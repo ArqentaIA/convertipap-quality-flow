@@ -1,8 +1,12 @@
-import { QUALITY_VARIABLES, type QualityVariable } from "@/lib/qc-data";
-import { useState } from "react";
+import { type QualityVariable } from "@/lib/qc-data";
+import { useEffect, useState } from "react";
 
-export function QualityVariableTable() {
-  const [rows, setRows] = useState<QualityVariable[]>(QUALITY_VARIABLES);
+export function QualityVariableTable({
+  variables,
+  productCode,
+}: { variables: QualityVariable[]; productCode?: string }) {
+  const [rows, setRows] = useState<QualityVariable[]>(variables);
+  useEffect(() => { setRows(variables); }, [variables, productCode]);
   const update = (i: number, field: keyof QualityVariable, v: string) => {
     setRows((rs) => rs.map((r, idx) => (idx === i ? { ...r, [field]: field === "label" || field === "unit" || field === "tolerance" || field === "key" ? v : Number(v) } : r)));
   };
