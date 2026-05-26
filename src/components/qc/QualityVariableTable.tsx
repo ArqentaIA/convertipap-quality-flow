@@ -65,7 +65,6 @@ export function QualityVariableTable({
               <th className="px-4 py-2">Mínimo</th>
               <th className="px-4 py-2">Objetivo</th>
               <th className="px-4 py-2">Máximo</th>
-              <th className="px-4 py-2">Tolerancia / Nota</th>
             </tr>
           </thead>
           <tbody>
@@ -76,16 +75,6 @@ export function QualityVariableTable({
                 <td className="px-4 py-2"><Cell value={r.min} disabled={!unlocked} onChange={(v) => update(i, "min", v)} /></td>
                 <td className="px-4 py-2"><Cell value={r.objective} disabled={!unlocked} onChange={(v) => update(i, "objective", v)} highlight /></td>
                 <td className="px-4 py-2"><Cell value={r.max} disabled={!unlocked} onChange={(v) => update(i, "max", v)} /></td>
-                <td className="px-4 py-2">
-                  <input
-                    type="text"
-                    placeholder="—"
-                    disabled={!unlocked}
-                    defaultValue={r.tolerance ?? ""}
-                    onBlur={(e) => update(i, "tolerance", e.target.value)}
-                    className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm disabled:cursor-not-allowed disabled:bg-muted/40 disabled:text-muted-foreground"
-                  />
-                </td>
               </tr>
             ))}
           </tbody>
