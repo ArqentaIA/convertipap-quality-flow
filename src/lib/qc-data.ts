@@ -88,7 +88,7 @@ export const DEFAULT_GENERAL: GeneralInfo = {
   plantId: "tlx",
   area: "Conversión Tissue",
   maquina: "MP-06",
-  fabricacion: "PH201",
+  fabricacion: "PHR01",
   jefeMaquina: "Erick Ordoñez",
   operador: "Palemón",
   prensero: "Ricardo",
