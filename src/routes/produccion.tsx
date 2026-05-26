@@ -124,6 +124,7 @@ function ProduccionPage() {
                   <Mini label="Horas" value={`${m.turnoHoras.toFixed(1)}h`} />
                   <Mini label="Rollos" value={String(m.rollosTurno)} />
                 </div>
+                </Link>
 
                 {necesitaCausa && (
                   <div className="mt-4 rounded-lg border border-destructive/40 bg-destructive/5 p-3">
