@@ -1,15 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Bell, Database, Globe, Lock, Plug, Save } from "lucide-react";
+import { Bell, Save } from "lucide-react";
 
 export const Route = createFileRoute("/configuracion")({ component: ConfigPage });
-
-const INTEGRACIONES = [
-  { nombre: "SAP S/4HANA", desc: "Sincronización de órdenes de fabricación", estado: "Conectado", icon: Database },
-  { nombre: "MES Convertipap", desc: "Lectura de variables PLC en tiempo real", estado: "Conectado", icon: Plug },
-  { nombre: "API Calidad REST", desc: "Endpoint /api/v1/qc/registros", estado: "Conectado", icon: Globe },
-  { nombre: "Active Directory", desc: "Autenticación corporativa SSO", estado: "Pendiente", icon: Lock },
-];
 
 function ConfigPage() {
   return (
