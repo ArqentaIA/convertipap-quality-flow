@@ -31,11 +31,16 @@ function ControlCalidad() {
   const [info, setInfo] = useState<GeneralInfo>(DEFAULT_GENERAL);
   const [measurements, setMeasurements] = useState<Measurement[]>(SAMPLE_MEASUREMENTS);
 
-  const specMap = useMemo(() => Object.fromEntries(QUALITY_VARIABLES.map((q) => [q.key, q])), []);
+  const activeSpec = useMemo(
+    () => PRODUCT_SPEC_MAP[info.fabricacion] ?? PRODUCT_SPEC_MAP["PHR01"],
+    [info.fabricacion],
+  );
+  const specVars = activeSpec.variables;
+  const specMap = useMemo(() => Object.fromEntries(specVars.map((q) => [q.key, q])), [specVars]);
   const alerts = useMemo(() => {
     const out: string[] = [];
     measurements.forEach((m) => {
-      QUALITY_VARIABLES.forEach((q) => {
+      specVars.forEach((q) => {
         const v = (m as any)[q.key];
         if (typeof v === "number" && evaluateValue(specMap[q.key], v) === "bad") {
           out.push(`${m.hora} · Rollo ${m.rollo}: ${q.label} = ${v}${q.unit} (rango ${q.min}–${q.max})`);
@@ -43,7 +48,7 @@ function ControlCalidad() {
       });
     });
     return out;
-  }, [measurements, specMap]);
+  }, [measurements, specMap, specVars]);
 
   const plant = PLANTS.find((p) => p.id === info.plantId)!;
 
