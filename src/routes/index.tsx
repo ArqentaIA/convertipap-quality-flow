@@ -62,7 +62,7 @@ function Dashboard() {
           </div>
 
           <div className="space-y-4">
-            <CardStat icon={Factory} label="Máquinas activas" value="4 / 7" tone="primary" />
+            <CardStat icon={Factory} label="Máquinas activas" value="4 / 4" tone="primary" />
             <CardStat icon={ClipboardCheck} label="Registros hoy" value="12" tone="success" />
             <CardStat icon={AlertTriangle} label="No conformidades" value="2" tone="warning" />
           </div>
