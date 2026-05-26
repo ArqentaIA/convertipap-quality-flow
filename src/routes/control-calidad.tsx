@@ -9,9 +9,10 @@ import { MeasurementTable } from "@/components/qc/MeasurementTable";
 import { AlertPanel } from "@/components/qc/AlertPanel";
 import { ReleaseBadge } from "@/components/qc/StatusBadge";
 import {
-  DEFAULT_GENERAL, SAMPLE_MEASUREMENTS, QUALITY_VARIABLES, PLANTS, evaluateValue,
+  DEFAULT_GENERAL, SAMPLE_MEASUREMENTS, PLANTS, evaluateValue,
   type Measurement, type GeneralInfo,
 } from "@/lib/qc-data";
+import { PRODUCT_SPEC_MAP } from "@/lib/spec-catalog";
 import {
   ArrowLeft, ArrowRight, Save, FileText, FileSpreadsheet, Pencil, CheckCircle2,
 } from "lucide-react";
