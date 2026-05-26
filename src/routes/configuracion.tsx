@@ -1,5 +1,109 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { PlaceholderPage } from "@/components/layout/PlaceholderPage";
-export const Route = createFileRoute("/configuracion")({
-  component: () => <PlaceholderPage title="Configuración" desc="Parámetros del sistema, integraciones API REST y preferencias por planta." />,
-});
+import { AppLayout } from "@/components/layout/AppLayout";
+import { Bell, Database, Globe, Lock, Plug, Save } from "lucide-react";
+
+export const Route = createFileRoute("/configuracion")({ component: ConfigPage });
+
+const INTEGRACIONES = [
+  { nombre: "SAP S/4HANA", desc: "Sincronización de órdenes de fabricación", estado: "Conectado", icon: Database },
+  { nombre: "MES Convertipap", desc: "Lectura de variables PLC en tiempo real", estado: "Conectado", icon: Plug },
+  { nombre: "API Calidad REST", desc: "Endpoint /api/v1/qc/registros", estado: "Conectado", icon: Globe },
+  { nombre: "Active Directory", desc: "Autenticación corporativa SSO", estado: "Pendiente", icon: Lock },
+];
+
+function ConfigPage() {
+  return (
+    <AppLayout title="Configuración del sistema">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="space-y-6 lg:col-span-2">
+          <Card title="Parámetros generales" desc="Aplica a todas las plantas">
+            <Field label="Tolerancia de advertencia (% del rango)" value="10" suffix="%" />
+            <Field label="Hora de corte turno 1" value="07:00" />
+            <Field label="Hora de corte turno 2" value="15:00" />
+            <Field label="Hora de corte turno 3" value="23:00" />
+            <Field label="Frecuencia de muestreo sugerida" value="30" suffix="min" />
+          </Card>
+
+          <Card title="Integraciones" desc="Servicios conectados al módulo de calidad">
+            <ul className="divide-y divide-border">
+              {INTEGRACIONES.map((i) => (
+                <li key={i.nombre} className="flex items-center gap-4 py-3 first:pt-0 last:pb-0">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <i.icon className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="font-medium text-foreground">{i.nombre}</div>
+                    <div className="text-xs text-muted-foreground">{i.desc}</div>
+                  </div>
+                  <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${i.estado === "Conectado" ? "border-success/30 bg-success/10 text-success" : "border-warning/40 bg-warning/15 text-foreground"}`}>
+                    {i.estado}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </Card>
+        </div>
+
+        <div className="space-y-6">
+          <Card title="Notificaciones" desc="Alertas automáticas">
+            <Toggle label="Alerta por valor fuera de rango" on />
+            <Toggle label="Resumen diario por correo" on />
+            <Toggle label="Notificar no conformidades a supervisor" on />
+            <Toggle label="Resumen semanal a dirección" />
+          </Card>
+
+          <Card title="Preferencias regionales">
+            <Field label="Zona horaria" value="America/Mexico_City" />
+            <Field label="Idioma" value="Español (MX)" />
+            <Field label="Unidades" value="Métrico (g/m², m/min, mm)" />
+          </Card>
+
+          <button className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm hover:opacity-90">
+            <Save className="h-4 w-4" /> Guardar cambios
+          </button>
+        </div>
+      </div>
+    </AppLayout>
+  );
+}
+
+function Card({ title, desc, children }: { title: string; desc?: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+      <div className="mb-4 flex items-start justify-between">
+        <div>
+          <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+          {desc && <p className="text-xs text-muted-foreground">{desc}</p>}
+        </div>
+        <Bell className="h-4 w-4 text-muted-foreground" />
+      </div>
+      <div className="space-y-3">{children}</div>
+    </div>
+  );
+}
+
+function Field({ label, value, suffix }: { label: string; value: string; suffix?: string }) {
+  return (
+    <div className="grid grid-cols-2 items-center gap-3">
+      <label className="text-xs text-muted-foreground">{label}</label>
+      <div className="relative">
+        <input
+          defaultValue={value}
+          className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+        />
+        {suffix && <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">{suffix}</span>}
+      </div>
+    </div>
+  );
+}
+
+function Toggle({ label, on }: { label: string; on?: boolean }) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <span className="text-sm text-foreground">{label}</span>
+      <span className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${on ? "bg-primary" : "bg-muted"}`}>
+        <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${on ? "translate-x-4" : "translate-x-0.5"}`} />
+      </span>
+    </div>
+  );
+}
