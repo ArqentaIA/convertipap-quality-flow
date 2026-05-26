@@ -61,11 +61,17 @@ export function GeneralInfoForm({
       <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
         {FIELDS.map((f) => {
           const lockedByRoster = ROSTER_FIELDS.has(f.key) && !isDireccion;
+          const isComputed = f.key === "cumplimiento";
           return (
             <div key={f.key as string} className={f.col === 2 ? "md:col-span-2" : ""}>
               <label className="mb-1 flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                 {f.label}
                 {lockedByRoster && <Lock className="h-2.5 w-2.5" />}
+                {isComputed && (
+                  <span className="ml-1 rounded bg-muted px-1.5 py-0.5 text-[9px] font-bold text-muted-foreground">
+                    AUTO
+                  </span>
+                )}
               </label>
               {f.type === "plant" ? (
                 <select
@@ -97,6 +103,14 @@ export function GeneralInfoForm({
                 >
                   {f.options!.map((o) => <option key={o} value={o}>Turno {o}</option>)}
                 </select>
+              ) : isComputed ? (
+                <div
+                  title="Calculado automáticamente: % de mediciones dentro de especificación (Paso 3)."
+                  className="flex w-full items-center justify-between rounded-md border border-input bg-muted/40 px-3 py-2 text-sm font-semibold tabular-nums text-foreground"
+                >
+                  <span>{Number(value.cumplimiento ?? 0).toFixed(2)}</span>
+                  <span className="text-xs text-muted-foreground">%</span>
+                </div>
               ) : (
                 <input
                   type={f.type ?? "text"}

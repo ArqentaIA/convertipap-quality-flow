@@ -50,6 +50,24 @@ function ControlCalidad() {
     return out;
   }, [measurements, specMap, specVars]);
 
+  // Cumplimiento calculado: % de mediciones numéricas dentro de especificación
+  const cumplimiento = useMemo(() => {
+    let total = 0;
+    let okCount = 0;
+    measurements.forEach((m) => {
+      specVars.forEach((q) => {
+        const v = (m as any)[q.key];
+        if (typeof v === "number") {
+          total += 1;
+          if (evaluateValue(specMap[q.key], v) !== "bad") okCount += 1;
+        }
+      });
+    });
+    return total === 0 ? 0 : (okCount / total) * 100;
+  }, [measurements, specMap, specVars]);
+
+  const infoView = useMemo(() => ({ ...info, cumplimiento }), [info, cumplimiento]);
+
   const plant = PLANTS.find((p) => p.id === info.plantId)!;
 
   return (
@@ -59,8 +77,8 @@ function ControlCalidad() {
 
         {step === 1 && (
           <div className="space-y-5">
-            <KPIGrid info={info} />
-            <GeneralInfoForm value={info} onChange={setInfo} />
+            <KPIGrid info={infoView} />
+            <GeneralInfoForm value={infoView} onChange={setInfo} />
           </div>
         )}
 
@@ -82,7 +100,7 @@ function ControlCalidad() {
         )}
 
         {step === 4 && (
-          <SummaryPanel info={info} plantName={plant.name} measurements={measurements} alerts={alerts} onEdit={setStep} />
+          <SummaryPanel info={infoView} plantName={plant.name} measurements={measurements} alerts={alerts} onEdit={setStep} />
         )}
 
         <ActionFooter
