@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Factory, Gauge, Clock, Pause, Play, AlertTriangle, AlertOctagon, X, Check } from "lucide-react";
 import { useState } from "react";
@@ -84,10 +84,15 @@ function ProduccionPage() {
             return (
               <div
                 key={m.codigo}
-                className={`rounded-xl border bg-card p-5 shadow-sm ${
+                className={`rounded-xl border bg-card p-5 shadow-sm transition hover:shadow-md hover:border-primary/40 ${
                   necesitaCausa ? "border-destructive/50 ring-1 ring-destructive/20" : "border-border"
                 }`}
               >
+                <Link
+                  to="/historial/$maquina"
+                  params={{ maquina: m.codigo }}
+                  className="block cursor-pointer"
+                >
                 <div className="flex items-start justify-between">
                   <div>
                     <div className="text-xs uppercase tracking-wider text-muted-foreground">{m.planta}</div>
@@ -119,6 +124,7 @@ function ProduccionPage() {
                   <Mini label="Horas" value={`${m.turnoHoras.toFixed(1)}h`} />
                   <Mini label="Rollos" value={String(m.rollosTurno)} />
                 </div>
+                </Link>
 
                 {necesitaCausa && (
                   <div className="mt-4 rounded-lg border border-destructive/40 bg-destructive/5 p-3">

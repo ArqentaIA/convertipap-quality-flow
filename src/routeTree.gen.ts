@@ -12,11 +12,11 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as UsuariosRouteImport } from './routes/usuarios'
 import { Route as ReportesRouteImport } from './routes/reportes'
 import { Route as ProduccionRouteImport } from './routes/produccion'
-import { Route as HistorialRouteImport } from './routes/historial'
 import { Route as ControlCalidadRouteImport } from './routes/control-calidad'
 import { Route as ConfiguracionRouteImport } from './routes/configuracion'
 import { Route as CatalogosRouteImport } from './routes/catalogos'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as HistorialMaquinaRouteImport } from './routes/historial.$maquina'
 
 const UsuariosRoute = UsuariosRouteImport.update({
   id: '/usuarios',
@@ -31,11 +31,6 @@ const ReportesRoute = ReportesRouteImport.update({
 const ProduccionRoute = ProduccionRouteImport.update({
   id: '/produccion',
   path: '/produccion',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const HistorialRoute = HistorialRouteImport.update({
-  id: '/historial',
-  path: '/historial',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ControlCalidadRoute = ControlCalidadRouteImport.update({
@@ -58,26 +53,31 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const HistorialMaquinaRoute = HistorialMaquinaRouteImport.update({
+  id: '/historial/$maquina',
+  path: '/historial/$maquina',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/catalogos': typeof CatalogosRoute
   '/configuracion': typeof ConfiguracionRoute
   '/control-calidad': typeof ControlCalidadRoute
-  '/historial': typeof HistorialRoute
   '/produccion': typeof ProduccionRoute
   '/reportes': typeof ReportesRoute
   '/usuarios': typeof UsuariosRoute
+  '/historial/$maquina': typeof HistorialMaquinaRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/catalogos': typeof CatalogosRoute
   '/configuracion': typeof ConfiguracionRoute
   '/control-calidad': typeof ControlCalidadRoute
-  '/historial': typeof HistorialRoute
   '/produccion': typeof ProduccionRoute
   '/reportes': typeof ReportesRoute
   '/usuarios': typeof UsuariosRoute
+  '/historial/$maquina': typeof HistorialMaquinaRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -85,10 +85,10 @@ export interface FileRoutesById {
   '/catalogos': typeof CatalogosRoute
   '/configuracion': typeof ConfiguracionRoute
   '/control-calidad': typeof ControlCalidadRoute
-  '/historial': typeof HistorialRoute
   '/produccion': typeof ProduccionRoute
   '/reportes': typeof ReportesRoute
   '/usuarios': typeof UsuariosRoute
+  '/historial/$maquina': typeof HistorialMaquinaRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -97,30 +97,30 @@ export interface FileRouteTypes {
     | '/catalogos'
     | '/configuracion'
     | '/control-calidad'
-    | '/historial'
     | '/produccion'
     | '/reportes'
     | '/usuarios'
+    | '/historial/$maquina'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/catalogos'
     | '/configuracion'
     | '/control-calidad'
-    | '/historial'
     | '/produccion'
     | '/reportes'
     | '/usuarios'
+    | '/historial/$maquina'
   id:
     | '__root__'
     | '/'
     | '/catalogos'
     | '/configuracion'
     | '/control-calidad'
-    | '/historial'
     | '/produccion'
     | '/reportes'
     | '/usuarios'
+    | '/historial/$maquina'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -128,10 +128,10 @@ export interface RootRouteChildren {
   CatalogosRoute: typeof CatalogosRoute
   ConfiguracionRoute: typeof ConfiguracionRoute
   ControlCalidadRoute: typeof ControlCalidadRoute
-  HistorialRoute: typeof HistorialRoute
   ProduccionRoute: typeof ProduccionRoute
   ReportesRoute: typeof ReportesRoute
   UsuariosRoute: typeof UsuariosRoute
+  HistorialMaquinaRoute: typeof HistorialMaquinaRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -155,13 +155,6 @@ declare module '@tanstack/react-router' {
       path: '/produccion'
       fullPath: '/produccion'
       preLoaderRoute: typeof ProduccionRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/historial': {
-      id: '/historial'
-      path: '/historial'
-      fullPath: '/historial'
-      preLoaderRoute: typeof HistorialRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/control-calidad': {
@@ -192,6 +185,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/historial/$maquina': {
+      id: '/historial/$maquina'
+      path: '/historial/$maquina'
+      fullPath: '/historial/$maquina'
+      preLoaderRoute: typeof HistorialMaquinaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -200,10 +200,10 @@ const rootRouteChildren: RootRouteChildren = {
   CatalogosRoute: CatalogosRoute,
   ConfiguracionRoute: ConfiguracionRoute,
   ControlCalidadRoute: ControlCalidadRoute,
-  HistorialRoute: HistorialRoute,
   ProduccionRoute: ProduccionRoute,
   ReportesRoute: ReportesRoute,
   UsuariosRoute: UsuariosRoute,
+  HistorialMaquinaRoute: HistorialMaquinaRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
