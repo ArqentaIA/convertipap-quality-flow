@@ -4,7 +4,7 @@ import { ReleaseBadge } from "@/components/qc/StatusBadge";
 import { Search, Download, Filter, Eye, Calendar } from "lucide-react";
 import { useState } from "react";
 
-export const Route = createFileRoute("/historial")({ component: HistorialPage });
+export const Route = createFileRoute("/historial/$maquina")({ component: HistorialPage });
 
 type Registro = {
   folio: string;
