@@ -26,8 +26,8 @@ type Maquina = {
 const MAQUINAS_INICIALES: Maquina[] = [
   { codigo: "MP-04", planta: "Tlaxcala", producto: "PST Higiénico 13 g/m²", orden: "OF-44218", estado: "operando", velocidad: 1720, velocidadObj: 1800, oee: 86.4, turnoHoras: 6.2, rollosTurno: 14, operador: "Palemón G.", minutosDesdeInicioTurno: 372, tieneRegistroTurno: true },
   { codigo: "MP-05", planta: "Tlaxcala", producto: "PST Higiénico 13 g/m²", orden: "OF-44219", estado: "operando", velocidad: 1815, velocidadObj: 1800, oee: 91.2, turnoHoras: 6.5, rollosTurno: 16, operador: "Ricardo M.", minutosDesdeInicioTurno: 390, tieneRegistroTurno: true },
-  { codigo: "MP-06", planta: "Planta 2", producto: "PST Toalla 22 g/m²", orden: "OF-44225", estado: "ajuste", velocidad: 0, velocidadObj: 1500, oee: 62.1, turnoHoras: 4.0, rollosTurno: 8, operador: "Adrián P.", minutosDesdeInicioTurno: 240, tieneRegistroTurno: true },
-  { codigo: "MP-07", planta: "Planta 2", producto: "PST Servilleta 17 g/m²", orden: "OF-44230", estado: "operando", velocidad: 1480, velocidadObj: 1500, oee: 88.0, turnoHoras: 6.0, rollosTurno: 15, operador: "Jorge H.", minutosDesdeInicioTurno: 360, tieneRegistroTurno: true },
+  { codigo: "MP-06", planta: "Tlaxcala", producto: "PST Toalla 22 g/m²", orden: "OF-44225", estado: "ajuste", velocidad: 0, velocidadObj: 1500, oee: 62.1, turnoHoras: 4.0, rollosTurno: 8, operador: "Adrián P.", minutosDesdeInicioTurno: 240, tieneRegistroTurno: true },
+  { codigo: "MP-07", planta: "Tlaxcala", producto: "PST Servilleta 17 g/m²", orden: "OF-44230", estado: "operando", velocidad: 1480, velocidadObj: 1500, oee: 88.0, turnoHoras: 6.0, rollosTurno: 15, operador: "Jorge H.", minutosDesdeInicioTurno: 360, tieneRegistroTurno: true },
 ];
 
 const UMBRAL_MIN = 15;
