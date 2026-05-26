@@ -16,8 +16,6 @@ const TENDENCIA = [
 
 const PLANTAS_PERF = [
   { planta: "Tlaxcala", cumpl: 92.4, rollos: 412, nc: 6, delta: 1.8 },
-  { planta: "Planta 2", cumpl: 87.1, rollos: 318, nc: 11, delta: -0.6 },
-  { planta: "Planta 3", cumpl: 90.3, rollos: 276, nc: 8, delta: 2.4 },
 ];
 
 const VARIABLES_TOP = [
