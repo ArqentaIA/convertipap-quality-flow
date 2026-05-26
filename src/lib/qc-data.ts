@@ -57,8 +57,6 @@ export interface GeneralInfo {
 
 export const PLANTS: Plant[] = [
   { id: "tlx", name: "Planta Tlaxcala", code: "TLX" },
-  { id: "p2", name: "Planta 2", code: "P02" },
-  { id: "p3", name: "Planta 3", code: "P03" },
 ];
 
 export const QUALITY_VARIABLES: QualityVariable[] = [

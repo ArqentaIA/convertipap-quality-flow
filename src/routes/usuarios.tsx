@@ -19,10 +19,10 @@ const USUARIOS: Usuario[] = [
   { nombre: "Erick Ordoñez", email: "erick.o@convertipap.mx", rol: "Jefe de máquina", planta: "Tlaxcala", activo: true, ultimo: "hace 22 min" },
   { nombre: "Palemón Gutiérrez", email: "palemon.g@convertipap.mx", rol: "Operador", planta: "Tlaxcala", activo: true, ultimo: "hace 1 h" },
   { nombre: "Ricardo Mendoza", email: "ricardo.m@convertipap.mx", rol: "Operador", planta: "Tlaxcala", activo: true, ultimo: "hace 3 h" },
-  { nombre: "Adrián Pérez", email: "adrian.p@convertipap.mx", rol: "Jefe de máquina", planta: "Planta 2", activo: true, ultimo: "ayer" },
-  { nombre: "Roberto Mejía", email: "roberto.m@convertipap.mx", rol: "Supervisor", planta: "Planta 3", activo: true, ultimo: "hace 2 h" },
-  { nombre: "Laura Vázquez", email: "laura.v@convertipap.mx", rol: "Administrador", planta: "Corporativo", activo: true, ultimo: "hace 12 min" },
-  { nombre: "Daniel Rojas", email: "daniel.r@convertipap.mx", rol: "Operador", planta: "Planta 3", activo: false, ultimo: "hace 8 días" },
+  { nombre: "Adrián Pérez", email: "adrian.p@convertipap.mx", rol: "Jefe de máquina", planta: "Tlaxcala", activo: true, ultimo: "ayer" },
+  { nombre: "Roberto Mejía", email: "roberto.m@convertipap.mx", rol: "Supervisor", planta: "Tlaxcala", activo: true, ultimo: "hace 2 h" },
+  { nombre: "Laura Vázquez", email: "laura.v@convertipap.mx", rol: "Administrador", planta: "Tlaxcala", activo: true, ultimo: "hace 12 min" },
+  { nombre: "Daniel Rojas", email: "daniel.r@convertipap.mx", rol: "Operador", planta: "Tlaxcala", activo: false, ultimo: "hace 8 días" },
 ];
 
 const ROL_COLORS: Record<Usuario["rol"], string> = {
@@ -43,7 +43,7 @@ function UsuariosPage() {
           <Stat label="Usuarios totales" value={String(USUARIOS.length)} />
           <Stat label="Activos" value={String(USUARIOS.filter(u => u.activo).length)} tone="success" />
           <Stat label="Roles definidos" value="5" />
-          <Stat label="Plantas con acceso" value="4" tone="primary" />
+          <Stat label="Plantas con acceso" value="1" tone="primary" />
         </div>
 
         <div className="rounded-xl border border-border bg-card shadow-sm">
