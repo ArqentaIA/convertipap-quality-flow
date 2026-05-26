@@ -43,6 +43,20 @@ export function GeneralInfoForm({
               >
                 {PLANTS.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
+            ) : f.type === "fabricacion" ? (
+              <select
+                value={value.fabricacion}
+                onChange={(e) => set("fabricacion", e.target.value)}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                {Array.from(new Set(PRODUCT_SPECS.map((p) => p.family))).map((fam) => (
+                  <optgroup key={fam} label={fam}>
+                    {PRODUCT_SPECS.filter((p) => p.family === fam).map((p) => (
+                      <option key={p.code} value={p.code}>{p.code}</option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
             ) : f.type === "select" ? (
               <select
                 value={String(value[f.key])}
