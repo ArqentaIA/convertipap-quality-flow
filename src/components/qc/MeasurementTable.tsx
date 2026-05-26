@@ -29,15 +29,31 @@ const STATUS_CLR: Record<ReleaseStatus, string> = {
 export function MeasurementTable({
   rows,
   onChange,
+  operadorTurno,
+  turno,
 }: {
   rows: Measurement[];
   onChange: (rows: Measurement[]) => void;
+  operadorTurno: string;
+  turno: string;
 }) {
   const specMap = useMemo(() => Object.fromEntries(QUALITY_VARIABLES.map((q) => [q.key, q])), []);
+  const session = useSession();
+  const [showLogin, setShowLogin] = useState(false);
 
-  const setRow = (id: string, patch: Partial<Measurement>) =>
+  const isOperadorTurno =
+    session.role === "operador" &&
+    !!session.user &&
+    session.user.trim().toLowerCase() === operadorTurno.trim().toLowerCase();
+  const isDireccion = session.role === "direccion";
+  const canCapture = isOperadorTurno || isDireccion;
+
+  const setRow = (id: string, patch: Partial<Measurement>) => {
+    if (!canCapture) return;
     onChange(rows.map((r) => (r.id === id ? { ...r, ...patch } : r)));
+  };
   const addRow = () => {
+    if (!canCapture) return;
     const lastHora = rows[rows.length - 1]?.hora ?? "00:00";
     onChange([
       ...rows,
@@ -50,11 +66,13 @@ export function MeasurementTable({
     ]);
   };
   const dupRow = (id: string) => {
+    if (!canCapture) return;
     const r = rows.find((x) => x.id === id);
     if (!r) return;
     onChange([...rows, { ...r, id: crypto.randomUUID() }]);
   };
   const delRow = (id: string) => {
+    if (!canCapture) return;
     if (!confirm("¿Eliminar esta fila de medición?")) return;
     onChange(rows.filter((r) => r.id !== id));
   };
@@ -71,18 +89,53 @@ export function MeasurementTable({
 
   return (
     <div className="rounded-xl border border-border bg-card shadow-sm">
-      <div className="flex items-center justify-between border-b border-border px-5 py-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-3">
         <div>
           <h3 className="text-sm font-semibold text-foreground">Mediciones por Hora</h3>
-          <p className="text-xs text-muted-foreground">Validación automática por celda contra objetivos. Guardado automático como borrador.</p>
+          <p className="text-xs text-muted-foreground">
+            Captura habilitada solo para el operador en turno (<span className="font-medium text-foreground">{operadorTurno || "—"}</span>, Turno {turno}).
+            {isDireccion && " · Dirección con acceso supervisión."}
+          </p>
         </div>
-        <button
-          onClick={addRow}
-          className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:opacity-90"
-        >
-          <Plus className="h-3.5 w-3.5" /> Agregar fila
-        </button>
+        <div className="flex items-center gap-2">
+          {canCapture ? (
+            <>
+              <span className="inline-flex items-center gap-1.5 rounded-md border border-success/40 bg-success/10 px-2.5 py-1 text-xs font-semibold text-success">
+                <UserCheck className="h-3.5 w-3.5" />
+                {session.user} · {isDireccion ? "Dirección" : "Operador en turno"}
+              </span>
+              <button
+                onClick={() => clearSession()}
+                title="Cerrar sesión de captura"
+                className="inline-flex items-center gap-1 rounded-md border border-input bg-background px-2 py-1 text-xs font-medium hover:bg-accent"
+              >
+                <LogOut className="h-3.5 w-3.5" /> Salir
+              </button>
+              <button
+                onClick={addRow}
+                className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:opacity-90"
+              >
+                <Plus className="h-3.5 w-3.5" /> Agregar fila
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={() => setShowLogin(true)}
+              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:opacity-90"
+            >
+              <Lock className="h-3.5 w-3.5" /> Iniciar captura
+            </button>
+          )}
+        </div>
       </div>
+
+      {!canCapture && (
+        <div className="border-b border-warning/40 bg-warning/10 px-5 py-2.5 text-xs text-foreground">
+          Solo el operador en turno (<span className="font-semibold">{operadorTurno || "—"}</span>) puede capturar mediciones.
+          Inicia sesión para habilitar la captura.
+        </div>
+      )}
+
 
       <div className="overflow-x-auto">
         <table className="min-w-[1400px] w-full text-sm">
