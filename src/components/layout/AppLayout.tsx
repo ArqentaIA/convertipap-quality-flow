@@ -1,7 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useState } from "react";
 import {
-  LayoutDashboard, Factory, ClipboardCheck, History, FileBarChart2,
+  LayoutDashboard, Factory, ClipboardCheck, FileBarChart2,
   BookOpen, Settings, Users, ChevronLeft, ChevronRight, Bell, ChevronDown,
 } from "lucide-react";
 import logo from "@/assets/logo.png";
@@ -11,7 +11,6 @@ const NAV = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
   { to: "/produccion", label: "Producción", icon: Factory },
   { to: "/control-calidad", label: "Control de Calidad", icon: ClipboardCheck },
-  { to: "/historial", label: "Historial", icon: History },
   { to: "/reportes", label: "Reportes", icon: FileBarChart2 },
   { to: "/catalogos", label: "Catálogos", icon: BookOpen },
   { to: "/configuracion", label: "Configuración", icon: Settings },
