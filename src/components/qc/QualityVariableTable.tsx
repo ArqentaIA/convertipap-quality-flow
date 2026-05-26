@@ -15,8 +15,12 @@ export function QualityVariableTable({
     <div className="rounded-xl border border-border bg-card shadow-sm">
       <div className="flex items-center justify-between border-b border-border px-5 py-3">
         <div>
-          <h3 className="text-sm font-semibold text-foreground">Variables de Calidad — Especificación</h3>
-          <p className="text-xs text-muted-foreground">Define mínimo, objetivo y máximo por variable</p>
+          <h3 className="text-sm font-semibold text-foreground">
+            Variables de Calidad — Especificación{productCode ? ` · ${productCode}` : ""}
+          </h3>
+          <p className="text-xs text-muted-foreground">
+            Valores base cargados del catálogo de fabricación. Editables por turno.
+          </p>
         </div>
         <span className={`text-xs font-medium ${allValid ? "text-success" : "text-destructive"}`}>
           {allValid ? "Especificación válida" : "Revisa rangos: min < objetivo < máx"}
