@@ -1,7 +1,24 @@
-import { useMemo, useState } from "react";
-import { Copy, Trash2, Plus, Lock, LogOut, UserCheck } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Copy, Trash2, Plus, Lock, LogOut, UserCheck, ChevronDown, Check } from "lucide-react";
 import { QUALITY_VARIABLES, evaluateValue, type Measurement, type ReleaseStatus } from "@/lib/qc-data";
 import { useSession, setSession, clearSession } from "@/lib/session";
+
+const NOTAS_OPCIONES = [
+  "Sin novedad",
+  "Ligeros hoyos",
+  "Hoyos",
+  "Ligero desfase",
+  "Desfase",
+  "Ligera suciedad",
+  "Suciedad",
+  "Destase",
+  "Arrugas",
+  "Manchas",
+  "Variación de color",
+  "Borde irregular",
+  "Empalme / unión",
+  "Paro de máquina",
+];
 
 const NUM_FIELDS: { key: keyof Measurement; label: string; specKey?: string; w?: string }[] = [
   { key: "calibre", label: "Calibre (mm)", specKey: "calibre", w: "w-20" },
