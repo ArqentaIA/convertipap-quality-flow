@@ -6,7 +6,7 @@ const FIELDS: { key: keyof GeneralInfo; label: string; type?: string; col?: numb
   { key: "plantId", label: "Planta", type: "plant", col: 2 },
   { key: "area", label: "Área" },
   { key: "maquina", label: "Máquina" },
-  { key: "fabricacion", label: "Fabricación" },
+  { key: "fabricacion", label: "Fabricación", type: "fabricacion" },
   { key: "jefeMaquina", label: "Jefe de Máquina" },
   { key: "operador", label: "Operador" },
   { key: "prensero", label: "Prensero" },
