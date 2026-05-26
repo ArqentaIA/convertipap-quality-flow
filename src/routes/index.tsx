@@ -218,10 +218,19 @@ function Dashboard() {
             ))}
           </div>
         </div>
+
+        {/* KPIs (parte inferior) */}
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+          <Kpi icon={Target} label="Cumplimiento prom." value={`${promCumpl}%`} delta={2.3} tone="primary" />
+          <Kpi icon={Activity} label="OEE promedio" value={`${promOEE}%`} delta={1.1} tone="success" />
+          <Kpi icon={Factory} label="Rollos producidos" value={String(totalRollos)} delta={4.8} tone="primary" />
+          <Kpi icon={AlertTriangle} label="No conformidades" value={String(totalNC)} delta={-1.6} tone="warning" />
+        </div>
       </div>
     </AppLayout>
   );
 }
+
 
 function rangoLabel(r: Rango) {
   return r === "dia" ? "Hoy" : r === "semana" ? "Últimos 7 días" : "Mes en curso";
