@@ -69,13 +69,16 @@ export function MeasurementTable({
     if (!canCapture) return;
     onChange(rows.map((r) => (r.id === id ? { ...r, ...patch } : r)));
   };
+  const nowHHMM = () => {
+    const d = new Date();
+    return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  };
   const addRow = () => {
     if (!canCapture) return;
-    const lastHora = rows[rows.length - 1]?.hora ?? "00:00";
     onChange([
       ...rows,
       {
-        id: crypto.randomUUID(), hora: lastHora, rollo: "", calibre: null, blancuraR457: null,
+        id: crypto.randomUUID(), hora: nowHHMM(), rollo: "", calibre: null, blancuraR457: null,
         blancuraA: null, blancuraB: null, tensionMD: null, tensionCD: null, relMDCD: null,
         elongMD: null, humedad: null, pesoBase: null, anchoUtil: null, diametro: null,
         uniones: 0, estatus: "L", pesoRollo: null, notas: "",
@@ -86,7 +89,7 @@ export function MeasurementTable({
     if (!canCapture) return;
     const r = rows.find((x) => x.id === id);
     if (!r) return;
-    onChange([...rows, { ...r, id: crypto.randomUUID() }]);
+    onChange([...rows, { ...r, id: crypto.randomUUID(), hora: nowHHMM() }]);
   };
   const delRow = (id: string) => {
     if (!canCapture) return;
@@ -158,7 +161,7 @@ export function MeasurementTable({
         <table className="min-w-[1400px] w-full text-sm">
           <thead className="sticky top-0 bg-muted/50 text-left text-[10px] uppercase tracking-wider text-muted-foreground">
             <tr>
-              <th className="px-2 py-2">Hora</th>
+              <th className="px-2 py-2" title="Generada automáticamente por el sistema al agregar la fila">Hora <span className="ml-1 rounded bg-muted px-1 py-0.5 text-[8px] font-bold text-muted-foreground">AUTO</span></th>
               <th className="px-2 py-2"># Rollo</th>
               {NUM_FIELDS.map((f) => (
                 <th key={f.key as string} className="px-2 py-2">{f.label}</th>
@@ -172,13 +175,12 @@ export function MeasurementTable({
             {rows.map((r) => (
               <tr key={r.id} className="border-t border-border hover:bg-accent/30">
                 <td className="px-2 py-1.5">
-                  <input
-                    type="time"
-                    value={r.hora}
-                    disabled={!canCapture}
-                    onChange={(e) => setRow(r.id, { hora: e.target.value })}
-                    className="w-24 rounded-md border border-input bg-background px-2 py-1 text-sm tabular-nums disabled:cursor-not-allowed disabled:bg-muted/40"
-                  />
+                  <div
+                    title="Hora generada automáticamente por el sistema al crear la fila"
+                    className="inline-flex w-24 items-center justify-center rounded-md border border-input bg-muted/40 px-2 py-1 text-sm font-medium tabular-nums text-foreground"
+                  >
+                    {r.hora}
+                  </div>
                 </td>
                 <td className="px-2 py-1.5">
                   <input
