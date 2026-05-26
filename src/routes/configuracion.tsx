@@ -24,24 +24,6 @@ function ConfigPage() {
             <Field label="Frecuencia de muestreo sugerida" value="30" suffix="min" />
           </Card>
 
-          <Card title="Integraciones" desc="Servicios conectados al módulo de calidad">
-            <ul className="divide-y divide-border">
-              {INTEGRACIONES.map((i) => (
-                <li key={i.nombre} className="flex items-center gap-4 py-3 first:pt-0 last:pb-0">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                    <i.icon className="h-5 w-5" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="font-medium text-foreground">{i.nombre}</div>
-                    <div className="text-xs text-muted-foreground">{i.desc}</div>
-                  </div>
-                  <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${i.estado === "Conectado" ? "border-success/30 bg-success/10 text-success" : "border-warning/40 bg-warning/15 text-foreground"}`}>
-                    {i.estado}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </Card>
         </div>
 
         <div className="space-y-6">
