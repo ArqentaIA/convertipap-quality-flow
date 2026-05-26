@@ -175,13 +175,12 @@ export function MeasurementTable({
             {rows.map((r) => (
               <tr key={r.id} className="border-t border-border hover:bg-accent/30">
                 <td className="px-2 py-1.5">
-                  <input
-                    type="time"
-                    value={r.hora}
-                    disabled={!canCapture}
-                    onChange={(e) => setRow(r.id, { hora: e.target.value })}
-                    className="w-24 rounded-md border border-input bg-background px-2 py-1 text-sm tabular-nums disabled:cursor-not-allowed disabled:bg-muted/40"
-                  />
+                  <div
+                    title="Hora generada automáticamente por el sistema al crear la fila"
+                    className="inline-flex w-24 items-center justify-center rounded-md border border-input bg-muted/40 px-2 py-1 text-sm font-medium tabular-nums text-foreground"
+                  >
+                    {r.hora}
+                  </div>
                 </td>
                 <td className="px-2 py-1.5">
                   <input
