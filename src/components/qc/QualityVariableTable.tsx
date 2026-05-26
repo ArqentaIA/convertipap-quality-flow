@@ -65,7 +65,6 @@ export function QualityVariableTable({
               <th className="px-4 py-2">Mínimo</th>
               <th className="px-4 py-2">Objetivo</th>
               <th className="px-4 py-2">Máximo</th>
-              <th className="px-4 py-2">Tolerancia / Nota</th>
             </tr>
           </thead>
           <tbody>
