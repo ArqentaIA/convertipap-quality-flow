@@ -1,6 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useSyncExternalStore, useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Bell, Save } from "lucide-react";
+import { Bell, Save, Lock, ShieldCheck, Users } from "lucide-react";
+import { getRoster, subscribeRoster, updateShiftAssignment, type RosterEntry } from "@/lib/roster";
+import { useSession } from "@/lib/session";
+import type { Shift } from "@/lib/qc-data";
 
 export const Route = createFileRoute("/configuracion")({ component: ConfigPage });
 
@@ -17,7 +21,9 @@ function ConfigPage() {
             <Field label="Frecuencia de muestreo sugerida" value="30" suffix="min" />
           </Card>
 
+          <RosterCard />
         </div>
+
 
         <div className="space-y-6">
           <Card title="Notificaciones" desc="Alertas automáticas">
