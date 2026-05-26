@@ -9,12 +9,48 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as UsuariosRouteImport } from './routes/usuarios'
+import { Route as ReportesRouteImport } from './routes/reportes'
+import { Route as ProduccionRouteImport } from './routes/produccion'
+import { Route as HistorialRouteImport } from './routes/historial'
 import { Route as ControlCalidadRouteImport } from './routes/control-calidad'
+import { Route as ConfiguracionRouteImport } from './routes/configuracion'
+import { Route as CatalogosRouteImport } from './routes/catalogos'
 import { Route as IndexRouteImport } from './routes/index'
 
+const UsuariosRoute = UsuariosRouteImport.update({
+  id: '/usuarios',
+  path: '/usuarios',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReportesRoute = ReportesRouteImport.update({
+  id: '/reportes',
+  path: '/reportes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProduccionRoute = ProduccionRouteImport.update({
+  id: '/produccion',
+  path: '/produccion',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HistorialRoute = HistorialRouteImport.update({
+  id: '/historial',
+  path: '/historial',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ControlCalidadRoute = ControlCalidadRouteImport.update({
   id: '/control-calidad',
   path: '/control-calidad',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConfiguracionRoute = ConfiguracionRouteImport.update({
+  id: '/configuracion',
+  path: '/configuracion',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CatalogosRoute = CatalogosRouteImport.update({
+  id: '/catalogos',
+  path: '/catalogos',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -25,37 +61,128 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/catalogos': typeof CatalogosRoute
+  '/configuracion': typeof ConfiguracionRoute
   '/control-calidad': typeof ControlCalidadRoute
+  '/historial': typeof HistorialRoute
+  '/produccion': typeof ProduccionRoute
+  '/reportes': typeof ReportesRoute
+  '/usuarios': typeof UsuariosRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/catalogos': typeof CatalogosRoute
+  '/configuracion': typeof ConfiguracionRoute
   '/control-calidad': typeof ControlCalidadRoute
+  '/historial': typeof HistorialRoute
+  '/produccion': typeof ProduccionRoute
+  '/reportes': typeof ReportesRoute
+  '/usuarios': typeof UsuariosRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/catalogos': typeof CatalogosRoute
+  '/configuracion': typeof ConfiguracionRoute
   '/control-calidad': typeof ControlCalidadRoute
+  '/historial': typeof HistorialRoute
+  '/produccion': typeof ProduccionRoute
+  '/reportes': typeof ReportesRoute
+  '/usuarios': typeof UsuariosRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/control-calidad'
+  fullPaths:
+    | '/'
+    | '/catalogos'
+    | '/configuracion'
+    | '/control-calidad'
+    | '/historial'
+    | '/produccion'
+    | '/reportes'
+    | '/usuarios'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/control-calidad'
-  id: '__root__' | '/' | '/control-calidad'
+  to:
+    | '/'
+    | '/catalogos'
+    | '/configuracion'
+    | '/control-calidad'
+    | '/historial'
+    | '/produccion'
+    | '/reportes'
+    | '/usuarios'
+  id:
+    | '__root__'
+    | '/'
+    | '/catalogos'
+    | '/configuracion'
+    | '/control-calidad'
+    | '/historial'
+    | '/produccion'
+    | '/reportes'
+    | '/usuarios'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CatalogosRoute: typeof CatalogosRoute
+  ConfiguracionRoute: typeof ConfiguracionRoute
   ControlCalidadRoute: typeof ControlCalidadRoute
+  HistorialRoute: typeof HistorialRoute
+  ProduccionRoute: typeof ProduccionRoute
+  ReportesRoute: typeof ReportesRoute
+  UsuariosRoute: typeof UsuariosRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/usuarios': {
+      id: '/usuarios'
+      path: '/usuarios'
+      fullPath: '/usuarios'
+      preLoaderRoute: typeof UsuariosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reportes': {
+      id: '/reportes'
+      path: '/reportes'
+      fullPath: '/reportes'
+      preLoaderRoute: typeof ReportesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/produccion': {
+      id: '/produccion'
+      path: '/produccion'
+      fullPath: '/produccion'
+      preLoaderRoute: typeof ProduccionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/historial': {
+      id: '/historial'
+      path: '/historial'
+      fullPath: '/historial'
+      preLoaderRoute: typeof HistorialRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/control-calidad': {
       id: '/control-calidad'
       path: '/control-calidad'
       fullPath: '/control-calidad'
       preLoaderRoute: typeof ControlCalidadRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/configuracion': {
+      id: '/configuracion'
+      path: '/configuracion'
+      fullPath: '/configuracion'
+      preLoaderRoute: typeof ConfiguracionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/catalogos': {
+      id: '/catalogos'
+      path: '/catalogos'
+      fullPath: '/catalogos'
+      preLoaderRoute: typeof CatalogosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -70,8 +197,24 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CatalogosRoute: CatalogosRoute,
+  ConfiguracionRoute: ConfiguracionRoute,
   ControlCalidadRoute: ControlCalidadRoute,
+  HistorialRoute: HistorialRoute,
+  ProduccionRoute: ProduccionRoute,
+  ReportesRoute: ReportesRoute,
+  UsuariosRoute: UsuariosRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
