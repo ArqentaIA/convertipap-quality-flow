@@ -91,7 +91,7 @@ function ProduccionPage() {
                 <Link
                   to="/historial/$maquina"
                   params={{ maquina: m.codigo }}
-                  className="block -m-5 p-5 cursor-pointer"
+                  className="block cursor-pointer"
                 >
                 <div className="flex items-start justify-between">
                   <div>
