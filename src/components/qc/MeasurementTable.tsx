@@ -1,6 +1,7 @@
-import { useMemo } from "react";
-import { Copy, Trash2, Plus } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Copy, Trash2, Plus, Lock, LogOut, UserCheck } from "lucide-react";
 import { QUALITY_VARIABLES, evaluateValue, type Measurement, type ReleaseStatus } from "@/lib/qc-data";
+import { useSession, setSession, clearSession } from "@/lib/session";
 
 const NUM_FIELDS: { key: keyof Measurement; label: string; specKey?: string; w?: string }[] = [
   { key: "calibre", label: "Calibre (mm)", specKey: "calibre", w: "w-20" },
