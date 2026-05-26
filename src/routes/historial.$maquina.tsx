@@ -1,7 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { ReleaseBadge } from "@/components/qc/StatusBadge";
-import { Search, Download, Filter, Eye, Calendar } from "lucide-react";
+import { Search, Download, Filter, Eye, Calendar, ArrowLeft } from "lucide-react";
 import { useState } from "react";
 
 export const Route = createFileRoute("/historial/$maquina")({ component: HistorialPage });
@@ -20,21 +20,30 @@ type Registro = {
 };
 
 const REGISTROS: Registro[] = [
-  { folio: "CAL-2026-04821", fecha: "2026-05-26", planta: "Tlaxcala", maquina: "MP-06", turno: "3", producto: "PST Higiénico", jefe: "Erick Ordoñez", rollos: 14, cumplimiento: 92.4, estatus: "L" },
-  { folio: "CAL-2026-04820", fecha: "2026-05-26", planta: "Tlaxcala", maquina: "MP-06", turno: "2", producto: "PST Higiénico", jefe: "Manuel Rivas", rollos: 16, cumplimiento: 88.1, estatus: "L" },
-  { folio: "CAL-2026-04819", fecha: "2026-05-26", planta: "Tlaxcala", maquina: "MP-05", turno: "2", producto: "PST Toalla", jefe: "Luis Cárdenas", rollos: 12, cumplimiento: 76.5, estatus: "NC" },
-  { folio: "CAL-2026-04818", fecha: "2026-05-25", planta: "Planta 2", maquina: "MP-08", turno: "3", producto: "PST Servilleta", jefe: "Adrián Pérez", rollos: 18, cumplimiento: 95.0, estatus: "L" },
-  { folio: "CAL-2026-04817", fecha: "2026-05-25", planta: "Tlaxcala", maquina: "MP-06", turno: "1", producto: "PST Higiénico", jefe: "Erick Ordoñez", rollos: 15, cumplimiento: 90.2, estatus: "L" },
-  { folio: "CAL-2026-04816", fecha: "2026-05-25", planta: "Planta 3", maquina: "MP-09", turno: "3", producto: "PST Facial", jefe: "Roberto Mejía", rollos: 11, cumplimiento: 84.7, estatus: "C" },
-  { folio: "CAL-2026-04815", fecha: "2026-05-25", planta: "Planta 2", maquina: "MP-07", turno: "2", producto: "PST Toalla", jefe: "Adrián Pérez", rollos: 13, cumplimiento: 71.3, estatus: "NC" },
-  { folio: "CAL-2026-04814", fecha: "2026-05-24", planta: "Tlaxcala", maquina: "MP-05", turno: "1", producto: "PST Higiénico", jefe: "Manuel Rivas", rollos: 17, cumplimiento: 93.6, estatus: "L" },
-  { folio: "CAL-2026-04813", fecha: "2026-05-24", planta: "Planta 3", maquina: "MP-09", turno: "2", producto: "PST Facial", jefe: "Roberto Mejía", rollos: 14, cumplimiento: 89.0, estatus: "L" },
-  { folio: "CAL-2026-04812", fecha: "2026-05-24", planta: "Tlaxcala", maquina: "MP-06", turno: "3", producto: "PST Servilleta", jefe: "Erick Ordoñez", rollos: 16, cumplimiento: 87.2, estatus: "L" },
+  // MP-04
+  { folio: "CAL-2026-04830", fecha: "2026-05-26", planta: "Tlaxcala", maquina: "MP-04", turno: "3", producto: "PST Higiénico 13 g/m²", jefe: "Palemón G.", rollos: 14, cumplimiento: 86.4, estatus: "L" },
+  { folio: "CAL-2026-04822", fecha: "2026-05-25", planta: "Tlaxcala", maquina: "MP-04", turno: "2", producto: "PST Higiénico 13 g/m²", jefe: "Palemón G.", rollos: 15, cumplimiento: 90.1, estatus: "L" },
+  { folio: "CAL-2026-04811", fecha: "2026-05-24", planta: "Tlaxcala", maquina: "MP-04", turno: "1", producto: "PST Higiénico 13 g/m²", jefe: "Manuel Rivas", rollos: 13, cumplimiento: 78.2, estatus: "NC" },
+  // MP-05
+  { folio: "CAL-2026-04831", fecha: "2026-05-26", planta: "Tlaxcala", maquina: "MP-05", turno: "3", producto: "PST Higiénico 13 g/m²", jefe: "Ricardo M.", rollos: 16, cumplimiento: 91.2, estatus: "L" },
+  { folio: "CAL-2026-04819", fecha: "2026-05-26", planta: "Tlaxcala", maquina: "MP-05", turno: "2", producto: "PST Higiénico 13 g/m²", jefe: "Luis Cárdenas", rollos: 12, cumplimiento: 76.5, estatus: "NC" },
+  { folio: "CAL-2026-04814", fecha: "2026-05-24", planta: "Tlaxcala", maquina: "MP-05", turno: "1", producto: "PST Higiénico 13 g/m²", jefe: "Manuel Rivas", rollos: 17, cumplimiento: 93.6, estatus: "L" },
+  // MP-06
+  { folio: "CAL-2026-04821", fecha: "2026-05-26", planta: "Tlaxcala", maquina: "MP-06", turno: "3", producto: "PST Toalla 22 g/m²", jefe: "Erick Ordoñez", rollos: 14, cumplimiento: 92.4, estatus: "L" },
+  { folio: "CAL-2026-04820", fecha: "2026-05-26", planta: "Tlaxcala", maquina: "MP-06", turno: "2", producto: "PST Toalla 22 g/m²", jefe: "Manuel Rivas", rollos: 16, cumplimiento: 88.1, estatus: "L" },
+  { folio: "CAL-2026-04817", fecha: "2026-05-25", planta: "Tlaxcala", maquina: "MP-06", turno: "1", producto: "PST Toalla 22 g/m²", jefe: "Erick Ordoñez", rollos: 15, cumplimiento: 62.1, estatus: "NC" },
+  { folio: "CAL-2026-04812", fecha: "2026-05-24", planta: "Tlaxcala", maquina: "MP-06", turno: "3", producto: "PST Toalla 22 g/m²", jefe: "Erick Ordoñez", rollos: 16, cumplimiento: 87.2, estatus: "L" },
+  // MP-07
+  { folio: "CAL-2026-04832", fecha: "2026-05-26", planta: "Tlaxcala", maquina: "MP-07", turno: "3", producto: "PST Servilleta 17 g/m²", jefe: "Jorge H.", rollos: 15, cumplimiento: 88.0, estatus: "L" },
+  { folio: "CAL-2026-04815", fecha: "2026-05-25", planta: "Tlaxcala", maquina: "MP-07", turno: "2", producto: "PST Servilleta 17 g/m²", jefe: "Adrián Pérez", rollos: 13, cumplimiento: 71.3, estatus: "NC" },
+  { folio: "CAL-2026-04810", fecha: "2026-05-24", planta: "Tlaxcala", maquina: "MP-07", turno: "1", producto: "PST Servilleta 17 g/m²", jefe: "Jorge H.", rollos: 14, cumplimiento: 89.5, estatus: "L" },
 ];
 
 function HistorialPage() {
+  const { maquina } = Route.useParams();
   const [q, setQ] = useState("");
-  const filtered = REGISTROS.filter((r) =>
+  const porMaquina = REGISTROS.filter((r) => r.maquina.toLowerCase() === maquina.toLowerCase());
+  const filtered = porMaquina.filter((r) =>
     [r.folio, r.planta, r.maquina, r.producto, r.jefe].join(" ").toLowerCase().includes(q.toLowerCase())
   );
   const total = filtered.length;
@@ -43,10 +52,17 @@ function HistorialPage() {
   const avg = (filtered.reduce((s, r) => s + r.cumplimiento, 0) / Math.max(filtered.length, 1)).toFixed(1);
 
   return (
-    <AppLayout title="Historial de Registros">
+    <AppLayout title={`Historial · ${maquina.toUpperCase()}`}>
       <div className="space-y-6">
+        <Link
+          to="/produccion"
+          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="h-4 w-4" /> Volver a Producción
+        </Link>
+
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-          <StatCard label="Registros" value={String(total)} hint="últimos 30 días" />
+          <StatCard label="Registros" value={String(total)} hint="históricos de la máquina" />
           <StatCard label="Liberados" value={String(liberados)} hint="estatus L" tone="success" />
           <StatCard label="No conformes" value={String(noConf)} hint="requieren acción" tone="danger" />
           <StatCard label="Cumplimiento prom." value={`${avg}%`} hint="objetivo ≥ 90%" tone="primary" />
@@ -59,7 +75,7 @@ function HistorialPage() {
               <input
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
-                placeholder="Buscar folio, planta, máquina, producto o jefe…"
+                placeholder="Buscar folio, producto o jefe…"
                 className="w-full rounded-md border border-input bg-background py-2 pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
@@ -92,6 +108,13 @@ function HistorialPage() {
                 </tr>
               </thead>
               <tbody>
+                {filtered.length === 0 && (
+                  <tr>
+                    <td colSpan={11} className="px-4 py-10 text-center text-sm text-muted-foreground">
+                      No hay registros de producción para {maquina.toUpperCase()}.
+                    </td>
+                  </tr>
+                )}
                 {filtered.map((r) => (
                   <tr key={r.folio} className="border-t border-border hover:bg-muted/30">
                     <td className="px-4 py-3 font-medium text-primary">{r.folio}</td>
@@ -116,7 +139,7 @@ function HistorialPage() {
           </div>
 
           <div className="flex items-center justify-between border-t border-border px-4 py-3 text-xs text-muted-foreground">
-            <div>Mostrando {filtered.length} de {REGISTROS.length} registros</div>
+            <div>Mostrando {filtered.length} de {porMaquina.length} registros</div>
             <div className="flex items-center gap-1">
               <button className="rounded border border-input bg-background px-2 py-1 hover:bg-accent">Anterior</button>
               <span className="px-2">Página 1 / 1</span>
