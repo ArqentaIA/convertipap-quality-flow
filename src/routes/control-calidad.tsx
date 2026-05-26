@@ -77,8 +77,8 @@ function ControlCalidad() {
 
         {step === 1 && (
           <div className="space-y-5">
-            <KPIGrid info={info} />
-            <GeneralInfoForm value={info} onChange={setInfo} />
+            <KPIGrid info={infoView} />
+            <GeneralInfoForm value={infoView} onChange={setInfo} />
           </div>
         )}
 
@@ -100,7 +100,7 @@ function ControlCalidad() {
         )}
 
         {step === 4 && (
-          <SummaryPanel info={info} plantName={plant.name} measurements={measurements} alerts={alerts} onEdit={setStep} />
+          <SummaryPanel info={infoView} plantName={plant.name} measurements={measurements} alerts={alerts} onEdit={setStep} />
         )}
 
         <ActionFooter
