@@ -84,10 +84,15 @@ function ProduccionPage() {
             return (
               <div
                 key={m.codigo}
-                className={`rounded-xl border bg-card p-5 shadow-sm ${
+                className={`rounded-xl border bg-card p-5 shadow-sm transition hover:shadow-md hover:border-primary/40 ${
                   necesitaCausa ? "border-destructive/50 ring-1 ring-destructive/20" : "border-border"
                 }`}
               >
+                <Link
+                  to="/historial/$maquina"
+                  params={{ maquina: m.codigo }}
+                  className="block -m-5 p-5 cursor-pointer"
+                >
                 <div className="flex items-start justify-between">
                   <div>
                     <div className="text-xs uppercase tracking-wider text-muted-foreground">{m.planta}</div>
