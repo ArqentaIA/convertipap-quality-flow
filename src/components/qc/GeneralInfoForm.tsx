@@ -1,11 +1,12 @@
 import type { GeneralInfo } from "@/lib/qc-data";
 import { PLANTS } from "@/lib/qc-data";
+import { PRODUCT_SPECS } from "@/lib/spec-catalog";
 
 const FIELDS: { key: keyof GeneralInfo; label: string; type?: string; col?: number; options?: string[] }[] = [
   { key: "plantId", label: "Planta", type: "plant", col: 2 },
   { key: "area", label: "Área" },
   { key: "maquina", label: "Máquina" },
-  { key: "fabricacion", label: "Fabricación" },
+  { key: "fabricacion", label: "Fabricación", type: "fabricacion" },
   { key: "jefeMaquina", label: "Jefe de Máquina" },
   { key: "operador", label: "Operador" },
   { key: "prensero", label: "Prensero" },
@@ -41,6 +42,20 @@ export function GeneralInfoForm({
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               >
                 {PLANTS.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+            ) : f.type === "fabricacion" ? (
+              <select
+                value={value.fabricacion}
+                onChange={(e) => set("fabricacion", e.target.value)}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                {Array.from(new Set(PRODUCT_SPECS.map((p) => p.family))).map((fam) => (
+                  <optgroup key={fam} label={fam}>
+                    {PRODUCT_SPECS.filter((p) => p.family === fam).map((p) => (
+                      <option key={p.code} value={p.code}>{p.code}</option>
+                    ))}
+                  </optgroup>
+                ))}
               </select>
             ) : f.type === "select" ? (
               <select

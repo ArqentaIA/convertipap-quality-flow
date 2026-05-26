@@ -9,9 +9,10 @@ import { MeasurementTable } from "@/components/qc/MeasurementTable";
 import { AlertPanel } from "@/components/qc/AlertPanel";
 import { ReleaseBadge } from "@/components/qc/StatusBadge";
 import {
-  DEFAULT_GENERAL, SAMPLE_MEASUREMENTS, QUALITY_VARIABLES, PLANTS, evaluateValue,
+  DEFAULT_GENERAL, SAMPLE_MEASUREMENTS, PLANTS, evaluateValue,
   type Measurement, type GeneralInfo,
 } from "@/lib/qc-data";
+import { PRODUCT_SPEC_MAP } from "@/lib/spec-catalog";
 import {
   ArrowLeft, ArrowRight, Save, FileText, FileSpreadsheet, Pencil, CheckCircle2,
 } from "lucide-react";
@@ -30,11 +31,16 @@ function ControlCalidad() {
   const [info, setInfo] = useState<GeneralInfo>(DEFAULT_GENERAL);
   const [measurements, setMeasurements] = useState<Measurement[]>(SAMPLE_MEASUREMENTS);
 
-  const specMap = useMemo(() => Object.fromEntries(QUALITY_VARIABLES.map((q) => [q.key, q])), []);
+  const activeSpec = useMemo(
+    () => PRODUCT_SPEC_MAP[info.fabricacion] ?? PRODUCT_SPEC_MAP["PHR01"],
+    [info.fabricacion],
+  );
+  const specVars = activeSpec.variables;
+  const specMap = useMemo(() => Object.fromEntries(specVars.map((q) => [q.key, q])), [specVars]);
   const alerts = useMemo(() => {
     const out: string[] = [];
     measurements.forEach((m) => {
-      QUALITY_VARIABLES.forEach((q) => {
+      specVars.forEach((q) => {
         const v = (m as any)[q.key];
         if (typeof v === "number" && evaluateValue(specMap[q.key], v) === "bad") {
           out.push(`${m.hora} · Rollo ${m.rollo}: ${q.label} = ${v}${q.unit} (rango ${q.min}–${q.max})`);
@@ -42,7 +48,7 @@ function ControlCalidad() {
       });
     });
     return out;
-  }, [measurements, specMap]);
+  }, [measurements, specMap, specVars]);
 
   const plant = PLANTS.find((p) => p.id === info.plantId)!;
 
@@ -60,7 +66,7 @@ function ControlCalidad() {
 
         {step === 2 && (
           <div className="space-y-5">
-            <QualityVariableTable />
+            <QualityVariableTable variables={specVars} productCode={activeSpec.code} />
             <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 text-xs text-foreground/80">
               Los valores capturados en el paso 3 se evaluarán automáticamente contra estos objetivos. Las celdas fuera
               de rango se marcarán en rojo, cerca del límite en amarillo y dentro del rango en verde.

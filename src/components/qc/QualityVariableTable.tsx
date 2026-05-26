@@ -1,8 +1,12 @@
-import { QUALITY_VARIABLES, type QualityVariable } from "@/lib/qc-data";
-import { useState } from "react";
+import { type QualityVariable } from "@/lib/qc-data";
+import { useEffect, useState } from "react";
 
-export function QualityVariableTable() {
-  const [rows, setRows] = useState<QualityVariable[]>(QUALITY_VARIABLES);
+export function QualityVariableTable({
+  variables,
+  productCode,
+}: { variables: QualityVariable[]; productCode?: string }) {
+  const [rows, setRows] = useState<QualityVariable[]>(variables);
+  useEffect(() => { setRows(variables); }, [variables, productCode]);
   const update = (i: number, field: keyof QualityVariable, v: string) => {
     setRows((rs) => rs.map((r, idx) => (idx === i ? { ...r, [field]: field === "label" || field === "unit" || field === "tolerance" || field === "key" ? v : Number(v) } : r)));
   };
@@ -11,8 +15,12 @@ export function QualityVariableTable() {
     <div className="rounded-xl border border-border bg-card shadow-sm">
       <div className="flex items-center justify-between border-b border-border px-5 py-3">
         <div>
-          <h3 className="text-sm font-semibold text-foreground">Variables de Calidad — Especificación</h3>
-          <p className="text-xs text-muted-foreground">Define mínimo, objetivo y máximo por variable</p>
+          <h3 className="text-sm font-semibold text-foreground">
+            Variables de Calidad — Especificación{productCode ? ` · ${productCode}` : ""}
+          </h3>
+          <p className="text-xs text-muted-foreground">
+            Valores base cargados del catálogo de fabricación. Editables por turno.
+          </p>
         </div>
         <span className={`text-xs font-medium ${allValid ? "text-success" : "text-destructive"}`}>
           {allValid ? "Especificación válida" : "Revisa rangos: min < objetivo < máx"}
