@@ -1,15 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Bell, Database, Globe, Lock, Plug, Save } from "lucide-react";
+import { Bell, Save } from "lucide-react";
 
 export const Route = createFileRoute("/configuracion")({ component: ConfigPage });
-
-const INTEGRACIONES = [
-  { nombre: "SAP S/4HANA", desc: "Sincronización de órdenes de fabricación", estado: "Conectado", icon: Database },
-  { nombre: "MES Convertipap", desc: "Lectura de variables PLC en tiempo real", estado: "Conectado", icon: Plug },
-  { nombre: "API Calidad REST", desc: "Endpoint /api/v1/qc/registros", estado: "Conectado", icon: Globe },
-  { nombre: "Active Directory", desc: "Autenticación corporativa SSO", estado: "Pendiente", icon: Lock },
-];
 
 function ConfigPage() {
   return (
@@ -24,24 +17,6 @@ function ConfigPage() {
             <Field label="Frecuencia de muestreo sugerida" value="30" suffix="min" />
           </Card>
 
-          <Card title="Integraciones" desc="Servicios conectados al módulo de calidad">
-            <ul className="divide-y divide-border">
-              {INTEGRACIONES.map((i) => (
-                <li key={i.nombre} className="flex items-center gap-4 py-3 first:pt-0 last:pb-0">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                    <i.icon className="h-5 w-5" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="font-medium text-foreground">{i.nombre}</div>
-                    <div className="text-xs text-muted-foreground">{i.desc}</div>
-                  </div>
-                  <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${i.estado === "Conectado" ? "border-success/30 bg-success/10 text-success" : "border-warning/40 bg-warning/15 text-foreground"}`}>
-                    {i.estado}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </Card>
         </div>
 
         <div className="space-y-6">
