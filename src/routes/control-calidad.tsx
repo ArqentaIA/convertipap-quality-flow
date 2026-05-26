@@ -77,7 +77,7 @@ function ControlCalidad() {
         {step === 3 && (
           <div className="space-y-5">
             <AlertPanel alerts={alerts} />
-            <MeasurementTable rows={measurements} onChange={setMeasurements} />
+            <MeasurementTable rows={measurements} onChange={setMeasurements} operadorTurno={info.operador} turno={info.turno} />
           </div>
         )}
 
