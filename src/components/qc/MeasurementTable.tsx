@@ -69,13 +69,16 @@ export function MeasurementTable({
     if (!canCapture) return;
     onChange(rows.map((r) => (r.id === id ? { ...r, ...patch } : r)));
   };
+  const nowHHMM = () => {
+    const d = new Date();
+    return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  };
   const addRow = () => {
     if (!canCapture) return;
-    const lastHora = rows[rows.length - 1]?.hora ?? "00:00";
     onChange([
       ...rows,
       {
-        id: crypto.randomUUID(), hora: lastHora, rollo: "", calibre: null, blancuraR457: null,
+        id: crypto.randomUUID(), hora: nowHHMM(), rollo: "", calibre: null, blancuraR457: null,
         blancuraA: null, blancuraB: null, tensionMD: null, tensionCD: null, relMDCD: null,
         elongMD: null, humedad: null, pesoBase: null, anchoUtil: null, diametro: null,
         uniones: 0, estatus: "L", pesoRollo: null, notas: "",
