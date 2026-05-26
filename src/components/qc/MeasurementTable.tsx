@@ -230,7 +230,7 @@ export function MeasurementTable({
                   <NotasSelect
                     value={r.notas}
                     disabled={!canCapture}
-                    onChange={(v) => setRow(r.id, { notas: v })}
+                    onChange={(v: string) => setRow(r.id, { notas: v })}
                   />
                 </td>
                 <td className="px-2 py-1.5">
