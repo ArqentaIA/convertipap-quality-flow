@@ -1,5 +1,6 @@
 import type { GeneralInfo } from "@/lib/qc-data";
 import { PLANTS } from "@/lib/qc-data";
+import { PRODUCT_SPECS } from "@/lib/spec-catalog";
 
 const FIELDS: { key: keyof GeneralInfo; label: string; type?: string; col?: number; options?: string[] }[] = [
   { key: "plantId", label: "Planta", type: "plant", col: 2 },
