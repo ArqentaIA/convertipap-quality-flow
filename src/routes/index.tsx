@@ -1,70 +1,228 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useMemo, useState } from "react";
+import {
+  ResponsiveContainer,
+  LineChart, Line,
+  BarChart, Bar,
+  RadialBarChart, RadialBar,
+  XAxis, YAxis, Tooltip, CartesianGrid, Legend,
+  PieChart, Pie, Cell,
+} from "recharts";
+import {
+  ArrowRight, Factory, ClipboardCheck, AlertTriangle, Gauge,
+  TrendingUp, TrendingDown, Activity, Target,
+} from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { KPIGrid } from "@/components/qc/KPIGrid";
-import { DEFAULT_GENERAL, SAMPLE_MEASUREMENTS, PLANTS } from "@/lib/qc-data";
-import { ReleaseBadge } from "@/components/qc/StatusBadge";
-import { Link } from "@tanstack/react-router";
-import { ArrowRight, Factory, ClipboardCheck, TrendingUp, AlertTriangle } from "lucide-react";
 
 export const Route = createFileRoute("/")({ component: Dashboard });
 
+type Rango = "dia" | "semana" | "mes";
+
+const MAQUINAS = ["MP-04", "MP-05", "MP-06", "MP-07"] as const;
+
+// Datos simulados por rango y máquina
+const DATA: Record<Rango, { label: string; cumplimiento: Record<string, number>; rollos: Record<string, number>; oee: Record<string, number> }[]> = {
+  dia: [
+    { label: "00h", cumplimiento: { "MP-04": 88, "MP-05": 91, "MP-06": 84, "MP-07": 89 }, rollos: { "MP-04": 2, "MP-05": 3, "MP-06": 2, "MP-07": 2 }, oee: { "MP-04": 82, "MP-05": 88, "MP-06": 70, "MP-07": 84 } },
+    { label: "04h", cumplimiento: { "MP-04": 90, "MP-05": 93, "MP-06": 80, "MP-07": 91 }, rollos: { "MP-04": 3, "MP-05": 3, "MP-06": 2, "MP-07": 3 }, oee: { "MP-04": 85, "MP-05": 90, "MP-06": 68, "MP-07": 86 } },
+    { label: "08h", cumplimiento: { "MP-04": 92, "MP-05": 94, "MP-06": 78, "MP-07": 90 }, rollos: { "MP-04": 4, "MP-05": 4, "MP-06": 1, "MP-07": 3 }, oee: { "MP-04": 87, "MP-05": 91, "MP-06": 62, "MP-07": 85 } },
+    { label: "12h", cumplimiento: { "MP-04": 89, "MP-05": 92, "MP-06": 82, "MP-07": 88 }, rollos: { "MP-04": 3, "MP-05": 4, "MP-06": 2, "MP-07": 3 }, oee: { "MP-04": 84, "MP-05": 89, "MP-06": 71, "MP-07": 83 } },
+    { label: "16h", cumplimiento: { "MP-04": 91, "MP-05": 95, "MP-06": 85, "MP-07": 92 }, rollos: { "MP-04": 4, "MP-05": 5, "MP-06": 3, "MP-07": 4 }, oee: { "MP-04": 88, "MP-05": 93, "MP-06": 76, "MP-07": 87 } },
+    { label: "20h", cumplimiento: { "MP-04": 93, "MP-05": 96, "MP-06": 87, "MP-07": 90 }, rollos: { "MP-04": 4, "MP-05": 5, "MP-06": 3, "MP-07": 3 }, oee: { "MP-04": 90, "MP-05": 94, "MP-06": 78, "MP-07": 86 } },
+  ],
+  semana: [
+    { label: "Lun", cumplimiento: { "MP-04": 88, "MP-05": 91, "MP-06": 78, "MP-07": 87 }, rollos: { "MP-04": 18, "MP-05": 22, "MP-06": 12, "MP-07": 17 }, oee: { "MP-04": 84, "MP-05": 88, "MP-06": 68, "MP-07": 83 } },
+    { label: "Mar", cumplimiento: { "MP-04": 90, "MP-05": 93, "MP-06": 80, "MP-07": 89 }, rollos: { "MP-04": 20, "MP-05": 24, "MP-06": 13, "MP-07": 18 }, oee: { "MP-04": 86, "MP-05": 90, "MP-06": 70, "MP-07": 85 } },
+    { label: "Mié", cumplimiento: { "MP-04": 86, "MP-05": 89, "MP-06": 75, "MP-07": 88 }, rollos: { "MP-04": 17, "MP-05": 21, "MP-06": 11, "MP-07": 16 }, oee: { "MP-04": 82, "MP-05": 87, "MP-06": 65, "MP-07": 82 } },
+    { label: "Jue", cumplimiento: { "MP-04": 92, "MP-05": 94, "MP-06": 82, "MP-07": 91 }, rollos: { "MP-04": 21, "MP-05": 25, "MP-06": 14, "MP-07": 19 }, oee: { "MP-04": 88, "MP-05": 91, "MP-06": 73, "MP-07": 86 } },
+    { label: "Vie", cumplimiento: { "MP-04": 94, "MP-05": 96, "MP-06": 84, "MP-07": 92 }, rollos: { "MP-04": 22, "MP-05": 26, "MP-06": 15, "MP-07": 20 }, oee: { "MP-04": 90, "MP-05": 93, "MP-06": 76, "MP-07": 87 } },
+    { label: "Sáb", cumplimiento: { "MP-04": 89, "MP-05": 92, "MP-06": 79, "MP-07": 88 }, rollos: { "MP-04": 19, "MP-05": 23, "MP-06": 13, "MP-07": 17 }, oee: { "MP-04": 85, "MP-05": 89, "MP-06": 69, "MP-07": 84 } },
+    { label: "Dom", cumplimiento: { "MP-04": 91, "MP-05": 93, "MP-06": 81, "MP-07": 90 }, rollos: { "MP-04": 20, "MP-05": 24, "MP-06": 14, "MP-07": 18 }, oee: { "MP-04": 87, "MP-05": 90, "MP-06": 71, "MP-07": 85 } },
+  ],
+  mes: [
+    { label: "S1", cumplimiento: { "MP-04": 89, "MP-05": 92, "MP-06": 79, "MP-07": 88 }, rollos: { "MP-04": 130, "MP-05": 158, "MP-06": 88, "MP-07": 122 }, oee: { "MP-04": 85, "MP-05": 89, "MP-06": 70, "MP-07": 84 } },
+    { label: "S2", cumplimiento: { "MP-04": 91, "MP-05": 94, "MP-06": 81, "MP-07": 90 }, rollos: { "MP-04": 138, "MP-05": 165, "MP-06": 92, "MP-07": 128 }, oee: { "MP-04": 87, "MP-05": 91, "MP-06": 72, "MP-07": 86 } },
+    { label: "S3", cumplimiento: { "MP-04": 88, "MP-05": 90, "MP-06": 77, "MP-07": 87 }, rollos: { "MP-04": 125, "MP-05": 152, "MP-06": 84, "MP-07": 118 }, oee: { "MP-04": 83, "MP-05": 87, "MP-06": 67, "MP-07": 82 } },
+    { label: "S4", cumplimiento: { "MP-04": 93, "MP-05": 95, "MP-06": 83, "MP-07": 91 }, rollos: { "MP-04": 142, "MP-05": 170, "MP-06": 96, "MP-07": 132 }, oee: { "MP-04": 89, "MP-05": 92, "MP-06": 75, "MP-07": 87 } },
+  ],
+};
+
+const NO_CONFORMIDADES = [
+  { name: "Humedad", value: 18 },
+  { name: "Peso base", value: 12 },
+  { name: "Tensión MD", value: 9 },
+  { name: "Blancura", value: 5 },
+];
+
+const COLORS_MAQ: Record<string, string> = {
+  "MP-04": "hsl(180, 65%, 40%)",
+  "MP-05": "hsl(210, 75%, 50%)",
+  "MP-06": "hsl(40, 90%, 55%)",
+  "MP-07": "hsl(150, 55%, 45%)",
+};
+
+const PIE_COLORS = ["hsl(180,65%,40%)", "hsl(40,90%,55%)", "hsl(210,75%,50%)", "hsl(0,70%,55%)"];
+
 function Dashboard() {
+  const [rango, setRango] = useState<Rango>("dia");
+  const serie = DATA[rango];
+
+  // Datos derivados
+  const cumplimientoData = serie.map(d => ({ label: d.label, ...d.cumplimiento }));
+  const rollosData = serie.map(d => ({ label: d.label, ...d.rollos }));
+
+  const promedios = useMemo(() => {
+    return MAQUINAS.map(m => {
+      const c = serie.reduce((a, d) => a + d.cumplimiento[m], 0) / serie.length;
+      const r = serie.reduce((a, d) => a + d.rollos[m], 0);
+      const o = serie.reduce((a, d) => a + d.oee[m], 0) / serie.length;
+      return { maquina: m, cumplimiento: +c.toFixed(1), rollos: r, oee: +o.toFixed(1) };
+    });
+  }, [serie]);
+
+  const totalRollos = promedios.reduce((a, p) => a + p.rollos, 0);
+  const promCumpl = +(promedios.reduce((a, p) => a + p.cumplimiento, 0) / promedios.length).toFixed(1);
+  const promOEE = +(promedios.reduce((a, p) => a + p.oee, 0) / promedios.length).toFixed(1);
+  const totalNC = NO_CONFORMIDADES.reduce((a, n) => a + n.value, 0);
+
+  const oeeRadial = promedios.map((p, i) => ({
+    name: p.maquina,
+    value: p.oee,
+    fill: COLORS_MAQ[p.maquina],
+  }));
+
   return (
     <AppLayout title="Dashboard · Calidad y Producción">
       <div className="space-y-6">
+        {/* Hero + selector de rango */}
         <div className="rounded-2xl border border-border bg-gradient-to-br from-primary/10 via-card to-card p-6 shadow-sm">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
               <div className="text-xs font-semibold uppercase tracking-wider text-primary">Operación en vivo</div>
               <h2 className="mt-1 text-2xl font-bold text-foreground">Buen turno, Christian</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Resumen consolidado de las {PLANTS.length} plantas Convertipap. Última sincronización hace 2 min.
+                Planta Tlaxcala · 4 máquinas monitoreadas · Última sincronización hace 2 min.
               </p>
             </div>
-            <Link
-              to="/control-calidad"
-              className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm hover:opacity-90"
-            >
-              Nuevo registro de calidad <ArrowRight className="h-4 w-4" />
-            </Link>
+            <div className="flex items-center gap-3">
+              <RangoSelector rango={rango} setRango={setRango} />
+              <Link
+                to="/control-calidad"
+                className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm hover:opacity-90"
+              >
+                Nuevo registro <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
           </div>
         </div>
 
-        <KPIGrid info={DEFAULT_GENERAL} />
+        {/* KPIs */}
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+          <Kpi icon={Target} label="Cumplimiento prom." value={`${promCumpl}%`} delta={2.3} tone="primary" />
+          <Kpi icon={Activity} label="OEE promedio" value={`${promOEE}%`} delta={1.1} tone="success" />
+          <Kpi icon={Factory} label="Rollos producidos" value={String(totalRollos)} delta={4.8} tone="primary" />
+          <Kpi icon={AlertTriangle} label="No conformidades" value={String(totalNC)} delta={-1.6} tone="warning" />
+        </div>
 
+        {/* Tendencia cumplimiento por máquina */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          <div className="lg:col-span-2 rounded-xl border border-border bg-card p-5 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-semibold text-foreground">Últimos rollos liberados</h3>
-                <p className="text-xs text-muted-foreground">Planta Tlaxcala · MP-06 · Turno 3</p>
-              </div>
-              <TrendingUp className="h-4 w-4 text-success" />
-            </div>
-            <div className="mt-4 overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="text-left text-[11px] uppercase tracking-wider text-muted-foreground">
-                  <tr><th className="py-2">Hora</th><th>Rollo</th><th>Peso base</th><th>Humedad</th><th>Estatus</th></tr>
-                </thead>
-                <tbody>
-                  {SAMPLE_MEASUREMENTS.map((m) => (
-                    <tr key={m.id} className="border-t border-border">
-                      <td className="py-2 tabular-nums">{m.hora}</td>
-                      <td className="font-medium tabular-nums">{m.rollo}</td>
-                      <td className="tabular-nums">{m.pesoBase} g/m²</td>
-                      <td className="tabular-nums">{m.humedad}%</td>
-                      <td><ReleaseBadge s={m.estatus} /></td>
-                    </tr>
+          <Card className="lg:col-span-2" title="Cumplimiento por máquina" subtitle={`Tendencia · ${rangoLabel(rango)} · meta 90%`}>
+            <div className="h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={cumplimientoData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="label" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
+                  <YAxis domain={[60, 100]} tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" unit="%" />
+                  <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
+                  <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
+                  {MAQUINAS.map(m => (
+                    <Line key={m} type="monotone" dataKey={m} stroke={COLORS_MAQ[m]} strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 5 }} />
                   ))}
-                </tbody>
-              </table>
+                </LineChart>
+              </ResponsiveContainer>
             </div>
-          </div>
+          </Card>
 
-          <div className="space-y-4">
-            <CardStat icon={Factory} label="Máquinas activas" value="4 / 4" tone="primary" />
-            <CardStat icon={ClipboardCheck} label="Registros hoy" value="12" tone="success" />
-            <CardStat icon={AlertTriangle} label="No conformidades" value="2" tone="warning" />
+          <Card title="OEE actual" subtitle="Por máquina">
+            <div className="h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <RadialBarChart innerRadius="25%" outerRadius="95%" data={oeeRadial} startAngle={90} endAngle={-270}>
+                  <RadialBar background dataKey="value" cornerRadius={6} />
+                  <Legend iconType="circle" wrapperStyle={{ fontSize: 11 }} />
+                  <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} formatter={(v: number) => `${v}%`} />
+                </RadialBarChart>
+              </ResponsiveContainer>
+            </div>
+          </Card>
+        </div>
+
+        {/* Rollos por máquina + NC */}
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          <Card className="lg:col-span-2" title="Rollos producidos por máquina" subtitle={rangoLabel(rango)}>
+            <div className="h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={rollosData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="label" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
+                  <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
+                  <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
+                  <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
+                  {MAQUINAS.map(m => (
+                    <Bar key={m} dataKey={m} stackId="r" fill={COLORS_MAQ[m]} radius={[4, 4, 0, 0]} />
+                  ))}
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </Card>
+
+          <Card title="No conformidades" subtitle="Distribución por variable">
+            <div className="h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={NO_CONFORMIDADES} dataKey="value" nameKey="name" innerRadius={50} outerRadius={90} paddingAngle={2}>
+                    {NO_CONFORMIDADES.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
+                  </Pie>
+                  <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
+                  <Legend iconType="circle" wrapperStyle={{ fontSize: 11 }} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </Card>
+        </div>
+
+        {/* Tarjetas por máquina */}
+        <div>
+          <h3 className="mb-3 text-sm font-semibold text-foreground">Resumen por máquina</h3>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {promedios.map(p => (
+              <Link
+                key={p.maquina}
+                to="/historial/$maquina"
+                params={{ maquina: p.maquina }}
+                className="group rounded-xl border border-border bg-card p-4 shadow-sm transition hover:border-primary/40 hover:shadow-md"
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Máquina</div>
+                    <div className="text-lg font-bold text-foreground">{p.maquina}</div>
+                  </div>
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg" style={{ background: `${COLORS_MAQ[p.maquina]}1f`, color: COLORS_MAQ[p.maquina] }}>
+                    <Gauge className="h-5 w-5" />
+                  </div>
+                </div>
+                <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+                  <Mini label="Cumpl." value={`${p.cumplimiento}%`} ok={p.cumplimiento >= 90} />
+                  <Mini label="OEE" value={`${p.oee}%`} ok={p.oee >= 85} />
+                  <Mini label="Rollos" value={String(p.rollos)} ok />
+                </div>
+                <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="h-full rounded-full transition-all"
+                    style={{ width: `${p.cumplimiento}%`, background: COLORS_MAQ[p.maquina] }}
+                  />
+                </div>
+              </Link>
+            ))}
           </div>
         </div>
       </div>
@@ -72,21 +230,74 @@ function Dashboard() {
   );
 }
 
-function CardStat({ icon: Icon, label, value, tone }: { icon: any; label: string; value: string; tone: "primary" | "success" | "warning" }) {
+function rangoLabel(r: Rango) {
+  return r === "dia" ? "Hoy" : r === "semana" ? "Últimos 7 días" : "Mes en curso";
+}
+
+function RangoSelector({ rango, setRango }: { rango: Rango; setRango: (r: Rango) => void }) {
+  const opts: { v: Rango; label: string }[] = [
+    { v: "dia", label: "Día" },
+    { v: "semana", label: "Semana" },
+    { v: "mes", label: "Mes" },
+  ];
+  return (
+    <div className="inline-flex rounded-lg border border-border bg-background p-1 shadow-sm">
+      {opts.map(o => (
+        <button
+          key={o.v}
+          onClick={() => setRango(o.v)}
+          className={`rounded-md px-3 py-1.5 text-xs font-semibold transition ${
+            rango === o.v ? "bg-primary text-primary-foreground shadow" : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function Card({ title, subtitle, children, className = "" }: { title: string; subtitle?: string; children: React.ReactNode; className?: string }) {
+  return (
+    <div className={`rounded-xl border border-border bg-card p-5 shadow-sm ${className}`}>
+      <div className="mb-2">
+        <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+        {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function Kpi({ icon: Icon, label, value, delta, tone }: { icon: any; label: string; value: string; delta: number; tone: "primary" | "success" | "warning" }) {
   const tones = {
     primary: "bg-primary/10 text-primary",
     success: "bg-success/15 text-success",
     warning: "bg-warning/20 text-foreground",
   };
+  const up = delta >= 0;
   return (
-    <div className="flex items-center gap-4 rounded-xl border border-border bg-card p-4 shadow-sm">
-      <div className={`flex h-12 w-12 items-center justify-center rounded-lg ${tones[tone]}`}>
-        <Icon className="h-5 w-5" />
+    <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
+      <div className="flex items-center justify-between">
+        <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${tones[tone]}`}>
+          <Icon className="h-5 w-5" />
+        </div>
+        <span className={`inline-flex items-center gap-1 text-[11px] font-semibold ${up ? "text-success" : "text-destructive"}`}>
+          {up ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+          {up ? "+" : ""}{delta}%
+        </span>
       </div>
-      <div>
-        <div className="text-xs uppercase tracking-wider text-muted-foreground">{label}</div>
-        <div className="text-xl font-bold text-foreground">{value}</div>
-      </div>
+      <div className="mt-3 text-[11px] uppercase tracking-wider text-muted-foreground">{label}</div>
+      <div className="text-2xl font-bold text-foreground tabular-nums">{value}</div>
+    </div>
+  );
+}
+
+function Mini({ label, value, ok }: { label: string; value: string; ok: boolean }) {
+  return (
+    <div className="rounded-md border border-border bg-background py-1.5">
+      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
+      <div className={`text-sm font-bold tabular-nums ${ok ? "text-foreground" : "text-warning"}`}>{value}</div>
     </div>
   );
 }
