@@ -161,7 +161,7 @@ export function MeasurementTable({
         <table className="min-w-[1400px] w-full text-sm">
           <thead className="sticky top-0 bg-muted/50 text-left text-[10px] uppercase tracking-wider text-muted-foreground">
             <tr>
-              <th className="px-2 py-2">Hora</th>
+              <th className="px-2 py-2" title="Generada automáticamente por el sistema al agregar la fila">Hora <span className="ml-1 rounded bg-muted px-1 py-0.5 text-[8px] font-bold text-muted-foreground">AUTO</span></th>
               <th className="px-2 py-2"># Rollo</th>
               {NUM_FIELDS.map((f) => (
                 <th key={f.key as string} className="px-2 py-2">{f.label}</th>
