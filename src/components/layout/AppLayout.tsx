@@ -32,17 +32,12 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
       <aside
         className={`${collapsed ? "w-[72px]" : "w-[260px]"} flex shrink-0 flex-col bg-sidebar text-sidebar-foreground transition-all duration-300 border-r border-sidebar-border`}
       >
-        <div className="flex items-center gap-3 px-4 py-4 border-b border-sidebar-border">
-          <div className="flex h-10 w-10 items-center justify-center rounded-md bg-white shrink-0 overflow-hidden">
-            <img src={logo} alt="Convertipap" className="h-8 w-auto object-contain" />
+        <div className={`flex items-center justify-center border-b border-sidebar-border ${collapsed ? "px-2 py-3" : "px-3 py-3"}`}>
+          <div className={`flex w-full items-center justify-center rounded-md bg-white overflow-hidden ${collapsed ? "h-12" : "h-20"}`}>
+            <img src={logo} alt="Convertipap" className="h-full w-full object-contain p-1" />
           </div>
-          {!collapsed && (
-            <div className="min-w-0">
-              <div className="font-semibold text-sm leading-tight">Convertipap</div>
-              <div className="text-[11px] text-sidebar-foreground/70 leading-tight">Fábrica de Papel Tissue</div>
-            </div>
-          )}
         </div>
+
 
         <nav className="flex-1 overflow-y-auto py-2">
           {NAV.map(({ to, label, icon: Icon }) => {
