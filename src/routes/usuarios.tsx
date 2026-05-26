@@ -43,7 +43,7 @@ function UsuariosPage() {
           <Stat label="Usuarios totales" value={String(USUARIOS.length)} />
           <Stat label="Activos" value={String(USUARIOS.filter(u => u.activo).length)} tone="success" />
           <Stat label="Roles definidos" value="5" />
-          <Stat label="Plantas con acceso" value="4" tone="primary" />
+          <Stat label="Plantas con acceso" value="1" tone="primary" />
         </div>
 
         <div className="rounded-xl border border-border bg-card shadow-sm">
