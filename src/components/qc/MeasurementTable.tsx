@@ -89,7 +89,7 @@ export function MeasurementTable({
     if (!canCapture) return;
     const r = rows.find((x) => x.id === id);
     if (!r) return;
-    onChange([...rows, { ...r, id: crypto.randomUUID() }]);
+    onChange([...rows, { ...r, id: crypto.randomUUID(), hora: nowHHMM() }]);
   };
   const delRow = (id: string) => {
     if (!canCapture) return;
