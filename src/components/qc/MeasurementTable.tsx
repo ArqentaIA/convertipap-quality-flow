@@ -280,10 +280,18 @@ function LoginModal({
   const [pass, setPass] = useState("");
   const [err, setErr] = useState<string | null>(null);
 
+  // Usuarios registrados (mock). En producción vendría del backend.
+  const USERS: Record<string, { pass: string; role: "operador" | "direccion" }> = {
+    general: { pass: "12345678", role: "direccion" },
+  };
+
   const submit = () => {
     const u = user.trim();
     if (!u || !pass) { setErr("Ingresa usuario y clave."); return; }
-    // Mock: clave "direccion" = rol dirección; "turno" = operador en turno (debe coincidir el nombre)
+    // 1) Usuarios registrados
+    const reg = USERS[u.toLowerCase()];
+    if (reg && reg.pass === pass) return onSuccess(u, reg.role);
+    // 2) Claves genéricas mock
     if (pass === "direccion") return onSuccess(u, "direccion");
     if (pass === "turno") {
       if (u.toLowerCase() !== operadorTurno.trim().toLowerCase()) {
