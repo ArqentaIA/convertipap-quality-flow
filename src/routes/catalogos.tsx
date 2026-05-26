@@ -7,12 +7,10 @@ import { useState } from "react";
 export const Route = createFileRoute("/catalogos")({ component: CatalogosPage });
 
 const MAQUINAS = [
+  { codigo: "MP-04", planta: "Tlaxcala", tipo: "Yankee", ancho: "2.85 m", veloc: "1800 m/min" },
   { codigo: "MP-05", planta: "Tlaxcala", tipo: "Yankee", ancho: "2.85 m", veloc: "1800 m/min" },
   { codigo: "MP-06", planta: "Tlaxcala", tipo: "Yankee", ancho: "2.85 m", veloc: "1800 m/min" },
-  { codigo: "MP-07", planta: "Planta 2", tipo: "TAD", ancho: "2.70 m", veloc: "1500 m/min" },
-  { codigo: "MP-08", planta: "Planta 2", tipo: "Yankee", ancho: "2.80 m", veloc: "1500 m/min" },
-  { codigo: "MP-09", planta: "Planta 3", tipo: "Crescent", ancho: "2.65 m", veloc: "1650 m/min" },
-  { codigo: "MP-10", planta: "Planta 3", tipo: "Yankee", ancho: "2.75 m", veloc: "1700 m/min" },
+  { codigo: "MP-07", planta: "Tlaxcala", tipo: "TAD", ancho: "2.70 m", veloc: "1500 m/min" },
 ];
 
 const PRODUCTOS = [
