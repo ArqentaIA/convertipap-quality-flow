@@ -66,7 +66,7 @@ function ControlCalidad() {
 
         {step === 2 && (
           <div className="space-y-5">
-            <QualityVariableTable />
+            <QualityVariableTable variables={specVars} productCode={activeSpec.code} />
             <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 text-xs text-foreground/80">
               Los valores capturados en el paso 3 se evaluarán automáticamente contra estos objetivos. Las celdas fuera
               de rango se marcarán en rojo, cerca del límite en amarillo y dentro del rango en verde.
