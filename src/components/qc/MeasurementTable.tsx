@@ -336,3 +336,79 @@ function LoginModal({
   );
 }
 
+
+function NotasSelect({
+  value,
+  disabled,
+  onChange,
+}: {
+  value: string;
+  disabled: boolean;
+  onChange: (v: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  const selected = useMemo(
+    () =>
+      value
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean),
+    [value],
+  );
+
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, [open]);
+
+  const toggle = (opt: string) => {
+    const next = selected.includes(opt)
+      ? selected.filter((s) => s !== opt)
+      : [...selected, opt];
+    onChange(next.join(", "));
+  };
+
+  const label = selected.length === 0 ? "Seleccionar…" : selected.join(", ");
+
+  return (
+    <div ref={ref} className="relative w-full min-w-[200px]">
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setOpen((o) => !o)}
+        className="flex w-full items-center justify-between gap-2 rounded-md border border-input bg-background px-2 py-1 text-left text-sm disabled:cursor-not-allowed disabled:bg-muted/40"
+      >
+        <span className={`truncate ${selected.length === 0 ? "text-muted-foreground" : "text-foreground"}`}>
+          {label}
+        </span>
+        <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+      </button>
+      {open && !disabled && (
+        <div className="absolute right-0 z-20 mt-1 max-h-64 w-64 overflow-auto rounded-md border border-border bg-popover p-1 shadow-lg">
+          {NOTAS_OPCIONES.map((opt) => {
+            const checked = selected.includes(opt);
+            return (
+              <button
+                key={opt}
+                type="button"
+                onClick={() => toggle(opt)}
+                className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent"
+              >
+                <span className={`flex h-4 w-4 items-center justify-center rounded border ${checked ? "border-primary bg-primary text-primary-foreground" : "border-input bg-background"}`}>
+                  {checked && <Check className="h-3 w-3" />}
+                </span>
+                <span className="flex-1">{opt}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
