@@ -96,7 +96,7 @@ function Dashboard() {
     <AppLayout title="Dashboard · Calidad y Producción">
       <div className="space-y-6">
         {/* Hero + selector de rango */}
-        <div className="rounded-2xl border border-border bg-gradient-to-br from-primary/10 via-card to-card p-6 shadow-sm">
+        <div className="rounded-2xl border border-border bg-gradient-to-r from-primary/30 via-primary/15 to-primary/5 p-6 shadow-sm">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
               <div className="text-xs font-semibold uppercase tracking-wider text-primary">Centro de Control de Calidad Operativa</div>
