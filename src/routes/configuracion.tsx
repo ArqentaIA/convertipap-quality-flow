@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useSyncExternalStore, useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Bell, Save, Lock, ShieldCheck, Users } from "lucide-react";
+import { Bell, Save, Lock, ShieldCheck, Users, Eye, X, Mail } from "lucide-react";
 import { getRoster, subscribeRoster, updateShiftAssignment, type RosterEntry } from "@/lib/roster";
 import { useSession } from "@/lib/session";
 import type { Shift } from "@/lib/qc-data";
