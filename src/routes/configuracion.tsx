@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useSyncExternalStore, useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Bell, Save, Lock, ShieldCheck, Users, Eye, X, Mail } from "lucide-react";
+import { Bell, Save, Lock, ShieldCheck, Users, Eye, X, Mail, Monitor, Copy, ExternalLink } from "lucide-react";
 import { getRoster, subscribeRoster, updateShiftAssignment, type RosterEntry } from "@/lib/roster";
 import { useSession } from "@/lib/session";
 import type { Shift } from "@/lib/qc-data";
@@ -109,6 +109,10 @@ function ConfigPage() {
             <Field label="Zona horaria" value="America/Mexico_City" />
             <Field label="Idioma" value="Español (MX)" />
             <Field label="Unidades" value="Métrico (g/m², m/min, mm)" />
+          </Card>
+
+          <Card title="Operator Vision · Pantalla operativa" desc="Vista fullscreen para TV industrial">
+            <OperatorVisionUrl />
           </Card>
 
           <button className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm hover:opacity-90">
@@ -405,6 +409,54 @@ function CEOReportPreview({ onClose }: { onClose: () => void }) {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function OperatorVisionUrl() {
+  const [copied, setCopied] = useState(false);
+  const url = typeof window !== "undefined" ? `${window.location.origin}/operator-vision` : "/operator-vision";
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // ignore
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 p-3">
+        <Monitor className="h-5 w-5 text-primary" />
+        <div className="min-w-0 flex-1">
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-primary">URL de acceso</div>
+          <div className="truncate font-mono text-sm text-foreground">{url}</div>
+        </div>
+      </div>
+      <div className="flex gap-2">
+        <button
+          onClick={copy}
+          className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-md border border-input bg-background px-3 py-2 text-xs font-medium hover:bg-accent"
+        >
+          <Copy className="h-3.5 w-3.5" />
+          {copied ? "¡Copiado!" : "Copiar URL"}
+        </button>
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-md bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:opacity-90"
+        >
+          <ExternalLink className="h-3.5 w-3.5" />
+          Abrir pantalla
+        </a>
+      </div>
+      <p className="text-[11px] leading-snug text-muted-foreground">
+        Ideal para mostrar en TV industrial de 70". Se actualiza en tiempo real sin recargar.
+      </p>
     </div>
   );
 }
