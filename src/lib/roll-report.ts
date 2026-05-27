@@ -117,22 +117,9 @@ export async function printRollReport(data: RollReportData) {
     </div>
   </div>
 
-  <h2>Métricas de calidad</h2>
-  <table>
-    <thead><tr><th>Variable</th><th style="text-align:right">Valor</th><th>Unidad</th><th>Estatus</th></tr></thead>
-    <tbody>
-      ${data.metricas
-        .map(
-          (m) => `<tr>
-        <td>${m.label}</td>
-        <td class="val">${m.value}</td>
-        <td>${m.unit ?? ""}</td>
-        <td>${m.status ? `<span class="pill ${m.status}">${m.status}</span>` : ""}</td>
-      </tr>`,
-        )
-        .join("")}
-    </tbody>
-  </table>
+  <div class="notas" style="margin-top:18px;border-left-color:#0f172a">
+    <strong>Métricas de calidad protegidas.</strong> Los valores detallados (calibre, humedad, peso base, tensión, cumplimiento y estatus por variable) no se imprimen en este documento por política de trazabilidad. Escanee el código QR superior para consultarlos en el sistema, donde se valida la autenticidad del folio y se registra el acceso para auditoría.
+  </div>
 
   ${data.notas ? `<div class="notas"><strong>Notas:</strong> ${data.notas}</div>` : ""}
 
