@@ -23,7 +23,58 @@ begin
 end$$;
 
 -- ---------------------------------------------------------------------
--- 2. Tabla profiles (1 a 1 con auth.users)
+-- 2. Tabla user_roles (1 usuario → N roles)
+--    Se crea ANTES de has_role() porque la función la consulta.
+-- ---------------------------------------------------------------------
+create table if not exists public.user_roles (
+  id         uuid primary key default gen_random_uuid(),
+  user_id    uuid not null references auth.users(id) on delete cascade,
+  role       public.app_role not null,
+  created_at timestamptz not null default now(),
+  unique (user_id, role)
+);
+
+grant select on public.user_roles to authenticated;
+grant all on public.user_roles to service_role;
+
+alter table public.user_roles enable row level security;
+
+-- ---------------------------------------------------------------------
+-- 3. has_role() — SECURITY DEFINER (evita recursión RLS)
+--    Se crea ANTES de las políticas que la usan.
+-- ---------------------------------------------------------------------
+create or replace function public.has_role(_user_id uuid, _role public.app_role)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.user_roles
+    where user_id = _user_id
+      and role = _role
+  )
+$$;
+
+revoke all on function public.has_role(uuid, public.app_role) from public;
+grant execute on function public.has_role(uuid, public.app_role) to authenticated, service_role;
+
+-- ---------------------------------------------------------------------
+-- 4. Políticas para user_roles (ya existe has_role)
+-- ---------------------------------------------------------------------
+drop policy if exists "user_roles_select_self_or_admin" on public.user_roles;
+create policy "user_roles_select_self_or_admin"
+on public.user_roles for select
+to authenticated
+using (
+  user_id = auth.uid()
+  or public.has_role(auth.uid(), 'admin'::public.app_role)
+);
+
+-- ---------------------------------------------------------------------
+-- 5. Tabla profiles (1 a 1 con auth.users)
 -- ---------------------------------------------------------------------
 create table if not exists public.profiles (
   id          uuid primary key references auth.users(id) on delete cascade,
@@ -46,8 +97,8 @@ on public.profiles for select
 to authenticated
 using (
   id = auth.uid()
-  or public.has_role(auth.uid(), 'admin')
-  or public.has_role(auth.uid(), 'direccion')
+  or public.has_role(auth.uid(), 'admin'::public.app_role)
+  or public.has_role(auth.uid(), 'direccion'::public.app_role)
 );
 
 drop policy if exists "profiles_update_self" on public.profiles;
@@ -58,54 +109,7 @@ using (id = auth.uid())
 with check (id = auth.uid());
 
 -- ---------------------------------------------------------------------
--- 3. Tabla user_roles (1 usuario → N roles)
--- ---------------------------------------------------------------------
-create table if not exists public.user_roles (
-  id         uuid primary key default gen_random_uuid(),
-  user_id    uuid not null references auth.users(id) on delete cascade,
-  role       public.app_role not null,
-  created_at timestamptz not null default now(),
-  unique (user_id, role)
-);
-
-grant select on public.user_roles to authenticated;
-grant all on public.user_roles to service_role;
-
-alter table public.user_roles enable row level security;
-
-drop policy if exists "user_roles_select_self_or_admin" on public.user_roles;
-create policy "user_roles_select_self_or_admin"
-on public.user_roles for select
-to authenticated
-using (
-  user_id = auth.uid()
-  or public.has_role(auth.uid(), 'admin')
-);
-
--- ---------------------------------------------------------------------
--- 4. has_role() — SECURITY DEFINER (evita recursión RLS)
---    Se crea ANTES de las políticas que la usan; recreate-or-replace.
--- ---------------------------------------------------------------------
-create or replace function public.has_role(_user_id uuid, _role public.app_role)
-returns boolean
-language sql
-stable
-security definer
-set search_path = public
-as $$
-  select exists (
-    select 1
-    from public.user_roles
-    where user_id = _user_id
-      and role = _role
-  )
-$$;
-
-revoke all on function public.has_role(uuid, public.app_role) from public;
-grant execute on function public.has_role(uuid, public.app_role) to authenticated, service_role;
-
--- ---------------------------------------------------------------------
--- 5. Trigger: cuando se crea un usuario en auth.users → crear profile
+-- 6. Trigger: cuando se crea un usuario en auth.users → crear profile
 -- ---------------------------------------------------------------------
 create or replace function public.handle_new_user()
 returns trigger
@@ -131,7 +135,7 @@ create trigger on_auth_user_created
   for each row execute function public.handle_new_user();
 
 -- ---------------------------------------------------------------------
--- 6. Trigger updated_at en profiles
+-- 7. Trigger updated_at en profiles
 -- ---------------------------------------------------------------------
 create or replace function public.set_updated_at()
 returns trigger language plpgsql as $$
