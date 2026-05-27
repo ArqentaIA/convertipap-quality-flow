@@ -89,11 +89,20 @@ function ConfigPage() {
                   </div>
                 </div>
               </div>
-              <p className="mt-3 text-[11px] text-muted-foreground">
-                El reporte se envía automáticamente a los correos configurados.
-              </p>
+              <div className="mt-3 flex items-center justify-between gap-3">
+                <p className="text-[11px] text-muted-foreground">
+                  El reporte se envía automáticamente a los correos configurados.
+                </p>
+                <button
+                  onClick={() => setPreviewCEO(true)}
+                  className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-primary/40 bg-background px-2.5 py-1.5 text-[11px] font-semibold text-primary hover:bg-primary/10"
+                >
+                  <Eye className="h-3.5 w-3.5" /> Previsualizar reporte
+                </button>
+              </div>
             </div>
           </Card>
+          {previewCEO && <CEOReportPreview onClose={() => setPreviewCEO(false)} />}
 
           <Card title="Preferencias regionales">
             <Field label="Zona horaria" value="America/Mexico_City" />
