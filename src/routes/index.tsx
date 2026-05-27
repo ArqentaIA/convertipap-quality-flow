@@ -150,7 +150,9 @@ function Dashboard() {
                   <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" allowDecimals={false} />
                   <Tooltip
                     cursor={{ fill: "hsl(var(--muted) / 0.4)" }}
-                    contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
+                    contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12, color: "hsl(var(--foreground))" }}
+                    labelStyle={{ color: "hsl(var(--foreground))", fontWeight: 600 }}
+                    itemStyle={{ color: "hsl(var(--foreground))" }}
                     formatter={(v: number, name: string) => [`${v} rollos`, name]}
                   />
                   <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
