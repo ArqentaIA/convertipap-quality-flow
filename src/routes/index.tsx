@@ -55,13 +55,14 @@ const NO_CONFORMIDADES = [
 ];
 
 const COLORS_MAQ: Record<string, string> = {
-  "MP-04": "hsl(180, 65%, 40%)",
+  "MP-04": "hsl(330, 75%, 55%)",
   "MP-05": "hsl(210, 75%, 50%)",
   "MP-06": "hsl(40, 90%, 55%)",
   "MP-07": "hsl(150, 55%, 45%)",
 };
 
-const PIE_COLORS = ["hsl(180,65%,40%)", "hsl(40,90%,55%)", "hsl(210,75%,50%)", "hsl(0,70%,55%)"];
+const PIE_COLORS = ["hsl(330,75%,55%)", "hsl(40,90%,55%)", "hsl(210,75%,50%)", "hsl(0,70%,55%)"];
+
 
 function Dashboard() {
   const [rango, setRango] = useState<Rango>("dia");
