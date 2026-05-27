@@ -21,7 +21,7 @@ const META_EMPRESA = {
 
 // Datasets simulados por reporte (estructura tipo BD, listos para exportar a XLSX)
 const DATASETS: Record<string, { sheet: string; rows: Record<string, string | number>[] }[]> = {
-  "Cumplimiento Semanal": [
+  "Cumplimiento": [
     {
       sheet: "Cumplimiento",
       rows: [
