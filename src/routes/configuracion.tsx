@@ -291,9 +291,22 @@ function CEOReportPreview({ onClose }: { onClose: () => void }) {
           <div className="mx-auto max-w-2xl rounded-lg bg-white shadow-sm">
             {/* Header */}
             <div className="rounded-t-lg bg-gradient-to-r from-primary to-primary/80 px-6 py-5 text-primary-foreground">
-              <div className="text-[11px] uppercase tracking-wider opacity-90">Convertipap · Reporte Ejecutivo Diario</div>
-              <div className="mt-1 text-xl font-bold">Resumen de producción</div>
-              <div className="mt-1 text-xs opacity-90 capitalize">{fecha}</div>
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-md bg-white p-1.5 shadow-sm">
+                    <img src={logoConvertipap} alt="Convertipap" className="h-full w-full object-contain" />
+                  </div>
+                  <div>
+                    <div className="text-[11px] uppercase tracking-wider opacity-90">Convertipap · Reporte Ejecutivo Diario</div>
+                    <div className="mt-0.5 text-xl font-bold leading-tight">Resumen de producción</div>
+                  </div>
+                </div>
+                <div className="text-right text-[11px] leading-relaxed opacity-95">
+                  <div className="font-semibold">{planta}</div>
+                  <div className="capitalize">{fecha}</div>
+                  <div>Generado a las {hora}</div>
+                </div>
+              </div>
             </div>
 
             {/* KPIs */}
