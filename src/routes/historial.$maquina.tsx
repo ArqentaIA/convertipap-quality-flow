@@ -1,7 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { ReleaseBadge } from "@/components/qc/StatusBadge";
-import { Search, Download, Filter, Eye, Calendar, ArrowLeft } from "lucide-react";
+import { Search, Download, Filter, Eye, Calendar, ArrowLeft, QrCode } from "lucide-react";
+import { printRollReport } from "@/lib/roll-report";
 import { useState } from "react";
 
 export const Route = createFileRoute("/historial/$maquina")({ component: HistorialPage });
@@ -129,10 +130,40 @@ function HistorialPage() {
                     <td className="px-4 py-3 text-right tabular-nums font-semibold">{r.cumplimiento.toFixed(1)}%</td>
                     <td className="px-4 py-3"><ReleaseBadge s={r.estatus} /></td>
                     <td className="px-4 py-3 text-right">
-                      <button className="inline-flex items-center gap-1 text-xs text-primary hover:underline">
-                        <Eye className="h-3.5 w-3.5" /> Ver
-                      </button>
+                      <div className="inline-flex items-center gap-3">
+                        <button
+                          onClick={() =>
+                            printRollReport({
+                              folio: r.folio,
+                              maquina: r.maquina,
+                              planta: r.planta,
+                              turno: r.turno,
+                              operador: r.jefe,
+                              jefeMaquina: r.jefe,
+                              fecha: r.fecha,
+                              producto: r.producto,
+                              estatus: r.estatus,
+                              metricas: [
+                                { label: "Rollos producidos", value: r.rollos },
+                                { label: "Cumplimiento", value: r.cumplimiento.toFixed(1), unit: "%", status: r.estatus },
+                                { label: "Planta", value: r.planta },
+                                { label: "Máquina", value: r.maquina },
+                                { label: "Turno", value: `T${r.turno}` },
+                              ],
+                              notas: `Registro histórico · jefe de máquina ${r.jefe}`,
+                            })
+                          }
+                          className="inline-flex items-center gap-1 text-xs text-foreground hover:text-primary"
+                          title="Imprimir reporte con QR"
+                        >
+                          <QrCode className="h-3.5 w-3.5" /> Imprimir
+                        </button>
+                        <button className="inline-flex items-center gap-1 text-xs text-primary hover:underline">
+                          <Eye className="h-3.5 w-3.5" /> Ver
+                        </button>
+                      </div>
                     </td>
+
                   </tr>
                 ))}
               </tbody>
