@@ -1,8 +1,93 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { FileBarChart2, Download, TrendingUp, TrendingDown } from "lucide-react";
+import { FileBarChart2, Download, FileSpreadsheet, TrendingUp, TrendingDown } from "lucide-react";
+import * as XLSX from "xlsx";
 
 export const Route = createFileRoute("/reportes")({ component: ReportesPage });
+
+// Datasets simulados por reporte (estructura tipo BD, listos para exportar a XLSX)
+const DATASETS: Record<string, { sheet: string; rows: Record<string, string | number>[] }[]> = {
+  "Cumplimiento Semanal": [
+    {
+      sheet: "Cumplimiento",
+      rows: [
+        { semana: "S1", planta: "Tlaxcala", maquina: "MP-04", cumplimiento_pct: 89, meta_pct: 90 },
+        { semana: "S1", planta: "Tlaxcala", maquina: "MP-05", cumplimiento_pct: 92, meta_pct: 90 },
+        { semana: "S1", planta: "Tlaxcala", maquina: "MP-06", cumplimiento_pct: 79, meta_pct: 90 },
+        { semana: "S1", planta: "Tlaxcala", maquina: "MP-07", cumplimiento_pct: 88, meta_pct: 90 },
+        { semana: "S2", planta: "Tlaxcala", maquina: "MP-04", cumplimiento_pct: 91, meta_pct: 90 },
+        { semana: "S2", planta: "Tlaxcala", maquina: "MP-05", cumplimiento_pct: 94, meta_pct: 90 },
+        { semana: "S2", planta: "Tlaxcala", maquina: "MP-06", cumplimiento_pct: 81, meta_pct: 90 },
+        { semana: "S2", planta: "Tlaxcala", maquina: "MP-07", cumplimiento_pct: 90, meta_pct: 90 },
+      ],
+    },
+  ],
+  "Detalle de no conformidades": [
+    {
+      sheet: "No conformidades",
+      rows: [
+        { id: "NC-0001", fecha: "2026-05-20", maquina: "MP-04", variable: "Humedad", valor: 7.8, limite_sup: 7.0, severidad: "Media" },
+        { id: "NC-0002", fecha: "2026-05-21", maquina: "MP-06", variable: "Peso base", valor: 18.2, limite_inf: 19.0, severidad: "Alta" },
+        { id: "NC-0003", fecha: "2026-05-22", maquina: "MP-05", variable: "Tensión MD", valor: 1.9, limite_inf: 2.2, severidad: "Alta" },
+        { id: "NC-0004", fecha: "2026-05-23", maquina: "MP-07", variable: "Blancura R457", valor: 82.1, limite_inf: 84.0, severidad: "Baja" },
+      ],
+    },
+  ],
+  "Tendencia de variables críticas": [
+    {
+      sheet: "Tendencia",
+      rows: [
+        { mes: "Ene", variable: "Humedad", promedio: 6.4, desviacion: 0.31, fuera_spec_pct: 4.2 },
+        { mes: "Feb", variable: "Humedad", promedio: 6.6, desviacion: 0.28, fuera_spec_pct: 3.8 },
+        { mes: "Mar", variable: "Peso base", promedio: 19.4, desviacion: 0.42, fuera_spec_pct: 5.1 },
+        { mes: "Abr", variable: "Tensión MD", promedio: 2.4, desviacion: 0.18, fuera_spec_pct: 2.7 },
+      ],
+    },
+  ],
+  "OEE por máquina y turno": [
+    {
+      sheet: "OEE",
+      rows: [
+        { fecha: "2026-05-25", maquina: "MP-04", turno: "A", disponibilidad: 0.92, desempeno: 0.95, calidad: 0.98, oee: 0.857 },
+        { fecha: "2026-05-25", maquina: "MP-04", turno: "B", disponibilidad: 0.88, desempeno: 0.93, calidad: 0.97, oee: 0.793 },
+        { fecha: "2026-05-25", maquina: "MP-05", turno: "A", disponibilidad: 0.94, desempeno: 0.96, calidad: 0.99, oee: 0.894 },
+        { fecha: "2026-05-25", maquina: "MP-06", turno: "A", disponibilidad: 0.80, desempeno: 0.87, calidad: 0.95, oee: 0.661 },
+        { fecha: "2026-05-25", maquina: "MP-07", turno: "A", disponibilidad: 0.90, desempeno: 0.94, calidad: 0.97, oee: 0.820 },
+      ],
+    },
+  ],
+  "Reporte ejecutivo de calidad": [
+    {
+      sheet: "KPIs",
+      rows: [
+        { kpi: "Cumplimiento promedio", valor: 92.4, unidad: "%", periodo: "Mayo 2026" },
+        { kpi: "OEE promedio", valor: 84.1, unidad: "%", periodo: "Mayo 2026" },
+        { kpi: "Rollos producidos", valor: 1720, unidad: "rollos", periodo: "Mayo 2026" },
+        { kpi: "No conformidades", valor: 44, unidad: "incidencias", periodo: "Mayo 2026" },
+      ],
+    },
+    {
+      sheet: "Resumen por planta",
+      rows: [
+        { planta: "Tlaxcala", cumplimiento_pct: 92.4, rollos: 412, no_conformes: 6, delta_pct: 1.8 },
+      ],
+    },
+  ],
+};
+
+function descargarXLSX(nombre: string) {
+  const hojas = DATASETS[nombre] ?? [
+    { sheet: "Datos", rows: [{ aviso: "Sin datos disponibles para este reporte" }] },
+  ];
+  const wb = XLSX.utils.book_new();
+  for (const h of hojas) {
+    const ws = XLSX.utils.json_to_sheet(h.rows);
+    XLSX.utils.book_append_sheet(wb, ws, h.sheet.slice(0, 31));
+  }
+  const fecha = new Date().toISOString().slice(0, 10);
+  const safe = nombre.replace(/[^a-z0-9]+/gi, "_").toLowerCase();
+  XLSX.writeFile(wb, `${safe}_${fecha}.xlsx`);
+}
 
 const TENDENCIA = [
   { dia: "Lun", cumpl: 88 },
@@ -85,9 +170,18 @@ function ReportesPage() {
                   <div className="text-sm font-medium text-foreground">{r.nombre}</div>
                   <div className="text-[11px] text-muted-foreground">Frecuencia: {r.freq} · {r.formato}</div>
                 </div>
-                <button className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium hover:bg-accent">
-                  <Download className="h-3.5 w-3.5" /> Descargar
-                </button>
+                <div className="flex items-center gap-2">
+                  <button className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium hover:bg-accent">
+                    <Download className="h-3.5 w-3.5" /> Descargar
+                  </button>
+                  <button
+                    onClick={() => descargarXLSX(r.nombre)}
+                    className="inline-flex items-center gap-2 rounded-md border border-success/40 bg-success/10 px-3 py-1.5 text-xs font-medium text-success hover:bg-success/20"
+                    title="Descargar archivo XLSX para manejo de BD"
+                  >
+                    <FileSpreadsheet className="h-3.5 w-3.5" /> XLSX (BD)
+                  </button>
+                </div>
               </li>
             ))}
           </ul>
