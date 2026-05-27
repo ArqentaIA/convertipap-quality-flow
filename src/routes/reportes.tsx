@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { FileBarChart2, Download, FileSpreadsheet, TrendingUp, TrendingDown } from "lucide-react";
-import * as XLSX from "xlsx";
+
 
 export const Route = createFileRoute("/reportes")({ component: ReportesPage });
 
@@ -75,7 +75,8 @@ const DATASETS: Record<string, { sheet: string; rows: Record<string, string | nu
   ],
 };
 
-function descargarXLSX(nombre: string) {
+async function descargarXLSX(nombre: string) {
+  const XLSX = await import("xlsx");
   const hojas = DATASETS[nombre] ?? [
     { sheet: "Datos", rows: [{ aviso: "Sin datos disponibles para este reporte" }] },
   ];
