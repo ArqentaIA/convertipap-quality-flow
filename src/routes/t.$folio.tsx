@@ -1,0 +1,146 @@
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { AppLayout } from "@/components/layout/AppLayout";
+import { ShieldCheck, QrCode, ArrowLeft, Factory, User, Calendar, Package, Hash, Printer } from "lucide-react";
+import { ReleaseBadge } from "@/components/qc/StatusBadge";
+import { printRollReport } from "@/lib/roll-report";
+
+export const Route = createFileRoute("/t/$folio")({ component: TracePage });
+
+// Simulación: en producción esto vendrá del backend (GET /api/v1/qc/trace/:folio)
+type TraceRecord = {
+  folio: string;
+  rollo?: string;
+  maquina: string;
+  planta: string;
+  turno: string;
+  operador: string;
+  jefeMaquina: string;
+  fecha: string;
+  hora: string;
+  producto: string;
+  estatus: "L" | "NC" | "C";
+  cumplimiento: number;
+  rollos: number;
+  metricas: { label: string; value: string | number; unit?: string; status?: "L" | "NC" | "C" }[];
+  emitido: string;
+  validadoPor: string;
+};
+
+const MOCK: Record<string, TraceRecord> = {
+  "CAL-2026-04830": { folio: "CAL-2026-04830", rollo: "4441-6", maquina: "MP-04", planta: "Tlaxcala", turno: "3", operador: "Palemón G.", jefeMaquina: "Palemón G.", fecha: "2026-05-26", hora: "01:25", producto: "PST Higiénico 13 g/m²", estatus: "L", cumplimiento: 86.4, rollos: 14, emitido: "2026-05-26 07:12", validadoPor: "Christian H. · Analista TLX", metricas: [{label:"Calibre",value:0.84,unit:"mm",status:"L"},{label:"Humedad",value:6.2,unit:"%",status:"L"},{label:"Peso base",value:13.19,unit:"g/m²",status:"L"},{label:"Tensión MD",value:461,unit:"g/in",status:"L"},{label:"Cumplimiento",value:"86.4",unit:"%",status:"L"}] },
+  "CAL-2026-04811": { folio: "CAL-2026-04811", rollo: "4438-6", maquina: "MP-04", planta: "Tlaxcala", turno: "1", operador: "Manuel Rivas", jefeMaquina: "Manuel Rivas", fecha: "2026-05-24", hora: "08:40", producto: "PST Higiénico 13 g/m²", estatus: "NC", cumplimiento: 78.2, rollos: 13, emitido: "2026-05-24 14:55", validadoPor: "Christian H. · Analista TLX", metricas: [{label:"Calibre",value:0.74,unit:"mm",status:"NC"},{label:"Humedad",value:7.3,unit:"%",status:"NC"},{label:"Peso base",value:12.50,unit:"g/m²",status:"NC"},{label:"Tensión MD",value:402,unit:"g/in",status:"NC"},{label:"Cumplimiento",value:"78.2",unit:"%",status:"NC"}] },
+};
+
+function TracePage() {
+  const { folio } = Route.useParams();
+  const rec = MOCK[folio];
+
+  if (!rec) {
+    return (
+      <AppLayout title="Validación de folio">
+        <div className="mx-auto max-w-xl rounded-xl border border-destructive/40 bg-destructive/5 p-6 text-center">
+          <h2 className="text-lg font-bold text-destructive">Folio no encontrado</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            El folio <code className="font-mono">{folio}</code> no existe o aún no ha sido sincronizado con la base de datos.
+          </p>
+          <Link to="/produccion" className="mt-4 inline-flex items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-xs font-semibold hover:bg-accent">
+            <ArrowLeft className="h-3.5 w-3.5" /> Volver a Producción
+          </Link>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  return (
+    <AppLayout title={`Trazabilidad · ${rec.folio}`}>
+      <div className="mx-auto max-w-3xl space-y-5">
+        <div className="rounded-xl border border-success/40 bg-success/5 p-4">
+          <div className="flex items-center gap-3">
+            <ShieldCheck className="h-6 w-6 text-success" />
+            <div>
+              <div className="text-sm font-bold text-success">Documento auténtico</div>
+              <div className="text-xs text-muted-foreground">
+                Validado contra el registro interno · Emitido {rec.emitido} · {rec.validadoPor}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+          <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border pb-4">
+            <div>
+              <div className="flex items-center gap-2 text-[11px] uppercase tracking-wider text-muted-foreground">
+                <QrCode className="h-3.5 w-3.5" /> Folio escaneado
+              </div>
+              <h1 className="mt-1 font-mono text-xl font-bold text-foreground">{rec.folio}</h1>
+              {rec.rollo && <div className="text-xs text-muted-foreground">Rollo: <strong className="text-foreground">{rec.rollo}</strong></div>}
+            </div>
+            <ReleaseBadge s={rec.estatus} />
+          </div>
+
+          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <Info icon={Factory} label="Planta / Máquina" value={`${rec.planta} · ${rec.maquina}`} />
+            <Info icon={Hash} label="Turno" value={`T${rec.turno}`} />
+            <Info icon={Calendar} label="Fecha / hora" value={`${rec.fecha} · ${rec.hora}`} />
+            <Info icon={Package} label="Producto" value={rec.producto} />
+            <Info icon={User} label="Operador" value={rec.operador} />
+            <Info icon={User} label="Jefe de máquina" value={rec.jefeMaquina} />
+          </div>
+
+          <h3 className="mt-6 mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Métricas registradas</h3>
+          <div className="overflow-hidden rounded-md border border-border">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/40 text-left text-[11px] uppercase tracking-wider text-muted-foreground">
+                <tr><th className="px-3 py-2">Variable</th><th className="px-3 py-2 text-right">Valor</th><th className="px-3 py-2">Unidad</th><th className="px-3 py-2">Estatus</th></tr>
+              </thead>
+              <tbody>
+                {rec.metricas.map((m) => (
+                  <tr key={m.label} className="border-t border-border">
+                    <td className="px-3 py-2">{m.label}</td>
+                    <td className="px-3 py-2 text-right tabular-nums font-semibold">{m.value}</td>
+                    <td className="px-3 py-2 text-muted-foreground">{m.unit ?? ""}</td>
+                    <td className="px-3 py-2">{m.status && <ReleaseBadge s={m.status} />}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="mt-5 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-4">
+            <p className="text-[11px] text-muted-foreground">
+              Este documento es la representación digital del registro interno y no puede modificarse. Cualquier corrección queda asentada en la bitácora auditada.
+            </p>
+            <button
+              onClick={() => printRollReport({
+                folio: rec.folio, rollo: rec.rollo, maquina: rec.maquina, planta: rec.planta,
+                turno: rec.turno, operador: rec.operador, jefeMaquina: rec.jefeMaquina,
+                fecha: rec.fecha, hora: rec.hora, producto: rec.producto, estatus: rec.estatus,
+                metricas: rec.metricas, notas: `Validado por ${rec.validadoPor}`,
+              })}
+              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:opacity-90"
+            >
+              <Printer className="h-3.5 w-3.5" /> Reimprimir reporte
+            </button>
+          </div>
+        </div>
+
+        <div className="rounded-md border border-dashed border-border bg-muted/20 p-3 text-[11px] text-muted-foreground">
+          <strong className="text-foreground">Demo:</strong> esta vista simula el endpoint <code className="font-mono">GET /api/v1/qc/trace/{`{folio}`}</code>.
+          Folios disponibles para probar: <code className="font-mono">CAL-2026-04830</code>, <code className="font-mono">CAL-2026-04811</code>.
+        </div>
+      </div>
+    </AppLayout>
+  );
+}
+
+function Info({ icon: Icon, label, value }: { icon: any; label: string; value: string }) {
+  return (
+    <div className="flex items-start gap-2 rounded-md border border-border bg-background/40 p-3">
+      <Icon className="mt-0.5 h-4 w-4 text-muted-foreground" />
+      <div>
+        <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
+        <div className="text-sm font-semibold text-foreground">{value}</div>
+      </div>
+    </div>
+  );
+}
