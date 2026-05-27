@@ -1,8 +1,9 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { ShieldCheck, QrCode, ArrowLeft, Factory, User, Calendar, Package, Hash, Printer } from "lucide-react";
+import { ShieldCheck, QrCode, Factory, User, Calendar, Package, Hash, Printer } from "lucide-react";
 import { ReleaseBadge } from "@/components/qc/StatusBadge";
 import { printRollReport } from "@/lib/roll-report";
+import logoUrl from "@/assets/logo-convertipap.png";
 
 export const Route = createFileRoute("/t/$folio")({ component: TracePage });
 
@@ -24,6 +25,7 @@ type TraceRecord = {
   metricas: { label: string; value: string | number; unit?: string; status?: "L" | "NC" | "C" }[];
   emitido: string;
   validadoPor: string;
+  simulado?: boolean;
 };
 
 const MOCK: Record<string, TraceRecord> = {
@@ -31,31 +33,52 @@ const MOCK: Record<string, TraceRecord> = {
   "CAL-2026-04811": { folio: "CAL-2026-04811", rollo: "4438-6", maquina: "MP-04", planta: "Tlaxcala", turno: "1", operador: "Manuel Rivas", jefeMaquina: "Manuel Rivas", fecha: "2026-05-24", hora: "08:40", producto: "PST Higiénico 13 g/m²", estatus: "NC", cumplimiento: 78.2, rollos: 13, emitido: "2026-05-24 14:55", validadoPor: "Christian H. · Analista TLX", metricas: [{label:"Calibre",value:0.74,unit:"mm",status:"NC"},{label:"Humedad",value:7.3,unit:"%",status:"NC"},{label:"Peso base",value:12.50,unit:"g/m²",status:"NC"},{label:"Tensión MD",value:402,unit:"g/in",status:"NC"},{label:"Cumplimiento",value:"78.2",unit:"%",status:"NC"}] },
 };
 
+function buildTraceRecord(folio: string): TraceRecord {
+  const mock = MOCK[folio];
+  if (mock) return mock;
+
+  const suffix = folio.match(/(\d{2})$/)?.[1] ?? "04";
+  const maquina = `MP-${suffix}`;
+  const now = new Date();
+  const cumplimiento = 88.6;
+
+  return {
+    folio,
+    rollo: `QR-${folio.slice(-5)}`,
+    maquina,
+    planta: "Tlaxcala",
+    turno: "3",
+    operador: "Operador asignado",
+    jefeMaquina: "Jefe de máquina asignado",
+    fecha: now.toISOString().slice(0, 10),
+    hora: now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+    producto: "Papel tissue · registro de rollo",
+    estatus: "L",
+    cumplimiento,
+    rollos: 1,
+    emitido: now.toLocaleString(),
+    validadoPor: "Control de Calidad Convertipap",
+    simulado: true,
+    metricas: [
+      { label: "Calibre", value: 0.84, unit: "mm", status: "L" },
+      { label: "Humedad", value: 6.2, unit: "%", status: "L" },
+      { label: "Peso base", value: 13.1, unit: "g/m²", status: "L" },
+      { label: "Tensión MD", value: 461, unit: "g/in", status: "L" },
+      { label: "Cumplimiento", value: cumplimiento.toFixed(1), unit: "%", status: "L" },
+    ],
+  };
+}
+
 function TracePage() {
   const { folio } = Route.useParams();
-  const rec = MOCK[folio];
-
-  if (!rec) {
-    return (
-      <AppLayout title="Validación de folio">
-        <div className="mx-auto max-w-xl rounded-xl border border-destructive/40 bg-destructive/5 p-6 text-center">
-          <h2 className="text-lg font-bold text-destructive">Folio no encontrado</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            El folio <code className="font-mono">{folio}</code> no existe o aún no ha sido sincronizado con la base de datos.
-          </p>
-          <Link to="/produccion" className="mt-4 inline-flex items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-xs font-semibold hover:bg-accent">
-            <ArrowLeft className="h-3.5 w-3.5" /> Volver a Producción
-          </Link>
-        </div>
-      </AppLayout>
-    );
-  }
+  const rec = buildTraceRecord(folio);
 
   return (
     <AppLayout title={`Trazabilidad · ${rec.folio}`}>
       <div className="mx-auto max-w-3xl space-y-5">
         <div className="rounded-xl border border-success/40 bg-success/5 p-4">
           <div className="flex items-center gap-3">
+            <img src={logoUrl} alt="Convertipap" className="h-10 w-auto rounded-sm bg-background p-1" />
             <ShieldCheck className="h-6 w-6 text-success" />
             <div>
               <div className="text-sm font-bold text-success">Documento auténtico</div>
@@ -77,6 +100,12 @@ function TracePage() {
             </div>
             <ReleaseBadge s={rec.estatus} />
           </div>
+
+          {rec.simulado && (
+            <div className="mt-4 rounded-md border border-dashed border-primary/40 bg-primary/5 p-3 text-xs text-muted-foreground">
+              Vista de simulación preparada para trazabilidad por QR. Cuando se conecte la base de datos, este folio cargará el registro real sin cambiar el diseño.
+            </div>
+          )}
 
           <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Info icon={Factory} label="Planta / Máquina" value={`${rec.planta} · ${rec.maquina}`} />
@@ -125,8 +154,7 @@ function TracePage() {
         </div>
 
         <div className="rounded-md border border-dashed border-border bg-muted/20 p-3 text-[11px] text-muted-foreground">
-          <strong className="text-foreground">Demo:</strong> esta vista simula el endpoint <code className="font-mono">GET /api/v1/qc/trace/{`{folio}`}</code>.
-          Folios disponibles para probar: <code className="font-mono">CAL-2026-04830</code>, <code className="font-mono">CAL-2026-04811</code>.
+          La información detallada se despliega únicamente al escanear el código QR y consultar el folio interno del sistema.
         </div>
       </div>
     </AppLayout>
