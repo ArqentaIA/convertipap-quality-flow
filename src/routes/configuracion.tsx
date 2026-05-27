@@ -140,7 +140,7 @@ function RosterCard({ maquina }: { maquina: string }) {
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-            <Users className="h-4 w-4" /> Operadores por turno
+            <Users className="h-4 w-4" /> Operadores por turno · <span className="text-primary">{maquina}</span>
           </h3>
           <p className="text-xs text-muted-foreground">
             Se asignan automáticamente al seleccionar turno en Control de Calidad.
