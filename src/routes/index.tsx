@@ -99,7 +99,7 @@ function Dashboard() {
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
               <div className="text-xs font-semibold uppercase tracking-wider text-primary">Centro de Control de Calidad Operativa</div>
-              <h2 className="mt-1 text-2xl font-bold text-foreground">Buen turno, Christian</h2>
+              
               <p className="mt-1 text-sm text-muted-foreground">
                 Planta Tlaxcala · 4 máquinas monitoreadas · Última sincronización hace 2 min.
               </p>
