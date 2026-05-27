@@ -4,7 +4,6 @@ import {
   Activity,
   AlertTriangle,
   CheckCircle2,
-  Factory,
   Gauge,
   Maximize2,
   Radio,
@@ -12,6 +11,8 @@ import {
   TrendingUp,
   XCircle,
 } from "lucide-react";
+import logoConvertipap from "@/assets/logo-convertipap.png";
+
 import {
   QUALITY_VARIABLES,
   SAMPLE_MEASUREMENTS,
