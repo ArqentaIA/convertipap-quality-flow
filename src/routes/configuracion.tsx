@@ -114,7 +114,7 @@ function Toggle({ label, on }: { label: string; on?: boolean }) {
   );
 }
 
-function RosterCard() {
+function RosterCard({ maquina }: { maquina: string }) {
   const session = useSession();
   const isDireccion = session.role === "direccion";
   const roster = useSyncExternalStore(subscribeRoster, getRoster, getRoster);
