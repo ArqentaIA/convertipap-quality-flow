@@ -99,9 +99,16 @@ async function descargarXLSX(nombre: string) {
     const ws = XLSX.utils.json_to_sheet(h.rows);
     XLSX.utils.book_append_sheet(wb, ws, h.sheet.slice(0, 31));
   }
-  const fecha = new Date().toISOString().slice(0, 10);
-  const safe = nombre.replace(/[^a-z0-9]+/gi, "_").toLowerCase();
-  XLSX.writeFile(wb, `${safe}_${fecha}.xlsx`);
+  XLSX.writeFile(wb, `${buildFileName(nombre)}.xlsx`);
+}
+
+function buildFileName(nombre: string) {
+  const safe = nombre.replace(/[^a-z0-9]+/gi, "_").replace(/^_|_$/g, "").toLowerCase();
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const fecha = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const hora = `${pad(d.getHours())}-${pad(d.getMinutes())}-${pad(d.getSeconds())}`;
+  return `${safe}_${fecha}_${hora}`;
 }
 
 async function urlToDataURL(url: string): Promise<string | null> {
