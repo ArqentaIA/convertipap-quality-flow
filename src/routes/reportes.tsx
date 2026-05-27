@@ -1,9 +1,20 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { FileBarChart2, Download, FileSpreadsheet, TrendingUp, TrendingDown } from "lucide-react";
-
+import logoUrl from "@/assets/logo-convertipap.png";
 
 export const Route = createFileRoute("/reportes")({ component: ReportesPage });
+
+// Metadatos ejecutivos comunes a todos los reportes
+const META_EMPRESA = {
+  empresa: "ConvertiPap S.A. de C.V.",
+  planta: "Planta Tlaxcala",
+  direccion: "Parque Industrial Xicohténcatl, Tlaxcala, México",
+  responsable: "Ing. Laura Méndez · Gerente de Calidad",
+  operador: "Carlos Ramírez · Supervisor de turno",
+  sistema: "ConvertiPap QMS · v1.0",
+};
+
 
 // Datasets simulados por reporte (estructura tipo BD, listos para exportar a XLSX)
 const DATASETS: Record<string, { sheet: string; rows: Record<string, string | number>[] }[]> = {
