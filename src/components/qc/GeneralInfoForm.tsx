@@ -27,12 +27,13 @@ const FIELDS: { key: keyof GeneralInfo; label: string; type?: string; col?: numb
 ];
 
 export function GeneralInfoForm({
-  value, onChange,
-}: { value: GeneralInfo; onChange: (v: GeneralInfo) => void }) {
+  value, onChange, locked = false,
+}: { value: GeneralInfo; onChange: (v: GeneralInfo) => void; locked?: boolean }) {
   const session = useSession();
   const isDireccion = session.role === "direccion";
 
   const set = <K extends keyof GeneralInfo>(k: K, v: GeneralInfo[K]) => {
+    if (locked) return;
     if (k === "turno") {
       const turno = v as Shift;
       const equipo = getShiftAssignment(turno);
