@@ -52,10 +52,28 @@ function ConfigPage() {
 
         <div className="space-y-6">
           <Card title="Notificaciones" desc={`Alertas automáticas · ${maquina}`}>
-            <Toggle label="Alerta por valor fuera de rango" on />
-            <Toggle label="Resumen diario por correo" on />
-            <Toggle label="Notificar no conformidades a supervisor" on />
-            <Toggle label="Resumen semanal a dirección" />
+            <Toggle label="Alerta por valor fuera de rango" on hint="Envía una notificación cuando una variable supere los límites configurados." />
+            <Toggle label="Resumen diario por correo" on hint="Envía automáticamente un resumen diario de producción." />
+            <Toggle label="Notificar no conformidades a supervisor" on hint="Notifica incidencias y eventos de calidad al supervisor responsable." />
+            <Toggle label="Resumen semanal a dirección" hint="Genera un reporte consolidado semanal para dirección." />
+            <div className="mt-2 rounded-lg border border-primary/30 bg-primary/5 p-3">
+              <Toggle
+                label="Reporte CEO"
+                on
+                hint="Correo ejecutivo diario con producción total, estado de las 4 máquinas, eficiencia general, tiempo de paro, calidad, alertas críticas y resumen ejecutivo automático."
+              />
+              <div className="mt-3 grid grid-cols-2 items-center gap-3">
+                <label className="text-xs text-muted-foreground">Hora de envío</label>
+                <input
+                  type="time"
+                  defaultValue="07:00"
+                  className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
+              <p className="mt-2 text-[11px] text-muted-foreground">
+                El reporte se envía automáticamente al correo configurado del CEO.
+              </p>
+            </div>
           </Card>
 
           <Card title="Preferencias regionales">
