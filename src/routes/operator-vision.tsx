@@ -261,18 +261,17 @@ function OperatorVisionPage() {
             <img
               src={logoConvertipap}
               alt="Convertipap"
-              className="h-12 w-auto object-contain"
+              className="h-15 w-auto object-contain"
+              style={{ height: "3.75rem" }}
             />
             <div>
-              <div className="text-[10px] font-bold uppercase tracking-[0.25em] text-slate-500">
-                Convertipap · Operator Vision
-              </div>
               <div className="text-2xl font-black tracking-tight text-slate-900">
                 {info.maquina} <span className="text-slate-400">/</span>{" "}
                 <span className="text-cyan-700">{info.area}</span>
               </div>
             </div>
           </div>
+
 
 
           <div className="ml-auto grid grid-cols-5 gap-x-8 gap-y-1 text-sm">
