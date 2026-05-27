@@ -26,7 +26,7 @@ const VARIABLES_TOP = [
 ];
 
 const REPORTES = [
-  { nombre: "Cumplimiento semanal por planta", freq: "Semanal", formato: "PDF" },
+  { nombre: "Cumplimiento Semanal", freq: "Semanal", formato: "PDF" },
   { nombre: "Detalle de no conformidades", freq: "Diario", formato: "Excel" },
   { nombre: "Tendencia de variables críticas", freq: "Mensual", formato: "PDF" },
   { nombre: "OEE por máquina y turno", freq: "Semanal", formato: "Excel" },
