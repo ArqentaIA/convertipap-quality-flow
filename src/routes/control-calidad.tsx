@@ -8,6 +8,8 @@ import { QualityVariableTable } from "@/components/qc/QualityVariableTable";
 import { MeasurementTable } from "@/components/qc/MeasurementTable";
 import { AlertPanel } from "@/components/qc/AlertPanel";
 import { ReleaseBadge } from "@/components/qc/StatusBadge";
+import { ShiftStatusBar } from "@/components/qc/ShiftStatusBar";
+import { useShiftStatus } from "@/lib/shift-status";
 import {
   DEFAULT_GENERAL, SAMPLE_MEASUREMENTS, PLANTS, evaluateValue,
   type Measurement, type GeneralInfo,
