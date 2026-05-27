@@ -56,9 +56,10 @@ function HistorialPage() {
       <div className="space-y-6">
         <Link
           to="/produccion"
-          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+          className="group inline-flex items-center gap-2 rounded-full border border-primary/30 bg-gradient-to-r from-primary/15 via-primary/10 to-transparent px-4 py-2 text-sm font-semibold text-primary shadow-sm transition-all hover:border-primary/60 hover:from-primary/25 hover:via-primary/20 hover:shadow-md hover:-translate-y-0.5"
         >
-          <ArrowLeft className="h-4 w-4" /> Volver a Producción
+          <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
+          Volver a Producción
         </Link>
 
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
