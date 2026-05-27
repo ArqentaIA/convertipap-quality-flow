@@ -127,35 +127,8 @@ function ProduccionPage() {
                 </div>
                 </Link>
 
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    printRollReport({
-                      folio: `CAL-2026-${m.codigo.replace("MP-", "047")}`,
-                      maquina: m.codigo,
-                      planta: m.planta,
-                      turno: "3",
-                      operador: m.operador,
-                      fecha: new Date().toISOString().slice(0, 10),
-                      hora: new Date().toLocaleTimeString().slice(0, 5),
-                      producto: m.producto,
-                      estatus: m.oee >= 85 ? "L" : m.oee >= 70 ? "C" : "NC",
-                      metricas: [
-                        { label: "OEE", value: m.oee.toFixed(1), unit: "%" },
-                        { label: "Velocidad", value: m.velocidad, unit: "m/min" },
-                        { label: "Velocidad objetivo", value: m.velocidadObj, unit: "m/min" },
-                        { label: "Horas turno", value: m.turnoHoras.toFixed(1), unit: "h" },
-                        { label: "Rollos turno", value: m.rollosTurno },
-                      ],
-                      notas: `Orden ${m.orden} · estado ${m.estado}`,
-                    });
-                  }}
-                  className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-xs font-semibold text-foreground hover:bg-accent"
-                  title="Imprimir reporte con QR de trazabilidad"
-                >
-                  <QrCode className="h-3.5 w-3.5" /> Imprimir reporte por rollo
-                </button>
+
+
 
 
                 {necesitaCausa && (
