@@ -1,8 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { AppLayout } from "@/components/layout/AppLayout";
-import { ShieldCheck, QrCode, Factory, User, Calendar, Package, Hash, Printer } from "lucide-react";
+import { ShieldCheck, QrCode, Factory, User, Calendar, Package, Hash } from "lucide-react";
 import { ReleaseBadge } from "@/components/qc/StatusBadge";
-import { printRollReport } from "@/lib/roll-report";
 import logoUrl from "@/assets/logo-convertipap.png";
 
 export const Route = createFileRoute("/t/$folio")({ component: TracePage });
