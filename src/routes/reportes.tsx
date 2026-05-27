@@ -1,9 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { FileBarChart2, Download, FileSpreadsheet, TrendingUp, TrendingDown } from "lucide-react";
+import { FileBarChart2, Download, FileSpreadsheet, TrendingUp, TrendingDown, CalendarRange } from "lucide-react";
 import logoUrl from "@/assets/logo-convertipap.png";
+import { RangoSelector, MESES, rangoLabel, rangoToFreq, type Rango } from "@/components/qc/RangoSelector";
 
 export const Route = createFileRoute("/reportes")({ component: ReportesPage });
+
 
 // Metadatos ejecutivos comunes a todos los reportes
 const META_EMPRESA = {
