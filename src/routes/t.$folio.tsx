@@ -78,6 +78,7 @@ function TracePage() {
       <div className="mx-auto max-w-3xl space-y-5">
         <div className="rounded-xl border border-success/40 bg-success/5 p-4">
           <div className="flex items-center gap-3">
+            <img src={logoUrl} alt="Convertipap" className="h-10 w-auto rounded-sm bg-background p-1" />
             <ShieldCheck className="h-6 w-6 text-success" />
             <div>
               <div className="text-sm font-bold text-success">Documento auténtico</div>
@@ -99,6 +100,12 @@ function TracePage() {
             </div>
             <ReleaseBadge s={rec.estatus} />
           </div>
+
+          {rec.simulado && (
+            <div className="mt-4 rounded-md border border-dashed border-primary/40 bg-primary/5 p-3 text-xs text-muted-foreground">
+              Vista de simulación preparada para trazabilidad por QR. Cuando se conecte la base de datos, este folio cargará el registro real sin cambiar el diseño.
+            </div>
+          )}
 
           <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Info icon={Factory} label="Planta / Máquina" value={`${rec.planta} · ${rec.maquina}`} />
