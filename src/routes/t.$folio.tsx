@@ -154,8 +154,7 @@ function TracePage() {
         </div>
 
         <div className="rounded-md border border-dashed border-border bg-muted/20 p-3 text-[11px] text-muted-foreground">
-          <strong className="text-foreground">Demo:</strong> esta vista simula el endpoint <code className="font-mono">GET /api/v1/qc/trace/{`{folio}`}</code>.
-          Folios disponibles para probar: <code className="font-mono">CAL-2026-04830</code>, <code className="font-mono">CAL-2026-04811</code>.
+          La información detallada se despliega únicamente al escanear el código QR y consultar el folio interno del sistema.
         </div>
       </div>
     </AppLayout>
