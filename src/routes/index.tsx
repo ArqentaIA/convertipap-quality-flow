@@ -53,10 +53,6 @@ const DATA: Record<"dia" | "semana" | "mes", PuntoSerie[]> = {
   ],
 };
 
-const MESES = [
-  "Ene", "Feb", "Mar", "Abr", "May", "Jun",
-  "Jul", "Ago", "Sep", "Oct", "Nov", "Dic",
-] as const;
 
 // Datos simulados por mes del año (12 puntos)
 const DATA_AÑO: PuntoSerie[] = MESES.map((m, i) => {
