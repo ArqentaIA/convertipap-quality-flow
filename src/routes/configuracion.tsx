@@ -44,9 +44,9 @@ function ConfigPage() {
         <div className="space-y-6 lg:col-span-2">
           <Card title="Parámetros generales" desc={`Aplican a la máquina ${maquina}`}>
             <Field label="Tolerancia de advertencia (% del rango)" value="10" suffix="%" />
-            <Field label="Hora de corte turno 1" value="07:00" />
-            <Field label="Hora de corte turno 2" value="15:00" />
-            <Field label="Hora de corte turno 3" value="23:00" />
+            <ShiftRange label="Turno 1" inicio="07:00" fin="15:00" />
+            <ShiftRange label="Turno 2" inicio="15:00" fin="23:00" />
+            <ShiftRange label="Turno 3" inicio="23:00" fin="07:00" />
             <Field label="Frecuencia de muestreo sugerida" value="30" suffix="min" />
           </Card>
 
