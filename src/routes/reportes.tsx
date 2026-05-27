@@ -253,45 +253,56 @@ async function descargarPDF(nombre: string, freq: string) {
   doc.save(`${safe}_${fecha}.pdf`);
 }
 
-const TENDENCIA = [
-  { dia: "Lun", cumpl: 88 },
-  { dia: "Mar", cumpl: 91 },
-  { dia: "Mié", cumpl: 86 },
-  { dia: "Jue", cumpl: 93 },
-  { dia: "Vie", cumpl: 95 },
-  { dia: "Sáb", cumpl: 89 },
-  { dia: "Dom", cumpl: 92 },
-];
-
 const PLANTAS_PERF = [
   { planta: "Tlaxcala", cumpl: 92.4, rollos: 412, nc: 6, delta: 1.8 },
 ];
 
-const VARIABLES_TOP = [
-  { v: "Humedad", incidencias: 18, impacto: "Media" },
-  { v: "Peso base", incidencias: 12, impacto: "Alta" },
-  { v: "Tensión MD", incidencias: 9, impacto: "Alta" },
-  { v: "Blancura R457", incidencias: 5, impacto: "Baja" },
-];
-
 const REPORTES = [
-  { nombre: "Cumplimiento Semanal", freq: "Semanal", formato: "PDF" },
-  { nombre: "Detalle de no conformidades", freq: "Diario", formato: "Excel" },
-  { nombre: "Tendencia de variables críticas", freq: "Mensual", formato: "PDF" },
-  { nombre: "OEE por máquina y turno", freq: "Semanal", formato: "Excel" },
-  { nombre: "Reporte ejecutivo de calidad", freq: "Mensual", formato: "PDF" },
+  { nombre: "Cumplimiento" },
+  { nombre: "Detalle de no conformidades" },
+  { nombre: "Tendencia de variables críticas" },
+  { nombre: "OEE por máquina y turno" },
+  { nombre: "Reporte ejecutivo de calidad" },
 ];
 
 function ReportesPage() {
-  const max = Math.max(...TENDENCIA.map(t => t.cumpl));
+  const [rango, setRango] = useState<Rango>("semana");
+  const [mesesSel, setMesesSel] = useState<number[]>(MESES.map((_, i) => i));
+  const periodo = rangoLabel(rango, mesesSel);
+  const freq = rangoToFreq(rango);
+
   return (
     <AppLayout title="Reportes e Indicadores">
       <div className="space-y-6">
 
+        {/* Selector de periodo unificado */}
+        <div className="rounded-2xl border border-border bg-gradient-to-r from-primary/20 via-primary/10 to-primary/5 p-5 shadow-sm">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-wider text-primary">Periodo de análisis</div>
+              <p className="mt-1 flex items-center gap-2 text-sm text-foreground">
+                <CalendarRange className="h-4 w-4 text-primary" />
+                <span className="font-semibold">{periodo}</span>
+                <span className="text-muted-foreground">· {freq}</span>
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Todos los reportes se generarán para el periodo seleccionado.
+              </p>
+            </div>
+            <RangoSelector
+              rango={rango}
+              setRango={setRango}
+              mesesSel={mesesSel}
+              setMesesSel={setMesesSel}
+              includeTurno
+            />
+          </div>
+        </div>
+
         <div className="rounded-xl border border-border bg-card shadow-sm">
           <div className="flex items-center gap-2 border-b border-border bg-primary/5 p-5">
             <span className="h-5 w-1 rounded-full bg-primary" />
-            <h3 className="text-sm font-semibold text-primary">Desempeño por planta</h3>
+            <h3 className="text-sm font-semibold text-primary">Desempeño por planta · {periodo}</h3>
           </div>
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-left text-[11px] uppercase tracking-wider text-muted-foreground">
@@ -300,7 +311,7 @@ function ReportesPage() {
                 <th className="px-4 py-3 text-right">Cumplimiento</th>
                 <th className="px-4 py-3 text-right">Rollos producidos</th>
                 <th className="px-4 py-3 text-right">No conformes</th>
-                <th className="px-4 py-3 text-right">Δ vs mes anterior</th>
+                <th className="px-4 py-3 text-right">Δ vs periodo anterior</th>
               </tr>
             </thead>
             <tbody>
@@ -324,37 +335,44 @@ function ReportesPage() {
 
         <div className="rounded-xl border border-border bg-card shadow-sm">
           <div className="flex items-center justify-between border-b border-border p-5">
-            <h3 className="text-sm font-semibold text-foreground">Reportes disponibles</h3>
+            <div>
+              <h3 className="text-sm font-semibold text-foreground">Reportes disponibles</h3>
+              <p className="text-[11px] text-muted-foreground">Generación: {freq} · {periodo}</p>
+            </div>
             <FileBarChart2 className="h-4 w-4 text-muted-foreground" />
           </div>
           <ul className="divide-y divide-border">
-            {REPORTES.map((r) => (
-              <li key={r.nombre} className="flex items-center justify-between gap-3 px-5 py-3">
-                <div>
-                  <div className="text-sm font-medium text-foreground">{r.nombre}</div>
-                  <div className="text-[11px] text-muted-foreground">Frecuencia: {r.freq} · {r.formato}</div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => descargarPDF(r.nombre, r.freq)}
-                    className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium hover:bg-accent"
-                    title="Descargar reporte ejecutivo en PDF"
-                  >
-                    <Download className="h-3.5 w-3.5" /> Descargar
-                  </button>
-                  <button
-                    onClick={() => descargarXLSX(r.nombre)}
-                    className="inline-flex items-center gap-2 rounded-md border border-success/40 bg-success/10 px-3 py-1.5 text-xs font-medium text-success hover:bg-success/20"
-                    title="Descargar archivo XLSX para manejo de BD"
-                  >
-                    <FileSpreadsheet className="h-3.5 w-3.5" /> XLSX (BD)
-                  </button>
-                </div>
-              </li>
-            ))}
+            {REPORTES.map((r) => {
+              const titulo = `${r.nombre} · ${periodo}`;
+              return (
+                <li key={r.nombre} className="flex items-center justify-between gap-3 px-5 py-3">
+                  <div>
+                    <div className="text-sm font-medium text-foreground">{r.nombre}</div>
+                    <div className="text-[11px] text-muted-foreground">PDF ejecutivo + XLSX para BD</div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => descargarPDF(titulo, `${freq} · ${periodo}`)}
+                      className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium hover:bg-accent"
+                      title="Descargar reporte ejecutivo en PDF"
+                    >
+                      <Download className="h-3.5 w-3.5" /> PDF
+                    </button>
+                    <button
+                      onClick={() => descargarXLSX(r.nombre)}
+                      className="inline-flex items-center gap-2 rounded-md border border-success/40 bg-success/10 px-3 py-1.5 text-xs font-medium text-success hover:bg-success/20"
+                      title="Descargar archivo XLSX para manejo de BD"
+                    >
+                      <FileSpreadsheet className="h-3.5 w-3.5" /> XLSX (BD)
+                    </button>
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         </div>
       </div>
     </AppLayout>
   );
 }
+
