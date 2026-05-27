@@ -13,6 +13,9 @@ type Maquina = typeof MAQUINAS[number];
 
 function ConfigPage() {
   const [maquina, setMaquina] = useState<Maquina>("MP-04");
+  const [previewCEO, setPreviewCEO] = useState(false);
+
+
 
   return (
     <AppLayout title="Configuración del sistema">
