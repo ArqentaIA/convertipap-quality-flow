@@ -294,7 +294,7 @@ function CEOReportPreview({ onClose }: { onClose: () => void }) {
             <div className="rounded-t-lg bg-gradient-to-r from-primary to-primary/80 px-6 py-5 text-primary-foreground">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-md bg-white p-1.5 shadow-sm">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-md p-1.5 shadow-sm">
                     <img src={logoConvertipap} alt="Convertipap" className="h-full w-full object-contain" />
                   </div>
                   <div>
