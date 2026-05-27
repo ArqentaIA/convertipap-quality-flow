@@ -1,7 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Factory, Gauge, Clock, Pause, Play, AlertTriangle, AlertOctagon, X, Check, QrCode } from "lucide-react";
-import { printRollReport } from "@/lib/roll-report";
+import { Factory, Gauge, Clock, Pause, Play, AlertTriangle, AlertOctagon, X, Check } from "lucide-react";
 import { useState } from "react";
 
 export const Route = createFileRoute("/produccion")({ component: ProduccionPage });
