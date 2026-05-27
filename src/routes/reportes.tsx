@@ -255,9 +255,7 @@ async function descargarPDF(nombre: string, freq: string, datasetKey?: string) {
     doc.text(`Página ${i} de ${total}`, pageW - M, pageH - 24, { align: "right" });
   }
 
-  const safe = nombre.replace(/[^a-z0-9]+/gi, "_").toLowerCase();
-  const fecha = new Date().toISOString().slice(0, 10);
-  doc.save(`${safe}_${fecha}.pdf`);
+  doc.save(`${buildFileName(nombre)}.pdf`);
 }
 
 const PLANTAS_PERF = [
