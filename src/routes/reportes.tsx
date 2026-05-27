@@ -38,47 +38,6 @@ function ReportesPage() {
   return (
     <AppLayout title="Reportes e Indicadores">
       <div className="space-y-6">
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          <div className="lg:col-span-2 rounded-xl border border-border bg-card p-5 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-semibold text-foreground">Cumplimiento de calidad · últimos 7 días</h3>
-                <p className="text-xs text-muted-foreground">Consolidado todas las plantas · meta 90%</p>
-              </div>
-              <span className="inline-flex items-center gap-1 text-xs font-semibold text-success">
-                <TrendingUp className="h-3.5 w-3.5" /> +2.3% vs semana previa
-              </span>
-            </div>
-            <div className="mt-6 flex h-48 items-end gap-3">
-              {TENDENCIA.map((t) => (
-                <div key={t.dia} className="flex flex-1 flex-col items-center gap-2">
-                  <div className="text-[11px] tabular-nums font-semibold text-foreground">{t.cumpl}%</div>
-                  <div
-                    className={`w-full rounded-t-md ${t.cumpl >= 90 ? "bg-primary" : "bg-warning"}`}
-                    style={{ height: `${(t.cumpl / max) * 100}%` }}
-                  />
-                  <div className="text-[11px] text-muted-foreground">{t.dia}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
-            <h3 className="text-sm font-semibold text-foreground">Variables con más incidencias</h3>
-            <p className="text-xs text-muted-foreground">Mes en curso</p>
-            <div className="mt-4 space-y-3">
-              {VARIABLES_TOP.map((v) => (
-                <div key={v.v} className="flex items-center justify-between border-b border-border pb-2 last:border-0">
-                  <div>
-                    <div className="text-sm font-medium text-foreground">{v.v}</div>
-                    <div className="text-[11px] text-muted-foreground">Impacto {v.impacto}</div>
-                  </div>
-                  <div className="text-lg font-bold tabular-nums text-foreground">{v.incidencias}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
 
         <div className="rounded-xl border border-border bg-card shadow-sm">
           <div className="border-b border-border p-5">
