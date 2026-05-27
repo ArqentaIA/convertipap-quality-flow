@@ -121,7 +121,7 @@ function Field({ label, value, suffix }: { label: string; value: string; suffix?
   );
 }
 
-function Toggle({ label, on }: { label: string; on?: boolean }) {
+function Toggle({ label, on, hint }: { label: string; on?: boolean; hint?: string }) {
   return (
     <div className="flex items-center justify-between gap-3">
       <span className="text-sm text-foreground">{label}</span>
