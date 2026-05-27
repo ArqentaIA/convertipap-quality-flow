@@ -150,6 +150,30 @@ function Field({ label, value, suffix }: { label: string; value: string; suffix?
   );
 }
 
+function ShiftRange({ label, inicio, fin }: { label: string; inicio: string; fin: string }) {
+  return (
+    <div className="grid grid-cols-[1fr_1fr_1fr] items-center gap-3">
+      <label className="text-xs text-muted-foreground">{label}</label>
+      <div className="relative">
+        <input
+          type="time"
+          defaultValue={inicio}
+          className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+        />
+        <span className="pointer-events-none absolute -top-2 left-2 bg-card px-1 text-[9px] uppercase tracking-wider text-muted-foreground">Inicio</span>
+      </div>
+      <div className="relative">
+        <input
+          type="time"
+          defaultValue={fin}
+          className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+        />
+        <span className="pointer-events-none absolute -top-2 left-2 bg-card px-1 text-[9px] uppercase tracking-wider text-muted-foreground">Término</span>
+      </div>
+    </div>
+  );
+}
+
 function Toggle({ label, on, hint }: { label: string; on?: boolean; hint?: string }) {
   return (
     <div className="flex items-start justify-between gap-3">
