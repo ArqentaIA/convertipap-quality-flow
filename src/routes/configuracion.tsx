@@ -413,6 +413,54 @@ function CEOReportPreview({ onClose }: { onClose: () => void }) {
   );
 }
 
+function OperatorVisionUrl() {
+  const [copied, setCopied] = useState(false);
+  const url = typeof window !== "undefined" ? `${window.location.origin}/operator-vision` : "/operator-vision";
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // ignore
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 p-3">
+        <Monitor className="h-5 w-5 text-primary" />
+        <div className="min-w-0 flex-1">
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-primary">URL de acceso</div>
+          <div className="truncate font-mono text-sm text-foreground">{url}</div>
+        </div>
+      </div>
+      <div className="flex gap-2">
+        <button
+          onClick={copy}
+          className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-md border border-input bg-background px-3 py-2 text-xs font-medium hover:bg-accent"
+        >
+          <Copy className="h-3.5 w-3.5" />
+          {copied ? "¡Copiado!" : "Copiar URL"}
+        </button>
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-md bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:opacity-90"
+        >
+          <ExternalLink className="h-3.5 w-3.5" />
+          Abrir pantalla
+        </a>
+      </div>
+      <p className="text-[11px] leading-snug text-muted-foreground">
+        Ideal para mostrar en TV industrial de 70". Se actualiza en tiempo real sin recargar.
+      </p>
+    </div>
+  );
+}
+
 function KPI({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-md border border-gray-200 bg-gray-50 p-3">
