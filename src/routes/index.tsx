@@ -118,8 +118,8 @@ function Dashboard() {
 
 
         {/* Tendencia cumplimiento por máquina */}
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          <Card className="lg:col-span-2" title="Cumplimiento por máquina" subtitle={`Tendencia · ${rangoLabel(rango)} · meta 90%`}>
+        <div className="grid grid-cols-1 gap-6">
+          <Card title="Cumplimiento por máquina" subtitle={`Tendencia · ${rangoLabel(rango)} · meta 90%`}>
             <div className="h-72">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={cumplimientoData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
@@ -135,19 +135,8 @@ function Dashboard() {
               </ResponsiveContainer>
             </div>
           </Card>
-
-          <Card title="OEE actual" subtitle="Por máquina">
-            <div className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <RadialBarChart innerRadius="25%" outerRadius="95%" data={oeeRadial} startAngle={90} endAngle={-270}>
-                  <RadialBar background dataKey="value" cornerRadius={6} />
-                  <Legend iconType="circle" wrapperStyle={{ fontSize: 11 }} />
-                  <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} formatter={(v: number) => `${v}%`} />
-                </RadialBarChart>
-              </ResponsiveContainer>
-            </div>
-          </Card>
         </div>
+
 
         {/* Rollos por máquina + NC */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
