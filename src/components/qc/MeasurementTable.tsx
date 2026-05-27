@@ -151,7 +151,12 @@ export function MeasurementTable({
         </div>
       </div>
 
-      {!canCapture && (
+      {locked ? (
+        <div className="border-b border-success/40 bg-success/10 px-5 py-2.5 text-xs font-medium text-success">
+          <Lock className="mr-1.5 inline h-3 w-3" />
+          Turno cerrado. Mediciones en solo lectura. Para modificar utiliza el flujo de corrección auditada.
+        </div>
+      ) : !canCapture && (
         <div className="border-b border-warning/40 bg-warning/10 px-5 py-2.5 text-xs text-foreground">
           Solo el operador en turno (<span className="font-semibold">{operadorTurno || "—"}</span>) puede capturar mediciones.
           Inicia sesión para habilitar la captura.
