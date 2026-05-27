@@ -8,6 +8,8 @@ import { QualityVariableTable } from "@/components/qc/QualityVariableTable";
 import { MeasurementTable } from "@/components/qc/MeasurementTable";
 import { AlertPanel } from "@/components/qc/AlertPanel";
 import { ReleaseBadge } from "@/components/qc/StatusBadge";
+import { ShiftStatusBar } from "@/components/qc/ShiftStatusBar";
+import { useShiftStatus } from "@/lib/shift-status";
 import {
   DEFAULT_GENERAL, SAMPLE_MEASUREMENTS, PLANTS, evaluateValue,
   type Measurement, type GeneralInfo,
@@ -30,6 +32,8 @@ function ControlCalidad() {
   const [step, setStep] = useState(1);
   const [info, setInfo] = useState<GeneralInfo>(DEFAULT_GENERAL);
   const [measurements, setMeasurements] = useState<Measurement[]>(SAMPLE_MEASUREMENTS);
+  const shift = useShiftStatus();
+  const locked = shift.status !== "borrador";
 
   const activeSpec = useMemo(
     () => PRODUCT_SPEC_MAP[info.fabricacion] ?? PRODUCT_SPEC_MAP["PHR01"],
@@ -73,18 +77,19 @@ function ControlCalidad() {
   return (
     <AppLayout title="Control de Calidad · Registro de Producción">
       <div className="space-y-5">
+        <ShiftStatusBar />
         <StepperWizard steps={STEPS} current={step} onGo={setStep} />
 
         {step === 1 && (
           <div className="space-y-5">
             <KPIGrid info={infoView} />
-            <GeneralInfoForm value={infoView} onChange={setInfo} />
+            <GeneralInfoForm value={infoView} onChange={setInfo} locked={locked} />
           </div>
         )}
 
         {step === 2 && (
           <div className="space-y-5">
-            <QualityVariableTable variables={specVars} productCode={activeSpec.code} />
+            <QualityVariableTable variables={specVars} productCode={activeSpec.code} locked={locked} />
             <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 text-xs text-foreground/80">
               Los valores capturados en el paso 3 se evaluarán automáticamente contra estos objetivos. Las celdas fuera
               de rango se marcarán en rojo, cerca del límite en amarillo y dentro del rango en verde.
@@ -95,7 +100,7 @@ function ControlCalidad() {
         {step === 3 && (
           <div className="space-y-5">
             <AlertPanel alerts={alerts} />
-            <MeasurementTable rows={measurements} onChange={setMeasurements} operadorTurno={info.operador} turno={info.turno} />
+            <MeasurementTable rows={measurements} onChange={setMeasurements} operadorTurno={info.operador} turno={info.turno} locked={locked} />
           </div>
         )}
 

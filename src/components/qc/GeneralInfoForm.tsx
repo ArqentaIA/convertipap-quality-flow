@@ -27,12 +27,13 @@ const FIELDS: { key: keyof GeneralInfo; label: string; type?: string; col?: numb
 ];
 
 export function GeneralInfoForm({
-  value, onChange,
-}: { value: GeneralInfo; onChange: (v: GeneralInfo) => void }) {
+  value, onChange, locked = false,
+}: { value: GeneralInfo; onChange: (v: GeneralInfo) => void; locked?: boolean }) {
   const session = useSession();
   const isDireccion = session.role === "direccion";
 
   const set = <K extends keyof GeneralInfo>(k: K, v: GeneralInfo[K]) => {
+    if (locked) return;
     if (k === "turno") {
       const turno = v as Shift;
       const equipo = getShiftAssignment(turno);
@@ -58,7 +59,12 @@ export function GeneralInfoForm({
         )}
       </div>
 
-      <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <fieldset disabled={locked} className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4 disabled:opacity-90">
+        {locked && (
+          <div className="md:col-span-2 lg:col-span-4 -mb-1 inline-flex items-center gap-1.5 rounded-md border border-success/40 bg-success/10 px-2.5 py-1.5 text-[11px] font-semibold text-success">
+            <Lock className="h-3 w-3" /> Turno cerrado · campos en solo lectura
+          </div>
+        )}
         {FIELDS.map((f) => {
           const lockedByRoster = ROSTER_FIELDS.has(f.key) && !isDireccion;
           const isComputed = f.key === "cumplimiento";
@@ -135,7 +141,7 @@ export function GeneralInfoForm({
             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
-      </div>
+      </fieldset>
     </div>
   );
 }

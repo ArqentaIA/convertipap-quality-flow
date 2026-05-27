@@ -48,11 +48,13 @@ export function MeasurementTable({
   onChange,
   operadorTurno,
   turno,
+  locked = false,
 }: {
   rows: Measurement[];
   onChange: (rows: Measurement[]) => void;
   operadorTurno: string;
   turno: string;
+  locked?: boolean;
 }) {
   const specMap = useMemo(() => Object.fromEntries(QUALITY_VARIABLES.map((q) => [q.key, q])), []);
   const session = useSession();
@@ -63,7 +65,7 @@ export function MeasurementTable({
     !!session.user &&
     session.user.trim().toLowerCase() === operadorTurno.trim().toLowerCase();
   const isDireccion = session.role === "direccion";
-  const canCapture = isOperadorTurno || isDireccion;
+  const canCapture = !locked && (isOperadorTurno || isDireccion);
 
   const setRow = (id: string, patch: Partial<Measurement>) => {
     if (!canCapture) return;
@@ -149,7 +151,12 @@ export function MeasurementTable({
         </div>
       </div>
 
-      {!canCapture && (
+      {locked ? (
+        <div className="border-b border-success/40 bg-success/10 px-5 py-2.5 text-xs font-medium text-success">
+          <Lock className="mr-1.5 inline h-3 w-3" />
+          Turno cerrado. Mediciones en solo lectura. Para modificar utiliza el flujo de corrección auditada.
+        </div>
+      ) : !canCapture && (
         <div className="border-b border-warning/40 bg-warning/10 px-5 py-2.5 text-xs text-foreground">
           Solo el operador en turno (<span className="font-semibold">{operadorTurno || "—"}</span>) puede capturar mediciones.
           Inicia sesión para habilitar la captura.

@@ -5,9 +5,11 @@ import { Lock, Unlock, ShieldCheck } from "lucide-react";
 export function QualityVariableTable({
   variables,
   productCode,
-}: { variables: QualityVariable[]; productCode?: string }) {
+  locked = false,
+}: { variables: QualityVariable[]; productCode?: string; locked?: boolean }) {
   const [rows, setRows] = useState<QualityVariable[]>(variables);
-  const [unlocked, setUnlocked] = useState(false);
+  const [unlocked, setUnlockedRaw] = useState(false);
+  const setUnlocked = (v: boolean) => setUnlockedRaw(locked ? false : v);
   const [showAuth, setShowAuth] = useState(false);
 
   useEffect(() => {
@@ -16,7 +18,7 @@ export function QualityVariableTable({
   }, [variables, productCode]);
 
   const update = (i: number, field: keyof QualityVariable, v: string) => {
-    if (!unlocked) return;
+    if (!unlocked || locked) return;
     setRows((rs) => rs.map((r, idx) => (idx === i ? { ...r, [field]: field === "label" || field === "unit" || field === "tolerance" || field === "key" ? v : Number(v) } : r)));
   };
   const allValid = rows.every((r) => r.min < r.objective && r.objective < r.max);
@@ -39,7 +41,11 @@ export function QualityVariableTable({
           <span className={`text-xs font-medium ${allValid ? "text-success" : "text-destructive"}`}>
             {allValid ? "Especificación válida" : "Revisa rangos: min < objetivo < máx"}
           </span>
-          {unlocked ? (
+          {locked ? (
+            <span className="inline-flex items-center gap-1.5 rounded-md border border-success/40 bg-success/10 px-2.5 py-1 text-[11px] font-semibold text-success">
+              <Lock className="h-3 w-3" /> Turno cerrado · solo lectura
+            </span>
+          ) : unlocked ? (
             <button
               onClick={() => { setRows(variables); setUnlocked(false); }}
               className="inline-flex items-center gap-1.5 rounded-md border border-warning/40 bg-warning/10 px-3 py-1.5 text-xs font-semibold text-warning hover:bg-warning/20"
