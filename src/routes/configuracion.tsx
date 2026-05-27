@@ -259,7 +259,10 @@ function RosterCard({ maquina }: { maquina: string }) {
 }
 
 function CEOReportPreview({ onClose }: { onClose: () => void }) {
-  const fecha = new Date().toLocaleDateString("es-MX", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+  const now = new Date();
+  const fecha = now.toLocaleDateString("es-MX", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+  const hora = now.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", hour12: true });
+  const planta = "Planta Tlaxcala";
   const maquinas = [
     { id: "MP-04", estado: "Operando", eficiencia: 92.4, paro: "00:12", cumplimiento: 96.1 },
     { id: "MP-05", estado: "Operando", eficiencia: 88.7, paro: "00:35", cumplimiento: 94.3 },
