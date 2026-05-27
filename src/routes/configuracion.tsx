@@ -8,12 +8,37 @@ import type { Shift } from "@/lib/qc-data";
 
 export const Route = createFileRoute("/configuracion")({ component: ConfigPage });
 
+const MAQUINAS = ["MP-04", "MP-05", "MP-06", "MP-07"] as const;
+type Maquina = typeof MAQUINAS[number];
+
 function ConfigPage() {
+  const [maquina, setMaquina] = useState<Maquina>("MP-04");
+
   return (
     <AppLayout title="Configuración del sistema">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card p-4 shadow-sm">
+        <div>
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-primary">Configuración por máquina</div>
+          <p className="text-xs text-muted-foreground">Selecciona la máquina para editar sus parámetros, operadores y notificaciones.</p>
+        </div>
+        <div className="inline-flex rounded-lg border border-border bg-background p-1 shadow-sm">
+          {MAQUINAS.map((m) => (
+            <button
+              key={m}
+              onClick={() => setMaquina(m)}
+              className={`rounded-md px-3 py-1.5 text-xs font-semibold transition ${
+                maquina === m ? "bg-primary text-primary-foreground shadow" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {m}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
-          <Card title="Parámetros generales" desc="Aplica a todas las plantas">
+          <Card title="Parámetros generales" desc={`Aplican a la máquina ${maquina}`}>
             <Field label="Tolerancia de advertencia (% del rango)" value="10" suffix="%" />
             <Field label="Hora de corte turno 1" value="07:00" />
             <Field label="Hora de corte turno 2" value="15:00" />
@@ -21,12 +46,12 @@ function ConfigPage() {
             <Field label="Frecuencia de muestreo sugerida" value="30" suffix="min" />
           </Card>
 
-          <RosterCard />
+          <RosterCard maquina={maquina} />
         </div>
 
 
         <div className="space-y-6">
-          <Card title="Notificaciones" desc="Alertas automáticas">
+          <Card title="Notificaciones" desc={`Alertas automáticas · ${maquina}`}>
             <Toggle label="Alerta por valor fuera de rango" on />
             <Toggle label="Resumen diario por correo" on />
             <Toggle label="Notificar no conformidades a supervisor" on />
@@ -89,7 +114,7 @@ function Toggle({ label, on }: { label: string; on?: boolean }) {
   );
 }
 
-function RosterCard() {
+function RosterCard({ maquina }: { maquina: string }) {
   const session = useSession();
   const isDireccion = session.role === "direccion";
   const roster = useSyncExternalStore(subscribeRoster, getRoster, getRoster);
@@ -115,7 +140,7 @@ function RosterCard() {
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-            <Users className="h-4 w-4" /> Operadores por turno
+            <Users className="h-4 w-4" /> Operadores por turno · <span className="text-primary">{maquina}</span>
           </h3>
           <p className="text-xs text-muted-foreground">
             Se asignan automáticamente al seleccionar turno en Control de Calidad.
