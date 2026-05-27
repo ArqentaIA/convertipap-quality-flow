@@ -4,24 +4,32 @@ import {
   ResponsiveContainer,
   LineChart, Line,
   BarChart, Bar,
-  RadialBarChart, RadialBar,
   XAxis, YAxis, Tooltip, CartesianGrid, Legend,
   PieChart, Pie, Cell,
 } from "recharts";
 import {
-  ArrowRight, Factory, ClipboardCheck, AlertTriangle, Gauge,
-  TrendingUp, TrendingDown, Activity, Target,
+  ArrowRight, Factory, AlertTriangle, Gauge,
+  TrendingUp, TrendingDown, Activity, Target, Check,
 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/")({ component: Dashboard });
 
-type Rango = "dia" | "semana" | "mes";
+type Rango = "dia" | "semana" | "mes" | "año" | "custom";
 
 const MAQUINAS = ["MP-04", "MP-05", "MP-06", "MP-07"] as const;
 
+type PuntoSerie = {
+  label: string;
+  cumplimiento: Record<string, number>;
+  rollos: Record<string, number>;
+  oee: Record<string, number>;
+};
+
 // Datos simulados por rango y máquina
-const DATA: Record<Rango, { label: string; cumplimiento: Record<string, number>; rollos: Record<string, number>; oee: Record<string, number> }[]> = {
+const DATA: Record<Exclude<Rango, "custom" | "año">, PuntoSerie[]> = {
   dia: [
     { label: "00h", cumplimiento: { "MP-04": 88, "MP-05": 91, "MP-06": 84, "MP-07": 89 }, rollos: { "MP-04": 2, "MP-05": 3, "MP-06": 2, "MP-07": 2 }, oee: { "MP-04": 82, "MP-05": 88, "MP-06": 70, "MP-07": 84 } },
     { label: "04h", cumplimiento: { "MP-04": 90, "MP-05": 93, "MP-06": 80, "MP-07": 91 }, rollos: { "MP-04": 3, "MP-05": 3, "MP-06": 2, "MP-07": 3 }, oee: { "MP-04": 85, "MP-05": 90, "MP-06": 68, "MP-07": 86 } },
@@ -47,6 +55,40 @@ const DATA: Record<Rango, { label: string; cumplimiento: Record<string, number>;
   ],
 };
 
+const MESES = [
+  "Ene", "Feb", "Mar", "Abr", "May", "Jun",
+  "Jul", "Ago", "Sep", "Oct", "Nov", "Dic",
+] as const;
+
+// Datos simulados por mes del año (12 puntos)
+const DATA_AÑO: PuntoSerie[] = MESES.map((m, i) => {
+  // pequeña variación determinista por mes para que se vea natural
+  const base = 85 + ((i * 7) % 9);
+  const oeeBase = 80 + ((i * 5) % 10);
+  const rollosBase = 520 + ((i * 37) % 180);
+  return {
+    label: m,
+    cumplimiento: {
+      "MP-04": base + 2,
+      "MP-05": base + 4,
+      "MP-06": base - 6,
+      "MP-07": base + 1,
+    },
+    rollos: {
+      "MP-04": rollosBase,
+      "MP-05": rollosBase + 90,
+      "MP-06": Math.round(rollosBase * 0.65),
+      "MP-07": rollosBase - 20,
+    },
+    oee: {
+      "MP-04": oeeBase + 3,
+      "MP-05": oeeBase + 6,
+      "MP-06": oeeBase - 8,
+      "MP-07": oeeBase + 2,
+    },
+  };
+});
+
 const NO_CONFORMIDADES = [
   { name: "Humedad", value: 18 },
   { name: "Peso base", value: 12 },
@@ -66,7 +108,17 @@ const PIE_COLORS = ["hsl(330,75%,55%)", "hsl(40,90%,55%)", "hsl(210,75%,50%)", "
 
 function Dashboard() {
   const [rango, setRango] = useState<Rango>("dia");
-  const serie = DATA[rango];
+  // meses seleccionados para los modos "año" y "custom" (0..11)
+  const [mesesSel, setMesesSel] = useState<number[]>(MESES.map((_, i) => i));
+
+  const serie: PuntoSerie[] = useMemo(() => {
+    if (rango === "dia" || rango === "semana" || rango === "mes") {
+      return DATA[rango];
+    }
+    // año / custom -> filtramos los meses seleccionados
+    const sel = mesesSel.length ? mesesSel : MESES.map((_, i) => i);
+    return DATA_AÑO.filter((_, i) => sel.includes(i));
+  }, [rango, mesesSel]);
 
   // Datos derivados
   const cumplimientoData = serie.map(d => ({ label: d.label, ...d.cumplimiento }));
@@ -74,9 +126,10 @@ function Dashboard() {
 
   const promedios = useMemo(() => {
     return MAQUINAS.map(m => {
-      const c = serie.reduce((a, d) => a + d.cumplimiento[m], 0) / serie.length;
+      const n = Math.max(serie.length, 1);
+      const c = serie.reduce((a, d) => a + d.cumplimiento[m], 0) / n;
       const r = serie.reduce((a, d) => a + d.rollos[m], 0);
-      const o = serie.reduce((a, d) => a + d.oee[m], 0) / serie.length;
+      const o = serie.reduce((a, d) => a + d.oee[m], 0) / n;
       return { maquina: m, cumplimiento: +c.toFixed(1), rollos: r, oee: +o.toFixed(1) };
     });
   }, [serie]);
@@ -85,12 +138,6 @@ function Dashboard() {
   const promCumpl = +(promedios.reduce((a, p) => a + p.cumplimiento, 0) / promedios.length).toFixed(1);
   const promOEE = +(promedios.reduce((a, p) => a + p.oee, 0) / promedios.length).toFixed(1);
   const totalNC = NO_CONFORMIDADES.reduce((a, n) => a + n.value, 0);
-
-  const oeeRadial = promedios.map((p, i) => ({
-    name: p.maquina,
-    value: p.oee,
-    fill: COLORS_MAQ[p.maquina],
-  }));
 
   return (
     <AppLayout title="Dashboard · Calidad y Producción">
@@ -105,8 +152,13 @@ function Dashboard() {
                 Planta Tlaxcala · 4 máquinas monitoreadas · Última sincronización hace 2 min.
               </p>
             </div>
-            <div className="flex items-center gap-3">
-              <RangoSelector rango={rango} setRango={setRango} />
+            <div className="flex flex-wrap items-center gap-3">
+              <RangoSelector
+                rango={rango}
+                setRango={setRango}
+                mesesSel={mesesSel}
+                setMesesSel={setMesesSel}
+              />
               <Link
                 to="/control-calidad"
                 className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm hover:opacity-90"
@@ -120,7 +172,7 @@ function Dashboard() {
 
         {/* Tendencia cumplimiento por máquina */}
         <div className="grid grid-cols-1 gap-6">
-          <Card title="Cumplimiento por máquina" subtitle={`Tendencia · ${rangoLabel(rango)} · meta 90%`}>
+          <Card title="Cumplimiento por máquina" subtitle={`Tendencia · ${rangoLabel(rango, mesesSel)} · meta 90%`}>
             <div className="h-72">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={cumplimientoData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
@@ -141,7 +193,7 @@ function Dashboard() {
 
         {/* Rollos por máquina + NC */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          <Card className="lg:col-span-2" title="Rollos producidos por máquina" subtitle={rangoLabel(rango)}>
+          <Card className="lg:col-span-2" title="Rollos producidos por máquina" subtitle={rangoLabel(rango, mesesSel)}>
             <div className="h-72">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={rollosData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }} barCategoryGap="20%" barGap={4}>
@@ -228,29 +280,125 @@ function Dashboard() {
 }
 
 
-function rangoLabel(r: Rango) {
-  return r === "dia" ? "Hoy" : r === "semana" ? "Últimos 7 días" : "Mes en curso";
+function rangoLabel(r: Rango, mesesSel: number[]) {
+  if (r === "dia") return "Hoy";
+  if (r === "semana") return "Últimos 7 días";
+  if (r === "mes") return "Mes en curso";
+  if (r === "año") return `Año en curso (${new Date().getFullYear()})`;
+  // custom
+  if (mesesSel.length === 0) return "Sin meses seleccionados";
+  if (mesesSel.length === 12) return "Todo el año";
+  if (mesesSel.length <= 3) return mesesSel.map(i => MESES[i]).join(", ");
+  return `${mesesSel.length} meses seleccionados`;
 }
 
-function RangoSelector({ rango, setRango }: { rango: Rango; setRango: (r: Rango) => void }) {
+function RangoSelector({
+  rango,
+  setRango,
+  mesesSel,
+  setMesesSel,
+}: {
+  rango: Rango;
+  setRango: (r: Rango) => void;
+  mesesSel: number[];
+  setMesesSel: (m: number[]) => void;
+}) {
   const opts: { v: Rango; label: string }[] = [
     { v: "dia", label: "Día" },
     { v: "semana", label: "Semana" },
     { v: "mes", label: "Mes" },
+    { v: "año", label: "Año" },
   ];
+
+  const toggleMes = (i: number) => {
+    if (mesesSel.includes(i)) setMesesSel(mesesSel.filter(x => x !== i));
+    else setMesesSel([...mesesSel, i].sort((a, b) => a - b));
+  };
+
   return (
-    <div className="inline-flex rounded-lg border border-border bg-background p-1 shadow-sm">
-      {opts.map(o => (
-        <button
-          key={o.v}
-          onClick={() => setRango(o.v)}
-          className={`rounded-md px-3 py-1.5 text-xs font-semibold transition ${
-            rango === o.v ? "bg-primary text-primary-foreground shadow" : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          {o.label}
-        </button>
-      ))}
+    <div className="flex flex-wrap items-center gap-2">
+      <div className="inline-flex rounded-lg border border-border bg-background p-1 shadow-sm">
+        {opts.map(o => (
+          <button
+            key={o.v}
+            onClick={() => {
+              setRango(o.v);
+              if (o.v === "año") setMesesSel(MESES.map((_, i) => i));
+            }}
+            className={`rounded-md px-3 py-1.5 text-xs font-semibold transition ${
+              rango === o.v ? "bg-primary text-primary-foreground shadow" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {o.label}
+          </button>
+        ))}
+      </div>
+
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setRango("custom")}
+            className={`h-[34px] text-xs font-semibold ${rango === "custom" ? "border-primary text-primary" : ""}`}
+          >
+            Meses
+            {rango === "custom" && mesesSel.length < 12 && (
+              <span className="ml-1.5 rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] text-primary">
+                {mesesSel.length}
+              </span>
+            )}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent align="end" className="w-64 p-3">
+          <div className="mb-2 flex items-center justify-between">
+            <span className="text-xs font-semibold text-foreground">Selecciona meses</span>
+            <div className="flex gap-1">
+              <button
+                onClick={() => {
+                  setMesesSel(MESES.map((_, i) => i));
+                  setRango("custom");
+                }}
+                className="text-[10px] font-semibold text-primary hover:underline"
+              >
+                Todos
+              </button>
+              <span className="text-[10px] text-muted-foreground">·</span>
+              <button
+                onClick={() => {
+                  setMesesSel([]);
+                  setRango("custom");
+                }}
+                className="text-[10px] font-semibold text-muted-foreground hover:underline"
+              >
+                Ninguno
+              </button>
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-1.5">
+            {MESES.map((m, i) => {
+              const active = mesesSel.includes(i);
+              return (
+                <button
+                  key={m}
+                  onClick={() => {
+                    toggleMes(i);
+                    setRango("custom");
+                  }}
+                  className={`flex items-center justify-center gap-1 rounded-md border px-2 py-1.5 text-xs font-medium transition ${
+                    active
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border bg-background text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {active && <Check className="h-3 w-3" />}
+                  {m}
+                </button>
+              );
+            })}
+          </div>
+        </PopoverContent>
+      </Popover>
     </div>
   );
 }
