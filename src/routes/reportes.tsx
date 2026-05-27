@@ -119,7 +119,7 @@ async function urlToDataURL(url: string): Promise<string | null> {
   }
 }
 
-async function descargarPDF(nombre: string, freq: string) {
+async function descargarPDF(nombre: string, freq: string, datasetKey?: string) {
   const [{ default: jsPDF }, autoTableMod] = await Promise.all([
     import("jspdf"),
     import("jspdf-autotable"),
