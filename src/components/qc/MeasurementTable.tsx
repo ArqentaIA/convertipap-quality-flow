@@ -48,11 +48,13 @@ export function MeasurementTable({
   onChange,
   operadorTurno,
   turno,
+  locked = false,
 }: {
   rows: Measurement[];
   onChange: (rows: Measurement[]) => void;
   operadorTurno: string;
   turno: string;
+  locked?: boolean;
 }) {
   const specMap = useMemo(() => Object.fromEntries(QUALITY_VARIABLES.map((q) => [q.key, q])), []);
   const session = useSession();
@@ -63,7 +65,7 @@ export function MeasurementTable({
     !!session.user &&
     session.user.trim().toLowerCase() === operadorTurno.trim().toLowerCase();
   const isDireccion = session.role === "direccion";
-  const canCapture = isOperadorTurno || isDireccion;
+  const canCapture = !locked && (isOperadorTurno || isDireccion);
 
   const setRow = (id: string, patch: Partial<Measurement>) => {
     if (!canCapture) return;
