@@ -55,13 +55,14 @@ const NO_CONFORMIDADES = [
 ];
 
 const COLORS_MAQ: Record<string, string> = {
-  "MP-04": "hsl(180, 65%, 40%)",
+  "MP-04": "hsl(330, 75%, 55%)",
   "MP-05": "hsl(210, 75%, 50%)",
   "MP-06": "hsl(40, 90%, 55%)",
   "MP-07": "hsl(150, 55%, 45%)",
 };
 
-const PIE_COLORS = ["hsl(180,65%,40%)", "hsl(40,90%,55%)", "hsl(210,75%,50%)", "hsl(0,70%,55%)"];
+const PIE_COLORS = ["hsl(330,75%,55%)", "hsl(40,90%,55%)", "hsl(210,75%,50%)", "hsl(0,70%,55%)"];
+
 
 function Dashboard() {
   const [rango, setRango] = useState<Rango>("dia");
@@ -143,14 +144,18 @@ function Dashboard() {
           <Card className="lg:col-span-2" title="Rollos producidos por máquina" subtitle={rangoLabel(rango)}>
             <div className="h-72">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={rollosData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <BarChart data={rollosData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }} barCategoryGap="20%" barGap={4}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
                   <XAxis dataKey="label" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
-                  <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
-                  <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
+                  <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" allowDecimals={false} />
+                  <Tooltip
+                    cursor={{ fill: "hsl(var(--muted) / 0.4)" }}
+                    contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
+                    formatter={(v: number, name: string) => [`${v} rollos`, name]}
+                  />
                   <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
                   {MAQUINAS.map(m => (
-                    <Bar key={m} dataKey={m} stackId="r" fill={COLORS_MAQ[m]} radius={[4, 4, 0, 0]} />
+                    <Bar key={m} dataKey={m} fill={COLORS_MAQ[m]} radius={[4, 4, 0, 0]} maxBarSize={28} />
                   ))}
                 </BarChart>
               </ResponsiveContainer>
