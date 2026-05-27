@@ -29,15 +29,15 @@ const ESTATUS_LABEL: Record<RollReportData["estatus"], { txt: string; color: str
   NC: { txt: "NO CONFORME", color: "#dc2626" },
 };
 
+const TRACEABILITY_BASE_URL = "https://www.convertipap.site";
+
 /**
  * Build the canonical traceability URL embedded in the QR code.
  * Backend persistence is pending; this URL will resolve to the registry
  * detail page when the API is connected.
  */
 export function buildTraceUrl(folio: string): string {
-  const base =
-    typeof window !== "undefined" ? window.location.origin : "https://convertipap.app";
-  return `${base}/t/${encodeURIComponent(folio)}`;
+  return `${TRACEABILITY_BASE_URL}/t/${encodeURIComponent(folio)}`;
 }
 
 export async function printRollReport(data: RollReportData) {
