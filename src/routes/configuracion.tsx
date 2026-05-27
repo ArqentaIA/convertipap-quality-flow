@@ -44,9 +44,9 @@ function ConfigPage() {
         <div className="space-y-6 lg:col-span-2">
           <Card title="Parámetros generales" desc={`Aplican a la máquina ${maquina}`}>
             <Field label="Tolerancia de advertencia (% del rango)" value="10" suffix="%" />
-            <Field label="Hora de corte turno 1" value="07:00" />
-            <Field label="Hora de corte turno 2" value="15:00" />
-            <Field label="Hora de corte turno 3" value="23:00" />
+            <ShiftRange label="Turno 1" inicio="07:00" fin="15:00" />
+            <ShiftRange label="Turno 2" inicio="15:00" fin="23:00" />
+            <ShiftRange label="Turno 3" inicio="23:00" fin="07:00" />
             <Field label="Frecuencia de muestreo sugerida" value="30" suffix="min" />
           </Card>
 
@@ -145,6 +145,30 @@ function Field({ label, value, suffix }: { label: string; value: string; suffix?
           className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
         />
         {suffix && <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">{suffix}</span>}
+      </div>
+    </div>
+  );
+}
+
+function ShiftRange({ label, inicio, fin }: { label: string; inicio: string; fin: string }) {
+  return (
+    <div className="grid grid-cols-[1fr_1fr_1fr] items-center gap-3">
+      <label className="text-xs text-muted-foreground">{label}</label>
+      <div className="relative">
+        <input
+          type="time"
+          defaultValue={inicio}
+          className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+        />
+        <span className="pointer-events-none absolute -top-2 left-2 bg-card px-1 text-[9px] uppercase tracking-wider text-muted-foreground">Inicio</span>
+      </div>
+      <div className="relative">
+        <input
+          type="time"
+          defaultValue={fin}
+          className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+        />
+        <span className="pointer-events-none absolute -top-2 left-2 bg-card px-1 text-[9px] uppercase tracking-wider text-muted-foreground">Término</span>
       </div>
     </div>
   );
