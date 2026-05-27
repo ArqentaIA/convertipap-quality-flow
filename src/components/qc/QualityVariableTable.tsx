@@ -5,9 +5,11 @@ import { Lock, Unlock, ShieldCheck } from "lucide-react";
 export function QualityVariableTable({
   variables,
   productCode,
-}: { variables: QualityVariable[]; productCode?: string }) {
+  locked = false,
+}: { variables: QualityVariable[]; productCode?: string; locked?: boolean }) {
   const [rows, setRows] = useState<QualityVariable[]>(variables);
-  const [unlocked, setUnlocked] = useState(false);
+  const [unlocked, setUnlockedRaw] = useState(false);
+  const setUnlocked = (v: boolean) => setUnlockedRaw(locked ? false : v);
   const [showAuth, setShowAuth] = useState(false);
 
   useEffect(() => {
