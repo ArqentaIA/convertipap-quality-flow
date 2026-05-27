@@ -1,9 +1,20 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { FileBarChart2, Download, FileSpreadsheet, TrendingUp, TrendingDown } from "lucide-react";
-
+import logoUrl from "@/assets/logo-convertipap.png";
 
 export const Route = createFileRoute("/reportes")({ component: ReportesPage });
+
+// Metadatos ejecutivos comunes a todos los reportes
+const META_EMPRESA = {
+  empresa: "ConvertiPap S.A. de C.V.",
+  planta: "Planta Tlaxcala",
+  direccion: "Parque Industrial Xicohténcatl, Tlaxcala, México",
+  responsable: "Ing. Laura Méndez · Gerente de Calidad",
+  operador: "Carlos Ramírez · Supervisor de turno",
+  sistema: "ConvertiPap QMS · v1.0",
+};
+
 
 // Datasets simulados por reporte (estructura tipo BD, listos para exportar a XLSX)
 const DATASETS: Record<string, { sheet: string; rows: Record<string, string | number>[] }[]> = {
@@ -90,6 +101,155 @@ async function descargarXLSX(nombre: string) {
   XLSX.writeFile(wb, `${safe}_${fecha}.xlsx`);
 }
 
+async function urlToDataURL(url: string): Promise<string | null> {
+  try {
+    const res = await fetch(url);
+    const blob = await res.blob();
+    return await new Promise((resolve) => {
+      const r = new FileReader();
+      r.onloadend = () => resolve(typeof r.result === "string" ? r.result : null);
+      r.onerror = () => resolve(null);
+      r.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
+}
+
+async function descargarPDF(nombre: string, freq: string) {
+  const [{ default: jsPDF }, autoTableMod] = await Promise.all([
+    import("jspdf"),
+    import("jspdf-autotable"),
+  ]);
+  const autoTable = (autoTableMod as { default: (doc: unknown, opts: unknown) => void }).default;
+
+  const doc = new jsPDF({ unit: "pt", format: "letter" });
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const M = 40;
+
+  // Encabezado con logotipo
+  const logoData = await urlToDataURL(logoUrl);
+  if (logoData) {
+    try {
+      doc.addImage(logoData, "PNG", M, M, 90, 36);
+    } catch {
+      /* logo opcional */
+    }
+  }
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(14);
+  doc.setTextColor(20, 20, 30);
+  doc.text(META_EMPRESA.empresa, pageW - M, M + 14, { align: "right" });
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(110);
+  doc.text(META_EMPRESA.planta, pageW - M, M + 28, { align: "right" });
+  doc.text(META_EMPRESA.direccion, pageW - M, M + 40, { align: "right" });
+
+  doc.setDrawColor(220);
+  doc.setLineWidth(0.6);
+  doc.line(M, M + 56, pageW - M, M + 56);
+
+  // Título del reporte
+  doc.setTextColor(20, 20, 30);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(18);
+  doc.text(nombre, M, M + 84);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.setTextColor(110);
+  const fechaGen = new Date().toLocaleString("es-MX", { dateStyle: "long", timeStyle: "short" });
+  doc.text(`Reporte ${freq.toLowerCase()} · Generado: ${fechaGen}`, M, M + 100);
+
+  // Bloque de metadatos
+  autoTable(doc, {
+    startY: M + 120,
+    theme: "plain",
+    styles: { fontSize: 9, cellPadding: 4, textColor: [40, 40, 50] },
+    columnStyles: {
+      0: { fontStyle: "bold", textColor: [90, 90, 110], cellWidth: 110 },
+      1: { cellWidth: (pageW - M * 2) / 2 - 110 },
+      2: { fontStyle: "bold", textColor: [90, 90, 110], cellWidth: 110 },
+      3: { cellWidth: (pageW - M * 2) / 2 - 110 },
+    },
+    body: [
+      ["Responsable", META_EMPRESA.responsable, "Operador", META_EMPRESA.operador],
+      ["Planta", META_EMPRESA.planta, "Sistema origen", META_EMPRESA.sistema],
+      ["Frecuencia", freq, "Folio", `RPT-${Date.now().toString().slice(-8)}`],
+    ],
+  });
+
+  // Resumen ejecutivo
+  const lastY1 = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY;
+  doc.setFillColor(245, 247, 251);
+  doc.rect(M, lastY1 + 16, pageW - M * 2, 60, "F");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.setTextColor(60, 80, 140);
+  doc.text("Resumen ejecutivo", M + 12, lastY1 + 34);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(60);
+  const resumen = doc.splitTextToSize(
+    `Este reporte presenta los indicadores clave de "${nombre}" para la ${META_EMPRESA.planta}. ` +
+      `Los datos provienen del sistema ${META_EMPRESA.sistema} y han sido validados por el área de calidad. ` +
+      `Use el archivo XLSX adjunto para análisis detallado en base de datos.`,
+    pageW - M * 2 - 24,
+  );
+  doc.text(resumen, M + 12, lastY1 + 48);
+
+  // Datos
+  const hojas = DATASETS[nombre] ?? [{ sheet: "Datos", rows: [] }];
+  let cursorY = lastY1 + 96;
+
+  for (const h of hojas) {
+    if (cursorY > pageH - 120) {
+      doc.addPage();
+      cursorY = M;
+    }
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.setTextColor(20, 20, 30);
+    doc.text(h.sheet, M, cursorY);
+
+    const cols = h.rows.length ? Object.keys(h.rows[0]) : ["—"];
+    const head = [cols.map((c) => c.replace(/_/g, " ").replace(/\b\w/g, (m) => m.toUpperCase()))];
+    const body = h.rows.map((row) => cols.map((c) => String(row[c] ?? "")));
+
+    autoTable(doc, {
+      startY: cursorY + 8,
+      head,
+      body: body.length ? body : [["Sin datos"]],
+      styles: { fontSize: 8.5, cellPadding: 5 },
+      headStyles: { fillColor: [60, 80, 140], textColor: 255, fontStyle: "bold" },
+      alternateRowStyles: { fillColor: [248, 250, 253] },
+      margin: { left: M, right: M },
+    });
+    cursorY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 20;
+  }
+
+  // Pie de página
+  const total = doc.getNumberOfPages();
+  for (let i = 1; i <= total; i++) {
+    doc.setPage(i);
+    doc.setDrawColor(220);
+    doc.line(M, pageH - 40, pageW - M, pageH - 40);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(130);
+    doc.text(`${META_EMPRESA.empresa} · Documento confidencial`, M, pageH - 24);
+    doc.text(`Página ${i} de ${total}`, pageW - M, pageH - 24, { align: "right" });
+  }
+
+  const safe = nombre.replace(/[^a-z0-9]+/gi, "_").toLowerCase();
+  const fecha = new Date().toISOString().slice(0, 10);
+  doc.save(`${safe}_${fecha}.pdf`);
+}
+
 const TENDENCIA = [
   { dia: "Lun", cumpl: 88 },
   { dia: "Mar", cumpl: 91 },
@@ -172,7 +332,11 @@ function ReportesPage() {
                   <div className="text-[11px] text-muted-foreground">Frecuencia: {r.freq} · {r.formato}</div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium hover:bg-accent">
+                  <button
+                    onClick={() => descargarPDF(r.nombre, r.freq)}
+                    className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium hover:bg-accent"
+                    title="Descargar reporte ejecutivo en PDF"
+                  >
                     <Download className="h-3.5 w-3.5" /> Descargar
                   </button>
                   <button
