@@ -40,8 +40,9 @@ function ReportesPage() {
       <div className="space-y-6">
 
         <div className="rounded-xl border border-border bg-card shadow-sm">
-          <div className="border-b border-border p-5">
-            <h3 className="text-sm font-semibold text-foreground">Desempeño por planta</h3>
+          <div className="flex items-center gap-2 border-b border-border bg-primary/5 p-5">
+            <span className="h-5 w-1 rounded-full bg-primary" />
+            <h3 className="text-sm font-semibold text-primary">Desempeño por planta</h3>
           </div>
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-left text-[11px] uppercase tracking-wider text-muted-foreground">
