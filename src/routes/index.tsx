@@ -9,15 +9,13 @@ import {
 } from "recharts";
 import {
   ArrowRight, Factory, AlertTriangle, Gauge,
-  TrendingUp, TrendingDown, Activity, Target, Check,
+  TrendingUp, TrendingDown, Activity, Target,
 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Button } from "@/components/ui/button";
+import { RangoSelector, MESES, rangoLabel, type Rango } from "@/components/qc/RangoSelector";
 
 export const Route = createFileRoute("/")({ component: Dashboard });
 
-type Rango = "dia" | "semana" | "mes" | "año" | "custom";
 
 const MAQUINAS = ["MP-04", "MP-05", "MP-06", "MP-07"] as const;
 
