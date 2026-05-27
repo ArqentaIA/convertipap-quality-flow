@@ -257,9 +257,11 @@ function OperatorVisionPage() {
       <header className="relative border-b-2 border-slate-200 bg-white/80 backdrop-blur">
         <div className="flex items-center gap-6 px-8 py-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500 to-blue-700 text-white shadow-lg">
-              <Factory className="h-7 w-7" />
-            </div>
+            <img
+              src={logoConvertipap}
+              alt="Convertipap"
+              className="h-12 w-auto object-contain"
+            />
             <div>
               <div className="text-[10px] font-bold uppercase tracking-[0.25em] text-slate-500">
                 Convertipap · Operator Vision
@@ -270,6 +272,7 @@ function OperatorVisionPage() {
               </div>
             </div>
           </div>
+
 
           <div className="ml-auto grid grid-cols-5 gap-x-8 gap-y-1 text-sm">
             <HeaderField label="Producto" value={info.fabricacion} />
