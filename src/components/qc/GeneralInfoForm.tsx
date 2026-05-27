@@ -10,7 +10,7 @@ const ROSTER_FIELDS = new Set<keyof GeneralInfo>(["jefeMaquina", "operador", "pr
 const FIELDS: { key: keyof GeneralInfo; label: string; type?: string; col?: number; options?: string[] }[] = [
   { key: "plantId", label: "Planta", type: "plant", col: 2 },
   { key: "area", label: "Área" },
-  { key: "maquina", label: "Máquina" },
+  { key: "maquina", label: "Máquina", type: "select", options: ["MP-04", "MP-05", "MP-06", "MP-07"] },
   { key: "fabricacion", label: "Fabricación", type: "fabricacion" },
   { key: "jefeMaquina", label: "Jefe de Máquina" },
   { key: "operador", label: "Operador" },
