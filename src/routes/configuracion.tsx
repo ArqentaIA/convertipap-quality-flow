@@ -62,16 +62,32 @@ function ConfigPage() {
                 on
                 hint="Correo ejecutivo diario con producción total, estado de las 4 máquinas, eficiencia general, tiempo de paro, calidad, alertas críticas y resumen ejecutivo automático."
               />
-              <div className="mt-3 grid grid-cols-2 items-center gap-3">
-                <label className="text-xs text-muted-foreground">Hora de envío</label>
-                <input
-                  type="time"
-                  defaultValue="07:00"
-                  className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                />
+              <div className="mt-3 space-y-3">
+                <div className="grid grid-cols-[140px_1fr] items-center gap-3">
+                  <label className="text-xs text-muted-foreground">Hora de envío</label>
+                  <input
+                    type="time"
+                    defaultValue="07:00"
+                    className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  />
+                </div>
+                <div className="grid grid-cols-[140px_1fr] items-start gap-3">
+                  <label className="pt-1.5 text-xs text-muted-foreground">Destinatarios</label>
+                  <div>
+                    <input
+                      type="text"
+                      defaultValue="ceo@convertipap.com"
+                      placeholder="correo1@empresa.com, correo2@empresa.com"
+                      className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                    />
+                    <p className="mt-1 text-[10px] text-muted-foreground">
+                      Separa varios correos con coma. El reporte se enviará a todos los destinatarios listados.
+                    </p>
+                  </div>
+                </div>
               </div>
-              <p className="mt-2 text-[11px] text-muted-foreground">
-                El reporte se envía automáticamente al correo configurado del CEO.
+              <p className="mt-3 text-[11px] text-muted-foreground">
+                El reporte se envía automáticamente a los correos configurados.
               </p>
             </div>
           </Card>
