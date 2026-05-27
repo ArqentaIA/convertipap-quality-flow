@@ -144,14 +144,18 @@ function Dashboard() {
           <Card className="lg:col-span-2" title="Rollos producidos por máquina" subtitle={rangoLabel(rango)}>
             <div className="h-72">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={rollosData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <BarChart data={rollosData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }} barCategoryGap="20%" barGap={4}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
                   <XAxis dataKey="label" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
-                  <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
-                  <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
+                  <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" allowDecimals={false} />
+                  <Tooltip
+                    cursor={{ fill: "hsl(var(--muted) / 0.4)" }}
+                    contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
+                    formatter={(v: number, name: string) => [`${v} rollos`, name]}
+                  />
                   <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
                   {MAQUINAS.map(m => (
-                    <Bar key={m} dataKey={m} stackId="r" fill={COLORS_MAQ[m]} radius={[4, 4, 0, 0]} />
+                    <Bar key={m} dataKey={m} fill={COLORS_MAQ[m]} radius={[4, 4, 0, 0]} maxBarSize={28} />
                   ))}
                 </BarChart>
               </ResponsiveContainer>
