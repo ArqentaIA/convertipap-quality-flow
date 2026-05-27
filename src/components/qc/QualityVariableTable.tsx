@@ -18,7 +18,7 @@ export function QualityVariableTable({
   }, [variables, productCode]);
 
   const update = (i: number, field: keyof QualityVariable, v: string) => {
-    if (!unlocked) return;
+    if (!unlocked || locked) return;
     setRows((rs) => rs.map((r, idx) => (idx === i ? { ...r, [field]: field === "label" || field === "unit" || field === "tolerance" || field === "key" ? v : Number(v) } : r)));
   };
   const allValid = rows.every((r) => r.min < r.objective && r.objective < r.max);
