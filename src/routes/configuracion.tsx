@@ -5,6 +5,7 @@ import { Bell, Save, Lock, ShieldCheck, Users, Eye, X, Mail } from "lucide-react
 import { getRoster, subscribeRoster, updateShiftAssignment, type RosterEntry } from "@/lib/roster";
 import { useSession } from "@/lib/session";
 import type { Shift } from "@/lib/qc-data";
+import logoConvertipap from "@/assets/logo-convertipap.png";
 
 export const Route = createFileRoute("/configuracion")({ component: ConfigPage });
 
