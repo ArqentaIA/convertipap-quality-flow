@@ -1,8 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { AppLayout } from "@/components/layout/AppLayout";
-import { ShieldCheck, QrCode, Factory, User, Calendar, Package, Hash, Printer } from "lucide-react";
+import { ShieldCheck, QrCode, Factory, User, Calendar, Package, Hash } from "lucide-react";
 import { ReleaseBadge } from "@/components/qc/StatusBadge";
-import { printRollReport } from "@/lib/roll-report";
 import logoUrl from "@/assets/logo-convertipap.png";
 
 export const Route = createFileRoute("/t/$folio")({ component: TracePage });
@@ -74,11 +72,18 @@ function TracePage() {
   const rec = buildTraceRecord(folio);
 
   return (
-    <AppLayout title={`Trazabilidad · ${rec.folio}`}>
+    <div className="min-h-screen bg-background py-8 px-4">
       <div className="mx-auto max-w-3xl space-y-5">
+        <div className="flex items-center justify-center gap-3 pb-2">
+          <img src={logoUrl} alt="Convertipap" className="h-12 w-auto" />
+          <div className="text-center">
+            <div className="text-base font-bold text-foreground">Convertipap</div>
+            <div className="text-[11px] text-muted-foreground">Fábrica de papel tissue · Trazabilidad</div>
+          </div>
+        </div>
+
         <div className="rounded-xl border border-success/40 bg-success/5 p-4">
           <div className="flex items-center gap-3">
-            <img src={logoUrl} alt="Convertipap" className="h-10 w-auto rounded-sm bg-background p-1" />
             <ShieldCheck className="h-6 w-6 text-success" />
             <div>
               <div className="text-sm font-bold text-success">Documento auténtico</div>
@@ -135,29 +140,18 @@ function TracePage() {
             </table>
           </div>
 
-          <div className="mt-5 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-4">
+          <div className="mt-5 border-t border-border pt-4">
             <p className="text-[11px] text-muted-foreground">
               Este documento es la representación digital del registro interno y no puede modificarse. Cualquier corrección queda asentada en la bitácora auditada.
             </p>
-            <button
-              onClick={() => printRollReport({
-                folio: rec.folio, rollo: rec.rollo, maquina: rec.maquina, planta: rec.planta,
-                turno: rec.turno, operador: rec.operador, jefeMaquina: rec.jefeMaquina,
-                fecha: rec.fecha, hora: rec.hora, producto: rec.producto, estatus: rec.estatus,
-                metricas: rec.metricas, notas: `Validado por ${rec.validadoPor}`,
-              })}
-              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:opacity-90"
-            >
-              <Printer className="h-3.5 w-3.5" /> Reimprimir reporte
-            </button>
           </div>
         </div>
 
-        <div className="rounded-md border border-dashed border-border bg-muted/20 p-3 text-[11px] text-muted-foreground">
-          La información detallada se despliega únicamente al escanear el código QR y consultar el folio interno del sistema.
+        <div className="rounded-md border border-dashed border-border bg-muted/20 p-3 text-center text-[11px] text-muted-foreground">
+          Vista pública de trazabilidad · Solo lectura · No otorga acceso al sistema de control de calidad.
         </div>
       </div>
-    </AppLayout>
+    </div>
   );
 }
 
