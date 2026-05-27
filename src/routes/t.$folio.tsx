@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { ShieldCheck, QrCode, Factory, User, Calendar, Package, Hash, Printer } from "lucide-react";
 import { ReleaseBadge } from "@/components/qc/StatusBadge";
