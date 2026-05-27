@@ -16,6 +16,7 @@ import { Route as ControlCalidadRouteImport } from './routes/control-calidad'
 import { Route as ConfiguracionRouteImport } from './routes/configuracion'
 import { Route as CatalogosRouteImport } from './routes/catalogos'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as TFolioRouteImport } from './routes/t.$folio'
 import { Route as HistorialMaquinaRouteImport } from './routes/historial.$maquina'
 
 const UsuariosRoute = UsuariosRouteImport.update({
@@ -53,6 +54,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TFolioRoute = TFolioRouteImport.update({
+  id: '/t/$folio',
+  path: '/t/$folio',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const HistorialMaquinaRoute = HistorialMaquinaRouteImport.update({
   id: '/historial/$maquina',
   path: '/historial/$maquina',
@@ -68,6 +74,7 @@ export interface FileRoutesByFullPath {
   '/reportes': typeof ReportesRoute
   '/usuarios': typeof UsuariosRoute
   '/historial/$maquina': typeof HistorialMaquinaRoute
+  '/t/$folio': typeof TFolioRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -78,6 +85,7 @@ export interface FileRoutesByTo {
   '/reportes': typeof ReportesRoute
   '/usuarios': typeof UsuariosRoute
   '/historial/$maquina': typeof HistorialMaquinaRoute
+  '/t/$folio': typeof TFolioRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -89,6 +97,7 @@ export interface FileRoutesById {
   '/reportes': typeof ReportesRoute
   '/usuarios': typeof UsuariosRoute
   '/historial/$maquina': typeof HistorialMaquinaRoute
+  '/t/$folio': typeof TFolioRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -101,6 +110,7 @@ export interface FileRouteTypes {
     | '/reportes'
     | '/usuarios'
     | '/historial/$maquina'
+    | '/t/$folio'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -111,6 +121,7 @@ export interface FileRouteTypes {
     | '/reportes'
     | '/usuarios'
     | '/historial/$maquina'
+    | '/t/$folio'
   id:
     | '__root__'
     | '/'
@@ -121,6 +132,7 @@ export interface FileRouteTypes {
     | '/reportes'
     | '/usuarios'
     | '/historial/$maquina'
+    | '/t/$folio'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -132,6 +144,7 @@ export interface RootRouteChildren {
   ReportesRoute: typeof ReportesRoute
   UsuariosRoute: typeof UsuariosRoute
   HistorialMaquinaRoute: typeof HistorialMaquinaRoute
+  TFolioRoute: typeof TFolioRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -185,6 +198,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/t/$folio': {
+      id: '/t/$folio'
+      path: '/t/$folio'
+      fullPath: '/t/$folio'
+      preLoaderRoute: typeof TFolioRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/historial/$maquina': {
       id: '/historial/$maquina'
       path: '/historial/$maquina'
@@ -204,6 +224,7 @@ const rootRouteChildren: RootRouteChildren = {
   ReportesRoute: ReportesRoute,
   UsuariosRoute: UsuariosRoute,
   HistorialMaquinaRoute: HistorialMaquinaRoute,
+  TFolioRoute: TFolioRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
