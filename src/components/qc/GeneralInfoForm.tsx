@@ -59,7 +59,12 @@ export function GeneralInfoForm({
         )}
       </div>
 
-      <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <fieldset disabled={locked} className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4 disabled:opacity-90">
+        {locked && (
+          <div className="md:col-span-2 lg:col-span-4 -mb-1 inline-flex items-center gap-1.5 rounded-md border border-success/40 bg-success/10 px-2.5 py-1.5 text-[11px] font-semibold text-success">
+            <Lock className="h-3 w-3" /> Turno cerrado · campos en solo lectura
+          </div>
+        )}
         {FIELDS.map((f) => {
           const lockedByRoster = ROSTER_FIELDS.has(f.key) && !isDireccion;
           const isComputed = f.key === "cumplimiento";
