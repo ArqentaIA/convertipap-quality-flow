@@ -206,7 +206,7 @@ async function descargarPDF(nombre: string, freq: string, datasetKey?: string) {
   doc.text(resumen, M + 12, lastY1 + 48);
 
   // Datos
-  const hojas = DATASETS[nombre] ?? [{ sheet: "Datos", rows: [] }];
+  const hojas = DATASETS[datasetKey ?? nombre] ?? [{ sheet: "Datos", rows: [] }];
   let cursorY = lastY1 + 96;
 
   for (const h of hojas) {
