@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useSyncExternalStore, useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Bell, Save, Lock, ShieldCheck, Users } from "lucide-react";
+import { Bell, Save, Lock, ShieldCheck, Users, Eye, X, Mail } from "lucide-react";
 import { getRoster, subscribeRoster, updateShiftAssignment, type RosterEntry } from "@/lib/roster";
 import { useSession } from "@/lib/session";
 import type { Shift } from "@/lib/qc-data";
@@ -13,6 +13,9 @@ type Maquina = typeof MAQUINAS[number];
 
 function ConfigPage() {
   const [maquina, setMaquina] = useState<Maquina>("MP-04");
+  const [previewCEO, setPreviewCEO] = useState(false);
+
+
 
   return (
     <AppLayout title="Configuración del sistema">
@@ -86,11 +89,20 @@ function ConfigPage() {
                   </div>
                 </div>
               </div>
-              <p className="mt-3 text-[11px] text-muted-foreground">
-                El reporte se envía automáticamente a los correos configurados.
-              </p>
+              <div className="mt-3 flex items-center justify-between gap-3">
+                <p className="text-[11px] text-muted-foreground">
+                  El reporte se envía automáticamente a los correos configurados.
+                </p>
+                <button
+                  onClick={() => setPreviewCEO(true)}
+                  className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-primary/40 bg-background px-2.5 py-1.5 text-[11px] font-semibold text-primary hover:bg-primary/10"
+                >
+                  <Eye className="h-3.5 w-3.5" /> Previsualizar reporte
+                </button>
+              </div>
             </div>
           </Card>
+          {previewCEO && <CEOReportPreview onClose={() => setPreviewCEO(false)} />}
 
           <Card title="Preferencias regionales">
             <Field label="Zona horaria" value="America/Mexico_City" />
@@ -242,6 +254,125 @@ function RosterCard({ maquina }: { maquina: string }) {
           </>
         )}
       </div>
+    </div>
+  );
+}
+
+function CEOReportPreview({ onClose }: { onClose: () => void }) {
+  const fecha = new Date().toLocaleDateString("es-MX", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+  const maquinas = [
+    { id: "MP-04", estado: "Operando", eficiencia: 92.4, paro: "00:12", cumplimiento: 96.1 },
+    { id: "MP-05", estado: "Operando", eficiencia: 88.7, paro: "00:35", cumplimiento: 94.3 },
+    { id: "MP-06", estado: "Paro programado", eficiencia: 71.2, paro: "02:10", cumplimiento: 89.5 },
+    { id: "MP-07", estado: "Operando", eficiencia: 90.1, paro: "00:20", cumplimiento: 95.7 },
+  ];
+  const totalProd = 142.8;
+  const efGeneral = 85.6;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="relative max-h-[90vh] w-full max-w-3xl overflow-hidden rounded-xl bg-white shadow-2xl"
+      >
+        <div className="flex items-center justify-between border-b border-border bg-muted/30 px-5 py-3">
+          <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+            <Mail className="h-4 w-4 text-primary" /> Previsualización · Reporte CEO
+          </div>
+          <button onClick={onClose} className="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="max-h-[calc(90vh-52px)] overflow-y-auto bg-[#f5f6f8] p-6">
+          <div className="mx-auto max-w-2xl rounded-lg bg-white shadow-sm">
+            {/* Header */}
+            <div className="rounded-t-lg bg-gradient-to-r from-primary to-primary/80 px-6 py-5 text-primary-foreground">
+              <div className="text-[11px] uppercase tracking-wider opacity-90">Convertipap · Reporte Ejecutivo Diario</div>
+              <div className="mt-1 text-xl font-bold">Resumen de producción</div>
+              <div className="mt-1 text-xs opacity-90 capitalize">{fecha}</div>
+            </div>
+
+            {/* KPIs */}
+            <div className="grid grid-cols-3 gap-3 border-b border-gray-200 p-5">
+              <KPI label="Producción total" value={`${totalProd} t`} />
+              <KPI label="Eficiencia general" value={`${efGeneral}%`} />
+              <KPI label="Tiempo de paro" value="03:17 h" />
+            </div>
+
+            {/* Estado de máquinas */}
+            <div className="border-b border-gray-200 p-5">
+              <div className="mb-3 text-[11px] font-bold uppercase tracking-wider text-gray-500">Estado de las 4 máquinas</div>
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-gray-200 text-left text-[10px] uppercase tracking-wider text-gray-500">
+                    <th className="py-2">Máquina</th>
+                    <th className="py-2">Estado</th>
+                    <th className="py-2 text-right">Eficiencia</th>
+                    <th className="py-2 text-right">Paro</th>
+                    <th className="py-2 text-right">Calidad</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {maquinas.map((m) => (
+                    <tr key={m.id} className="border-b border-gray-100 last:border-0">
+                      <td className="py-2 font-semibold text-gray-900">{m.id}</td>
+                      <td className="py-2">
+                        <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                          m.estado === "Operando" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"
+                        }`}>{m.estado}</span>
+                      </td>
+                      <td className="py-2 text-right tabular-nums text-gray-700">{m.eficiencia}%</td>
+                      <td className="py-2 text-right tabular-nums text-gray-700">{m.paro}</td>
+                      <td className="py-2 text-right tabular-nums text-gray-700">{m.cumplimiento}%</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Alertas */}
+            <div className="border-b border-gray-200 p-5">
+              <div className="mb-3 text-[11px] font-bold uppercase tracking-wider text-gray-500">Alertas críticas</div>
+              <ul className="space-y-2 text-xs text-gray-700">
+                <li className="flex gap-2 rounded-md bg-red-50 p-2.5 text-red-700">
+                  <span>•</span>
+                  <span><b>MP-06</b> — Paro programado prolongado (02:10 h). Afecta cumplimiento del día.</span>
+                </li>
+                <li className="flex gap-2 rounded-md bg-amber-50 p-2.5 text-amber-800">
+                  <span>•</span>
+                  <span><b>MP-05</b> — 3 rollos no conformes en turno 2 (humedad fuera de rango).</span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Resumen ejecutivo */}
+            <div className="p-5">
+              <div className="mb-2 text-[11px] font-bold uppercase tracking-wider text-gray-500">Resumen ejecutivo</div>
+              <p className="text-xs leading-relaxed text-gray-700">
+                La planta operó al <b>{efGeneral}%</b> de eficiencia con una producción total de <b>{totalProd} t</b>.
+                Tres de cuatro máquinas se mantuvieron en operación continua. El paro programado en MP-06
+                impactó la eficiencia general. La calidad promedio se mantuvo por arriba del 94% en las máquinas
+                activas. Se recomienda revisar control de humedad en MP-05 durante el siguiente turno.
+              </p>
+            </div>
+
+            {/* Footer */}
+            <div className="rounded-b-lg border-t border-gray-200 bg-gray-50 px-5 py-3 text-center text-[10px] text-gray-500">
+              Generado automáticamente por la plataforma Convertipap · Calidad &amp; Producción
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function KPI({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-md border border-gray-200 bg-gray-50 p-3">
+      <div className="text-[10px] font-medium uppercase tracking-wider text-gray-500">{label}</div>
+      <div className="mt-1 text-lg font-bold tabular-nums text-gray-900">{value}</div>
     </div>
   );
 }
