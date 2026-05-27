@@ -27,7 +27,7 @@ type PuntoSerie = {
 };
 
 // Datos simulados por rango y máquina
-const DATA: Record<Exclude<Rango, "custom" | "año">, PuntoSerie[]> = {
+const DATA: Record<"dia" | "semana" | "mes", PuntoSerie[]> = {
   dia: [
     { label: "00h", cumplimiento: { "MP-04": 88, "MP-05": 91, "MP-06": 84, "MP-07": 89 }, rollos: { "MP-04": 2, "MP-05": 3, "MP-06": 2, "MP-07": 2 }, oee: { "MP-04": 82, "MP-05": 88, "MP-06": 70, "MP-07": 84 } },
     { label: "04h", cumplimiento: { "MP-04": 90, "MP-05": 93, "MP-06": 80, "MP-07": 91 }, rollos: { "MP-04": 3, "MP-05": 3, "MP-06": 2, "MP-07": 3 }, oee: { "MP-04": 85, "MP-05": 90, "MP-06": 68, "MP-07": 86 } },
