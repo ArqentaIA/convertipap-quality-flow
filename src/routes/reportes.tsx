@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { FileBarChart2, Download, TrendingDown } from "lucide-react";
+import { FileBarChart2, Download, TrendingUp, TrendingDown } from "lucide-react";
 
 export const Route = createFileRoute("/reportes")({ component: ReportesPage });
 
