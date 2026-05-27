@@ -65,7 +65,7 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
       {/* Main */}
       <div className="flex min-w-0 flex-1 flex-col">
         {/* TopHeader */}
-        <header className="flex h-[64px] items-center justify-between gap-4 border-b border-border bg-card px-6 shadow-sm">
+        <header className="flex h-[64px] items-center justify-between gap-4 border-b border-border bg-gradient-to-r from-primary/30 via-primary/15 to-primary/5 px-6 shadow-sm">
           <div className="min-w-0">
             <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Módulo</div>
             <h1 className="text-base font-semibold text-foreground truncate">{title}</h1>
