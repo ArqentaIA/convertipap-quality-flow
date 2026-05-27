@@ -170,9 +170,18 @@ function ReportesPage() {
                   <div className="text-sm font-medium text-foreground">{r.nombre}</div>
                   <div className="text-[11px] text-muted-foreground">Frecuencia: {r.freq} · {r.formato}</div>
                 </div>
-                <button className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium hover:bg-accent">
-                  <Download className="h-3.5 w-3.5" /> Descargar
-                </button>
+                <div className="flex items-center gap-2">
+                  <button className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium hover:bg-accent">
+                    <Download className="h-3.5 w-3.5" /> Descargar
+                  </button>
+                  <button
+                    onClick={() => descargarXLSX(r.nombre)}
+                    className="inline-flex items-center gap-2 rounded-md border border-success/40 bg-success/10 px-3 py-1.5 text-xs font-medium text-success hover:bg-success/20"
+                    title="Descargar archivo XLSX para manejo de BD"
+                  >
+                    <FileSpreadsheet className="h-3.5 w-3.5" /> XLSX (BD)
+                  </button>
+                </div>
               </li>
             ))}
           </ul>
