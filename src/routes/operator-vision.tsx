@@ -22,6 +22,9 @@ import {
   type VarStatus,
 } from "@/lib/qc-data";
 
+const MAQUINAS_VALIDAS = ["MP-04", "MP-05", "MP-06", "MP-07"] as const;
+type MaquinaValida = (typeof MAQUINAS_VALIDAS)[number];
+
 export const Route = createFileRoute("/operator-vision")({
   head: () => ({
     meta: [
@@ -29,6 +32,14 @@ export const Route = createFileRoute("/operator-vision")({
       { name: "description", content: "Pantalla operativa industrial en tiempo real" },
     ],
   }),
+  validateSearch: (search: Record<string, unknown>): { maquina: MaquinaValida } => {
+    const m = String(search.maquina ?? "");
+    return {
+      maquina: (MAQUINAS_VALIDAS as readonly string[]).includes(m)
+        ? (m as MaquinaValida)
+        : "MP-04",
+    };
+  },
   component: OperatorVisionPage,
 });
 
