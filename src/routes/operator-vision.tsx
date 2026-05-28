@@ -264,8 +264,7 @@ function OperatorVisionPage() {
             />
             <div>
               <div className="text-2xl font-black tracking-tight text-slate-900">
-                {info.maquina} <span className="text-slate-400">/</span>{" "}
-                <span className="text-cyan-700">{info.area}</span>
+                Fabricación <span className="text-cyan-700">Tissue</span>
               </div>
             </div>
           </div>
