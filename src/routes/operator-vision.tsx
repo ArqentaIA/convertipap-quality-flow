@@ -222,8 +222,6 @@ function OperatorVisionPage() {
     "pesoBase",
     "humedad",
     "calibre",
-    "tensionMD",
-    "tensionCD",
     "diametro",
     "relMDCD",
     "anchoUtil",
