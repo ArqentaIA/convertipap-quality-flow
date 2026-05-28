@@ -111,8 +111,8 @@ function ConfigPage() {
             <Field label="Unidades" value="Métrico (g/m², m/min, mm)" />
           </Card>
 
-          <Card title="Operator Vision · Pantalla operativa" desc="Vista fullscreen para TV industrial">
-            <OperatorVisionUrl />
+          <Card title="Operator Vision · Pantalla operativa" desc={`Vista fullscreen para TV industrial · ${maquina}`}>
+            <OperatorVisionUrl maquina={maquina} />
           </Card>
 
           <button className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm hover:opacity-90">
