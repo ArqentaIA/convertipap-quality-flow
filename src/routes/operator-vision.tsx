@@ -206,8 +206,9 @@ function statusFromRelease(s: Measurement["estatus"]): VarStatus {
 }
 
 function OperatorVisionPage() {
+  const { maquina } = Route.useSearch();
   const now = useTicker(1000);
-  const info = DEFAULT_GENERAL;
+  const info = { ...DEFAULT_GENERAL, maquina };
   const measurements = SAMPLE_MEASUREMENTS;
   const current = measurements[measurements.length - 1];
 
