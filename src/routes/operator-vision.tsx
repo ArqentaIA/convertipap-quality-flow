@@ -277,6 +277,9 @@ function OperatorVisionPage() {
             <div>
               <div className="text-2xl font-black tracking-tight text-slate-900">
                 Fabricación <span className="text-cyan-700">Tissue</span>
+                <span className="ml-3 rounded-md bg-slate-900 px-2.5 py-1 align-middle font-mono text-base font-black tracking-wider text-white">
+                  {info.maquina}
+                </span>
               </div>
             </div>
           </div>
