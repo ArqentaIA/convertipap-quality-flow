@@ -413,9 +413,9 @@ function CEOReportPreview({ onClose }: { onClose: () => void }) {
   );
 }
 
-function OperatorVisionUrl() {
+function OperatorVisionUrl({ maquina }: { maquina: string }) {
   const [copied, setCopied] = useState(false);
-  const url = typeof window !== "undefined" ? `${window.location.origin}/operator-vision` : "/operator-vision";
+  const url = typeof window !== "undefined" ? `${window.location.origin}/operator-vision?maquina=${maquina}` : `/operator-vision?maquina=${maquina}`;
 
   const copy = async () => {
     try {
