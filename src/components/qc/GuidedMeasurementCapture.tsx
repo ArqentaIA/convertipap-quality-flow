@@ -37,13 +37,22 @@ const NOTAS_OPCIONES = [
 ];
 
 // Campos visibles en la tarjeta de captura operativa
-const CAPTURE_FIELDS: { key: keyof Measurement; label: string; unit: string; specKey?: string }[] = [
-  { key: "humedad",   label: "Humedad",     unit: "%",    specKey: "humedad" },
-  { key: "pesoBase",  label: "Peso Base",   unit: "g/m²", specKey: "pesoBase" },
-  { key: "anchoUtil", label: "Ancho útil",  unit: "cm",   specKey: "anchoUtil" },
-  { key: "diametro",  label: "Diámetro",    unit: "cm",   specKey: "diametro" },
-  { key: "uniones",   label: "Uniones",     unit: "" },
-  { key: "pesoRollo", label: "Peso Rollo",  unit: "kg" },
+const CAPTURE_FIELDS: { key: keyof Measurement; label: string; unit: string; specKey?: string; group: "linea" | "lab" }[] = [
+  // En línea
+  { key: "humedad",      label: "Humedad",         unit: "%",     specKey: "humedad",      group: "linea" },
+  { key: "pesoBase",     label: "Peso Base",       unit: "g/m²",  specKey: "pesoBase",     group: "linea" },
+  { key: "anchoUtil",    label: "Ancho útil",      unit: "cm",    specKey: "anchoUtil",    group: "linea" },
+  { key: "diametro",     label: "Diámetro",        unit: "cm",    specKey: "diametro",     group: "linea" },
+  { key: "uniones",      label: "Uniones",         unit: "",                              group: "linea" },
+  { key: "pesoRollo",    label: "Peso Rollo",      unit: "kg",                            group: "linea" },
+  // Laboratorio (obligatorias para análisis y liberación)
+  { key: "calibre",      label: "Calibre",         unit: "mm",    specKey: "calibre",      group: "lab" },
+  { key: "blancuraR457", label: "Blancura R457",   unit: "%",     specKey: "blancuraR457", group: "lab" },
+  { key: "blancuraA",    label: "Blancura a*",     unit: "",      specKey: "blancuraA",    group: "lab" },
+  { key: "blancuraB",    label: "Blancura b*",     unit: "",      specKey: "blancuraB",    group: "lab" },
+  { key: "tensionMD",    label: "Tensión MD",      unit: "g/in",  specKey: "tensionMD",    group: "lab" },
+  { key: "tensionCD",    label: "Tensión CD",      unit: "g/in",  specKey: "tensionCD",    group: "lab" },
+  { key: "elongMD",      label: "Elongación MD",   unit: "%",     specKey: "elongMD",      group: "lab" },
 ];
 
 type Draft = {
