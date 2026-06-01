@@ -357,6 +357,9 @@ export function solicitarAjuste(input: SolicitarAjusteInput): ResultRev {
     resultado: "pendiente",
     evidencia_url: null,
     observacion_ajuste: null,
+    muestra_verificacion_id: null,
+    sla_objetivo_horas: SLA_HORAS[input.tipo_ajuste] ?? 4,
+    estado_flujo: "solicitado",
     created_at: now,
     updated_at: now,
   };
