@@ -106,6 +106,61 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => sub.subscription.unsubscribe();
   }, []);
 
+  // Auto-cierre por inactividad (5 min sin interacción)
+  useEffect(() => {
+    if (!session?.user) return;
+    const IDLE_MS = 5 * 60 * 1000;
+    let timer: ReturnType<typeof setTimeout>;
+
+    const logout = async () => {
+      try {
+        await supabase.auth.signOut();
+      } finally {
+        if (typeof window !== "undefined") {
+          try {
+            const { toast } = await import("sonner");
+            toast.warning("Sesión cerrada por inactividad (5 min)");
+          } catch {
+            // sonner opcional
+          }
+          window.location.href = "/login";
+        }
+      }
+    };
+
+    const reset = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        void logout();
+      }, IDLE_MS);
+    };
+
+    const events: (keyof WindowEventMap)[] = [
+      "mousemove",
+      "mousedown",
+      "keydown",
+      "click",
+      "scroll",
+      "touchstart",
+      "wheel",
+    ];
+    events.forEach((ev) =>
+      window.addEventListener(ev, reset, { passive: true } as AddEventListenerOptions),
+    );
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") reset();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    reset();
+
+    return () => {
+      clearTimeout(timer);
+      events.forEach((ev) => window.removeEventListener(ev, reset));
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [session?.user?.id]);
+
+
   const value = useMemo<AuthState>(
     () => ({
       loading,
