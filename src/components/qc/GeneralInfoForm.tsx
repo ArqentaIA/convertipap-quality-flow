@@ -128,12 +128,23 @@ export function GeneralInfoForm({
                   type={f.type ?? "text"}
                   step={f.type === "number" ? "any" : undefined}
                   inputMode={f.type === "number" ? "decimal" : undefined}
-                  value={value[f.key] as string | number}
+                  value={
+                    f.type === "number"
+                      ? (value[f.key] === 0 || value[f.key] == null ? "" : (value[f.key] as number))
+                      : (value[f.key] as string)
+                  }
+                  placeholder={f.type === "number" ? "0" : undefined}
                   disabled={lockedByRoster}
-                  title={lockedByRoster ? "Asignación automática del turno. Solo Dirección puede modificarla." : undefined}
+                  title={
+                    f.key === "crepado"
+                      ? "Acepta valores positivos o negativos (ej. 14 o -14)."
+                      : lockedByRoster
+                      ? "Asignación automática del turno. Solo Dirección puede modificarla."
+                      : undefined
+                  }
                   onChange={(e) => {
                     const raw = e.target.value;
-                    const next = f.type === "number" ? (raw === "" ? 0 : Number(raw)) : raw;
+                    const next = f.type === "number" ? (raw === "" || raw === "-" ? 0 : Number(raw)) : raw;
                     set(f.key, next as never);
                   }}
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:bg-muted/40 disabled:text-muted-foreground"
