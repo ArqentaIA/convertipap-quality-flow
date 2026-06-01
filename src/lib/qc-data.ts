@@ -106,7 +106,7 @@ export const DEFAULT_GENERAL: GeneralInfo = {
   velocidadMaquina: 0,
   velocidadEnrollador: 0,
   crepado: 0,
-  cumplimiento: 0,
+  cumplimiento: null,
   notas: "",
 };
 
