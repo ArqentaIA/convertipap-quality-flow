@@ -90,9 +90,12 @@ const DATASETS: Record<string, { sheet: string; rows: Record<string, string | nu
   ],
 };
 
-async function descargarXLSX(nombre: string) {
+async function descargarXLSX(
+  nombre: string,
+  override?: { sheet: string; rows: Record<string, string | number>[] }[],
+) {
   const XLSX = await import("xlsx");
-  const hojas = DATASETS[nombre] ?? [
+  const hojas = override ?? DATASETS[nombre] ?? [
     { sheet: "Datos", rows: [{ aviso: "Sin datos disponibles para este reporte" }] },
   ];
   const wb = XLSX.utils.book_new();
