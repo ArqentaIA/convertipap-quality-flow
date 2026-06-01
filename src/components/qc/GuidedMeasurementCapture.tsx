@@ -52,6 +52,7 @@ type Draft = {
   values: Record<string, number | null>;
   estatus: ReleaseStatus;
   notas: string;
+  override?: { by: string; at: string; motivo: string; sugerido: ReleaseStatus } | null;
 };
 
 function nowHHMM() {
