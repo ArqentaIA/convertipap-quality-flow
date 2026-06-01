@@ -11,7 +11,7 @@ import { ReleaseBadge } from "@/components/qc/StatusBadge";
 import { ShiftStatusBar } from "@/components/qc/ShiftStatusBar";
 import { useShiftStatus } from "@/lib/shift-status";
 import {
-  DEFAULT_GENERAL, SAMPLE_MEASUREMENTS, PLANTS, evaluateValue,
+  DEFAULT_GENERAL, PLANTS, evaluateValue,
   type Measurement, type GeneralInfo,
 } from "@/lib/qc-data";
 import { PRODUCT_SPEC_MAP } from "@/lib/spec-catalog";
