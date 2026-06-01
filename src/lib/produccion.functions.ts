@@ -1,0 +1,524 @@
+// =====================================================================
+// Fase 4b — Server functions de transición de Producción
+// =====================================================================
+// Todas las funciones se ejecutan como el usuario autenticado (RLS aplica)
+// y aplican además checks explícitos de rol y reglas de negocio.
+// =====================================================================
+import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
+
+type SB = SupabaseClient<Database>;
+
+// ------------------------- Helpers -------------------------
+
+const ROLES_OPERATIVOS = [
+  "capturista",
+  "calidad",
+  "gerente_general",
+  "administrador",
+] as const;
+const ROLES_ADMIN = ["gerente_general", "administrador"] as const;
+
+async function getUserRoles(sb: SB, userId: string): Promise<string[]> {
+  const { data, error } = await sb
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId);
+  if (error) throw new Error(`No se pudieron leer roles: ${error.message}`);
+  return (data ?? []).map((r) => r.role as string);
+}
+
+function requireAnyRole(userRoles: string[], allowed: readonly string[]) {
+  if (!userRoles.some((r) => allowed.includes(r))) {
+    throw new Error(
+      `Acceso denegado. Roles requeridos: ${allowed.join(", ")}`,
+    );
+  }
+}
+
+async function generarFolio(sb: SB): Promise<string> {
+  const today = new Date();
+  const yyyy = today.getUTCFullYear();
+  const mm = String(today.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(today.getUTCDate()).padStart(2, "0");
+  const prefix = `OF-${yyyy}${mm}${dd}`;
+
+  const { count, error } = await sb
+    .from("ordenes_fabricacion")
+    .select("id", { count: "exact", head: true })
+    .like("folio", `${prefix}-%`);
+  if (error) throw new Error(`Error generando folio: ${error.message}`);
+
+  const next = String((count ?? 0) + 1).padStart(4, "0");
+  return `${prefix}-${next}`;
+}
+
+async function getEspecificacionVigente(
+  sb: SB,
+  productoId: string,
+): Promise<string> {
+  const { data, error } = await sb
+    .from("producto_especificaciones")
+    .select("id")
+    .eq("producto_id", productoId)
+    .eq("estado", "vigente")
+    .order("vigente_desde", { ascending: false, nullsFirst: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw new Error(`Error leyendo especificación: ${error.message}`);
+  if (!data) {
+    throw new Error(
+      "El producto no tiene una especificación vigente. Aprueba una versión antes de iniciar producción.",
+    );
+  }
+  return data.id;
+}
+
+async function upsertEstadoMaquina(
+  sb: SB,
+  maquinaId: string,
+  patch: {
+    estado: Database["public"]["Enums"]["maquina_estado"];
+    orden_activa_id?: string | null;
+    paro_activo_id?: string | null;
+    actualizado_por: string;
+  },
+) {
+  const { error } = await sb
+    .from("maquina_estado_actual")
+    .upsert(
+      {
+        maquina_id: maquinaId,
+        estado: patch.estado,
+        orden_activa_id: patch.orden_activa_id ?? null,
+        paro_activo_id: patch.paro_activo_id ?? null,
+        ultimo_cambio: new Date().toISOString(),
+        actualizado_por: patch.actualizado_por,
+      },
+      { onConflict: "maquina_id" },
+    );
+  if (error)
+    throw new Error(`No se pudo actualizar estado de máquina: ${error.message}`);
+}
+
+// =====================================================================
+// 1) CREAR ORDEN
+// =====================================================================
+const crearOrdenSchema = z.object({
+  producto_id: z.string().uuid(),
+  maquina_id: z.string().uuid(),
+  planta_id: z.string().uuid(),
+  turno: z.string().min(1).max(30).optional(),
+  unidad_objetivo: z.enum(["kg", "rollos", "ambos"]).default("kg"),
+  objetivo_kg: z.number().positive().optional(),
+  objetivo_rollos: z.number().int().positive().optional(),
+  fecha_programada: z.string().datetime().optional(),
+  notas: z.string().max(1000).optional(),
+});
+
+export const crearOrden = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => crearOrdenSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const roles = await getUserRoles(supabase, userId);
+    requireAnyRole(roles, ROLES_OPERATIVOS);
+
+    // Especificación vigente al momento de crear (se reconfirma al iniciar)
+    const especificacion_id = await getEspecificacionVigente(
+      supabase,
+      data.producto_id,
+    );
+
+    const folio = await generarFolio(supabase);
+    const estado = data.fecha_programada ? "programada" : "borrador";
+
+    const { data: orden, error } = await supabase
+      .from("ordenes_fabricacion")
+      .insert({
+        folio,
+        producto_id: data.producto_id,
+        especificacion_id,
+        maquina_id: data.maquina_id,
+        planta_id: data.planta_id,
+        turno: data.turno ?? null,
+        estado,
+        unidad_objetivo: data.unidad_objetivo,
+        objetivo_kg: data.objetivo_kg ?? null,
+        objetivo_rollos: data.objetivo_rollos ?? null,
+        fecha_programada: data.fecha_programada ?? null,
+        creado_por: userId,
+        notas: data.notas ?? null,
+      })
+      .select("id, folio, estado")
+      .single();
+    if (error) throw new Error(`Error creando orden: ${error.message}`);
+    return orden;
+  });
+
+// =====================================================================
+// 2) INICIAR ORDEN
+// =====================================================================
+const idSchema = z.object({ orden_id: z.string().uuid() });
+
+export const iniciarOrden = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => idSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const roles = await getUserRoles(supabase, userId);
+    requireAnyRole(roles, ROLES_OPERATIVOS);
+
+    const { data: orden, error: errOrden } = await supabase
+      .from("ordenes_fabricacion")
+      .select("id, estado, maquina_id, producto_id")
+      .eq("id", data.orden_id)
+      .single();
+    if (errOrden) throw new Error(errOrden.message);
+
+    if (!["borrador", "programada"].includes(orden.estado)) {
+      throw new Error(
+        `No se puede iniciar una orden en estado '${orden.estado}'.`,
+      );
+    }
+
+    // Validar que la máquina no tenga otra orden activa
+    const { data: activa, error: errActiva } = await supabase
+      .from("ordenes_fabricacion")
+      .select("id, folio")
+      .eq("maquina_id", orden.maquina_id)
+      .in("estado", ["en_proceso", "pausada"])
+      .neq("id", orden.id)
+      .maybeSingle();
+    if (errActiva) throw new Error(errActiva.message);
+    if (activa) {
+      throw new Error(
+        `La máquina ya tiene una orden activa: ${activa.folio}. Ciérrala antes de iniciar otra.`,
+      );
+    }
+
+    // Congelar especificación vigente al momento de iniciar
+    const especificacion_id = await getEspecificacionVigente(
+      supabase,
+      orden.producto_id,
+    );
+
+    const nowIso = new Date().toISOString();
+    const { data: updated, error: errUpd } = await supabase
+      .from("ordenes_fabricacion")
+      .update({
+        estado: "en_proceso",
+        especificacion_id,
+        fecha_inicio: nowIso,
+        iniciado_por: userId,
+      })
+      .eq("id", orden.id)
+      .select("id, folio, estado, fecha_inicio, especificacion_id")
+      .single();
+    if (errUpd) throw new Error(errUpd.message);
+
+    await upsertEstadoMaquina(supabase, orden.maquina_id, {
+      estado: "produciendo",
+      orden_activa_id: orden.id,
+      paro_activo_id: null,
+      actualizado_por: userId,
+    });
+
+    return updated;
+  });
+
+// =====================================================================
+// 3) PAUSAR ORDEN POR PARO
+// =====================================================================
+const pausarSchema = z.object({
+  orden_id: z.string().uuid(),
+  tipo_paro_id: z.string().uuid(),
+  descripcion: z.string().max(1000).optional(),
+});
+
+export const pausarOrden = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => pausarSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const roles = await getUserRoles(supabase, userId);
+    requireAnyRole(roles, ROLES_OPERATIVOS);
+
+    const { data: orden, error } = await supabase
+      .from("ordenes_fabricacion")
+      .select("id, estado, maquina_id")
+      .eq("id", data.orden_id)
+      .single();
+    if (error) throw new Error(error.message);
+    if (orden.estado !== "en_proceso") {
+      throw new Error(
+        `Solo se puede pausar una orden 'en_proceso' (actual: '${orden.estado}').`,
+      );
+    }
+
+    // Verificar que no haya paro abierto en la máquina
+    const { data: paroAbierto, error: errParo } = await supabase
+      .from("paros_maquina")
+      .select("id")
+      .eq("maquina_id", orden.maquina_id)
+      .is("fin", null)
+      .maybeSingle();
+    if (errParo) throw new Error(errParo.message);
+    if (paroAbierto) {
+      throw new Error("La máquina ya tiene un paro abierto.");
+    }
+
+    const { data: paro, error: errIns } = await supabase
+      .from("paros_maquina")
+      .insert({
+        maquina_id: orden.maquina_id,
+        orden_id: orden.id,
+        tipo_paro_id: data.tipo_paro_id,
+        descripcion: data.descripcion ?? null,
+        abierto_por: userId,
+      })
+      .select("id, inicio")
+      .single();
+    if (errIns) throw new Error(errIns.message);
+
+    const { error: errUpd } = await supabase
+      .from("ordenes_fabricacion")
+      .update({ estado: "pausada" })
+      .eq("id", orden.id);
+    if (errUpd) throw new Error(errUpd.message);
+
+    await upsertEstadoMaquina(supabase, orden.maquina_id, {
+      estado: "paro",
+      orden_activa_id: orden.id,
+      paro_activo_id: paro.id,
+      actualizado_por: userId,
+    });
+
+    return { orden_id: orden.id, paro_id: paro.id, inicio: paro.inicio };
+  });
+
+// =====================================================================
+// 4) REANUDAR ORDEN (cierra paro activo)
+// =====================================================================
+export const reanudarOrden = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => idSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const roles = await getUserRoles(supabase, userId);
+    requireAnyRole(roles, ROLES_OPERATIVOS);
+
+    const { data: orden, error } = await supabase
+      .from("ordenes_fabricacion")
+      .select("id, estado, maquina_id")
+      .eq("id", data.orden_id)
+      .single();
+    if (error) throw new Error(error.message);
+    if (orden.estado !== "pausada") {
+      throw new Error(
+        `Solo se puede reanudar una orden 'pausada' (actual: '${orden.estado}').`,
+      );
+    }
+
+    // Cerrar paro abierto de la máquina
+    const { data: paro, error: errParo } = await supabase
+      .from("paros_maquina")
+      .select("id")
+      .eq("maquina_id", orden.maquina_id)
+      .is("fin", null)
+      .maybeSingle();
+    if (errParo) throw new Error(errParo.message);
+    if (!paro) {
+      throw new Error(
+        "No hay paro abierto que cerrar. Verifica el estado de la máquina.",
+      );
+    }
+
+    const nowIso = new Date().toISOString();
+    const { error: errCierre } = await supabase
+      .from("paros_maquina")
+      .update({ fin: nowIso, cerrado_por: userId })
+      .eq("id", paro.id);
+    if (errCierre) throw new Error(errCierre.message);
+
+    const { error: errUpd } = await supabase
+      .from("ordenes_fabricacion")
+      .update({ estado: "en_proceso" })
+      .eq("id", orden.id);
+    if (errUpd) throw new Error(errUpd.message);
+
+    await upsertEstadoMaquina(supabase, orden.maquina_id, {
+      estado: "produciendo",
+      orden_activa_id: orden.id,
+      paro_activo_id: null,
+      actualizado_por: userId,
+    });
+
+    return { orden_id: orden.id, paro_id: paro.id, fin: nowIso };
+  });
+
+// =====================================================================
+// 5) CERRAR ORDEN
+// =====================================================================
+const cerrarSchema = z.object({
+  orden_id: z.string().uuid(),
+  producido_kg: z.number().nonnegative().optional(),
+  producido_rollos: z.number().int().nonnegative().optional(),
+  notas: z.string().max(1000).optional(),
+});
+
+export const cerrarOrden = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => cerrarSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const roles = await getUserRoles(supabase, userId);
+    requireAnyRole(roles, ROLES_OPERATIVOS);
+
+    const { data: orden, error } = await supabase
+      .from("ordenes_fabricacion")
+      .select("id, estado, maquina_id, producido_kg, producido_rollos, notas")
+      .eq("id", data.orden_id)
+      .single();
+    if (error) throw new Error(error.message);
+    if (!["en_proceso", "pausada"].includes(orden.estado)) {
+      throw new Error(
+        `Solo se puede cerrar una orden 'en_proceso' o 'pausada' (actual: '${orden.estado}').`,
+      );
+    }
+
+    // Si hay paro abierto en la máquina, ciérralo automáticamente
+    const nowIso = new Date().toISOString();
+    const { data: paroAbierto } = await supabase
+      .from("paros_maquina")
+      .select("id")
+      .eq("maquina_id", orden.maquina_id)
+      .is("fin", null)
+      .maybeSingle();
+    if (paroAbierto) {
+      await supabase
+        .from("paros_maquina")
+        .update({ fin: nowIso, cerrado_por: userId })
+        .eq("id", paroAbierto.id);
+    }
+
+    // Auto-calcular producido si no se envió, basándose en rollos_producidos
+    let producido_kg = data.producido_kg;
+    let producido_rollos = data.producido_rollos;
+    if (producido_kg === undefined || producido_rollos === undefined) {
+      const { data: agg } = await supabase
+        .from("rollos_producidos")
+        .select("peso_kg")
+        .eq("orden_id", orden.id);
+      if (agg) {
+        producido_rollos ??= agg.length;
+        producido_kg ??= agg.reduce(
+          (acc, r) => acc + (Number(r.peso_kg) || 0),
+          0,
+        );
+      }
+    }
+
+    const { data: updated, error: errUpd } = await supabase
+      .from("ordenes_fabricacion")
+      .update({
+        estado: "finalizada",
+        fecha_fin: nowIso,
+        cerrado_por: userId,
+        producido_kg: producido_kg ?? orden.producido_kg,
+        producido_rollos: producido_rollos ?? orden.producido_rollos,
+        notas: data.notas ?? orden.notas,
+      })
+      .eq("id", orden.id)
+      .select("id, folio, estado, fecha_fin, producido_kg, producido_rollos")
+      .single();
+    if (errUpd) throw new Error(errUpd.message);
+
+    await upsertEstadoMaquina(supabase, orden.maquina_id, {
+      estado: "libre",
+      orden_activa_id: null,
+      paro_activo_id: null,
+      actualizado_por: userId,
+    });
+
+    return updated;
+  });
+
+// =====================================================================
+// 6) CANCELAR ORDEN
+// =====================================================================
+const cancelarSchema = z.object({
+  orden_id: z.string().uuid(),
+  motivo: z.string().min(3).max(500),
+});
+
+export const cancelarOrden = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => cancelarSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const roles = await getUserRoles(supabase, userId);
+    requireAnyRole(roles, ROLES_ADMIN);
+
+    const { data: orden, error } = await supabase
+      .from("ordenes_fabricacion")
+      .select("id, estado, maquina_id, notas")
+      .eq("id", data.orden_id)
+      .single();
+    if (error) throw new Error(error.message);
+    if (["finalizada", "cancelada"].includes(orden.estado)) {
+      throw new Error(
+        `No se puede cancelar una orden en estado '${orden.estado}'.`,
+      );
+    }
+
+    // Cerrar paro abierto si existe
+    const nowIso = new Date().toISOString();
+    const { data: paroAbierto } = await supabase
+      .from("paros_maquina")
+      .select("id")
+      .eq("maquina_id", orden.maquina_id)
+      .is("fin", null)
+      .maybeSingle();
+    if (paroAbierto) {
+      await supabase
+        .from("paros_maquina")
+        .update({ fin: nowIso, cerrado_por: userId })
+        .eq("id", paroAbierto.id);
+    }
+
+    const notasFinales = `${orden.notas ? orden.notas + "\n" : ""}[CANCELADA] ${data.motivo}`;
+
+    const { data: updated, error: errUpd } = await supabase
+      .from("ordenes_fabricacion")
+      .update({
+        estado: "cancelada",
+        fecha_fin: nowIso,
+        cerrado_por: userId,
+        notas: notasFinales,
+      })
+      .eq("id", orden.id)
+      .select("id, folio, estado, fecha_fin")
+      .single();
+    if (errUpd) throw new Error(errUpd.message);
+
+    // Liberar máquina solo si esta orden la tenía ocupada
+    const { data: mea } = await supabase
+      .from("maquina_estado_actual")
+      .select("orden_activa_id")
+      .eq("maquina_id", orden.maquina_id)
+      .maybeSingle();
+    if (mea?.orden_activa_id === orden.id) {
+      await upsertEstadoMaquina(supabase, orden.maquina_id, {
+        estado: "libre",
+        orden_activa_id: null,
+        paro_activo_id: null,
+        actualizado_por: userId,
+      });
+    }
+
+    return updated;
+  });
