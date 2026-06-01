@@ -175,6 +175,15 @@ export function GuidedMeasurementCapture({
       estatus: draft.estatus,
       pesoRollo: (draft.values.pesoRollo as number | null) ?? null,
       notas: draft.notas,
+      estatusOverride: draft.override
+        ? {
+            sugerido: draft.override.sugerido,
+            final: draft.estatus,
+            by: draft.override.by,
+            at: draft.override.at,
+            motivo: draft.override.motivo,
+          }
+        : null,
     };
     onChange([...rows, newRow]);
     toast.success("Registro guardado correctamente", {
