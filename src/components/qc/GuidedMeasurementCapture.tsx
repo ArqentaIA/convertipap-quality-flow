@@ -164,25 +164,46 @@ export function GuidedMeasurementCapture({
     setDraft(emptyDraft(seed));
   };
 
+  const missingFields = useMemo(
+    () => CAPTURE_FIELDS.filter((f) => typeof draft.values[f.key as string] !== "number"),
+    [draft.values]
+  );
+  const isComplete = missingFields.length === 0;
+
   const save = () => {
     if (!canCapture) return;
     if (!draft.rollo.trim()) { toast.error("Captura el número de rollo."); return; }
-    const captured = CAPTURE_FIELDS.some((f) => typeof draft.values[f.key as string] === "number");
-    if (!captured) { toast.error("Captura al menos una medición."); return; }
+    if (!isComplete) {
+      toast.error("Captura completa requerida", {
+        description: `Faltan ${missingFields.length} variable(s): ${missingFields.map((f) => f.label).join(", ")}`,
+      });
+      return;
+    }
+
+    const num = (k: string) => (draft.values[k] as number | null) ?? null;
+    const tMD = num("tensionMD");
+    const tCD = num("tensionCD");
+    const relMDCD = tMD != null && tCD != null && tCD !== 0 ? Number((tMD / tCD).toFixed(2)) : null;
 
     const newRow: Measurement = {
       id: crypto.randomUUID(),
       hora: draft.hora || nowHHMM(),
       rollo: draft.rollo.trim(),
-      calibre: null, blancuraR457: null, blancuraA: null, blancuraB: null,
-      tensionMD: null, tensionCD: null, relMDCD: null, elongMD: null,
-      humedad: (draft.values.humedad as number | null) ?? null,
-      pesoBase: (draft.values.pesoBase as number | null) ?? null,
-      anchoUtil: (draft.values.anchoUtil as number | null) ?? null,
-      diametro: (draft.values.diametro as number | null) ?? null,
-      uniones: (draft.values.uniones as number | null) ?? 0,
+      calibre: num("calibre"),
+      blancuraR457: num("blancuraR457"),
+      blancuraA: num("blancuraA"),
+      blancuraB: num("blancuraB"),
+      tensionMD: tMD,
+      tensionCD: tCD,
+      relMDCD,
+      elongMD: num("elongMD"),
+      humedad: num("humedad"),
+      pesoBase: num("pesoBase"),
+      anchoUtil: num("anchoUtil"),
+      diametro: num("diametro"),
+      uniones: num("uniones") ?? 0,
       estatus: draft.estatus,
-      pesoRollo: (draft.values.pesoRollo as number | null) ?? null,
+      pesoRollo: num("pesoRollo"),
       notas: draft.notas,
       estatusOverride: draft.override
         ? {
