@@ -8,6 +8,7 @@ import {
 import logo from "@/assets/logo.png";
 import { PLANTS } from "@/lib/qc-data";
 import { useAuth, type AppModule } from "@/lib/auth";
+import { useLabFilter, LAB_LABEL } from "@/lib/lab";
 
 type NavItem = {
   to: string;
@@ -59,6 +60,7 @@ function initials(name?: string | null, email?: string | null) {
 export function AppLayout({ children, title }: { children: React.ReactNode; title: string }) {
   const navigate = useNavigate();
   const auth = useAuth();
+  const labFilter = useLabFilter();
   const [collapsed, setCollapsed] = useState(false);
   const [plantId, setPlantId] = useState("tlx");
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -169,6 +171,16 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
               <div className="text-xs text-muted-foreground capitalize">{dateStr}</div>
               <div className="text-xs font-semibold text-primary">Planta {plant.code}</div>
             </div>
+
+            {labFilter.lab && (
+              <div className="hidden md:flex items-center gap-1.5 rounded-md border border-primary/40 bg-primary/10 px-2.5 py-1.5 text-xs font-semibold text-primary">
+                <span className={`h-1.5 w-1.5 rounded-full ${labFilter.lab === "sur" ? "bg-amber-500" : "bg-sky-500"}`} />
+                {LAB_LABEL[labFilter.lab]}
+                <span className="text-[10px] font-normal text-muted-foreground">
+                  · {labFilter.allowedMachineCodes?.join(" · ")}
+                </span>
+              </div>
+            )}
 
             <button className="relative rounded-md p-2 text-muted-foreground hover:bg-accent hover:text-foreground">
               <Bell className="h-5 w-5" />

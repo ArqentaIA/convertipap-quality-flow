@@ -21,6 +21,7 @@ import {
   type Measurement,
   type VarStatus,
 } from "@/lib/qc-data";
+import { useLabFilter, LAB_LABEL } from "@/lib/lab";
 
 const MAQUINAS_VALIDAS = ["MP-04", "MP-05", "MP-06", "MP-07"] as const;
 type MaquinaValida = (typeof MAQUINAS_VALIDAS)[number];
