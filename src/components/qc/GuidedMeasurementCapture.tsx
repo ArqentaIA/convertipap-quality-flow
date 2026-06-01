@@ -300,7 +300,7 @@ export function GuidedMeasurementCapture({
                 className="mt-1 block w-44 rounded-lg border border-input bg-background px-3 py-2 text-xl font-bold tabular-nums text-foreground outline-none ring-2 ring-transparent transition focus:border-primary focus:ring-primary/30 placeholder:text-muted-foreground/50 disabled:cursor-not-allowed disabled:bg-muted/40"
               />
               <div className="mt-1 text-[11px] text-muted-foreground">
-                Sugerido automáticamente · editable
+                Captura el número de rollo en proceso
               </div>
             </div>
             <div className="flex flex-col">
