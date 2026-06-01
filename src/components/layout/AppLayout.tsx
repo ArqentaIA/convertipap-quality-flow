@@ -97,10 +97,10 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
             </button>
 
             <div className="flex items-center gap-2 border-l border-border pl-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-semibold">CH</div>
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-semibold">JP</div>
               <div className="hidden lg:block">
-                <div className="text-sm font-medium leading-tight">Christian H.</div>
-                <div className="text-[11px] text-muted-foreground leading-tight">Analista · {plant.code}</div>
+                <div className="text-sm font-medium leading-tight">Ing. Jonathan Alberto Pelaez</div>
+                <div className="text-[11px] text-muted-foreground leading-tight">Gerente de Calidad · {plant.code}</div>
               </div>
             </div>
           </div>
