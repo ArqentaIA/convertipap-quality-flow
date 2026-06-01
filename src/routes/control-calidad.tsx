@@ -82,7 +82,7 @@ function ControlCalidad() {
 
         {step === 1 && (
           <div className="space-y-5">
-            <KPIGrid info={infoView} />
+            
             <GeneralInfoForm value={infoView} onChange={setInfo} locked={locked} />
           </div>
         )}
