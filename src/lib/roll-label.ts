@@ -1,4 +1,6 @@
 import QRCode from "qrcode";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 import logoUrl from "@/assets/logo-convertipap.png";
 import type { Measurement, GeneralInfo } from "@/lib/qc-data";
 import { buildTraceUrl } from "@/lib/roll-report";
