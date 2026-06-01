@@ -90,17 +90,18 @@ export function GuidedMeasurementCapture({
 
   // Auto-sugerencia de estatus
   const suggestedStatus: ReleaseStatus = useMemo(() => {
-    let worst: "ok" | "warn" | "bad" = "ok";
+    let hasBad = false;
+    let hasWarn = false;
     for (const f of CAPTURE_FIELDS) {
       const spec = f.specKey ? specMap[f.specKey] : undefined;
       if (!spec) continue;
       const v = draft.values[f.key as string];
       if (typeof v !== "number") continue;
       const s = evaluateValue(spec, v);
-      if (s === "bad") { worst = "bad"; break; }
-      if (s === "warn" && worst !== "bad") worst = "warn";
+      if (s === "bad") { hasBad = true; break; }
+      if (s === "warn") hasWarn = true;
     }
-    return worst === "bad" ? "NC" : worst === "warn" ? "C" : "L";
+    return hasBad ? "NC" : hasWarn ? "C" : "L";
   }, [draft.values, specMap]);
 
   // Sincroniza estatus sugerido salvo que el operador lo modifique manualmente
