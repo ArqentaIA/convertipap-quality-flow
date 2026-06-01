@@ -22,6 +22,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as TFolioRouteImport } from './routes/t.$folio'
 import { Route as HistorialMaquinaRouteImport } from './routes/historial.$maquina'
 import { Route as CalidadRevisionRouteImport } from './routes/calidad.revision'
+import { Route as CalidadDashboardRouteImport } from './routes/calidad.dashboard'
 import { Route as CalidadCapturaRouteImport } from './routes/calidad.captura'
 import { Route as CalidadAjustesRouteImport } from './routes/calidad.ajustes'
 
@@ -90,6 +91,11 @@ const CalidadRevisionRoute = CalidadRevisionRouteImport.update({
   path: '/calidad/revision',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CalidadDashboardRoute = CalidadDashboardRouteImport.update({
+  id: '/calidad/dashboard',
+  path: '/calidad/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CalidadCapturaRoute = CalidadCapturaRouteImport.update({
   id: '/calidad/captura',
   path: '/calidad/captura',
@@ -114,6 +120,7 @@ export interface FileRoutesByFullPath {
   '/variables-calidad': typeof VariablesCalidadRoute
   '/calidad/ajustes': typeof CalidadAjustesRoute
   '/calidad/captura': typeof CalidadCapturaRoute
+  '/calidad/dashboard': typeof CalidadDashboardRoute
   '/calidad/revision': typeof CalidadRevisionRoute
   '/historial/$maquina': typeof HistorialMaquinaRoute
   '/t/$folio': typeof TFolioRoute
@@ -131,6 +138,7 @@ export interface FileRoutesByTo {
   '/variables-calidad': typeof VariablesCalidadRoute
   '/calidad/ajustes': typeof CalidadAjustesRoute
   '/calidad/captura': typeof CalidadCapturaRoute
+  '/calidad/dashboard': typeof CalidadDashboardRoute
   '/calidad/revision': typeof CalidadRevisionRoute
   '/historial/$maquina': typeof HistorialMaquinaRoute
   '/t/$folio': typeof TFolioRoute
@@ -149,6 +157,7 @@ export interface FileRoutesById {
   '/variables-calidad': typeof VariablesCalidadRoute
   '/calidad/ajustes': typeof CalidadAjustesRoute
   '/calidad/captura': typeof CalidadCapturaRoute
+  '/calidad/dashboard': typeof CalidadDashboardRoute
   '/calidad/revision': typeof CalidadRevisionRoute
   '/historial/$maquina': typeof HistorialMaquinaRoute
   '/t/$folio': typeof TFolioRoute
@@ -168,6 +177,7 @@ export interface FileRouteTypes {
     | '/variables-calidad'
     | '/calidad/ajustes'
     | '/calidad/captura'
+    | '/calidad/dashboard'
     | '/calidad/revision'
     | '/historial/$maquina'
     | '/t/$folio'
@@ -185,6 +195,7 @@ export interface FileRouteTypes {
     | '/variables-calidad'
     | '/calidad/ajustes'
     | '/calidad/captura'
+    | '/calidad/dashboard'
     | '/calidad/revision'
     | '/historial/$maquina'
     | '/t/$folio'
@@ -202,6 +213,7 @@ export interface FileRouteTypes {
     | '/variables-calidad'
     | '/calidad/ajustes'
     | '/calidad/captura'
+    | '/calidad/dashboard'
     | '/calidad/revision'
     | '/historial/$maquina'
     | '/t/$folio'
@@ -220,6 +232,7 @@ export interface RootRouteChildren {
   VariablesCalidadRoute: typeof VariablesCalidadRoute
   CalidadAjustesRoute: typeof CalidadAjustesRoute
   CalidadCapturaRoute: typeof CalidadCapturaRoute
+  CalidadDashboardRoute: typeof CalidadDashboardRoute
   CalidadRevisionRoute: typeof CalidadRevisionRoute
   HistorialMaquinaRoute: typeof HistorialMaquinaRoute
   TFolioRoute: typeof TFolioRoute
@@ -318,6 +331,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CalidadRevisionRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/calidad/dashboard': {
+      id: '/calidad/dashboard'
+      path: '/calidad/dashboard'
+      fullPath: '/calidad/dashboard'
+      preLoaderRoute: typeof CalidadDashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/calidad/captura': {
       id: '/calidad/captura'
       path: '/calidad/captura'
@@ -348,6 +368,7 @@ const rootRouteChildren: RootRouteChildren = {
   VariablesCalidadRoute: VariablesCalidadRoute,
   CalidadAjustesRoute: CalidadAjustesRoute,
   CalidadCapturaRoute: CalidadCapturaRoute,
+  CalidadDashboardRoute: CalidadDashboardRoute,
   CalidadRevisionRoute: CalidadRevisionRoute,
   HistorialMaquinaRoute: HistorialMaquinaRoute,
   TFolioRoute: TFolioRoute,
