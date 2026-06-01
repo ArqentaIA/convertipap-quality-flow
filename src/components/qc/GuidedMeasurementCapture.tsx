@@ -292,58 +292,74 @@ export function GuidedMeasurementCapture({
           </span>
         </div>
 
-        {/* Grid de campos */}
-        <div className="grid grid-cols-1 gap-4 p-5 sm:grid-cols-2 lg:grid-cols-3">
-          {CAPTURE_FIELDS.map((f) => {
-            const spec = f.specKey ? specMap[f.specKey] : undefined;
-            const val = draft.values[f.key as string];
-            const status = spec ? evaluateValue(spec, typeof val === "number" ? val : null) : "ok";
-            const hasValue = typeof val === "number";
-            const ring =
-              !hasValue || !spec
-                ? "border-input bg-background"
-                : status === "bad"
-                ? "border-destructive bg-destructive/5 text-destructive ring-destructive/30"
-                : status === "warn"
-                ? "border-warning bg-warning/10 ring-warning/30"
-                : "border-success bg-success/5 ring-success/30";
-            return (
-              <div key={f.key as string} className="rounded-xl border border-border bg-card p-3">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    {f.label} {f.unit && <span className="text-muted-foreground/70">({f.unit})</span>}
-                  </label>
-                  {hasValue && spec && (
-                    status === "bad" ? <XCircle className="h-4 w-4 text-destructive" />
-                    : status === "warn" ? <AlertTriangle className="h-4 w-4 text-warning" />
-                    : <CheckCircle2 className="h-4 w-4 text-success" />
-                  )}
+        {/* Grid de campos por grupo */}
+        {(["linea", "lab"] as const).map((grp) => {
+          const fields = CAPTURE_FIELDS.filter((f) => f.group === grp);
+          const grpMissing = fields.filter((f) => typeof draft.values[f.key as string] !== "number").length;
+          return (
+            <div key={grp} className="border-t border-border first:border-t-0">
+              <div className="flex items-center justify-between px-5 pt-4">
+                <div className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                  {grp === "linea" ? "Mediciones en línea" : "Laboratorio · obligatorias para liberar"}
                 </div>
-                <input
-                  type="number"
-                  inputMode="decimal"
-                  step="0.01"
-                  value={val ?? ""}
-                  disabled={!canCapture}
-                  onChange={(e) => setVal(f.key as string, e.target.value)}
-                  placeholder={spec ? String(spec.objective) : "—"}
-                  className={`mt-2 w-full rounded-lg border px-3 py-3 text-2xl font-semibold tabular-nums outline-none ring-2 ring-transparent transition focus:ring-2 disabled:cursor-not-allowed disabled:bg-muted/40 ${ring}`}
-                />
-                {spec && (
-                  <div className="mt-1.5 flex items-center justify-between text-[11px] text-muted-foreground">
-                    <span>Obj. <span className="font-medium text-foreground tabular-nums">{spec.objective}</span></span>
-                    <span>Rango <span className="tabular-nums">{spec.min}–{spec.max}</span></span>
-                  </div>
-                )}
-                {hasValue && spec && status !== "ok" && (
-                  <div className={`mt-1.5 text-[11px] font-medium ${status === "bad" ? "text-destructive" : "text-warning-foreground"}`}>
-                    {status === "bad" ? "⚠ Fuera de especificación" : "Cercano al límite"}
-                  </div>
-                )}
+                <span className={`text-[11px] font-semibold ${grpMissing === 0 ? "text-success" : "text-warning-foreground"}`}>
+                  {grpMissing === 0 ? "Completo" : `Faltan ${grpMissing}`}
+                </span>
               </div>
-            );
-          })}
-        </div>
+              <div className="grid grid-cols-1 gap-4 p-5 sm:grid-cols-2 lg:grid-cols-3">
+                {fields.map((f) => {
+                  const spec = f.specKey ? specMap[f.specKey] : undefined;
+                  const val = draft.values[f.key as string];
+                  const status = spec ? evaluateValue(spec, typeof val === "number" ? val : null) : "ok";
+                  const hasValue = typeof val === "number";
+                  const ring =
+                    !hasValue || !spec
+                      ? "border-input bg-background"
+                      : status === "bad"
+                      ? "border-destructive bg-destructive/5 text-destructive ring-destructive/30"
+                      : status === "warn"
+                      ? "border-warning bg-warning/10 ring-warning/30"
+                      : "border-success bg-success/5 ring-success/30";
+                  return (
+                    <div key={f.key as string} className="rounded-xl border border-border bg-card p-3">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                          {f.label} {f.unit && <span className="text-muted-foreground/70">({f.unit})</span>}
+                        </label>
+                        {hasValue && spec && (
+                          status === "bad" ? <XCircle className="h-4 w-4 text-destructive" />
+                          : status === "warn" ? <AlertTriangle className="h-4 w-4 text-warning" />
+                          : <CheckCircle2 className="h-4 w-4 text-success" />
+                        )}
+                      </div>
+                      <input
+                        type="number"
+                        inputMode="decimal"
+                        step="0.01"
+                        value={val ?? ""}
+                        disabled={!canCapture}
+                        onChange={(e) => setVal(f.key as string, e.target.value)}
+                        placeholder={spec ? String(spec.objective) : "—"}
+                        className={`mt-2 w-full rounded-lg border px-3 py-3 text-2xl font-semibold tabular-nums outline-none ring-2 ring-transparent transition focus:ring-2 disabled:cursor-not-allowed disabled:bg-muted/40 ${ring}`}
+                      />
+                      {spec && (
+                        <div className="mt-1.5 flex items-center justify-between text-[11px] text-muted-foreground">
+                          <span>Obj. <span className="font-medium text-foreground tabular-nums">{spec.objective}</span></span>
+                          <span>Rango <span className="tabular-nums">{spec.min}–{spec.max}</span></span>
+                        </div>
+                      )}
+                      {hasValue && spec && status !== "ok" && (
+                        <div className={`mt-1.5 text-[11px] font-medium ${status === "bad" ? "text-destructive" : "text-warning-foreground"}`}>
+                          {status === "bad" ? "⚠ Fuera de especificación" : "Cercano al límite"}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
 
         {/* Estatus + Notas + Guardar */}
         <div className="grid grid-cols-1 gap-4 border-t border-border bg-card/60 p-5 lg:grid-cols-[1fr_2fr_auto]">
