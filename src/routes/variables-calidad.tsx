@@ -25,30 +25,6 @@ function VariablesCalidad() {
   return (
     <AppLayout title="Variables de Calidad · Catálogo Maestro de Especificaciones">
       <div className="space-y-5">
-        {/* Header / banner */}
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/30 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-4 shadow-sm">
-          <div className="flex items-start gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/15 text-primary">
-              <ShieldCheck className="h-5 w-5" />
-            </div>
-            <div>
-              <h2 className="text-sm font-semibold text-foreground">Catálogo Maestro de Especificaciones</h2>
-              <p className="text-xs text-muted-foreground max-w-2xl">
-                Fuente única de verdad para las variables de calidad por producto. Los operadores consultan estos
-                valores en modo lectura durante la captura del turno. Solo Dirección, Calidad Senior y Administrador
-                pueden modificar.
-              </p>
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-md border border-success/40 bg-success/10 px-2.5 py-1 text-[11px] font-semibold text-success">
-              <Power className="h-3 w-3" /> {PRODUCT_SPECS.length} especificaciones activas
-            </span>
-            <button className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:opacity-90">
-              <Plus className="h-3.5 w-3.5" /> Crear especificación
-            </button>
-          </div>
-        </div>
 
         {/* Selectores desplegables */}
         <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
