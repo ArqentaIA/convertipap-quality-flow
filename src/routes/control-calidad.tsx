@@ -6,7 +6,7 @@ import { KPIGrid } from "@/components/qc/KPIGrid";
 import { GeneralInfoForm } from "@/components/qc/GeneralInfoForm";
 import { QualityVariableTable } from "@/components/qc/QualityVariableTable";
 import { GuidedMeasurementCapture } from "@/components/qc/GuidedMeasurementCapture";
-import { AlertPanel } from "@/components/qc/AlertPanel";
+
 import { ReleaseBadge } from "@/components/qc/StatusBadge";
 import { ShiftStatusBar } from "@/components/qc/ShiftStatusBar";
 import { useShiftStatus } from "@/lib/shift-status";
