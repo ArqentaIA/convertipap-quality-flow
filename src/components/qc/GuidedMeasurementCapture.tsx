@@ -36,23 +36,32 @@ const NOTAS_OPCIONES = [
   "Falla de yankee",
 ];
 
-// Campos visibles en la tarjeta de captura operativa
-const CAPTURE_FIELDS: { key: keyof Measurement; label: string; unit: string; specKey?: string; group: "linea" | "lab" }[] = [
-  // En línea
-  { key: "humedad",      label: "Humedad",         unit: "%",     specKey: "humedad",      group: "linea" },
-  { key: "pesoBase",     label: "Peso Base",       unit: "g/m²",  specKey: "pesoBase",     group: "linea" },
-  { key: "anchoUtil",    label: "Ancho útil",      unit: "cm",    specKey: "anchoUtil",    group: "linea" },
-  { key: "diametro",     label: "Diámetro",        unit: "cm",    specKey: "diametro",     group: "linea" },
-  { key: "uniones",      label: "Uniones",         unit: "",                              group: "linea" },
-  { key: "pesoRollo",    label: "Peso Rollo",      unit: "kg",                            group: "linea" },
-  // Laboratorio (obligatorias para análisis y liberación)
-  { key: "calibre",      label: "Calibre",         unit: "mm",    specKey: "calibre",      group: "lab" },
-  { key: "blancuraR457", label: "Blancura R457",   unit: "%",     specKey: "blancuraR457", group: "lab" },
-  { key: "blancuraA",    label: "Blancura a*",     unit: "",      specKey: "blancuraA",    group: "lab" },
-  { key: "blancuraB",    label: "Blancura b*",     unit: "",      specKey: "blancuraB",    group: "lab" },
-  { key: "tensionMD",    label: "Tensión MD",      unit: "g/in",  specKey: "tensionMD",    group: "lab" },
-  { key: "tensionCD",    label: "Tensión CD",      unit: "g/in",  specKey: "tensionCD",    group: "lab" },
-  { key: "elongMD",      label: "Elongación MD",   unit: "%",     specKey: "elongMD",      group: "lab" },
+// Campos visibles en la tarjeta de captura operativa.
+// Orden = jerarquía del formato físico CAL-03-A (Variables de Calidad PST Higiénico).
+// Hora y # Rollo se manejan aparte (cabecera). Estatus se calcula automáticamente.
+// Rel. MD/CD se deriva de Tensión MD / Tensión CD (no se captura).
+const CAPTURE_FIELDS: { key: keyof Measurement; label: string; unit: string; specKey?: string; group: "calidad" | "fisicas" | "cierre" }[] = [
+  // 1. Calibre
+  { key: "calibre",      label: "Calibre",         unit: "mm",    specKey: "calibre",      group: "calidad" },
+  // 2. Blancura (R457, a*, b*)
+  { key: "blancuraR457", label: "Blancura R457",   unit: "%",     specKey: "blancuraR457", group: "calidad" },
+  { key: "blancuraA",    label: "Blancura a*",     unit: "",      specKey: "blancuraA",    group: "calidad" },
+  { key: "blancuraB",    label: "Blancura b*",     unit: "",      specKey: "blancuraB",    group: "calidad" },
+  // 3. Tensión seca (MD, CD) — Rel. MD/CD se calcula sola
+  { key: "tensionMD",    label: "Tensión MD",      unit: "g/in",  specKey: "tensionMD",    group: "calidad" },
+  { key: "tensionCD",    label: "Tensión CD",      unit: "g/in",  specKey: "tensionCD",    group: "calidad" },
+  // 4. % Elongación MD
+  { key: "elongMD",      label: "% Elongación MD", unit: "%",     specKey: "elongMD",      group: "calidad" },
+  // 5. Humedad
+  { key: "humedad",      label: "Humedad",         unit: "%",     specKey: "humedad",      group: "calidad" },
+  // 6. Peso base, Ancho útil, Diámetro (físicas del rollo)
+  { key: "pesoBase",     label: "Peso Base",       unit: "g/m²",  specKey: "pesoBase",     group: "fisicas" },
+  { key: "anchoUtil",    label: "Ancho útil",      unit: "cm",    specKey: "anchoUtil",    group: "fisicas" },
+  { key: "diametro",     label: "Diámetro",        unit: "cm",    specKey: "diametro",     group: "fisicas" },
+  // 7. No. Uniones (antes del estatus en el formato)
+  { key: "uniones",      label: "No. Uniones",     unit: "",                               group: "fisicas" },
+  // 8. Peso del rollo (cierre — después del estatus en el formato)
+  { key: "pesoRollo",    label: "Peso Rollo",      unit: "kg",                             group: "cierre" },
 ];
 
 type Draft = {
