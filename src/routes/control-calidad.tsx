@@ -56,8 +56,8 @@ function ControlCalidad() {
   }, [measurements, specMap, specVars]);
 
   // Cumplimiento del turno: rollos liberados / total de rollos del turno
-  const cumplimiento = useMemo(() => {
-    if (measurements.length === 0) return 0;
+  const cumplimiento = useMemo<number | null>(() => {
+    if (measurements.length === 0) return null;
     const liberados = measurements.filter((m) => m.estatus === "L").length;
     return (liberados / measurements.length) * 100;
   }, [measurements]);
