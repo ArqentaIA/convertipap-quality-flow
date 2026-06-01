@@ -216,6 +216,18 @@ function OperatorVisionPage() {
   const rollosOK = measurements.filter((m) => m.estatus === "L").length;
   const rollosNC = measurements.filter((m) => m.estatus === "NC").length;
 
+  // Alerta NC consecutivos: parpadea al 2° NC y se apaga al primer C o L.
+  const ncConsecutivos = useMemo(() => {
+    let count = 0;
+    for (let i = measurements.length - 1; i >= 0; i--) {
+      if (measurements[i].estatus === "NC") count++;
+      else break;
+    }
+    return count;
+  }, [measurements]);
+  const ncAlerta = ncConsecutivos >= 2;
+
+
   // Tiempo sin captura desde el último rollo (simulado)
   const lastCaptureMin = useMemo(() => {
     // pretend last capture was ~3 min ago, growing live
