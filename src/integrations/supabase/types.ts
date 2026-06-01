@@ -47,6 +47,58 @@ export type Database = {
         }
         Relationships: []
       }
+      maquina_estado_actual: {
+        Row: {
+          actualizado_por: string | null
+          estado: Database["public"]["Enums"]["maquina_estado"]
+          maquina_id: string
+          orden_activa_id: string | null
+          paro_activo_id: string | null
+          ultimo_cambio: string
+          updated_at: string
+        }
+        Insert: {
+          actualizado_por?: string | null
+          estado?: Database["public"]["Enums"]["maquina_estado"]
+          maquina_id: string
+          orden_activa_id?: string | null
+          paro_activo_id?: string | null
+          ultimo_cambio?: string
+          updated_at?: string
+        }
+        Update: {
+          actualizado_por?: string | null
+          estado?: Database["public"]["Enums"]["maquina_estado"]
+          maquina_id?: string
+          orden_activa_id?: string | null
+          paro_activo_id?: string | null
+          ultimo_cambio?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_mea_paro_activo"
+            columns: ["paro_activo_id"]
+            isOneToOne: false
+            referencedRelation: "paros_maquina"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maquina_estado_actual_maquina_id_fkey"
+            columns: ["maquina_id"]
+            isOneToOne: true
+            referencedRelation: "maquinas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maquina_estado_actual_orden_activa_id_fkey"
+            columns: ["orden_activa_id"]
+            isOneToOne: false
+            referencedRelation: "ordenes_fabricacion"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       maquinas: {
         Row: {
           activo: boolean
@@ -140,6 +192,177 @@ export type Database = {
             columns: ["planta_id"]
             isOneToOne: false
             referencedRelation: "plantas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ordenes_fabricacion: {
+        Row: {
+          cerrado_por: string | null
+          creado_por: string | null
+          created_at: string
+          especificacion_id: string
+          estado: Database["public"]["Enums"]["orden_estado"]
+          fecha_fin: string | null
+          fecha_inicio: string | null
+          fecha_programada: string | null
+          folio: string
+          id: string
+          iniciado_por: string | null
+          maquina_id: string
+          notas: string | null
+          objetivo_kg: number | null
+          objetivo_rollos: number | null
+          planta_id: string
+          producido_kg: number
+          producido_rollos: number
+          producto_id: string
+          turno: string | null
+          unidad_objetivo: Database["public"]["Enums"]["unidad_objetivo"]
+          updated_at: string
+        }
+        Insert: {
+          cerrado_por?: string | null
+          creado_por?: string | null
+          created_at?: string
+          especificacion_id: string
+          estado?: Database["public"]["Enums"]["orden_estado"]
+          fecha_fin?: string | null
+          fecha_inicio?: string | null
+          fecha_programada?: string | null
+          folio: string
+          id?: string
+          iniciado_por?: string | null
+          maquina_id: string
+          notas?: string | null
+          objetivo_kg?: number | null
+          objetivo_rollos?: number | null
+          planta_id: string
+          producido_kg?: number
+          producido_rollos?: number
+          producto_id: string
+          turno?: string | null
+          unidad_objetivo?: Database["public"]["Enums"]["unidad_objetivo"]
+          updated_at?: string
+        }
+        Update: {
+          cerrado_por?: string | null
+          creado_por?: string | null
+          created_at?: string
+          especificacion_id?: string
+          estado?: Database["public"]["Enums"]["orden_estado"]
+          fecha_fin?: string | null
+          fecha_inicio?: string | null
+          fecha_programada?: string | null
+          folio?: string
+          id?: string
+          iniciado_por?: string | null
+          maquina_id?: string
+          notas?: string | null
+          objetivo_kg?: number | null
+          objetivo_rollos?: number | null
+          planta_id?: string
+          producido_kg?: number
+          producido_rollos?: number
+          producto_id?: string
+          turno?: string | null
+          unidad_objetivo?: Database["public"]["Enums"]["unidad_objetivo"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ordenes_fabricacion_especificacion_id_fkey"
+            columns: ["especificacion_id"]
+            isOneToOne: false
+            referencedRelation: "producto_especificaciones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ordenes_fabricacion_maquina_id_fkey"
+            columns: ["maquina_id"]
+            isOneToOne: false
+            referencedRelation: "maquinas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ordenes_fabricacion_planta_id_fkey"
+            columns: ["planta_id"]
+            isOneToOne: false
+            referencedRelation: "plantas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ordenes_fabricacion_producto_id_fkey"
+            columns: ["producto_id"]
+            isOneToOne: false
+            referencedRelation: "productos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      paros_maquina: {
+        Row: {
+          abierto_por: string | null
+          cerrado_por: string | null
+          created_at: string
+          descripcion: string | null
+          duracion_min: number | null
+          fin: string | null
+          id: string
+          inicio: string
+          maquina_id: string
+          orden_id: string | null
+          tipo_paro_id: string
+          updated_at: string
+        }
+        Insert: {
+          abierto_por?: string | null
+          cerrado_por?: string | null
+          created_at?: string
+          descripcion?: string | null
+          duracion_min?: number | null
+          fin?: string | null
+          id?: string
+          inicio?: string
+          maquina_id: string
+          orden_id?: string | null
+          tipo_paro_id: string
+          updated_at?: string
+        }
+        Update: {
+          abierto_por?: string | null
+          cerrado_por?: string | null
+          created_at?: string
+          descripcion?: string | null
+          duracion_min?: number | null
+          fin?: string | null
+          id?: string
+          inicio?: string
+          maquina_id?: string
+          orden_id?: string | null
+          tipo_paro_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "paros_maquina_maquina_id_fkey"
+            columns: ["maquina_id"]
+            isOneToOne: false
+            referencedRelation: "maquinas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "paros_maquina_orden_id_fkey"
+            columns: ["orden_id"]
+            isOneToOne: false
+            referencedRelation: "ordenes_fabricacion"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "paros_maquina_tipo_paro_id_fkey"
+            columns: ["tipo_paro_id"]
+            isOneToOne: false
+            referencedRelation: "tipos_paro"
             referencedColumns: ["id"]
           },
         ]
@@ -352,6 +575,53 @@ export type Database = {
         }
         Relationships: []
       }
+      rollos_producidos: {
+        Row: {
+          created_at: string
+          diametro_mm: number | null
+          id: string
+          numero: number
+          observaciones: string | null
+          orden_id: string
+          peso_kg: number | null
+          registrado_at: string
+          registrado_por: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          diametro_mm?: number | null
+          id?: string
+          numero: number
+          observaciones?: string | null
+          orden_id: string
+          peso_kg?: number | null
+          registrado_at?: string
+          registrado_por?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          diametro_mm?: number | null
+          id?: string
+          numero?: number
+          observaciones?: string | null
+          orden_id?: string
+          peso_kg?: number | null
+          registrado_at?: string
+          registrado_por?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rollos_producidos_orden_id_fkey"
+            columns: ["orden_id"]
+            isOneToOne: false
+            referencedRelation: "ordenes_fabricacion"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       roster_turnos: {
         Row: {
           activo: boolean
@@ -419,6 +689,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      tipos_paro: {
+        Row: {
+          activo: boolean
+          categoria: Database["public"]["Enums"]["paro_categoria"]
+          codigo: string
+          created_at: string
+          descripcion: string | null
+          id: string
+          nombre: string
+          orden: number
+          updated_at: string
+        }
+        Insert: {
+          activo?: boolean
+          categoria: Database["public"]["Enums"]["paro_categoria"]
+          codigo: string
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          nombre: string
+          orden?: number
+          updated_at?: string
+        }
+        Update: {
+          activo?: boolean
+          categoria?: Database["public"]["Enums"]["paro_categoria"]
+          codigo?: string
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          nombre?: string
+          orden?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       tipos_producto: {
         Row: {
@@ -562,8 +868,28 @@ export type Database = {
         | "direccion"
         | "calidad"
         | "capturista"
+      maquina_estado: "libre" | "produciendo" | "paro" | "mantenimiento"
+      orden_estado:
+        | "borrador"
+        | "programada"
+        | "en_proceso"
+        | "pausada"
+        | "finalizada"
+        | "cancelada"
+      paro_categoria:
+        | "materiales"
+        | "cambio_produccion"
+        | "limpieza"
+        | "mantenimiento"
+        | "falla_tecnica"
+        | "calidad"
+        | "recursos_humanos"
+        | "servicios"
+        | "planeado"
+        | "otro"
       shift_code: "1" | "2" | "3"
       spec_status: "borrador" | "vigente" | "obsoleta"
+      unidad_objetivo: "kg" | "rollos" | "ambos"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -707,8 +1033,30 @@ export const Constants = {
         "calidad",
         "capturista",
       ],
+      maquina_estado: ["libre", "produciendo", "paro", "mantenimiento"],
+      orden_estado: [
+        "borrador",
+        "programada",
+        "en_proceso",
+        "pausada",
+        "finalizada",
+        "cancelada",
+      ],
+      paro_categoria: [
+        "materiales",
+        "cambio_produccion",
+        "limpieza",
+        "mantenimiento",
+        "falla_tecnica",
+        "calidad",
+        "recursos_humanos",
+        "servicios",
+        "planeado",
+        "otro",
+      ],
       shift_code: ["1", "2", "3"],
       spec_status: ["borrador", "vigente", "obsoleta"],
+      unidad_objetivo: ["kg", "rollos", "ambos"],
     },
   },
 } as const
