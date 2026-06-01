@@ -8,6 +8,7 @@ import {
 } from "@/lib/spec-audit";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import logoUrl from "@/assets/logo-convertipap.png";
 import {
   Pencil, Power, Lock, FileSpreadsheet, ShieldCheck, Save, X,
 } from "lucide-react";
