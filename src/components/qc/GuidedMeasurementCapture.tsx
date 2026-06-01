@@ -284,25 +284,32 @@ export function GuidedMeasurementCapture({
       {/* ZONA SUPERIOR · TARJETA DE CAPTURA */}
       <div className="rounded-2xl border border-primary/30 bg-gradient-to-br from-card to-primary/5 shadow-lg">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-card/60 px-5 py-3">
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-end gap-4">
             <div className="rounded-lg bg-primary/10 p-2 text-primary">
               <FileText className="h-5 w-5" />
             </div>
             <div>
-              <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Rollo Actual</div>
-              <div className="flex items-baseline gap-3">
-                <input
-                  type="text"
-                  value={draft.rollo}
-                  disabled={!canCapture}
-                  onChange={(e) => { userTouchedRolloRef.current = true; setDraft({ ...draft, rollo: e.target.value }); }}
-                  placeholder="0000-0"
-                  className="w-36 bg-transparent text-xl font-bold tabular-nums text-foreground outline-none placeholder:text-muted-foreground/50 disabled:cursor-not-allowed"
-                />
-                <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                  <Clock className="h-3.5 w-3.5" /> {draft.hora}
-                </span>
+              <label htmlFor="rollo-input" className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                No. de rollo <span className="text-destructive">*</span>
+              </label>
+              <input
+                id="rollo-input"
+                type="text"
+                value={draft.rollo}
+                disabled={!canCapture}
+                onChange={(e) => { userTouchedRolloRef.current = true; setDraft({ ...draft, rollo: e.target.value }); }}
+                placeholder="0000-0"
+                className="mt-1 block w-44 rounded-lg border border-input bg-background px-3 py-2 text-xl font-bold tabular-nums text-foreground outline-none ring-2 ring-transparent transition focus:border-primary focus:ring-primary/30 placeholder:text-muted-foreground/50 disabled:cursor-not-allowed disabled:bg-muted/40"
+              />
+              <div className="mt-1 text-[11px] text-muted-foreground">
+                Sugerido automáticamente · editable
               </div>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Hora</span>
+              <span className="mt-1 inline-flex items-center gap-1.5 rounded-lg border border-input bg-muted/40 px-3 py-2 text-sm font-semibold tabular-nums text-foreground">
+                <Clock className="h-3.5 w-3.5 text-muted-foreground" /> {draft.hora}
+              </span>
             </div>
           </div>
           <span className="inline-flex items-center gap-1.5 rounded-full border border-warning/50 bg-warning/15 px-3 py-1 text-xs font-semibold text-foreground">
