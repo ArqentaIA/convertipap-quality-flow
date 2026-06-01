@@ -11,7 +11,7 @@ import { ReleaseBadge } from "@/components/qc/StatusBadge";
 import { ShiftStatusBar } from "@/components/qc/ShiftStatusBar";
 import { useShiftStatus } from "@/lib/shift-status";
 import {
-  DEFAULT_GENERAL, SAMPLE_MEASUREMENTS, PLANTS, evaluateValue,
+  DEFAULT_GENERAL, PLANTS, evaluateValue,
   type Measurement, type GeneralInfo,
 } from "@/lib/qc-data";
 import { PRODUCT_SPEC_MAP } from "@/lib/spec-catalog";
@@ -31,7 +31,7 @@ const STEPS = [
 function ControlCalidad() {
   const [step, setStep] = useState(1);
   const [info, setInfo] = useState<GeneralInfo>(DEFAULT_GENERAL);
-  const [measurements, setMeasurements] = useState<Measurement[]>(SAMPLE_MEASUREMENTS);
+  const [measurements, setMeasurements] = useState<Measurement[]>([]);
   const [confirmed, setConfirmed] = useState(false);
   const shift = useShiftStatus();
   const locked = shift.status !== "borrador" || confirmed;
