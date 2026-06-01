@@ -2,7 +2,7 @@ import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import {
   LayoutDashboard, Factory, ClipboardCheck, FileBarChart2,
-  Settings, Users, ChevronLeft, ChevronRight, Bell, ChevronDown, SlidersHorizontal,
+  Settings, ChevronLeft, ChevronRight, Bell, ChevronDown, SlidersHorizontal,
   LogOut, Lock, Loader2, FolderCog,
 } from "lucide-react";
 import logo from "@/assets/logo.png";
@@ -25,7 +25,6 @@ const NAV: NavItem[] = [
   { to: "/reportes", label: "Reportes", icon: FileBarChart2, module: "reportes" },
   { to: "/catalogos", label: "Catálogos", icon: FolderCog, module: "configuracion" },
   { to: "/configuracion", label: "Configuración", icon: Settings, module: "configuracion" },
-  { to: "/usuarios", label: "Usuarios y permisos", icon: Users, module: "usuarios_permisos" },
 ];
 
 // Mapea cada ruta protegida con el módulo que controla su acceso.
@@ -37,7 +36,6 @@ const ROUTE_MODULE: Array<{ prefix: string; module: AppModule }> = [
   { prefix: "/reportes", module: "reportes" },
   { prefix: "/catalogos", module: "configuracion" },
   { prefix: "/configuracion", module: "configuracion" },
-  { prefix: "/usuarios", module: "usuarios_permisos" },
 ];
 
 function moduleForPath(pathname: string): AppModule {
