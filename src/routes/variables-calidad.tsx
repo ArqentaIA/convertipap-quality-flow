@@ -57,23 +57,15 @@ function VariablesCalidad() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-[340px,1fr]">
-          {/* Lista de productos */}
-          <div className="rounded-xl border border-border bg-card shadow-sm">
-            <div className="border-b border-border p-3 space-y-2">
-              <div className="relative">
-                <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <input
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Buscar por código, nombre o familia…"
-                  className="w-full rounded-md border border-input bg-background pl-8 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                />
-              </div>
+        {/* Selectores desplegables */}
+        <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-[260px,1fr]">
+            <div>
+              <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Familia</label>
               <select
                 value={family}
-                onChange={(e) => setFamily(e.target.value)}
-                className="w-full rounded-md border border-input bg-background px-2 py-2 text-xs font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                onChange={(e) => { setFamily(e.target.value); setSelected(""); }}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               >
                 <option value="all">Todas las familias ({PRODUCT_SPECS.length})</option>
                 {PRODUCT_FAMILIES.map((f) => (
@@ -81,38 +73,28 @@ function VariablesCalidad() {
                 ))}
               </select>
             </div>
-            <ul className="max-h-[560px] overflow-y-auto">
-              {filtered.map((p) => {
-                const active = p.code === activeSpec?.code;
-                return (
-                  <li key={p.code}>
-                    <button
-                      onClick={() => setSelected(p.code)}
-                      className={`flex w-full items-center justify-between gap-2 border-l-2 px-4 py-2.5 text-left transition-colors ${
-                        active ? "border-primary bg-primary/5" : "border-transparent hover:bg-accent/50"
-                      }`}
-                    >
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className={`text-xs font-bold tabular-nums ${active ? "text-primary" : "text-foreground"}`}>{p.code}</span>
-                          <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                            {p.variables.length} var
-                          </span>
-                        </div>
-                        <div className="truncate text-[11px] text-muted-foreground">{p.family}</div>
-                      </div>
-                      <ChevronRight className={`h-4 w-4 shrink-0 ${active ? "text-primary" : "text-muted-foreground"}`} />
-                    </button>
-                  </li>
-                );
-              })}
-              {filtered.length === 0 && (
-                <li className="px-4 py-6 text-center text-xs text-muted-foreground">Sin resultados</li>
-              )}
-            </ul>
+            <div>
+              <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Producto / Especificación ({filtered.length})
+              </label>
+              <select
+                value={activeSpec?.code ?? ""}
+                onChange={(e) => setSelected(e.target.value)}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                {filtered.length === 0 && <option value="">Sin productos en esta familia</option>}
+                {filtered.map((p) => (
+                  <option key={p.code} value={p.code}>
+                    {p.code} — {p.name} · {p.variables.length} var
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
+        </div>
 
-          {/* Detalle de especificación */}
+        <div>
+
           <div className="rounded-xl border border-border bg-card shadow-sm">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-3">
               <div>
