@@ -52,6 +52,7 @@ type Draft = {
   values: Record<string, number | null>;
   estatus: ReleaseStatus;
   notas: string;
+  override?: { by: string; at: string; motivo: string; sugerido: ReleaseStatus } | null;
 };
 
 function nowHHMM() {
@@ -74,6 +75,7 @@ function emptyDraft(rolloSeed: string): Draft {
     values: Object.fromEntries(CAPTURE_FIELDS.map((f) => [f.key, null])),
     estatus: "L",
     notas: "",
+    override: null,
   };
 }
 
@@ -134,13 +136,13 @@ export function GuidedMeasurementCapture({
     return hasBad ? "NC" : hasWarn ? "C" : "L";
   }, [draft.values, specMap]);
 
-  // Sincroniza estatus sugerido salvo que el operador lo modifique manualmente
-  const userTouchedStatusRef = useRef(false);
+  // El estatus SIEMPRE sigue al sugerido por el sistema, salvo que exista
+  // una sobreescritura explícita autorizada por Control de Calidad (queda evidencia).
   useEffect(() => {
-    if (!userTouchedStatusRef.current) {
-      setDraft((d) => ({ ...d, estatus: suggestedStatus }));
-    }
+    setDraft((d) => (d.override ? d : { ...d, estatus: suggestedStatus }));
   }, [suggestedStatus]);
+
+  const [showQcOverride, setShowQcOverride] = useState(false);
 
   const setVal = (key: string, raw: string) => {
     if (!canCapture) return;
@@ -150,7 +152,6 @@ export function GuidedMeasurementCapture({
 
   const resetDraft = (seed: string) => {
     userTouchedRolloRef.current = false;
-    userTouchedStatusRef.current = false;
     setDraft(emptyDraft(seed));
   };
 
@@ -174,6 +175,15 @@ export function GuidedMeasurementCapture({
       estatus: draft.estatus,
       pesoRollo: (draft.values.pesoRollo as number | null) ?? null,
       notas: draft.notas,
+      estatusOverride: draft.override
+        ? {
+            sugerido: draft.override.sugerido,
+            final: draft.estatus,
+            by: draft.override.by,
+            at: draft.override.at,
+            motivo: draft.override.motivo,
+          }
+        : null,
     };
     onChange([...rows, newRow]);
     toast.success("Registro guardado correctamente", {
@@ -309,22 +319,38 @@ export function GuidedMeasurementCapture({
         <div className="grid grid-cols-1 gap-4 border-t border-border bg-card/60 p-5 lg:grid-cols-[1fr_2fr_auto]">
           <div>
             <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Estatus</label>
-            <div className="mt-1 flex items-center gap-2">
-              <select
-                value={draft.estatus}
-                disabled={!canCapture}
-                onChange={(e) => { userTouchedStatusRef.current = true; setDraft({ ...draft, estatus: e.target.value as ReleaseStatus }); }}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-semibold disabled:cursor-not-allowed"
-              >
-                <option value="L">🟢 Liberado</option>
-                <option value="C">🟡 Condicional</option>
-                <option value="NC">🔴 No Conforme</option>
-              </select>
-            </div>
-            <div className="mt-1 text-[11px] text-muted-foreground">
-              Sugerido por el sistema: <span className="font-semibold text-foreground">
-                {suggestedStatus === "L" ? "Liberado" : suggestedStatus === "C" ? "Condicional" : "No Conforme"}
+            <div className="mt-1 flex items-center gap-2 rounded-md border border-input bg-muted/40 px-3 py-2">
+              <span className={`inline-block h-2.5 w-2.5 rounded-full ${draft.estatus === "L" ? "bg-success" : draft.estatus === "C" ? "bg-warning" : "bg-destructive"}`} />
+              <span className="text-sm font-semibold text-foreground">
+                {draft.estatus === "L" ? "Liberado" : draft.estatus === "C" ? "Condicional" : "No Conforme"}
               </span>
+              <Lock className="ml-auto h-3.5 w-3.5 text-muted-foreground" />
+            </div>
+            <div className="mt-1 flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
+              <span>
+                {draft.override ? (
+                  <>Sobreescrito por <span className="font-semibold text-foreground">{draft.override.by}</span> · sugerido: {draft.override.sugerido === "L" ? "Liberado" : draft.override.sugerido === "C" ? "Condicional" : "No Conforme"}</>
+                ) : (
+                  <>Calculado automáticamente según especificaciones</>
+                )}
+              </span>
+              {canCapture && !locked && (
+                draft.override ? (
+                  <button
+                    onClick={() => setDraft((d) => ({ ...d, override: null, estatus: suggestedStatus }))}
+                    className="rounded border border-input bg-background px-2 py-0.5 text-[10px] font-semibold hover:bg-accent"
+                  >
+                    Quitar override
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setShowQcOverride(true)}
+                    className="rounded border border-primary/40 bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary hover:bg-primary/20"
+                  >
+                    Cambiar (Control de Calidad)
+                  </button>
+                )
+              )}
             </div>
           </div>
           <div>
@@ -392,6 +418,25 @@ export function GuidedMeasurementCapture({
           turno={turno}
           onCancel={() => setShowLogin(false)}
           onSuccess={(user, role) => { setSession({ user, role }); setShowLogin(false); }}
+        />
+      )}
+
+      {showQcOverride && (
+        <QcOverrideModal
+          sugerido={suggestedStatus}
+          actual={draft.estatus}
+          onCancel={() => setShowQcOverride(false)}
+          onConfirm={({ by, nuevoEstatus, motivo }) => {
+            setDraft((d) => ({
+              ...d,
+              estatus: nuevoEstatus,
+              override: { by, at: new Date().toISOString(), motivo, sugerido: suggestedStatus },
+            }));
+            setShowQcOverride(false);
+            toast.success("Estatus actualizado por Control de Calidad", {
+              description: `Por ${by} · evidencia registrada`,
+            });
+          }}
         />
       )}
 
@@ -591,6 +636,84 @@ function NotasSelect({ value, disabled, onChange }: { value: string; disabled: b
           })}
         </div>
       )}
+    </div>
+  );
+}
+
+/* ---------- Override de estatus (Control de Calidad) ---------- */
+function QcOverrideModal({
+  sugerido, actual, onCancel, onConfirm,
+}: {
+  sugerido: ReleaseStatus;
+  actual: ReleaseStatus;
+  onCancel: () => void;
+  onConfirm: (p: { by: string; nuevoEstatus: ReleaseStatus; motivo: string }) => void;
+}) {
+  const [user, setUser] = useState("");
+  const [pass, setPass] = useState("");
+  const [nuevo, setNuevo] = useState<ReleaseStatus>(actual);
+  const [motivo, setMotivo] = useState("");
+  const [err, setErr] = useState<string | null>(null);
+
+  // Credenciales simuladas autorizadas de Control de Calidad
+  const QC_USERS: Record<string, string> = {
+    "calidad": "calidad",
+    "qc": "qc",
+    "jonathan.pelaez": "calidad",
+  };
+
+  const submit = () => {
+    const u = user.trim().toLowerCase();
+    if (!u || !pass) { setErr("Ingresa usuario y clave de Control de Calidad."); return; }
+    if (QC_USERS[u] !== pass) { setErr("Credenciales de Control de Calidad inválidas."); return; }
+    if (!motivo.trim() || motivo.trim().length < 5) { setErr("Captura un motivo (mín. 5 caracteres)."); return; }
+    if (nuevo === sugerido) { setErr("El estatus seleccionado coincide con el sugerido."); return; }
+    onConfirm({ by: user.trim(), nuevoEstatus: nuevo, motivo: motivo.trim() });
+  };
+
+  const label = (s: ReleaseStatus) => s === "L" ? "Liberado" : s === "C" ? "Condicional" : "No Conforme";
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/70 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-md rounded-xl border border-border bg-card p-5 shadow-lg">
+        <div className="flex items-center gap-2">
+          <Lock className="h-5 w-5 text-primary" />
+          <h4 className="text-sm font-semibold text-foreground">Cambio de estatus · Control de Calidad</h4>
+        </div>
+        <p className="mt-1 text-xs text-muted-foreground">
+          El estatus sugerido por el sistema es <span className="font-semibold text-foreground">{label(sugerido)}</span>.
+          Sobreescribirlo requiere autenticación y queda registrado como evidencia.
+        </p>
+        <div className="mt-4 space-y-3">
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Usuario QC</label>
+              <input value={user} onChange={(e) => setUser(e.target.value)} className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" placeholder="usuario.calidad" />
+            </div>
+            <div>
+              <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Clave</label>
+              <input type="password" value={pass} onChange={(e) => setPass(e.target.value)} className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" placeholder="••••••••" />
+            </div>
+          </div>
+          <div>
+            <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Nuevo estatus</label>
+            <select value={nuevo} onChange={(e) => setNuevo(e.target.value as ReleaseStatus)} className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-semibold">
+              <option value="L">🟢 Liberado</option>
+              <option value="C">🟡 Condicional</option>
+              <option value="NC">🔴 No Conforme</option>
+            </select>
+          </div>
+          <div>
+            <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Motivo / Justificación</label>
+            <textarea value={motivo} onChange={(e) => setMotivo(e.target.value)} rows={3} className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" placeholder="Ej. Reanálisis con muestra adicional, autorizado por jefe de calidad…" />
+          </div>
+          {err && <div className="text-xs font-medium text-destructive">{err}</div>}
+        </div>
+        <div className="mt-5 flex justify-end gap-2">
+          <button onClick={onCancel} className="rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium hover:bg-accent">Cancelar</button>
+          <button onClick={submit} className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:opacity-90">Confirmar y firmar</button>
+        </div>
+      </div>
     </div>
   );
 }
