@@ -216,7 +216,7 @@ export function GuidedMeasurementCapture({
       )}
 
       {/* ZONA SUPERIOR · TARJETA DE CAPTURA */}
-      <div className="overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-br from-card to-primary/5 shadow-lg">
+      <div className="rounded-2xl border border-primary/30 bg-gradient-to-br from-card to-primary/5 shadow-lg">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-card/60 px-5 py-3">
           <div className="flex items-center gap-4">
             <div className="rounded-lg bg-primary/10 p-2 text-primary">
