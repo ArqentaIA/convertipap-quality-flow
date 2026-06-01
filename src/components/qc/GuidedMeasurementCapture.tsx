@@ -160,6 +160,15 @@ export function GuidedMeasurementCapture({
     setDraft((d) => (d.override ? d : { ...d, estatus: suggestedStatus }));
   }, [suggestedStatus]);
 
+  // Hora evidente: se sincroniza automáticamente con la hora del sistema
+  // mientras el rollo no ha sido guardado (se congela al persistir).
+  useEffect(() => {
+    const tick = () => setDraft((d) => ({ ...d, hora: nowHHMM() }));
+    tick();
+    const id = window.setInterval(tick, 30_000);
+    return () => window.clearInterval(id);
+  }, []);
+
   const [showQcOverride, setShowQcOverride] = useState(false);
 
   const setVal = (key: string, raw: string) => {
