@@ -78,7 +78,7 @@ function ControlCalidad() {
   return (
     <AppLayout title="Control de Calidad · Registro de Producción">
       <div className="space-y-5">
-        {step !== 1 && <ShiftStatusBar />}
+        {step === 2 && <ShiftStatusBar />}
         <StepperWizard steps={STEPS} current={step} onGo={setStep} />
 
         {step === 1 && (
