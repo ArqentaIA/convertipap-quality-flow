@@ -112,13 +112,26 @@ function ControlCalidad() {
           total={STEPS.length}
           onBack={() => setStep((s) => Math.max(1, s - 1))}
           onNext={() => setStep((s) => Math.min(STEPS.length, s + 1))}
+          onCloseShift={() => {
+            if (!window.confirm("¿Cerrar turno? Se limpiarán las mediciones y se iniciará el siguiente turno.")) return;
+            const nextTurno = (info.turno === "1" ? "2" : info.turno === "2" ? "3" : "1") as GeneralInfo["turno"];
+            const horario = nextTurno === "1"
+              ? { horaInicio: "07:00", horaFin: "15:00" }
+              : nextTurno === "2"
+                ? { horaInicio: "15:00", horaFin: "23:00" }
+                : { horaInicio: "23:00", horaFin: "07:00" };
+            setInfo({ ...info, turno: nextTurno, ...horario });
+            setMeasurements([]);
+            setConfirmed(false);
+            setStep(1);
+          }}
         />
       </div>
     </AppLayout>
   );
 }
 
-function ActionFooter({ step, total, onBack, onNext }: { step: number; total: number; onBack: () => void; onNext: () => void }) {
+function ActionFooter({ step, total, onBack, onNext, onCloseShift }: { step: number; total: number; onBack: () => void; onNext: () => void; onCloseShift: () => void }) {
   return (
     <div className="sticky bottom-0 -mx-6 mt-6 border-t border-border bg-card/95 px-6 py-3 backdrop-blur">
       <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-3">
@@ -136,9 +149,12 @@ function ActionFooter({ step, total, onBack, onNext }: { step: number; total: nu
               Siguiente <ArrowRight className="h-4 w-4" />
             </button>
           ) : (
-            <span className="inline-flex items-center gap-2 rounded-md border border-success/40 bg-success/10 px-4 py-2 text-sm font-semibold text-success">
-              <CheckCircle2 className="h-4 w-4" /> Registro confirmado
-            </span>
+            <button
+              onClick={onCloseShift}
+              className="inline-flex items-center gap-2 rounded-md bg-success px-4 py-2 text-sm font-semibold text-success-foreground hover:opacity-90"
+            >
+              <CheckCircle2 className="h-4 w-4" /> Cerrar turno
+            </button>
           )}
         </div>
       </div>
