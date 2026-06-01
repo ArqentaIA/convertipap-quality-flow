@@ -75,6 +75,7 @@ function emptyDraft(rolloSeed: string): Draft {
     values: Object.fromEntries(CAPTURE_FIELDS.map((f) => [f.key, null])),
     estatus: "L",
     notas: "",
+    override: null,
   };
 }
 
