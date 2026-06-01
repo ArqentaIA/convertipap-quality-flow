@@ -43,7 +43,7 @@ export function GeneralInfoForm({
     if (k === "turno") {
       const turno = v as Shift;
       const horario = SHIFT_HOURS[turno];
-      onChange({ ...value, turno, ...horario });
+      onChange({ ...value, turno, ...(horario ?? { horaInicio: "", horaFin: "" }) });
       return;
     }
     onChange({ ...value, [k]: v });
@@ -109,10 +109,11 @@ export function GeneralInfoForm({
                 </select>
               ) : f.type === "select" ? (
                 <select
-                  value={String(value[f.key])}
+                  value={String(value[f.key] ?? "")}
                   onChange={(e) => set(f.key, e.target.value as never)}
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 >
+                  {f.key === "turno" && <option value="">Seleccionar…</option>}
                   {f.options!.map((o) => <option key={o} value={o}>{f.key === "turno" ? `Turno ${o}` : o}</option>)}
                 </select>
               ) : isComputed ? (
