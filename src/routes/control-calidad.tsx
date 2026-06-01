@@ -147,9 +147,9 @@ function ActionFooter({ step, total, onBack, onNext }: { step: number; total: nu
 }
 
 function SummaryPanel({
-  info, plantName, measurements, alerts, onEdit,
+  info, plantName, productoNombre, measurements, alerts, onEdit,
 }: {
-  info: GeneralInfo; plantName: string; measurements: Measurement[]; alerts: string[]; onEdit: (s: number) => void;
+  info: GeneralInfo; plantName: string; productoNombre: string; measurements: Measurement[]; alerts: string[]; onEdit: (s: number) => void;
 }) {
   const finalStatus = alerts.length === 0 ? "ok" : "issues";
 
