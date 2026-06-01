@@ -296,7 +296,6 @@ function CEOReportPreview({ onClose }: { onClose: () => void }) {
 const OPERATOR_VISION_BASE = "https://www.convertipap.site";
 
 function OperatorVisionUrls() {
-  const [copiedAll, setCopiedAll] = useState(false);
   const [copiedOne, setCopiedOne] = useState<string | null>(null);
 
   const urls = MAQUINAS.map((m) => ({
@@ -309,17 +308,6 @@ function OperatorVisionUrls() {
       await navigator.clipboard.writeText(text);
       setCopiedOne(key);
       setTimeout(() => setCopiedOne(null), 2000);
-    } catch {
-      // ignore
-    }
-  };
-
-  const copyAll = async () => {
-    try {
-      const text = urls.map((u) => `${u.maquina}\n${u.url}`).join("\n\n");
-      await navigator.clipboard.writeText(text);
-      setCopiedAll(true);
-      setTimeout(() => setCopiedAll(false), 2000);
     } catch {
       // ignore
     }
@@ -357,18 +345,6 @@ function OperatorVisionUrls() {
             </a>
           </div>
         ))}
-      </div>
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-[11px] leading-snug text-muted-foreground">
-          Cada URL muestra la información en tiempo real de su máquina. Ideal para TV industrial de 70".
-        </p>
-        <button
-          onClick={copyAll}
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-input bg-background px-3 py-1.5 text-[11px] font-medium hover:bg-accent"
-        >
-          <Copy className="h-3 w-3" />
-          {copiedAll ? "¡Copiadas!" : "Copiar todas"}
-        </button>
       </div>
     </div>
   );
