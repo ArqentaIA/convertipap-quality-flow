@@ -17,9 +17,9 @@ type NavItem = {
   pathPrefixes?: string[];
 };
 
-// Nota: "Catálogos" se oculta del menú lateral para todos los roles.
-// La ruta /catalogos sigue existiendo y protegida por el módulo "configuracion"
-// (ver ROUTE_MODULE) para uso técnico por URL directa.
+// Nota: "Catálogos" y "Usuarios y permisos" se ocultan del menú lateral
+// para todos los roles. Las rutas /catalogos y /usuarios siguen existiendo
+// protegidas por ROUTE_MODULE para uso técnico por URL directa.
 const NAV: NavItem[] = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, module: "dashboard" },
   { to: "/produccion", label: "Producción", icon: Factory, module: "produccion", pathPrefixes: ["/produccion", "/historial"] },
@@ -27,7 +27,6 @@ const NAV: NavItem[] = [
   { to: "/variables-calidad", label: "Variables de Calidad", icon: SlidersHorizontal, module: "variables_calidad" },
   { to: "/reportes", label: "Reportes", icon: FileBarChart2, module: "reportes" },
   { to: "/configuracion", label: "Configuración", icon: Settings, module: "configuracion" },
-  { to: "/usuarios", label: "Usuarios y permisos", icon: Users, module: "usuarios_permisos" },
 ];
 
 // Mapea cada ruta protegida con el módulo que controla su acceso.
