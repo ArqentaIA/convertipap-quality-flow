@@ -97,6 +97,8 @@ function ControlCalidad() {
               turno={info.turno}
               specVars={specVars}
               locked={locked}
+              confirmed={confirmed}
+              onConfirm={() => { setConfirmed(true); setStep(3); }}
             />
           </div>
         )}
