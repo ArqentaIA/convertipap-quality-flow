@@ -216,6 +216,18 @@ function OperatorVisionPage() {
   const rollosOK = measurements.filter((m) => m.estatus === "L").length;
   const rollosNC = measurements.filter((m) => m.estatus === "NC").length;
 
+  // Alerta NC consecutivos: parpadea al 2° NC y se apaga al primer C o L.
+  const ncConsecutivos = useMemo(() => {
+    let count = 0;
+    for (let i = measurements.length - 1; i >= 0; i--) {
+      if (measurements[i].estatus === "NC") count++;
+      else break;
+    }
+    return count;
+  }, [measurements]);
+  const ncAlerta = ncConsecutivos >= 2;
+
+
   // Tiempo sin captura desde el último rollo (simulado)
   const lastCaptureMin = useMemo(() => {
     // pretend last capture was ~3 min ago, growing live
@@ -264,8 +276,28 @@ function OperatorVisionPage() {
         backgroundSize: "48px 48px",
       }}
     >
+      {/* ---------------- ALERTA NC CONSECUTIVOS ---------------- */}
+      {ncAlerta && (
+        <div className="pointer-events-none fixed inset-0 z-[60] animate-[ncFlash_2s_ease-in-out_infinite]">
+          <div className="absolute inset-0 bg-rose-600/25 mix-blend-multiply" />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div
+              className="select-none font-black uppercase tracking-[0.25em] text-rose-600/30"
+              style={{ fontSize: "clamp(80px, 14vw, 260px)", transform: "rotate(-18deg)" }}
+            >
+              NO CONFORME
+            </div>
+          </div>
+          <div className="absolute left-1/2 top-6 -translate-x-1/2 rounded-full border-2 border-rose-600 bg-white/95 px-6 py-2 text-base font-black uppercase tracking-widest text-rose-700 shadow-lg">
+            ⚠ {ncConsecutivos} rollos NC consecutivos — atención inmediata
+          </div>
+          <style>{`@keyframes ncFlash { 0%,100% { opacity: 0.25 } 50% { opacity: 1 } }`}</style>
+        </div>
+      )}
+
       {/* ---------------- HEADER ---------------- */}
       <header className="relative border-b-2 border-slate-200 bg-white/80 backdrop-blur">
+
         <div className="flex items-center gap-6 px-8 py-4">
           <div className="flex items-center gap-3">
             <img
