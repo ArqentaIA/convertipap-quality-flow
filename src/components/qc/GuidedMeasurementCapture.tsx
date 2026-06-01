@@ -421,6 +421,25 @@ export function GuidedMeasurementCapture({
         />
       )}
 
+      {showQcOverride && (
+        <QcOverrideModal
+          sugerido={suggestedStatus}
+          actual={draft.estatus}
+          onCancel={() => setShowQcOverride(false)}
+          onConfirm={({ by, nuevoEstatus, motivo }) => {
+            setDraft((d) => ({
+              ...d,
+              estatus: nuevoEstatus,
+              override: { by, at: new Date().toISOString(), motivo, sugerido: suggestedStatus },
+            }));
+            setShowQcOverride(false);
+            toast.success("Estatus actualizado por Control de Calidad", {
+              description: `Por ${by} · evidencia registrada`,
+            });
+          }}
+        />
+      )}
+
       {detailId && (
         <DetailDrawer
           row={rows.find((r) => r.id === detailId)!}
