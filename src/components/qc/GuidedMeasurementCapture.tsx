@@ -319,22 +319,38 @@ export function GuidedMeasurementCapture({
         <div className="grid grid-cols-1 gap-4 border-t border-border bg-card/60 p-5 lg:grid-cols-[1fr_2fr_auto]">
           <div>
             <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Estatus</label>
-            <div className="mt-1 flex items-center gap-2">
-              <select
-                value={draft.estatus}
-                disabled={!canCapture}
-                onChange={(e) => { userTouchedStatusRef.current = true; setDraft({ ...draft, estatus: e.target.value as ReleaseStatus }); }}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-semibold disabled:cursor-not-allowed"
-              >
-                <option value="L">🟢 Liberado</option>
-                <option value="C">🟡 Condicional</option>
-                <option value="NC">🔴 No Conforme</option>
-              </select>
-            </div>
-            <div className="mt-1 text-[11px] text-muted-foreground">
-              Sugerido por el sistema: <span className="font-semibold text-foreground">
-                {suggestedStatus === "L" ? "Liberado" : suggestedStatus === "C" ? "Condicional" : "No Conforme"}
+            <div className="mt-1 flex items-center gap-2 rounded-md border border-input bg-muted/40 px-3 py-2">
+              <span className={`inline-block h-2.5 w-2.5 rounded-full ${draft.estatus === "L" ? "bg-success" : draft.estatus === "C" ? "bg-warning" : "bg-destructive"}`} />
+              <span className="text-sm font-semibold text-foreground">
+                {draft.estatus === "L" ? "Liberado" : draft.estatus === "C" ? "Condicional" : "No Conforme"}
               </span>
+              <Lock className="ml-auto h-3.5 w-3.5 text-muted-foreground" />
+            </div>
+            <div className="mt-1 flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
+              <span>
+                {draft.override ? (
+                  <>Sobreescrito por <span className="font-semibold text-foreground">{draft.override.by}</span> · sugerido: {draft.override.sugerido === "L" ? "Liberado" : draft.override.sugerido === "C" ? "Condicional" : "No Conforme"}</>
+                ) : (
+                  <>Calculado automáticamente según especificaciones</>
+                )}
+              </span>
+              {canCapture && !locked && (
+                draft.override ? (
+                  <button
+                    onClick={() => setDraft((d) => ({ ...d, override: null, estatus: suggestedStatus }))}
+                    className="rounded border border-input bg-background px-2 py-0.5 text-[10px] font-semibold hover:bg-accent"
+                  >
+                    Quitar override
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setShowQcOverride(true)}
+                    className="rounded border border-primary/40 bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary hover:bg-primary/20"
+                  >
+                    Cambiar (Control de Calidad)
+                  </button>
+                )
+              )}
             </div>
           </div>
           <div>
