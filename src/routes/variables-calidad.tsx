@@ -102,8 +102,8 @@ function VariablesCalidad() {
     const records = auditFor(activeSpec.code).sort((a, b) => a.timestamp.localeCompare(b.timestamp));
     const W = doc.internal.pageSize.getWidth();
 
-    // Logo (parte superior izquierda)
-    let headerBottom = 40;
+    // Logo centrado y luego título debajo
+    let cursorY = 30;
     try {
       const blob = await fetch(logoUrl).then((r) => r.blob());
       const dataUrl: string = await new Promise((res, rej) => {
@@ -112,14 +112,17 @@ function VariablesCalidad() {
         fr.onerror = rej;
         fr.readAsDataURL(blob);
       });
-      const logoW = 90;
-      const logoH = 90 * (300 / 700); // ~38.6
-      doc.addImage(dataUrl, "PNG", 40, 24, logoW, logoH);
-      headerBottom = 24 + logoH;
-    } catch { /* sigue sin logo */ }
+      const logoW = 130;
+      const logoH = logoW * (300 / 700); // ~55.7
+      doc.addImage(dataUrl, "PNG", (W - logoW) / 2, cursorY, logoW, logoH);
+      cursorY += logoH + 18;
+    } catch {
+      cursorY = 50;
+    }
 
     doc.setFontSize(14).setFont("helvetica", "bold");
-    doc.text("Reporte de Trazabilidad de Cambios de Especificaciones", W / 2, Math.max(50, headerBottom - 8), { align: "center" });
+    doc.text("Reporte de Trazabilidad de Cambios de Especificaciones", W / 2, cursorY, { align: "center" });
+    cursorY += 16;
 
     doc.setFontSize(10).setFont("helvetica", "normal");
     const meta = [
@@ -130,7 +133,7 @@ function VariablesCalidad() {
       ["Fecha de emisión", new Date().toLocaleString("es-MX")],
     ];
     autoTable(doc, {
-      startY: Math.max(75, headerBottom + 10),
+      startY: cursorY,
       head: [["Datos Generales", ""]],
       body: meta,
       theme: "grid",
