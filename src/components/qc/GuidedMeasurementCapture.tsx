@@ -383,6 +383,49 @@ export function GuidedMeasurementCapture({
                     </div>
                   );
                 })}
+                {grp === "calidad" && (() => {
+                  const tMD = draft.values["tensionMD"];
+                  const tCD = draft.values["tensionCD"];
+                  const rel = typeof tMD === "number" && typeof tCD === "number" && tCD !== 0
+                    ? Number((tMD / tCD).toFixed(2))
+                    : null;
+                  const spec = specMap["relMDCD"];
+                  const status = spec && rel != null ? evaluateValue(spec, rel) : "ok";
+                  const ring =
+                    rel == null || !spec
+                      ? "border-input bg-muted/30"
+                      : status === "bad"
+                      ? "border-destructive bg-destructive/5 text-destructive"
+                      : status === "warn"
+                      ? "border-warning bg-warning/10"
+                      : "border-success bg-success/5";
+                  return (
+                    <div className="rounded-xl border border-dashed border-primary/40 bg-primary/5 p-3">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                          Rel. MD/CD <span className="text-muted-foreground/70">(calculado)</span>
+                        </label>
+                        {rel != null && spec && (
+                          status === "bad" ? <XCircle className="h-4 w-4 text-destructive" />
+                          : status === "warn" ? <AlertTriangle className="h-4 w-4 text-warning" />
+                          : <CheckCircle2 className="h-4 w-4 text-success" />
+                        )}
+                      </div>
+                      <div className={`mt-2 w-full rounded-lg border px-3 py-3 text-2xl font-semibold tabular-nums ${ring}`}>
+                        {rel != null ? rel.toFixed(2) : "—"}
+                      </div>
+                      {spec && (
+                        <div className="mt-1.5 flex items-center justify-between text-[11px] text-muted-foreground">
+                          <span>Obj. <span className="font-medium text-foreground tabular-nums">{spec.objective}</span></span>
+                          <span>Rango <span className="tabular-nums">{spec.min}–{spec.max}</span></span>
+                        </div>
+                      )}
+                      <div className="mt-1.5 text-[11px] text-muted-foreground">
+                        Tensión MD ÷ Tensión CD
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           );
