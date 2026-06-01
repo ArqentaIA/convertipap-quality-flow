@@ -215,17 +215,40 @@ export async function printRollLabel(data: RollLabelData) {
 </body>
 </html>`;
 
-  // Renderizar en un contenedor oculto del documento actual para capturarlo a PDF
-  // (evita el cuadro de impresión del navegador, que añade la URL en el encabezado).
-  const host = document.createElement("div");
-  host.style.cssText = "position:fixed;left:-10000px;top:0;width:820px;background:#fff;z-index:-1;";
-  host.innerHTML = html.replace(/<script[\s\S]*?<\/script>/g, "");
-  document.body.appendChild(host);
-  const target = host.querySelector(".sheet") as HTMLElement | null;
-  if (!target) { host.remove(); return; }
+  // Renderizar dentro de un iframe aislado para evitar heredar los estilos
+  // globales del proyecto (que usan oklch() y rompen html2canvas).
+  const iframe = document.createElement("iframe");
+  iframe.style.cssText = "position:fixed;left:-10000px;top:0;width:820px;height:1200px;border:0;background:#fff;";
+  document.body.appendChild(iframe);
 
   try {
-    const canvas = await html2canvas(target, { scale: 2, backgroundColor: "#ffffff", useCORS: true });
+    const doc = iframe.contentDocument!;
+    doc.open();
+    doc.write(html.replace(/<script[\s\S]*?<\/script>/g, ""));
+    doc.close();
+
+    // Esperar a que carguen las imágenes (logo + QR) dentro del iframe
+    await new Promise<void>((resolve) => {
+      const imgs = Array.from(doc.images);
+      if (imgs.length === 0) return resolve();
+      let pending = imgs.length;
+      const done = () => { if (--pending <= 0) resolve(); };
+      imgs.forEach((img) => {
+        if (img.complete) done();
+        else { img.addEventListener("load", done); img.addEventListener("error", done); }
+      });
+      setTimeout(resolve, 2500);
+    });
+
+    const target = doc.querySelector(".sheet") as HTMLElement | null;
+    if (!target) return;
+
+    const canvas = await html2canvas(target, {
+      scale: 2,
+      backgroundColor: "#ffffff",
+      useCORS: true,
+      windowWidth: 820,
+    });
     const img = canvas.toDataURL("image/png");
     const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "letter" });
     const pageW = pdf.internal.pageSize.getWidth();
@@ -243,6 +266,6 @@ export async function printRollLabel(data: RollLabelData) {
     pdf.addImage(img, "PNG", x, margin, imgW, imgH);
     pdf.save(`Etiqueta_Rollo_${m.rollo}.pdf`);
   } finally {
-    host.remove();
+    iframe.remove();
   }
 }
