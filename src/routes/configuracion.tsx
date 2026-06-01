@@ -7,7 +7,7 @@ import logoConvertipap from "@/assets/logo-convertipap.png";
 export const Route = createFileRoute("/configuracion")({ component: ConfigPage });
 
 const MAQUINAS = ["MP-04", "MP-05", "MP-06", "MP-07"] as const;
-type Maquina = typeof MAQUINAS[number];
+
 
 function ConfigPage() {
   const [previewCEO, setPreviewCEO] = useState(false);
