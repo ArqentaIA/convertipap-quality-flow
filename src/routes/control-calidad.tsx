@@ -196,7 +196,7 @@ function SummaryPanel({
         </div>
       </div>
 
-      <AlertPanel alerts={alerts} />
+      
 
       <div className="rounded-xl border border-border bg-card shadow-sm">
         <div className="border-b border-border px-5 py-3">
