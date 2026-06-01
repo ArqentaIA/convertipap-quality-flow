@@ -14,16 +14,107 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      module_permissions: {
+        Row: {
+          module: Database["public"]["Enums"]["app_module"]
+          role: Database["public"]["Enums"]["app_role"]
+        }
+        Insert: {
+          module: Database["public"]["Enums"]["app_module"]
+          role: Database["public"]["Enums"]["app_role"]
+        }
+        Update: {
+          module?: Database["public"]["Enums"]["app_module"]
+          role?: Database["public"]["Enums"]["app_role"]
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          activo: boolean
+          created_at: string
+          email: string
+          id: string
+          nombre: string
+          rol_visible: string | null
+          updated_at: string
+        }
+        Insert: {
+          activo?: boolean
+          created_at?: string
+          email: string
+          id: string
+          nombre: string
+          rol_visible?: string | null
+          updated_at?: string
+        }
+        Update: {
+          activo?: boolean
+          created_at?: string
+          email?: string
+          id?: string
+          nombre?: string
+          rol_visible?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      can_access_module: {
+        Args: {
+          _module: Database["public"]["Enums"]["app_module"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_module:
+        | "dashboard"
+        | "produccion"
+        | "control_calidad"
+        | "variables_calidad"
+        | "reportes"
+        | "configuracion"
+        | "usuarios_permisos"
+      app_role:
+        | "administrador"
+        | "gerente_general"
+        | "direccion"
+        | "calidad"
+        | "capturista"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +241,23 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_module: [
+        "dashboard",
+        "produccion",
+        "control_calidad",
+        "variables_calidad",
+        "reportes",
+        "configuracion",
+        "usuarios_permisos",
+      ],
+      app_role: [
+        "administrador",
+        "gerente_general",
+        "direccion",
+        "calidad",
+        "capturista",
+      ],
+    },
   },
 } as const
