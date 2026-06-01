@@ -136,13 +136,13 @@ export function GuidedMeasurementCapture({
     return hasBad ? "NC" : hasWarn ? "C" : "L";
   }, [draft.values, specMap]);
 
-  // Sincroniza estatus sugerido salvo que el operador lo modifique manualmente
-  const userTouchedStatusRef = useRef(false);
+  // El estatus SIEMPRE sigue al sugerido por el sistema, salvo que exista
+  // una sobreescritura explícita autorizada por Control de Calidad (queda evidencia).
   useEffect(() => {
-    if (!userTouchedStatusRef.current) {
-      setDraft((d) => ({ ...d, estatus: suggestedStatus }));
-    }
+    setDraft((d) => (d.override ? d : { ...d, estatus: suggestedStatus }));
   }, [suggestedStatus]);
+
+  const [showQcOverride, setShowQcOverride] = useState(false);
 
   const setVal = (key: string, raw: string) => {
     if (!canCapture) return;
