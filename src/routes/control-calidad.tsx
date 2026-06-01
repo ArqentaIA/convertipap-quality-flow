@@ -88,22 +88,12 @@ function ControlCalidad() {
 
         {step === 2 && (
           <div className="space-y-5">
-            <QualityVariableTable variables={specVars} productCode={activeSpec.code} locked={locked} />
-            <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 text-xs text-foreground/80">
-              Los valores capturados en el paso 3 se evaluarán automáticamente contra estos objetivos. Las celdas fuera
-              de rango se marcarán en rojo, cerca del límite en amarillo y dentro del rango en verde.
-            </div>
-          </div>
-        )}
-
-        {step === 3 && (
-          <div className="space-y-5">
             <AlertPanel alerts={alerts} />
             <MeasurementTable rows={measurements} onChange={setMeasurements} operadorTurno={info.operador} turno={info.turno} locked={locked} />
           </div>
         )}
 
-        {step === 4 && (
+        {step === 3 && (
           <SummaryPanel info={infoView} plantName={plant.name} measurements={measurements} alerts={alerts} onEdit={setStep} />
         )}
 
