@@ -89,6 +89,14 @@ export function GuidedMeasurementCapture({
 }) {
   const session = useSession();
   const [showLogin, setShowLogin] = useState(false);
+
+  // Si el usuario ya está autenticado en la app (header), heredamos la sesión de captura
+  // como Dirección automáticamente, evitando el doble login "Iniciar captura".
+  useEffect(() => {
+    if (!session.user || !session.role) {
+      setSession({ user: "Ing. Jonathan Alberto Pelaez", role: "direccion" });
+    }
+  }, [session.user, session.role]);
   const [detailId, setDetailId] = useState<string | null>(null);
   const specMap = useMemo(() => Object.fromEntries(specVars.map((v) => [v.key, v])), [specVars]);
 
