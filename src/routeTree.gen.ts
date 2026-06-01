@@ -23,6 +23,7 @@ import { Route as TFolioRouteImport } from './routes/t.$folio'
 import { Route as HistorialMaquinaRouteImport } from './routes/historial.$maquina'
 import { Route as CalidadRevisionRouteImport } from './routes/calidad.revision'
 import { Route as CalidadCapturaRouteImport } from './routes/calidad.captura'
+import { Route as CalidadAjustesRouteImport } from './routes/calidad.ajustes'
 
 const VariablesCalidadRoute = VariablesCalidadRouteImport.update({
   id: '/variables-calidad',
@@ -94,6 +95,11 @@ const CalidadCapturaRoute = CalidadCapturaRouteImport.update({
   path: '/calidad/captura',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CalidadAjustesRoute = CalidadAjustesRouteImport.update({
+  id: '/calidad/ajustes',
+  path: '/calidad/ajustes',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -106,6 +112,7 @@ export interface FileRoutesByFullPath {
   '/reportes': typeof ReportesRoute
   '/usuarios': typeof UsuariosRoute
   '/variables-calidad': typeof VariablesCalidadRoute
+  '/calidad/ajustes': typeof CalidadAjustesRoute
   '/calidad/captura': typeof CalidadCapturaRoute
   '/calidad/revision': typeof CalidadRevisionRoute
   '/historial/$maquina': typeof HistorialMaquinaRoute
@@ -122,6 +129,7 @@ export interface FileRoutesByTo {
   '/reportes': typeof ReportesRoute
   '/usuarios': typeof UsuariosRoute
   '/variables-calidad': typeof VariablesCalidadRoute
+  '/calidad/ajustes': typeof CalidadAjustesRoute
   '/calidad/captura': typeof CalidadCapturaRoute
   '/calidad/revision': typeof CalidadRevisionRoute
   '/historial/$maquina': typeof HistorialMaquinaRoute
@@ -139,6 +147,7 @@ export interface FileRoutesById {
   '/reportes': typeof ReportesRoute
   '/usuarios': typeof UsuariosRoute
   '/variables-calidad': typeof VariablesCalidadRoute
+  '/calidad/ajustes': typeof CalidadAjustesRoute
   '/calidad/captura': typeof CalidadCapturaRoute
   '/calidad/revision': typeof CalidadRevisionRoute
   '/historial/$maquina': typeof HistorialMaquinaRoute
@@ -157,6 +166,7 @@ export interface FileRouteTypes {
     | '/reportes'
     | '/usuarios'
     | '/variables-calidad'
+    | '/calidad/ajustes'
     | '/calidad/captura'
     | '/calidad/revision'
     | '/historial/$maquina'
@@ -173,6 +183,7 @@ export interface FileRouteTypes {
     | '/reportes'
     | '/usuarios'
     | '/variables-calidad'
+    | '/calidad/ajustes'
     | '/calidad/captura'
     | '/calidad/revision'
     | '/historial/$maquina'
@@ -189,6 +200,7 @@ export interface FileRouteTypes {
     | '/reportes'
     | '/usuarios'
     | '/variables-calidad'
+    | '/calidad/ajustes'
     | '/calidad/captura'
     | '/calidad/revision'
     | '/historial/$maquina'
@@ -206,6 +218,7 @@ export interface RootRouteChildren {
   ReportesRoute: typeof ReportesRoute
   UsuariosRoute: typeof UsuariosRoute
   VariablesCalidadRoute: typeof VariablesCalidadRoute
+  CalidadAjustesRoute: typeof CalidadAjustesRoute
   CalidadCapturaRoute: typeof CalidadCapturaRoute
   CalidadRevisionRoute: typeof CalidadRevisionRoute
   HistorialMaquinaRoute: typeof HistorialMaquinaRoute
@@ -312,6 +325,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CalidadCapturaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/calidad/ajustes': {
+      id: '/calidad/ajustes'
+      path: '/calidad/ajustes'
+      fullPath: '/calidad/ajustes'
+      preLoaderRoute: typeof CalidadAjustesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -326,6 +346,7 @@ const rootRouteChildren: RootRouteChildren = {
   ReportesRoute: ReportesRoute,
   UsuariosRoute: UsuariosRoute,
   VariablesCalidadRoute: VariablesCalidadRoute,
+  CalidadAjustesRoute: CalidadAjustesRoute,
   CalidadCapturaRoute: CalidadCapturaRoute,
   CalidadRevisionRoute: CalidadRevisionRoute,
   HistorialMaquinaRoute: HistorialMaquinaRoute,
