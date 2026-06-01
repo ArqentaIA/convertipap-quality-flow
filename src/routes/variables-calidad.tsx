@@ -3,26 +3,19 @@ import { useMemo, useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PRODUCT_SPECS, PRODUCT_FAMILIES } from "@/lib/spec-catalog";
 import {
-  Search, Plus, Pencil, Copy, GitBranch, Power, Lock, ShieldCheck,
-  ChevronRight, FileSpreadsheet,
+  Plus, Pencil, Copy, GitBranch, Power, Lock, ShieldCheck, FileSpreadsheet,
 } from "lucide-react";
 
 export const Route = createFileRoute("/variables-calidad")({ component: VariablesCalidad });
 
 function VariablesCalidad() {
-  const [query, setQuery] = useState("");
   const [family, setFamily] = useState<string>("all");
   const [selected, setSelected] = useState<string>(PRODUCT_SPECS[0]?.code ?? "");
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return PRODUCT_SPECS.filter((p) => {
-      const matchesFam = family === "all" || p.family === family;
-      const matchesQ =
-        !q || p.code.toLowerCase().includes(q) || p.name.toLowerCase().includes(q) || p.family.toLowerCase().includes(q);
-      return matchesFam && matchesQ;
-    });
-  }, [query, family]);
+  const filtered = useMemo(
+    () => PRODUCT_SPECS.filter((p) => family === "all" || p.family === family),
+    [family],
+  );
 
   const activeSpec = useMemo(
     () => PRODUCT_SPECS.find((p) => p.code === selected) ?? filtered[0] ?? PRODUCT_SPECS[0],
