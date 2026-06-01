@@ -1,10 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useSyncExternalStore, useState } from "react";
+import { useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Bell, Save, Lock, ShieldCheck, Users, Eye, X, Mail, Monitor, Copy, ExternalLink } from "lucide-react";
-import { getRoster, subscribeRoster, updateShiftAssignment, type RosterEntry } from "@/lib/roster";
-import { useSession } from "@/lib/session";
-import type { Shift } from "@/lib/qc-data";
+import { Save, Eye, X, Mail, Sliders, Bell, Globe, Monitor, Copy, ExternalLink } from "lucide-react";
 import logoConvertipap from "@/assets/logo-convertipap.png";
 
 export const Route = createFileRoute("/configuracion")({ component: ConfigPage });
