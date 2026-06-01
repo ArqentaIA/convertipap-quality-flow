@@ -5,7 +5,7 @@ import { StepperWizard } from "@/components/qc/StepperWizard";
 import { KPIGrid } from "@/components/qc/KPIGrid";
 import { GeneralInfoForm } from "@/components/qc/GeneralInfoForm";
 import { QualityVariableTable } from "@/components/qc/QualityVariableTable";
-import { MeasurementTable } from "@/components/qc/MeasurementTable";
+import { GuidedMeasurementCapture } from "@/components/qc/GuidedMeasurementCapture";
 import { AlertPanel } from "@/components/qc/AlertPanel";
 import { ReleaseBadge } from "@/components/qc/StatusBadge";
 import { ShiftStatusBar } from "@/components/qc/ShiftStatusBar";
@@ -88,7 +88,14 @@ function ControlCalidad() {
 
         {step === 2 && (
           <div className="space-y-5">
-            <MeasurementTable rows={measurements} onChange={setMeasurements} operadorTurno={info.operador} turno={info.turno} locked={locked} />
+            <GuidedMeasurementCapture
+              rows={measurements}
+              onChange={setMeasurements}
+              operadorTurno={info.operador}
+              turno={info.turno}
+              specVars={specVars}
+              locked={locked}
+            />
           </div>
         )}
 
