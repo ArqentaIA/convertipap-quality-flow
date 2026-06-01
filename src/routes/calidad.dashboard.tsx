@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/lib/auth";
 import { useQcMock, calcularSla } from "@/lib/qc-mock/store";
 import type { MuestraCalidad, MedicionCalidad, AjusteCalidad } from "@/lib/qc-mock/types";
+import { useLabFilter } from "@/lib/lab";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/calidad/dashboard")({
@@ -34,9 +35,26 @@ function dayKey(iso: string) {
 
 function DashboardPage() {
   const auth = useAuth();
-  const muestras = useQcMock((s) => s.muestras);
-  const mediciones = useQcMock((s) => s.mediciones);
-  const ajustes = useQcMock((s) => s.ajustes);
+  const labFilter = useLabFilter();
+  const muestrasAll = useQcMock((s) => s.muestras);
+  const medicionesAll = useQcMock((s) => s.mediciones);
+  const ajustesAll = useQcMock((s) => s.ajustes);
+
+  // Filtrado por laboratorio.
+  const muestras = useMemo(
+    () => muestrasAll.filter((m) => labFilter.isMachineIdAllowed(m.maquina_id)),
+    [muestrasAll, labFilter],
+  );
+  const ajustes = useMemo(
+    () => ajustesAll.filter((a) => labFilter.isMachineIdAllowed(a.maquina_id)),
+    [ajustesAll, labFilter],
+  );
+  // Mediciones se filtran indirectamente vía las muestras visibles.
+  const muestraIds = useMemo(() => new Set(muestras.map((m) => m.id)), [muestras]);
+  const mediciones = useMemo(
+    () => medicionesAll.filter((m) => muestraIds.has(m.muestra_id)),
+    [medicionesAll, muestraIds],
+  );
 
   const puedeVer = auth.roles.some((r) => ROLES_DASHBOARD.includes(r));
 

@@ -25,6 +25,7 @@ import {
   saveDraft, loadDraft, clearDraft,
 } from "@/lib/qc-mock/store";
 import type { MedicionEstado } from "@/lib/qc-mock/types";
+import { useLabFilter, LAB_LABEL } from "@/lib/lab";
 import { cn } from "@/lib/utils";
 
 const searchSchema = z.object({
@@ -44,9 +45,16 @@ function CapturaCalidadPage() {
   const navigate = useNavigate();
   const router = useRouter();
   const auth = useAuth();
+  const labFilter = useLabFilter();
 
-  const ordenes = useQcMock((s) => s.ordenes);
+  const ordenesAll = useQcMock((s) => s.ordenes);
   const muestrasExistentes = useQcMock((s) => s.muestras);
+
+  // Filtrado por laboratorio (capturistas solo ven sus máquinas).
+  const ordenes = useMemo(
+    () => ordenesAll.filter((o) => labFilter.isMachineIdAllowed(o.maquina_id)),
+    [ordenesAll, labFilter],
+  );
 
   // --- Selección de orden -------------------------------------------------
   const ordenesActivas = useMemo(
