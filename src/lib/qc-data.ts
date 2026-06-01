@@ -59,7 +59,7 @@ export interface GeneralInfo {
   velocidadMaquina: number;
   velocidadEnrollador: number;
   crepado: number;
-  cumplimiento: number;
+  cumplimiento: number | null;
   notas: string;
 }
 
