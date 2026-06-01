@@ -639,3 +639,81 @@ function NotasSelect({ value, disabled, onChange }: { value: string; disabled: b
     </div>
   );
 }
+
+/* ---------- Override de estatus (Control de Calidad) ---------- */
+function QcOverrideModal({
+  sugerido, actual, onCancel, onConfirm,
+}: {
+  sugerido: ReleaseStatus;
+  actual: ReleaseStatus;
+  onCancel: () => void;
+  onConfirm: (p: { by: string; nuevoEstatus: ReleaseStatus; motivo: string }) => void;
+}) {
+  const [user, setUser] = useState("");
+  const [pass, setPass] = useState("");
+  const [nuevo, setNuevo] = useState<ReleaseStatus>(actual);
+  const [motivo, setMotivo] = useState("");
+  const [err, setErr] = useState<string | null>(null);
+
+  // Credenciales simuladas autorizadas de Control de Calidad
+  const QC_USERS: Record<string, string> = {
+    "calidad": "calidad",
+    "qc": "qc",
+    "jonathan.pelaez": "calidad",
+  };
+
+  const submit = () => {
+    const u = user.trim().toLowerCase();
+    if (!u || !pass) { setErr("Ingresa usuario y clave de Control de Calidad."); return; }
+    if (QC_USERS[u] !== pass) { setErr("Credenciales de Control de Calidad inválidas."); return; }
+    if (!motivo.trim() || motivo.trim().length < 5) { setErr("Captura un motivo (mín. 5 caracteres)."); return; }
+    if (nuevo === sugerido) { setErr("El estatus seleccionado coincide con el sugerido."); return; }
+    onConfirm({ by: user.trim(), nuevoEstatus: nuevo, motivo: motivo.trim() });
+  };
+
+  const label = (s: ReleaseStatus) => s === "L" ? "Liberado" : s === "C" ? "Condicional" : "No Conforme";
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/70 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-md rounded-xl border border-border bg-card p-5 shadow-lg">
+        <div className="flex items-center gap-2">
+          <Lock className="h-5 w-5 text-primary" />
+          <h4 className="text-sm font-semibold text-foreground">Cambio de estatus · Control de Calidad</h4>
+        </div>
+        <p className="mt-1 text-xs text-muted-foreground">
+          El estatus sugerido por el sistema es <span className="font-semibold text-foreground">{label(sugerido)}</span>.
+          Sobreescribirlo requiere autenticación y queda registrado como evidencia.
+        </p>
+        <div className="mt-4 space-y-3">
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Usuario QC</label>
+              <input value={user} onChange={(e) => setUser(e.target.value)} className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" placeholder="usuario.calidad" />
+            </div>
+            <div>
+              <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Clave</label>
+              <input type="password" value={pass} onChange={(e) => setPass(e.target.value)} className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" placeholder="••••••••" />
+            </div>
+          </div>
+          <div>
+            <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Nuevo estatus</label>
+            <select value={nuevo} onChange={(e) => setNuevo(e.target.value as ReleaseStatus)} className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-semibold">
+              <option value="L">🟢 Liberado</option>
+              <option value="C">🟡 Condicional</option>
+              <option value="NC">🔴 No Conforme</option>
+            </select>
+          </div>
+          <div>
+            <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Motivo / Justificación</label>
+            <textarea value={motivo} onChange={(e) => setMotivo(e.target.value)} rows={3} className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" placeholder="Ej. Reanálisis con muestra adicional, autorizado por jefe de calidad…" />
+          </div>
+          {err && <div className="text-xs font-medium text-destructive">{err}</div>}
+        </div>
+        <div className="mt-5 flex justify-end gap-2">
+          <button onClick={onCancel} className="rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium hover:bg-accent">Cancelar</button>
+          <button onClick={submit} className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:opacity-90">Confirmar y firmar</button>
+        </div>
+      </div>
+    </div>
+  );
+}
