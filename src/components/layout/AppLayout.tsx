@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   LayoutDashboard, Factory, ClipboardCheck, FileBarChart2,
   Settings, ChevronLeft, ChevronRight, Bell, ChevronDown, SlidersHorizontal,
-  LogOut, Lock, Loader2, Users,
+  LogOut, Lock, Loader2,
 } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { PLANTS } from "@/lib/qc-data";
