@@ -1,11 +1,11 @@
 import type { GeneralInfo, Shift } from "@/lib/qc-data";
 import { PLANTS } from "@/lib/qc-data";
 import { PRODUCT_SPECS } from "@/lib/spec-catalog";
-import { getShiftAssignment } from "@/lib/roster";
+
 import { useSession } from "@/lib/session";
 import { Lock } from "lucide-react";
 
-const ROSTER_FIELDS = new Set<keyof GeneralInfo>(["jefeMaquina", "operador", "prensero"]);
+const ROSTER_FIELDS = new Set<keyof GeneralInfo>();
 
 const FIELDS: { key: keyof GeneralInfo; label: string; type?: string; col?: number; options?: string[] }[] = [
   { key: "plantId", label: "Planta", type: "plant", col: 2 },
@@ -42,9 +42,8 @@ export function GeneralInfoForm({
     if (locked) return;
     if (k === "turno") {
       const turno = v as Shift;
-      const equipo = getShiftAssignment(turno);
       const horario = SHIFT_HOURS[turno];
-      onChange({ ...value, turno, ...equipo, ...horario });
+      onChange({ ...value, turno, ...horario });
       return;
     }
     onChange({ ...value, [k]: v });
@@ -56,7 +55,7 @@ export function GeneralInfoForm({
         <div>
           <h3 className="text-sm font-semibold text-foreground">Información General del Registro</h3>
           <p className="text-xs text-muted-foreground">
-            Datos de cabecera del formato CAL-03-A · El equipo se asigna automáticamente según el turno seleccionado.
+            Datos de cabecera del formato CAL-03-A · Capturados por el usuario operativo.
           </p>
         </div>
         {!isDireccion && (
