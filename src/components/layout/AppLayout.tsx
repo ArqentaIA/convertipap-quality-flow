@@ -71,6 +71,17 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
     }
   }, [auth.loading, auth.isAuthenticated, navigate]);
 
+  // 2) Si está en una ruta sin permisos, mandarlo al primer módulo permitido.
+  useEffect(() => {
+    if (auth.loading || !auth.isAuthenticated) return;
+    const mod = moduleForPath(pathname);
+    if (auth.canAccess(mod)) return;
+    const firstAllowed = NAV.find((n) => auth.canAccess(n.module));
+    if (firstAllowed && firstAllowed.to !== pathname) {
+      void navigate({ to: firstAllowed.to, replace: true });
+    }
+  }, [auth.loading, auth.isAuthenticated, auth.modules, pathname, navigate]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const visibleNav = useMemo(
     () => NAV.filter((item) => auth.canAccess(item.module)),
     [auth.modules], // eslint-disable-line react-hooks/exhaustive-deps
