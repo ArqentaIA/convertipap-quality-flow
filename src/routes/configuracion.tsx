@@ -309,9 +309,12 @@ function CEOReportPreview({ onClose }: { onClose: () => void }) {
   );
 }
 
+const OPERATOR_VISION_BASE = "https://www.convertipap.site";
+
 function OperatorVisionUrl({ maquina }: { maquina: string }) {
   const [copied, setCopied] = useState(false);
-  const url = typeof window !== "undefined" ? `${window.location.origin}/operator-vision?maquina=${maquina}` : `/operator-vision?maquina=${maquina}`;
+  const url = `${OPERATOR_VISION_BASE}/operator-vision?maquina=${maquina}`;
+
 
   const copy = async () => {
     try {
