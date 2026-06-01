@@ -37,13 +37,22 @@ const NOTAS_OPCIONES = [
 ];
 
 // Campos visibles en la tarjeta de captura operativa
-const CAPTURE_FIELDS: { key: keyof Measurement; label: string; unit: string; specKey?: string }[] = [
-  { key: "humedad",   label: "Humedad",     unit: "%",    specKey: "humedad" },
-  { key: "pesoBase",  label: "Peso Base",   unit: "g/m²", specKey: "pesoBase" },
-  { key: "anchoUtil", label: "Ancho útil",  unit: "cm",   specKey: "anchoUtil" },
-  { key: "diametro",  label: "Diámetro",    unit: "cm",   specKey: "diametro" },
-  { key: "uniones",   label: "Uniones",     unit: "" },
-  { key: "pesoRollo", label: "Peso Rollo",  unit: "kg" },
+const CAPTURE_FIELDS: { key: keyof Measurement; label: string; unit: string; specKey?: string; group: "linea" | "lab" }[] = [
+  // En línea
+  { key: "humedad",      label: "Humedad",         unit: "%",     specKey: "humedad",      group: "linea" },
+  { key: "pesoBase",     label: "Peso Base",       unit: "g/m²",  specKey: "pesoBase",     group: "linea" },
+  { key: "anchoUtil",    label: "Ancho útil",      unit: "cm",    specKey: "anchoUtil",    group: "linea" },
+  { key: "diametro",     label: "Diámetro",        unit: "cm",    specKey: "diametro",     group: "linea" },
+  { key: "uniones",      label: "Uniones",         unit: "",                              group: "linea" },
+  { key: "pesoRollo",    label: "Peso Rollo",      unit: "kg",                            group: "linea" },
+  // Laboratorio (obligatorias para análisis y liberación)
+  { key: "calibre",      label: "Calibre",         unit: "mm",    specKey: "calibre",      group: "lab" },
+  { key: "blancuraR457", label: "Blancura R457",   unit: "%",     specKey: "blancuraR457", group: "lab" },
+  { key: "blancuraA",    label: "Blancura a*",     unit: "",      specKey: "blancuraA",    group: "lab" },
+  { key: "blancuraB",    label: "Blancura b*",     unit: "",      specKey: "blancuraB",    group: "lab" },
+  { key: "tensionMD",    label: "Tensión MD",      unit: "g/in",  specKey: "tensionMD",    group: "lab" },
+  { key: "tensionCD",    label: "Tensión CD",      unit: "g/in",  specKey: "tensionCD",    group: "lab" },
+  { key: "elongMD",      label: "Elongación MD",   unit: "%",     specKey: "elongMD",      group: "lab" },
 ];
 
 type Draft = {
@@ -155,25 +164,46 @@ export function GuidedMeasurementCapture({
     setDraft(emptyDraft(seed));
   };
 
+  const missingFields = useMemo(
+    () => CAPTURE_FIELDS.filter((f) => typeof draft.values[f.key as string] !== "number"),
+    [draft.values]
+  );
+  const isComplete = missingFields.length === 0;
+
   const save = () => {
     if (!canCapture) return;
     if (!draft.rollo.trim()) { toast.error("Captura el número de rollo."); return; }
-    const captured = CAPTURE_FIELDS.some((f) => typeof draft.values[f.key as string] === "number");
-    if (!captured) { toast.error("Captura al menos una medición."); return; }
+    if (!isComplete) {
+      toast.error("Captura completa requerida", {
+        description: `Faltan ${missingFields.length} variable(s): ${missingFields.map((f) => f.label).join(", ")}`,
+      });
+      return;
+    }
+
+    const num = (k: string) => (draft.values[k] as number | null) ?? null;
+    const tMD = num("tensionMD");
+    const tCD = num("tensionCD");
+    const relMDCD = tMD != null && tCD != null && tCD !== 0 ? Number((tMD / tCD).toFixed(2)) : null;
 
     const newRow: Measurement = {
       id: crypto.randomUUID(),
       hora: draft.hora || nowHHMM(),
       rollo: draft.rollo.trim(),
-      calibre: null, blancuraR457: null, blancuraA: null, blancuraB: null,
-      tensionMD: null, tensionCD: null, relMDCD: null, elongMD: null,
-      humedad: (draft.values.humedad as number | null) ?? null,
-      pesoBase: (draft.values.pesoBase as number | null) ?? null,
-      anchoUtil: (draft.values.anchoUtil as number | null) ?? null,
-      diametro: (draft.values.diametro as number | null) ?? null,
-      uniones: (draft.values.uniones as number | null) ?? 0,
+      calibre: num("calibre"),
+      blancuraR457: num("blancuraR457"),
+      blancuraA: num("blancuraA"),
+      blancuraB: num("blancuraB"),
+      tensionMD: tMD,
+      tensionCD: tCD,
+      relMDCD,
+      elongMD: num("elongMD"),
+      humedad: num("humedad"),
+      pesoBase: num("pesoBase"),
+      anchoUtil: num("anchoUtil"),
+      diametro: num("diametro"),
+      uniones: num("uniones") ?? 0,
       estatus: draft.estatus,
-      pesoRollo: (draft.values.pesoRollo as number | null) ?? null,
+      pesoRollo: num("pesoRollo"),
       notas: draft.notas,
       estatusOverride: draft.override
         ? {
@@ -262,58 +292,74 @@ export function GuidedMeasurementCapture({
           </span>
         </div>
 
-        {/* Grid de campos */}
-        <div className="grid grid-cols-1 gap-4 p-5 sm:grid-cols-2 lg:grid-cols-3">
-          {CAPTURE_FIELDS.map((f) => {
-            const spec = f.specKey ? specMap[f.specKey] : undefined;
-            const val = draft.values[f.key as string];
-            const status = spec ? evaluateValue(spec, typeof val === "number" ? val : null) : "ok";
-            const hasValue = typeof val === "number";
-            const ring =
-              !hasValue || !spec
-                ? "border-input bg-background"
-                : status === "bad"
-                ? "border-destructive bg-destructive/5 text-destructive ring-destructive/30"
-                : status === "warn"
-                ? "border-warning bg-warning/10 ring-warning/30"
-                : "border-success bg-success/5 ring-success/30";
-            return (
-              <div key={f.key as string} className="rounded-xl border border-border bg-card p-3">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    {f.label} {f.unit && <span className="text-muted-foreground/70">({f.unit})</span>}
-                  </label>
-                  {hasValue && spec && (
-                    status === "bad" ? <XCircle className="h-4 w-4 text-destructive" />
-                    : status === "warn" ? <AlertTriangle className="h-4 w-4 text-warning" />
-                    : <CheckCircle2 className="h-4 w-4 text-success" />
-                  )}
+        {/* Grid de campos por grupo */}
+        {(["linea", "lab"] as const).map((grp) => {
+          const fields = CAPTURE_FIELDS.filter((f) => f.group === grp);
+          const grpMissing = fields.filter((f) => typeof draft.values[f.key as string] !== "number").length;
+          return (
+            <div key={grp} className="border-t border-border first:border-t-0">
+              <div className="flex items-center justify-between px-5 pt-4">
+                <div className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                  {grp === "linea" ? "Mediciones en línea" : "Laboratorio · obligatorias para liberar"}
                 </div>
-                <input
-                  type="number"
-                  inputMode="decimal"
-                  step="0.01"
-                  value={val ?? ""}
-                  disabled={!canCapture}
-                  onChange={(e) => setVal(f.key as string, e.target.value)}
-                  placeholder={spec ? String(spec.objective) : "—"}
-                  className={`mt-2 w-full rounded-lg border px-3 py-3 text-2xl font-semibold tabular-nums outline-none ring-2 ring-transparent transition focus:ring-2 disabled:cursor-not-allowed disabled:bg-muted/40 ${ring}`}
-                />
-                {spec && (
-                  <div className="mt-1.5 flex items-center justify-between text-[11px] text-muted-foreground">
-                    <span>Obj. <span className="font-medium text-foreground tabular-nums">{spec.objective}</span></span>
-                    <span>Rango <span className="tabular-nums">{spec.min}–{spec.max}</span></span>
-                  </div>
-                )}
-                {hasValue && spec && status !== "ok" && (
-                  <div className={`mt-1.5 text-[11px] font-medium ${status === "bad" ? "text-destructive" : "text-warning-foreground"}`}>
-                    {status === "bad" ? "⚠ Fuera de especificación" : "Cercano al límite"}
-                  </div>
-                )}
+                <span className={`text-[11px] font-semibold ${grpMissing === 0 ? "text-success" : "text-warning-foreground"}`}>
+                  {grpMissing === 0 ? "Completo" : `Faltan ${grpMissing}`}
+                </span>
               </div>
-            );
-          })}
-        </div>
+              <div className="grid grid-cols-1 gap-4 p-5 sm:grid-cols-2 lg:grid-cols-3">
+                {fields.map((f) => {
+                  const spec = f.specKey ? specMap[f.specKey] : undefined;
+                  const val = draft.values[f.key as string];
+                  const status = spec ? evaluateValue(spec, typeof val === "number" ? val : null) : "ok";
+                  const hasValue = typeof val === "number";
+                  const ring =
+                    !hasValue || !spec
+                      ? "border-input bg-background"
+                      : status === "bad"
+                      ? "border-destructive bg-destructive/5 text-destructive ring-destructive/30"
+                      : status === "warn"
+                      ? "border-warning bg-warning/10 ring-warning/30"
+                      : "border-success bg-success/5 ring-success/30";
+                  return (
+                    <div key={f.key as string} className="rounded-xl border border-border bg-card p-3">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                          {f.label} {f.unit && <span className="text-muted-foreground/70">({f.unit})</span>}
+                        </label>
+                        {hasValue && spec && (
+                          status === "bad" ? <XCircle className="h-4 w-4 text-destructive" />
+                          : status === "warn" ? <AlertTriangle className="h-4 w-4 text-warning" />
+                          : <CheckCircle2 className="h-4 w-4 text-success" />
+                        )}
+                      </div>
+                      <input
+                        type="number"
+                        inputMode="decimal"
+                        step="0.01"
+                        value={val ?? ""}
+                        disabled={!canCapture}
+                        onChange={(e) => setVal(f.key as string, e.target.value)}
+                        placeholder={spec ? String(spec.objective) : "—"}
+                        className={`mt-2 w-full rounded-lg border px-3 py-3 text-2xl font-semibold tabular-nums outline-none ring-2 ring-transparent transition focus:ring-2 disabled:cursor-not-allowed disabled:bg-muted/40 ${ring}`}
+                      />
+                      {spec && (
+                        <div className="mt-1.5 flex items-center justify-between text-[11px] text-muted-foreground">
+                          <span>Obj. <span className="font-medium text-foreground tabular-nums">{spec.objective}</span></span>
+                          <span>Rango <span className="tabular-nums">{spec.min}–{spec.max}</span></span>
+                        </div>
+                      )}
+                      {hasValue && spec && status !== "ok" && (
+                        <div className={`mt-1.5 text-[11px] font-medium ${status === "bad" ? "text-destructive" : "text-warning-foreground"}`}>
+                          {status === "bad" ? "⚠ Fuera de especificación" : "Cercano al límite"}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
 
         {/* Estatus + Notas + Guardar */}
         <div className="grid grid-cols-1 gap-4 border-t border-border bg-card/60 p-5 lg:grid-cols-[1fr_2fr_auto]">
@@ -361,14 +407,20 @@ export function GuidedMeasurementCapture({
               onChange={(v) => setDraft({ ...draft, notas: v })}
             />
           </div>
-          <div className="flex items-end">
+          <div className="flex flex-col items-end gap-1">
             <button
-              disabled={!canCapture}
+              disabled={!canCapture || !isComplete}
               onClick={save}
+              title={!isComplete ? `Faltan ${missingFields.length} variable(s): ${missingFields.map((f) => f.label).join(", ")}` : undefined}
               className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-bold text-primary-foreground shadow-md hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 lg:w-auto"
             >
               <Save className="h-4 w-4" /> Guardar Registro
             </button>
+            {!isComplete && (
+              <span className="text-[11px] font-medium text-warning-foreground">
+                Faltan {missingFields.length} variable(s) para liberar
+              </span>
+            )}
           </div>
         </div>
       </div>
