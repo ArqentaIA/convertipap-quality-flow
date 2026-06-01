@@ -128,15 +128,12 @@ export function GuidedMeasurementCapture({
   const canCapture = !locked && (isOperadorTurno || isDireccion);
 
   const lastRollo = rows[rows.length - 1]?.rollo;
-  const [draft, setDraft] = useState<Draft>(() => emptyDraft(nextRollo(lastRollo)));
+  const [draft, setDraft] = useState<Draft>(() => emptyDraft(""));
 
-  // Mantener rollo sugerido sincronizado si cambia la última fila y el operador aún no escribió
+  // Ya no se sugiere un número de rollo automáticamente: el capturista lo escribe.
   const userTouchedRolloRef = useRef(false);
-  useEffect(() => {
-    if (!userTouchedRolloRef.current) {
-      setDraft((d) => ({ ...d, rollo: nextRollo(lastRollo) }));
-    }
-  }, [lastRollo]);
+  // Mantener referencia por compatibilidad sin auto-sugerir
+  void lastRollo;
 
   // Auto-sugerencia de estatus
   const suggestedStatus: ReleaseStatus = useMemo(() => {
