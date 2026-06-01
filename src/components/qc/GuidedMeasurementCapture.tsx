@@ -568,7 +568,7 @@ function NotasSelect({ value, disabled, onChange }: { value: string; disabled: b
         <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
       </button>
       {open && !disabled && (
-        <div className="absolute left-0 right-0 z-20 mt-1 max-h-64 overflow-auto rounded-md border border-border bg-popover p-1 shadow-lg">
+        <div className="absolute bottom-full left-0 right-0 z-50 mb-1 max-h-64 overflow-auto rounded-md border border-border bg-popover p-1 shadow-lg">
           {NOTAS_OPCIONES.map((opt) => {
             const checked = selected.includes(opt);
             return (
