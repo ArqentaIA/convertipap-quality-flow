@@ -15,8 +15,9 @@ import {
   type Measurement, type GeneralInfo,
 } from "@/lib/qc-data";
 import { PRODUCT_SPEC_MAP } from "@/lib/spec-catalog";
+import { printRollLabel } from "@/lib/roll-label";
 import {
-  ArrowLeft, ArrowRight, CheckCircle2,
+  ArrowLeft, ArrowRight, CheckCircle2, Printer,
 } from "lucide-react";
 
 export const Route = createFileRoute("/control-calidad")({ component: ControlCalidad });
