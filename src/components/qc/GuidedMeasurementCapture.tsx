@@ -301,15 +301,19 @@ export function GuidedMeasurementCapture({
           </span>
         </div>
 
-        {/* Grid de campos por grupo */}
-        {(["linea", "lab"] as const).map((grp) => {
+        {/* Grid de campos por grupo · orden jerárquico del formato CAL-03-A */}
+        {([
+          { id: "calidad", title: "Variables de calidad · Calibre, Blancura, Tensión, Elongación, Humedad" },
+          { id: "fisicas", title: "Físicas del rollo · Peso base, Ancho, Diámetro, Uniones" },
+          { id: "cierre",  title: "Cierre del rollo · Peso del rollo" },
+        ] as const).map(({ id: grp, title }) => {
           const fields = CAPTURE_FIELDS.filter((f) => f.group === grp);
           const grpMissing = fields.filter((f) => typeof draft.values[f.key as string] !== "number").length;
           return (
             <div key={grp} className="border-t border-border first:border-t-0">
               <div className="flex items-center justify-between px-5 pt-4">
                 <div className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                  {grp === "linea" ? "Mediciones en línea" : "Laboratorio · obligatorias para liberar"}
+                  {title}
                 </div>
                 <span className={`text-[11px] font-semibold ${grpMissing === 0 ? "text-success" : "text-warning-foreground"}`}>
                   {grpMissing === 0 ? "Completo" : `Faltan ${grpMissing}`}
