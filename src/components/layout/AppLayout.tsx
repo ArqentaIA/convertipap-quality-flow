@@ -39,6 +39,7 @@ const ROUTE_MODULE: Array<{ prefix: string; module: AppModule }> = [
   { prefix: "/reportes", module: "reportes" },
   { prefix: "/catalogos", module: "configuracion" },
   { prefix: "/configuracion", module: "configuracion" },
+  { prefix: "/usuarios", module: "usuarios_permisos" },
 ];
 
 function moduleForPath(pathname: string): AppModule {
