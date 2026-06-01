@@ -164,11 +164,6 @@ function SummaryPanel({
               {finalStatus === "ok" ? "✓ Listo para liberar" : `⚠ ${alerts.length} alertas de calidad detectadas`}
             </div>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <button onClick={() => onEdit(1)} className="inline-flex items-center gap-2 rounded-md border border-input bg-card px-3 py-1.5 text-xs font-medium hover:bg-accent"><Pencil className="h-3.5 w-3.5" /> Editar sección</button>
-            <button className="inline-flex items-center gap-2 rounded-md border border-input bg-card px-3 py-1.5 text-xs font-medium hover:bg-accent"><FileText className="h-3.5 w-3.5" /> Exportar PDF</button>
-            <button className="inline-flex items-center gap-2 rounded-md border border-input bg-card px-3 py-1.5 text-xs font-medium hover:bg-accent"><FileSpreadsheet className="h-3.5 w-3.5" /> Exportar Excel</button>
-          </div>
         </div>
       </div>
 
