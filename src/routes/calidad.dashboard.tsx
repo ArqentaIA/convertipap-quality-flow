@@ -264,7 +264,7 @@ function DashboardPage() {
                   <XAxis dataKey="fecha" tick={{ fontSize: 11 }} />
                   <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} unit="%" />
                   <Tooltip
-                    formatter={(v: number | null) => (v == null ? "Sin datos" : `${v}%`)}
+                    formatter={(v) => (v == null ? "Sin datos" : `${v}%`)}
                     labelFormatter={(l) => `Día ${l}`}
                   />
                   <Line
