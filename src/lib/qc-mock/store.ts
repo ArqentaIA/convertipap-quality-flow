@@ -262,6 +262,124 @@ export function clearDraft(orden_id: string) {
   localStorage.removeItem(DRAFT_PREFIX + orden_id);
 }
 
+// --- Acciones de revisión -------------------------------------------------
+
+type ResultRev = { ok: true } | { ok: false; error: string };
+
+function updateMuestra(
+  muestra_id: string,
+  updater: (m: MuestraCalidad) => MuestraCalidad,
+): ResultRev {
+  const m = state.muestras.find((x) => x.id === muestra_id);
+  if (!m) return { ok: false, error: "Muestra no encontrada" };
+  if (m.estado !== "pendiente_revision") {
+    return { ok: false, error: `La muestra ya no está pendiente (estado: ${m.estado})` };
+  }
+  setState((prev) => ({
+    ...prev,
+    muestras: prev.muestras.map((x) => (x.id === muestra_id ? updater(x) : x)),
+  }));
+  return { ok: true };
+}
+
+export function liberarMuestra(muestra_id: string, revisor: string, motivo: string): ResultRev {
+  const now = new Date().toISOString();
+  return updateMuestra(muestra_id, (m) => ({
+    ...m,
+    estado: "liberada",
+    dictamen: "liberada",
+    dictamen_motivo: motivo || null,
+    revisado_por: revisor,
+    revisado_at: now,
+    updated_at: now,
+  }));
+}
+
+export function rechazarMuestra(muestra_id: string, revisor: string, motivo: string): ResultRev {
+  if (!motivo.trim()) return { ok: false, error: "El motivo de rechazo es obligatorio" };
+  const now = new Date().toISOString();
+  return updateMuestra(muestra_id, (m) => ({
+    ...m,
+    estado: "rechazada",
+    dictamen: "rechazada",
+    dictamen_motivo: motivo,
+    revisado_por: revisor,
+    revisado_at: now,
+    updated_at: now,
+  }));
+}
+
+export function liberarConConcesion(muestra_id: string, revisor: string, motivo: string): ResultRev {
+  if (!motivo.trim()) return { ok: false, error: "La justificación de la concesión es obligatoria" };
+  const now = new Date().toISOString();
+  return updateMuestra(muestra_id, (m) => ({
+    ...m,
+    estado: "concesion",
+    dictamen: "concesion",
+    dictamen_motivo: motivo,
+    revisado_por: revisor,
+    revisado_at: now,
+    updated_at: now,
+  }));
+}
+
+export interface SolicitarAjusteInput {
+  muestra_id: string;
+  tipo_ajuste: AjusteCalidad["tipo_ajuste"];
+  motivo: string;
+  revisor: string;
+}
+
+export function solicitarAjuste(input: SolicitarAjusteInput): ResultRev {
+  if (!input.motivo.trim()) return { ok: false, error: "El motivo del ajuste es obligatorio" };
+  const m = state.muestras.find((x) => x.id === input.muestra_id);
+  if (!m) return { ok: false, error: "Muestra no encontrada" };
+  if (m.estado !== "pendiente_revision") {
+    return { ok: false, error: `La muestra ya no está pendiente (estado: ${m.estado})` };
+  }
+  const now = new Date().toISOString();
+  const ajuste: AjusteCalidad = {
+    id: uid(),
+    muestra_id: m.id,
+    orden_id: m.orden_id,
+    maquina_id: m.maquina_id,
+    planta_id: m.planta_id,
+    tipo_ajuste: input.tipo_ajuste,
+    motivo: input.motivo,
+    detectado_en: now,
+    solicitado_por: input.revisor,
+    solicitado_at: now,
+    autorizado_por: null,
+    autorizado_at: null,
+    ajustado_por: null,
+    ajustado_at: null,
+    accion_realizada: null,
+    resultado: "pendiente",
+    evidencia_url: null,
+    observacion_ajuste: null,
+    created_at: now,
+    updated_at: now,
+  };
+  const destino: MuestraCalidad["estado"] = input.tipo_ajuste === "reproceso" ? "reproceso" : "en_ajuste";
+  setState((prev) => ({
+    ...prev,
+    ajustes: [...prev.ajustes, ajuste],
+    muestras: prev.muestras.map((x) =>
+      x.id === m.id
+        ? {
+            ...x,
+            estado: destino,
+            dictamen_motivo: input.motivo,
+            revisado_por: input.revisor,
+            revisado_at: now,
+            updated_at: now,
+          }
+        : x,
+    ),
+  }));
+  return { ok: true };
+}
+
 // --- Reseteo (útil para pruebas) ------------------------------------------
 
 export function resetQcMock() {
