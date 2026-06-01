@@ -152,7 +152,6 @@ export function GuidedMeasurementCapture({
 
   const resetDraft = (seed: string) => {
     userTouchedRolloRef.current = false;
-    userTouchedStatusRef.current = false;
     setDraft(emptyDraft(seed));
   };
 
