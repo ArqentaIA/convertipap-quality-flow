@@ -32,12 +32,19 @@ export function GeneralInfoForm({
   const session = useSession();
   const isDireccion = session.role === "direccion";
 
+  const SHIFT_HOURS: Record<Shift, { horaInicio: string; horaFin: string }> = {
+    "1": { horaInicio: "07:00", horaFin: "15:00" },
+    "2": { horaInicio: "15:00", horaFin: "23:00" },
+    "3": { horaInicio: "23:00", horaFin: "07:00" },
+  };
+
   const set = <K extends keyof GeneralInfo>(k: K, v: GeneralInfo[K]) => {
     if (locked) return;
     if (k === "turno") {
       const turno = v as Shift;
       const equipo = getShiftAssignment(turno);
-      onChange({ ...value, turno, ...equipo });
+      const horario = SHIFT_HOURS[turno];
+      onChange({ ...value, turno, ...equipo, ...horario });
       return;
     }
     onChange({ ...value, [k]: v });
