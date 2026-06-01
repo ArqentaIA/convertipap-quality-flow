@@ -14,6 +14,80 @@ export type Database = {
   }
   public: {
     Tables: {
+      familias_producto: {
+        Row: {
+          activo: boolean
+          codigo: string
+          created_at: string
+          descripcion: string | null
+          id: string
+          nombre: string
+          orden: number
+          updated_at: string
+        }
+        Insert: {
+          activo?: boolean
+          codigo: string
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          nombre: string
+          orden?: number
+          updated_at?: string
+        }
+        Update: {
+          activo?: boolean
+          codigo?: string
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          nombre?: string
+          orden?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      maquinas: {
+        Row: {
+          activo: boolean
+          area: string | null
+          codigo: string
+          created_at: string
+          id: string
+          nombre: string
+          planta_id: string
+          updated_at: string
+        }
+        Insert: {
+          activo?: boolean
+          area?: string | null
+          codigo: string
+          created_at?: string
+          id?: string
+          nombre: string
+          planta_id: string
+          updated_at?: string
+        }
+        Update: {
+          activo?: boolean
+          area?: string | null
+          codigo?: string
+          created_at?: string
+          id?: string
+          nombre?: string
+          planta_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maquinas_planta_id_fkey"
+            columns: ["planta_id"]
+            isOneToOne: false
+            referencedRelation: "plantas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       module_permissions: {
         Row: {
           module: Database["public"]["Enums"]["app_module"]
@@ -28,6 +102,225 @@ export type Database = {
           role?: Database["public"]["Enums"]["app_role"]
         }
         Relationships: []
+      }
+      operarios: {
+        Row: {
+          activo: boolean
+          created_at: string
+          id: string
+          nombre: string
+          planta_id: string | null
+          puesto: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          activo?: boolean
+          created_at?: string
+          id?: string
+          nombre: string
+          planta_id?: string | null
+          puesto?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          activo?: boolean
+          created_at?: string
+          id?: string
+          nombre?: string
+          planta_id?: string | null
+          puesto?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "operarios_planta_id_fkey"
+            columns: ["planta_id"]
+            isOneToOne: false
+            referencedRelation: "plantas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      plantas: {
+        Row: {
+          activo: boolean
+          codigo: string
+          created_at: string
+          id: string
+          nombre: string
+          ubicacion: string | null
+          updated_at: string
+        }
+        Insert: {
+          activo?: boolean
+          codigo: string
+          created_at?: string
+          id?: string
+          nombre: string
+          ubicacion?: string | null
+          updated_at?: string
+        }
+        Update: {
+          activo?: boolean
+          codigo?: string
+          created_at?: string
+          id?: string
+          nombre?: string
+          ubicacion?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      producto_especificaciones: {
+        Row: {
+          aprobado_at: string | null
+          aprobado_por: string | null
+          created_at: string
+          estado: Database["public"]["Enums"]["spec_status"]
+          id: string
+          notas: string | null
+          producto_id: string
+          updated_at: string
+          version: string
+          vigente_desde: string | null
+          vigente_hasta: string | null
+        }
+        Insert: {
+          aprobado_at?: string | null
+          aprobado_por?: string | null
+          created_at?: string
+          estado?: Database["public"]["Enums"]["spec_status"]
+          id?: string
+          notas?: string | null
+          producto_id: string
+          updated_at?: string
+          version: string
+          vigente_desde?: string | null
+          vigente_hasta?: string | null
+        }
+        Update: {
+          aprobado_at?: string | null
+          aprobado_por?: string | null
+          created_at?: string
+          estado?: Database["public"]["Enums"]["spec_status"]
+          id?: string
+          notas?: string | null
+          producto_id?: string
+          updated_at?: string
+          version?: string
+          vigente_desde?: string | null
+          vigente_hasta?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "producto_especificaciones_producto_id_fkey"
+            columns: ["producto_id"]
+            isOneToOne: false
+            referencedRelation: "productos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      producto_variables: {
+        Row: {
+          created_at: string
+          especificacion_id: string
+          id: string
+          max_valor: number
+          min_valor: number
+          objetivo: number
+          tolerancia: string | null
+          updated_at: string
+          variable_id: string
+        }
+        Insert: {
+          created_at?: string
+          especificacion_id: string
+          id?: string
+          max_valor: number
+          min_valor: number
+          objetivo: number
+          tolerancia?: string | null
+          updated_at?: string
+          variable_id: string
+        }
+        Update: {
+          created_at?: string
+          especificacion_id?: string
+          id?: string
+          max_valor?: number
+          min_valor?: number
+          objetivo?: number
+          tolerancia?: string | null
+          updated_at?: string
+          variable_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "producto_variables_especificacion_id_fkey"
+            columns: ["especificacion_id"]
+            isOneToOne: false
+            referencedRelation: "producto_especificaciones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "producto_variables_variable_id_fkey"
+            columns: ["variable_id"]
+            isOneToOne: false
+            referencedRelation: "variables_calidad"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      productos: {
+        Row: {
+          activo: boolean
+          capas: number | null
+          codigo: string
+          created_at: string
+          descripcion: string | null
+          gramaje: number | null
+          id: string
+          nombre: string
+          tipo_id: string
+          updated_at: string
+        }
+        Insert: {
+          activo?: boolean
+          capas?: number | null
+          codigo: string
+          created_at?: string
+          descripcion?: string | null
+          gramaje?: number | null
+          id?: string
+          nombre: string
+          tipo_id: string
+          updated_at?: string
+        }
+        Update: {
+          activo?: boolean
+          capas?: number | null
+          codigo?: string
+          created_at?: string
+          descripcion?: string | null
+          gramaje?: number | null
+          id?: string
+          nombre?: string
+          tipo_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "productos_tipo_id_fkey"
+            columns: ["tipo_id"]
+            isOneToOne: false
+            referencedRelation: "tipos_producto"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -59,6 +352,118 @@ export type Database = {
         }
         Relationships: []
       }
+      roster_turnos: {
+        Row: {
+          activo: boolean
+          created_at: string
+          id: string
+          jefe_maquina_id: string | null
+          maquina_id: string
+          operador_id: string | null
+          prensero_id: string | null
+          turno: Database["public"]["Enums"]["shift_code"]
+          updated_at: string
+          vigente_desde: string
+        }
+        Insert: {
+          activo?: boolean
+          created_at?: string
+          id?: string
+          jefe_maquina_id?: string | null
+          maquina_id: string
+          operador_id?: string | null
+          prensero_id?: string | null
+          turno: Database["public"]["Enums"]["shift_code"]
+          updated_at?: string
+          vigente_desde?: string
+        }
+        Update: {
+          activo?: boolean
+          created_at?: string
+          id?: string
+          jefe_maquina_id?: string | null
+          maquina_id?: string
+          operador_id?: string | null
+          prensero_id?: string | null
+          turno?: Database["public"]["Enums"]["shift_code"]
+          updated_at?: string
+          vigente_desde?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "roster_turnos_jefe_maquina_id_fkey"
+            columns: ["jefe_maquina_id"]
+            isOneToOne: false
+            referencedRelation: "operarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "roster_turnos_maquina_id_fkey"
+            columns: ["maquina_id"]
+            isOneToOne: false
+            referencedRelation: "maquinas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "roster_turnos_operador_id_fkey"
+            columns: ["operador_id"]
+            isOneToOne: false
+            referencedRelation: "operarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "roster_turnos_prensero_id_fkey"
+            columns: ["prensero_id"]
+            isOneToOne: false
+            referencedRelation: "operarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tipos_producto: {
+        Row: {
+          activo: boolean
+          codigo: string
+          created_at: string
+          descripcion: string | null
+          familia_id: string
+          id: string
+          nombre: string
+          orden: number
+          updated_at: string
+        }
+        Insert: {
+          activo?: boolean
+          codigo: string
+          created_at?: string
+          descripcion?: string | null
+          familia_id: string
+          id?: string
+          nombre: string
+          orden?: number
+          updated_at?: string
+        }
+        Update: {
+          activo?: boolean
+          codigo?: string
+          created_at?: string
+          descripcion?: string | null
+          familia_id?: string
+          id?: string
+          nombre?: string
+          orden?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tipos_producto_familia_id_fkey"
+            columns: ["familia_id"]
+            isOneToOne: false
+            referencedRelation: "familias_producto"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -77,6 +482,48 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      variables_calidad: {
+        Row: {
+          activo: boolean
+          clave: string
+          created_at: string
+          etiqueta: string
+          id: string
+          max_default: number | null
+          min_default: number | null
+          objetivo_default: number | null
+          orden: number
+          unidad: string | null
+          updated_at: string
+        }
+        Insert: {
+          activo?: boolean
+          clave: string
+          created_at?: string
+          etiqueta: string
+          id?: string
+          max_default?: number | null
+          min_default?: number | null
+          objetivo_default?: number | null
+          orden?: number
+          unidad?: string | null
+          updated_at?: string
+        }
+        Update: {
+          activo?: boolean
+          clave?: string
+          created_at?: string
+          etiqueta?: string
+          id?: string
+          max_default?: number | null
+          min_default?: number | null
+          objetivo_default?: number | null
+          orden?: number
+          unidad?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -115,6 +562,8 @@ export type Database = {
         | "direccion"
         | "calidad"
         | "capturista"
+      shift_code: "1" | "2" | "3"
+      spec_status: "borrador" | "vigente" | "obsoleta"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -258,6 +707,8 @@ export const Constants = {
         "calidad",
         "capturista",
       ],
+      shift_code: ["1", "2", "3"],
+      spec_status: ["borrador", "vigente", "obsoleta"],
     },
   },
 } as const
