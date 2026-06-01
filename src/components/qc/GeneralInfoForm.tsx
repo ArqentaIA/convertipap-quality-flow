@@ -1,7 +1,7 @@
 import type { GeneralInfo, Shift } from "@/lib/qc-data";
 import { PLANTS } from "@/lib/qc-data";
 import { PRODUCT_SPECS } from "@/lib/spec-catalog";
-import { getShiftAssignment } from "@/lib/roster";
+
 import { useSession } from "@/lib/session";
 import { Lock } from "lucide-react";
 
@@ -55,7 +55,7 @@ export function GeneralInfoForm({
         <div>
           <h3 className="text-sm font-semibold text-foreground">Información General del Registro</h3>
           <p className="text-xs text-muted-foreground">
-            Datos de cabecera del formato CAL-03-A · El equipo se asigna automáticamente según el turno seleccionado.
+            Datos de cabecera del formato CAL-03-A · Capturados por el usuario operativo.
           </p>
         </div>
         {!isDireccion && (
