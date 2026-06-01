@@ -1,4 +1,6 @@
 import QRCode from "qrcode";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 import logoUrl from "@/assets/logo-convertipap.png";
 import type { Measurement, GeneralInfo } from "@/lib/qc-data";
 import { buildTraceUrl } from "@/lib/roll-report";
@@ -210,16 +212,37 @@ export async function printRollLabel(data: RollLabelData) {
   <!-- Estatus -->
   <div class="estatus">ESTATUS: ${est.txt}</div>
 </div>
-<script>setTimeout(()=>window.print(),300)</script>
 </body>
 </html>`;
 
-  const w = window.open("", "_blank", "width=900,height=1000");
-  if (!w) {
-    alert("Habilita las ventanas emergentes para imprimir la etiqueta.");
-    return;
+  // Renderizar en un contenedor oculto del documento actual para capturarlo a PDF
+  // (evita el cuadro de impresión del navegador, que añade la URL en el encabezado).
+  const host = document.createElement("div");
+  host.style.cssText = "position:fixed;left:-10000px;top:0;width:820px;background:#fff;z-index:-1;";
+  host.innerHTML = html.replace(/<script[\s\S]*?<\/script>/g, "");
+  document.body.appendChild(host);
+  const target = host.querySelector(".sheet") as HTMLElement | null;
+  if (!target) { host.remove(); return; }
+
+  try {
+    const canvas = await html2canvas(target, { scale: 2, backgroundColor: "#ffffff", useCORS: true });
+    const img = canvas.toDataURL("image/png");
+    const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "letter" });
+    const pageW = pdf.internal.pageSize.getWidth();
+    const pageH = pdf.internal.pageSize.getHeight();
+    const margin = 8;
+    const usableW = pageW - margin * 2;
+    const ratio = canvas.height / canvas.width;
+    let imgW = usableW;
+    let imgH = imgW * ratio;
+    if (imgH > pageH - margin * 2) {
+      imgH = pageH - margin * 2;
+      imgW = imgH / ratio;
+    }
+    const x = (pageW - imgW) / 2;
+    pdf.addImage(img, "PNG", x, margin, imgW, imgH);
+    pdf.save(`Etiqueta_Rollo_${m.rollo}.pdf`);
+  } finally {
+    host.remove();
   }
-  w.document.open();
-  w.document.write(html);
-  w.document.close();
 }
