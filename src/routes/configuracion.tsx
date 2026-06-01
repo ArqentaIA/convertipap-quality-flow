@@ -10,7 +10,6 @@ const MAQUINAS = ["MP-04", "MP-05", "MP-06", "MP-07"] as const;
 type Maquina = typeof MAQUINAS[number];
 
 function ConfigPage() {
-  const [maquina, setMaquina] = useState<Maquina>("MP-04");
   const [previewCEO, setPreviewCEO] = useState(false);
 
 
