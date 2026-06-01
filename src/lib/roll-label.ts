@@ -1,4 +1,7 @@
+import QRCode from "qrcode";
+import logoUrl from "@/assets/logo-convertipap.png";
 import type { Measurement, GeneralInfo } from "@/lib/qc-data";
+import { buildTraceUrl } from "@/lib/roll-report";
 
 export type RollLabelData = {
   m: Measurement;
@@ -21,42 +24,67 @@ function check(active: boolean) {
   return active ? "☑" : "☐";
 }
 
-export function printRollLabel(data: RollLabelData) {
+async function toDataUrl(url: string): Promise<string> {
+  try {
+    const res = await fetch(url);
+    const blob = await res.blob();
+    return await new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onloadend = () => resolve(r.result as string);
+      r.onerror = reject;
+      r.readAsDataURL(blob);
+    });
+  } catch {
+    return url;
+  }
+}
+
+export async function printRollLabel(data: RollLabelData) {
   const { m, info, plantName, productoNombre } = data;
   const est = ESTATUS[m.estatus];
   const notas = parseNotas(m.notas || "");
   const has = (k: string) => notas.some((n) => n.includes(k));
   const fechaImpresion = new Date().toLocaleDateString("es-MX");
 
+  const folio = `${info.maquina}-${info.fecha}-${m.rollo}`.replace(/\s+/g, "");
+  const traceUrl = buildTraceUrl(folio);
+  const [qrDataUrl, logoDataUrl] = await Promise.all([
+    QRCode.toDataURL(traceUrl, { margin: 1, width: 200, errorCorrectionLevel: "M" }),
+    toDataUrl(logoUrl),
+  ]);
+
   const html = `<!doctype html>
 <html lang="es">
 <head>
 <meta charset="utf-8" />
-<title>Etiqueta de Liberación · Rollo ${m.rollo}</title>
+<title>Etiqueta de Liberación</title>
 <style>
+  @page { size: auto; margin: 8mm; }
   *{box-sizing:border-box;font-family:-apple-system,Segoe UI,Inter,Roboto,sans-serif}
   body{margin:0;padding:18px;color:#0f172a;background:#fff}
-  .sheet{max-width:760px;margin:0 auto;border:2px solid #0f172a}
+  .sheet{max-width:780px;margin:0 auto;border:2px solid #0f172a}
   table{width:100%;border-collapse:collapse}
   td,th{border:1px solid #0f172a;padding:4px 8px;font-size:11px;vertical-align:middle}
   .head td{padding:6px 8px}
-  .brand{text-align:center;font-weight:700;font-size:10px;color:#475569;letter-spacing:.08em}
-  .brand .wave{font-size:22px;color:#0ea5e9;letter-spacing:0}
+  .logo-cell{text-align:center;padding:8px}
+  .logo-cell img{max-width:150px;max-height:70px;object-fit:contain}
   .title{text-align:center;font-weight:800;font-size:13px}
   .sub{text-align:center;font-weight:700;font-size:12px;letter-spacing:.05em}
   .meta{font-size:9px;line-height:1.4}
   .label{background:#f1f5f9;font-weight:700;text-align:right;width:22%}
   .val{font-weight:700;text-align:center;font-variant-numeric:tabular-nums}
   .big{font-size:14px}
-  .chip{display:inline-block;padding:2px 8px;border:1px solid #0f172a;margin:1px;font-size:10px;font-weight:700;background:#fff}
-  .chip.on{background:#0f172a;color:#fff}
   .fab{background:#e2e8f0;font-weight:800;text-align:center;font-size:12px;padding:8px}
   .producto{background:#fff;font-weight:800;text-align:center;font-size:13px;padding:10px}
   .codigo{background:#f1f5f9;font-weight:700;text-align:center;font-size:11px}
   .estatus{padding:10px;text-align:center;font-weight:800;font-size:16px;letter-spacing:.12em;color:${est.color};background:${est.bg}}
   .obs td{padding:6px 8px}
   .obs .ck{font-family:"Segoe UI Symbol",sans-serif;font-size:13px;margin-right:4px}
-  .actions{max-width:760px;margin:0 auto 12px;text-align:right}
+  .qr-box{text-align:center;padding:6px}
+  .qr-box img{width:110px;height:110px;display:block;margin:0 auto}
+  .qr-box .cap{font-size:8px;color:#475569;margin-top:3px;letter-spacing:.04em;text-transform:uppercase}
+  .qr-box .url{font-family:ui-monospace,Menlo,monospace;font-size:7px;color:#334155;word-break:break-all;margin-top:2px;line-height:1.2}
+  .actions{max-width:780px;margin:0 auto 12px;text-align:right}
   .actions button{padding:8px 14px;border:1px solid #0f172a;background:#0f172a;color:#fff;border-radius:6px;font-size:12px;cursor:pointer}
   @media print{body{padding:0}.actions{display:none}}
 </style>
@@ -67,8 +95,8 @@ export function printRollLabel(data: RollLabelData) {
   <!-- Encabezado -->
   <table class="head">
     <tr>
-      <td style="width:22%" rowspan="2">
-        <div class="brand"><div class="wave">~~~</div>Convertipap<div style="font-size:8px;font-weight:600">FÁBRICA DE PAPEL TISSUE</div></div>
+      <td class="logo-cell" style="width:22%" rowspan="2">
+        <img src="${logoDataUrl}" alt="Convertipap" />
       </td>
       <td class="title">CONVERTIDOR DE PAPEL S.A. DE C.V</td>
       <td class="meta" style="width:26%" rowspan="2">
@@ -148,10 +176,10 @@ export function printRollLabel(data: RollLabelData) {
     </tr>
   </table>
 
-  <!-- Observaciones / Comentarios / Diámetro / Uniones -->
+  <!-- Observaciones / Comentarios / QR -->
   <table class="obs">
     <tr>
-      <td style="width:30%;vertical-align:top">
+      <td style="width:26%;vertical-align:top">
         <div style="font-weight:700;margin-bottom:4px">Observaciones:</div>
         <div><span class="ck">${check(has("arruga"))}</span>Arruga</div>
         <div><span class="ck">${check(has("picad"))}</span>Picado</div>
@@ -159,17 +187,22 @@ export function printRollLabel(data: RollLabelData) {
         <div><span class="ck">${check(has("hoyo"))}</span>Hoyos / Hoyos por gomas</div>
         <div><span class="ck">${check(has("suciedad") || has("mancha") || has("desfase") || has("destase"))}</span>Otro</div>
       </td>
-      <td colspan="3" style="vertical-align:top">
+      <td style="vertical-align:top">
         <div style="font-weight:700;margin-bottom:4px">Comentarios</div>
         <div style="min-height:48px;font-size:12px">${m.notas || "—"}</div>
         <table style="margin-top:6px">
           <tr>
-            <td class="label" style="width:30%">DIÁMETRO</td>
+            <td class="label" style="width:35%">DIÁMETRO</td>
             <td class="val">${m.diametro ?? "—"} cm</td>
             <td class="label" style="width:20%">Uniones</td>
             <td class="val" style="width:15%">${m.uniones ?? 0}</td>
           </tr>
         </table>
+      </td>
+      <td class="qr-box" style="width:22%;vertical-align:middle">
+        <img src="${qrDataUrl}" alt="QR de verificación" />
+        <div class="cap">Verificar datos</div>
+        <div class="url">${traceUrl}</div>
       </td>
     </tr>
   </table>
