@@ -42,9 +42,8 @@ export function GeneralInfoForm({
     if (locked) return;
     if (k === "turno") {
       const turno = v as Shift;
-      const equipo = getShiftAssignment(turno);
       const horario = SHIFT_HOURS[turno];
-      onChange({ ...value, turno, ...equipo, ...horario });
+      onChange({ ...value, turno, ...horario });
       return;
     }
     onChange({ ...value, [k]: v });
