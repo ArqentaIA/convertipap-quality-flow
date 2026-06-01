@@ -59,7 +59,7 @@ export interface GeneralInfo {
   velocidadMaquina: number;
   velocidadEnrollador: number;
   crepado: number;
-  cumplimiento: number;
+  cumplimiento: number | null;
   notas: string;
 }
 
@@ -106,7 +106,7 @@ export const DEFAULT_GENERAL: GeneralInfo = {
   velocidadMaquina: 0,
   velocidadEnrollador: 0,
   crepado: 0,
-  cumplimiento: 0,
+  cumplimiento: null,
   notas: "",
 };
 

@@ -363,9 +363,9 @@ function OperatorVisionPage() {
         <div className="grid grid-cols-6 gap-4">
           <KpiTile
             label="Cumplimiento"
-            value={info.cumplimiento.toFixed(1)}
+            value={info.cumplimiento == null ? "—" : info.cumplimiento.toFixed(1)}
             unit="%"
-            tone={info.cumplimiento >= 90 ? "green" : info.cumplimiento >= 80 ? "amber" : "red"}
+            tone={(info.cumplimiento ?? 0) >= 90 ? "green" : (info.cumplimiento ?? 0) >= 80 ? "amber" : "red"}
             icon={TrendingUp}
           />
           <KpiTile label="OEE" value="82.4" unit="%" tone="green" icon={Gauge} />

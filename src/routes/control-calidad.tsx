@@ -56,8 +56,8 @@ function ControlCalidad() {
   }, [measurements, specMap, specVars]);
 
   // Cumplimiento del turno: rollos liberados / total de rollos del turno
-  const cumplimiento = useMemo(() => {
-    if (measurements.length === 0) return 0;
+  const cumplimiento = useMemo<number | null>(() => {
+    if (measurements.length === 0) return null;
     const liberados = measurements.filter((m) => m.estatus === "L").length;
     return (liberados / measurements.length) * 100;
   }, [measurements]);
@@ -195,10 +195,10 @@ function SummaryPanel({
         </div>
         <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
           <h3 className="text-sm font-semibold text-foreground">Cumplimiento del turno</h3>
-          <div className="mt-3 text-4xl font-bold text-primary tabular-nums">{info.cumplimiento.toFixed(2)}%</div>
+          <div className="mt-3 text-4xl font-bold text-primary tabular-nums">{info.cumplimiento == null ? "—" : `${info.cumplimiento.toFixed(2)}%`}</div>
           <div className="mt-1 text-xs text-muted-foreground">{measurements.length} mediciones · {alerts.length} alertas</div>
           <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-muted">
-            <div className="h-full bg-primary" style={{ width: `${Math.min(100, info.cumplimiento)}%` }} />
+            <div className="h-full bg-primary" style={{ width: `${Math.min(100, info.cumplimiento ?? 0)}%` }} />
           </div>
         </div>
       </div>

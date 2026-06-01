@@ -118,10 +118,12 @@ export function GeneralInfoForm({
                 </select>
               ) : isComputed ? (
                 <div
-                  title="Calculado automáticamente: % de mediciones dentro de especificación (Paso 3)."
+                  title="Calculado automáticamente conforme se capturan los rollos del turno: % de rollos liberados sobre el total."
                   className="flex w-full items-center justify-between rounded-md border border-input bg-muted/40 px-3 py-2 text-sm font-semibold tabular-nums text-foreground"
                 >
-                  <span>{Number(value.cumplimiento ?? 0).toFixed(2)}</span>
+                  <span className={value.cumplimiento == null ? "text-muted-foreground" : ""}>
+                    {value.cumplimiento == null ? "—" : Number(value.cumplimiento).toFixed(2)}
+                  </span>
                   <span className="text-xs text-muted-foreground">%</span>
                 </div>
               ) : (
