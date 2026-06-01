@@ -23,9 +23,8 @@ export const Route = createFileRoute("/control-calidad")({ component: ControlCal
 
 const STEPS = [
   { id: 1, title: "Información General", subtitle: "Cabecera del registro" },
-  { id: 2, title: "Variables de Calidad", subtitle: "Especificación de objetivos" },
-  { id: 3, title: "Mediciones por Hora", subtitle: "Captura del turno" },
-  { id: 4, title: "Resumen y Guardado", subtitle: "Validación final" },
+  { id: 2, title: "Mediciones por Hora", subtitle: "Captura del turno" },
+  { id: 3, title: "Resumen y Guardado", subtitle: "Validación final" },
 ];
 
 function ControlCalidad() {
