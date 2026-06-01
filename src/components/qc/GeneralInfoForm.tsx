@@ -43,7 +43,7 @@ export function GeneralInfoForm({
     if (k === "turno") {
       const turno = v as Shift;
       const horario = SHIFT_HOURS[turno];
-      onChange({ ...value, turno, ...horario });
+      onChange({ ...value, turno, ...(horario ?? { horaInicio: "", horaFin: "" }) });
       return;
     }
     onChange({ ...value, [k]: v });
