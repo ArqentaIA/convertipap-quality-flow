@@ -32,8 +32,9 @@ function ControlCalidad() {
   const [step, setStep] = useState(1);
   const [info, setInfo] = useState<GeneralInfo>(DEFAULT_GENERAL);
   const [measurements, setMeasurements] = useState<Measurement[]>(SAMPLE_MEASUREMENTS);
+  const [confirmed, setConfirmed] = useState(false);
   const shift = useShiftStatus();
-  const locked = shift.status !== "borrador";
+  const locked = shift.status !== "borrador" || confirmed;
 
   const activeSpec = useMemo(
     () => PRODUCT_SPEC_MAP[info.fabricacion] ?? PRODUCT_SPEC_MAP["PHR01"],
