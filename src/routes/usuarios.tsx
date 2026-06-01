@@ -169,8 +169,8 @@ function UsuariosPage() {
           <div className="text-muted-foreground">
             Este módulo es <span className="font-semibold text-foreground">informativo</span>.
             La gestión real de usuarios (alta, baja, cambio de rol, restablecimiento
-            de contraseña) se realiza directamente desde el panel de autenticación de
-            Lovable Cloud.
+            de contraseña) se realiza directamente desde el panel de administración
+            del sistema.
           </div>
         </div>
 
