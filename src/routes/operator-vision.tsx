@@ -208,7 +208,31 @@ function statusFromRelease(s: Measurement["estatus"]): VarStatus {
 
 function OperatorVisionPage() {
   const { maquina } = Route.useSearch();
+  const labFilter = useLabFilter();
   const now = useTicker(1000);
+
+  // Bloqueo por laboratorio: capturista no puede ver máquinas de otro lab.
+  if (!labFilter.isMachineAllowed(maquina)) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background p-8">
+        <div className="max-w-md rounded-xl border border-border bg-card p-8 text-center shadow-sm">
+          <h2 className="text-lg font-semibold text-foreground">
+            Sin acceso a esta máquina
+          </h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Tu laboratorio asignado{labFilter.lab ? ` (${LAB_LABEL[labFilter.lab]})` : ""} no
+            opera la máquina <strong>{maquina}</strong>.
+          </p>
+          {labFilter.allowedMachineCodes && labFilter.allowedMachineCodes.length > 0 && (
+            <div className="mt-4 text-xs text-muted-foreground">
+              Máquinas permitidas: {labFilter.allowedMachineCodes.join(", ")}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   const info = { ...DEFAULT_GENERAL, maquina };
   const measurements = SAMPLE_MEASUREMENTS;
   const current = measurements[measurements.length - 1];

@@ -1,9 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { ReleaseBadge } from "@/components/qc/StatusBadge";
-import { Search, Download, Filter, Eye, Calendar, ArrowLeft, QrCode } from "lucide-react";
+import { Search, Download, Filter, Eye, Calendar, ArrowLeft, QrCode, Lock } from "lucide-react";
 import { printRollReport } from "@/lib/roll-report";
 import { useState } from "react";
+import { useLabFilter, LAB_LABEL } from "@/lib/lab";
 
 export const Route = createFileRoute("/historial/$maquina")({ component: HistorialPage });
 
@@ -43,6 +44,29 @@ const REGISTROS: Registro[] = [
 function HistorialPage() {
   const { maquina } = Route.useParams();
   const [q, setQ] = useState("");
+  const labFilter = useLabFilter();
+
+  // Bloqueo por laboratorio
+  if (!labFilter.isMachineAllowed(maquina)) {
+    return (
+      <AppLayout title={`Historial · ${maquina.toUpperCase()}`}>
+        <div className="mx-auto mt-16 max-w-md rounded-xl border border-border bg-card p-8 text-center shadow-sm">
+          <Lock className="mx-auto mb-4 h-10 w-10 text-muted-foreground" />
+          <h2 className="text-lg font-semibold text-foreground">Sin acceso a esta máquina</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Tu laboratorio asignado{labFilter.lab ? ` (${LAB_LABEL[labFilter.lab]})` : ""} no
+            opera la máquina <strong>{maquina.toUpperCase()}</strong>.
+          </p>
+          {labFilter.allowedMachineCodes && labFilter.allowedMachineCodes.length > 0 && (
+            <p className="mt-4 text-xs text-muted-foreground">
+              Máquinas permitidas: {labFilter.allowedMachineCodes.join(", ")}
+            </p>
+          )}
+        </div>
+      </AppLayout>
+    );
+  }
+
   const porMaquina = REGISTROS.filter((r) => r.maquina.toLowerCase() === maquina.toLowerCase());
   const filtered = porMaquina.filter((r) =>
     [r.folio, r.planta, r.maquina, r.producto, r.jefe].join(" ").toLowerCase().includes(q.toLowerCase())
@@ -54,6 +78,7 @@ function HistorialPage() {
 
   return (
     <AppLayout title={`Historial · ${maquina.toUpperCase()}`}>
+
       <div className="space-y-6">
         <Link
           to="/produccion"
