@@ -1,23 +1,62 @@
-import { Link, useRouterState } from "@tanstack/react-router";
-import { useState } from "react";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
 import {
   LayoutDashboard, Factory, ClipboardCheck, FileBarChart2,
   Settings, Users, ChevronLeft, ChevronRight, Bell, ChevronDown, SlidersHorizontal,
+  LogOut, Lock, Loader2, FolderCog,
 } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { PLANTS } from "@/lib/qc-data";
+import { useAuth, type AppModule } from "@/lib/auth";
 
-const NAV = [
-  { to: "/", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/produccion", label: "Producción", icon: Factory },
-  { to: "/control-calidad", label: "Control de Calidad", icon: ClipboardCheck },
-  { to: "/variables-calidad", label: "Variables de Calidad", icon: SlidersHorizontal },
-  { to: "/reportes", label: "Reportes", icon: FileBarChart2 },
-  { to: "/configuracion", label: "Configuración", icon: Settings },
-  { to: "/usuarios", label: "Usuarios y permisos", icon: Users },
+type NavItem = {
+  to: string;
+  label: string;
+  icon: typeof LayoutDashboard;
+  module: AppModule;
+  pathPrefixes?: string[];
+};
+
+const NAV: NavItem[] = [
+  { to: "/", label: "Dashboard", icon: LayoutDashboard, module: "dashboard" },
+  { to: "/produccion", label: "Producción", icon: Factory, module: "produccion", pathPrefixes: ["/produccion", "/historial"] },
+  { to: "/control-calidad", label: "Control de Calidad", icon: ClipboardCheck, module: "control_calidad" },
+  { to: "/variables-calidad", label: "Variables de Calidad", icon: SlidersHorizontal, module: "variables_calidad" },
+  { to: "/reportes", label: "Reportes", icon: FileBarChart2, module: "reportes" },
+  { to: "/catalogos", label: "Catálogos", icon: FolderCog, module: "configuracion" },
+  { to: "/configuracion", label: "Configuración", icon: Settings, module: "configuracion" },
+  { to: "/usuarios", label: "Usuarios y permisos", icon: Users, module: "usuarios_permisos" },
 ];
 
+// Mapea cada ruta protegida con el módulo que controla su acceso.
+const ROUTE_MODULE: Array<{ prefix: string; module: AppModule }> = [
+  { prefix: "/produccion", module: "produccion" },
+  { prefix: "/historial", module: "produccion" },
+  { prefix: "/control-calidad", module: "control_calidad" },
+  { prefix: "/variables-calidad", module: "variables_calidad" },
+  { prefix: "/reportes", module: "reportes" },
+  { prefix: "/catalogos", module: "configuracion" },
+  { prefix: "/configuracion", module: "configuracion" },
+  { prefix: "/usuarios", module: "usuarios_permisos" },
+];
+
+function moduleForPath(pathname: string): AppModule {
+  for (const entry of ROUTE_MODULE) {
+    if (pathname === entry.prefix || pathname.startsWith(entry.prefix + "/")) return entry.module;
+  }
+  return "dashboard";
+}
+
+function initials(name?: string | null, email?: string | null) {
+  const base = (name ?? email ?? "?").trim();
+  const parts = base.split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+  return base.slice(0, 2).toUpperCase();
+}
+
 export function AppLayout({ children, title }: { children: React.ReactNode; title: string }) {
+  const navigate = useNavigate();
+  const auth = useAuth();
   const [collapsed, setCollapsed] = useState(false);
   const [plantId, setPlantId] = useState("tlx");
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -25,9 +64,46 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
   const now = new Date();
   const dateStr = now.toLocaleDateString("es-MX", { weekday: "long", day: "2-digit", month: "long", year: "numeric" });
 
+  // 1) Redirigir a /login si no hay sesión
+  useEffect(() => {
+    if (!auth.loading && !auth.isAuthenticated) {
+      void navigate({ to: "/login", replace: true });
+    }
+  }, [auth.loading, auth.isAuthenticated, navigate]);
+
+  // 2) Si está en una ruta sin permisos, mandarlo al primer módulo permitido.
+  useEffect(() => {
+    if (auth.loading || !auth.isAuthenticated) return;
+    const mod = moduleForPath(pathname);
+    if (auth.canAccess(mod)) return;
+    const firstAllowed = NAV.find((n) => auth.canAccess(n.module));
+    if (firstAllowed && firstAllowed.to !== pathname) {
+      void navigate({ to: firstAllowed.to, replace: true });
+    }
+  }, [auth.loading, auth.isAuthenticated, auth.modules, pathname, navigate]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const visibleNav = useMemo(
+    () => NAV.filter((item) => auth.canAccess(item.module)),
+    [auth.modules], // eslint-disable-line react-hooks/exhaustive-deps
+  );
+
+  const currentModule = moduleForPath(pathname);
+  const allowedHere = auth.canAccess(currentModule);
+
+  if (auth.loading || !auth.isAuthenticated) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  const displayName = auth.profile?.nombre ?? auth.user?.email ?? "Usuario";
+  const rolVisible = auth.profile?.rol_visible ?? auth.roles[0] ?? "";
+
   return (
     <div className="flex h-screen w-full bg-background text-foreground">
-      {/* SidebarCabinet */}
+      {/* Sidebar */}
       <aside
         className={`${collapsed ? "w-[72px]" : "w-[260px]"} flex shrink-0 flex-col bg-sidebar text-sidebar-foreground transition-all duration-300 border-r border-sidebar-border`}
       >
@@ -37,10 +113,12 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
           </div>
         </div>
 
-
         <nav className="flex-1 overflow-y-auto py-2">
-          {NAV.map(({ to, label, icon: Icon }) => {
-            const active = pathname === to || (to !== "/" && pathname.startsWith(to));
+          {visibleNav.map(({ to, label, icon: Icon, pathPrefixes }) => {
+            const active =
+              pathname === to ||
+              (to !== "/" && pathname.startsWith(to)) ||
+              (pathPrefixes ?? []).some((p) => pathname.startsWith(p));
             return (
               <Link
                 key={to}
@@ -65,7 +143,6 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
 
       {/* Main */}
       <div className="flex min-w-0 flex-1 flex-col">
-        {/* TopHeader */}
         <header className="flex h-[64px] items-center justify-between gap-4 border-b border-border bg-gradient-to-r from-primary/30 via-primary/15 to-primary/5 px-6 shadow-sm">
           <div className="min-w-0">
             <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Módulo</div>
@@ -73,7 +150,6 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Plant selector */}
             <div className="relative">
               <select
                 value={plantId}
@@ -89,7 +165,7 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
 
             <div className="hidden md:flex flex-col items-end leading-tight">
               <div className="text-xs text-muted-foreground capitalize">{dateStr}</div>
-              <div className="text-xs font-semibold text-primary">Turno 3 · Activo</div>
+              <div className="text-xs font-semibold text-primary">Planta {plant.code}</div>
             </div>
 
             <button className="relative rounded-md p-2 text-muted-foreground hover:bg-accent hover:text-foreground">
@@ -98,17 +174,50 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
             </button>
 
             <div className="flex items-center gap-2 border-l border-border pl-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-semibold">JP</div>
-              <div className="hidden lg:block">
-                <div className="text-sm font-medium leading-tight">Ing. Jonathan Alberto Pelaez</div>
-                <div className="text-[11px] text-muted-foreground leading-tight">Gerente de Calidad · {plant.code}</div>
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-semibold">
+                {initials(auth.profile?.nombre, auth.user?.email)}
               </div>
+              <div className="hidden lg:block">
+                <div className="text-sm font-medium leading-tight">{displayName}</div>
+                <div className="text-[11px] text-muted-foreground leading-tight capitalize">
+                  {rolVisible.replace(/_/g, " ")}
+                </div>
+              </div>
+              <button
+                onClick={async () => {
+                  await auth.signOut();
+                  void navigate({ to: "/login", replace: true });
+                }}
+                className="ml-1 rounded-md p-2 text-muted-foreground hover:bg-accent hover:text-foreground"
+                title="Cerrar sesión"
+              >
+                <LogOut className="h-4 w-4" />
+              </button>
             </div>
           </div>
         </header>
 
         <main className="flex-1 overflow-auto industrial-bg">
-          <div className="mx-auto max-w-[1600px] p-6">{children}</div>
+          <div className="mx-auto max-w-[1600px] p-6">
+            {allowedHere ? (
+              children
+            ) : (
+              <div className="mx-auto mt-16 max-w-md rounded-xl border border-border bg-card p-8 text-center shadow-sm">
+                <Lock className="mx-auto mb-4 h-10 w-10 text-muted-foreground" />
+                <h2 className="text-lg font-semibold text-foreground">Sin acceso a este módulo</h2>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Tu rol actual no tiene permisos para entrar a <strong>{title}</strong>.
+                  Contacta al administrador si crees que es un error.
+                </p>
+                <Link
+                  to="/"
+                  className="mt-6 inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+                >
+                  Volver al inicio
+                </Link>
+              </div>
+            )}
+          </div>
         </main>
       </div>
     </div>
