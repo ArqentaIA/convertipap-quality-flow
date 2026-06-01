@@ -136,12 +136,9 @@ function ActionFooter({ step, total, onBack, onNext }: { step: number; total: nu
               Siguiente <ArrowRight className="h-4 w-4" />
             </button>
           ) : (
-            <button
-              onClick={() => alert("Registro guardado correctamente ✓")}
-              className="inline-flex items-center gap-2 rounded-md bg-success px-4 py-2 text-sm font-semibold text-success-foreground hover:opacity-90"
-            >
-              <CheckCircle2 className="h-4 w-4" /> Guardar registro
-            </button>
+            <span className="inline-flex items-center gap-2 rounded-md border border-success/40 bg-success/10 px-4 py-2 text-sm font-semibold text-success">
+              <CheckCircle2 className="h-4 w-4" /> Registro confirmado
+            </span>
           )}
         </div>
       </div>
