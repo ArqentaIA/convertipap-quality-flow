@@ -55,21 +55,12 @@ function ControlCalidad() {
     return out;
   }, [measurements, specMap, specVars]);
 
-  // Cumplimiento calculado: % de mediciones numéricas dentro de especificación
+  // Cumplimiento del turno: rollos liberados / total de rollos del turno
   const cumplimiento = useMemo(() => {
-    let total = 0;
-    let okCount = 0;
-    measurements.forEach((m) => {
-      specVars.forEach((q) => {
-        const v = (m as any)[q.key];
-        if (typeof v === "number") {
-          total += 1;
-          if (evaluateValue(specMap[q.key], v) !== "bad") okCount += 1;
-        }
-      });
-    });
-    return total === 0 ? 0 : (okCount / total) * 100;
-  }, [measurements, specMap, specVars]);
+    if (measurements.length === 0) return 0;
+    const liberados = measurements.filter((m) => m.estatus === "L").length;
+    return (liberados / measurements.length) * 100;
+  }, [measurements]);
 
   const infoView = useMemo(() => ({ ...info, cumplimiento }), [info, cumplimiento]);
 
