@@ -17,29 +17,9 @@ function ConfigPage() {
 
   return (
     <AppLayout title="Configuración del sistema">
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card p-4 shadow-sm">
-        <div>
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-primary">Configuración por máquina</div>
-          <p className="text-xs text-muted-foreground">Selecciona la máquina para editar sus parámetros, operadores y notificaciones.</p>
-        </div>
-        <div className="inline-flex rounded-lg border border-border bg-background p-1 shadow-sm">
-          {MAQUINAS.map((m) => (
-            <button
-              key={m}
-              onClick={() => setMaquina(m)}
-              className={`rounded-md px-3 py-1.5 text-xs font-semibold transition ${
-                maquina === m ? "bg-primary text-primary-foreground shadow" : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {m}
-            </button>
-          ))}
-        </div>
-      </div>
-
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div className="space-y-6">
-          <Card icon={Sliders} title="Parámetros generales" desc={`Aplican a la máquina ${maquina}`}>
+          <Card icon={Sliders} title="Parámetros generales" desc="Aplican a todas las máquinas">
             <Field label="Tolerancia de advertencia (% del rango)" value="10" suffix="%" />
             <ShiftRange label="Turno 1" inicio="07:00" fin="15:00" />
             <ShiftRange label="Turno 2" inicio="15:00" fin="23:00" />
@@ -48,13 +28,30 @@ function ConfigPage() {
           </Card>
 
 
-          <Card icon={Monitor} title="Operator Vision · Pantalla operativa" desc={`Vista fullscreen para TV industrial · ${maquina}`}>
+          <Card icon={Monitor} title="Operator Vision · Pantalla operativa" desc="Genera la URL de la TV industrial según la máquina seleccionada">
+            <div>
+              <div className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Selecciona la máquina</div>
+              <div className="inline-flex w-full rounded-lg border border-border bg-background p-1 shadow-sm">
+                {MAQUINAS.map((m) => (
+                  <button
+                    key={m}
+                    onClick={() => setMaquina(m)}
+                    className={`flex-1 rounded-md px-3 py-1.5 text-xs font-semibold transition ${
+                      maquina === m ? "bg-primary text-primary-foreground shadow" : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {m}
+                  </button>
+                ))}
+              </div>
+            </div>
             <OperatorVisionUrl maquina={maquina} />
           </Card>
         </div>
 
         <div className="space-y-6">
-          <Card icon={Bell} title="Notificaciones" desc={`Alertas automáticas · ${maquina}`}>
+          <Card icon={Bell} title="Notificaciones" desc="Alertas automáticas del sistema">
+
             <Toggle label="Alerta por valor fuera de rango" on hint="Envía una notificación cuando una variable supere los límites configurados." />
             <Toggle label="Resumen diario por correo" on hint="Envía automáticamente un resumen diario de producción." />
             <Toggle label="Notificar no conformidades a supervisor" on hint="Notifica incidencias y eventos de calidad al supervisor responsable." />
