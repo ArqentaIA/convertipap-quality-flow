@@ -130,7 +130,7 @@ async function urlToDataURL(url: string): Promise<string | null> {
   }
 }
 
-async function descargarPDF(nombre: string, freq: string, datasetKey?: string) {
+async function descargarPDF(nombre: string, freq: string, datasetKey?: string, override?: { sheet: string; rows: Record<string, string | number>[] }[]) {
   const [{ default: jsPDF }, autoTableMod] = await Promise.all([
     import("jspdf"),
     import("jspdf-autotable"),
@@ -217,7 +217,7 @@ async function descargarPDF(nombre: string, freq: string, datasetKey?: string) {
   doc.text(resumen, M + 12, lastY1 + 48);
 
   // Datos
-  const hojas = DATASETS[datasetKey ?? nombre] ?? [{ sheet: "Datos", rows: [] }];
+  const hojas = override ?? DATASETS[datasetKey ?? nombre] ?? [{ sheet: "Datos", rows: [] }];
   let cursorY = lastY1 + 96;
 
   for (const h of hojas) {
@@ -385,14 +385,14 @@ function ReportesPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={() => descargarPDF(titulo, `${freq} · ${periodo}`)}
+                      onClick={() => descargarPDF(titulo, `${freq} · ${periodo}`, r.nombre, datasetsFiltrados[r.nombre])}
                       className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium hover:bg-accent"
                       title="Descargar reporte ejecutivo en PDF"
                     >
                       <Download className="h-3.5 w-3.5" /> PDF
                     </button>
                     <button
-                      onClick={() => descargarXLSX(r.nombre)}
+                      onClick={() => descargarXLSX(r.nombre, datasetsFiltrados[r.nombre])}
                       className="inline-flex items-center gap-2 rounded-md border border-success/40 bg-success/10 px-3 py-1.5 text-xs font-medium text-success hover:bg-success/20"
                       title="Descargar archivo XLSX para manejo de BD"
                     >
