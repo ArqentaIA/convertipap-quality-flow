@@ -127,9 +127,6 @@ function ActionFooter({ step, total, onBack, onNext }: { step: number; total: nu
         </button>
         <div className="text-xs text-muted-foreground">Paso {step} de {total}</div>
         <div className="flex items-center gap-2">
-          <button className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-accent">
-            <Save className="h-4 w-4" /> Guardar borrador
-          </button>
           {step < total ? (
             <button onClick={onNext} className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90">
               Siguiente <ArrowRight className="h-4 w-4" />
