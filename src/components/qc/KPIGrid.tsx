@@ -6,7 +6,7 @@ export function KPIGrid({ info }: { info: GeneralInfo }) {
     { label: "Velocidad máquina", value: info.velocidadMaquina, unit: "m/min", icon: Gauge, tone: "primary" as const },
     { label: "Velocidad enrollador", value: info.velocidadEnrollador, unit: "m/min", icon: Wind, tone: "navy" as const },
     { label: "% Crepado", value: info.crepado, unit: "%", icon: Percent, tone: "warning" as const },
-    { label: "Cumplimiento", value: info.cumplimiento.toFixed(2), unit: "%", icon: Target, tone: "success" as const },
+    { label: "Cumplimiento", value: info.cumplimiento == null ? "—" : info.cumplimiento.toFixed(2), unit: "%", icon: Target, tone: "success" as const },
   ];
   const tones: Record<string, string> = {
     primary: "from-primary/15 to-primary/0 text-primary border-primary/30",
