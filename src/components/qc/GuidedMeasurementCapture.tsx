@@ -9,9 +9,31 @@ import { useSession, setSession, clearSession } from "@/lib/session";
 import { ReleaseBadge } from "@/components/qc/StatusBadge";
 
 const NOTAS_OPCIONES = [
-  "Sin novedad", "Ligeros hoyos", "Hoyos", "Ligero desfase", "Desfase",
-  "Ligera suciedad", "Suciedad", "Destase", "Arrugas", "Manchas",
-  "Variación de color", "Borde irregular", "Empalme / unión", "Paro de máquina",
+  "Sin novedad",
+  "Puntos negros",
+  "Ligeros hoyos",
+  "Hoyos",
+  "Ligero desfase",
+  "Desfase",
+  "Ligera suciedad",
+  "Suciedad",
+  "Destase",
+  "Arrugas",
+  "Manchas",
+  "Variación de color",
+  "Borde irregular",
+  "Empalme / unión",
+  "Paro de máquina",
+  "Pliegues",
+  "Rasgaduras",
+  "Bajo gramaje",
+  "Alto gramaje",
+  "Humedad fuera de rango",
+  "Tensión irregular",
+  "Cambio de fabricación",
+  "Limpieza de fieltros",
+  "Ajuste de crepado",
+  "Falla de yankee",
 ];
 
 // Campos visibles en la tarjeta de captura operativa
