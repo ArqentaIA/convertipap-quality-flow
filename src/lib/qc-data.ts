@@ -33,6 +33,14 @@ export interface Measurement {
   estatus: ReleaseStatus;
   pesoRollo: number | null;
   notas: string;
+  /** Evidencia cuando Control de Calidad sobreescribe el estatus sugerido */
+  estatusOverride?: {
+    sugerido: ReleaseStatus;
+    final: ReleaseStatus;
+    by: string;
+    at: string;
+    motivo: string;
+  } | null;
 }
 
 export interface GeneralInfo {
