@@ -23,6 +23,7 @@ import {
   SLA_HORAS,
 } from "@/lib/qc-mock/store";
 import type { AjusteCalidad, ResultadoAjuste } from "@/lib/qc-mock/types";
+import { useLabFilter } from "@/lib/lab";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/calidad/ajustes")({
@@ -49,9 +50,20 @@ const FLUJO_LABEL: Record<AjusteCalidad["estado_flujo"], string> = {
 function AjustesPage() {
   const router = useRouter();
   const auth = useAuth();
-  const ajustes = useQcMock((s) => s.ajustes);
+  const labFilter = useLabFilter();
+  const ajustesAll = useQcMock((s) => s.ajustes);
   const muestras = useQcMock((s) => s.muestras);
-  const ordenes = useQcMock((s) => s.ordenes);
+  const ordenesAll = useQcMock((s) => s.ordenes);
+
+  // Filtrado por laboratorio.
+  const ajustes = useMemo(
+    () => ajustesAll.filter((a) => labFilter.isMachineIdAllowed(a.maquina_id)),
+    [ajustesAll, labFilter],
+  );
+  const ordenes = useMemo(
+    () => ordenesAll.filter((o) => labFilter.isMachineIdAllowed(o.maquina_id)),
+    [ordenesAll, labFilter],
+  );
 
   const canAuthorize =
     auth.hasRole("calidad") || auth.hasRole("gerente_general") || auth.hasRole("administrador");

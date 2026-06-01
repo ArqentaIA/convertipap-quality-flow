@@ -1,9 +1,8 @@
 // Datos semilla para el prototipo Fase 5.
-// Genera órdenes activas en distintas máquinas para poder probar:
-// - captura normal
-// - bloqueo por máquina sin orden
-// - bloqueo por orden distinta a la activa
-// - bloqueo por orden pausada
+// Las 4 máquinas (MP-04..MP-07) están repartidas entre dos laboratorios:
+//   Laboratorio Sur:   MP-04, MP-05
+//   Laboratorio Norte: MP-06, MP-07
+// Ver src/lib/lab.ts para la lógica de filtrado por laboratorio.
 
 import type {
   MockOrden,
@@ -37,15 +36,16 @@ const specToallaV1: MockEspecificacionCongelada = {
 };
 
 export const MOCK_ORDENES: MockOrden[] = [
+  // --- Laboratorio SUR ---
   {
-    orden_id: "ord-001",
+    orden_id: "ord-mp04-001",
     folio: "OF-2026-0142",
     estado: "en_proceso",
     producto_id: "p-phr01",
     producto_nombre: "Papel Higiénico Premium 2H",
     producto_codigo: "PHR01",
-    maquina_id: "maq-pm1",
-    maquina_nombre: "PM-1 (Tissue)",
+    maquina_id: "maq-mp04",
+    maquina_nombre: "MP-04",
     planta_id: "planta-tlx",
     planta_nombre: "Tlaxcala",
     turno: "A",
@@ -55,14 +55,14 @@ export const MOCK_ORDENES: MockOrden[] = [
     ultimo_rollo: 12,
   },
   {
-    orden_id: "ord-002",
+    orden_id: "ord-mp05-001",
     folio: "OF-2026-0143",
     estado: "en_proceso",
     producto_id: "p-toalla",
     producto_nombre: "Toalla Interdoblada Eco",
     producto_codigo: "TIE02",
-    maquina_id: "maq-pm2",
-    maquina_nombre: "PM-2 (Tissue)",
+    maquina_id: "maq-mp05",
+    maquina_nombre: "MP-05",
     planta_id: "planta-tlx",
     planta_nombre: "Tlaxcala",
     turno: "A",
@@ -71,15 +71,33 @@ export const MOCK_ORDENES: MockOrden[] = [
     especificacion_congelada: specToallaV1,
     ultimo_rollo: 7,
   },
+  // --- Laboratorio NORTE ---
   {
-    orden_id: "ord-003",
+    orden_id: "ord-mp06-001",
+    folio: "OF-2026-0144",
+    estado: "en_proceso",
+    producto_id: "p-toalla",
+    producto_nombre: "Toalla Interdoblada Eco",
+    producto_codigo: "TIE02",
+    maquina_id: "maq-mp06",
+    maquina_nombre: "MP-06",
+    planta_id: "planta-tlx",
+    planta_nombre: "Tlaxcala",
+    turno: "A",
+    operario_id: "op-3",
+    operario_nombre: "Erick Ordoñez (Jefe Máquina)",
+    especificacion_congelada: specToallaV1,
+    ultimo_rollo: 9,
+  },
+  {
+    orden_id: "ord-mp07-001",
     folio: "OF-2026-0140",
     estado: "pausada",
     producto_id: "p-phr01",
     producto_nombre: "Papel Higiénico Premium 2H",
     producto_codigo: "PHR01",
-    maquina_id: "maq-pm3",
-    maquina_nombre: "PM-3 (Tissue)",
+    maquina_id: "maq-mp07",
+    maquina_nombre: "MP-07",
     planta_id: "planta-tlx",
     planta_nombre: "Tlaxcala",
     turno: "B",
@@ -89,14 +107,14 @@ export const MOCK_ORDENES: MockOrden[] = [
     ultimo_rollo: 4,
   },
   {
-    orden_id: "ord-004",
+    orden_id: "ord-mp05-prev",
     folio: "OF-2026-0138",
     estado: "cerrada",
     producto_id: "p-toalla",
     producto_nombre: "Toalla Interdoblada Eco",
     producto_codigo: "TIE02",
-    maquina_id: "maq-pm2",
-    maquina_nombre: "PM-2 (Tissue)",
+    maquina_id: "maq-mp05",
+    maquina_nombre: "MP-05",
     planta_id: "planta-tlx",
     planta_nombre: "Tlaxcala",
     turno: "C",
@@ -109,7 +127,8 @@ export const MOCK_ORDENES: MockOrden[] = [
 
 // maquina_estado_actual — qué orden corre físicamente en cada máquina ahora
 export const MOCK_MAQUINA_ESTADO: MockMaquinaEstadoActual[] = [
-  { maquina_id: "maq-pm1", orden_activa_id: "ord-001" },
-  { maquina_id: "maq-pm2", orden_activa_id: "ord-002" },
-  { maquina_id: "maq-pm3", orden_activa_id: null }, // máquina libre — para probar bloqueo
+  { maquina_id: "maq-mp04", orden_activa_id: "ord-mp04-001" },
+  { maquina_id: "maq-mp05", orden_activa_id: "ord-mp05-001" },
+  { maquina_id: "maq-mp06", orden_activa_id: "ord-mp06-001" },
+  { maquina_id: "maq-mp07", orden_activa_id: null }, // pausada — prueba bloqueo
 ];

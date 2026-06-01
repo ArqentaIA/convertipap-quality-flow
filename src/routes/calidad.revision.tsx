@@ -22,6 +22,7 @@ import {
   useQcMock, liberarMuestra, rechazarMuestra, liberarConConcesion, solicitarAjuste,
 } from "@/lib/qc-mock/store";
 import type { MuestraCalidad, MedicionCalidad, TipoAjuste } from "@/lib/qc-mock/types";
+import { useLabFilter } from "@/lib/lab";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/calidad/revision")({
@@ -44,9 +45,20 @@ const ESTADO_FILTROS = [
 function RevisionPage() {
   const router = useRouter();
   const auth = useAuth();
-  const muestras = useQcMock((s) => s.muestras);
+  const labFilter = useLabFilter();
+  const muestrasAll = useQcMock((s) => s.muestras);
   const mediciones = useQcMock((s) => s.mediciones);
-  const ordenes = useQcMock((s) => s.ordenes);
+  const ordenesAll = useQcMock((s) => s.ordenes);
+
+  // Filtrado por laboratorio (capturistas solo ven sus máquinas).
+  const muestras = useMemo(
+    () => muestrasAll.filter((m) => labFilter.isMachineIdAllowed(m.maquina_id)),
+    [muestrasAll, labFilter],
+  );
+  const ordenes = useMemo(
+    () => ordenesAll.filter((o) => labFilter.isMachineIdAllowed(o.maquina_id)),
+    [ordenesAll, labFilter],
+  );
 
   const canReview =
     auth.hasRole("calidad") || auth.hasRole("gerente_general") || auth.hasRole("administrador");

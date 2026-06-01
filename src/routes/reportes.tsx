@@ -1,9 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { FileBarChart2, Download, FileSpreadsheet, TrendingUp, TrendingDown, CalendarRange } from "lucide-react";
 import logoUrl from "@/assets/logo-convertipap.png";
 import { RangoSelector, MESES, rangoLabel, rangoToFreq, type Rango } from "@/components/qc/RangoSelector";
+import { useLabFilter, LAB_LABEL } from "@/lib/lab";
 
 export const Route = createFileRoute("/reportes")({ component: ReportesPage });
 
@@ -89,9 +90,12 @@ const DATASETS: Record<string, { sheet: string; rows: Record<string, string | nu
   ],
 };
 
-async function descargarXLSX(nombre: string) {
+async function descargarXLSX(
+  nombre: string,
+  override?: { sheet: string; rows: Record<string, string | number>[] }[],
+) {
   const XLSX = await import("xlsx");
-  const hojas = DATASETS[nombre] ?? [
+  const hojas = override ?? DATASETS[nombre] ?? [
     { sheet: "Datos", rows: [{ aviso: "Sin datos disponibles para este reporte" }] },
   ];
   const wb = XLSX.utils.book_new();
@@ -126,7 +130,7 @@ async function urlToDataURL(url: string): Promise<string | null> {
   }
 }
 
-async function descargarPDF(nombre: string, freq: string, datasetKey?: string) {
+async function descargarPDF(nombre: string, freq: string, datasetKey?: string, override?: { sheet: string; rows: Record<string, string | number>[] }[]) {
   const [{ default: jsPDF }, autoTableMod] = await Promise.all([
     import("jspdf"),
     import("jspdf-autotable"),
@@ -213,7 +217,7 @@ async function descargarPDF(nombre: string, freq: string, datasetKey?: string) {
   doc.text(resumen, M + 12, lastY1 + 48);
 
   // Datos
-  const hojas = DATASETS[datasetKey ?? nombre] ?? [{ sheet: "Datos", rows: [] }];
+  const hojas = override ?? DATASETS[datasetKey ?? nombre] ?? [{ sheet: "Datos", rows: [] }];
   let cursorY = lastY1 + 96;
 
   for (const h of hojas) {
@@ -275,10 +279,34 @@ function ReportesPage() {
   const [mesesSel, setMesesSel] = useState<number[]>(MESES.map((_, i) => i));
   const periodo = rangoLabel(rango, mesesSel);
   const freq = rangoToFreq(rango);
+  const labFilter = useLabFilter();
+
+  // Vista previa de los datasets, filtrada por laboratorio del usuario.
+  const datasetsFiltrados = useMemo(() => {
+    const out: Record<string, { sheet: string; rows: Record<string, string | number>[] }[]> = {};
+    for (const [nombre, hojas] of Object.entries(DATASETS)) {
+      out[nombre] = hojas.map((h) => ({
+        ...h,
+        rows: h.rows.filter((row) => {
+          const maq = typeof row.maquina === "string" ? row.maquina : null;
+          if (!maq) return true; // filas sin máquina (KPIs globales) — siempre visibles
+          return labFilter.isMachineAllowed(maq);
+        }),
+      }));
+    }
+    return out;
+  }, [labFilter]);
 
   return (
     <AppLayout title="Reportes e Indicadores">
       <div className="space-y-6">
+        {labFilter.lab && (
+          <div className="rounded-md border border-primary/40 bg-primary/5 px-4 py-2 text-xs text-primary">
+            Mostrando solo datos de <strong>{LAB_LABEL[labFilter.lab]}</strong>
+            {labFilter.allowedMachineCodes && ` (${labFilter.allowedMachineCodes.join(", ")})`}.
+          </div>
+        )}
+
 
         {/* Selector de periodo unificado */}
         <div className="rounded-2xl border border-border bg-gradient-to-r from-primary/20 via-primary/10 to-primary/5 p-5 shadow-sm">
@@ -357,14 +385,14 @@ function ReportesPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={() => descargarPDF(titulo, `${freq} · ${periodo}`)}
+                      onClick={() => descargarPDF(titulo, `${freq} · ${periodo}`, r.nombre, datasetsFiltrados[r.nombre])}
                       className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium hover:bg-accent"
                       title="Descargar reporte ejecutivo en PDF"
                     >
                       <Download className="h-3.5 w-3.5" /> PDF
                     </button>
                     <button
-                      onClick={() => descargarXLSX(r.nombre)}
+                      onClick={() => descargarXLSX(r.nombre, datasetsFiltrados[r.nombre])}
                       className="inline-flex items-center gap-2 rounded-md border border-success/40 bg-success/10 px-3 py-1.5 text-xs font-medium text-success hover:bg-success/20"
                       title="Descargar archivo XLSX para manejo de BD"
                     >

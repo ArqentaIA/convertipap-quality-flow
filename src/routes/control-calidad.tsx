@@ -14,6 +14,7 @@ import {
   DEFAULT_GENERAL, PLANTS, evaluateValue,
   type Measurement, type GeneralInfo,
 } from "@/lib/qc-data";
+import { useLabFilter } from "@/lib/lab";
 import { PRODUCT_SPEC_MAP } from "@/lib/spec-catalog";
 import { printRollLabel } from "@/lib/roll-label";
 import {
@@ -29,8 +30,10 @@ const STEPS = [
 ];
 
 function ControlCalidad() {
+  const labFilter = useLabFilter();
+  const defaultMaquina = labFilter.allowedMachineCodes?.[0] ?? DEFAULT_GENERAL.maquina;
   const [step, setStep] = useState(1);
-  const [info, setInfo] = useState<GeneralInfo>(DEFAULT_GENERAL);
+  const [info, setInfo] = useState<GeneralInfo>({ ...DEFAULT_GENERAL, maquina: defaultMaquina });
   const [measurements, setMeasurements] = useState<Measurement[]>([]);
   const [confirmed, setConfirmed] = useState(false);
   const shift = useShiftStatus();

@@ -13,7 +13,7 @@ import type {
 } from "./types";
 import { MOCK_ORDENES, MOCK_MAQUINA_ESTADO } from "./seed";
 
-const STORAGE_KEY = "qc-mock-store-v1";
+const STORAGE_KEY = "qc-mock-store-v2-labs";
 
 interface QcMockState {
   ordenes: MockOrden[];
