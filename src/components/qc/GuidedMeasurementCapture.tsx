@@ -234,7 +234,8 @@ export function GuidedMeasurementCapture({
     toast.success("Registro guardado correctamente", {
       description: `Rollo ${newRow.rollo} · ${newRow.hora}`,
     });
-    resetDraft(nextRollo(newRow.rollo));
+    resetDraft("");
+    userTouchedRolloRef.current = false;
   };
 
   return (
