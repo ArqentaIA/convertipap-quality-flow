@@ -5,7 +5,7 @@ import { getShiftAssignment } from "@/lib/roster";
 import { useSession } from "@/lib/session";
 import { Lock } from "lucide-react";
 
-const ROSTER_FIELDS = new Set<keyof GeneralInfo>(["jefeMaquina", "operador", "prensero"]);
+const ROSTER_FIELDS = new Set<keyof GeneralInfo>();
 
 const FIELDS: { key: keyof GeneralInfo; label: string; type?: string; col?: number; options?: string[] }[] = [
   { key: "plantId", label: "Planta", type: "plant", col: 2 },
