@@ -6,7 +6,7 @@ import { KPIGrid } from "@/components/qc/KPIGrid";
 import { GeneralInfoForm } from "@/components/qc/GeneralInfoForm";
 import { QualityVariableTable } from "@/components/qc/QualityVariableTable";
 import { GuidedMeasurementCapture } from "@/components/qc/GuidedMeasurementCapture";
-import { AlertPanel } from "@/components/qc/AlertPanel";
+
 import { ReleaseBadge } from "@/components/qc/StatusBadge";
 import { ShiftStatusBar } from "@/components/qc/ShiftStatusBar";
 import { useShiftStatus } from "@/lib/shift-status";
@@ -196,7 +196,7 @@ function SummaryPanel({
         </div>
       </div>
 
-      <AlertPanel alerts={alerts} />
+      
 
       <div className="rounded-xl border border-border bg-card shadow-sm">
         <div className="border-b border-border px-5 py-3">
