@@ -296,7 +296,6 @@ function CEOReportPreview({ onClose }: { onClose: () => void }) {
 const OPERATOR_VISION_BASE = "https://www.convertipap.site";
 
 function OperatorVisionUrls() {
-  const [copiedAll, setCopiedAll] = useState(false);
   const [copiedOne, setCopiedOne] = useState<string | null>(null);
 
   const urls = MAQUINAS.map((m) => ({
@@ -309,17 +308,6 @@ function OperatorVisionUrls() {
       await navigator.clipboard.writeText(text);
       setCopiedOne(key);
       setTimeout(() => setCopiedOne(null), 2000);
-    } catch {
-      // ignore
-    }
-  };
-
-  const copyAll = async () => {
-    try {
-      const text = urls.map((u) => `${u.maquina}\n${u.url}`).join("\n\n");
-      await navigator.clipboard.writeText(text);
-      setCopiedAll(true);
-      setTimeout(() => setCopiedAll(false), 2000);
     } catch {
       // ignore
     }
