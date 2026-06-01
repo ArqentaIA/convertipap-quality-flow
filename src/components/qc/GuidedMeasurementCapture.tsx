@@ -98,7 +98,7 @@ function emptyDraft(rolloSeed: string): Draft {
 }
 
 export function GuidedMeasurementCapture({
-  rows, onChange, operadorTurno, turno, specVars, locked = false,
+  rows, onChange, operadorTurno, turno, specVars, locked = false, confirmed = false, onConfirm,
 }: {
   rows: Measurement[];
   onChange: (rows: Measurement[]) => void;
@@ -106,6 +106,8 @@ export function GuidedMeasurementCapture({
   turno: string;
   specVars: QualityVariable[];
   locked?: boolean;
+  confirmed?: boolean;
+  onConfirm?: () => void;
 }) {
   const session = useSession();
   const [showLogin, setShowLogin] = useState(false);
