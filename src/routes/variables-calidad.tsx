@@ -130,7 +130,7 @@ function VariablesCalidad() {
       ["Fecha de emisión", new Date().toLocaleString("es-MX")],
     ];
     autoTable(doc, {
-      startY: 60,
+      startY: Math.max(75, headerBottom + 10),
       head: [["Datos Generales", ""]],
       body: meta,
       theme: "grid",
