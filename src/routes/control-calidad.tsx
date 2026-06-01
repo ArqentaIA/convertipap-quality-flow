@@ -15,8 +15,9 @@ import {
   type Measurement, type GeneralInfo,
 } from "@/lib/qc-data";
 import { PRODUCT_SPEC_MAP } from "@/lib/spec-catalog";
+import { printRollLabel } from "@/lib/roll-label";
 import {
-  ArrowLeft, ArrowRight, CheckCircle2,
+  ArrowLeft, ArrowRight, CheckCircle2, Printer,
 } from "lucide-react";
 
 export const Route = createFileRoute("/control-calidad")({ component: ControlCalidad });
@@ -100,7 +101,7 @@ function ControlCalidad() {
         )}
 
         {step === 3 && (
-          <SummaryPanel info={infoView} plantName={plant.name} measurements={measurements} alerts={alerts} onEdit={setStep} />
+          <SummaryPanel info={infoView} plantName={plant.name} productoNombre={activeSpec.name} measurements={measurements} alerts={alerts} onEdit={setStep} />
         )}
 
         <ActionFooter
@@ -146,9 +147,9 @@ function ActionFooter({ step, total, onBack, onNext }: { step: number; total: nu
 }
 
 function SummaryPanel({
-  info, plantName, measurements, alerts, onEdit,
+  info, plantName, productoNombre, measurements, alerts, onEdit,
 }: {
-  info: GeneralInfo; plantName: string; measurements: Measurement[]; alerts: string[]; onEdit: (s: number) => void;
+  info: GeneralInfo; plantName: string; productoNombre: string; measurements: Measurement[]; alerts: string[]; onEdit: (s: number) => void;
 }) {
   const finalStatus = alerts.length === 0 ? "ok" : "issues";
 
@@ -204,7 +205,7 @@ function SummaryPanel({
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-left text-[11px] uppercase tracking-wider text-muted-foreground">
-              <tr><th className="px-4 py-2">Hora</th><th>Rollo</th><th>P. base</th><th>Humedad</th><th>Ancho</th><th>Diámetro</th><th>Estatus</th></tr>
+              <tr><th className="px-4 py-2">Hora</th><th>Rollo</th><th>P. base</th><th>Humedad</th><th>Ancho</th><th>Diámetro</th><th>Estatus</th><th className="px-4 py-2 text-right">Etiqueta</th></tr>
             </thead>
             <tbody>
               {measurements.map((m) => (
@@ -216,6 +217,15 @@ function SummaryPanel({
                   <td className="px-4 tabular-nums">{m.anchoUtil} cm</td>
                   <td className="px-4 tabular-nums">{m.diametro} cm</td>
                   <td className="px-4 py-2"><ReleaseBadge s={m.estatus} /></td>
+                  <td className="px-4 py-2 text-right">
+                    <button
+                      onClick={() => printRollLabel({ m, info, plantName, productoNombre })}
+                      className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-2.5 py-1 text-xs font-medium text-foreground hover:bg-accent"
+                      title="Imprimir etiqueta de liberación"
+                    >
+                      <Printer className="h-3.5 w-3.5" /> Imprimir
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
