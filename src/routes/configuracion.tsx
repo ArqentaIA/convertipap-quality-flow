@@ -27,25 +27,10 @@ function ConfigPage() {
           </Card>
 
 
-          <Card icon={Monitor} title="Operator Vision · Pantalla operativa" desc="Genera la URL de la TV industrial según la máquina seleccionada">
-            <div>
-              <div className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Selecciona la máquina</div>
-              <div className="inline-flex w-full rounded-lg border border-border bg-background p-1 shadow-sm">
-                {MAQUINAS.map((m) => (
-                  <button
-                    key={m}
-                    onClick={() => setMaquina(m)}
-                    className={`flex-1 rounded-md px-3 py-1.5 text-xs font-semibold transition ${
-                      maquina === m ? "bg-primary text-primary-foreground shadow" : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    {m}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <OperatorVisionUrl maquina={maquina} />
+          <Card icon={Monitor} title="Operator Vision · Pantallas operativas" desc="URLs de la TV industrial generadas automáticamente por máquina">
+            <OperatorVisionUrls />
           </Card>
+
         </div>
 
         <div className="space-y-6">
