@@ -31,7 +31,7 @@ const STEPS = [
 function ControlCalidad() {
   const [step, setStep] = useState(1);
   const [info, setInfo] = useState<GeneralInfo>(DEFAULT_GENERAL);
-  const [measurements, setMeasurements] = useState<Measurement[]>(SAMPLE_MEASUREMENTS);
+  const [measurements, setMeasurements] = useState<Measurement[]>([]);
   const [confirmed, setConfirmed] = useState(false);
   const shift = useShiftStatus();
   const locked = shift.status !== "borrador" || confirmed;
