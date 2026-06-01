@@ -357,6 +357,9 @@ export function solicitarAjuste(input: SolicitarAjusteInput): ResultRev {
     resultado: "pendiente",
     evidencia_url: null,
     observacion_ajuste: null,
+    muestra_verificacion_id: null,
+    sla_objetivo_horas: SLA_HORAS[input.tipo_ajuste] ?? 4,
+    estado_flujo: "solicitado",
     created_at: now,
     updated_at: now,
   };
@@ -380,6 +383,105 @@ export function solicitarAjuste(input: SolicitarAjusteInput): ResultRev {
   return { ok: true };
 }
 
+// --- SLA y acciones del flujo de ajustes ---------------------------------
+
+// Horas objetivo para resolver un ajuste, según tipo. En producción esto
+// viviría en una tabla de configuración.
+export const SLA_HORAS: Record<AjusteCalidad["tipo_ajuste"], number> = {
+  ajuste_calidad: 2,
+  ajuste_maquina: 4,
+  ajuste_parametros: 1,
+  cambio_materia_prima: 8,
+  reproceso: 12,
+  otro: 6,
+};
+
+export type SlaEstado = "verde" | "amarillo" | "rojo" | "cumplido";
+
+export function calcularSla(
+  ajuste: AjusteCalidad,
+  ahora: Date = new Date(),
+): { estado: SlaEstado; transcurridoHoras: number; restantesHoras: number } {
+  const inicio = new Date(ajuste.solicitado_at).getTime();
+  const fin = ajuste.ajustado_at ? new Date(ajuste.ajustado_at).getTime() : ahora.getTime();
+  const transcurridoHoras = (fin - inicio) / 36e5;
+  const restantesHoras = ajuste.sla_objetivo_horas - transcurridoHoras;
+  let estado: SlaEstado;
+  if (ajuste.estado_flujo === "cerrado") {
+    estado = transcurridoHoras <= ajuste.sla_objetivo_horas ? "cumplido" : "rojo";
+  } else if (restantesHoras < 0) estado = "rojo";
+  else if (restantesHoras < ajuste.sla_objetivo_horas * 0.25) estado = "amarillo";
+  else estado = "verde";
+  return { estado, transcurridoHoras, restantesHoras };
+}
+
+function updateAjuste(
+  ajuste_id: string,
+  updater: (a: AjusteCalidad) => AjusteCalidad,
+): ResultRev {
+  const a = state.ajustes.find((x) => x.id === ajuste_id);
+  if (!a) return { ok: false, error: "Ajuste no encontrado" };
+  setState((prev) => ({
+    ...prev,
+    ajustes: prev.ajustes.map((x) => (x.id === ajuste_id ? updater(x) : x)),
+  }));
+  return { ok: true };
+}
+
+export function autorizarAjuste(ajuste_id: string, usuario: string): ResultRev {
+  const now = new Date().toISOString();
+  return updateAjuste(ajuste_id, (a) =>
+    a.estado_flujo !== "solicitado"
+      ? a
+      : { ...a, estado_flujo: "autorizado", autorizado_por: usuario, autorizado_at: now, updated_at: now },
+  );
+}
+
+export function iniciarAjuste(ajuste_id: string, usuario: string): ResultRev {
+  const now = new Date().toISOString();
+  return updateAjuste(ajuste_id, (a) =>
+    a.estado_flujo !== "autorizado"
+      ? a
+      : { ...a, estado_flujo: "en_ejecucion", ajustado_por: usuario, updated_at: now },
+  );
+}
+
+export interface CerrarAjusteInput {
+  ajuste_id: string;
+  usuario: string;
+  accion_realizada: string;
+  resultado: AjusteCalidad["resultado"];
+  observacion: string;
+  muestra_verificacion_id?: string | null;
+}
+
+export function cerrarAjuste(input: CerrarAjusteInput): ResultRev {
+  if (!input.accion_realizada.trim())
+    return { ok: false, error: "Describe la acción realizada" };
+  if (input.resultado === "pendiente")
+    return { ok: false, error: "Selecciona un resultado" };
+  const now = new Date().toISOString();
+  return updateAjuste(input.ajuste_id, (a) => ({
+    ...a,
+    estado_flujo: "cerrado",
+    resultado: input.resultado,
+    accion_realizada: input.accion_realizada,
+    observacion_ajuste: input.observacion,
+    muestra_verificacion_id: input.muestra_verificacion_id ?? a.muestra_verificacion_id,
+    ajustado_por: a.ajustado_por ?? input.usuario,
+    ajustado_at: now,
+    updated_at: now,
+  }));
+}
+
+export function vincularVerificacion(ajuste_id: string, muestra_verificacion_id: string): ResultRev {
+  return updateAjuste(ajuste_id, (a) => ({
+    ...a,
+    muestra_verificacion_id,
+    updated_at: new Date().toISOString(),
+  }));
+}
+
 // --- Reseteo (útil para pruebas) ------------------------------------------
 
 export function resetQcMock() {
@@ -387,3 +489,4 @@ export function resetQcMock() {
   persist();
   listeners.forEach((l) => l());
 }
+

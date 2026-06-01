@@ -149,6 +149,12 @@ export interface AjusteCalidad {
   resultado: ResultadoAjuste;
   evidencia_url: string | null;
   observacion_ajuste: string | null;
+  // Verificación posterior (muestra que valida el ajuste)
+  muestra_verificacion_id: string | null;
+  // SLA objetivo en horas, congelado al crear
+  sla_objetivo_horas: number;
+  // Estado del flujo: solicitado → autorizado → en_ejecucion → cerrado
+  estado_flujo: "solicitado" | "autorizado" | "en_ejecucion" | "cerrado" | "rechazado";
   created_at: string;
   updated_at: string;
 }
