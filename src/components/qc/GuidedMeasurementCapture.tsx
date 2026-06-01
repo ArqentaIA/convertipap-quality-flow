@@ -128,15 +128,12 @@ export function GuidedMeasurementCapture({
   const canCapture = !locked && (isOperadorTurno || isDireccion);
 
   const lastRollo = rows[rows.length - 1]?.rollo;
-  const [draft, setDraft] = useState<Draft>(() => emptyDraft(nextRollo(lastRollo)));
+  const [draft, setDraft] = useState<Draft>(() => emptyDraft(""));
 
-  // Mantener rollo sugerido sincronizado si cambia la última fila y el operador aún no escribió
+  // Ya no se sugiere un número de rollo automáticamente: el capturista lo escribe.
   const userTouchedRolloRef = useRef(false);
-  useEffect(() => {
-    if (!userTouchedRolloRef.current) {
-      setDraft((d) => ({ ...d, rollo: nextRollo(lastRollo) }));
-    }
-  }, [lastRollo]);
+  // Mantener referencia por compatibilidad sin auto-sugerir
+  void lastRollo;
 
   // Auto-sugerencia de estatus
   const suggestedStatus: ReleaseStatus = useMemo(() => {
@@ -237,7 +234,8 @@ export function GuidedMeasurementCapture({
     toast.success("Registro guardado correctamente", {
       description: `Rollo ${newRow.rollo} · ${newRow.hora}`,
     });
-    resetDraft(nextRollo(newRow.rollo));
+    resetDraft("");
+    userTouchedRolloRef.current = false;
   };
 
   return (
@@ -302,7 +300,7 @@ export function GuidedMeasurementCapture({
                 className="mt-1 block w-44 rounded-lg border border-input bg-background px-3 py-2 text-xl font-bold tabular-nums text-foreground outline-none ring-2 ring-transparent transition focus:border-primary focus:ring-primary/30 placeholder:text-muted-foreground/50 disabled:cursor-not-allowed disabled:bg-muted/40"
               />
               <div className="mt-1 text-[11px] text-muted-foreground">
-                Sugerido automáticamente · editable
+                Captura el número de rollo en proceso
               </div>
             </div>
             <div className="flex flex-col">
