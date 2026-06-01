@@ -16,7 +16,7 @@ import {
 } from "@/lib/qc-data";
 import { PRODUCT_SPEC_MAP } from "@/lib/spec-catalog";
 import {
-  ArrowLeft, ArrowRight, FileText, FileSpreadsheet, Pencil, CheckCircle2,
+  ArrowLeft, ArrowRight, CheckCircle2,
 } from "lucide-react";
 
 export const Route = createFileRoute("/control-calidad")({ component: ControlCalidad });
@@ -163,11 +163,6 @@ function SummaryPanel({
             <div className={`mt-1 text-xl font-bold ${finalStatus === "ok" ? "text-success" : "text-foreground"}`}>
               {finalStatus === "ok" ? "✓ Listo para liberar" : `⚠ ${alerts.length} alertas de calidad detectadas`}
             </div>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <button onClick={() => onEdit(1)} className="inline-flex items-center gap-2 rounded-md border border-input bg-card px-3 py-1.5 text-xs font-medium hover:bg-accent"><Pencil className="h-3.5 w-3.5" /> Editar sección</button>
-            <button className="inline-flex items-center gap-2 rounded-md border border-input bg-card px-3 py-1.5 text-xs font-medium hover:bg-accent"><FileText className="h-3.5 w-3.5" /> Exportar PDF</button>
-            <button className="inline-flex items-center gap-2 rounded-md border border-input bg-card px-3 py-1.5 text-xs font-medium hover:bg-accent"><FileSpreadsheet className="h-3.5 w-3.5" /> Exportar Excel</button>
           </div>
         </div>
       </div>
