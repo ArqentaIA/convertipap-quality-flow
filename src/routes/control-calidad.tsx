@@ -16,7 +16,7 @@ import {
 } from "@/lib/qc-data";
 import { PRODUCT_SPEC_MAP } from "@/lib/spec-catalog";
 import {
-  ArrowLeft, ArrowRight, FileText, FileSpreadsheet, Pencil, CheckCircle2,
+  ArrowLeft, ArrowRight, CheckCircle2,
 } from "lucide-react";
 
 export const Route = createFileRoute("/control-calidad")({ component: ControlCalidad });
