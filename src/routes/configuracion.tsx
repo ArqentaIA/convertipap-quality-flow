@@ -118,15 +118,19 @@ function ConfigPage() {
   );
 }
 
-function Card({ title, desc, children }: { title: string; desc?: string; children: React.ReactNode }) {
+function Card({ icon: Icon, title, desc, children }: { icon?: React.ComponentType<{ className?: string }>; title: string; desc?: string; children: React.ReactNode }) {
   return (
     <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
-      <div className="mb-4 flex items-start justify-between">
-        <div>
+      <div className="mb-4 flex items-start gap-3">
+        {Icon && (
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <Icon className="h-4 w-4" />
+          </div>
+        )}
+        <div className="flex-1">
           <h3 className="text-sm font-semibold text-foreground">{title}</h3>
           {desc && <p className="text-xs text-muted-foreground">{desc}</p>}
         </div>
-        <Bell className="h-4 w-4 text-muted-foreground" />
       </div>
       <div className="space-y-3">{children}</div>
     </div>
