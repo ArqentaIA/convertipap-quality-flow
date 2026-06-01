@@ -276,8 +276,28 @@ function OperatorVisionPage() {
         backgroundSize: "48px 48px",
       }}
     >
+      {/* ---------------- ALERTA NC CONSECUTIVOS ---------------- */}
+      {ncAlerta && (
+        <div className="pointer-events-none fixed inset-0 z-[60] animate-[ncFlash_2s_ease-in-out_infinite]">
+          <div className="absolute inset-0 bg-rose-600/25 mix-blend-multiply" />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div
+              className="select-none font-black uppercase tracking-[0.25em] text-rose-600/30"
+              style={{ fontSize: "clamp(80px, 14vw, 260px)", transform: "rotate(-18deg)" }}
+            >
+              NO CONFORME
+            </div>
+          </div>
+          <div className="absolute left-1/2 top-6 -translate-x-1/2 rounded-full border-2 border-rose-600 bg-white/95 px-6 py-2 text-base font-black uppercase tracking-widest text-rose-700 shadow-lg">
+            ⚠ {ncConsecutivos} rollos NC consecutivos — atención inmediata
+          </div>
+          <style>{`@keyframes ncFlash { 0%,100% { opacity: 0.25 } 50% { opacity: 1 } }`}</style>
+        </div>
+      )}
+
       {/* ---------------- HEADER ---------------- */}
       <header className="relative border-b-2 border-slate-200 bg-white/80 backdrop-blur">
+
         <div className="flex items-center gap-6 px-8 py-4">
           <div className="flex items-center gap-3">
             <img
