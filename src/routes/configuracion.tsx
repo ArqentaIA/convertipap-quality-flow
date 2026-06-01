@@ -47,11 +47,6 @@ function ConfigPage() {
             <Field label="Frecuencia de muestreo sugerida" value="30" suffix="min" />
           </Card>
 
-          <Card icon={Globe} title="Preferencias regionales" desc="Formato y unidades del sistema">
-            <Field label="Zona horaria" value="America/Mexico_City" />
-            <Field label="Idioma" value="Español (MX)" />
-            <Field label="Unidades" value="Métrico (g/m², m/min, mm)" />
-          </Card>
 
           <Card icon={Monitor} title="Operator Vision · Pantalla operativa" desc={`Vista fullscreen para TV industrial · ${maquina}`}>
             <OperatorVisionUrl maquina={maquina} />
