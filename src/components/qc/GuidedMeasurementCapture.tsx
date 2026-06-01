@@ -407,14 +407,20 @@ export function GuidedMeasurementCapture({
               onChange={(v) => setDraft({ ...draft, notas: v })}
             />
           </div>
-          <div className="flex items-end">
+          <div className="flex flex-col items-end gap-1">
             <button
-              disabled={!canCapture}
+              disabled={!canCapture || !isComplete}
               onClick={save}
+              title={!isComplete ? `Faltan ${missingFields.length} variable(s): ${missingFields.map((f) => f.label).join(", ")}` : undefined}
               className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-bold text-primary-foreground shadow-md hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 lg:w-auto"
             >
               <Save className="h-4 w-4" /> Guardar Registro
             </button>
+            {!isComplete && (
+              <span className="text-[11px] font-medium text-warning-foreground">
+                Faltan {missingFields.length} variable(s) para liberar
+              </span>
+            )}
           </div>
         </div>
       </div>
