@@ -57,7 +57,7 @@ function LoginPage() {
           <div className="mb-3 flex h-16 w-full max-w-[180px] items-center justify-center rounded-md bg-white p-2">
             <img src={logo} alt="ConvertiPap" className="h-full w-full object-contain" />
           </div>
-          <h1 className="text-lg font-semibold text-foreground">Quality Hub</h1>
+          <h1 className="text-lg font-semibold text-foreground">Control de calidad</h1>
           <p className="text-xs text-muted-foreground">Inicia sesión para continuar</p>
         </div>
 
