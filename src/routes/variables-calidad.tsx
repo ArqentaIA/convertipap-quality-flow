@@ -8,6 +8,7 @@ import {
 } from "@/lib/spec-audit";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import logoUrl from "@/assets/logo-convertipap.png";
 import {
   Pencil, Power, Lock, FileSpreadsheet, ShieldCheck, Save, X,
 } from "lucide-react";
@@ -95,14 +96,30 @@ function VariablesCalidad() {
     cancelEdit();
   };
 
-  const exportPDF = () => {
+  const exportPDF = async () => {
     if (!activeSpec) return;
     const doc = new jsPDF({ unit: "pt", format: "a4" });
     const records = auditFor(activeSpec.code).sort((a, b) => a.timestamp.localeCompare(b.timestamp));
     const W = doc.internal.pageSize.getWidth();
 
+    // Logo (parte superior izquierda)
+    let headerBottom = 40;
+    try {
+      const blob = await fetch(logoUrl).then((r) => r.blob());
+      const dataUrl: string = await new Promise((res, rej) => {
+        const fr = new FileReader();
+        fr.onload = () => res(fr.result as string);
+        fr.onerror = rej;
+        fr.readAsDataURL(blob);
+      });
+      const logoW = 90;
+      const logoH = 90 * (300 / 700); // ~38.6
+      doc.addImage(dataUrl, "PNG", 40, 24, logoW, logoH);
+      headerBottom = 24 + logoH;
+    } catch { /* sigue sin logo */ }
+
     doc.setFontSize(14).setFont("helvetica", "bold");
-    doc.text("Reporte de Trazabilidad de Cambios de Especificaciones", W / 2, 40, { align: "center" });
+    doc.text("Reporte de Trazabilidad de Cambios de Especificaciones", W / 2, Math.max(50, headerBottom - 8), { align: "center" });
 
     doc.setFontSize(10).setFont("helvetica", "normal");
     const meta = [
@@ -113,7 +130,7 @@ function VariablesCalidad() {
       ["Fecha de emisión", new Date().toLocaleString("es-MX")],
     ];
     autoTable(doc, {
-      startY: 60,
+      startY: Math.max(75, headerBottom + 10),
       head: [["Datos Generales", ""]],
       body: meta,
       theme: "grid",
