@@ -37,9 +37,9 @@ function ConfigPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <div className="space-y-6 lg:col-span-2">
-          <Card title="Parámetros generales" desc={`Aplican a la máquina ${maquina}`}>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div className="space-y-6">
+          <Card icon={Sliders} title="Parámetros generales" desc={`Aplican a la máquina ${maquina}`}>
             <Field label="Tolerancia de advertencia (% del rango)" value="10" suffix="%" />
             <ShiftRange label="Turno 1" inicio="07:00" fin="15:00" />
             <ShiftRange label="Turno 2" inicio="15:00" fin="23:00" />
@@ -47,12 +47,19 @@ function ConfigPage() {
             <Field label="Frecuencia de muestreo sugerida" value="30" suffix="min" />
           </Card>
 
-          <RosterCard maquina={maquina} />
+          <Card icon={Globe} title="Preferencias regionales" desc="Formato y unidades del sistema">
+            <Field label="Zona horaria" value="America/Mexico_City" />
+            <Field label="Idioma" value="Español (MX)" />
+            <Field label="Unidades" value="Métrico (g/m², m/min, mm)" />
+          </Card>
+
+          <Card icon={Monitor} title="Operator Vision · Pantalla operativa" desc={`Vista fullscreen para TV industrial · ${maquina}`}>
+            <OperatorVisionUrl maquina={maquina} />
+          </Card>
         </div>
 
-
         <div className="space-y-6">
-          <Card title="Notificaciones" desc={`Alertas automáticas · ${maquina}`}>
+          <Card icon={Bell} title="Notificaciones" desc={`Alertas automáticas · ${maquina}`}>
             <Toggle label="Alerta por valor fuera de rango" on hint="Envía una notificación cuando una variable supere los límites configurados." />
             <Toggle label="Resumen diario por correo" on hint="Envía automáticamente un resumen diario de producción." />
             <Toggle label="Notificar no conformidades a supervisor" on hint="Notifica incidencias y eventos de calidad al supervisor responsable." />
@@ -101,16 +108,6 @@ function ConfigPage() {
             </div>
           </Card>
           {previewCEO && <CEOReportPreview onClose={() => setPreviewCEO(false)} />}
-
-          <Card title="Preferencias regionales">
-            <Field label="Zona horaria" value="America/Mexico_City" />
-            <Field label="Idioma" value="Español (MX)" />
-            <Field label="Unidades" value="Métrico (g/m², m/min, mm)" />
-          </Card>
-
-          <Card title="Operator Vision · Pantalla operativa" desc={`Vista fullscreen para TV industrial · ${maquina}`}>
-            <OperatorVisionUrl maquina={maquina} />
-          </Card>
 
           <button className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm hover:opacity-90">
             <Save className="h-4 w-4" /> Guardar cambios
