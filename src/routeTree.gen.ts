@@ -21,6 +21,7 @@ import { Route as CatalogosRouteImport } from './routes/catalogos'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TFolioRouteImport } from './routes/t.$folio'
 import { Route as HistorialMaquinaRouteImport } from './routes/historial.$maquina'
+import { Route as CalidadCapturaRouteImport } from './routes/calidad.captura'
 
 const VariablesCalidadRoute = VariablesCalidadRouteImport.update({
   id: '/variables-calidad',
@@ -82,6 +83,11 @@ const HistorialMaquinaRoute = HistorialMaquinaRouteImport.update({
   path: '/historial/$maquina',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CalidadCapturaRoute = CalidadCapturaRouteImport.update({
+  id: '/calidad/captura',
+  path: '/calidad/captura',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -94,6 +100,7 @@ export interface FileRoutesByFullPath {
   '/reportes': typeof ReportesRoute
   '/usuarios': typeof UsuariosRoute
   '/variables-calidad': typeof VariablesCalidadRoute
+  '/calidad/captura': typeof CalidadCapturaRoute
   '/historial/$maquina': typeof HistorialMaquinaRoute
   '/t/$folio': typeof TFolioRoute
 }
@@ -108,6 +115,7 @@ export interface FileRoutesByTo {
   '/reportes': typeof ReportesRoute
   '/usuarios': typeof UsuariosRoute
   '/variables-calidad': typeof VariablesCalidadRoute
+  '/calidad/captura': typeof CalidadCapturaRoute
   '/historial/$maquina': typeof HistorialMaquinaRoute
   '/t/$folio': typeof TFolioRoute
 }
@@ -123,6 +131,7 @@ export interface FileRoutesById {
   '/reportes': typeof ReportesRoute
   '/usuarios': typeof UsuariosRoute
   '/variables-calidad': typeof VariablesCalidadRoute
+  '/calidad/captura': typeof CalidadCapturaRoute
   '/historial/$maquina': typeof HistorialMaquinaRoute
   '/t/$folio': typeof TFolioRoute
 }
@@ -139,6 +148,7 @@ export interface FileRouteTypes {
     | '/reportes'
     | '/usuarios'
     | '/variables-calidad'
+    | '/calidad/captura'
     | '/historial/$maquina'
     | '/t/$folio'
   fileRoutesByTo: FileRoutesByTo
@@ -153,6 +163,7 @@ export interface FileRouteTypes {
     | '/reportes'
     | '/usuarios'
     | '/variables-calidad'
+    | '/calidad/captura'
     | '/historial/$maquina'
     | '/t/$folio'
   id:
@@ -167,6 +178,7 @@ export interface FileRouteTypes {
     | '/reportes'
     | '/usuarios'
     | '/variables-calidad'
+    | '/calidad/captura'
     | '/historial/$maquina'
     | '/t/$folio'
   fileRoutesById: FileRoutesById
@@ -182,6 +194,7 @@ export interface RootRouteChildren {
   ReportesRoute: typeof ReportesRoute
   UsuariosRoute: typeof UsuariosRoute
   VariablesCalidadRoute: typeof VariablesCalidadRoute
+  CalidadCapturaRoute: typeof CalidadCapturaRoute
   HistorialMaquinaRoute: typeof HistorialMaquinaRoute
   TFolioRoute: typeof TFolioRoute
 }
@@ -272,6 +285,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof HistorialMaquinaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/calidad/captura': {
+      id: '/calidad/captura'
+      path: '/calidad/captura'
+      fullPath: '/calidad/captura'
+      preLoaderRoute: typeof CalidadCapturaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -286,19 +306,10 @@ const rootRouteChildren: RootRouteChildren = {
   ReportesRoute: ReportesRoute,
   UsuariosRoute: UsuariosRoute,
   VariablesCalidadRoute: VariablesCalidadRoute,
+  CalidadCapturaRoute: CalidadCapturaRoute,
   HistorialMaquinaRoute: HistorialMaquinaRoute,
   TFolioRoute: TFolioRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
