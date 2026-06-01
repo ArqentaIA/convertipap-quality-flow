@@ -101,7 +101,7 @@ function ControlCalidad() {
         )}
 
         {step === 3 && (
-          <SummaryPanel info={infoView} plantName={plant.name} measurements={measurements} alerts={alerts} onEdit={setStep} />
+          <SummaryPanel info={infoView} plantName={plant.name} productoNombre={activeSpec.name} measurements={measurements} alerts={alerts} onEdit={setStep} />
         )}
 
         <ActionFooter
