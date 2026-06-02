@@ -190,7 +190,7 @@ export const getSpecPorProducto = createServerFn({ method: "GET" })
       .from("producto_variables")
       .select(
         `id, variable_id, min_valor, objetivo, max_valor, tolerancia,
-         variables_calidad(id, clave, etiqueta, unidad)`,
+         variables_calidad(id, clave, etiqueta, unidad, orden)`,
       )
       .eq("especificacion_id", spec.id);
     if (eVars) throw new Error(eVars.message);
@@ -278,9 +278,10 @@ export const listMisMuestrasRecientes = createServerFn({ method: "GET" })
       .from("muestras_calidad")
       .select(
         `id, hora_muestreo, capturado_at, numero_rollo, estado, observaciones_generales,
-         producto_id, maquina_id, capturado_por,
+         producto_id, maquina_id, capturado_por, turno,
+         jefe_maquina, operador, prensero, analista,
          productos(id, codigo, nombre),
-         maquinas(id, codigo, nombre),
+         maquinas(id, codigo, nombre, planta_id, plantas(codigo, nombre)),
          mediciones_calidad(variable_id, variable_clave, valor, min_snapshot, objetivo_snapshot, max_snapshot, estado, variables_calidad(clave, etiqueta, unidad))`
       )
       .order("capturado_at", { ascending: false })
@@ -363,7 +364,11 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
         producto_id: z.string().uuid(),
         turno: z.string().min(1),
         operario_id: z.string().uuid().nullable().optional(),
-        numero_rollo: z.number().int().nullable().optional(),
+        numero_rollo: z.string().regex(/^\d{1,5}-\d{1,2}$/, "Formato XXXX-X").nullable().optional(),
+        jefe_maquina: z.string().max(120).nullable().optional(),
+        operador: z.string().max(120).nullable().optional(),
+        prensero: z.string().max(120).nullable().optional(),
+        analista: z.string().max(120).nullable().optional(),
         tipo_muestreo: z.enum(["por_rollo", "por_tiempo"]),
         hora_muestreo: z.string(),
         observaciones_generales: z.string().default(""),
@@ -405,6 +410,10 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
       turno: data.turno,
       operario_id: data.operario_id ?? null,
       numero_rollo: data.numero_rollo ?? null,
+      jefe_maquina: data.jefe_maquina ?? null,
+      operador: data.operador ?? null,
+      prensero: data.prensero ?? null,
+      analista: data.analista ?? null,
       tipo_muestreo: data.tipo_muestreo,
       hora_muestreo: data.hora_muestreo,
       observaciones_generales: data.observaciones_generales,

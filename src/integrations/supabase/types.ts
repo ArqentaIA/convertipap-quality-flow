@@ -400,6 +400,7 @@ export type Database = {
       }
       muestras_calidad: {
         Row: {
+          analista: string | null
           autorizado_at: string | null
           autorizado_por: string | null
           capturado_at: string
@@ -415,15 +416,18 @@ export type Database = {
           evidencia_url: string | null
           hora_muestreo: string
           id: string
+          jefe_maquina: string | null
           maquina_id: string
           mediciones_modificacion_motivo: string | null
           mediciones_modificadas_at: string | null
           mediciones_modificadas_por: string | null
-          numero_rollo: number | null
+          numero_rollo: string | null
           observaciones_generales: string
+          operador: string | null
           operario_id: string | null
           orden_id: string | null
           planta_id: string
+          prensero: string | null
           producto_id: string
           revisado_at: string | null
           revisado_por: string | null
@@ -434,6 +438,7 @@ export type Database = {
           variables_snapshot_json: Json
         }
         Insert: {
+          analista?: string | null
           autorizado_at?: string | null
           autorizado_por?: string | null
           capturado_at?: string
@@ -449,15 +454,18 @@ export type Database = {
           evidencia_url?: string | null
           hora_muestreo?: string
           id?: string
+          jefe_maquina?: string | null
           maquina_id: string
           mediciones_modificacion_motivo?: string | null
           mediciones_modificadas_at?: string | null
           mediciones_modificadas_por?: string | null
-          numero_rollo?: number | null
+          numero_rollo?: string | null
           observaciones_generales?: string
+          operador?: string | null
           operario_id?: string | null
           orden_id?: string | null
           planta_id: string
+          prensero?: string | null
           producto_id: string
           revisado_at?: string | null
           revisado_por?: string | null
@@ -468,6 +476,7 @@ export type Database = {
           variables_snapshot_json?: Json
         }
         Update: {
+          analista?: string | null
           autorizado_at?: string | null
           autorizado_por?: string | null
           capturado_at?: string
@@ -483,15 +492,18 @@ export type Database = {
           evidencia_url?: string | null
           hora_muestreo?: string
           id?: string
+          jefe_maquina?: string | null
           maquina_id?: string
           mediciones_modificacion_motivo?: string | null
           mediciones_modificadas_at?: string | null
           mediciones_modificadas_por?: string | null
-          numero_rollo?: number | null
+          numero_rollo?: string | null
           observaciones_generales?: string
+          operador?: string | null
           operario_id?: string | null
           orden_id?: string | null
           planta_id?: string
+          prensero?: string | null
           producto_id?: string
           revisado_at?: string | null
           revisado_por?: string | null

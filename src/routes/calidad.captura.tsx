@@ -31,7 +31,15 @@ import {
   upsertMuestraConMediciones,
   listMisMuestrasRecientes,
 } from "@/lib/qc.functions";
+import { getAppSettings } from "@/lib/settings.functions";
 import { cn } from "@/lib/utils";
+
+const ROLLO_REGEX = /^\d{1,5}-\d{1,2}$/;
+
+const settingsQO = queryOptions({
+  queryKey: ["app", "settings"],
+  queryFn: () => getAppSettings(),
+});
 
 const misMuestrasQO = queryOptions({
   queryKey: ["qc", "mis-muestras-recientes"],
@@ -85,11 +93,20 @@ function evaluarMedicion(v: number, min: number, max: number): MedicionEstadoUI 
   return "conforme";
 }
 
-function inferirTurno(d: Date): string {
-  const h = d.getHours();
-  if (h >= 7 && h < 15) return "A";
-  if (h >= 15 && h < 23) return "B";
-  return "C";
+function inferirTurno(d: Date, settings?: { turno1_inicio: string; turno1_fin: string; turno2_inicio: string; turno2_fin: string; turno3_inicio: string; turno3_fin: string } | null): "1" | "2" | "3" {
+  const mins = d.getHours() * 60 + d.getMinutes();
+  const toMin = (hhmm: string) => {
+    const [h, m] = hhmm.split(":").map(Number);
+    return (h ?? 0) * 60 + (m ?? 0);
+  };
+  const s = settings ?? { turno1_inicio: "07:00", turno1_fin: "15:00", turno2_inicio: "15:00", turno2_fin: "23:00", turno3_inicio: "23:00", turno3_fin: "07:00" };
+  const inRange = (start: string, end: string) => {
+    const a = toMin(start), b = toMin(end);
+    return a <= b ? (mins >= a && mins < b) : (mins >= a || mins < b);
+  };
+  if (inRange(s.turno1_inicio, s.turno1_fin)) return "1";
+  if (inRange(s.turno2_inicio, s.turno2_fin)) return "2";
+  return "3";
 }
 
 function CapturaCalidadPage() {
@@ -148,6 +165,9 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
   const specQuery = useQuery(specQO(producto.producto_id));
   const spec = specQuery.data;
 
+  const settingsQuery = useQuery(settingsQO);
+  const settings = settingsQuery.data;
+
   const variables = useMemo(() => {
     if (!spec) return [];
     return (spec.variables as Array<{
@@ -156,16 +176,19 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
       min_valor: number;
       objetivo: number;
       max_valor: number;
-      variables_calidad: { id: string; clave: string; etiqueta: string; unidad: string | null } | null;
-    }>).map((v) => ({
-      variable_id: v.variable_id,
-      clave: v.variables_calidad?.clave ?? "",
-      etiqueta: v.variables_calidad?.etiqueta ?? "(variable)",
-      unidad: v.variables_calidad?.unidad ?? "",
-      min_valor: Number(v.min_valor),
-      objetivo: Number(v.objetivo),
-      max_valor: Number(v.max_valor),
-    }));
+      variables_calidad: { id: string; clave: string; etiqueta: string; unidad: string | null; orden?: number } | null;
+    }>)
+      .map((v) => ({
+        variable_id: v.variable_id,
+        clave: v.variables_calidad?.clave ?? "",
+        etiqueta: v.variables_calidad?.etiqueta ?? "(variable)",
+        unidad: v.variables_calidad?.unidad ?? "",
+        orden: v.variables_calidad?.orden ?? 999,
+        min_valor: Number(v.min_valor),
+        objetivo: Number(v.objetivo),
+        max_valor: Number(v.max_valor),
+      }))
+      .sort((a, b) => a.orden - b.orden);
   }, [spec]);
 
   const ahoraLocal = useMemo(() => toLocalDateTimeInputValue(new Date()), []);
@@ -174,6 +197,20 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
   const [observaciones, setObservaciones] = useState<string>("");
   const [mediciones, setMediciones] = useState<MedicionInputState>({});
   const [showConfirm, setShowConfirm] = useState(false);
+
+  // Turno: auto-inferido por hora, editable manualmente
+  const turnoInferido = useMemo(
+    () => inferirTurno(new Date(horaMuestreo || Date.now()), settings),
+    [horaMuestreo, settings],
+  );
+  const [turno, setTurno] = useState<"1" | "2" | "3">(turnoInferido);
+  useEffect(() => { setTurno(turnoInferido); }, [turnoInferido]);
+
+  // Personal del turno
+  const [jefeMaquina, setJefeMaquina] = useState<string>("");
+  const [operador, setOperador] = useState<string>("");
+  const [prensero, setPrensero] = useState<string>("");
+  const [analista, setAnalista] = useState<string>("");
 
   // Reinicializar mediciones cuando cambia el producto / spec
   useEffect(() => {
@@ -224,6 +261,11 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
           productoCodigo: producto.codigo,
           productoNombre: producto.nombre,
           observacionesGenerales: observaciones,
+          turno,
+          jefeMaquina,
+          operador,
+          prensero,
+          analista,
           mediciones: evalMediciones
             .filter((m) => m.input.valor !== "" && Number.isFinite(m.num))
             .map((m) => ({
@@ -282,8 +324,14 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
     if (!horaMuestreo) return "Indica la hora de muestreo";
     if (new Date(horaMuestreo).getTime() > Date.now() + 60_000)
       return "La hora de muestreo no puede ser futura";
+    if (!numeroRollo.trim()) return "Captura el número de rollo (formato XXXX-X)";
+    if (!ROLLO_REGEX.test(numeroRollo.trim()))
+      return "El número de rollo debe tener el formato XXXX-X (ej. 4438-6)";
     if (modo === "envio") {
-      if (!numeroRollo.trim()) return "Captura el número de rollo";
+      if (!jefeMaquina.trim()) return "Captura el Jefe de Máquina";
+      if (!operador.trim()) return "Captura el Operador";
+      if (!prensero.trim()) return "Captura el Prensero";
+      if (!analista.trim()) return "Captura el Analista";
       const faltantes = evalMediciones.filter((m) => m.input.valor === "").map((m) => m.spec.etiqueta);
       if (faltantes.length) return `Falta capturar: ${faltantes.join(", ")}`;
       const inverosimil = evalMediciones.find(
@@ -316,9 +364,13 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
         planta_id: maquina.planta_id,
         maquina_id: maquina.id,
         producto_id: producto.producto_id,
-        turno: inferirTurno(new Date(horaMuestreo)),
+        turno,
         operario_id: null,
-        numero_rollo: numeroRollo ? Number(numeroRollo) : null,
+        numero_rollo: numeroRollo.trim() || null,
+        jefe_maquina: jefeMaquina.trim() || null,
+        operador: operador.trim() || null,
+        prensero: prensero.trim() || null,
+        analista: analista.trim() || null,
         tipo_muestreo: "por_rollo" as const,
         hora_muestreo: new Date(horaMuestreo).toISOString(),
         observaciones_generales: observaciones,
@@ -379,9 +431,28 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">A. Máquina y producto</CardTitle>
+            <CardTitle className="text-sm font-medium">A. Turno, máquina y producto</CardTitle>
           </CardHeader>
-          <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div className="space-y-1.5">
+              <Label>Turno</Label>
+              <Select value={turno} onValueChange={(v) => setTurno(v as "1" | "2" | "3")}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecciona turno" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">
+                    Turno 1 · {settings?.turno1_inicio ?? "07:00"} – {settings?.turno1_fin ?? "15:00"}
+                  </SelectItem>
+                  <SelectItem value="2">
+                    Turno 2 · {settings?.turno2_inicio ?? "15:00"} – {settings?.turno2_fin ?? "23:00"}
+                  </SelectItem>
+                  <SelectItem value="3">
+                    Turno 3 · {settings?.turno3_inicio ?? "23:00"} – {settings?.turno3_fin ?? "07:00"}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <div className="space-y-1.5">
               <Label>Máquina</Label>
               <Select value={maquinaId} onValueChange={setMaquinaId}>
@@ -443,15 +514,53 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
         {spec && (
           <Card className={cn(isBlocked && "opacity-60 pointer-events-none")}>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">B. Datos de la muestra</CardTitle>
+              <CardTitle className="text-sm font-medium">B. Personal del turno</CardTitle>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="jefe">Jefe de Máquina</Label>
+                <Input id="jefe" maxLength={120} value={jefeMaquina}
+                  onChange={(e) => setJefeMaquina(e.target.value)} placeholder="Nombre" />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="oper">Operador</Label>
+                <Input id="oper" maxLength={120} value={operador}
+                  onChange={(e) => setOperador(e.target.value)} placeholder="Nombre" />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="prens">Prensero</Label>
+                <Input id="prens" maxLength={120} value={prensero}
+                  onChange={(e) => setPrensero(e.target.value)} placeholder="Nombre" />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="anal">Analista</Label>
+                <Input id="anal" maxLength={120} value={analista}
+                  onChange={(e) => setAnalista(e.target.value)} placeholder="Nombre" />
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {spec && (
+          <Card className={cn(isBlocked && "opacity-60 pointer-events-none")}>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">C. Datos de la muestra</CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-3">
               <div className="space-y-1.5">
-                <Label htmlFor="rollo">Número de rollo</Label>
+                <Label htmlFor="rollo">Número de rollo <span className="text-muted-foreground font-normal">(formato XXXX-X)</span></Label>
                 <Input
-                  id="rollo" type="number" min={1}
-                  value={numeroRollo} onChange={(e) => setNumeroRollo(e.target.value)}
+                  id="rollo" type="text" inputMode="numeric" placeholder="4438-6"
+                  pattern="\d{1,5}-\d{1,2}"
+                  value={numeroRollo}
+                  onChange={(e) => setNumeroRollo(e.target.value)}
+                  className={cn(
+                    numeroRollo && !ROLLO_REGEX.test(numeroRollo.trim()) && "border-destructive",
+                  )}
                 />
+                {numeroRollo && !ROLLO_REGEX.test(numeroRollo.trim()) && (
+                  <p className="text-[11px] text-destructive">Formato esperado: XXXX-X (ej. 4438-6)</p>
+                )}
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="hora">Hora de muestreo</Label>
@@ -461,7 +570,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
                 />
               </div>
               <div className="space-y-1.5">
-                <Label>Especificación</Label>
+                <Label>Especificación vigente</Label>
                 <div className="flex items-center gap-2 h-9 px-3 rounded-md border border-border bg-muted text-sm">
                   <Badge variant="secondary">v{spec.spec.version}</Badge>
                   <span className="text-muted-foreground text-xs">{variables.length} variables</span>
@@ -494,7 +603,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
         {spec && (
           <Card className={cn(isBlocked && "opacity-60 pointer-events-none")}>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">C. Mediciones por variable</CardTitle>
+              <CardTitle className="text-sm font-medium">D. Mediciones por variable</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               {/* Desktop / tablet landscape: tabla clásica */}
@@ -644,10 +753,10 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
           </Alert>
         )}
 
-        {/* D. Producción capturada recientemente */}
+        {/* E. Producción capturada recientemente */}
         <Card>
           <CardHeader className="pb-2 flex flex-row items-center justify-between">
-            <CardTitle className="text-sm font-medium">D. Producción capturada recientemente</CardTitle>
+            <CardTitle className="text-sm font-medium">E. Producción capturada recientemente</CardTitle>
             <Badge variant="outline" className="text-xs">
               {misMuestrasQuery.data?.length ?? 0} muestras
             </Badge>
@@ -819,6 +928,11 @@ function buildEtiquetaFromMuestra(m: MuestraReciente): EtiquetaData {
     productoCodigo: m.productos?.codigo ?? "",
     productoNombre: m.productos?.nombre ?? "",
     observacionesGenerales: m.observaciones_generales ?? "",
+    turno: (m as { turno?: string | null }).turno ?? null,
+    jefeMaquina: (m as { jefe_maquina?: string | null }).jefe_maquina ?? null,
+    operador: (m as { operador?: string | null }).operador ?? null,
+    prensero: (m as { prensero?: string | null }).prensero ?? null,
+    analista: (m as { analista?: string | null }).analista ?? null,
     mediciones: meds,
     estatus: fueraSpec ? "NO CONFORME" : "CONFORME",
   };

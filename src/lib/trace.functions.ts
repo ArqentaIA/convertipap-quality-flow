@@ -18,13 +18,17 @@ export type TraceMuestra = {
   found: true;
   id: string;
   folio: string;
-  numero_rollo: number | null;
+  numero_rollo: string | null;
   hora_muestreo: string;
   capturado_at: string;
   turno: string;
   estado: string;
   dictamen: string | null;
   observaciones_generales: string;
+  jefe_maquina: string | null;
+  operador: string | null;
+  prensero: string | null;
+  analista: string | null;
   producto: { codigo: string; nombre: string };
   maquina: { codigo: string; nombre: string };
   planta: { codigo: string; nombre: string };
@@ -41,7 +45,7 @@ export const getMuestraTrace = createServerFn({ method: "GET" })
       .from("muestras_calidad")
       .select(
         `id, hora_muestreo, capturado_at, turno, estado, dictamen, numero_rollo,
-         observaciones_generales,
+         observaciones_generales, jefe_maquina, operador, prensero, analista,
          producto:productos(codigo, nombre),
          maquina:maquinas(codigo, nombre),
          planta:plantas(codigo, nombre),
@@ -91,6 +95,10 @@ export const getMuestraTrace = createServerFn({ method: "GET" })
       estado: m.estado,
       dictamen: m.dictamen,
       observaciones_generales: m.observaciones_generales ?? "",
+      jefe_maquina: (m as { jefe_maquina?: string | null }).jefe_maquina ?? null,
+      operador: (m as { operador?: string | null }).operador ?? null,
+      prensero: (m as { prensero?: string | null }).prensero ?? null,
+      analista: (m as { analista?: string | null }).analista ?? null,
       producto: (m.producto as { codigo: string; nombre: string }) ?? { codigo: "—", nombre: "—" },
       maquina: (m.maquina as { codigo: string; nombre: string }) ?? { codigo: "—", nombre: "—" },
       planta: (m.planta as { codigo: string; nombre: string }) ?? { codigo: "—", nombre: "—" },
