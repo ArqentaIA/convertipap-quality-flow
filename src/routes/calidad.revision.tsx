@@ -496,12 +496,36 @@ function RevisionPage() {
             )}
             <div className="space-y-1.5">
               <Label>
-                {accion === "liberar" ? "Observación (opcional)" : "Motivo / justificación (obligatorio)"}
+                {accion === "liberar"
+                  ? "Motivo (opcional)"
+                  : "Motivo / justificación (obligatorio)"}
               </Label>
-              <Textarea rows={4} value={motivo} onChange={(e) => setMotivo(e.target.value)}
+              <Textarea rows={3} value={motivo} onChange={(e) => setMotivo(e.target.value)}
                 placeholder="Describe la decisión…" />
             </div>
+            {(accion === "liberar" || accion === "concesion" || accion === "rechazar") && (
+              <div className="space-y-1.5">
+                <Label>
+                  Evidencia (URL)
+                  {(accion === "rechazar") && " — obligatoria"}
+                  {(accion === "liberar" || accion === "concesion") && " — opcional"}
+                </Label>
+                <Input
+                  value={evidenciaUrl}
+                  onChange={(e) => setEvidenciaUrl(e.target.value)}
+                  placeholder="https://…  (foto, reporte, certificado)"
+                />
+              </div>
+            )}
+            {(accion === "liberar" || accion === "concesion" || accion === "rechazar") && (
+              <div className="space-y-1.5">
+                <Label>Observaciones (opcional)</Label>
+                <Textarea rows={2} value={observaciones} onChange={(e) => setObservaciones(e.target.value)}
+                  placeholder="Notas adicionales…" />
+              </div>
+            )}
           </div>
+
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setAccion(null)}>Cancelar</Button>
