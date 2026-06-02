@@ -264,10 +264,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
 
   // ---- Listado de muestras recientes del capturista ----
   const misMuestrasQuery = useQuery(misMuestrasQO);
-  const maquinasById = useMemo(
-    () => new Map(maquinas.map((m) => [m.id, m])),
-    [maquinas],
-  );
+
 
   async function imprimirEtiquetaMuestra(muestra: MuestraReciente) {
     try {
