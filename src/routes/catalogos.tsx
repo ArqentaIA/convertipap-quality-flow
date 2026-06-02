@@ -115,7 +115,7 @@ function PlantasTab({ plantas, isAdmin }: { plantas: Planta[]; isAdmin: boolean 
 
   return (
     <>
-      <SectionHeader title="Plantas" onAdd={() => setEditing({ activo: true })} />
+      <SectionHeader title="Plantas" onAdd={() => setEditing({ activo: true })} canEdit={isAdmin} />
       <Card>
         <Table headers={["Código", "Nombre", "Ubicación", "Estado", ""]}>
           {plantas.map((p) => (
@@ -203,7 +203,7 @@ function MaquinasTab({ maquinas, plantas, isAdmin }: { maquinas: Maquina[]; plan
 
   return (
     <>
-      <SectionHeader title="Máquinas" onAdd={() => setEditing({ activo: true })} />
+      <SectionHeader title="Máquinas" onAdd={() => setEditing({ activo: true })} canEdit={isAdmin} />
       <Card>
         <Table headers={["Código", "Nombre", "Planta", "Área", "Estado", ""]}>
           {maquinas.map((m) => (
@@ -306,7 +306,7 @@ function ProductosTab({ productos, isAdmin }: { productos: Producto[]; isAdmin: 
 
   return (
     <>
-      <SectionHeader title="Productos" onAdd={() => setEditing({ activo: true })} />
+      <SectionHeader title="Productos" onAdd={() => setEditing({ activo: true })} canEdit={isAdmin} />
       <Card>
         <Table headers={["Código", "Nombre", "Gramaje", "Capas", "Estado", ""]}>
           {productos.map((p) => (
