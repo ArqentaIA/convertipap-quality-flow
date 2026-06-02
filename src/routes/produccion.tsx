@@ -243,10 +243,17 @@ function CausaModal({ maquina, onClose }: { maquina: MaquinaRow; onClose: () => 
 function EstadoChip({ estado }: { estado: MaquinaRow["estado"] }) {
   const map = {
     operando: { cls: "bg-success/15 text-success border-success/30", icon: Play, txt: "Operando" },
-    ajuste: { cls: "bg-warning/20 text-foreground border-warning/40", icon: Clock, txt: "Ajuste" },
+    mantenimiento: { cls: "bg-warning/20 text-foreground border-warning/40", icon: Clock, txt: "Mantenimiento" },
     paro: { cls: "bg-destructive/15 text-destructive border-destructive/30", icon: Pause, txt: "Paro" },
     libre: { cls: "bg-muted text-muted-foreground border-border", icon: CircleDashed, txt: "Libre" },
   } as const;
+  const { cls, icon: Icon, txt } = map[estado];
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${cls}`}>
+      <Icon className="h-3 w-3" /> {txt}
+    </span>
+  );
+}
   const { cls, icon: Icon, txt } = map[estado];
   return (
     <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${cls}`}>
