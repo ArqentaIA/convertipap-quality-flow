@@ -10,7 +10,7 @@ import {
 } from "recharts";
 import {
   ArrowRight, Factory, AlertTriangle, Gauge,
-  TrendingUp, TrendingDown, Activity, Target,
+  Activity, Target,
 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { RangoSelector, MESES, rangoLabel, type Rango } from "@/components/qc/RangoSelector";
@@ -283,5 +283,3 @@ function Mini({ label, value, ok }: { label: string; value: string; ok: boolean 
     </div>
   );
 }
-// Unused imports kept for typing
-void TrendingUp; void TrendingDown;
