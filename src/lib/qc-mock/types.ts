@@ -107,6 +107,20 @@ export interface MuestraCalidad {
   revisado_at: string | null;
   dictamen: DictamenCalidad | null;
   dictamen_motivo: string | null;
+  // --- Autorización formal de Gerencia de Calidad (única fuente válida) ---
+  // Sin estos campos, el resolver devuelve `pendiente_revision` aunque
+  // exista un dictamen técnico. Roles permitidos: calidad/gerencia_calidad,
+  // gerente_general, administrador.
+  autorizado_por?: string | null;
+  rol_autorizador?: string | null;
+  autorizado_at?: string | null;
+  dictamen_at?: string | null;
+  dictamen_observaciones?: string | null;
+  evidencia_url?: string | null;
+  // Marca de modificación posterior al dictamen → dispara inconsistencia.
+  mediciones_modificadas_at?: string | null;
+  mediciones_modificadas_por?: string | null;
+  mediciones_modificacion_motivo?: string | null;
   // snapshot redundante para trazabilidad
   variables_snapshot_json: Record<
     string,
