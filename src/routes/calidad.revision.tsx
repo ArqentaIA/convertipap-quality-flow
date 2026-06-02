@@ -706,7 +706,7 @@ function EstadoBadge({ estado }: { estado: EstadoMuestra }) {
   return <span className={cn("inline-flex rounded px-2 py-0.5 text-xs font-medium", c.cls)}>{c.label}</span>;
 }
 
-type MedicionRow = {
+type MedicionView = {
   id: string;
   variable_clave: string;
   valor: number;
@@ -717,7 +717,8 @@ type MedicionRow = {
   observacion: string;
 };
 
-function MedicionRow({ m }: { m: MedicionRow }) {
+function MedicionRow({ m }: { m: MedicionView }) {
+
   const fuera = m.estado !== "conforme";
   const critico = m.estado === "fuera_rango_critico";
   return (
