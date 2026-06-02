@@ -1,10 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { ReleaseBadge } from "@/components/qc/StatusBadge";
 import { Search, Download, Filter, Eye, Calendar, ArrowLeft, QrCode, Lock } from "lucide-react";
 import { printRollReport } from "@/lib/roll-report";
 import { useState } from "react";
 import { useLabFilter, LAB_LABEL } from "@/lib/lab";
+import { resolveRolloStatus } from "@/lib/roll-status";
 
 export const Route = createFileRoute("/historial/$maquina")({ component: HistorialPage });
 
