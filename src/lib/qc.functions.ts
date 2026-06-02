@@ -261,25 +261,32 @@ export const listMuestras = createServerFn({ method: "GET" })
   });
 
 /**
- * Últimas muestras capturadas por el usuario actual (para reimprimir etiquetas).
+ * Últimas muestras capturadas (para reimprimir etiquetas).
+ * - Capturista: solo ve las suyas.
+ * - Admin / Gerencia / Calidad / Dirección: ven TODAS sin filtro.
  */
 export const listMisMuestrasRecientes = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const sb = context.supabase as SB;
     const userId = context.userId;
-    const { data, error } = await sb
+    const roles = await getUserRoles(sb, userId);
+    const seesAll = roles.some((r) =>
+      ["administrador", "gerente_general", "direccion", "calidad"].includes(r),
+    );
+    let q = sb
       .from("muestras_calidad")
       .select(
         `id, hora_muestreo, capturado_at, numero_rollo, estado, observaciones_generales,
-         producto_id, maquina_id,
+         producto_id, maquina_id, capturado_por,
          productos(id, codigo, nombre),
          maquinas(id, codigo, nombre),
          mediciones_calidad(variable_id, variable_clave, valor, min_snapshot, objetivo_snapshot, max_snapshot, estado, variables_calidad(clave, etiqueta, unidad))`
       )
-      .eq("capturado_por", userId)
       .order("capturado_at", { ascending: false })
-      .limit(20);
+      .limit(seesAll ? 50 : 20);
+    if (!seesAll) q = q.eq("capturado_por", userId);
+    const { data, error } = await q;
     if (error) throw new Error(error.message);
     return data ?? [];
   });
