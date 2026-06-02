@@ -5,6 +5,10 @@ import {
   ArrowLeft, CheckCircle2, XCircle, AlertTriangle, Wrench, Lock,
   Download, Search, FileSpreadsheet, Clock, User, ClipboardCheck,
 } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import {
+  useMutation, useQueryClient, useSuspenseQuery, queryOptions,
+} from "@tanstack/react-query";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,15 +23,43 @@ import {
 } from "@/components/ui/dialog";
 import { useAuth } from "@/lib/auth";
 import {
-  useQcMock, liberarMuestra, rechazarMuestra, liberarConConcesion, solicitarAjuste,
-} from "@/lib/qc-mock/store";
-import type { MuestraCalidad, MedicionCalidad, TipoAjuste } from "@/lib/qc-mock/types";
+  listOrdenesContexto, listMuestras, dictaminarMuestra, autorizarMuestra, crearAjuste,
+} from "@/lib/qc.functions";
 import { useLabFilter } from "@/lib/lab";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/calidad/revision")({
-  component: RevisionPage,
+const ordenesQO = queryOptions({
+  queryKey: ["qc", "ordenes-contexto"],
+  queryFn: () => listOrdenesContexto(),
 });
+const muestrasQO = queryOptions({
+  queryKey: ["qc", "muestras", "all"],
+  queryFn: () => listMuestras({ data: {} }),
+});
+
+export const Route = createFileRoute("/calidad/revision")({
+  loader: ({ context }) => {
+    context.queryClient.ensureQueryData(ordenesQO);
+    context.queryClient.ensureQueryData(muestrasQO);
+  },
+  component: RevisionPage,
+  errorComponent: ({ error }) => (
+    <AppLayout title="Bandeja de Revisión de Calidad">
+      <Alert variant="destructive">
+        <AlertTitle>No se pudo cargar la bandeja</AlertTitle>
+        <AlertDescription>{error.message}</AlertDescription>
+      </Alert>
+    </AppLayout>
+  ),
+});
+
+type EstadoMuestra =
+  | "borrador" | "pendiente_revision" | "liberada" | "rechazada"
+  | "concesion" | "en_ajuste" | "reproceso";
+
+type TipoAjuste =
+  | "ajuste_calidad" | "ajuste_maquina" | "ajuste_parametros"
+  | "cambio_materia_prima" | "reproceso" | "otro";
 
 type AccionDialog = "liberar" | "rechazar" | "concesion" | "ajuste" | null;
 
@@ -46,18 +78,34 @@ function RevisionPage() {
   const router = useRouter();
   const auth = useAuth();
   const labFilter = useLabFilter();
-  const muestrasAll = useQcMock((s) => s.muestras);
-  const mediciones = useQcMock((s) => s.mediciones);
-  const ordenesAll = useQcMock((s) => s.ordenes);
+  const qc = useQueryClient();
 
-  // Filtrado por laboratorio (capturistas solo ven sus máquinas).
+  const { data: ordenesRaw } = useSuspenseQuery(ordenesQO);
+  const { data: muestrasRaw } = useSuspenseQuery(muestrasQO);
+
+  // Normaliza ordenes con campos derivados
+  const ordenes = useMemo(() => {
+    return (ordenesRaw ?? [])
+      .map((o) => ({
+        orden_id: o.id,
+        folio: o.folio,
+        planta_id: o.planta_id,
+        planta_nombre: o.plantas?.nombre ?? "",
+        maquina_id: o.maquina_id,
+        maquina_codigo: o.maquinas?.codigo ?? "",
+        maquina_nombre: o.maquinas?.nombre ?? "",
+        producto_id: o.producto_id,
+        producto_codigo: o.productos?.codigo ?? "",
+        producto_nombre: o.productos?.nombre ?? "",
+      }))
+      .filter((o) => labFilter.isMachineAllowed(o.maquina_codigo));
+  }, [ordenesRaw, labFilter]);
+
+  const allowedMaquinaIds = useMemo(() => new Set(ordenes.map((o) => o.maquina_id)), [ordenes]);
+
   const muestras = useMemo(
-    () => muestrasAll.filter((m) => labFilter.isMachineIdAllowed(m.maquina_id)),
-    [muestrasAll, labFilter],
-  );
-  const ordenes = useMemo(
-    () => ordenesAll.filter((o) => labFilter.isMachineIdAllowed(o.maquina_id)),
-    [ordenesAll, labFilter],
+    () => (muestrasRaw ?? []).filter((m) => allowedMaquinaIds.has(m.maquina_id)),
+    [muestrasRaw, allowedMaquinaIds],
   );
 
   const canReview =
@@ -113,14 +161,52 @@ function RevisionPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selected = filtradas.find((m) => m.id === selectedId) ?? filtradas[0] ?? null;
   const selectedMediciones = useMemo(
-    () => (selected ? mediciones.filter((x) => x.muestra_id === selected.id) : []),
-    [selected, mediciones],
+    () => (selected ? (selected.mediciones_calidad ?? []) : []),
+    [selected],
   );
   const selectedOrden = selected ? ordenes.find((o) => o.orden_id === selected.orden_id) : null;
 
   const totalFueraSpec = selectedMediciones.filter(
     (m) => m.estado === "no_conforme" || m.estado === "fuera_rango_critico",
   ).length;
+
+  // --- Mutations ---------------------------------------------------------
+  const dictaminarFn = useServerFn(dictaminarMuestra);
+  const autorizarFn = useServerFn(autorizarMuestra);
+  const ajusteFn = useServerFn(crearAjuste);
+
+  const invalidate = () => {
+    void qc.invalidateQueries({ queryKey: ["qc"] });
+  };
+
+  const dictaminarMut = useMutation({
+    mutationFn: async (vars: {
+      muestra_id: string;
+      dictamen: "liberada" | "rechazada" | "concesion";
+      motivo: string;
+      observaciones: string;
+    }) => {
+      await dictaminarFn({ data: vars });
+      // Auto-autorización en el mismo paso (Calidad/GG/Admin).
+      await autorizarFn({ data: { muestra_id: vars.muestra_id } });
+    },
+    onSuccess: () => {
+      toast.success("Dictamen registrado y autorizado");
+      setAccion(null);
+      invalidate();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const ajusteMut = useMutation({
+    mutationFn: ajusteFn,
+    onSuccess: () => {
+      toast.success("Solicitud de ajuste registrada");
+      setAccion(null);
+      invalidate();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
 
   // --- Diálogos -----------------------------------------------------------
   const [accion, setAccion] = useState<AccionDialog>(null);
@@ -142,28 +228,50 @@ function RevisionPage() {
   }
 
   function ejecutar() {
-    if (!selected) return;
+    if (!selected || !selectedOrden) return;
     if (!canReview) { toast.error("Acción bloqueada para tu rol."); return; }
-    const revisor = auth.profile?.nombre ?? auth.profile?.email ?? "calidad";
-    const rol =
-      (auth.roles.find((r) =>
-        ["calidad", "gerencia_calidad", "gerente_general", "administrador"].includes(r),
-      ) as string) ?? "calidad";
-    const opts = { rol, evidencia_url: evidenciaUrl, observaciones };
-    let res: { ok: true } | { ok: false; error: string } = { ok: false, error: "Acción inválida" };
-    if (accion === "liberar") res = liberarMuestra(selected.id, revisor, motivo, opts);
-    else if (accion === "rechazar") res = rechazarMuestra(selected.id, revisor, motivo, opts);
-    else if (accion === "concesion") res = liberarConConcesion(selected.id, revisor, motivo, opts);
-    else if (accion === "ajuste")
-      res = solicitarAjuste({ muestra_id: selected.id, tipo_ajuste: tipoAjuste, motivo, revisor });
 
-    if (!res.ok) { toast.error(res.error); return; }
-    toast.success("Dictamen registrado y autorizado");
-    setAccion(null);
+    if (accion === "ajuste") {
+      if (!motivo.trim()) { toast.error("El motivo es obligatorio"); return; }
+      ajusteMut.mutate({
+        data: {
+          muestra_id: selected.id,
+          orden_id: selected.orden_id,
+          maquina_id: selected.maquina_id,
+          planta_id: selected.planta_id,
+          tipo_ajuste: tipoAjuste,
+          motivo,
+          sla_objetivo_horas: 4,
+        },
+      });
+      return;
+    }
+
+    if (accion === "rechazar" && !evidenciaUrl.trim()) {
+      toast.error("La evidencia es obligatoria para rechazar"); return;
+    }
+    if ((accion === "rechazar" || accion === "concesion") && !motivo.trim()) {
+      toast.error("El motivo es obligatorio"); return;
+    }
+
+    const dictamen =
+      accion === "liberar" ? "liberada" :
+      accion === "rechazar" ? "rechazada" :
+      accion === "concesion" ? "concesion" : null;
+    if (!dictamen) return;
+
+    const obsParts = [observaciones];
+    if (evidenciaUrl) obsParts.push(`Evidencia: ${evidenciaUrl}`);
+
+    dictaminarMut.mutate({
+      muestra_id: selected.id,
+      dictamen,
+      motivo: motivo || "(sin motivo)",
+      observaciones: obsParts.filter(Boolean).join(" — "),
+    });
   }
 
-
-  // --- Exportación CSV (mock) --------------------------------------------
+  // --- Exportación CSV ----------------------------------------------------
   function exportarCSV() {
     const rows: string[] = [];
     rows.push([
@@ -173,7 +281,7 @@ function RevisionPage() {
     ].join(","));
     filtradas.forEach((m) => {
       const ord = ordenes.find((o) => o.orden_id === m.orden_id);
-      const meds = mediciones.filter((x) => x.muestra_id === m.id);
+      const meds = m.mediciones_calidad ?? [];
       const base = [
         ord?.folio ?? "", m.id, m.hora_muestreo, ord?.planta_nombre ?? "",
         ord?.maquina_nombre ?? "", ord?.producto_codigo ?? "", m.turno,
@@ -198,6 +306,8 @@ function RevisionPage() {
     toast.success(`Exportadas ${filtradas.length} muestras a CSV`);
   }
 
+  const isPending = dictaminarMut.isPending || ajusteMut.isPending;
+
   return (
     <AppLayout title="Bandeja de Revisión de Calidad">
       <div className="space-y-4">
@@ -210,7 +320,7 @@ function RevisionPage() {
             <div>
               <h1 className="text-xl font-semibold">Bandeja de Revisión de Calidad</h1>
               <p className="text-xs text-muted-foreground">
-                Prototipo Fase 5 — {filtradas.length} muestra(s) en vista
+                {filtradas.length} muestra(s) en vista
               </p>
             </div>
           </div>
@@ -281,7 +391,7 @@ function RevisionPage() {
                 <ul className="divide-y max-h-[600px] overflow-y-auto">
                   {filtradas.map((m) => {
                     const ord = ordenes.find((o) => o.orden_id === m.orden_id);
-                    const meds = mediciones.filter((x) => x.muestra_id === m.id);
+                    const meds = m.mediciones_calidad ?? [];
                     const fuera = meds.filter((x) => x.estado !== "conforme").length;
                     const isSel = (selected?.id ?? "") === m.id;
                     return (
@@ -295,7 +405,7 @@ function RevisionPage() {
                         >
                           <div className="flex items-center justify-between gap-2">
                             <span className="font-mono text-xs">{ord?.folio}</span>
-                            <EstadoBadge estado={m.estado} />
+                            <EstadoBadge estado={m.estado as EstadoMuestra} />
                           </div>
                           <div className="mt-1 text-sm">
                             {ord?.producto_codigo} · {ord?.maquina_nombre}
@@ -335,7 +445,7 @@ function RevisionPage() {
                       {selectedOrden.maquina_nombre} · {selectedOrden.planta_nombre} · Turno {selected.turno}
                     </p>
                   </div>
-                  <EstadoBadge estado={selected.estado} />
+                  <EstadoBadge estado={selected.estado as EstadoMuestra} />
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -349,6 +459,16 @@ function RevisionPage() {
                     versión, no contra la spec vigente actual.
                   </AlertDescription>
                 </Alert>
+
+                {selected.mediciones_modificadas_at && (
+                  <Alert variant="destructive">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertTitle className="text-sm">Mediciones modificadas post-dictamen</AlertTitle>
+                    <AlertDescription className="text-xs">
+                      {selected.mediciones_modificacion_motivo ?? "Se requiere nuevo dictamen."}
+                    </AlertDescription>
+                  </Alert>
+                )}
 
                 {/* Mediciones vs spec */}
                 <div className="overflow-x-auto rounded border">
@@ -392,18 +512,18 @@ function RevisionPage() {
                 {/* Acciones */}
                 {selected.estado === "pendiente_revision" ? (
                   <div className="flex flex-wrap gap-2 border-t pt-3">
-                    <Button onClick={() => openDialog("liberar")} disabled={!canReview}
+                    <Button onClick={() => openDialog("liberar")} disabled={!canReview || isPending}
                       className="bg-emerald-600 hover:bg-emerald-700 text-white">
                       <CheckCircle2 className="mr-1.5 h-4 w-4" /> Liberar
                     </Button>
-                    <Button onClick={() => openDialog("concesion")} disabled={!canReview} variant="outline"
+                    <Button onClick={() => openDialog("concesion")} disabled={!canReview || isPending} variant="outline"
                       className="border-amber-500 text-amber-700 hover:bg-amber-50">
                       <AlertTriangle className="mr-1.5 h-4 w-4" /> Liberar con concesión
                     </Button>
-                    <Button onClick={() => openDialog("ajuste")} disabled={!canReview} variant="outline">
+                    <Button onClick={() => openDialog("ajuste")} disabled={!canReview || isPending} variant="outline">
                       <Wrench className="mr-1.5 h-4 w-4" /> Solicitar ajuste
                     </Button>
-                    <Button onClick={() => openDialog("rechazar")} disabled={!canReview} variant="destructive">
+                    <Button onClick={() => openDialog("rechazar")} disabled={!canReview || isPending} variant="destructive">
                       <XCircle className="mr-1.5 h-4 w-4" /> Rechazar
                     </Button>
                   </div>
@@ -528,16 +648,17 @@ function RevisionPage() {
 
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setAccion(null)}>Cancelar</Button>
+            <Button variant="outline" onClick={() => setAccion(null)} disabled={isPending}>Cancelar</Button>
             <Button
               onClick={ejecutar}
+              disabled={isPending}
               variant={accion === "rechazar" ? "destructive" : "default"}
               className={cn(
                 accion === "liberar" && "bg-emerald-600 hover:bg-emerald-700",
                 accion === "concesion" && "bg-amber-600 hover:bg-amber-700",
               )}
             >
-              Confirmar
+              {isPending ? "Procesando…" : "Confirmar"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -571,8 +692,8 @@ function FilterSelect({
   );
 }
 
-function EstadoBadge({ estado }: { estado: MuestraCalidad["estado"] }) {
-  const cfg: Record<MuestraCalidad["estado"], { label: string; cls: string }> = {
+function EstadoBadge({ estado }: { estado: EstadoMuestra }) {
+  const cfg: Record<EstadoMuestra, { label: string; cls: string }> = {
     borrador: { label: "Borrador", cls: "bg-muted text-muted-foreground" },
     pendiente_revision: { label: "Pendiente", cls: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200" },
     liberada: { label: "Liberada", cls: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200" },
@@ -581,11 +702,22 @@ function EstadoBadge({ estado }: { estado: MuestraCalidad["estado"] }) {
     en_ajuste: { label: "En ajuste", cls: "bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-200" },
     reproceso: { label: "Reproceso", cls: "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-200" },
   };
-  const c = cfg[estado];
+  const c = cfg[estado] ?? cfg.borrador;
   return <span className={cn("inline-flex rounded px-2 py-0.5 text-xs font-medium", c.cls)}>{c.label}</span>;
 }
 
-function MedicionRow({ m }: { m: MedicionCalidad }) {
+type MedicionRow = {
+  id: string;
+  variable_clave: string;
+  valor: number;
+  min_snapshot: number;
+  objetivo_snapshot: number;
+  max_snapshot: number;
+  estado: string;
+  observacion: string;
+};
+
+function MedicionRow({ m }: { m: MedicionRow }) {
   const fuera = m.estado !== "conforme";
   const critico = m.estado === "fuera_rango_critico";
   return (
