@@ -1,20 +1,22 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo } from "react";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import {
   ArrowLeft, TrendingUp, TrendingDown, CheckCircle2, XCircle, ShieldAlert,
   Clock, AlertTriangle, ExternalLink, Activity,
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line,
-  CartesianGrid, Cell,
+  CartesianGrid,
 } from "recharts";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/lib/auth";
-import { useQcMock, calcularSla } from "@/lib/qc-mock/store";
-import type { MuestraCalidad, MedicionCalidad, AjusteCalidad } from "@/lib/qc-mock/types";
+import { listMuestras, listAjustes } from "@/lib/qc.functions";
+import { calcularSla } from "@/lib/qc-sla";
 import { useLabFilter } from "@/lib/lab";
 import { cn } from "@/lib/utils";
 
@@ -33,14 +35,30 @@ function dayKey(iso: string) {
   return iso.slice(0, 10);
 }
 
+type MuestraRow = Awaited<ReturnType<typeof listMuestras>>[number];
+type AjusteRow = Awaited<ReturnType<typeof listAjustes>>[number];
+
 function DashboardPage() {
   const auth = useAuth();
   const labFilter = useLabFilter();
-  const muestrasAll = useQcMock((s) => s.muestras);
-  const medicionesAll = useQcMock((s) => s.mediciones);
-  const ajustesAll = useQcMock((s) => s.ajustes);
+  const listMuestrasFn = useServerFn(listMuestras);
+  const listAjustesFn = useServerFn(listAjustes);
 
-  // Filtrado por laboratorio.
+  const muestrasQuery = useSuspenseQuery({
+    queryKey: ["qc", "muestras", "all"],
+    queryFn: () => listMuestrasFn({ data: {} }),
+    refetchInterval: 30_000,
+  });
+  const ajustesQuery = useSuspenseQuery({
+    queryKey: ["qc", "ajustes", "all"],
+    queryFn: () => listAjustesFn({ data: {} }),
+    refetchInterval: 30_000,
+  });
+
+  const muestrasAll = muestrasQuery.data as MuestraRow[];
+  const ajustesAll = ajustesQuery.data as AjusteRow[];
+
+  // Filtrado por laboratorio (alcance del usuario).
   const muestras = useMemo(
     () => muestrasAll.filter((m) => labFilter.isMachineIdAllowed(m.maquina_id)),
     [muestrasAll, labFilter],
@@ -49,11 +67,10 @@ function DashboardPage() {
     () => ajustesAll.filter((a) => labFilter.isMachineIdAllowed(a.maquina_id)),
     [ajustesAll, labFilter],
   );
-  // Mediciones se filtran indirectamente vía las muestras visibles.
-  const muestraIds = useMemo(() => new Set(muestras.map((m) => m.id)), [muestras]);
+  // Mediciones vienen anidadas en cada muestra (relación 1:N).
   const mediciones = useMemo(
-    () => medicionesAll.filter((m) => muestraIds.has(m.muestra_id)),
-    [medicionesAll, muestraIds],
+    () => muestras.flatMap((m) => (m.mediciones_calidad ?? []) as Array<{ variable_clave: string; estado: string }>),
+    [muestras],
   );
 
   const puedeVer = auth.roles.some((r) => ROLES_DASHBOARD.includes(r));
@@ -97,13 +114,13 @@ function DashboardPage() {
 
   // --- Tendencia diaria (últimos 30 días) --------------------------------
   const tendencia = useMemo(() => {
-    const map = new Map<string, { fecha: string; total: number; liberadas: number; conformidad: number }>();
+    const map = new Map<string, { fecha: string; total: number; liberadas: number; conformidad: number | null }>();
     const hoy = new Date();
     for (let i = 29; i >= 0; i--) {
       const d = new Date(hoy);
       d.setDate(d.getDate() - i);
       const k = d.toISOString().slice(0, 10);
-      map.set(k, { fecha: k.slice(5), total: 0, liberadas: 0, conformidad: 0 });
+      map.set(k, { fecha: k.slice(5), total: 0, liberadas: 0, conformidad: null });
     }
     muestras.forEach((m) => {
       if (m.dictamen === null) return;
@@ -138,9 +155,7 @@ function DashboardPage() {
     const turnos = ["A", "B", "C"];
     const maquinas = Array.from(new Set(muestras.map((m) => m.maquina_id))).sort();
     const data: Record<string, Record<string, number>> = {};
-    maquinas.forEach((mq) => {
-      data[mq] = { A: 0, B: 0, C: 0 };
-    });
+    maquinas.forEach((mq) => { data[mq] = { A: 0, B: 0, C: 0 }; });
     muestras
       .filter((m) => m.estado === "pendiente_revision")
       .forEach((m) => {
@@ -195,7 +210,7 @@ function DashboardPage() {
             <div>
               <h2 className="text-xl font-semibold">Vista ejecutiva — Control de Calidad</h2>
               <p className="text-sm text-muted-foreground">
-                Indicadores en tiempo real (modo prototipo · datos mock)
+                Indicadores en tiempo real · datos de Supabase (auto-refresh 30s)
               </p>
             </div>
           </div>
@@ -347,7 +362,7 @@ function DashboardPage() {
                     <tbody>
                       {heatmap.maquinas.map((mq) => (
                         <tr key={mq} className="border-t border-border">
-                          <td className="py-1.5 pr-2 font-medium">{mq}</td>
+                          <td className="py-1.5 pr-2 font-medium">{mq.slice(0, 8)}</td>
                           {heatmap.turnos.map((t) => {
                             const v = heatmap.data[mq][t] ?? 0;
                             const intensity = v === 0 ? 0 : v / heatmap.max;
@@ -404,7 +419,10 @@ function DashboardPage() {
             </CardHeader>
             <CardContent>
               {ajustesVencidos.length === 0 ? (
-                <div className="py-8 text-center text-sm text-muted-foreground">Todos los ajustes en tiempo.</div>
+                <div className="py-8 text-center text-sm text-muted-foreground">
+                  <AlertTriangle className="mx-auto mb-2 h-4 w-4 opacity-50" />
+                  Todos los ajustes en tiempo.
+                </div>
               ) : (
                 <ul className="space-y-2">
                   {ajustesVencidos.map(({ a, sla }) => (
@@ -412,7 +430,7 @@ function DashboardPage() {
                       <div className="min-w-0">
                         <div className="font-medium truncate">{a.tipo_ajuste.replace(/_/g, " ")}</div>
                         <div className="text-xs text-muted-foreground truncate">
-                          Máq. {a.maquina_id} · {a.motivo.slice(0, 40)}
+                          Máq. {a.maquina_id.slice(0, 8)} · {a.motivo.slice(0, 40)}
                         </div>
                       </div>
                       <Badge
@@ -481,13 +499,13 @@ function SlaPill({ label, value, tone }: { label: string; value: string | number
   );
 }
 
-function PendingRow({ muestra }: { muestra: MuestraCalidad }) {
+function PendingRow({ muestra }: { muestra: MuestraRow }) {
   const horas = Math.max(0, (Date.now() - new Date(muestra.capturado_at).getTime()) / 36e5);
   return (
     <li className="flex items-center justify-between rounded-md border border-border p-2 text-sm">
       <div className="min-w-0">
         <div className="font-medium truncate">
-          Muestra #{muestra.id.slice(-6)} · Máq. {muestra.maquina_id}
+          Muestra #{muestra.id.slice(-6)} · Máq. {muestra.maquina_id.slice(0, 8)}
         </div>
         <div className="text-xs text-muted-foreground truncate">
           Turno {muestra.turno} · Rollo {muestra.numero_rollo ?? "—"}
