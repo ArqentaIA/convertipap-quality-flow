@@ -302,17 +302,21 @@ function Toggle({ label, on, hint, onChange }: { label: string; on?: boolean; hi
 }
 
 function CEOReportPreview({ onClose }: { onClose: () => void }) {
-  const { data: maquinas } = useSuspenseQuery({
+  const { session } = useAuth();
+  const maquinasQuery = useQuery({
     queryKey: ["produccion", "maquinas-estado"],
     queryFn: () => listMaquinasConEstado(),
+    enabled: !!session?.access_token,
+    retry: false,
   });
+  const maquinas = maquinasQuery.data ?? [];
 
   const now = new Date();
   const fecha = now.toLocaleDateString("es-MX", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
   const hora = now.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", hour12: true });
   const planta = "Planta Tlaxcala";
 
-  const rows = (maquinas ?? []).map((m) => {
+  const rows = maquinas.map((m) => {
     const estadoLabel =
       m.estado === "operando" ? "Operando" :
       m.estado === "paro" ? "En paro" :
@@ -328,6 +332,16 @@ function CEOReportPreview({ onClose }: { onClose: () => void }) {
   const efGeneral = rows.length
     ? Number((rows.reduce((a, r) => a + r.eficiencia, 0) / rows.length).toFixed(1))
     : 0;
+
+  if (maquinasQuery.error) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
+        <div className="w-full max-w-md rounded-xl bg-card p-5 text-sm text-destructive shadow-2xl" onClick={(e) => e.stopPropagation()}>
+          No se pudo cargar la previsualización: {maquinasQuery.error.message}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
