@@ -262,6 +262,23 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
     }
   }
 
+  // ---- Listado de muestras recientes del capturista ----
+  const misMuestrasQuery = useQuery(misMuestrasQO);
+  const maquinasById = useMemo(
+    () => new Map(maquinas.map((m) => [m.id, m])),
+    [maquinas],
+  );
+
+  async function imprimirEtiquetaMuestra(muestra: MuestraReciente) {
+    try {
+      const data = buildEtiquetaFromMuestra(muestra);
+      await printEtiquetaLiberacion(data);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "No se pudo abrir la etiqueta");
+    }
+  }
+
+
   function validar(modo: "borrador" | "envio"): string | null {
     if (!spec) return "Selecciona un producto con especificación vigente";
     if (!canCapture) return "Sin permiso de captura";
