@@ -41,7 +41,11 @@ export interface MuestraCalidad {
   operario_id: string | null;
   especificacion_id: string;
   especificacion_version: string;
-  numero_rollo: number | null;
+  numero_rollo: string | null;
+  jefe_maquina: string | null;
+  operador: string | null;
+  prensero: string | null;
+  analista: string | null;
   hora_muestreo: string;
   tipo_muestreo: EstrategiaMuestreo;
   observaciones_generales: string;
