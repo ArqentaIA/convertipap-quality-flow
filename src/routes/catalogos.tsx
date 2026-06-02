@@ -506,7 +506,8 @@ function Td({ children, bold, className = "" }: { children: React.ReactNode; bol
   return <td className={`px-4 py-3 tabular-nums ${bold ? "font-medium text-foreground" : "text-foreground/90"} ${className}`}>{children}</td>;
 }
 
-function RowActions({ onEdit, activo, onToggle }: { onEdit: () => void; activo: boolean; onToggle: () => void }) {
+function RowActions({ onEdit, activo, onToggle, canEdit = true }: { onEdit: () => void; activo: boolean; onToggle: () => void; canEdit?: boolean }) {
+  if (!canEdit) return <td className="px-4 py-3" />;
   return (
     <td className="px-4 py-3 text-right">
       <div className="flex items-center justify-end gap-2">
