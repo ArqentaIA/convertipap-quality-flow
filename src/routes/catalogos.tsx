@@ -402,7 +402,7 @@ type Orden = {
   plantas?: { codigo: string; nombre: string } | null;
 };
 
-function OrdenesTab({ ordenes }: { ordenes: Orden[] }) {
+function OrdenesTab({ ordenes, isAdmin }: { ordenes: Orden[]; isAdmin: boolean }) {
   const qc = useQueryClient();
   const cancelFn = useServerFn(cancelarOrdenCatalogo);
   const [confirming, setConfirming] = useState<Orden | null>(null);
