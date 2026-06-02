@@ -71,10 +71,22 @@ function DashboardGate() {
   const auth = useAuth();
   const navigate = useNavigate();
   useEffect(() => {
-    if (!auth.loading && !auth.isAuthenticated) {
+    if (auth.loading) return;
+    if (!auth.isAuthenticated) {
       void navigate({ to: "/login", replace: true });
+      return;
     }
-  }, [auth.loading, auth.isAuthenticated, navigate]);
+    // Capturistas (sin rol superior) van directo a captura
+    const isOnlyCapturista =
+      auth.hasRole("capturista") &&
+      !auth.hasRole("administrador") &&
+      !auth.hasRole("gerente_general") &&
+      !auth.hasRole("direccion") &&
+      !auth.hasRole("calidad");
+    if (isOnlyCapturista) {
+      void navigate({ to: "/calidad/captura", replace: true });
+    }
+  }, [auth, navigate]);
   if (auth.loading || !auth.isAuthenticated) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
