@@ -52,7 +52,6 @@ export async function printRollLabel(data: RollLabelData) {
   const has = (k: string) => notas.some((n) => n.includes(k));
   const fechaImpresion = new Date().toLocaleDateString("es-MX");
 
-  const folio = `${info.maquina}-${info.fecha}-${m.rollo}`.replace(/\s+/g, "");
   const traceUrl = buildTraceUrl(folio);
   const [qrDataUrl, logoDataUrl] = await Promise.all([
     QRCode.toDataURL(traceUrl, { margin: 1, width: 200, errorCorrectionLevel: "M" }),
