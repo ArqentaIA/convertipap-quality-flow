@@ -66,7 +66,7 @@ export const Route = createFileRoute("/calidad/captura")({
   ),
 });
 
-type MedicionInputState = Record<string, { valor: string; observacion: string }>;
+type MedicionInputState = Record<string, { valor: string }>;
 type MedicionEstadoUI = "pendiente" | "conforme" | "no_conforme" | "fuera_rango_critico";
 
 function evaluarMedicion(v: number, min: number, max: number): MedicionEstadoUI {
