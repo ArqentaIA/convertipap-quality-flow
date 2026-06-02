@@ -128,6 +128,75 @@ export type Database = {
           },
         ]
       }
+      app_settings: {
+        Row: {
+          ceo_report_destinatarios: string
+          ceo_report_enabled: boolean
+          ceo_report_hora: string
+          created_at: string
+          frecuencia_muestreo_min: number
+          id: string
+          notif_fuera_rango: boolean
+          notif_no_conformidades: boolean
+          notif_resumen_diario: boolean
+          notif_resumen_semanal: boolean
+          singleton: boolean
+          tolerancia_advertencia_pct: number
+          turno1_fin: string
+          turno1_inicio: string
+          turno2_fin: string
+          turno2_inicio: string
+          turno3_fin: string
+          turno3_inicio: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          ceo_report_destinatarios?: string
+          ceo_report_enabled?: boolean
+          ceo_report_hora?: string
+          created_at?: string
+          frecuencia_muestreo_min?: number
+          id?: string
+          notif_fuera_rango?: boolean
+          notif_no_conformidades?: boolean
+          notif_resumen_diario?: boolean
+          notif_resumen_semanal?: boolean
+          singleton?: boolean
+          tolerancia_advertencia_pct?: number
+          turno1_fin?: string
+          turno1_inicio?: string
+          turno2_fin?: string
+          turno2_inicio?: string
+          turno3_fin?: string
+          turno3_inicio?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          ceo_report_destinatarios?: string
+          ceo_report_enabled?: boolean
+          ceo_report_hora?: string
+          created_at?: string
+          frecuencia_muestreo_min?: number
+          id?: string
+          notif_fuera_rango?: boolean
+          notif_no_conformidades?: boolean
+          notif_resumen_diario?: boolean
+          notif_resumen_semanal?: boolean
+          singleton?: boolean
+          tolerancia_advertencia_pct?: number
+          turno1_fin?: string
+          turno1_inicio?: string
+          turno2_fin?: string
+          turno2_inicio?: string
+          turno3_fin?: string
+          turno3_inicio?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       familias_producto: {
         Row: {
           activo: boolean
