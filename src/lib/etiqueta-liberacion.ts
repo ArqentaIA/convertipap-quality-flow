@@ -40,6 +40,11 @@ export type EtiquetaData = {
   observacionesGenerales: string;
   mediciones: EtiquetaMedicion[];
   estatus: "CONFORME" | "NO CONFORME";
+  turno?: string | null;
+  jefeMaquina?: string | null;
+  operador?: string | null;
+  prensero?: string | null;
+  analista?: string | null;
 };
 
 function esc(s: string): string {
