@@ -306,6 +306,12 @@ export function resolveRolloStatusFrom(
   return present("pendiente_revision", "sin_dictamen");
 }
 
-// Nota: la versión browser que leía el store mock fue eliminada. Los
-// consumidores deben usar `resolveRolloStatusServer` (server fn) o pasar
-// los datos explícitamente a `resolveRolloStatusFrom`.
+/**
+ * Versión sincrónica para etiquetas/reportes/PDF que se generan sin acceso a
+ * datos QC. Sólo evalúa el `legacyEstatus` recibido; cuando no hay info cae
+ * a `pendiente_revision`. Para estatus en vivo desde Supabase usar
+ * `resolveRolloStatusServer` (server fn) o `resolveRolloStatusFrom`.
+ */
+export function resolveRolloStatus(input: ResolveRolloInput): RolloStatusInfo {
+  return resolveRolloStatusFrom({ muestras: [], ajustes: [] }, input);
+}
