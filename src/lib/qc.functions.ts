@@ -417,6 +417,8 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
       operador: data.operador ?? null,
       prensero: data.prensero ?? null,
       analista: data.analista ?? null,
+      estatus_liberacion: data.estatus_liberacion ?? null,
+      defectos: data.defectos ?? [],
       tipo_muestreo: data.tipo_muestreo,
       hora_muestreo: data.hora_muestreo,
       observaciones_generales: data.observaciones_generales,
