@@ -68,7 +68,6 @@ const COLORS_BASE = [
 const PIE_COLORS = ["hsl(330,75%,55%)", "hsl(40,90%,55%)", "hsl(210,75%,50%)", "hsl(0,70%,55%)", "hsl(150,55%,45%)", "hsl(270,60%,55%)"];
 
 function DashboardGate() {
-  const { useAuth } = require("@/lib/auth") as typeof import("@/lib/auth");
   const auth = useAuth();
   if (auth.loading || !auth.isAuthenticated) {
     return (
