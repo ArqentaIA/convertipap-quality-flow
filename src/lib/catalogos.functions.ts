@@ -9,17 +9,16 @@ import type { Database } from "@/integrations/supabase/types";
 
 type SB = SupabaseClient<Database>;
 
-const ROLES_ADMIN = ["administrador", "gerente_general"] as const;
-
 async function requireAdmin(sb: SB, userId: string) {
   const { data, error } = await sb
     .from("user_roles")
     .select("role")
-    .eq("user_id", userId);
+    .eq("user_id", userId)
+    .eq("role", "administrador")
+    .limit(1);
   if (error) throw new Error(error.message);
-  const roles = (data ?? []).map((r) => r.role as string);
-  if (!roles.some((r) => ROLES_ADMIN.includes(r as (typeof ROLES_ADMIN)[number]))) {
-    throw new Error("Acceso denegado. Requiere rol administrador o gerente general.");
+  if (!data || data.length === 0) {
+    throw new Error("Acceso denegado. Solo el rol administrador puede modificar catálogos.");
   }
 }
 

@@ -5,6 +5,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Plus, Pencil, Power, Ban } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -45,6 +46,8 @@ type Tab = "plantas" | "maquinas" | "productos" | "ordenes";
 function CatalogosPage() {
   const [tab, setTab] = useState<Tab>("plantas");
   const { data } = useSuspenseQuery(catalogosQO);
+  const { hasRole } = useAuth();
+  const isAdmin = hasRole("administrador");
 
   return (
     <AppLayout title="Catálogos">
@@ -66,12 +69,17 @@ function CatalogosPage() {
               >{label}</button>
             ))}
           </div>
+          {!isAdmin && (
+            <p className="text-xs text-muted-foreground">
+              Solo lectura · Solo el rol <strong>administrador</strong> puede modificar catálogos.
+            </p>
+          )}
         </div>
 
-        {tab === "plantas" && <PlantasTab plantas={data.plantas} />}
-        {tab === "maquinas" && <MaquinasTab maquinas={data.maquinas} plantas={data.plantas} />}
-        {tab === "productos" && <ProductosTab productos={data.productos} />}
-        {tab === "ordenes" && <OrdenesTab ordenes={data.ordenes} />}
+        {tab === "plantas" && <PlantasTab plantas={data.plantas} isAdmin={isAdmin} />}
+        {tab === "maquinas" && <MaquinasTab maquinas={data.maquinas} plantas={data.plantas} isAdmin={isAdmin} />}
+        {tab === "productos" && <ProductosTab productos={data.productos} isAdmin={isAdmin} />}
+        {tab === "ordenes" && <OrdenesTab ordenes={data.ordenes} isAdmin={isAdmin} />}
       </div>
     </AppLayout>
   );
@@ -81,7 +89,7 @@ function CatalogosPage() {
 
 type Planta = { id: string; codigo: string; nombre: string; ubicacion: string | null; activo: boolean };
 
-function PlantasTab({ plantas }: { plantas: Planta[] }) {
+function PlantasTab({ plantas, isAdmin }: { plantas: Planta[]; isAdmin: boolean }) {
   const qc = useQueryClient();
   const upsertFn = useServerFn(upsertPlanta);
   const toggleFn = useServerFn(togglePlanta);
@@ -107,7 +115,7 @@ function PlantasTab({ plantas }: { plantas: Planta[] }) {
 
   return (
     <>
-      <SectionHeader title="Plantas" onAdd={() => setEditing({ activo: true })} />
+      <SectionHeader title="Plantas" onAdd={() => setEditing({ activo: true })} canEdit={isAdmin} />
       <Card>
         <Table headers={["Código", "Nombre", "Ubicación", "Estado", ""]}>
           {plantas.map((p) => (
@@ -120,6 +128,7 @@ function PlantasTab({ plantas }: { plantas: Planta[] }) {
                 onEdit={() => setEditing(p)}
                 activo={p.activo}
                 onToggle={() => toggle.mutate({ data: { id: p.id, activo: !p.activo } })}
+                canEdit={isAdmin}
               />
             </tr>
           ))}
@@ -169,7 +178,7 @@ type Maquina = {
   area: string | null; activo: boolean; plantas?: { nombre: string; codigo: string } | null;
 };
 
-function MaquinasTab({ maquinas, plantas }: { maquinas: Maquina[]; plantas: Planta[] }) {
+function MaquinasTab({ maquinas, plantas, isAdmin }: { maquinas: Maquina[]; plantas: Planta[]; isAdmin: boolean }) {
   const qc = useQueryClient();
   const upsertFn = useServerFn(upsertMaquina);
   const toggleFn = useServerFn(toggleMaquina);
@@ -195,7 +204,7 @@ function MaquinasTab({ maquinas, plantas }: { maquinas: Maquina[]; plantas: Plan
 
   return (
     <>
-      <SectionHeader title="Máquinas" onAdd={() => setEditing({ activo: true })} />
+      <SectionHeader title="Máquinas" onAdd={() => setEditing({ activo: true })} canEdit={isAdmin} />
       <Card>
         <Table headers={["Código", "Nombre", "Planta", "Área", "Estado", ""]}>
           {maquinas.map((m) => (
@@ -209,6 +218,7 @@ function MaquinasTab({ maquinas, plantas }: { maquinas: Maquina[]; plantas: Plan
                 onEdit={() => setEditing(m)}
                 activo={m.activo}
                 onToggle={() => toggle.mutate({ data: { id: m.id, activo: !m.activo } })}
+                canEdit={isAdmin}
               />
             </tr>
           ))}
@@ -271,7 +281,7 @@ type Producto = {
   descripcion: string | null; gramaje: number | null; capas: number | null; activo: boolean;
 };
 
-function ProductosTab({ productos }: { productos: Producto[] }) {
+function ProductosTab({ productos, isAdmin }: { productos: Producto[]; isAdmin: boolean }) {
   const qc = useQueryClient();
   const upsertFn = useServerFn(upsertProducto);
   const toggleFn = useServerFn(toggleProducto);
@@ -298,7 +308,7 @@ function ProductosTab({ productos }: { productos: Producto[] }) {
 
   return (
     <>
-      <SectionHeader title="Productos" onAdd={() => setEditing({ activo: true })} />
+      <SectionHeader title="Productos" onAdd={() => setEditing({ activo: true })} canEdit={isAdmin} />
       <Card>
         <Table headers={["Código", "Nombre", "Gramaje", "Capas", "Estado", ""]}>
           {productos.map((p) => (
@@ -312,6 +322,7 @@ function ProductosTab({ productos }: { productos: Producto[] }) {
                 onEdit={() => setEditing(p)}
                 activo={p.activo}
                 onToggle={() => toggle.mutate({ data: { id: p.id, activo: !p.activo } })}
+                canEdit={isAdmin}
               />
             </tr>
           ))}
@@ -394,7 +405,7 @@ type Orden = {
   plantas?: { codigo: string; nombre: string } | null;
 };
 
-function OrdenesTab({ ordenes }: { ordenes: Orden[] }) {
+function OrdenesTab({ ordenes, isAdmin }: { ordenes: Orden[]; isAdmin: boolean }) {
   const qc = useQueryClient();
   const cancelFn = useServerFn(cancelarOrdenCatalogo);
   const [confirming, setConfirming] = useState<Orden | null>(null);
@@ -428,7 +439,7 @@ function OrdenesTab({ ordenes }: { ordenes: Orden[] }) {
               <Td>{o.turno ?? "—"}</Td>
               <Td>{o.producido_rollos} rollos · {Number(o.producido_kg).toFixed(0)} kg</Td>
               <td className="px-4 py-3 text-right">
-                {!["finalizada", "cancelada"].includes(o.estado) && (
+                {isAdmin && !["finalizada", "cancelada"].includes(o.estado) && (
                   <button
                     className="text-muted-foreground hover:text-destructive"
                     title="Cancelar"
@@ -466,13 +477,15 @@ function OrdenesTab({ ordenes }: { ordenes: Orden[] }) {
 
 // ============================ UI helpers ============================
 
-function SectionHeader({ title, onAdd }: { title: string; onAdd: () => void }) {
+function SectionHeader({ title, onAdd, canEdit = true }: { title: string; onAdd: () => void; canEdit?: boolean }) {
   return (
     <div className="flex items-center justify-between mb-3">
       <h2 className="text-lg font-semibold">{title}</h2>
-      <Button onClick={onAdd} size="sm">
-        <Plus className="h-4 w-4 mr-1.5" /> Nuevo
-      </Button>
+      {canEdit && (
+        <Button onClick={onAdd} size="sm">
+          <Plus className="h-4 w-4 mr-1.5" /> Nuevo
+        </Button>
+      )}
     </div>
   );
 }
@@ -496,7 +509,8 @@ function Td({ children, bold, className = "" }: { children: React.ReactNode; bol
   return <td className={`px-4 py-3 tabular-nums ${bold ? "font-medium text-foreground" : "text-foreground/90"} ${className}`}>{children}</td>;
 }
 
-function RowActions({ onEdit, activo, onToggle }: { onEdit: () => void; activo: boolean; onToggle: () => void }) {
+function RowActions({ onEdit, activo, onToggle, canEdit = true }: { onEdit: () => void; activo: boolean; onToggle: () => void; canEdit?: boolean }) {
+  if (!canEdit) return <td className="px-4 py-3" />;
   return (
     <td className="px-4 py-3 text-right">
       <div className="flex items-center justify-end gap-2">
