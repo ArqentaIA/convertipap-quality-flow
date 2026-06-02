@@ -1,4 +1,5 @@
 import QRCode from "qrcode";
+import { resolveRolloStatus } from "@/lib/roll-status";
 
 export type RollReportMetric = {
   label: string;
@@ -10,6 +11,7 @@ export type RollReportMetric = {
 export type RollReportData = {
   folio: string;
   rollo?: string;
+  ordenId?: string;
   maquina: string;
   planta: string;
   turno: string;
@@ -18,15 +20,10 @@ export type RollReportData = {
   fecha: string;
   hora?: string;
   producto: string;
+  /** Estatus legado (sugerido). El estatus final se calcula con resolveRolloStatus(). */
   estatus: "L" | "NC" | "C";
   metricas: RollReportMetric[];
   notas?: string;
-};
-
-const ESTATUS_LABEL: Record<RollReportData["estatus"], { txt: string; color: string }> = {
-  L: { txt: "LIBERADO", color: "#16a34a" },
-  C: { txt: "CONDICIONADO", color: "#d97706" },
-  NC: { txt: "NO CONFORME", color: "#dc2626" },
 };
 
 const TRACEABILITY_BASE_URL = "https://www.convertipap.site";
