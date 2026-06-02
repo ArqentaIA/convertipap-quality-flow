@@ -559,6 +559,108 @@ export const registrarSpecAudit = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+// -----------------------------------------------------------------------------
+// Helpers para variables-calidad (catálogo estático con codigo) — resuelven
+// producto_id / especificacion_id / variable_id por código/clave server-side.
+// -----------------------------------------------------------------------------
+
+export const listSpecAuditByProductCode = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { codigo: string }) =>
+    z.object({ codigo: z.string().min(1) }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const sb = context.supabase as SB;
+    const { data: prod } = await sb
+      .from("productos")
+      .select("id")
+      .eq("codigo", data.codigo)
+      .maybeSingle();
+    if (!prod) return [];
+    const { data: rows, error } = await sb
+      .from("spec_audit_log")
+      .select("*")
+      .eq("producto_id", prod.id)
+      .order("modificado_at", { ascending: false })
+      .limit(500);
+    if (error) throw new Error(error.message);
+    return rows ?? [];
+  });
+
+export const registrarSpecAuditByCode = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        producto_codigo: z.string().min(1),
+        variable_clave: z.string().min(1),
+        variable_etiqueta: z.string().min(1),
+        campo: z.enum(["min", "objetivo", "max"]),
+        valor_anterior: z.number().nullable(),
+        valor_nuevo: z.number().nullable(),
+        motivo: z.string().min(1),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const sb = context.supabase as SB;
+    const roles = await getUserRoles(sb, context.userId);
+    requireAnyRole(roles, ["calidad", ...ROLES_ADMIN, "direccion"]);
+
+    const { data: prod } = await sb
+      .from("productos")
+      .select("id")
+      .eq("codigo", data.producto_codigo)
+      .maybeSingle();
+    if (!prod) throw new Error(`Producto ${data.producto_codigo} no encontrado en BD`);
+
+    const { data: spec } = await sb
+      .from("producto_especificaciones")
+      .select("id")
+      .eq("producto_id", prod.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (!spec) throw new Error(`Sin especificación registrada para ${data.producto_codigo}`);
+
+    const { data: variable } = await sb
+      .from("variables_calidad")
+      .select("id")
+      .eq("clave", data.variable_clave)
+      .maybeSingle();
+
+    const { data: profile } = await sb
+      .from("profiles")
+      .select("nombre")
+      .eq("id", context.userId)
+      .maybeSingle();
+
+    const rolAuditor = roles.includes("calidad")
+      ? "calidad"
+      : roles.includes("gerente_general")
+        ? "gerente_general"
+        : roles.includes("administrador")
+          ? "administrador"
+          : "direccion";
+
+    const { error } = await sb.from("spec_audit_log").insert({
+      especificacion_id: spec.id,
+      producto_id: prod.id,
+      variable_id: variable?.id ?? null,
+      variable_clave: data.variable_clave,
+      variable_etiqueta: data.variable_etiqueta,
+      campo: data.campo,
+      valor_anterior: data.valor_anterior,
+      valor_nuevo: data.valor_nuevo,
+      motivo: data.motivo,
+      modificado_por: context.userId,
+      modificado_por_nombre: profile?.nombre ?? null,
+      modificado_por_rol: rolAuditor as never,
+    });
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
 // =============================================================================
 // resolveRolloStatus — server-side (lee de Supabase, no del mock)
 // =============================================================================
