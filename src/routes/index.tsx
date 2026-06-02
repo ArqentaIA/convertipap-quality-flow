@@ -102,9 +102,30 @@ function DashboardGate() {
 function Dashboard() {
   const [rango, setRango] = useState<Rango>("dia");
   const [mesesSel, setMesesSel] = useState<number[]>(MESES.map((_, i) => i));
+  const queryClient = useQueryClient();
 
-  const { data } = useSuspenseQuery(dashboardQO(rango, mesesSel));
+  const { data } = useSuspenseQuery({
+    ...dashboardQO(rango, mesesSel),
+    refetchInterval: 30_000,
+  });
   const { serie, maquinas, noConformidades } = data;
+
+  // Realtime: invalida el dashboard al cambiar muestras/mediciones
+  useEffect(() => {
+    const channel = supabase
+      .channel("dashboard-qc-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "muestras_calidad" }, () => {
+        queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "mediciones_calidad" }, () => {
+        queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      })
+      .subscribe();
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
 
   const colorsByMaq = useMemo(() => {
     const map: Record<string, string> = {};
