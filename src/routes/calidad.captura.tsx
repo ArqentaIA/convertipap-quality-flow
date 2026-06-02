@@ -431,9 +431,28 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">A. Máquina y producto</CardTitle>
+            <CardTitle className="text-sm font-medium">A. Turno, máquina y producto</CardTitle>
           </CardHeader>
-          <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div className="space-y-1.5">
+              <Label>Turno</Label>
+              <Select value={turno} onValueChange={(v) => setTurno(v as "1" | "2" | "3")}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecciona turno" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">
+                    Turno 1 · {settings?.turno1_inicio ?? "07:00"} – {settings?.turno1_fin ?? "15:00"}
+                  </SelectItem>
+                  <SelectItem value="2">
+                    Turno 2 · {settings?.turno2_inicio ?? "15:00"} – {settings?.turno2_fin ?? "23:00"}
+                  </SelectItem>
+                  <SelectItem value="3">
+                    Turno 3 · {settings?.turno3_inicio ?? "23:00"} – {settings?.turno3_fin ?? "07:00"}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <div className="space-y-1.5">
               <Label>Máquina</Label>
               <Select value={maquinaId} onValueChange={setMaquinaId}>
@@ -495,15 +514,53 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
         {spec && (
           <Card className={cn(isBlocked && "opacity-60 pointer-events-none")}>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">B. Datos de la muestra</CardTitle>
+              <CardTitle className="text-sm font-medium">B. Personal del turno</CardTitle>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="jefe">Jefe de Máquina</Label>
+                <Input id="jefe" maxLength={120} value={jefeMaquina}
+                  onChange={(e) => setJefeMaquina(e.target.value)} placeholder="Nombre" />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="oper">Operador</Label>
+                <Input id="oper" maxLength={120} value={operador}
+                  onChange={(e) => setOperador(e.target.value)} placeholder="Nombre" />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="prens">Prensero</Label>
+                <Input id="prens" maxLength={120} value={prensero}
+                  onChange={(e) => setPrensero(e.target.value)} placeholder="Nombre" />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="anal">Analista</Label>
+                <Input id="anal" maxLength={120} value={analista}
+                  onChange={(e) => setAnalista(e.target.value)} placeholder="Nombre" />
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {spec && (
+          <Card className={cn(isBlocked && "opacity-60 pointer-events-none")}>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">C. Datos de la muestra</CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-3">
               <div className="space-y-1.5">
-                <Label htmlFor="rollo">Número de rollo</Label>
+                <Label htmlFor="rollo">Número de rollo <span className="text-muted-foreground font-normal">(formato XXXX-X)</span></Label>
                 <Input
-                  id="rollo" type="number" min={1}
-                  value={numeroRollo} onChange={(e) => setNumeroRollo(e.target.value)}
+                  id="rollo" type="text" inputMode="numeric" placeholder="4438-6"
+                  pattern="\d{1,5}-\d{1,2}"
+                  value={numeroRollo}
+                  onChange={(e) => setNumeroRollo(e.target.value)}
+                  className={cn(
+                    numeroRollo && !ROLLO_REGEX.test(numeroRollo.trim()) && "border-destructive",
+                  )}
                 />
+                {numeroRollo && !ROLLO_REGEX.test(numeroRollo.trim()) && (
+                  <p className="text-[11px] text-destructive">Formato esperado: XXXX-X (ej. 4438-6)</p>
+                )}
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="hora">Hora de muestreo</Label>
@@ -513,7 +570,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
                 />
               </div>
               <div className="space-y-1.5">
-                <Label>Especificación</Label>
+                <Label>Especificación vigente</Label>
                 <div className="flex items-center gap-2 h-9 px-3 rounded-md border border-border bg-muted text-sm">
                   <Badge variant="secondary">v{spec.spec.version}</Badge>
                   <span className="text-muted-foreground text-xs">{variables.length} variables</span>
