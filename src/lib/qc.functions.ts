@@ -481,7 +481,7 @@ export const actualizarAjuste = createServerFn({ method: "POST" })
     const roles = await getUserRoles(sb, context.userId);
     requireAnyRole(roles, ROLES_CAPTURA);
 
-    const patch: Record<string, unknown> = {};
+    const patch: Database["public"]["Tables"]["ajustes_calidad"]["Update"] = {};
     if (data.estado_flujo) patch.estado_flujo = data.estado_flujo;
     if (data.resultado) patch.resultado = data.resultado;
     if (data.accion_realizada !== undefined) patch.accion_realizada = data.accion_realizada;
