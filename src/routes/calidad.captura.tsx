@@ -752,6 +752,57 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
           </Card>
         )}
 
+        {spec && (
+          <Card className={cn(isBlocked && "opacity-60 pointer-events-none")}>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">F. Cierre — Estatus de liberación y defectos</CardTitle>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <div className="space-y-1.5">
+                <Label>Estatus de liberación</Label>
+                <Select
+                  value={estatusLiberacion}
+                  onValueChange={(v) => setEstatusLiberacion(v as "" | "L" | "NC" | "C")}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona estatus" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="L">L — Liberado</SelectItem>
+                    <SelectItem value="NC">NC — No Conforme</SelectItem>
+                    <SelectItem value="C">C — Condicional</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-[11px] text-muted-foreground">
+                  Si no se elige, se calcula automáticamente según las mediciones.
+                </p>
+              </div>
+              <div className="md:col-span-2 space-y-2">
+                <Label>Defectos observados</Label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {DEFECTOS_OPCIONES.map((d) => (
+                    <label
+                      key={d}
+                      className="flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm cursor-pointer hover:bg-muted/40"
+                    >
+                      <Checkbox
+                        checked={defectos.includes(d)}
+                        onCheckedChange={() => toggleDefecto(d)}
+                      />
+                      <span>{d}</span>
+                    </label>
+                  ))}
+                </div>
+                {defectos.includes("Otro") && (
+                  <p className="text-[11px] text-muted-foreground">
+                    Describe el detalle de "Otro" en el campo de observaciones generales (sección C).
+                  </p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {ultimaEtiqueta && (
           <Alert className="border-emerald-500 bg-emerald-50 text-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-100">
             <CheckCircle2 className="h-4 w-4" />
