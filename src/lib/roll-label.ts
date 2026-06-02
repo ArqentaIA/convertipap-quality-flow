@@ -41,7 +41,13 @@ async function toDataUrl(url: string): Promise<string> {
 
 export async function printRollLabel(data: RollLabelData) {
   const { m, info, plantName, productoNombre } = data;
-  const est = ESTATUS[m.estatus];
+  const folio = `${info.maquina}-${info.fecha}-${m.rollo}`.replace(/\s+/g, "");
+  // Estatus unificado: dictamen de Calidad > "pendiente_revision".
+  const est = resolveRolloStatus({
+    rolloId: m.rollo,
+    folio,
+    legacyEstatus: m.estatus, // sugerencia del capturista como respaldo si no existe dictamen real
+  });
   const notas = parseNotas(m.notas || "");
   const has = (k: string) => notas.some((n) => n.includes(k));
   const fechaImpresion = new Date().toLocaleDateString("es-MX");
