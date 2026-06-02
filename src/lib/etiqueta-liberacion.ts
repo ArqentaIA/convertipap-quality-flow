@@ -229,7 +229,8 @@ export async function printEtiquetaLiberacion(data: EtiquetaData): Promise<void>
     width: 240,
     errorCorrectionLevel: "M",
   });
-  const html = buildHtml(data, qrDataUrl);
+  const logoDataUrl = await toDataUrl(logoUrl);
+  const html = buildHtml(data, qrDataUrl, logoDataUrl);
   const w = window.open("", "_blank", "width=960,height=900");
   if (!w) {
     throw new Error("El navegador bloqueó la ventana. Permite popups para imprimir la etiqueta.");
