@@ -1,5 +1,5 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import {
   ResponsiveContainer,
@@ -15,8 +15,9 @@ import {
 import { AppLayout } from "@/components/layout/AppLayout";
 import { RangoSelector, MESES, rangoLabel, type Rango } from "@/components/qc/RangoSelector";
 import { getDashboard } from "@/lib/dashboard.functions";
+import { useAuth } from "@/lib/auth";
 
-export const Route = createFileRoute("/")({ component: Dashboard });
+export const Route = createFileRoute("/")({ component: DashboardGate, ssr: false });
 
 function computeWindow(rango: Rango, mesesSel: number[]): { start: Date; end: Date } {
   const now = new Date();
@@ -65,6 +66,24 @@ const COLORS_BASE = [
   "hsl(15, 80%, 55%)",
 ];
 const PIE_COLORS = ["hsl(330,75%,55%)", "hsl(40,90%,55%)", "hsl(210,75%,50%)", "hsl(0,70%,55%)", "hsl(150,55%,45%)", "hsl(270,60%,55%)"];
+
+function DashboardGate() {
+  const auth = useAuth();
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (!auth.loading && !auth.isAuthenticated) {
+      void navigate({ to: "/login", replace: true });
+    }
+  }, [auth.loading, auth.isAuthenticated, navigate]);
+  if (auth.loading || !auth.isAuthenticated) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="text-sm text-muted-foreground">Cargando…</div>
+      </div>
+    );
+  }
+  return <Dashboard />;
+}
 
 function Dashboard() {
   const [rango, setRango] = useState<Rango>("dia");
