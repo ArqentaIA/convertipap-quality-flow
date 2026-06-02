@@ -165,6 +165,9 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
   const specQuery = useQuery(specQO(producto.producto_id));
   const spec = specQuery.data;
 
+  const settingsQuery = useQuery(settingsQO);
+  const settings = settingsQuery.data;
+
   const variables = useMemo(() => {
     if (!spec) return [];
     return (spec.variables as Array<{
@@ -173,16 +176,19 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
       min_valor: number;
       objetivo: number;
       max_valor: number;
-      variables_calidad: { id: string; clave: string; etiqueta: string; unidad: string | null } | null;
-    }>).map((v) => ({
-      variable_id: v.variable_id,
-      clave: v.variables_calidad?.clave ?? "",
-      etiqueta: v.variables_calidad?.etiqueta ?? "(variable)",
-      unidad: v.variables_calidad?.unidad ?? "",
-      min_valor: Number(v.min_valor),
-      objetivo: Number(v.objetivo),
-      max_valor: Number(v.max_valor),
-    }));
+      variables_calidad: { id: string; clave: string; etiqueta: string; unidad: string | null; orden?: number } | null;
+    }>)
+      .map((v) => ({
+        variable_id: v.variable_id,
+        clave: v.variables_calidad?.clave ?? "",
+        etiqueta: v.variables_calidad?.etiqueta ?? "(variable)",
+        unidad: v.variables_calidad?.unidad ?? "",
+        orden: v.variables_calidad?.orden ?? 999,
+        min_valor: Number(v.min_valor),
+        objetivo: Number(v.objetivo),
+        max_valor: Number(v.max_valor),
+      }))
+      .sort((a, b) => a.orden - b.orden);
   }, [spec]);
 
   const ahoraLocal = useMemo(() => toLocalDateTimeInputValue(new Date()), []);
@@ -191,6 +197,20 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
   const [observaciones, setObservaciones] = useState<string>("");
   const [mediciones, setMediciones] = useState<MedicionInputState>({});
   const [showConfirm, setShowConfirm] = useState(false);
+
+  // Turno: auto-inferido por hora, editable manualmente
+  const turnoInferido = useMemo(
+    () => inferirTurno(new Date(horaMuestreo || Date.now()), settings),
+    [horaMuestreo, settings],
+  );
+  const [turno, setTurno] = useState<"1" | "2" | "3">(turnoInferido);
+  useEffect(() => { setTurno(turnoInferido); }, [turnoInferido]);
+
+  // Personal del turno
+  const [jefeMaquina, setJefeMaquina] = useState<string>("");
+  const [operador, setOperador] = useState<string>("");
+  const [prensero, setPrensero] = useState<string>("");
+  const [analista, setAnalista] = useState<string>("");
 
   // Reinicializar mediciones cuando cambia el producto / spec
   useEffect(() => {
