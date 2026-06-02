@@ -128,6 +128,7 @@ function PlantasTab({ plantas, isAdmin }: { plantas: Planta[]; isAdmin: boolean 
                 onEdit={() => setEditing(p)}
                 activo={p.activo}
                 onToggle={() => toggle.mutate({ data: { id: p.id, activo: !p.activo } })}
+                canEdit={isAdmin}
               />
             </tr>
           ))}
@@ -217,6 +218,7 @@ function MaquinasTab({ maquinas, plantas, isAdmin }: { maquinas: Maquina[]; plan
                 onEdit={() => setEditing(m)}
                 activo={m.activo}
                 onToggle={() => toggle.mutate({ data: { id: m.id, activo: !m.activo } })}
+                canEdit={isAdmin}
               />
             </tr>
           ))}
@@ -320,6 +322,7 @@ function ProductosTab({ productos, isAdmin }: { productos: Producto[]; isAdmin: 
                 onEdit={() => setEditing(p)}
                 activo={p.activo}
                 onToggle={() => toggle.mutate({ data: { id: p.id, activo: !p.activo } })}
+                canEdit={isAdmin}
               />
             </tr>
           ))}
