@@ -439,7 +439,7 @@ function OrdenesTab({ ordenes, isAdmin }: { ordenes: Orden[]; isAdmin: boolean }
               <Td>{o.turno ?? "—"}</Td>
               <Td>{o.producido_rollos} rollos · {Number(o.producido_kg).toFixed(0)} kg</Td>
               <td className="px-4 py-3 text-right">
-                {!["finalizada", "cancelada"].includes(o.estado) && (
+                {isAdmin && !["finalizada", "cancelada"].includes(o.estado) && (
                   <button
                     className="text-muted-foreground hover:text-destructive"
                     title="Cancelar"
