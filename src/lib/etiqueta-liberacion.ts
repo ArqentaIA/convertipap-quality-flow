@@ -1,6 +1,22 @@
 // Etiqueta de Liberación (FOR-CAL-04) — se abre en ventana nueva, lista para imprimir.
 // Sin marcas de plataforma, sin logos externos. Layout fiel al formato impreso.
 import QRCode from "qrcode";
+import logoUrl from "@/assets/logo-convertipap.png";
+
+async function toDataUrl(url: string): Promise<string> {
+  try {
+    const res = await fetch(url);
+    const blob = await res.blob();
+    return await new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onloadend = () => resolve(r.result as string);
+      r.onerror = reject;
+      r.readAsDataURL(blob);
+    });
+  } catch {
+    return url;
+  }
+}
 
 export type EtiquetaMedicion = {
   clave: string;
@@ -50,10 +66,11 @@ function row(label: string, valor: string | number, unidad = ""): string {
 
 const OBS_OPCIONES = ["Arruga", "Picado", "Porosidad", "Hoyos por gomas", "Otro"];
 
-function buildHtml(data: EtiquetaData, qrDataUrl: string): string {
+function buildHtml(data: EtiquetaData, qrDataUrl: string, logoDataUrl: string): string {
   const fechaImpresion = new Date().toLocaleString("es-MX");
   const estatusColor = data.estatus === "CONFORME" ? "#15803d" : "#b91c1c";
   const estatusBg = data.estatus === "CONFORME" ? "#dcfce7" : "#fee2e2";
+
 
   // Distribuir mediciones en dos columnas
   const left: string[] = [];
@@ -82,8 +99,8 @@ function buildHtml(data: EtiquetaData, qrDataUrl: string): string {
   .head{display:grid;grid-template-columns:1fr 1.6fr 1fr;border-bottom:2px solid #0f172a}
   .head > div{padding:10px 14px;border-right:1px solid #0f172a}
   .head > div:last-child{border-right:0}
-  .brand{font-weight:800;font-size:13px;text-align:center;line-height:1.3}
-  .brand small{font-size:10px;color:#475569;font-weight:600;letter-spacing:.08em}
+  .brand{display:flex;align-items:center;justify-content:center;padding:8px}
+  .brand img{max-width:100%;max-height:64px;width:auto;height:auto;object-fit:contain;display:block}
   .title{display:flex;flex-direction:column;justify-content:center;text-align:center}
   .title b{font-size:12px}
   .title .sub{margin-top:4px;font-size:14px;font-weight:800;letter-spacing:.08em}
@@ -132,8 +149,7 @@ function buildHtml(data: EtiquetaData, qrDataUrl: string): string {
   <div class="sheet">
     <div class="head">
       <div class="brand">
-        CONVERTIPAP<br/>
-        <small>FÁBRICA DE PAPEL TISSUE</small>
+        <img src="${logoDataUrl}" alt="Convertipap" />
       </div>
       <div class="title">
         <b>CONVERTIDOR DE PAPEL S.A. DE C.V</b>
@@ -213,7 +229,8 @@ export async function printEtiquetaLiberacion(data: EtiquetaData): Promise<void>
     width: 240,
     errorCorrectionLevel: "M",
   });
-  const html = buildHtml(data, qrDataUrl);
+  const logoDataUrl = await toDataUrl(logoUrl);
+  const html = buildHtml(data, qrDataUrl, logoDataUrl);
   const w = window.open("", "_blank", "width=960,height=900");
   if (!w) {
     throw new Error("El navegador bloqueó la ventana. Permite popups para imprimir la etiqueta.");
