@@ -591,10 +591,10 @@ export const listMaquinasConEstado = createServerFn({ method: "GET" })
       }, 0);
       const oee = Math.max(0, Math.min(100, (1 - minutosParo / 1440) * 100));
 
-      let estadoUI: "operando" | "paro" | "ajuste" | "libre" = "libre";
+      let estadoUI: "operando" | "paro" | "mantenimiento" | "libre" = "libre";
       if (estado?.estado === "produciendo") estadoUI = "operando";
       else if (estado?.estado === "paro") estadoUI = "paro";
-      else if (estado?.estado === "ajuste") estadoUI = "ajuste";
+      else if (estado?.estado === "mantenimiento") estadoUI = "mantenimiento";
 
       return {
         id: m.id,
