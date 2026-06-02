@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { queryOptions, useSuspenseQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { queryOptions, useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { SessionGate } from "@/components/SessionGate";
@@ -9,6 +9,7 @@ import logoConvertipap from "@/assets/logo-convertipap.png";
 import { toast } from "sonner";
 import { getAppSettings, updateAppSettings, type AppSettings } from "@/lib/settings.functions";
 import { listMaquinasConEstado } from "@/lib/produccion.functions";
+import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/configuracion")({
   component: ConfigGate,
@@ -36,7 +37,35 @@ const settingsQueryOptions = queryOptions({
 });
 
 function ConfigPage() {
-  const { data: settings } = useSuspenseQuery(settingsQueryOptions);
+  const { session } = useAuth();
+  const settingsQuery = useQuery({
+    ...settingsQueryOptions,
+    enabled: !!session?.access_token,
+    retry: false,
+  });
+
+  if (settingsQuery.error) {
+    return (
+      <AppLayout title="Configuración del sistema">
+        <div role="alert" className="rounded-md border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
+          No se pudo cargar la configuración: {settingsQuery.error.message}
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (settingsQuery.isLoading || !settingsQuery.data) {
+    return (
+      <AppLayout title="Configuración del sistema">
+        <div className="rounded-md border border-border bg-card p-4 text-sm text-muted-foreground">Cargando configuración…</div>
+      </AppLayout>
+    );
+  }
+
+  return <ConfigContent settings={settingsQuery.data} />;
+}
+
+function ConfigContent({ settings }: { settings: AppSettings }) {
   const [previewCEO, setPreviewCEO] = useState(false);
   const [form, setForm] = useState<AppSettings>(settings);
   const qc = useQueryClient();
