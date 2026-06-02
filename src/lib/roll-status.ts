@@ -200,7 +200,34 @@ function fromMuestra(
 ): RolloStatusInfo {
   const warnings: string[] = [];
 
-  // Detección de inconsistencias: dictamen vs estado, dictamen vs ajustes.
+  // -- Regla A: medición modificada después de un dictamen autorizado → inconsistencia.
+  if (
+    muestra.dictamen_at &&
+    muestra.mediciones_modificadas_at &&
+    new Date(muestra.mediciones_modificadas_at).getTime() >
+      new Date(muestra.dictamen_at).getTime()
+  ) {
+    warnings.push(
+      `Medición modificada (${muestra.mediciones_modificadas_at}) después del dictamen (${muestra.dictamen_at}). Requiere nuevo dictamen.`,
+    );
+    // eslint-disable-next-line no-console
+    console.warn("[resolveRolloStatus] Dictamen vencido por edición posterior:", {
+      muestra_id: muestra.id,
+      modificado_por: muestra.mediciones_modificadas_por,
+      motivo: muestra.mediciones_modificacion_motivo,
+    });
+    return present("inconsistencia", "inconsistencia", warnings);
+  }
+
+  // -- Regla B: existe dictamen técnico pero NO está autorizado por Gerencia
+  // de Calidad → siempre "Pendiente de dictamen de calidad".
+  if (muestra.dictamen && !muestra.autorizado_por) {
+    return present("pendiente_revision", "sin_dictamen", [
+      "Dictamen técnico sin autorización formal de Gerencia de Calidad",
+    ]);
+  }
+
+  // -- Regla C: dictamen vs estado vs ajustes abiertos.
   if (muestra.dictamen === "liberada" && muestra.estado !== "liberada") {
     warnings.push(
       `Dictamen=liberada pero estado=${muestra.estado} en muestra ${muestra.id}`,
@@ -230,7 +257,7 @@ function fromMuestra(
     return present("inconsistencia", "inconsistencia", warnings);
   }
 
-  // Prioridad 1: dictamen explícito de Calidad.
+  // Prioridad 1: dictamen autorizado por Gerencia de Calidad.
   if (muestra.dictamen === "liberada") return present("liberado", "dictamen_calidad");
   if (muestra.dictamen === "rechazada") return present("rechazado", "dictamen_calidad");
   if (muestra.dictamen === "concesion") return present("liberado_concesion", "dictamen_calidad");
