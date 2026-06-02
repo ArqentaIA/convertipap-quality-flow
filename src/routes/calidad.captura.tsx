@@ -749,3 +749,40 @@ function toLocalDateTimeInputValue(d: Date): string {
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
+
+type MuestraReciente = Awaited<ReturnType<typeof listMisMuestrasRecientes>>[number];
+
+function buildEtiquetaFromMuestra(m: MuestraReciente): EtiquetaData {
+  const fecha = new Date(m.hora_muestreo || m.capturado_at || new Date().toISOString());
+  const codigoMaq = m.maquinas?.codigo ?? "MQ";
+  const folio = `${codigoMaq}-${fecha.toISOString().slice(0, 10)}-${m.numero_rollo ?? "SN"}`.replace(/\s+/g, "");
+  const meds = (m.mediciones_calidad ?? []).map((md) => {
+    const min = Number(md.min_snapshot);
+    const max = Number(md.max_snapshot);
+    const valor = Number(md.valor);
+    return {
+      clave: md.variable_clave ?? md.variables_calidad?.clave ?? "",
+      etiqueta: md.variables_calidad?.etiqueta ?? md.variable_clave ?? "—",
+      valor,
+      unidad: md.variables_calidad?.unidad ?? "",
+      min,
+      max,
+      fueraSpec: md.estado === "no_conforme" || md.estado === "fuera_rango_critico",
+    };
+  });
+  const fueraSpec = meds.some((x) => x.fueraSpec);
+  return {
+    muestraId: m.id,
+    folio,
+    fecha: fecha.toLocaleDateString("es-MX"),
+    numeroRollo: m.numero_rollo != null ? String(m.numero_rollo) : "",
+    maquinaCodigo: codigoMaq,
+    maquinaNombre: m.maquinas?.nombre ?? "",
+    productoCodigo: m.productos?.codigo ?? "",
+    productoNombre: m.productos?.nombre ?? "",
+    observacionesGenerales: m.observaciones_generales ?? "",
+    mediciones: meds,
+    estatus: fueraSpec ? "NO CONFORME" : "CONFORME",
+  };
+}
+
