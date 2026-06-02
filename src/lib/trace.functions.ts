@@ -24,6 +24,8 @@ export type TraceMuestra = {
   turno: string;
   estado: string;
   dictamen: string | null;
+  estatus_liberacion: string | null;
+  defectos: string[];
   observaciones_generales: string;
   jefe_maquina: string | null;
   operador: string | null;
@@ -45,6 +47,7 @@ export const getMuestraTrace = createServerFn({ method: "GET" })
       .from("muestras_calidad")
       .select(
         `id, hora_muestreo, capturado_at, turno, estado, dictamen, numero_rollo,
+         estatus_liberacion, defectos,
          observaciones_generales, jefe_maquina, operador, prensero, analista,
          producto:productos(codigo, nombre),
          maquina:maquinas(codigo, nombre),
@@ -94,6 +97,8 @@ export const getMuestraTrace = createServerFn({ method: "GET" })
       turno: m.turno,
       estado: m.estado,
       dictamen: m.dictamen,
+      estatus_liberacion: (m as { estatus_liberacion?: string | null }).estatus_liberacion ?? null,
+      defectos: ((m as { defectos?: string[] | null }).defectos ?? []) as string[],
       observaciones_generales: m.observaciones_generales ?? "",
       jefe_maquina: (m as { jefe_maquina?: string | null }).jefe_maquina ?? null,
       operador: (m as { operador?: string | null }).operador ?? null,

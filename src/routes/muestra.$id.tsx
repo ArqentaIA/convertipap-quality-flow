@@ -57,12 +57,25 @@ function MuestraTracePage() {
 
   const conformes = trace.mediciones.filter((m) => m.estado === "conforme").length;
   const total = trace.mediciones.length;
-  const liberada = trace.dictamen === "liberada" || (trace.estado === "liberada");
-  const noConforme = trace.dictamen === "rechazada" || trace.mediciones.some((m) => m.estado !== "conforme");
 
-  const estatusLabel = liberada ? "CONFORME" : noConforme ? "NO CONFORME" : "EN REVISIÓN";
+  // Estatus manual de liberación tiene prioridad sobre el cálculo automático
+  const estManual = trace.estatus_liberacion;
+  const liberada = estManual === "L" || trace.dictamen === "liberada" || trace.estado === "liberada";
+  const condicional = estManual === "C";
+  const noConforme = estManual === "NC" || trace.dictamen === "rechazada"
+    || (estManual == null && trace.mediciones.some((m) => m.estado !== "conforme"));
+
+  const estatusLabel = liberada
+    ? "CONFORME"
+    : condicional
+    ? "CONDICIONAL"
+    : noConforme
+    ? "NO CONFORME"
+    : "EN REVISIÓN";
   const estatusClass = liberada
     ? "bg-emerald-600 text-white"
+    : condicional
+    ? "bg-amber-500 text-white"
     : noConforme
     ? "bg-rose-600 text-white"
     : "bg-amber-500 text-white";
@@ -163,6 +176,19 @@ function MuestraTracePage() {
             </div>
           )}
         </div>
+
+        {trace.defectos.length > 0 && (
+          <div className="bg-card border border-border rounded-lg p-4 text-sm">
+            <div className="text-[10px] uppercase text-muted-foreground tracking-wide mb-2">Defectos observados</div>
+            <div className="flex flex-wrap gap-1.5">
+              {trace.defectos.map((d) => (
+                <span key={d} className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-rose-100 text-rose-800 border border-rose-300">
+                  {d}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
 
         {trace.observaciones_generales && (
           <div className="bg-card border border-border rounded-lg p-4 text-sm">

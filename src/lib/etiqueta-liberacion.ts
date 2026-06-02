@@ -39,7 +39,9 @@ export type EtiquetaData = {
   productoNombre: string;
   observacionesGenerales: string;
   mediciones: EtiquetaMedicion[];
-  estatus: "CONFORME" | "NO CONFORME";
+  estatus: "CONFORME" | "NO CONFORME" | "LIBERADO" | "CONDICIONAL";
+  estatusLiberacion?: "L" | "NC" | "C" | null;
+  defectos?: string[];
   turno?: string | null;
   jefeMaquina?: string | null;
   operador?: string | null;
@@ -73,8 +75,16 @@ const OBS_OPCIONES = ["Arruga", "Picado", "Porosidad", "Hoyos por gomas", "Otro"
 
 function buildHtml(data: EtiquetaData, qrDataUrl: string, logoDataUrl: string): string {
   const fechaImpresion = new Date().toLocaleString("es-MX");
-  const estatusColor = data.estatus === "CONFORME" ? "#15803d" : "#b91c1c";
-  const estatusBg = data.estatus === "CONFORME" ? "#dcfce7" : "#fee2e2";
+  const estatusColor = data.estatus === "CONFORME" || data.estatus === "LIBERADO"
+    ? "#15803d"
+    : data.estatus === "CONDICIONAL"
+    ? "#b45309"
+    : "#b91c1c";
+  const estatusBg = data.estatus === "CONFORME" || data.estatus === "LIBERADO"
+    ? "#dcfce7"
+    : data.estatus === "CONDICIONAL"
+    ? "#fef3c7"
+    : "#fee2e2";
 
 
   // Distribuir mediciones en dos columnas
@@ -85,8 +95,9 @@ function buildHtml(data: EtiquetaData, qrDataUrl: string, logoDataUrl: string): 
     (i % 2 === 0 ? left : right).push(cell);
   });
 
+  const defectosSet = new Set((data.defectos ?? []).map((d) => d.toLowerCase()));
   const obsHtml = OBS_OPCIONES.map(
-    (o) => `<label class="ck"><input type="checkbox" /> ${esc(o)}</label>`,
+    (o) => `<label class="ck"><input type="checkbox" ${defectosSet.has(o.toLowerCase()) ? "checked" : ""} /> ${esc(o)}</label>`,
   ).join("");
 
   return `<!doctype html>

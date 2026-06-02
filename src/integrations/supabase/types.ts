@@ -406,6 +406,7 @@ export type Database = {
           capturado_at: string
           capturado_por: string
           created_at: string
+          defectos: string[]
           dictamen: Database["public"]["Enums"]["qc_dictamen"] | null
           dictamen_at: string | null
           dictamen_motivo: string | null
@@ -413,6 +414,7 @@ export type Database = {
           especificacion_id: string
           especificacion_version: string
           estado: Database["public"]["Enums"]["qc_muestra_estado"]
+          estatus_liberacion: string | null
           evidencia_url: string | null
           hora_muestreo: string
           id: string
@@ -444,6 +446,7 @@ export type Database = {
           capturado_at?: string
           capturado_por: string
           created_at?: string
+          defectos?: string[]
           dictamen?: Database["public"]["Enums"]["qc_dictamen"] | null
           dictamen_at?: string | null
           dictamen_motivo?: string | null
@@ -451,6 +454,7 @@ export type Database = {
           especificacion_id: string
           especificacion_version: string
           estado?: Database["public"]["Enums"]["qc_muestra_estado"]
+          estatus_liberacion?: string | null
           evidencia_url?: string | null
           hora_muestreo?: string
           id?: string
@@ -482,6 +486,7 @@ export type Database = {
           capturado_at?: string
           capturado_por?: string
           created_at?: string
+          defectos?: string[]
           dictamen?: Database["public"]["Enums"]["qc_dictamen"] | null
           dictamen_at?: string | null
           dictamen_motivo?: string | null
@@ -489,6 +494,7 @@ export type Database = {
           especificacion_id?: string
           especificacion_version?: string
           estado?: Database["public"]["Enums"]["qc_muestra_estado"]
+          estatus_liberacion?: string | null
           evidencia_url?: string | null
           hora_muestreo?: string
           id?: string

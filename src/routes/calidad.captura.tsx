@@ -18,6 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -212,6 +213,13 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
   const [prensero, setPrensero] = useState<string>("");
   const [analista, setAnalista] = useState<string>("");
 
+  // Sección F — Cierre: estatus manual y defectos
+  const DEFECTOS_OPCIONES = ["Arruga", "Picado", "Porosidad", "Hoyos por gomas", "Otro"] as const;
+  const [estatusLiberacion, setEstatusLiberacion] = useState<"" | "L" | "NC" | "C">("");
+  const [defectos, setDefectos] = useState<string[]>([]);
+  const toggleDefecto = (d: string) =>
+    setDefectos((prev) => prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]);
+
   // Reinicializar mediciones cuando cambia el producto / spec
   useEffect(() => {
     const base: MedicionInputState = {};
@@ -277,7 +285,15 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
               max: m.spec.max_valor,
               fueraSpec: m.estado === "no_conforme" || m.estado === "fuera_rango_critico",
             })),
-          estatus: fueraSpecAlguno ? "NO CONFORME" : "CONFORME",
+          estatusLiberacion: estatusLiberacion || null,
+          defectos,
+          estatus: estatusLiberacion === "L"
+            ? "LIBERADO"
+            : estatusLiberacion === "NC"
+            ? "NO CONFORME"
+            : estatusLiberacion === "C"
+            ? "CONDICIONAL"
+            : (fueraSpecAlguno ? "NO CONFORME" : "CONFORME"),
         };
         setUltimaEtiqueta(etiqueta);
         setMediciones((prev) => {
@@ -287,6 +303,8 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
         });
         setObservaciones("");
         setNumeroRollo("");
+        setEstatusLiberacion("");
+        setDefectos([]);
         setHoraMuestreo(toLocalDateTimeInputValue(new Date()));
       } else {
         toast.success("Borrador guardado");
@@ -371,6 +389,8 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
         operador: operador.trim() || null,
         prensero: prensero.trim() || null,
         analista: analista.trim() || null,
+        estatus_liberacion: estatusLiberacion || null,
+        defectos,
         tipo_muestreo: "por_rollo" as const,
         hora_muestreo: new Date(horaMuestreo).toISOString(),
         observaciones_generales: observaciones,
@@ -732,6 +752,57 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
           </Card>
         )}
 
+        {spec && (
+          <Card className={cn(isBlocked && "opacity-60 pointer-events-none")}>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">F. Cierre — Estatus de liberación y defectos</CardTitle>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <div className="space-y-1.5">
+                <Label>Estatus de liberación</Label>
+                <Select
+                  value={estatusLiberacion}
+                  onValueChange={(v) => setEstatusLiberacion(v as "" | "L" | "NC" | "C")}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona estatus" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="L">L — Liberado</SelectItem>
+                    <SelectItem value="NC">NC — No Conforme</SelectItem>
+                    <SelectItem value="C">C — Condicional</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-[11px] text-muted-foreground">
+                  Si no se elige, se calcula automáticamente según las mediciones.
+                </p>
+              </div>
+              <div className="md:col-span-2 space-y-2">
+                <Label>Defectos observados</Label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {DEFECTOS_OPCIONES.map((d) => (
+                    <label
+                      key={d}
+                      className="flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm cursor-pointer hover:bg-muted/40"
+                    >
+                      <Checkbox
+                        checked={defectos.includes(d)}
+                        onCheckedChange={() => toggleDefecto(d)}
+                      />
+                      <span>{d}</span>
+                    </label>
+                  ))}
+                </div>
+                {defectos.includes("Otro") && (
+                  <p className="text-[11px] text-muted-foreground">
+                    Describe el detalle de "Otro" en el campo de observaciones generales (sección C).
+                  </p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {ultimaEtiqueta && (
           <Alert className="border-emerald-500 bg-emerald-50 text-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-100">
             <CheckCircle2 className="h-4 w-4" />
@@ -918,6 +989,15 @@ function buildEtiquetaFromMuestra(m: MuestraReciente): EtiquetaData {
     };
   });
   const fueraSpec = meds.some((x) => x.fueraSpec);
+  const est = (m as { estatus_liberacion?: string | null }).estatus_liberacion ?? null;
+  const defectos = ((m as { defectos?: string[] | null }).defectos ?? []) as string[];
+  const estatus: EtiquetaData["estatus"] = est === "L"
+    ? "LIBERADO"
+    : est === "NC"
+    ? "NO CONFORME"
+    : est === "C"
+    ? "CONDICIONAL"
+    : (fueraSpec ? "NO CONFORME" : "CONFORME");
   return {
     muestraId: m.id,
     folio,
@@ -934,7 +1014,9 @@ function buildEtiquetaFromMuestra(m: MuestraReciente): EtiquetaData {
     prensero: (m as { prensero?: string | null }).prensero ?? null,
     analista: (m as { analista?: string | null }).analista ?? null,
     mediciones: meds,
-    estatus: fueraSpec ? "NO CONFORME" : "CONFORME",
+    estatusLiberacion: est as "L" | "NC" | "C" | null,
+    defectos,
+    estatus,
   };
 }
 
