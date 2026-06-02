@@ -66,10 +66,7 @@ function row(label: string, valor: string | number, unidad = ""): string {
 
 const OBS_OPCIONES = ["Arruga", "Picado", "Porosidad", "Hoyos por gomas", "Otro"];
 
-function buildHtml(data: EtiquetaData, qrDataUrl: string): string {
-  const fechaImpresion = new Date().toLocaleString("es-MX");
-  const estatusColor = data.estatus === "CONFORME" ? "#15803d" : "#b91c1c";
-  const estatusBg = data.estatus === "CONFORME" ? "#dcfce7" : "#fee2e2";
+function buildHtml(data: EtiquetaData, qrDataUrl: string, logoDataUrl: string): string {
 
   // Distribuir mediciones en dos columnas
   const left: string[] = [];
