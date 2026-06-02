@@ -149,8 +149,7 @@ function buildHtml(data: EtiquetaData, qrDataUrl: string, logoDataUrl: string): 
   <div class="sheet">
     <div class="head">
       <div class="brand">
-        CONVERTIPAP<br/>
-        <small>FÁBRICA DE PAPEL TISSUE</small>
+        <img src="${logoDataUrl}" alt="Convertipap" />
       </div>
       <div class="title">
         <b>CONVERTIDOR DE PAPEL S.A. DE C.V</b>
