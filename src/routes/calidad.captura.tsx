@@ -285,7 +285,15 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
               max: m.spec.max_valor,
               fueraSpec: m.estado === "no_conforme" || m.estado === "fuera_rango_critico",
             })),
-          estatus: fueraSpecAlguno ? "NO CONFORME" : "CONFORME",
+          estatusLiberacion: estatusLiberacion || null,
+          defectos,
+          estatus: estatusLiberacion === "L"
+            ? "LIBERADO"
+            : estatusLiberacion === "NC"
+            ? "NO CONFORME"
+            : estatusLiberacion === "C"
+            ? "CONDICIONAL"
+            : (fueraSpecAlguno ? "NO CONFORME" : "CONFORME"),
         };
         setUltimaEtiqueta(etiqueta);
         setMediciones((prev) => {
@@ -295,6 +303,8 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
         });
         setObservaciones("");
         setNumeroRollo("");
+        setEstatusLiberacion("");
+        setDefectos([]);
         setHoraMuestreo(toLocalDateTimeInputValue(new Date()));
       } else {
         toast.success("Borrador guardado");
