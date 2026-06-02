@@ -279,7 +279,7 @@ type Producto = {
   descripcion: string | null; gramaje: number | null; capas: number | null; activo: boolean;
 };
 
-function ProductosTab({ productos }: { productos: Producto[] }) {
+function ProductosTab({ productos, isAdmin }: { productos: Producto[]; isAdmin: boolean }) {
   const qc = useQueryClient();
   const upsertFn = useServerFn(upsertProducto);
   const toggleFn = useServerFn(toggleProducto);
