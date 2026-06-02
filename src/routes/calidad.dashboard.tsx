@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo } from "react";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useEffect, useMemo } from "react";
+import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
   ArrowLeft, TrendingUp, TrendingDown, CheckCircle2, XCircle, ShieldAlert,
@@ -19,6 +19,7 @@ import { listMuestras, listAjustes } from "@/lib/qc.functions";
 import { calcularSla } from "@/lib/qc-sla";
 import { useLabFilter } from "@/lib/lab";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/calidad/dashboard")({
   component: DashboardPage,
@@ -31,18 +32,16 @@ function pct(n: number, d: number) {
   return Math.round((n / d) * 1000) / 10;
 }
 
-function dayKey(iso: string) {
-  return iso.slice(0, 10);
-}
-
 type MuestraRow = Awaited<ReturnType<typeof listMuestras>>[number];
 type AjusteRow = Awaited<ReturnType<typeof listAjustes>>[number];
+
 
 function DashboardPage() {
   const auth = useAuth();
   const labFilter = useLabFilter();
   const listMuestrasFn = useServerFn(listMuestras);
   const listAjustesFn = useServerFn(listAjustes);
+  const queryClient = useQueryClient();
 
   const muestrasQuery = useSuspenseQuery({
     queryKey: ["qc", "muestras", "all"],
@@ -54,6 +53,21 @@ function DashboardPage() {
     queryFn: () => listAjustesFn({ data: {} }),
     refetchInterval: 30_000,
   });
+
+  // Realtime: invalida muestras/mediciones para refrescar sin recargar.
+  useEffect(() => {
+    const ch = supabase
+      .channel("calidad-dashboard-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "muestras_calidad" }, () => {
+        queryClient.invalidateQueries({ queryKey: ["qc", "muestras"] });
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "mediciones_calidad" }, () => {
+        queryClient.invalidateQueries({ queryKey: ["qc", "muestras"] });
+      })
+      .subscribe();
+    return () => { void supabase.removeChannel(ch); };
+  }, [queryClient]);
+
 
   const muestrasAll = muestrasQuery.data as MuestraRow[];
   const ajustesAll = ajustesQuery.data as AjusteRow[];
@@ -75,21 +89,33 @@ function DashboardPage() {
 
   const puedeVer = auth.roles.some((r) => ROLES_DASHBOARD.includes(r));
 
+  // Dictamen efectivo: combina dictamen del autorizador con estatus_liberacion del capturista
+  const dictEfectivo = (m: MuestraRow): "liberada" | "rechazada" | "concesion" | null => {
+    if (m.dictamen) return m.dictamen as "liberada" | "rechazada" | "concesion";
+    const est = (m as { estatus_liberacion?: string | null }).estatus_liberacion ?? null;
+    if (est === "L") return "liberada";
+    if (est === "NC") return "rechazada";
+    if (est === "C") return "concesion";
+    return null;
+  };
+
   // --- KPIs primarios -----------------------------------------------------
   const stats = useMemo(() => {
-    const dictaminadas = muestras.filter((m) => m.dictamen !== null);
-    const liberadas = dictaminadas.filter((m) => m.dictamen === "liberada").length;
-    const rechazadas = dictaminadas.filter((m) => m.dictamen === "rechazada").length;
-    const concesion = dictaminadas.filter((m) => m.dictamen === "concesion").length;
+    const conDict = muestras
+      .map((m) => ({ m, d: dictEfectivo(m) }))
+      .filter((x) => x.d !== null);
+    const liberadas = conDict.filter((x) => x.d === "liberada").length;
+    const rechazadas = conDict.filter((x) => x.d === "rechazada").length;
+    const concesion = conDict.filter((x) => x.d === "concesion").length;
     const pendientes = muestras.filter((m) => m.estado === "pendiente_revision").length;
     const enAjuste = muestras.filter((m) => m.estado === "en_ajuste" || m.estado === "reproceso").length;
     return {
       total: muestras.length,
-      dictaminadas: dictaminadas.length,
+      dictaminadas: conDict.length,
       liberadas, rechazadas, concesion, pendientes, enAjuste,
-      conformidadPct: pct(liberadas, dictaminadas.length),
-      rechazoPct: pct(rechazadas, dictaminadas.length),
-      concesionPct: pct(concesion, dictaminadas.length),
+      conformidadPct: pct(liberadas, conDict.length),
+      rechazoPct: pct(rechazadas, conDict.length),
+      concesionPct: pct(concesion, conDict.length),
     };
   }, [muestras]);
 
@@ -112,29 +138,35 @@ function DashboardPage() {
     };
   }, [ajustes]);
 
-  // --- Tendencia diaria (últimos 30 días) --------------------------------
+  // --- Tendencia diaria (últimos 30 días) — zona horaria MX --------------
   const tendencia = useMemo(() => {
+    const fmt = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "America/Mexico_City",
+      year: "numeric", month: "2-digit", day: "2-digit",
+    });
     const map = new Map<string, { fecha: string; total: number; liberadas: number; conformidad: number | null }>();
     const hoy = new Date();
     for (let i = 29; i >= 0; i--) {
       const d = new Date(hoy);
       d.setDate(d.getDate() - i);
-      const k = d.toISOString().slice(0, 10);
+      const k = fmt.format(d);
       map.set(k, { fecha: k.slice(5), total: 0, liberadas: 0, conformidad: null });
     }
     muestras.forEach((m) => {
-      if (m.dictamen === null) return;
-      const k = dayKey(m.capturado_at);
+      const d = dictEfectivo(m);
+      if (d === null) return;
+      const k = fmt.format(new Date(m.capturado_at));
       const row = map.get(k);
       if (!row) return;
       row.total++;
-      if (m.dictamen === "liberada") row.liberadas++;
+      if (d === "liberada") row.liberadas++;
     });
     return Array.from(map.values()).map((r) => ({
       ...r,
       conformidad: r.total === 0 ? null : Math.round((r.liberadas / r.total) * 1000) / 10,
     }));
   }, [muestras]);
+
 
   // --- Pareto de no conformidades por variable ---------------------------
   const pareto = useMemo(() => {

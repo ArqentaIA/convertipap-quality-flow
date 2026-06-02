@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
+import { queryOptions, useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ResponsiveContainer,
   LineChart, Line,
@@ -16,6 +16,8 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { RangoSelector, MESES, rangoLabel, type Rango } from "@/components/qc/RangoSelector";
 import { getDashboard } from "@/lib/dashboard.functions";
 import { useAuth } from "@/lib/auth";
+import { supabase } from "@/integrations/supabase/client";
+
 
 export const Route = createFileRoute("/")({ component: DashboardGate, ssr: false });
 
@@ -100,9 +102,30 @@ function DashboardGate() {
 function Dashboard() {
   const [rango, setRango] = useState<Rango>("dia");
   const [mesesSel, setMesesSel] = useState<number[]>(MESES.map((_, i) => i));
+  const queryClient = useQueryClient();
 
-  const { data } = useSuspenseQuery(dashboardQO(rango, mesesSel));
+  const { data } = useSuspenseQuery({
+    ...dashboardQO(rango, mesesSel),
+    refetchInterval: 30_000,
+  });
   const { serie, maquinas, noConformidades } = data;
+
+  // Realtime: invalida el dashboard al cambiar muestras/mediciones
+  useEffect(() => {
+    const channel = supabase
+      .channel("dashboard-qc-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "muestras_calidad" }, () => {
+        queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "mediciones_calidad" }, () => {
+        queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      })
+      .subscribe();
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
 
   const colorsByMaq = useMemo(() => {
     const map: Record<string, string> = {};

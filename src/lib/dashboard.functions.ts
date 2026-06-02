@@ -28,51 +28,44 @@ function bucketsForRango(
   end: Date,
 ): { label: string; start: Date; end: Date }[] {
   const buckets: { label: string; start: Date; end: Date }[] = [];
+  const HOUR = 3600_000;
   if (rango === "dia") {
-    // 6 buckets de 4h
+    // 6 buckets de 4h, relativos al inicio (preserva zona horaria del cliente)
     const hours = ["00h", "04h", "08h", "12h", "16h", "20h"];
-    const dayStart = new Date(start);
-    dayStart.setHours(0, 0, 0, 0);
     for (let i = 0; i < 6; i++) {
-      const s = new Date(dayStart); s.setHours(i * 4);
-      const e = new Date(dayStart); e.setHours(i * 4 + 4);
+      const s = new Date(start.getTime() + i * 4 * HOUR);
+      const e = new Date(start.getTime() + (i + 1) * 4 * HOUR);
       buckets.push({ label: hours[i], start: s, end: e });
     }
   } else if (rango === "semana") {
-    const dayNames = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
-    const weekStart = new Date(start);
-    weekStart.setHours(0, 0, 0, 0);
-    // start from Monday
-    const dow = weekStart.getDay();
-    const offset = dow === 0 ? -6 : 1 - dow;
-    weekStart.setDate(weekStart.getDate() + offset);
+    const dayNames = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
     for (let i = 0; i < 7; i++) {
-      const s = new Date(weekStart); s.setDate(weekStart.getDate() + i);
-      const e = new Date(s); e.setDate(s.getDate() + 1);
-      buckets.push({ label: dayNames[s.getDay()], start: s, end: e });
+      const s = new Date(start.getTime() + i * 24 * HOUR);
+      const e = new Date(start.getTime() + (i + 1) * 24 * HOUR);
+      buckets.push({ label: dayNames[i], start: s, end: e });
     }
   } else if (rango === "mes") {
-    // 4 semanas
-    const mStart = new Date(start.getFullYear(), start.getMonth(), 1);
+    // 4 semanas relativas
     for (let i = 0; i < 4; i++) {
-      const s = new Date(mStart); s.setDate(1 + i * 7);
-      const e = new Date(mStart); e.setDate(1 + (i + 1) * 7);
+      const s = new Date(start.getTime() + i * 7 * 24 * HOUR);
+      const e = new Date(start.getTime() + (i + 1) * 7 * 24 * HOUR);
       buckets.push({ label: `S${i + 1}`, start: s, end: e });
     }
   } else {
-    // año / custom → meses
+    // año / custom → meses (basados en UTC del start)
     const MES_ABBR = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
-    const cursor = new Date(start.getFullYear(), start.getMonth(), 1);
-    const stop = new Date(end.getFullYear(), end.getMonth(), 1);
+    const cursor = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), 1));
+    const stop = new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth(), 1));
     while (cursor <= stop) {
       const s = new Date(cursor);
-      const e = new Date(cursor); e.setMonth(e.getMonth() + 1);
-      buckets.push({ label: MES_ABBR[s.getMonth()], start: s, end: e });
-      cursor.setMonth(cursor.getMonth() + 1);
+      const e = new Date(Date.UTC(cursor.getUTCFullYear(), cursor.getUTCMonth() + 1, 1));
+      buckets.push({ label: MES_ABBR[s.getUTCMonth()], start: s, end: e });
+      cursor.setUTCMonth(cursor.getUTCMonth() + 1);
     }
   }
   return buckets;
 }
+
 
 export const getDashboard = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -87,7 +80,7 @@ export const getDashboard = createServerFn({ method: "POST" })
         sb.from("maquinas").select("id, codigo").order("codigo"),
         sb
           .from("muestras_calidad")
-          .select("id, maquina_id, hora_muestreo, dictamen")
+          .select("id, maquina_id, hora_muestreo, dictamen, estatus_liberacion, defectos, estado")
           .gte("hora_muestreo", start.toISOString())
           .lte("hora_muestreo", end.toISOString()),
         sb
@@ -95,6 +88,7 @@ export const getDashboard = createServerFn({ method: "POST" })
           .select("id, muestra_id, variable_clave, estado, created_at")
           .gte("created_at", start.toISOString())
           .lte("created_at", end.toISOString()),
+
         sb
           .from("rollos_producidos")
           .select("id, orden_id, registrado_at")
@@ -112,6 +106,24 @@ export const getDashboard = createServerFn({ method: "POST" })
     const maquinaCodeById = new Map((maquinas ?? []).map((m) => [m.id, m.codigo]));
     const ordenMaquinaById = new Map((ordenes ?? []).map((o) => [o.id, o.maquina_id]));
 
+    // Una muestra cuenta como "liberada" si dictamen='liberada' o si el capturista
+    // marcó estatus_liberacion='L' en la captura FOR-CAL-04.
+    const isLiberada = (m: { dictamen: string | null; estatus_liberacion: string | null }) =>
+      m.dictamen === "liberada" || m.estatus_liberacion === "L";
+    const isRechazada = (m: { dictamen: string | null; estatus_liberacion: string | null }) =>
+      m.dictamen === "rechazada" || m.estatus_liberacion === "NC";
+
+    console.log("[getDashboard]", {
+      rango: data.rango,
+      start: data.start,
+      end: data.end,
+      maquinas: maquinaList.length,
+      muestras: muestras?.length ?? 0,
+      mediciones: mediciones?.length ?? 0,
+      rollos: rollos?.length ?? 0,
+      paros: paros?.length ?? 0,
+    });
+
     const buckets = bucketsForRango(data.rango, start, end);
 
     const serie = buckets.map((b) => {
@@ -124,7 +136,7 @@ export const getDashboard = createServerFn({ method: "POST" })
           const t = new Date(m.hora_muestreo).getTime();
           return maquinaCodeById.get(m.maquina_id) === codigo && t >= b.start.getTime() && t < b.end.getTime();
         });
-        const liberadas = muestrasBucket.filter((m) => m.dictamen === "liberada").length;
+        const liberadas = muestrasBucket.filter(isLiberada).length;
         cumplimiento[codigo] = muestrasBucket.length ? Math.round((liberadas / muestrasBucket.length) * 1000) / 10 : 0;
 
         const rollosBucket = (rollos ?? []).filter((r) => {
@@ -148,11 +160,20 @@ export const getDashboard = createServerFn({ method: "POST" })
       return { label: b.label, cumplimiento, rollos: rollosMap, oee: oeeMap };
     });
 
-    // No conformidades por variable
+    // No conformidades: mediciones fuera de spec + defectos visuales reportados
     const ncMap = new Map<string, number>();
     for (const med of mediciones ?? []) {
       if (med.estado === "no_conforme" || med.estado === "fuera_rango_critico") {
         ncMap.set(med.variable_clave, (ncMap.get(med.variable_clave) ?? 0) + 1);
+      }
+    }
+    for (const m of muestras ?? []) {
+      for (const d of (m.defectos ?? []) as string[]) {
+        if (!d) continue;
+        ncMap.set(d, (ncMap.get(d) ?? 0) + 1);
+      }
+      if (isRechazada(m)) {
+        ncMap.set("Rechazo", (ncMap.get("Rechazo") ?? 0) + 1);
       }
     }
     const noConformidades = Array.from(ncMap.entries())
@@ -160,5 +181,11 @@ export const getDashboard = createServerFn({ method: "POST" })
       .sort((a, b) => b.value - a.value)
       .slice(0, 6);
 
+    console.log("[getDashboard] resultado", {
+      buckets: serie.length,
+      noConformidades: noConformidades.length,
+    });
+
     return { serie, maquinas: maquinaList, noConformidades };
   });
+
