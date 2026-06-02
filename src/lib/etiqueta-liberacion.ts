@@ -1,6 +1,22 @@
 // Etiqueta de Liberación (FOR-CAL-04) — se abre en ventana nueva, lista para imprimir.
 // Sin marcas de plataforma, sin logos externos. Layout fiel al formato impreso.
 import QRCode from "qrcode";
+import logoUrl from "@/assets/logo-convertipap.png";
+
+async function toDataUrl(url: string): Promise<string> {
+  try {
+    const res = await fetch(url);
+    const blob = await res.blob();
+    return await new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onloadend = () => resolve(r.result as string);
+      r.onerror = reject;
+      r.readAsDataURL(blob);
+    });
+  } catch {
+    return url;
+  }
+}
 
 export type EtiquetaMedicion = {
   clave: string;
