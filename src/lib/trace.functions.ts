@@ -45,7 +45,7 @@ export const getMuestraTrace = createServerFn({ method: "GET" })
       .from("muestras_calidad")
       .select(
         `id, hora_muestreo, capturado_at, turno, estado, dictamen, numero_rollo,
-         observaciones_generales,
+         observaciones_generales, jefe_maquina, operador, prensero, analista,
          producto:productos(codigo, nombre),
          maquina:maquinas(codigo, nombre),
          planta:plantas(codigo, nombre),
