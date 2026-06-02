@@ -93,11 +93,20 @@ function evaluarMedicion(v: number, min: number, max: number): MedicionEstadoUI 
   return "conforme";
 }
 
-function inferirTurno(d: Date): string {
-  const h = d.getHours();
-  if (h >= 7 && h < 15) return "A";
-  if (h >= 15 && h < 23) return "B";
-  return "C";
+function inferirTurno(d: Date, settings?: { turno1_inicio: string; turno1_fin: string; turno2_inicio: string; turno2_fin: string; turno3_inicio: string; turno3_fin: string } | null): "1" | "2" | "3" {
+  const mins = d.getHours() * 60 + d.getMinutes();
+  const toMin = (hhmm: string) => {
+    const [h, m] = hhmm.split(":").map(Number);
+    return (h ?? 0) * 60 + (m ?? 0);
+  };
+  const s = settings ?? { turno1_inicio: "07:00", turno1_fin: "15:00", turno2_inicio: "15:00", turno2_fin: "23:00", turno3_inicio: "23:00", turno3_fin: "07:00" };
+  const inRange = (start: string, end: string) => {
+    const a = toMin(start), b = toMin(end);
+    return a <= b ? (mins >= a && mins < b) : (mins >= a || mins < b);
+  };
+  if (inRange(s.turno1_inicio, s.turno1_fin)) return "1";
+  if (inRange(s.turno2_inicio, s.turno2_fin)) return "2";
+  return "3";
 }
 
 function CapturaCalidadPage() {
