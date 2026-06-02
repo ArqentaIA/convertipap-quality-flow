@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
+import { queryOptions, useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ResponsiveContainer,
   LineChart, Line,
@@ -16,6 +16,8 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { RangoSelector, MESES, rangoLabel, type Rango } from "@/components/qc/RangoSelector";
 import { getDashboard } from "@/lib/dashboard.functions";
 import { useAuth } from "@/lib/auth";
+import { supabase } from "@/integrations/supabase/client";
+
 
 export const Route = createFileRoute("/")({ component: DashboardGate, ssr: false });
 
