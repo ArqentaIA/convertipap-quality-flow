@@ -213,6 +213,13 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
   const [prensero, setPrensero] = useState<string>("");
   const [analista, setAnalista] = useState<string>("");
 
+  // Sección F — Cierre: estatus manual y defectos
+  const DEFECTOS_OPCIONES = ["Arruga", "Picado", "Porosidad", "Hoyos por gomas", "Otro"] as const;
+  const [estatusLiberacion, setEstatusLiberacion] = useState<"" | "L" | "NC" | "C">("");
+  const [defectos, setDefectos] = useState<string[]>([]);
+  const toggleDefecto = (d: string) =>
+    setDefectos((prev) => prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]);
+
   // Reinicializar mediciones cuando cambia el producto / spec
   useEffect(() => {
     const base: MedicionInputState = {};
