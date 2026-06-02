@@ -643,6 +643,25 @@ export const registrarSpecAuditByCode = createServerFn({ method: "POST" })
           ? "administrador"
           : "direccion";
 
+    // Persistir el cambio en producto_variables (fuente de verdad de la spec)
+    if (variable?.id) {
+      const { data: pv } = await sb
+        .from("producto_variables")
+        .select("id")
+        .eq("especificacion_id", spec.id)
+        .eq("variable_id", variable.id)
+        .maybeSingle();
+      if (pv?.id) {
+        const colMap = { min: "min_valor", objetivo: "objetivo", max: "max_valor" } as const;
+        const col = colMap[data.campo];
+        const { error: upErr } = await sb
+          .from("producto_variables")
+          .update({ [col]: data.valor_nuevo })
+          .eq("id", pv.id);
+        if (upErr) throw new Error(`No se pudo actualizar la especificación: ${upErr.message}`);
+      }
+    }
+
     const { error } = await sb.from("spec_audit_log").insert({
       especificacion_id: spec.id,
       producto_id: prod.id,
@@ -659,6 +678,88 @@ export const registrarSpecAuditByCode = createServerFn({ method: "POST" })
     });
     if (error) throw new Error(error.message);
     return { ok: true };
+  });
+
+// =============================================================================
+// listEspecsActivasConVariables — catálogo real de especificaciones
+// =============================================================================
+
+export const listEspecsActivasConVariables = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const sb = context.supabase as SB;
+
+    const { data: productos, error: pErr } = await sb
+      .from("productos")
+      .select("id, codigo, nombre, tipo_id, activo, tipos_producto:tipo_id (id, nombre, familia_id, familias_producto:familia_id (id, nombre))")
+      .eq("activo", true)
+      .order("codigo", { ascending: true });
+    if (pErr) throw new Error(pErr.message);
+    if (!productos || productos.length === 0) return [];
+
+    const productoIds = productos.map((p) => p.id);
+    const { data: specsRows, error: sErr } = await sb
+      .from("producto_especificaciones")
+      .select("id, producto_id, version, estado, created_at")
+      .in("producto_id", productoIds)
+      .order("created_at", { ascending: false });
+    if (sErr) throw new Error(sErr.message);
+
+    // Última spec por producto
+    const specByProd = new Map<string, { id: string; version: string }>();
+    for (const s of specsRows ?? []) {
+      if (!specByProd.has(s.producto_id)) {
+        specByProd.set(s.producto_id, { id: s.id, version: s.version });
+      }
+    }
+
+    const specIds = Array.from(specByProd.values()).map((s) => s.id);
+    type PVRow = {
+      id: string;
+      especificacion_id: string;
+      variable_id: string;
+      min_valor: number;
+      objetivo: number;
+      max_valor: number;
+      variables_calidad: { id: string; clave: string; etiqueta: string; unidad: string | null; orden: number } | null;
+    };
+    let pvRows: PVRow[] = [];
+    if (specIds.length > 0) {
+      const { data, error: vErr } = await sb
+        .from("producto_variables")
+        .select("id, especificacion_id, variable_id, min_valor, objetivo, max_valor, variables_calidad:variable_id (id, clave, etiqueta, unidad, orden)")
+        .in("especificacion_id", specIds);
+      if (vErr) throw new Error(vErr.message);
+      pvRows = (data ?? []) as unknown as PVRow[];
+    }
+
+    return productos.map((p) => {
+      const spec = specByProd.get(p.id);
+      const tipo = (p as { tipos_producto?: { nombre?: string; familias_producto?: { nombre?: string } } }).tipos_producto;
+      const familyName = tipo?.familias_producto?.nombre ?? tipo?.nombre ?? "Sin familia";
+      const variables = (spec
+        ? pvRows.filter((r) => r.especificacion_id === spec.id)
+        : []
+      )
+        .map((r) => ({
+          key: r.variables_calidad?.clave ?? "",
+          label: r.variables_calidad?.etiqueta ?? r.variables_calidad?.clave ?? "—",
+          unit: r.variables_calidad?.unidad ?? "",
+          min: Number(r.min_valor),
+          objective: Number(r.objetivo),
+          max: Number(r.max_valor),
+          orden: r.variables_calidad?.orden ?? 0,
+        }))
+        .sort((a, b) => a.orden - b.orden);
+      return {
+        code: p.codigo,
+        name: p.nombre,
+        family: familyName,
+        specVersion: spec?.version ?? null,
+        hasSpec: !!spec,
+        variables,
+      };
+    });
   });
 
 // =============================================================================
