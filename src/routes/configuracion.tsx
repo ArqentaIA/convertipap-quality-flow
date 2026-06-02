@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { queryOptions, useSuspenseQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { SessionGate } from "@/components/SessionGate";
 import { Save, Eye, X, Mail, Sliders, Bell } from "lucide-react";
 import logoConvertipap from "@/assets/logo-convertipap.png";
 import { toast } from "sonner";
@@ -10,7 +11,8 @@ import { getAppSettings, updateAppSettings, type AppSettings } from "@/lib/setti
 import { listMaquinasConEstado } from "@/lib/produccion.functions";
 
 export const Route = createFileRoute("/configuracion")({
-  component: ConfigPage,
+  component: ConfigGate,
+  ssr: false,
   errorComponent: ({ error }) => (
     <AppLayout title="Configuración del sistema">
       <div role="alert" className="rounded-md border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
@@ -19,6 +21,14 @@ export const Route = createFileRoute("/configuracion")({
     </AppLayout>
   ),
 });
+
+function ConfigGate() {
+  return (
+    <SessionGate>
+      <ConfigPage />
+    </SessionGate>
+  );
+}
 
 const settingsQueryOptions = queryOptions({
   queryKey: ["app_settings"],
