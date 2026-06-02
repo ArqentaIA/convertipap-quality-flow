@@ -521,17 +521,37 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
                         <td className="py-3 px-2 text-right tabular-nums font-semibold text-foreground align-middle">{vs.objetivo}</td>
                         <td className="py-3 px-2 text-right tabular-nums text-muted-foreground align-middle">{vs.max_valor}</td>
                         <td className="py-3 px-3 align-middle">
-                          <Input
-                            type="number" step={0.1} inputMode="decimal"
-                            disabled={isBlocked}
-                            value={input.valor}
-                            onChange={(e) => setMediciones((prev) => ({
-                              ...prev,
-                              [vs.variable_id]: { ...prev[vs.variable_id], valor: e.target.value },
-                            }))}
-                            className="h-11 text-base font-medium w-full"
-                            placeholder="—"
-                          />
+                          {vs.clave === "uniones" ? (
+                            <Select
+                              disabled={isBlocked}
+                              value={input.valor}
+                              onValueChange={(val) => setMediciones((prev) => ({
+                                ...prev,
+                                [vs.variable_id]: { ...prev[vs.variable_id], valor: val },
+                              }))}
+                            >
+                              <SelectTrigger className="h-11 text-base font-medium w-full">
+                                <SelectValue placeholder="—" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {["0","1","2","3","4","5"].map((o) => (
+                                  <SelectItem key={o} value={o}>{o === "5" ? "5+" : o}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <Input
+                              type="number" step={vs.clave === "peso" ? 1 : 0.1} inputMode="decimal"
+                              disabled={isBlocked}
+                              value={input.valor}
+                              onChange={(e) => setMediciones((prev) => ({
+                                ...prev,
+                                [vs.variable_id]: { ...prev[vs.variable_id], valor: e.target.value },
+                              }))}
+                              className="h-11 text-base font-medium w-full"
+                              placeholder="—"
+                            />
+                          )}
                         </td>
                         <td className="py-3 px-3 align-middle"><EstadoMedicionBadge estado={estado} /></td>
                       </tr>
