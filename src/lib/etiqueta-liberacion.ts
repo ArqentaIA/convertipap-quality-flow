@@ -39,7 +39,9 @@ export type EtiquetaData = {
   productoNombre: string;
   observacionesGenerales: string;
   mediciones: EtiquetaMedicion[];
-  estatus: "CONFORME" | "NO CONFORME";
+  estatus: "CONFORME" | "NO CONFORME" | "LIBERADO" | "CONDICIONAL";
+  estatusLiberacion?: "L" | "NC" | "C" | null;
+  defectos?: string[];
   turno?: string | null;
   jefeMaquina?: string | null;
   operador?: string | null;
