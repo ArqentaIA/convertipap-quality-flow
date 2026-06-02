@@ -275,7 +275,7 @@ export const listMisMuestrasRecientes = createServerFn({ method: "GET" })
          producto_id, maquina_id,
          productos(id, codigo, nombre),
          maquinas(id, codigo, nombre),
-         mediciones_calidad(variable_id, variable_clave, valor, min_snapshot, objetivo_snapshot, max_snapshot, estado)`
+         mediciones_calidad(variable_id, variable_clave, valor, min_snapshot, objetivo_snapshot, max_snapshot, estado, variables_calidad(clave, etiqueta, unidad))`
       )
       .eq("capturado_por", userId)
       .order("capturado_at", { ascending: false })
