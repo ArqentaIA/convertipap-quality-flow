@@ -65,7 +65,12 @@ function VariablesCalidad() {
   const listAuditFn = useServerFn(listSpecAuditByProductCode);
   const registrarFn = useServerFn(registrarSpecAuditByCode);
 
-  const { data: especs } = useSuspenseQuery(especsQueryOptions);
+  const especsQuery = useQuery({
+    ...especsQueryOptions,
+    enabled: !!auth.session?.access_token,
+    retry: false,
+  });
+  const especs = especsQuery.data ?? [];
 
   const families = useMemo(
     () => Array.from(new Set(especs.map((p) => p.family))).sort(),
@@ -121,6 +126,24 @@ function VariablesCalidad() {
     mutationFn: registrarFn,
     onError: (e: Error) => toast.error(e.message),
   });
+
+  if (especsQuery.error) {
+    return (
+      <AppLayout title="Variables de Calidad · Catálogo Maestro de Especificaciones">
+        <div role="alert" className="rounded-md border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
+          No se pudieron cargar las variables: {especsQuery.error.message}
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (especsQuery.isLoading) {
+    return (
+      <AppLayout title="Variables de Calidad · Catálogo Maestro de Especificaciones">
+        <div className="rounded-md border border-border bg-card p-4 text-sm text-muted-foreground">Cargando variables…</div>
+      </AppLayout>
+    );
+  }
 
   const saveEdit = async () => {
     if (!activeSpec) return;
