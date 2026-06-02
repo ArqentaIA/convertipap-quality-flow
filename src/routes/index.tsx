@@ -15,6 +15,7 @@ import {
 import { AppLayout } from "@/components/layout/AppLayout";
 import { RangoSelector, MESES, rangoLabel, type Rango } from "@/components/qc/RangoSelector";
 import { getDashboard } from "@/lib/dashboard.functions";
+import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/")({ component: DashboardGate, ssr: false });
 
