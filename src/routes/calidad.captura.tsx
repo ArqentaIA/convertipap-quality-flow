@@ -989,6 +989,15 @@ function buildEtiquetaFromMuestra(m: MuestraReciente): EtiquetaData {
     };
   });
   const fueraSpec = meds.some((x) => x.fueraSpec);
+  const est = (m as { estatus_liberacion?: string | null }).estatus_liberacion ?? null;
+  const defectos = ((m as { defectos?: string[] | null }).defectos ?? []) as string[];
+  const estatus: EtiquetaData["estatus"] = est === "L"
+    ? "LIBERADO"
+    : est === "NC"
+    ? "NO CONFORME"
+    : est === "C"
+    ? "CONDICIONAL"
+    : (fueraSpec ? "NO CONFORME" : "CONFORME");
   return {
     muestraId: m.id,
     folio,
@@ -1005,7 +1014,9 @@ function buildEtiquetaFromMuestra(m: MuestraReciente): EtiquetaData {
     prensero: (m as { prensero?: string | null }).prensero ?? null,
     analista: (m as { analista?: string | null }).analista ?? null,
     mediciones: meds,
-    estatus: fueraSpec ? "NO CONFORME" : "CONFORME",
+    estatusLiberacion: est as "L" | "NC" | "C" | null,
+    defectos,
+    estatus,
   };
 }
 
