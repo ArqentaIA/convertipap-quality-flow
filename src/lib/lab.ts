@@ -102,7 +102,9 @@ export function useLabFilter(): LabFilter {
       };
     }
 
-    const lab = getLabForEmail(auth.user?.email);
+    // Preferir el laboratorio persistido en el perfil; fallback a regla por email
+    const lab = (auth.profile?.laboratorio as LabZona | null | undefined)
+      ?? getLabForEmail(auth.user?.email);
     if (!lab) {
       // Capturista sin laboratorio asignado: no ve nada (seguridad por defecto).
       return {
