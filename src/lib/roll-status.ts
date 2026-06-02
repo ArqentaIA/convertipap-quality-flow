@@ -170,7 +170,12 @@ function findLatestMuestra(
   const rolloNum = extractRolloNumber(input);
   const candidatas = muestras.filter((m) => {
     if (input.ordenId && m.orden_id !== input.ordenId) return false;
-    if (rolloNum != null && m.numero_rollo !== rolloNum) return false;
+    if (rolloNum != null) {
+      const muestraNum = m.numero_rollo
+        ? Number(String(m.numero_rollo).split(/[^0-9]/).filter(Boolean)[0])
+        : null;
+      if (muestraNum !== rolloNum) return false;
+    }
     if (rolloNum == null && !input.ordenId) return false;
     return true;
   });
