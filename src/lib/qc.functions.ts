@@ -322,7 +322,7 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
     z
       .object({
         muestra_id: z.string().uuid().optional(),
-        orden_id: z.string().uuid(),
+        orden_id: z.string().uuid().nullable().optional(),
         especificacion_id: z.string().uuid(),
         especificacion_version: z.string(),
         planta_id: z.string().uuid(),
