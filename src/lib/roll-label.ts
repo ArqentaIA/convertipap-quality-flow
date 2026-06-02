@@ -213,7 +213,8 @@ export async function printRollLabel(data: RollLabelData) {
   </table>
 
   <!-- Estatus -->
-  <div class="estatus">ESTATUS: ${est.txt}</div>
+  <div class="estatus">ESTATUS: ${est.label.toUpperCase()}</div>
+  ${est.warnings.length > 0 ? `<div style="padding:6px 10px;background:#f3e8ff;color:#6b21a8;font-size:10px;text-align:center;border-top:1px solid #c084fc">⚠ ${est.warnings.join(" · ")}</div>` : ""}
 </div>
 </body>
 </html>`;
