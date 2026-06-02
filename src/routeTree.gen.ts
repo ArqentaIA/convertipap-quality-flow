@@ -20,6 +20,7 @@ import { Route as ConfiguracionRouteImport } from './routes/configuracion'
 import { Route as CatalogosRouteImport } from './routes/catalogos'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TFolioRouteImport } from './routes/t.$folio'
+import { Route as MuestraIdRouteImport } from './routes/muestra.$id'
 import { Route as HistorialMaquinaRouteImport } from './routes/historial.$maquina'
 import { Route as CalidadRevisionRouteImport } from './routes/calidad.revision'
 import { Route as CalidadDashboardRouteImport } from './routes/calidad.dashboard'
@@ -81,6 +82,11 @@ const TFolioRoute = TFolioRouteImport.update({
   path: '/t/$folio',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MuestraIdRoute = MuestraIdRouteImport.update({
+  id: '/muestra/$id',
+  path: '/muestra/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const HistorialMaquinaRoute = HistorialMaquinaRouteImport.update({
   id: '/historial/$maquina',
   path: '/historial/$maquina',
@@ -123,6 +129,7 @@ export interface FileRoutesByFullPath {
   '/calidad/dashboard': typeof CalidadDashboardRoute
   '/calidad/revision': typeof CalidadRevisionRoute
   '/historial/$maquina': typeof HistorialMaquinaRoute
+  '/muestra/$id': typeof MuestraIdRoute
   '/t/$folio': typeof TFolioRoute
 }
 export interface FileRoutesByTo {
@@ -141,6 +148,7 @@ export interface FileRoutesByTo {
   '/calidad/dashboard': typeof CalidadDashboardRoute
   '/calidad/revision': typeof CalidadRevisionRoute
   '/historial/$maquina': typeof HistorialMaquinaRoute
+  '/muestra/$id': typeof MuestraIdRoute
   '/t/$folio': typeof TFolioRoute
 }
 export interface FileRoutesById {
@@ -160,6 +168,7 @@ export interface FileRoutesById {
   '/calidad/dashboard': typeof CalidadDashboardRoute
   '/calidad/revision': typeof CalidadRevisionRoute
   '/historial/$maquina': typeof HistorialMaquinaRoute
+  '/muestra/$id': typeof MuestraIdRoute
   '/t/$folio': typeof TFolioRoute
 }
 export interface FileRouteTypes {
@@ -180,6 +189,7 @@ export interface FileRouteTypes {
     | '/calidad/dashboard'
     | '/calidad/revision'
     | '/historial/$maquina'
+    | '/muestra/$id'
     | '/t/$folio'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -198,6 +208,7 @@ export interface FileRouteTypes {
     | '/calidad/dashboard'
     | '/calidad/revision'
     | '/historial/$maquina'
+    | '/muestra/$id'
     | '/t/$folio'
   id:
     | '__root__'
@@ -216,6 +227,7 @@ export interface FileRouteTypes {
     | '/calidad/dashboard'
     | '/calidad/revision'
     | '/historial/$maquina'
+    | '/muestra/$id'
     | '/t/$folio'
   fileRoutesById: FileRoutesById
 }
@@ -235,6 +247,7 @@ export interface RootRouteChildren {
   CalidadDashboardRoute: typeof CalidadDashboardRoute
   CalidadRevisionRoute: typeof CalidadRevisionRoute
   HistorialMaquinaRoute: typeof HistorialMaquinaRoute
+  MuestraIdRoute: typeof MuestraIdRoute
   TFolioRoute: typeof TFolioRoute
 }
 
@@ -317,6 +330,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TFolioRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/muestra/$id': {
+      id: '/muestra/$id'
+      path: '/muestra/$id'
+      fullPath: '/muestra/$id'
+      preLoaderRoute: typeof MuestraIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/historial/$maquina': {
       id: '/historial/$maquina'
       path: '/historial/$maquina'
@@ -371,6 +391,7 @@ const rootRouteChildren: RootRouteChildren = {
   CalidadDashboardRoute: CalidadDashboardRoute,
   CalidadRevisionRoute: CalidadRevisionRoute,
   HistorialMaquinaRoute: HistorialMaquinaRoute,
+  MuestraIdRoute: MuestraIdRoute,
   TFolioRoute: TFolioRoute,
 }
 export const routeTree = rootRouteImport
