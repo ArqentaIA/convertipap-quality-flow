@@ -80,8 +80,8 @@ const STATUS_PRESENTATION: Record<
 > = {
   pendiente_revision: {
     key: "pendiente_revision",
-    label: "Pendiente de revisión",
-    short: "Pendiente",
+    label: "Pendiente de dictamen de calidad",
+    short: "Pendiente dictamen",
     legacyCode: "C",
     color: "#0369a1",
     bg: "#e0f2fe",
