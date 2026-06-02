@@ -120,8 +120,8 @@ export const getReportes = createServerFn({ method: "POST" })
       const entry =
         desempenoMap.get(k) ?? { total: 0, conformes: 0, rollos: 0, nc: 0 };
       entry.total++;
-      if (m.dictamen === "liberado") entry.conformes++;
-      if (m.dictamen === "rechazado") entry.nc++;
+      if (m.dictamen === "liberada") entry.conformes++;
+      if (m.dictamen === "rechazada") entry.nc++;
       desempenoMap.set(k, entry);
     }
     for (const r of rollos ?? []) {
@@ -141,7 +141,7 @@ export const getReportes = createServerFn({ method: "POST" })
     for (const m of muestrasPrev ?? []) {
       const e = prevByPlanta.get(m.planta_id) ?? { total: 0, conformes: 0 };
       e.total++;
-      if (m.dictamen === "liberado") e.conformes++;
+      if (m.dictamen === "liberada") e.conformes++;
       prevByPlanta.set(m.planta_id, e);
     }
 
@@ -190,7 +190,7 @@ export const getReportes = createServerFn({ method: "POST" })
           conformes: 0,
         };
       e.total++;
-      if (m.dictamen === "liberado") e.conformes++;
+      if (m.dictamen === "liberada") e.conformes++;
       cumplMap.set(key, e);
     }
     const cumplRows = Array.from(cumplMap.values()).map((v) => ({
@@ -285,7 +285,7 @@ export const getReportes = createServerFn({ method: "POST" })
           muestras_ok: 0,
         };
       e.muestras_total++;
-      if (m.dictamen === "liberado") e.muestras_ok++;
+      if (m.dictamen === "liberada") e.muestras_ok++;
       oeeMap.set(key, e);
     }
     const parosPorMaq = new Map<string, number>();
@@ -318,8 +318,8 @@ export const getReportes = createServerFn({ method: "POST" })
     // Reporte ejecutivo
     // ====================================================
     const totalMuestras = (muestras ?? []).length;
-    const totalLiberadas = (muestras ?? []).filter((m) => m.dictamen === "liberado").length;
-    const totalRechazadas = (muestras ?? []).filter((m) => m.dictamen === "rechazado").length;
+    const totalLiberadas = (muestras ?? []).filter((m) => m.dictamen === "liberada").length;
+    const totalRechazadas = (muestras ?? []).filter((m) => m.dictamen === "rechazada").length;
     const cumplGlobal = totalMuestras ? (totalLiberadas / totalMuestras) * 100 : 0;
     const oeeAvg = oeeRows.length
       ? oeeRows.reduce((a, r) => a + r.oee, 0) / oeeRows.length
