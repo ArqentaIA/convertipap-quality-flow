@@ -261,6 +261,11 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
           productoCodigo: producto.codigo,
           productoNombre: producto.nombre,
           observacionesGenerales: observaciones,
+          turno,
+          jefeMaquina,
+          operador,
+          prensero,
+          analista,
           mediciones: evalMediciones
             .filter((m) => m.input.valor !== "" && Number.isFinite(m.num))
             .map((m) => ({
