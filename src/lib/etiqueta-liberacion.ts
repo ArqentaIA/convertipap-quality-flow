@@ -182,11 +182,27 @@ function buildHtml(data: EtiquetaData, qrDataUrl: string, logoDataUrl: string): 
           </tr>
           <tr>
             <td class="lbl">Fecha</td>
-            <td class="val">${esc(data.fecha)}</td>
+            <td class="val">${esc(data.fecha)}${data.turno ? ` · Turno ${esc(data.turno)}` : ""}</td>
           </tr>
           <tr>
             <td class="lbl">Máquina</td>
             <td class="val">${esc(data.maquinaCodigo)} · ${esc(data.maquinaNombre)}</td>
+          </tr>
+          <tr>
+            <td class="lbl">Jefe de Máquina</td>
+            <td class="val">${esc(data.jefeMaquina || "—")}</td>
+          </tr>
+          <tr>
+            <td class="lbl">Operador</td>
+            <td class="val">${esc(data.operador || "—")}</td>
+          </tr>
+          <tr>
+            <td class="lbl">Prensero</td>
+            <td class="val">${esc(data.prensero || "—")}</td>
+          </tr>
+          <tr>
+            <td class="lbl">Analista</td>
+            <td class="val">${esc(data.analista || "—")}</td>
           </tr>
           <tr>
             <td class="lbl">Folio</td>
