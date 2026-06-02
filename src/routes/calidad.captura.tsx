@@ -446,7 +446,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
             </CardHeader>
             <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-3">
               <div className="space-y-1.5">
-                <Label htmlFor="rollo">Número de rollo (opcional)</Label>
+                <Label htmlFor="rollo">Número de rollo</Label>
                 <Input
                   id="rollo" type="number" min={1}
                   value={numeroRollo} onChange={(e) => setNumeroRollo(e.target.value)}
