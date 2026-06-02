@@ -10,6 +10,7 @@ import {
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { SessionGate } from "@/components/SessionGate";
 import {
   listSpecAuditByProductCode,
   registrarSpecAuditByCode,
@@ -29,9 +30,17 @@ const especsQueryOptions = queryOptions({
 });
 
 export const Route = createFileRoute("/variables-calidad")({
-  loader: ({ context }) => context.queryClient.ensureQueryData(especsQueryOptions),
-  component: VariablesCalidad,
+  component: VariablesCalidadGate,
+  ssr: false,
 });
+
+function VariablesCalidadGate() {
+  return (
+    <SessionGate>
+      <VariablesCalidad />
+    </SessionGate>
+  );
+}
 
 type DraftMap = Record<string, { min: number; objective: number; max: number }>;
 
