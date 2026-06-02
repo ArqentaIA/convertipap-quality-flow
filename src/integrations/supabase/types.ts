@@ -422,7 +422,7 @@ export type Database = {
           numero_rollo: number | null
           observaciones_generales: string
           operario_id: string | null
-          orden_id: string
+          orden_id: string | null
           planta_id: string
           producto_id: string
           revisado_at: string | null
@@ -456,7 +456,7 @@ export type Database = {
           numero_rollo?: number | null
           observaciones_generales?: string
           operario_id?: string | null
-          orden_id: string
+          orden_id?: string | null
           planta_id: string
           producto_id: string
           revisado_at?: string | null
@@ -490,7 +490,7 @@ export type Database = {
           numero_rollo?: number | null
           observaciones_generales?: string
           operario_id?: string | null
-          orden_id?: string
+          orden_id?: string | null
           planta_id?: string
           producto_id?: string
           revisado_at?: string | null
@@ -935,6 +935,7 @@ export type Database = {
           created_at: string
           email: string
           id: string
+          laboratorio: string | null
           nombre: string
           rol_visible: string | null
           updated_at: string
@@ -944,6 +945,7 @@ export type Database = {
           created_at?: string
           email: string
           id: string
+          laboratorio?: string | null
           nombre: string
           rol_visible?: string | null
           updated_at?: string
@@ -953,6 +955,7 @@ export type Database = {
           created_at?: string
           email?: string
           id?: string
+          laboratorio?: string | null
           nombre?: string
           rol_visible?: string | null
           updated_at?: string
