@@ -95,8 +95,9 @@ function buildHtml(data: EtiquetaData, qrDataUrl: string, logoDataUrl: string): 
     (i % 2 === 0 ? left : right).push(cell);
   });
 
+  const defectosSet = new Set((data.defectos ?? []).map((d) => d.toLowerCase()));
   const obsHtml = OBS_OPCIONES.map(
-    (o) => `<label class="ck"><input type="checkbox" /> ${esc(o)}</label>`,
+    (o) => `<label class="ck"><input type="checkbox" ${defectosSet.has(o.toLowerCase()) ? "checked" : ""} /> ${esc(o)}</label>`,
   ).join("");
 
   return `<!doctype html>
