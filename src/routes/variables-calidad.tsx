@@ -1,13 +1,19 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  queryOptions,
+  useQuery,
+  useMutation,
+  useQueryClient,
+  useSuspenseQuery,
+} from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { PRODUCT_SPECS, PRODUCT_FAMILIES } from "@/lib/spec-catalog";
 import {
   listSpecAuditByProductCode,
   registrarSpecAuditByCode,
+  listEspecsActivasConVariables,
 } from "@/lib/qc.functions";
 import { useAuth } from "@/lib/auth";
 import jsPDF from "jspdf";
@@ -17,12 +23,18 @@ import {
   Pencil, Power, Lock, FileSpreadsheet, Save, X, ShieldAlert,
 } from "lucide-react";
 
-export const Route = createFileRoute("/variables-calidad")({ component: VariablesCalidad });
+const especsQueryOptions = queryOptions({
+  queryKey: ["variables-calidad", "especs"],
+  queryFn: () => listEspecsActivasConVariables(),
+});
+
+export const Route = createFileRoute("/variables-calidad")({
+  loader: ({ context }) => context.queryClient.ensureQueryData(especsQueryOptions),
+  component: VariablesCalidad,
+});
 
 type DraftMap = Record<string, { min: number; objective: number; max: number }>;
 
-// Roles autorizados para editar especificaciones — verificación adicional
-// en cliente; el server (registrarSpecAuditByCode) revalida con RLS+rol.
 const ROLES_EDIT = ["calidad", "direccion", "gerente_general", "administrador"] as const;
 
 type AuditRow = {
@@ -44,19 +56,25 @@ function VariablesCalidad() {
   const listAuditFn = useServerFn(listSpecAuditByProductCode);
   const registrarFn = useServerFn(registrarSpecAuditByCode);
 
+  const { data: especs } = useSuspenseQuery(especsQueryOptions);
+
+  const families = useMemo(
+    () => Array.from(new Set(especs.map((p) => p.family))).sort(),
+    [especs],
+  );
+
   const [family, setFamily] = useState<string>("all");
-  const [selected, setSelected] = useState<string>(PRODUCT_SPECS[0]?.code ?? "");
+  const [selected, setSelected] = useState<string>(especs[0]?.code ?? "");
 
   const filtered = useMemo(
-    () => PRODUCT_SPECS.filter((p) => family === "all" || p.family === family),
-    [family],
+    () => especs.filter((p) => family === "all" || p.family === family),
+    [family, especs],
   );
   const activeSpec = useMemo(
-    () => PRODUCT_SPECS.find((p) => p.code === selected) ?? filtered[0] ?? PRODUCT_SPECS[0],
-    [selected, filtered],
+    () => especs.find((p) => p.code === selected) ?? filtered[0] ?? especs[0],
+    [selected, filtered, especs],
   );
 
-  // Bitácora real (Supabase)
   const auditQuery = useQuery({
     queryKey: ["spec-audit", activeSpec?.code],
     queryFn: () => listAuditFn({ data: { codigo: activeSpec!.code } }),
@@ -68,7 +86,6 @@ function VariablesCalidad() {
     (ROLES_EDIT as readonly string[]).includes(r),
   );
 
-  // Edición
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState<DraftMap>({});
   const [reason, setReason] = useState("");
@@ -104,7 +121,6 @@ function VariablesCalidad() {
       variable_clave: string; variable_etiqueta: string;
       campo: "min" | "objetivo" | "max";
       valor_anterior: number; valor_nuevo: number;
-      apply: () => void;
     }> = [];
 
     activeSpec.variables.forEach((v) => {
@@ -118,7 +134,6 @@ function VariablesCalidad() {
             campo: field === "objective" ? "objetivo" : (field as "min" | "max"),
             valor_anterior: v[field],
             valor_nuevo: d[field],
-            apply: () => { (v as { min: number; objective: number; max: number })[field] = d[field]; },
           });
         }
       });
@@ -139,9 +154,9 @@ function VariablesCalidad() {
             motivo: reason.trim(),
           },
         });
-        c.apply(); // refleja en catálogo en memoria
       }
-      toast.success(`${changes.length} cambio(s) registrados en la bitácora.`);
+      toast.success(`${changes.length} cambio(s) guardados en la base de datos.`);
+      await queryClient.invalidateQueries({ queryKey: ["variables-calidad", "especs"] });
       void queryClient.invalidateQueries({ queryKey: ["spec-audit", activeSpec.code] });
       cancelEdit();
     } catch {
@@ -229,6 +244,16 @@ function VariablesCalidad() {
     doc.save(`Trazabilidad_${activeSpec.code}_${new Date().toISOString().slice(0, 10)}.pdf`);
   };
 
+  if (especs.length === 0) {
+    return (
+      <AppLayout title="Variables de Calidad · Catálogo Maestro de Especificaciones">
+        <div className="rounded-xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
+          No hay productos con especificaciones registradas en la base de datos.
+        </div>
+      </AppLayout>
+    );
+  }
+
   return (
     <AppLayout title="Variables de Calidad · Catálogo Maestro de Especificaciones">
       <div className="space-y-5">
@@ -242,8 +267,8 @@ function VariablesCalidad() {
                 onChange={(e) => { setFamily(e.target.value); setSelected(""); }}
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               >
-                <option value="all">Todas las familias ({PRODUCT_SPECS.length})</option>
-                {PRODUCT_FAMILIES.map((f) => (<option key={f} value={f}>{f}</option>))}
+                <option value="all">Todas las familias ({especs.length})</option>
+                {families.map((f) => (<option key={f} value={f}>{f}</option>))}
               </select>
             </div>
             <div>
@@ -275,6 +300,12 @@ function VariablesCalidad() {
               <h3 className="text-base font-semibold text-foreground">{activeSpec?.name}</h3>
               <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
                 <span>Código: <span className="font-semibold text-foreground tabular-nums">{activeSpec?.code}</span></span>
+                {activeSpec?.specVersion && (
+                  <>
+                    <span>·</span>
+                    <span>Versión: <span className="font-semibold text-foreground tabular-nums">{activeSpec.specVersion}</span></span>
+                  </>
+                )}
                 <span>·</span>
                 <span className="inline-flex items-center gap-1 rounded bg-success/10 px-1.5 py-0.5 font-semibold text-success">
                   <Power className="h-2.5 w-2.5" /> Activa
@@ -286,7 +317,7 @@ function VariablesCalidad() {
                 <>
                   <button
                     onClick={startEdit}
-                    disabled={!puedeEditar}
+                    disabled={!puedeEditar || !activeSpec?.hasSpec}
                     className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-2.5 py-1.5 text-[11px] font-semibold text-foreground hover:bg-accent disabled:opacity-50"
                     title={puedeEditar ? "" : "Sin permiso para editar"}
                   >
@@ -323,6 +354,13 @@ function VariablesCalidad() {
             </div>
           )}
 
+          {!activeSpec?.hasSpec && (
+            <div className="border-b border-border bg-warning/10 px-5 py-2 text-[11px] text-warning flex items-center gap-2">
+              <ShieldAlert className="h-3.5 w-3.5" />
+              Este producto aún no tiene especificación registrada en la base de datos.
+            </div>
+          )}
+
           {isEditing && (
             <div className="border-b border-border bg-muted/20 px-5 py-3">
               <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
@@ -350,6 +388,13 @@ function VariablesCalidad() {
                 </tr>
               </thead>
               <tbody>
+                {activeSpec?.variables.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-6 text-center text-xs text-muted-foreground">
+                      Sin variables registradas para esta especificación.
+                    </td>
+                  </tr>
+                )}
                 {activeSpec?.variables.map((v) => {
                   const d = draft[v.key];
                   return (
@@ -389,7 +434,7 @@ function VariablesCalidad() {
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border bg-muted/20 px-5 py-3 text-[11px] text-muted-foreground">
             <div className="flex items-center gap-1.5">
               <Lock className="h-3.5 w-3.5" />
-              Solo lectura · Modificación restringida a Dirección, Calidad y Administrador.
+              Persistencia real · cambios escritos en producto_variables + spec_audit_log.
             </div>
             <div>
               {log.length > 0
@@ -406,11 +451,11 @@ function VariablesCalidad() {
             <p className="text-xs text-muted-foreground">Registro permanente, no modificable (Supabase · spec_audit_log).</p>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead className="bg-muted/40 text-left text-[10px] uppercase tracking-wider text-muted-foreground">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/40 text-left text-[11px] uppercase tracking-wider text-muted-foreground">
                 <tr>
-                  <th className="px-4 py-2">Fecha y hora</th>
-                  <th className="px-4 py-2">Nombre</th>
+                  <th className="px-4 py-2">Fecha</th>
+                  <th className="px-4 py-2">Usuario</th>
                   <th className="px-4 py-2">Rol</th>
                   <th className="px-4 py-2">Variable</th>
                   <th className="px-4 py-2">Campo</th>
@@ -420,22 +465,23 @@ function VariablesCalidad() {
                 </tr>
               </thead>
               <tbody>
-                {auditQuery.isLoading && (
-                  <tr><td colSpan={8} className="px-4 py-6 text-center text-muted-foreground">Cargando…</td></tr>
-                )}
-                {!auditQuery.isLoading && log.length === 0 && (
-                  <tr><td colSpan={8} className="px-4 py-6 text-center text-muted-foreground">Sin movimientos registrados.</td></tr>
+                {log.length === 0 && (
+                  <tr>
+                    <td colSpan={8} className="px-4 py-6 text-center text-xs text-muted-foreground">
+                      Sin cambios registrados para este producto.
+                    </td>
+                  </tr>
                 )}
                 {log.map((r) => (
                   <tr key={r.id} className="border-t border-border">
-                    <td className="px-4 py-2 tabular-nums">{new Date(r.modificado_at).toLocaleString("es-MX")}</td>
-                    <td className="px-4 py-2">{r.modificado_por_nombre ?? "—"}</td>
-                    <td className="px-4 py-2">{r.modificado_por_rol ?? "—"}</td>
-                    <td className="px-4 py-2">{r.variable_etiqueta}</td>
-                    <td className="px-4 py-2">{r.campo}</td>
-                    <td className="px-4 py-2 tabular-nums">{r.valor_anterior ?? "—"}</td>
-                    <td className="px-4 py-2 tabular-nums font-semibold text-primary">{r.valor_nuevo ?? "—"}</td>
-                    <td className="px-4 py-2 text-muted-foreground">{r.motivo}</td>
+                    <td className="px-4 py-2 text-xs">{new Date(r.modificado_at).toLocaleString("es-MX")}</td>
+                    <td className="px-4 py-2 text-xs">{r.modificado_por_nombre ?? "—"}</td>
+                    <td className="px-4 py-2 text-xs uppercase">{r.modificado_por_rol ?? "—"}</td>
+                    <td className="px-4 py-2 text-xs">{r.variable_etiqueta}</td>
+                    <td className="px-4 py-2 text-xs">{r.campo}</td>
+                    <td className="px-4 py-2 text-xs tabular-nums">{r.valor_anterior ?? "—"}</td>
+                    <td className="px-4 py-2 text-xs tabular-nums font-semibold">{r.valor_nuevo ?? "—"}</td>
+                    <td className="px-4 py-2 text-xs">{r.motivo}</td>
                   </tr>
                 ))}
               </tbody>
