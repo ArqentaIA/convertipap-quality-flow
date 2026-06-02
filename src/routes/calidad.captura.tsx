@@ -273,7 +273,6 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
             min_snapshot: m.spec.min_valor,
             objetivo_snapshot: m.spec.objetivo,
             max_snapshot: m.spec.max_valor,
-            observacion: m.input.observacion,
           })),
         enviar_a_revision: modo === "envio",
       },
