@@ -89,7 +89,7 @@ function CatalogosPage() {
 
 type Planta = { id: string; codigo: string; nombre: string; ubicacion: string | null; activo: boolean };
 
-function PlantasTab({ plantas }: { plantas: Planta[] }) {
+function PlantasTab({ plantas, isAdmin }: { plantas: Planta[]; isAdmin: boolean }) {
   const qc = useQueryClient();
   const upsertFn = useServerFn(upsertPlanta);
   const toggleFn = useServerFn(togglePlanta);
