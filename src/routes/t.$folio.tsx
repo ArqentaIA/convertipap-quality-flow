@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ShieldCheck, QrCode, Factory, User, Calendar, Package, Hash, AlertTriangle } from "lucide-react";
+import { useMemo } from "react";
 import logoUrl from "@/assets/logo-convertipap.png";
 import { resolveRolloStatus, type RolloStatusInfo } from "@/lib/roll-status";
 import { useQcMock } from "@/lib/qc-mock/store";
