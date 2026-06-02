@@ -363,7 +363,7 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
       : "borrador";
 
     const muestraPayload = {
-      orden_id: data.orden_id,
+      orden_id: data.orden_id ?? null,
       especificacion_id: data.especificacion_id,
       especificacion_version: data.especificacion_version,
       planta_id: data.planta_id,
