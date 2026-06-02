@@ -72,13 +72,16 @@ function TracePage() {
     folio === "CAL-2026-04811" ? "NC" :
     folio === "CAL-2026-04830" ? "L" : undefined;
 
-  const est: RolloStatusInfo = useQcMock(() =>
-    resolveRolloStatus({
-      rolloId: ctx.rollo,
-      folio: ctx.folio,
-      ordenId: ctx.ordenId,
-      legacyEstatus: legacy ?? null,
-    }),
+  const qcState = useQcMock((s) => s);
+  const est: RolloStatusInfo = useMemo(
+    () =>
+      resolveRolloStatus({
+        rolloId: ctx.rollo,
+        folio: ctx.folio,
+        ordenId: ctx.ordenId,
+        legacyEstatus: legacy ?? null,
+      }),
+    [qcState, ctx.rollo, ctx.folio, ctx.ordenId, legacy],
   );
 
   return (
