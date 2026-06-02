@@ -253,6 +253,9 @@ function EstadoChip({ estado }: { estado: MaquinaRow["estado"] }) {
       <Icon className="h-3 w-3" /> {txt}
     </span>
   );
+}
+
+
 
 
 
