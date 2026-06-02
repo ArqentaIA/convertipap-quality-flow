@@ -370,6 +370,8 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
         operador: z.string().max(120).nullable().optional(),
         prensero: z.string().max(120).nullable().optional(),
         analista: z.string().max(120).nullable().optional(),
+        estatus_liberacion: z.enum(["L", "NC", "C"]).nullable().optional(),
+        defectos: z.array(z.string().max(60)).max(20).default([]),
         tipo_muestreo: z.enum(["por_rollo", "por_tiempo"]),
         hora_muestreo: z.string(),
         observaciones_generales: z.string().default(""),
