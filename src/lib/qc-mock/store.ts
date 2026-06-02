@@ -267,9 +267,38 @@ export function clearDraft(orden_id: string) {
   localStorage.removeItem(DRAFT_PREFIX + orden_id);
 }
 
-// --- Acciones de revisión -------------------------------------------------
+// --- Acciones de revisión / dictamen -------------------------------------
 
 type ResultRev = { ok: true } | { ok: false; error: string };
+
+/** Roles autorizados para emitir dictamen final. Capturista NUNCA puede. */
+export const ROLES_AUTORIZADOS_DICTAMEN = [
+  "calidad",
+  "gerencia_calidad",
+  "gerente_general",
+  "administrador",
+] as const;
+
+export type RolAutorizador = (typeof ROLES_AUTORIZADOS_DICTAMEN)[number];
+
+export function puedeDictaminar(roles: string[] | null | undefined): boolean {
+  if (!roles || roles.length === 0) return false;
+  return roles.some((r) =>
+    (ROLES_AUTORIZADOS_DICTAMEN as readonly string[]).includes(r),
+  );
+}
+
+export type DictamenFinal = "liberada" | "rechazada" | "concesion" | "reproceso";
+
+export interface DictaminarInput {
+  muestra_id: string;
+  dictamen: DictamenFinal;
+  autorizado_por: string;       // nombre o email
+  rol_autorizador: string;      // debe estar en ROLES_AUTORIZADOS_DICTAMEN
+  motivo?: string;
+  observaciones?: string;
+  evidencia_url?: string;
+}
 
 function updateMuestra(
   muestra_id: string,
@@ -287,45 +316,159 @@ function updateMuestra(
   return { ok: true };
 }
 
-export function liberarMuestra(muestra_id: string, revisor: string, motivo: string): ResultRev {
+/**
+ * Acción central: emite el dictamen final con autorización formal.
+ * Cumple las reglas de evidencia y motivo por tipo de dictamen.
+ */
+export function dictaminarMuestra(input: DictaminarInput): ResultRev {
+  // 1. Validar rol autorizador.
+  if (!(ROLES_AUTORIZADOS_DICTAMEN as readonly string[]).includes(input.rol_autorizador)) {
+    return {
+      ok: false,
+      error: `Rol "${input.rol_autorizador}" no autorizado para dictaminar. Requiere Gerencia de Calidad, Gerente General o Administrador.`,
+    };
+  }
+
+  // 2. Reglas de motivo y evidencia.
+  const motivo = (input.motivo ?? "").trim();
+  const evidencia = (input.evidencia_url ?? "").trim();
+
+  if (input.dictamen === "concesion" && !motivo) {
+    return { ok: false, error: "Liberación con concesión requiere motivo obligatorio." };
+  }
+  if (input.dictamen === "rechazada") {
+    if (!motivo) return { ok: false, error: "Rechazo requiere motivo obligatorio." };
+    if (!evidencia) return { ok: false, error: "Rechazo requiere evidencia obligatoria." };
+  }
+  if (input.dictamen === "reproceso") {
+    if (!motivo) return { ok: false, error: "Reproceso requiere motivo obligatorio." };
+    if (!evidencia) return { ok: false, error: "Reproceso requiere evidencia obligatoria." };
+  }
+
   const now = new Date().toISOString();
-  return updateMuestra(muestra_id, (m) => ({
+
+  // Reproceso se traduce a flujo de ajuste (tipo reproceso) + estado reproceso.
+  if (input.dictamen === "reproceso") {
+    return solicitarAjuste({
+      muestra_id: input.muestra_id,
+      tipo_ajuste: "reproceso",
+      motivo,
+      revisor: input.autorizado_por,
+    });
+  }
+
+  const dictamenEstadoMap: Record<
+    Exclude<DictamenFinal, "reproceso">,
+    MuestraCalidad["estado"]
+  > = {
+    liberada: "liberada",
+    rechazada: "rechazada",
+    concesion: "concesion",
+  };
+
+  return updateMuestra(input.muestra_id, (m) => ({
     ...m,
-    estado: "liberada",
-    dictamen: "liberada",
+    estado: dictamenEstadoMap[input.dictamen as Exclude<DictamenFinal, "reproceso">],
+    dictamen: input.dictamen as Exclude<DictamenFinal, "reproceso">,
     dictamen_motivo: motivo || null,
-    revisado_por: revisor,
+    dictamen_observaciones: input.observaciones ?? null,
+    evidencia_url: evidencia || null,
+    autorizado_por: input.autorizado_por,
+    rol_autorizador: input.rol_autorizador,
+    autorizado_at: now,
+    dictamen_at: now,
+    revisado_por: input.autorizado_por,
     revisado_at: now,
     updated_at: now,
+    // Reinicia bandera de edición posterior cada vez que hay nuevo dictamen.
+    mediciones_modificadas_at: null,
+    mediciones_modificadas_por: null,
+    mediciones_modificacion_motivo: null,
   }));
 }
 
-export function rechazarMuestra(muestra_id: string, revisor: string, motivo: string): ResultRev {
-  if (!motivo.trim()) return { ok: false, error: "El motivo de rechazo es obligatorio" };
-  const now = new Date().toISOString();
-  return updateMuestra(muestra_id, (m) => ({
-    ...m,
-    estado: "rechazada",
-    dictamen: "rechazada",
-    dictamen_motivo: motivo,
-    revisado_por: revisor,
-    revisado_at: now,
-    updated_at: now,
-  }));
+// --- Wrappers de compatibilidad (revision UI legacy) ---------------------
+// Mantienen la firma anterior pero exigen rol; usan dictaminarMuestra().
+
+export function liberarMuestra(
+  muestra_id: string, revisor: string, motivo: string,
+  opts?: { rol?: string; evidencia_url?: string; observaciones?: string },
+): ResultRev {
+  return dictaminarMuestra({
+    muestra_id, dictamen: "liberada",
+    autorizado_por: revisor,
+    rol_autorizador: opts?.rol ?? "calidad",
+    motivo, evidencia_url: opts?.evidencia_url, observaciones: opts?.observaciones,
+  });
 }
 
-export function liberarConConcesion(muestra_id: string, revisor: string, motivo: string): ResultRev {
-  if (!motivo.trim()) return { ok: false, error: "La justificación de la concesión es obligatoria" };
+export function rechazarMuestra(
+  muestra_id: string, revisor: string, motivo: string,
+  opts?: { rol?: string; evidencia_url?: string; observaciones?: string },
+): ResultRev {
+  return dictaminarMuestra({
+    muestra_id, dictamen: "rechazada",
+    autorizado_por: revisor,
+    rol_autorizador: opts?.rol ?? "calidad",
+    motivo, evidencia_url: opts?.evidencia_url, observaciones: opts?.observaciones,
+  });
+}
+
+export function liberarConConcesion(
+  muestra_id: string, revisor: string, motivo: string,
+  opts?: { rol?: string; evidencia_url?: string; observaciones?: string },
+): ResultRev {
+  return dictaminarMuestra({
+    muestra_id, dictamen: "concesion",
+    autorizado_por: revisor,
+    rol_autorizador: opts?.rol ?? "calidad",
+    motivo, evidencia_url: opts?.evidencia_url, observaciones: opts?.observaciones,
+  });
+}
+
+// --- Edición de mediciones después del dictamen (caso 10) ---------------
+//
+// Marca el rollo como inconsistente y obliga a un nuevo dictamen.
+
+export interface EditarMedicionPostDictamenInput {
+  medicion_id: string;
+  nuevo_valor: number;
+  modificado_por: string;
+  motivo: string;
+}
+
+export function editarMedicionPostDictamen(
+  input: EditarMedicionPostDictamenInput,
+): ResultRev {
+  if (!input.motivo.trim()) {
+    return { ok: false, error: "Modificar una medición exige motivo." };
+  }
+  const med = state.mediciones.find((x) => x.id === input.medicion_id);
+  if (!med) return { ok: false, error: "Medición no encontrada" };
+  const muestra = state.muestras.find((m) => m.id === med.muestra_id);
+  if (!muestra) return { ok: false, error: "Muestra no encontrada" };
+
   const now = new Date().toISOString();
-  return updateMuestra(muestra_id, (m) => ({
-    ...m,
-    estado: "concesion",
-    dictamen: "concesion",
-    dictamen_motivo: motivo,
-    revisado_por: revisor,
-    revisado_at: now,
-    updated_at: now,
+  setState((prev) => ({
+    ...prev,
+    mediciones: prev.mediciones.map((x) =>
+      x.id === input.medicion_id
+        ? { ...x, valor: input.nuevo_valor, estado: evaluarMedicion(input.nuevo_valor, x.min_snapshot, x.max_snapshot) }
+        : x,
+    ),
+    muestras: prev.muestras.map((m) =>
+      m.id === muestra.id
+        ? {
+            ...m,
+            mediciones_modificadas_at: now,
+            mediciones_modificadas_por: input.modificado_por,
+            mediciones_modificacion_motivo: input.motivo,
+            updated_at: now,
+          }
+        : m,
+    ),
   }));
+  return { ok: true };
 }
 
 export interface SolicitarAjusteInput {

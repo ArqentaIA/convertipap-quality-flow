@@ -125,28 +125,43 @@ function RevisionPage() {
   // --- Diálogos -----------------------------------------------------------
   const [accion, setAccion] = useState<AccionDialog>(null);
   const [motivo, setMotivo] = useState("");
+  const [evidenciaUrl, setEvidenciaUrl] = useState("");
+  const [observaciones, setObservaciones] = useState("");
   const [tipoAjuste, setTipoAjuste] = useState<TipoAjuste>("ajuste_calidad");
 
   function openDialog(a: AccionDialog) {
+    if (!canReview && a !== null) {
+      toast.error("Solo Gerencia de Calidad puede dictaminar.");
+      return;
+    }
     setMotivo("");
+    setEvidenciaUrl("");
+    setObservaciones("");
     setTipoAjuste("ajuste_calidad");
     setAccion(a);
   }
 
   function ejecutar() {
     if (!selected) return;
+    if (!canReview) { toast.error("Acción bloqueada para tu rol."); return; }
     const revisor = auth.profile?.nombre ?? auth.profile?.email ?? "calidad";
+    const rol =
+      (auth.roles.find((r) =>
+        ["calidad", "gerencia_calidad", "gerente_general", "administrador"].includes(r),
+      ) as string) ?? "calidad";
+    const opts = { rol, evidencia_url: evidenciaUrl, observaciones };
     let res: { ok: true } | { ok: false; error: string } = { ok: false, error: "Acción inválida" };
-    if (accion === "liberar") res = liberarMuestra(selected.id, revisor, motivo);
-    else if (accion === "rechazar") res = rechazarMuestra(selected.id, revisor, motivo);
-    else if (accion === "concesion") res = liberarConConcesion(selected.id, revisor, motivo);
+    if (accion === "liberar") res = liberarMuestra(selected.id, revisor, motivo, opts);
+    else if (accion === "rechazar") res = rechazarMuestra(selected.id, revisor, motivo, opts);
+    else if (accion === "concesion") res = liberarConConcesion(selected.id, revisor, motivo, opts);
     else if (accion === "ajuste")
       res = solicitarAjuste({ muestra_id: selected.id, tipo_ajuste: tipoAjuste, motivo, revisor });
 
     if (!res.ok) { toast.error(res.error); return; }
-    toast.success("Decisión registrada");
+    toast.success("Dictamen registrado y autorizado");
     setAccion(null);
   }
+
 
   // --- Exportación CSV (mock) --------------------------------------------
   function exportarCSV() {
@@ -481,12 +496,36 @@ function RevisionPage() {
             )}
             <div className="space-y-1.5">
               <Label>
-                {accion === "liberar" ? "Observación (opcional)" : "Motivo / justificación (obligatorio)"}
+                {accion === "liberar"
+                  ? "Motivo (opcional)"
+                  : "Motivo / justificación (obligatorio)"}
               </Label>
-              <Textarea rows={4} value={motivo} onChange={(e) => setMotivo(e.target.value)}
+              <Textarea rows={3} value={motivo} onChange={(e) => setMotivo(e.target.value)}
                 placeholder="Describe la decisión…" />
             </div>
+            {(accion === "liberar" || accion === "concesion" || accion === "rechazar") && (
+              <div className="space-y-1.5">
+                <Label>
+                  Evidencia (URL)
+                  {(accion === "rechazar") && " — obligatoria"}
+                  {(accion === "liberar" || accion === "concesion") && " — opcional"}
+                </Label>
+                <Input
+                  value={evidenciaUrl}
+                  onChange={(e) => setEvidenciaUrl(e.target.value)}
+                  placeholder="https://…  (foto, reporte, certificado)"
+                />
+              </div>
+            )}
+            {(accion === "liberar" || accion === "concesion" || accion === "rechazar") && (
+              <div className="space-y-1.5">
+                <Label>Observaciones (opcional)</Label>
+                <Textarea rows={2} value={observaciones} onChange={(e) => setObservaciones(e.target.value)}
+                  placeholder="Notas adicionales…" />
+              </div>
+            )}
           </div>
+
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setAccion(null)}>Cancelar</Button>
