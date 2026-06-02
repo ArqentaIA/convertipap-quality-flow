@@ -474,13 +474,15 @@ function OrdenesTab({ ordenes, isAdmin }: { ordenes: Orden[]; isAdmin: boolean }
 
 // ============================ UI helpers ============================
 
-function SectionHeader({ title, onAdd }: { title: string; onAdd: () => void }) {
+function SectionHeader({ title, onAdd, canEdit = true }: { title: string; onAdd: () => void; canEdit?: boolean }) {
   return (
     <div className="flex items-center justify-between mb-3">
       <h2 className="text-lg font-semibold">{title}</h2>
-      <Button onClick={onAdd} size="sm">
-        <Plus className="h-4 w-4 mr-1.5" /> Nuevo
-      </Button>
+      {canEdit && (
+        <Button onClick={onAdd} size="sm">
+          <Plus className="h-4 w-4 mr-1.5" /> Nuevo
+        </Button>
+      )}
     </div>
   );
 }
