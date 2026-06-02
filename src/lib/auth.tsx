@@ -25,6 +25,7 @@ export interface Profile {
   nombre: string;
   rol_visible: string | null;
   activo: boolean;
+  laboratorio: "norte" | "sur" | null;
 }
 
 interface AuthState {

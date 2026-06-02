@@ -95,6 +95,110 @@ export const listOrdenesContexto = createServerFn({ method: "GET" })
     return data ?? [];
   });
 
+// ---- Captura libre (sin orden) --------------------------------------------
+
+/**
+ * Lista las máquinas activas del laboratorio del usuario actual.
+ * - Capturista: filtra por su `profiles.laboratorio` (norte/sur) usando `area`.
+ * - Otros roles (admin / gerencia / calidad / dirección): ve todas las activas.
+ */
+export const listMaquinasCaptura = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const sb = context.supabase as SB;
+    const userId = context.userId;
+
+    const [{ data: profile }, { data: roleRows }] = await Promise.all([
+      sb.from("profiles").select("laboratorio").eq("id", userId).maybeSingle(),
+      sb.from("user_roles").select("role").eq("user_id", userId),
+    ]);
+    const roles = (roleRows ?? []).map((r) => r.role as string);
+    const seesAll = roles.some((r) =>
+      ["administrador", "gerente_general", "direccion", "calidad"].includes(r),
+    );
+    const isCapturista = roles.includes("capturista");
+
+    let q = sb
+      .from("maquinas")
+      .select("id, nombre, codigo, area, planta_id, plantas(id, nombre, codigo)")
+      .eq("activo", true)
+      .order("codigo");
+
+    if (!seesAll && isCapturista) {
+      const lab = profile?.laboratorio as "norte" | "sur" | null | undefined;
+      if (!lab) return [];
+      const areaPattern = lab === "norte" ? "%Norte%" : "%Sur%";
+      q = q.ilike("area", areaPattern);
+    }
+
+    const { data, error } = await q;
+    if (error) throw new Error(error.message);
+    return data ?? [];
+  });
+
+/**
+ * Productos activos que tienen al menos una especificación vigente,
+ * con el id+versión de esa spec para precargar variables.
+ */
+export const listProductosConSpec = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const sb = context.supabase as SB;
+    const { data, error } = await sb
+      .from("producto_especificaciones")
+      .select(
+        `id, version, estado, producto_id,
+         productos(id, codigo, nombre, activo, tipo_id)`,
+      )
+      .eq("estado", "vigente");
+    if (error) throw new Error(error.message);
+
+    return (data ?? [])
+      .filter((row) => row.productos && row.productos.activo)
+      .map((row) => ({
+        producto_id: row.producto_id,
+        codigo: row.productos!.codigo,
+        nombre: row.productos!.nombre,
+        especificacion_id: row.id,
+        especificacion_version: row.version,
+      }))
+      .sort((a, b) => a.codigo.localeCompare(b.codigo));
+  });
+
+/**
+ * Devuelve la especificación vigente + variables (min/objetivo/max) de un producto.
+ */
+export const getSpecPorProducto = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { productoId: string }) =>
+    z.object({ productoId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const sb = context.supabase as SB;
+    const { data: spec, error: eSpec } = await sb
+      .from("producto_especificaciones")
+      .select("id, version, estado, producto_id")
+      .eq("producto_id", data.productoId)
+      .eq("estado", "vigente")
+      .order("vigente_desde", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (eSpec) throw new Error(eSpec.message);
+    if (!spec) throw new Error("El producto no tiene especificación vigente");
+
+    const { data: vars, error: eVars } = await sb
+      .from("producto_variables")
+      .select(
+        `id, variable_id, min_valor, objetivo, max_valor, tolerancia,
+         variables_calidad(id, clave, etiqueta, unidad)`,
+      )
+      .eq("especificacion_id", spec.id);
+    if (eVars) throw new Error(eVars.message);
+
+    return { spec, variables: vars ?? [] };
+  });
+
+
 export const getOrdenSpec = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { ordenId: string }) =>
@@ -218,7 +322,7 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
     z
       .object({
         muestra_id: z.string().uuid().optional(),
-        orden_id: z.string().uuid(),
+        orden_id: z.string().uuid().nullable().optional(),
         especificacion_id: z.string().uuid(),
         especificacion_version: z.string(),
         planta_id: z.string().uuid(),
@@ -259,7 +363,7 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
       : "borrador";
 
     const muestraPayload = {
-      orden_id: data.orden_id,
+      orden_id: data.orden_id ?? null,
       especificacion_id: data.especificacion_id,
       especificacion_version: data.especificacion_version,
       planta_id: data.planta_id,

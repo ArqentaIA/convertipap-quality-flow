@@ -651,6 +651,7 @@ export const listHistorialMaquina = createServerFn({ method: "GET" })
         .in("orden_id", ordIds);
       muestrasPorOrden = (muestras ?? []).reduce<typeof muestrasPorOrden>((acc, m) => {
         const k = m.orden_id;
+        if (!k) return acc;
         acc[k] ??= { total: 0, liberadas: 0, rechazadas: 0 };
         acc[k].total++;
         if (m.dictamen === "liberada") acc[k].liberadas++;

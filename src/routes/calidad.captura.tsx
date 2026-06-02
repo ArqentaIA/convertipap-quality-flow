@@ -1,11 +1,12 @@
-import { createFileRoute, Link, useNavigate, useRouter } from "@tanstack/react-router";
+import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { z } from "zod";
 import { toast } from "sonner";
-import { queryOptions, useSuspenseQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  queryOptions, useSuspenseQuery, useMutation, useQuery, useQueryClient,
+} from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
-  ArrowLeft, AlertTriangle, Ban, CheckCircle2, Save, Send, Lock,
+  ArrowLeft, AlertTriangle, CheckCircle2, Save, Send, Lock,
   ClipboardCheck, Info, Factory,
 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -23,41 +24,36 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/lib/auth";
 import {
-  listOrdenesContexto,
-  getOrdenSpec,
-  listMuestras,
+  listMaquinasCaptura,
+  listProductosConSpec,
+  getSpecPorProducto,
   upsertMuestraConMediciones,
 } from "@/lib/qc.functions";
-import { useLabFilter } from "@/lib/lab";
 import { cn } from "@/lib/utils";
 
-const searchSchema = z.object({
-  orden: z.string().optional(),
-  rollo: z.coerce.number().int().positive().optional(),
+const maquinasQO = queryOptions({
+  queryKey: ["qc", "maquinas-captura"],
+  queryFn: () => listMaquinasCaptura(),
 });
 
-const ordenesQO = queryOptions({
-  queryKey: ["qc", "ordenes-contexto"],
-  queryFn: () => listOrdenesContexto(),
+const productosQO = queryOptions({
+  queryKey: ["qc", "productos-con-spec"],
+  queryFn: () => listProductosConSpec(),
 });
 
-const specQO = (ordenId: string) =>
+const specQO = (productoId: string) =>
   queryOptions({
-    queryKey: ["qc", "orden-spec", ordenId],
-    queryFn: () => getOrdenSpec({ data: { ordenId } }),
-    enabled: !!ordenId,
-  });
-
-const muestrasOrdenQO = (ordenId: string) =>
-  queryOptions({
-    queryKey: ["qc", "muestras", ordenId],
-    queryFn: () => listMuestras({ data: { ordenId } }),
-    enabled: !!ordenId,
+    queryKey: ["qc", "spec-por-producto", productoId],
+    queryFn: () => getSpecPorProducto({ data: { productoId } }),
+    enabled: !!productoId,
   });
 
 export const Route = createFileRoute("/calidad/captura")({
-  validateSearch: searchSchema,
-  loader: ({ context }) => context.queryClient.ensureQueryData(ordenesQO),
+  loader: ({ context }) =>
+    Promise.all([
+      context.queryClient.ensureQueryData(maquinasQO),
+      context.queryClient.ensureQueryData(productosQO),
+    ]),
   component: CapturaCalidadPage,
   errorComponent: ({ error }) => (
     <AppLayout title="Captura de Muestra de Calidad">
@@ -82,54 +78,68 @@ function evaluarMedicion(v: number, min: number, max: number): MedicionEstadoUI 
   return "conforme";
 }
 
-function CapturaCalidadPage() {
-  const labFilter = useLabFilter();
-  const { data: ordenesAll } = useSuspenseQuery(ordenesQO);
-  const ordenes = useMemo(
-    () => ordenesAll.filter((o) => {
-      const codigo = o.maquinas?.codigo;
-      return codigo ? labFilter.isMachineAllowed(codigo) : true;
-    }),
-    [ordenesAll, labFilter],
-  );
+function inferirTurno(d: Date): string {
+  const h = d.getHours();
+  if (h >= 7 && h < 15) return "A";
+  if (h >= 15 && h < 23) return "B";
+  return "C";
+}
 
-  if (ordenes.length === 0) {
+function CapturaCalidadPage() {
+  const { data: maquinas } = useSuspenseQuery(maquinasQO);
+  const { data: productos } = useSuspenseQuery(productosQO);
+
+  if (maquinas.length === 0) {
     return (
       <AppLayout title="Captura de Muestra de Calidad">
         <div className="mx-auto mt-12 max-w-xl rounded-xl border border-border bg-card p-8 text-center shadow-sm">
           <Factory className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-          <h2 className="text-lg font-semibold text-foreground">No hay órdenes activas</h2>
+          <h2 className="text-lg font-semibold text-foreground">Sin máquinas asignadas</h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            Ve a <strong>Producción</strong> para crear una orden antes de capturar muestras de calidad.
+            Tu usuario no tiene laboratorio asignado o no hay máquinas activas en tu laboratorio.
+            Contacta al administrador.
           </p>
-          <Button asChild className="mt-6">
-            <Link to="/produccion">
-              <Factory className="mr-1.5 h-4 w-4" /> Ir a Producción
-            </Link>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (productos.length === 0) {
+    return (
+      <AppLayout title="Captura de Muestra de Calidad">
+        <div className="mx-auto mt-12 max-w-xl rounded-xl border border-border bg-card p-8 text-center shadow-sm">
+          <ClipboardCheck className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+          <h2 className="text-lg font-semibold text-foreground">Sin productos con especificación vigente</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Pide a un administrador que cargue las especificaciones de producto.
+          </p>
+          <Button asChild className="mt-6" variant="outline">
+            <Link to="/catalogos">Ir a Catálogos</Link>
           </Button>
         </div>
       </AppLayout>
     );
   }
 
-  return <CapturaInner ordenes={ordenes} />;
+  return <CapturaInner maquinas={maquinas} productos={productos} />;
 }
 
-function CapturaInner({ ordenes }: { ordenes: Awaited<ReturnType<typeof listOrdenesContexto>> }) {
-  const search = Route.useSearch();
-  const navigate = useNavigate();
+type Maquina = Awaited<ReturnType<typeof listMaquinasCaptura>>[number];
+type Producto = Awaited<ReturnType<typeof listProductosConSpec>>[number];
+
+function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos: Producto[] }) {
   const router = useRouter();
   const auth = useAuth();
   const queryClient = useQueryClient();
 
-  const [ordenId, setOrdenId] = useState<string>(search.orden ?? ordenes[0]!.id);
-  const orden = ordenes.find((o) => o.id === ordenId) ?? ordenes[0]!;
-  const effectiveId = orden.id;
+  const [maquinaId, setMaquinaId] = useState<string>(maquinas[0]!.id);
+  const [productoId, setProductoId] = useState<string>(productos[0]!.producto_id);
 
-  const specQuery = useSuspenseQuery(specQO(effectiveId));
-  const muestrasQuery = useSuspenseQuery(muestrasOrdenQO(effectiveId));
+  const maquina = maquinas.find((m) => m.id === maquinaId) ?? maquinas[0]!;
+  const producto = productos.find((p) => p.producto_id === productoId) ?? productos[0]!;
+
+  const specQuery = useQuery(specQO(producto.producto_id));
   const spec = specQuery.data;
-  const muestrasExistentes = muestrasQuery.data;
 
   const variables = useMemo(() => {
     if (!spec) return [];
@@ -152,33 +162,24 @@ function CapturaInner({ ordenes }: { ordenes: Awaited<ReturnType<typeof listOrde
   }, [spec]);
 
   const ahoraLocal = useMemo(() => toLocalDateTimeInputValue(new Date()), []);
-  const [numeroRollo, setNumeroRollo] = useState<string>(
-    search.rollo != null ? String(search.rollo) : orden ? String((orden.producido_rollos ?? 0) + 1) : "",
-  );
+  const [numeroRollo, setNumeroRollo] = useState<string>("");
   const [horaMuestreo, setHoraMuestreo] = useState<string>(ahoraLocal);
   const [observaciones, setObservaciones] = useState<string>("");
   const [mediciones, setMediciones] = useState<MedicionInputState>({});
   const [showConfirm, setShowConfirm] = useState(false);
 
-  // Reinicializa al cambiar orden
+  // Reinicializar mediciones cuando cambia el producto / spec
   useEffect(() => {
-    if (!orden) return;
     const base: MedicionInputState = {};
     variables.forEach((v) => { base[v.variable_id] = { valor: "", observacion: "" }; });
     setMediciones(base);
-    setNumeroRollo(
-      search.rollo != null ? String(search.rollo) : String((orden.producido_rollos ?? 0) + 1),
-    );
-    setObservaciones("");
-    setHoraMuestreo(toLocalDateTimeInputValue(new Date()));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orden?.id, variables.length]);
+  }, [productoId, variables.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const canCapture =
     auth.hasRole("capturista") || auth.hasRole("calidad") ||
     auth.hasRole("gerente_general") || auth.hasRole("administrador");
 
-  const isBlocked = !orden || !spec || !canCapture;
+  const isBlocked = !spec || !canCapture;
 
   const evalMediciones = useMemo(() => {
     return variables.map((v) => {
@@ -194,32 +195,21 @@ function CapturaInner({ ordenes }: { ordenes: Awaited<ReturnType<typeof listOrde
   );
   const hayCritico = evalMediciones.some((m) => m.estado === "fuera_rango_critico");
 
-  const muestraDuplicada = useMemo(() => {
-    if (!orden || !numeroRollo) return false;
-    return muestrasExistentes.some(
-      (m: { orden_id: string; numero_rollo: number | null }) =>
-        m.orden_id === orden.id && m.numero_rollo === Number(numeroRollo),
-    );
-  }, [orden, numeroRollo, muestrasExistentes]);
-
   const upsertFn = useServerFn(upsertMuestraConMediciones);
   const [lastSubmitMode, setLastSubmitMode] = useState<"borrador" | "envio">("borrador");
   const mutation = useMutation({
     mutationFn: upsertFn,
-    onSuccess: (res: { muestra_id: string; reabre_dictamen: boolean }) => {
+    onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["qc"] });
       if (lastSubmitMode === "envio") {
         toast.success("Muestra enviada a revisión");
-        if (res.reabre_dictamen) {
-          toast.warning("Se modificaron mediciones de una muestra ya autorizada — requiere nuevo dictamen");
-        }
         setMediciones((prev) => {
           const r: MedicionInputState = {};
           Object.keys(prev).forEach((k) => { r[k] = { valor: "", observacion: "" }; });
           return r;
         });
         setObservaciones("");
-        if (orden) setNumeroRollo(String((orden.producido_rollos ?? 0) + 1));
+        setNumeroRollo("");
         setHoraMuestreo(toLocalDateTimeInputValue(new Date()));
       } else {
         toast.success("Borrador guardado");
@@ -229,13 +219,12 @@ function CapturaInner({ ordenes }: { ordenes: Awaited<ReturnType<typeof listOrde
   });
 
   function validar(modo: "borrador" | "envio"): string | null {
-    if (!orden || !spec) return "Selecciona una orden";
+    if (!spec) return "Selecciona un producto con especificación vigente";
     if (!canCapture) return "Sin permiso de captura";
     if (!horaMuestreo) return "Indica la hora de muestreo";
     if (new Date(horaMuestreo).getTime() > Date.now() + 60_000)
       return "La hora de muestreo no puede ser futura";
     if (modo === "envio") {
-      if (!numeroRollo) return "Indica el número de rollo";
       const faltantes = evalMediciones.filter((m) => m.input.valor === "").map((m) => m.spec.etiqueta);
       if (faltantes.length) return `Falta capturar: ${faltantes.join(", ")}`;
       const inverosimil = evalMediciones.find(
@@ -249,7 +238,7 @@ function CapturaInner({ ordenes }: { ordenes: Awaited<ReturnType<typeof listOrde
   function handleSubmit(modo: "borrador" | "envio") {
     const err = validar(modo);
     if (err) { toast.error(err); return; }
-    if (!orden || !spec) return;
+    if (!spec) return;
 
     const variablesSnapshot: Record<string, unknown> = {};
     variables.forEach((v) => {
@@ -262,16 +251,16 @@ function CapturaInner({ ordenes }: { ordenes: Awaited<ReturnType<typeof listOrde
     setLastSubmitMode(modo);
     mutation.mutate({
       data: {
-        orden_id: orden.id,
+        orden_id: null,
         especificacion_id: spec.spec.id,
         especificacion_version: spec.spec.version,
-        planta_id: orden.planta_id,
-        maquina_id: orden.maquina_id,
-        producto_id: orden.producto_id,
-        turno: orden.turno ?? "A",
+        planta_id: maquina.planta_id,
+        maquina_id: maquina.id,
+        producto_id: producto.producto_id,
+        turno: inferirTurno(new Date(horaMuestreo)),
         operario_id: null,
         numero_rollo: numeroRollo ? Number(numeroRollo) : null,
-        tipo_muestreo: "por_rollo",
+        tipo_muestreo: "por_rollo" as const,
         hora_muestreo: new Date(horaMuestreo).toISOString(),
         observaciones_generales: observaciones,
         variables_snapshot_json: variablesSnapshot,
@@ -311,7 +300,11 @@ function CapturaInner({ ordenes }: { ordenes: Awaited<ReturnType<typeof listOrde
             </Button>
             <div>
               <h1 className="text-xl font-semibold">Nueva Muestra de Calidad</h1>
-              <p className="text-xs text-muted-foreground">Conectado a Lovable Cloud</p>
+              <p className="text-xs text-muted-foreground">
+                {auth.profile?.laboratorio
+                  ? `Laboratorio ${auth.profile.laboratorio === "norte" ? "Norte" : "Sur"}`
+                  : "Captura directa"}
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -326,105 +319,102 @@ function CapturaInner({ ordenes }: { ordenes: Awaited<ReturnType<typeof listOrde
           </div>
         </div>
 
-        {ordenes.length === 0 && (
-          <Alert>
-            <Info className="h-4 w-4" />
-            <AlertTitle>Sin órdenes activas</AlertTitle>
-            <AlertDescription>
-              No hay órdenes en proceso disponibles para tu laboratorio.
-            </AlertDescription>
-          </Alert>
-        )}
-
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Orden de fabricación</CardTitle>
+            <CardTitle className="text-sm font-medium">A. Máquina y producto</CardTitle>
           </CardHeader>
-          <CardContent>
-            <Select value={ordenId} onValueChange={setOrdenId}>
-              <SelectTrigger className="max-w-md">
-                <SelectValue placeholder="Selecciona una orden" />
-              </SelectTrigger>
-              <SelectContent>
-                {ordenes.map((o) => (
-                  <SelectItem key={o.id} value={o.id}>
-                    <span className="font-mono mr-2">{o.folio}</span>
-                    <span className="text-muted-foreground">·</span>
-                    <span className="ml-2">
-                      {o.productos?.codigo ?? "—"} · {o.maquinas?.nombre ?? "—"}
-                    </span>
-                    <span className="ml-2 text-xs text-muted-foreground">[{o.estado}]</span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label>Máquina</Label>
+              <Select value={maquinaId} onValueChange={setMaquinaId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecciona máquina" />
+                </SelectTrigger>
+                <SelectContent>
+                  {maquinas.map((m) => (
+                    <SelectItem key={m.id} value={m.id}>
+                      <span className="font-mono mr-2">{m.codigo}</span>
+                      <span className="text-muted-foreground">·</span>
+                      <span className="ml-2">{m.nombre}</span>
+                      {m.area && (
+                        <span className="ml-2 text-xs text-muted-foreground">[{m.area}]</span>
+                      )}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Producto</Label>
+              <Select value={productoId} onValueChange={setProductoId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecciona producto" />
+                </SelectTrigger>
+                <SelectContent>
+                  {productos.map((p) => (
+                    <SelectItem key={p.producto_id} value={p.producto_id}>
+                      <span className="font-mono mr-2">{p.codigo}</span>
+                      <span className="text-muted-foreground">·</span>
+                      <span className="ml-2">{p.nombre}</span>
+                      <span className="ml-2 text-xs text-muted-foreground">
+                        v{p.especificacion_version}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </CardContent>
         </Card>
 
-        {!ordenId && (
-          <Alert variant="destructive">
-            <Ban className="h-4 w-4" />
-            <AlertTitle>Selecciona una orden</AlertTitle>
-            <AlertDescription>No hay orden seleccionada para capturar muestra.</AlertDescription>
+        {specQuery.isLoading && (
+          <Alert>
+            <Info className="h-4 w-4" />
+            <AlertTitle>Cargando especificación…</AlertTitle>
           </Alert>
         )}
 
-        {orden && spec && (
-          <Card className={cn(isBlocked && "opacity-60 pointer-events-none")}>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">A. Contexto de la orden</CardTitle>
-            </CardHeader>
-            <CardContent className="grid grid-cols-2 gap-4 text-sm md:grid-cols-4">
-              <Field label="Folio"><span className="font-mono">{orden.folio}</span></Field>
-              <Field label="Producto">{orden.productos?.codigo ?? "—"} — {orden.productos?.nombre ?? "—"}</Field>
-              <Field label="Máquina">{orden.maquinas?.nombre ?? "—"}</Field>
-              <Field label="Planta">{orden.plantas?.nombre ?? "—"}</Field>
-              <Field label="Turno">{orden.turno ?? "—"}</Field>
-              <Field label="Rollos producidos">{orden.producido_rollos ?? 0}</Field>
-              <Field label="Especificación vigente">
-                <Badge variant="secondary">{spec.spec.version}</Badge>
-                <span className="ml-1 text-xs text-muted-foreground">({spec.spec.estado})</span>
-              </Field>
-              <Field label="Variables">{variables.length}</Field>
-            </CardContent>
-          </Card>
+        {specQuery.error && (
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>No se pudo cargar la especificación</AlertTitle>
+            <AlertDescription>{specQuery.error.message}</AlertDescription>
+          </Alert>
         )}
 
-        {orden && spec && (
+        {spec && (
           <Card className={cn(isBlocked && "opacity-60 pointer-events-none")}>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium">B. Datos de la muestra</CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-3">
               <div className="space-y-1.5">
-                <Label htmlFor="rollo">Número de rollo</Label>
+                <Label htmlFor="rollo">Número de rollo (opcional)</Label>
                 <Input
-                  id="rollo" type="number" min={1} disabled={isBlocked}
+                  id="rollo" type="number" min={1}
                   value={numeroRollo} onChange={(e) => setNumeroRollo(e.target.value)}
                 />
-                {muestraDuplicada && (
-                  <p className="flex items-center gap-1 text-xs text-amber-600">
-                    <AlertTriangle className="h-3 w-3" /> Ya existe muestra del rollo #{numeroRollo} en esta orden.
-                  </p>
-                )}
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="hora">Hora de muestreo</Label>
                 <Input
-                  id="hora" type="datetime-local" disabled={isBlocked}
+                  id="hora" type="datetime-local"
                   value={horaMuestreo} onChange={(e) => setHoraMuestreo(e.target.value)}
                 />
               </div>
               <div className="space-y-1.5">
-                <Label>Tipo de muestreo</Label>
-                <Input value="por_rollo" disabled className="bg-muted" />
+                <Label>Especificación</Label>
+                <div className="flex items-center gap-2 h-9 px-3 rounded-md border border-border bg-muted text-sm">
+                  <Badge variant="secondary">v{spec.spec.version}</Badge>
+                  <span className="text-muted-foreground text-xs">{variables.length} variables</span>
+                </div>
               </div>
               <div className="md:col-span-3 space-y-1.5">
                 <Label htmlFor="obs">Observaciones generales</Label>
                 <Textarea
-                  id="obs" maxLength={500} rows={2} disabled={isBlocked}
+                  id="obs" maxLength={500} rows={2}
                   value={observaciones} onChange={(e) => setObservaciones(e.target.value)}
-                  placeholder="Observaciones del turno, condiciones especiales, etc."
+                  placeholder="Condiciones del turno, observaciones, etc."
                 />
               </div>
             </CardContent>
@@ -443,7 +433,7 @@ function CapturaInner({ ordenes }: { ordenes: Awaited<ReturnType<typeof listOrde
           </Alert>
         )}
 
-        {orden && spec && (
+        {spec && (
           <Card className={cn(isBlocked && "opacity-60 pointer-events-none")}>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium">C. Mediciones por variable</CardTitle>
@@ -507,26 +497,21 @@ function CapturaInner({ ordenes }: { ordenes: Awaited<ReturnType<typeof listOrde
           </Card>
         )}
 
-        {orden && (
-          <div className="flex flex-wrap items-center justify-between gap-2 sticky bottom-0 bg-background/95 backdrop-blur py-3 border-t">
-            <Button variant="ghost" asChild>
-              <Link to="/calidad/captura" search={{}}>Cancelar</Link>
+        {spec && (
+          <div className="flex flex-wrap items-center justify-end gap-2 sticky bottom-0 bg-background/95 backdrop-blur py-3 border-t">
+            <Button
+              variant="outline" disabled={isBlocked || mutation.isPending}
+              onClick={() => handleSubmit("borrador")}
+            >
+              <Save className="mr-1.5 h-4 w-4" /> Guardar borrador
             </Button>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                variant="outline" disabled={isBlocked || mutation.isPending}
-                onClick={() => handleSubmit("borrador")}
-              >
-                <Save className="mr-1.5 h-4 w-4" /> Guardar borrador
-              </Button>
-              <Button
-                disabled={isBlocked || mutation.isPending}
-                onClick={onClickEnviar}
-              >
-                <Send className="mr-1.5 h-4 w-4" />
-                {mutation.isPending ? "Enviando..." : "Enviar a Revisión"}
-              </Button>
-            </div>
+            <Button
+              disabled={isBlocked || mutation.isPending}
+              onClick={onClickEnviar}
+            >
+              <Send className="mr-1.5 h-4 w-4" />
+              {mutation.isPending ? "Enviando..." : "Enviar a Revisión"}
+            </Button>
           </div>
         )}
 
@@ -548,25 +533,8 @@ function CapturaInner({ ordenes }: { ordenes: Awaited<ReturnType<typeof listOrde
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-
-        {!orden && ordenes.length > 0 && (
-          <Alert>
-            <Info className="h-4 w-4" />
-            <AlertTitle>Sin orden seleccionada</AlertTitle>
-            <AlertDescription>Selecciona una orden de fabricación para iniciar la captura de muestra.</AlertDescription>
-          </Alert>
-        )}
       </div>
     </AppLayout>
-  );
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="font-medium">{children}</div>
-    </div>
   );
 }
 
