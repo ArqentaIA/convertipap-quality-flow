@@ -106,10 +106,29 @@ export const getDashboard = createServerFn({ method: "POST" })
     const maquinaCodeById = new Map((maquinas ?? []).map((m) => [m.id, m.codigo]));
     const ordenMaquinaById = new Map((ordenes ?? []).map((o) => [o.id, o.maquina_id]));
 
-    // Una muestra cuenta como "liberada" si dictamen='liberada' o si el capturista
-    // marcó estatus_liberacion='L' en la captura FOR-CAL-04.
-    const isLiberada = (m: { dictamen: string | null; estatus_liberacion: string | null }) =>
-      m.dictamen === "liberada" || m.estatus_liberacion === "L";
+    // Mediciones fuera de spec por muestra → inferir cumplimiento cuando no hay dictamen
+    const ncPorMuestra = new Map<string, number>();
+    for (const med of mediciones ?? []) {
+      if (med.estado === "no_conforme" || med.estado === "fuera_rango_critico") {
+        ncPorMuestra.set(med.muestra_id, (ncPorMuestra.get(med.muestra_id) ?? 0) + 1);
+      }
+    }
+
+    // Una muestra cuenta como "conforme" si:
+    //  - dictamen='liberada' o estatus_liberacion='L', O
+    //  - sin dictamen pero ninguna medición fuera de spec y sin defectos marcados
+    const isConforme = (m: {
+      id: string;
+      dictamen: string | null;
+      estatus_liberacion: string | null;
+      defectos: string[] | null;
+    }) => {
+      if (m.dictamen === "liberada" || m.estatus_liberacion === "L") return true;
+      if (m.dictamen === "rechazada" || m.estatus_liberacion === "NC") return false;
+      const nc = ncPorMuestra.get(m.id) ?? 0;
+      const def = (m.defectos ?? []).filter(Boolean).length;
+      return nc === 0 && def === 0;
+    };
     const isRechazada = (m: { dictamen: string | null; estatus_liberacion: string | null }) =>
       m.dictamen === "rechazada" || m.estatus_liberacion === "NC";
 
@@ -136,15 +155,16 @@ export const getDashboard = createServerFn({ method: "POST" })
           const t = new Date(m.hora_muestreo).getTime();
           return maquinaCodeById.get(m.maquina_id) === codigo && t >= b.start.getTime() && t < b.end.getTime();
         });
-        const liberadas = muestrasBucket.filter(isLiberada).length;
-        cumplimiento[codigo] = muestrasBucket.length ? Math.round((liberadas / muestrasBucket.length) * 1000) / 10 : 0;
+        const conformes = muestrasBucket.filter(isConforme).length;
+        cumplimiento[codigo] = muestrasBucket.length ? Math.round((conformes / muestrasBucket.length) * 1000) / 10 : 0;
 
+        // Rollos: usa rollos_producidos si existen, sino cada muestra capturada = 1 rollo
         const rollosBucket = (rollos ?? []).filter((r) => {
           const t = new Date(r.registrado_at).getTime();
           const mqId = ordenMaquinaById.get(r.orden_id);
           return mqId && maquinaCodeById.get(mqId) === codigo && t >= b.start.getTime() && t < b.end.getTime();
         });
-        rollosMap[codigo] = rollosBucket.length;
+        rollosMap[codigo] = rollosBucket.length > 0 ? rollosBucket.length : muestrasBucket.length;
 
         const parosBucket = (paros ?? []).filter((p) => {
           const t = new Date(p.inicio).getTime();
@@ -153,7 +173,7 @@ export const getDashboard = createServerFn({ method: "POST" })
         const parosMin = parosBucket.reduce((a, p) => a + Number(p.duracion_min ?? 0), 0);
         const bucketMin = Math.max(1, (b.end.getTime() - b.start.getTime()) / 60000);
         const disponibilidad = Math.max(0, 1 - parosMin / bucketMin);
-        const calidad = muestrasBucket.length ? liberadas / muestrasBucket.length : 1;
+        const calidad = muestrasBucket.length ? conformes / muestrasBucket.length : 1;
         oeeMap[codigo] = Math.round(disponibilidad * 0.95 * calidad * 1000) / 10;
       }
 
