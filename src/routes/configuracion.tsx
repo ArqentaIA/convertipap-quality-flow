@@ -275,15 +275,14 @@ function CEOReportPreview({ onClose }: { onClose: () => void }) {
 
   const rows = (maquinas ?? []).map((m) => {
     const estadoLabel =
-      m.estado === "produciendo" ? "Operando" :
+      m.estado === "operando" ? "Operando" :
       m.estado === "paro" ? "En paro" :
       m.estado === "mantenimiento" ? "Mantenimiento" :
       "Libre";
     return {
       id: m.codigo,
       estado: estadoLabel,
-      eficiencia: Number((m.oee24h ?? 0).toFixed(1)),
-      cumplimiento: 100, // placeholder; integrable más adelante
+      eficiencia: Number((m.oee ?? 0).toFixed(1)),
     };
   });
 
