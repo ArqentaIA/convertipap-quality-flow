@@ -227,6 +227,27 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
     setMediciones(base);
   }, [productoId, variables.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Cálculo automático de Relación MD/CD = tensionMD / tensionCD
+  const mdVarId = useMemo(() => variables.find((v) => v.clave === "tensionMD")?.variable_id, [variables]);
+  const cdVarId = useMemo(() => variables.find((v) => v.clave === "tensionCD")?.variable_id, [variables]);
+  const relVarId = useMemo(() => variables.find((v) => v.clave === "relMDCD")?.variable_id, [variables]);
+  const mdValor = mdVarId ? mediciones[mdVarId]?.valor ?? "" : "";
+  const cdValor = cdVarId ? mediciones[cdVarId]?.valor ?? "" : "";
+  useEffect(() => {
+    if (!relVarId) return;
+    const md = Number(mdValor);
+    const cd = Number(cdValor);
+    const calc =
+      mdValor !== "" && cdValor !== "" && Number.isFinite(md) && Number.isFinite(cd) && cd !== 0
+        ? (md / cd).toFixed(2)
+        : "";
+    setMediciones((prev) => {
+      const cur = prev[relVarId]?.valor ?? "";
+      if (cur === calc) return prev;
+      return { ...prev, [relVarId]: { ...prev[relVarId], valor: calc } };
+    });
+  }, [mdValor, cdValor, relVarId]);
+
   const canCapture =
     auth.hasRole("capturista") || auth.hasRole("calidad") ||
     auth.hasRole("gerente_general") || auth.hasRole("administrador");
