@@ -562,6 +562,27 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
           </Card>
         )}
 
+        {ultimaEtiqueta && (
+          <Alert className="border-emerald-500 bg-emerald-50 text-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-100">
+            <CheckCircle2 className="h-4 w-4" />
+            <AlertTitle>Muestra guardada</AlertTitle>
+            <AlertDescription className="flex flex-wrap items-center justify-between gap-3">
+              <span>
+                Folio <strong className="font-mono">{ultimaEtiqueta.folio}</strong> · estatus{" "}
+                <strong>{ultimaEtiqueta.estatus}</strong>. Imprime la etiqueta de liberación para el rollo.
+              </span>
+              <div className="flex gap-2">
+                <Button size="sm" variant="ghost" onClick={() => setUltimaEtiqueta(null)}>
+                  Cerrar
+                </Button>
+                <Button size="sm" onClick={handlePrintEtiqueta}>
+                  <Printer className="mr-1.5 h-4 w-4" /> Imprimir Etiqueta
+                </Button>
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
+
         {spec && (
           <div className="flex flex-wrap items-center justify-end gap-2 sticky bottom-0 bg-background/95 backdrop-blur py-3 border-t">
             <Button
