@@ -1,14 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ShieldCheck, QrCode, Factory, User, Calendar, Package, Hash } from "lucide-react";
-import { ReleaseBadge } from "@/components/qc/StatusBadge";
+import { ShieldCheck, QrCode, Factory, User, Calendar, Package, Hash, AlertTriangle } from "lucide-react";
+import { useMemo } from "react";
 import logoUrl from "@/assets/logo-convertipap.png";
+import { resolveRolloStatus, type RolloStatusInfo } from "@/lib/roll-status";
+import { useQcMock } from "@/lib/qc-mock/store";
 
 export const Route = createFileRoute("/t/$folio")({ component: TracePage });
 
-// Simulación: en producción esto vendrá del backend (GET /api/v1/qc/trace/:folio)
-type TraceRecord = {
+// Datos de contexto del rollo (identidad, no estatus).
+// El estatus NUNCA se almacena en el QR ni en esta tabla; se calcula en vivo.
+type TraceContext = {
   folio: string;
   rollo?: string;
+  ordenId?: string;
   maquina: string;
   planta: string;
   turno: string;
@@ -17,29 +21,23 @@ type TraceRecord = {
   fecha: string;
   hora: string;
   producto: string;
-  estatus: "L" | "NC" | "C";
-  cumplimiento: number;
-  rollos: number;
-  metricas: { label: string; value: string | number; unit?: string; status?: "L" | "NC" | "C" }[];
+  metricas: { label: string; value: string | number; unit?: string }[];
   emitido: string;
   validadoPor: string;
   simulado?: boolean;
 };
 
-const MOCK: Record<string, TraceRecord> = {
-  "CAL-2026-04830": { folio: "CAL-2026-04830", rollo: "4441-6", maquina: "MP-04", planta: "Tlaxcala", turno: "3", operador: "Palemón G.", jefeMaquina: "Palemón G.", fecha: "2026-05-26", hora: "01:25", producto: "PST Higiénico 13 g/m²", estatus: "L", cumplimiento: 86.4, rollos: 14, emitido: "2026-05-26 07:12", validadoPor: "Christian H. · Analista TLX", metricas: [{label:"Calibre",value:0.84,unit:"mm",status:"L"},{label:"Humedad",value:6.2,unit:"%",status:"L"},{label:"Peso base",value:13.19,unit:"g/m²",status:"L"},{label:"Tensión MD",value:461,unit:"g/in",status:"L"},{label:"Cumplimiento",value:"86.4",unit:"%",status:"L"}] },
-  "CAL-2026-04811": { folio: "CAL-2026-04811", rollo: "4438-6", maquina: "MP-04", planta: "Tlaxcala", turno: "1", operador: "Manuel Rivas", jefeMaquina: "Manuel Rivas", fecha: "2026-05-24", hora: "08:40", producto: "PST Higiénico 13 g/m²", estatus: "NC", cumplimiento: 78.2, rollos: 13, emitido: "2026-05-24 14:55", validadoPor: "Christian H. · Analista TLX", metricas: [{label:"Calibre",value:0.74,unit:"mm",status:"NC"},{label:"Humedad",value:7.3,unit:"%",status:"NC"},{label:"Peso base",value:12.50,unit:"g/m²",status:"NC"},{label:"Tensión MD",value:402,unit:"g/in",status:"NC"},{label:"Cumplimiento",value:"78.2",unit:"%",status:"NC"}] },
+const CONTEXT: Record<string, TraceContext> = {
+  "CAL-2026-04830": { folio: "CAL-2026-04830", rollo: "4441-6", maquina: "MP-04", planta: "Tlaxcala", turno: "3", operador: "Palemón G.", jefeMaquina: "Palemón G.", fecha: "2026-05-26", hora: "01:25", producto: "PST Higiénico 13 g/m²", emitido: "2026-05-26 07:12", validadoPor: "Christian H. · Analista TLX", metricas: [{label:"Calibre",value:0.84,unit:"mm"},{label:"Humedad",value:6.2,unit:"%"},{label:"Peso base",value:13.19,unit:"g/m²"},{label:"Tensión MD",value:461,unit:"g/in"},{label:"Cumplimiento",value:"86.4",unit:"%"}] },
+  "CAL-2026-04811": { folio: "CAL-2026-04811", rollo: "4438-6", maquina: "MP-04", planta: "Tlaxcala", turno: "1", operador: "Manuel Rivas", jefeMaquina: "Manuel Rivas", fecha: "2026-05-24", hora: "08:40", producto: "PST Higiénico 13 g/m²", emitido: "2026-05-24 14:55", validadoPor: "Christian H. · Analista TLX", metricas: [{label:"Calibre",value:0.74,unit:"mm"},{label:"Humedad",value:7.3,unit:"%"},{label:"Peso base",value:12.50,unit:"g/m²"},{label:"Tensión MD",value:402,unit:"g/in"},{label:"Cumplimiento",value:"78.2",unit:"%"}] },
 };
 
-function buildTraceRecord(folio: string): TraceRecord {
-  const mock = MOCK[folio];
-  if (mock) return mock;
-
+function buildContext(folio: string): TraceContext {
+  const ctx = CONTEXT[folio];
+  if (ctx) return ctx;
   const suffix = folio.match(/(\d{2})$/)?.[1] ?? "04";
   const maquina = `MP-${suffix}`;
   const now = new Date();
-  const cumplimiento = 88.6;
-
   return {
     folio,
     rollo: `QR-${folio.slice(-5)}`,
@@ -51,25 +49,40 @@ function buildTraceRecord(folio: string): TraceRecord {
     fecha: now.toISOString().slice(0, 10),
     hora: now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     producto: "Papel tissue · registro de rollo",
-    estatus: "L",
-    cumplimiento,
-    rollos: 1,
     emitido: now.toLocaleString(),
     validadoPor: "Control de Calidad Convertipap",
     simulado: true,
     metricas: [
-      { label: "Calibre", value: 0.84, unit: "mm", status: "L" },
-      { label: "Humedad", value: 6.2, unit: "%", status: "L" },
-      { label: "Peso base", value: 13.1, unit: "g/m²", status: "L" },
-      { label: "Tensión MD", value: 461, unit: "g/in", status: "L" },
-      { label: "Cumplimiento", value: cumplimiento.toFixed(1), unit: "%", status: "L" },
+      { label: "Calibre", value: 0.84, unit: "mm" },
+      { label: "Humedad", value: 6.2, unit: "%" },
+      { label: "Peso base", value: 13.1, unit: "g/m²" },
+      { label: "Tensión MD", value: 461, unit: "g/in" },
+      { label: "Cumplimiento", value: "88.6", unit: "%" },
     ],
   };
 }
 
 function TracePage() {
   const { folio } = Route.useParams();
-  const rec = buildTraceRecord(folio);
+  const ctx = buildContext(folio);
+
+  // Resolución en tiempo real: re-renderiza si el store de Calidad cambia.
+  // Para folios históricos del mock se respeta su estatus legado (CONTEXT).
+  const legacy: "L" | "NC" | "C" | undefined =
+    folio === "CAL-2026-04811" ? "NC" :
+    folio === "CAL-2026-04830" ? "L" : undefined;
+
+  const qcState = useQcMock((s) => s);
+  const est: RolloStatusInfo = useMemo(
+    () =>
+      resolveRolloStatus({
+        rolloId: ctx.rollo,
+        folio: ctx.folio,
+        ordenId: ctx.ordenId,
+        legacyEstatus: legacy ?? null,
+      }),
+    [qcState, ctx.rollo, ctx.folio, ctx.ordenId, legacy],
+  );
 
   return (
     <div className="min-h-screen bg-background py-8 px-4">
@@ -88,7 +101,7 @@ function TracePage() {
             <div>
               <div className="text-sm font-bold text-success">Documento auténtico</div>
               <div className="text-xs text-muted-foreground">
-                Validado contra el registro interno · Emitido {rec.emitido} · {rec.validadoPor}
+                Validado contra el registro interno · Emitido {ctx.emitido} · {ctx.validadoPor}
               </div>
             </div>
           </div>
@@ -100,40 +113,56 @@ function TracePage() {
               <div className="flex items-center gap-2 text-[11px] uppercase tracking-wider text-muted-foreground">
                 <QrCode className="h-3.5 w-3.5" /> Folio escaneado
               </div>
-              <h1 className="mt-1 font-mono text-xl font-bold text-foreground">{rec.folio}</h1>
-              {rec.rollo && <div className="text-xs text-muted-foreground">Rollo: <strong className="text-foreground">{rec.rollo}</strong></div>}
+              <h1 className="mt-1 font-mono text-xl font-bold text-foreground">{ctx.folio}</h1>
+              {ctx.rollo && <div className="text-xs text-muted-foreground">Rollo: <strong className="text-foreground">{ctx.rollo}</strong></div>}
             </div>
-            <ReleaseBadge s={rec.estatus} />
+            <span
+              className="inline-flex items-center rounded-md border px-3 py-1 text-xs font-bold"
+              style={{ background: est.bg, color: est.color, borderColor: est.color }}
+              title={`Fuente: ${est.source}`}
+            >
+              {est.label}
+            </span>
           </div>
 
-          {rec.simulado && (
+          {est.warnings.length > 0 && (
+            <div className="mt-4 rounded-md border border-purple-300 bg-purple-50 p-3 text-xs text-purple-900">
+              <div className="flex items-center gap-2 font-semibold">
+                <AlertTriangle className="h-4 w-4" /> Inconsistencia detectada
+              </div>
+              <ul className="mt-1 list-disc pl-5">
+                {est.warnings.map((w, i) => <li key={i}>{w}</li>)}
+              </ul>
+            </div>
+          )}
+
+          {ctx.simulado && (
             <div className="mt-4 rounded-md border border-dashed border-primary/40 bg-primary/5 p-3 text-xs text-muted-foreground">
-              Vista de simulación preparada para trazabilidad por QR. Cuando se conecte la base de datos, este folio cargará el registro real sin cambiar el diseño.
+              Vista de simulación preparada para trazabilidad por QR. Cuando se conecte la base de datos, este folio cargará el registro real sin cambiar el diseño. El estatus mostrado siempre se calcula en vivo desde el dictamen de Calidad.
             </div>
           )}
 
           <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <Info icon={Factory} label="Planta / Máquina" value={`${rec.planta} · ${rec.maquina}`} />
-            <Info icon={Hash} label="Turno" value={`T${rec.turno}`} />
-            <Info icon={Calendar} label="Fecha / hora" value={`${rec.fecha} · ${rec.hora}`} />
-            <Info icon={Package} label="Producto" value={rec.producto} />
-            <Info icon={User} label="Operador" value={rec.operador} />
-            <Info icon={User} label="Jefe de máquina" value={rec.jefeMaquina} />
+            <Info icon={Factory} label="Planta / Máquina" value={`${ctx.planta} · ${ctx.maquina}`} />
+            <Info icon={Hash} label="Turno" value={`T${ctx.turno}`} />
+            <Info icon={Calendar} label="Fecha / hora" value={`${ctx.fecha} · ${ctx.hora}`} />
+            <Info icon={Package} label="Producto" value={ctx.producto} />
+            <Info icon={User} label="Operador" value={ctx.operador} />
+            <Info icon={User} label="Jefe de máquina" value={ctx.jefeMaquina} />
           </div>
 
           <h3 className="mt-6 mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Métricas registradas</h3>
           <div className="overflow-hidden rounded-md border border-border">
             <table className="w-full text-sm">
               <thead className="bg-muted/40 text-left text-[11px] uppercase tracking-wider text-muted-foreground">
-                <tr><th className="px-3 py-2">Variable</th><th className="px-3 py-2 text-right">Valor</th><th className="px-3 py-2">Unidad</th><th className="px-3 py-2">Estatus</th></tr>
+                <tr><th className="px-3 py-2">Variable</th><th className="px-3 py-2 text-right">Valor</th><th className="px-3 py-2">Unidad</th></tr>
               </thead>
               <tbody>
-                {rec.metricas.map((m) => (
+                {ctx.metricas.map((m) => (
                   <tr key={m.label} className="border-t border-border">
                     <td className="px-3 py-2">{m.label}</td>
                     <td className="px-3 py-2 text-right tabular-nums font-semibold">{m.value}</td>
                     <td className="px-3 py-2 text-muted-foreground">{m.unit ?? ""}</td>
-                    <td className="px-3 py-2">{m.status && <ReleaseBadge s={m.status} />}</td>
                   </tr>
                 ))}
               </tbody>
@@ -142,7 +171,7 @@ function TracePage() {
 
           <div className="mt-5 border-t border-border pt-4">
             <p className="text-[11px] text-muted-foreground">
-              Este documento es la representación digital del registro interno y no puede modificarse. Cualquier corrección queda asentada en la bitácora auditada.
+              Este documento es la representación digital del registro interno y no puede modificarse. El estatus se calcula en tiempo real mediante <code>resolveRolloStatus()</code> sobre el dictamen vigente de Calidad. Fuente: <strong>{est.source}</strong>.
             </p>
           </div>
         </div>

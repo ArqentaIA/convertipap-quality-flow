@@ -1,10 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { ReleaseBadge } from "@/components/qc/StatusBadge";
 import { Search, Download, Filter, Eye, Calendar, ArrowLeft, QrCode, Lock } from "lucide-react";
 import { printRollReport } from "@/lib/roll-report";
 import { useState } from "react";
 import { useLabFilter, LAB_LABEL } from "@/lib/lab";
+import { resolveRolloStatus } from "@/lib/roll-status";
 
 export const Route = createFileRoute("/historial/$maquina")({ component: HistorialPage });
 
@@ -153,7 +153,7 @@ function HistorialPage() {
                     <td className="px-4 py-3 text-muted-foreground">{r.jefe}</td>
                     <td className="px-4 py-3 text-right tabular-nums">{r.rollos}</td>
                     <td className="px-4 py-3 text-right tabular-nums font-semibold">{r.cumplimiento.toFixed(1)}%</td>
-                    <td className="px-4 py-3"><ReleaseBadge s={r.estatus} /></td>
+                    <td className="px-4 py-3">{(() => { const e = resolveRolloStatus({ folio: r.folio, legacyEstatus: r.estatus }); return <span className="inline-flex items-center rounded-md border px-2 py-0.5 text-[11px] font-semibold" style={{ background: e.bg, color: e.color, borderColor: e.color }}>{e.label}</span>; })()}</td>
                     <td className="px-4 py-3 text-right">
                       <div className="inline-flex items-center gap-3">
                         <button

@@ -4,6 +4,7 @@ import html2canvas from "html2canvas";
 import logoUrl from "@/assets/logo-convertipap.png";
 import type { Measurement, GeneralInfo } from "@/lib/qc-data";
 import { buildTraceUrl } from "@/lib/roll-report";
+import { resolveRolloStatus } from "@/lib/roll-status";
 
 export type RollLabelData = {
   m: Measurement;
@@ -12,11 +13,8 @@ export type RollLabelData = {
   productoNombre: string;
 };
 
-const ESTATUS = {
-  L:  { txt: "LIBERADO",     color: "#16a34a", bg: "#dcfce7" },
-  C:  { txt: "CONDICIONADO", color: "#a16207", bg: "#fef3c7" },
-  NC: { txt: "NO CONFORME",  color: "#b91c1c", bg: "#fee2e2" },
-} as const;
+// El estatus impreso SIEMPRE proviene de resolveRolloStatus().
+// `Measurement.estatus` es solo la sugerencia del capturista (referencia interna).
 
 function parseNotas(notas: string): string[] {
   return notas.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
@@ -43,12 +41,17 @@ async function toDataUrl(url: string): Promise<string> {
 
 export async function printRollLabel(data: RollLabelData) {
   const { m, info, plantName, productoNombre } = data;
-  const est = ESTATUS[m.estatus];
+  const folio = `${info.maquina}-${info.fecha}-${m.rollo}`.replace(/\s+/g, "");
+  // Estatus unificado: dictamen de Calidad > "pendiente_revision".
+  const est = resolveRolloStatus({
+    rolloId: m.rollo,
+    folio,
+    legacyEstatus: m.estatus, // sugerencia del capturista como respaldo si no existe dictamen real
+  });
   const notas = parseNotas(m.notas || "");
   const has = (k: string) => notas.some((n) => n.includes(k));
   const fechaImpresion = new Date().toLocaleDateString("es-MX");
 
-  const folio = `${info.maquina}-${info.fecha}-${m.rollo}`.replace(/\s+/g, "");
   const traceUrl = buildTraceUrl(folio);
   const [qrDataUrl, logoDataUrl] = await Promise.all([
     QRCode.toDataURL(traceUrl, { margin: 1, width: 200, errorCorrectionLevel: "M" }),
@@ -210,7 +213,8 @@ export async function printRollLabel(data: RollLabelData) {
   </table>
 
   <!-- Estatus -->
-  <div class="estatus">ESTATUS: ${est.txt}</div>
+  <div class="estatus">ESTATUS: ${est.label.toUpperCase()}</div>
+  ${est.warnings.length > 0 ? `<div style="padding:6px 10px;background:#f3e8ff;color:#6b21a8;font-size:10px;text-align:center;border-top:1px solid #c084fc">⚠ ${est.warnings.join(" · ")}</div>` : ""}
 </div>
 </body>
 </html>`;

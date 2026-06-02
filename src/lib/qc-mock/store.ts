@@ -76,6 +76,11 @@ function getSnapshot() {
   return state;
 }
 
+/** Snapshot público (lectura) — usado por resolveRolloStatus y utilidades. */
+export function getQcSnapshot(): QcMockState {
+  return state;
+}
+
 // SSR-safe snapshot — siempre devuelve el mismo objeto inicial
 const SERVER_SNAPSHOT = initialState;
 function getServerSnapshot() {
