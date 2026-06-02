@@ -7,8 +7,9 @@ import {
 import { useServerFn } from "@tanstack/react-start";
 import {
   ArrowLeft, AlertTriangle, CheckCircle2, Save, Send, Lock,
-  ClipboardCheck, Info, Factory,
+  ClipboardCheck, Info, Factory, Printer,
 } from "lucide-react";
+import { printEtiquetaLiberacion, type EtiquetaData } from "@/lib/etiqueta-liberacion";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -197,12 +198,40 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
 
   const upsertFn = useServerFn(upsertMuestraConMediciones);
   const [lastSubmitMode, setLastSubmitMode] = useState<"borrador" | "envio">("borrador");
+  const [ultimaEtiqueta, setUltimaEtiqueta] = useState<EtiquetaData | null>(null);
   const mutation = useMutation({
     mutationFn: upsertFn,
-    onSuccess: () => {
+    onSuccess: (res: { muestra_id: string }) => {
       void queryClient.invalidateQueries({ queryKey: ["qc"] });
       if (lastSubmitMode === "envio") {
         toast.success("Muestra enviada a revisión");
+        // Construir snapshot de etiqueta antes de limpiar el formulario
+        const fechaMuestreo = new Date(horaMuestreo);
+        const fueraSpecAlguno = variablesFueraDeSpec.length > 0;
+        const etiqueta: EtiquetaData = {
+          muestraId: res.muestra_id,
+          folio: `${maquina.codigo}-${fechaMuestreo.toISOString().slice(0,10)}-${numeroRollo || "SN"}`.replace(/\s+/g,""),
+          fecha: fechaMuestreo.toLocaleDateString("es-MX"),
+          numeroRollo: numeroRollo || "",
+          maquinaCodigo: maquina.codigo,
+          maquinaNombre: maquina.nombre,
+          productoCodigo: producto.codigo,
+          productoNombre: producto.nombre,
+          observacionesGenerales: observaciones,
+          mediciones: evalMediciones
+            .filter((m) => m.input.valor !== "" && Number.isFinite(m.num))
+            .map((m) => ({
+              clave: m.spec.clave,
+              etiqueta: m.spec.etiqueta,
+              valor: m.num,
+              unidad: m.spec.unidad,
+              min: m.spec.min_valor,
+              max: m.spec.max_valor,
+              fueraSpec: m.estado === "no_conforme" || m.estado === "fuera_rango_critico",
+            })),
+          estatus: fueraSpecAlguno ? "NO CONFORME" : "CONFORME",
+        };
+        setUltimaEtiqueta(etiqueta);
         setMediciones((prev) => {
           const r: MedicionInputState = {};
           Object.keys(prev).forEach((k) => { r[k] = { valor: "" }; });
@@ -217,6 +246,15 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
     },
     onError: (err: Error) => toast.error(err.message),
   });
+
+  async function handlePrintEtiqueta() {
+    if (!ultimaEtiqueta) return;
+    try {
+      await printEtiquetaLiberacion(ultimaEtiqueta);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "No se pudo abrir la etiqueta");
+    }
+  }
 
   function validar(modo: "borrador" | "envio"): string | null {
     if (!spec) return "Selecciona un producto con especificación vigente";
@@ -522,6 +560,27 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
               </div>
             </CardContent>
           </Card>
+        )}
+
+        {ultimaEtiqueta && (
+          <Alert className="border-emerald-500 bg-emerald-50 text-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-100">
+            <CheckCircle2 className="h-4 w-4" />
+            <AlertTitle>Muestra guardada</AlertTitle>
+            <AlertDescription className="flex flex-wrap items-center justify-between gap-3">
+              <span>
+                Folio <strong className="font-mono">{ultimaEtiqueta.folio}</strong> · estatus{" "}
+                <strong>{ultimaEtiqueta.estatus}</strong>. Imprime la etiqueta de liberación para el rollo.
+              </span>
+              <div className="flex gap-2">
+                <Button size="sm" variant="ghost" onClick={() => setUltimaEtiqueta(null)}>
+                  Cerrar
+                </Button>
+                <Button size="sm" onClick={handlePrintEtiqueta}>
+                  <Printer className="mr-1.5 h-4 w-4" /> Imprimir Etiqueta
+                </Button>
+              </div>
+            </AlertDescription>
+          </Alert>
         )}
 
         {spec && (
