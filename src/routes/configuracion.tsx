@@ -27,10 +27,6 @@ function ConfigPage() {
           </Card>
 
 
-          <Card icon={Monitor} title="Operator Vision · Pantallas operativas" desc="URLs de la TV industrial generadas automáticamente por máquina">
-            <OperatorVisionUrls />
-          </Card>
-
         </div>
 
         <div className="space-y-6">

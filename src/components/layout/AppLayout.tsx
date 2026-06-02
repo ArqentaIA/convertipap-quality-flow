@@ -24,7 +24,7 @@ type NavItem = {
 const NAV: NavItem[] = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, module: "dashboard" },
   { to: "/produccion", label: "Producción", icon: Factory, module: "produccion", pathPrefixes: ["/produccion", "/historial"] },
-  { to: "/control-calidad", label: "Control de Calidad", icon: ClipboardCheck, module: "control_calidad" },
+  { to: "/calidad/captura", label: "Control de Calidad", icon: ClipboardCheck, module: "control_calidad" },
   { to: "/variables-calidad", label: "Variables de Calidad", icon: SlidersHorizontal, module: "variables_calidad" },
   { to: "/reportes", label: "Reportes", icon: FileBarChart2, module: "reportes" },
   { to: "/configuracion", label: "Configuración", icon: Settings, module: "configuracion" },
