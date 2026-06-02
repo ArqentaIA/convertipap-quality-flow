@@ -1,23 +1,49 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { toast } from "sonner";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PRODUCT_SPECS, PRODUCT_FAMILIES } from "@/lib/spec-catalog";
 import {
-  AUTHORIZED_USERS, AUTH_PASSWORD, appendAudit, auditFor,
-  type SpecChangeRecord,
-} from "@/lib/spec-audit";
+  listSpecAuditByProductCode,
+  registrarSpecAuditByCode,
+} from "@/lib/qc.functions";
+import { useAuth } from "@/lib/auth";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import logoUrl from "@/assets/logo-convertipap.png";
 import {
-  Pencil, Power, Lock, FileSpreadsheet, ShieldCheck, Save, X,
+  Pencil, Power, Lock, FileSpreadsheet, Save, X, ShieldAlert,
 } from "lucide-react";
 
 export const Route = createFileRoute("/variables-calidad")({ component: VariablesCalidad });
 
 type DraftMap = Record<string, { min: number; objective: number; max: number }>;
 
+// Roles autorizados para editar especificaciones — verificación adicional
+// en cliente; el server (registrarSpecAuditByCode) revalida con RLS+rol.
+const ROLES_EDIT = ["calidad", "direccion", "gerente_general", "administrador"] as const;
+
+type AuditRow = {
+  id: string;
+  modificado_at: string;
+  modificado_por_nombre: string | null;
+  modificado_por_rol: string | null;
+  variable_clave: string;
+  variable_etiqueta: string;
+  campo: string;
+  valor_anterior: number | null;
+  valor_nuevo: number | null;
+  motivo: string;
+};
+
 function VariablesCalidad() {
+  const auth = useAuth();
+  const queryClient = useQueryClient();
+  const listAuditFn = useServerFn(listSpecAuditByProductCode);
+  const registrarFn = useServerFn(registrarSpecAuditByCode);
+
   const [family, setFamily] = useState<string>("all");
   const [selected, setSelected] = useState<string>(PRODUCT_SPECS[0]?.code ?? "");
 
@@ -30,79 +56,105 @@ function VariablesCalidad() {
     [selected, filtered],
   );
 
+  // Bitácora real (Supabase)
+  const auditQuery = useQuery({
+    queryKey: ["spec-audit", activeSpec?.code],
+    queryFn: () => listAuditFn({ data: { codigo: activeSpec!.code } }),
+    enabled: !!activeSpec?.code,
+  });
+  const log = (auditQuery.data ?? []) as AuditRow[];
+
+  const puedeEditar = auth.roles.some((r) =>
+    (ROLES_EDIT as readonly string[]).includes(r),
+  );
+
   // Edición
-  const [authOpen, setAuthOpen] = useState(false);
-  const [editor, setEditor] = useState<
-    { username: string; fullName: string; role: SpecChangeRecord["role"] } | null
-  >(null);
+  const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState<DraftMap>({});
   const [reason, setReason] = useState("");
 
-  // Bitácora del producto activo
-  const [log, setLog] = useState<SpecChangeRecord[]>([]);
   useEffect(() => {
-    setLog(auditFor(activeSpec?.code ?? ""));
-    setEditor(null); setDraft({}); setReason("");
+    setIsEditing(false); setDraft({}); setReason("");
   }, [activeSpec?.code]);
 
-  const isEditing = editor !== null;
-
-  const startEdit = () => setAuthOpen(true);
-  const onAuthorized = (u: { username: string; fullName: string; role: SpecChangeRecord["role"] }) => {
-    setEditor(u);
+  const startEdit = () => {
+    if (!puedeEditar) {
+      toast.error("Solo Dirección, Calidad o Administrador pueden modificar especificaciones.");
+      return;
+    }
     const d: DraftMap = {};
     activeSpec?.variables.forEach((v) => {
       d[v.key] = { min: v.min, objective: v.objective, max: v.max };
     });
     setDraft(d);
-    setAuthOpen(false);
+    setIsEditing(true);
   };
-  const cancelEdit = () => { setEditor(null); setDraft({}); setReason(""); };
+  const cancelEdit = () => { setIsEditing(false); setDraft({}); setReason(""); };
 
-  const saveEdit = () => {
-    if (!editor || !activeSpec) return;
-    if (!reason.trim()) { alert("Indique el motivo del cambio."); return; }
-    const now = new Date().toISOString();
-    const records: SpecChangeRecord[] = [];
+  const saveMut = useMutation({
+    mutationFn: registrarFn,
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const saveEdit = async () => {
+    if (!activeSpec) return;
+    if (!reason.trim()) { toast.warning("Indique el motivo del cambio."); return; }
+
+    const changes: Array<{
+      variable_clave: string; variable_etiqueta: string;
+      campo: "min" | "objetivo" | "max";
+      valor_anterior: number; valor_nuevo: number;
+      apply: () => void;
+    }> = [];
+
     activeSpec.variables.forEach((v) => {
       const d = draft[v.key];
       if (!d) return;
       (["min", "objective", "max"] as const).forEach((field) => {
         if (d[field] !== v[field]) {
-          records.push({
-            id: crypto.randomUUID(),
-            timestamp: now,
-            username: editor.username,
-            fullName: editor.fullName,
-            role: editor.role,
-            plant: "TLX",
-            productCode: activeSpec.code,
-            productName: activeSpec.name,
-            variableKey: v.key,
-            variableLabel: v.label,
-            field,
-            oldValue: v[field],
-            newValue: d[field],
-            reason: reason.trim(),
+          changes.push({
+            variable_clave: v.key,
+            variable_etiqueta: v.label,
+            campo: field === "objective" ? "objetivo" : (field as "min" | "max"),
+            valor_anterior: v[field],
+            valor_nuevo: d[field],
+            apply: () => { (v as { min: number; objective: number; max: number })[field] = d[field]; },
           });
-          // Mutación local del catálogo (en producción: persistir en BD)
-          (v as any)[field] = d[field];
         }
       });
     });
-    if (records.length === 0) { alert("No hay cambios para guardar."); return; }
-    appendAudit(records);
-    setLog(auditFor(activeSpec.code));
-    cancelEdit();
+
+    if (changes.length === 0) { toast.info("No hay cambios para guardar."); return; }
+
+    try {
+      for (const c of changes) {
+        await saveMut.mutateAsync({
+          data: {
+            producto_codigo: activeSpec.code,
+            variable_clave: c.variable_clave,
+            variable_etiqueta: c.variable_etiqueta,
+            campo: c.campo,
+            valor_anterior: c.valor_anterior,
+            valor_nuevo: c.valor_nuevo,
+            motivo: reason.trim(),
+          },
+        });
+        c.apply(); // refleja en catálogo en memoria
+      }
+      toast.success(`${changes.length} cambio(s) registrados en la bitácora.`);
+      void queryClient.invalidateQueries({ queryKey: ["spec-audit", activeSpec.code] });
+      cancelEdit();
+    } catch {
+      /* error ya notificado por onError */
+    }
   };
 
   const exportPDF = async () => {
     if (!activeSpec) return;
     const doc = new jsPDF({ unit: "pt", format: "a4" });
-    const records = auditFor(activeSpec.code).sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+    const records = [...log].sort((a, b) => a.modificado_at.localeCompare(b.modificado_at));
     const W = doc.internal.pageSize.getWidth();
 
-    // Logo centrado y luego título debajo
     let cursorY = 30;
     try {
       const blob = await fetch(logoUrl).then((r) => r.blob());
@@ -113,7 +165,7 @@ function VariablesCalidad() {
         fr.readAsDataURL(blob);
       });
       const logoW = 130;
-      const logoH = logoW * (300 / 700); // ~55.7
+      const logoH = logoW * (300 / 700);
       doc.addImage(dataUrl, "PNG", (W - logoW) / 2, cursorY, logoW, logoH);
       cursorY += logoH + 18;
     } catch {
@@ -126,7 +178,6 @@ function VariablesCalidad() {
 
     doc.setFontSize(10).setFont("helvetica", "normal");
     const meta = [
-      ["Planta", "TLX"],
       ["Producto", activeSpec.name],
       ["Código", activeSpec.code],
       ["Familia", activeSpec.family],
@@ -143,34 +194,37 @@ function VariablesCalidad() {
     });
 
     autoTable(doc, {
-      head: [["Fecha y Hora", "Usuario", "Nombre Completo", "Variable", "Campo", "Anterior", "Nuevo", "Motivo"]],
+      head: [["Fecha y Hora", "Nombre", "Rol", "Variable", "Campo", "Anterior", "Nuevo", "Motivo"]],
       body: records.length
         ? records.map((r) => [
-            new Date(r.timestamp).toLocaleString("es-MX"),
-            r.username,
-            r.fullName,
-            r.variableLabel,
-            r.field,
-            String(r.oldValue),
-            String(r.newValue),
-            r.reason,
+            new Date(r.modificado_at).toLocaleString("es-MX"),
+            r.modificado_por_nombre ?? "—",
+            r.modificado_por_rol ?? "—",
+            r.variable_etiqueta,
+            r.campo,
+            r.valor_anterior == null ? "—" : String(r.valor_anterior),
+            r.valor_nuevo == null ? "—" : String(r.valor_nuevo),
+            r.motivo,
           ])
         : [["—", "—", "—", "Sin cambios registrados", "—", "—", "—", "—"]],
       styles: { fontSize: 8, cellPadding: 4 },
       headStyles: { fillColor: [37, 99, 235] },
-      startY: (doc as any).lastAutoTable.finalY + 14,
+      startY: (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 14,
     });
 
     const last = records[records.length - 1];
-    const y = (doc as any).lastAutoTable.finalY + 24;
+    const y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 24;
     doc.setFontSize(10).setFont("helvetica", "bold");
     doc.text("Último cambio realizado por:", 40, y);
     doc.setFont("helvetica", "normal");
-    doc.text(last ? last.fullName : "—", 40, y + 14);
+    doc.text(last ? (last.modificado_por_nombre ?? "—") : "—", 40, y + 14);
     doc.setFont("helvetica", "bold").text("Fecha:", 40, y + 32);
-    doc.setFont("helvetica", "normal").text(last ? new Date(last.timestamp).toLocaleString("es-MX") : "—", 90, y + 32);
-    doc.setFont("helvetica", "bold").text("Cargo:", 40, y + 48);
-    doc.setFont("helvetica", "normal").text(last ? last.role : "—", 90, y + 48);
+    doc.setFont("helvetica", "normal").text(
+      last ? new Date(last.modificado_at).toLocaleString("es-MX") : "—",
+      90, y + 32,
+    );
+    doc.setFont("helvetica", "bold").text("Rol:", 40, y + 48);
+    doc.setFont("helvetica", "normal").text(last ? (last.modificado_por_rol ?? "—") : "—", 90, y + 48);
 
     doc.save(`Trazabilidad_${activeSpec.code}_${new Date().toISOString().slice(0, 10)}.pdf`);
   };
@@ -222,10 +276,6 @@ function VariablesCalidad() {
               <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
                 <span>Código: <span className="font-semibold text-foreground tabular-nums">{activeSpec?.code}</span></span>
                 <span>·</span>
-                <span>Planta: <span className="font-semibold text-foreground">TLX</span></span>
-                <span>·</span>
-                <span>Versión: <span className="font-semibold text-foreground">v1.0</span></span>
-                <span>·</span>
                 <span className="inline-flex items-center gap-1 rounded bg-success/10 px-1.5 py-0.5 font-semibold text-success">
                   <Power className="h-2.5 w-2.5" /> Activa
                 </span>
@@ -234,7 +284,12 @@ function VariablesCalidad() {
             <div className="flex flex-wrap items-center gap-1.5">
               {!isEditing ? (
                 <>
-                  <button onClick={startEdit} className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-2.5 py-1.5 text-[11px] font-semibold text-foreground hover:bg-accent">
+                  <button
+                    onClick={startEdit}
+                    disabled={!puedeEditar}
+                    className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-2.5 py-1.5 text-[11px] font-semibold text-foreground hover:bg-accent disabled:opacity-50"
+                    title={puedeEditar ? "" : "Sin permiso para editar"}
+                  >
                     <Pencil className="h-3.5 w-3.5" /> Editar
                   </button>
                   <button onClick={exportPDF} className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-2.5 py-1.5 text-[11px] font-semibold text-foreground hover:bg-accent">
@@ -244,10 +299,14 @@ function VariablesCalidad() {
               ) : (
                 <>
                   <span className="rounded-md border border-warning/40 bg-warning/10 px-2 py-1 text-[10px] font-semibold text-warning">
-                    Editando como {editor?.fullName} ({editor?.role})
+                    Editando como {auth.profile?.nombre ?? auth.user?.email} ({auth.roles.join(", ")})
                   </span>
-                  <button onClick={saveEdit} className="inline-flex items-center gap-1.5 rounded-md bg-primary px-2.5 py-1.5 text-[11px] font-semibold text-primary-foreground hover:opacity-90">
-                    <Save className="h-3.5 w-3.5" /> Guardar
+                  <button
+                    onClick={saveEdit}
+                    disabled={saveMut.isPending}
+                    className="inline-flex items-center gap-1.5 rounded-md bg-primary px-2.5 py-1.5 text-[11px] font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                  >
+                    <Save className="h-3.5 w-3.5" /> {saveMut.isPending ? "Guardando…" : "Guardar"}
                   </button>
                   <button onClick={cancelEdit} className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-2.5 py-1.5 text-[11px] font-semibold text-foreground hover:bg-accent">
                     <X className="h-3.5 w-3.5" /> Cancelar
@@ -256,6 +315,13 @@ function VariablesCalidad() {
               )}
             </div>
           </div>
+
+          {!puedeEditar && (
+            <div className="border-b border-border bg-muted/20 px-5 py-2 text-[11px] text-muted-foreground flex items-center gap-2">
+              <ShieldAlert className="h-3.5 w-3.5" />
+              Solo Dirección, Calidad o Administrador pueden modificar especificaciones.
+            </div>
+          )}
 
           {isEditing && (
             <div className="border-b border-border bg-muted/20 px-5 py-3">
@@ -323,11 +389,11 @@ function VariablesCalidad() {
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border bg-muted/20 px-5 py-3 text-[11px] text-muted-foreground">
             <div className="flex items-center gap-1.5">
               <Lock className="h-3.5 w-3.5" />
-              Solo lectura · Modificación restringida a Dirección, Calidad Senior y Administrador.
+              Solo lectura · Modificación restringida a Dirección, Calidad y Administrador.
             </div>
             <div>
               {log.length > 0
-                ? `Última modificación: ${new Date(log[log.length - 1].timestamp).toLocaleString("es-MX")} · ${log[log.length - 1].fullName}`
+                ? `Última modificación: ${new Date(log[0].modificado_at).toLocaleString("es-MX")} · ${log[0].modificado_por_nombre ?? "—"}`
                 : "Sin modificaciones registradas"}
             </div>
           </div>
@@ -337,14 +403,13 @@ function VariablesCalidad() {
         <div className="rounded-xl border border-border bg-card shadow-sm">
           <div className="border-b border-border px-5 py-3">
             <h3 className="text-sm font-semibold text-foreground">Bitácora de cambios — {activeSpec?.code}</h3>
-            <p className="text-xs text-muted-foreground">Registro permanente, no modificable.</p>
+            <p className="text-xs text-muted-foreground">Registro permanente, no modificable (Supabase · spec_audit_log).</p>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead className="bg-muted/40 text-left text-[10px] uppercase tracking-wider text-muted-foreground">
                 <tr>
                   <th className="px-4 py-2">Fecha y hora</th>
-                  <th className="px-4 py-2">Usuario</th>
                   <th className="px-4 py-2">Nombre</th>
                   <th className="px-4 py-2">Rol</th>
                   <th className="px-4 py-2">Variable</th>
@@ -355,20 +420,22 @@ function VariablesCalidad() {
                 </tr>
               </thead>
               <tbody>
-                {log.length === 0 && (
-                  <tr><td colSpan={9} className="px-4 py-6 text-center text-muted-foreground">Sin movimientos registrados.</td></tr>
+                {auditQuery.isLoading && (
+                  <tr><td colSpan={8} className="px-4 py-6 text-center text-muted-foreground">Cargando…</td></tr>
                 )}
-                {[...log].reverse().map((r) => (
+                {!auditQuery.isLoading && log.length === 0 && (
+                  <tr><td colSpan={8} className="px-4 py-6 text-center text-muted-foreground">Sin movimientos registrados.</td></tr>
+                )}
+                {log.map((r) => (
                   <tr key={r.id} className="border-t border-border">
-                    <td className="px-4 py-2 tabular-nums">{new Date(r.timestamp).toLocaleString("es-MX")}</td>
-                    <td className="px-4 py-2">{r.username}</td>
-                    <td className="px-4 py-2">{r.fullName}</td>
-                    <td className="px-4 py-2">{r.role}</td>
-                    <td className="px-4 py-2">{r.variableLabel}</td>
-                    <td className="px-4 py-2">{r.field}</td>
-                    <td className="px-4 py-2 tabular-nums">{r.oldValue}</td>
-                    <td className="px-4 py-2 tabular-nums font-semibold text-primary">{r.newValue}</td>
-                    <td className="px-4 py-2 text-muted-foreground">{r.reason}</td>
+                    <td className="px-4 py-2 tabular-nums">{new Date(r.modificado_at).toLocaleString("es-MX")}</td>
+                    <td className="px-4 py-2">{r.modificado_por_nombre ?? "—"}</td>
+                    <td className="px-4 py-2">{r.modificado_por_rol ?? "—"}</td>
+                    <td className="px-4 py-2">{r.variable_etiqueta}</td>
+                    <td className="px-4 py-2">{r.campo}</td>
+                    <td className="px-4 py-2 tabular-nums">{r.valor_anterior ?? "—"}</td>
+                    <td className="px-4 py-2 tabular-nums font-semibold text-primary">{r.valor_nuevo ?? "—"}</td>
+                    <td className="px-4 py-2 text-muted-foreground">{r.motivo}</td>
                   </tr>
                 ))}
               </tbody>
@@ -376,74 +443,6 @@ function VariablesCalidad() {
           </div>
         </div>
       </div>
-
-      {authOpen && (
-        <AuthModal
-          onCancel={() => setAuthOpen(false)}
-          onConfirm={onAuthorized}
-        />
-      )}
     </AppLayout>
-  );
-}
-
-function AuthModal({
-  onCancel, onConfirm,
-}: {
-  onCancel: () => void;
-  onConfirm: (u: { username: string; fullName: string; role: SpecChangeRecord["role"] }) => void;
-}) {
-  const [user, setUser] = useState("");
-  const [pass, setPass] = useState("");
-  const [err, setErr] = useState<string | null>(null);
-
-  const submit = () => {
-    const u = AUTHORIZED_USERS[user.trim().toLowerCase()];
-    if (!u || pass !== AUTH_PASSWORD) {
-      setErr("No cuenta con autorización para modificar especificaciones.");
-      return;
-    }
-    onConfirm({ username: user.trim().toLowerCase(), fullName: u.fullName, role: u.role });
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/70 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-sm rounded-xl border border-border bg-card p-5 shadow-lg">
-        <div className="flex items-center gap-2">
-          <ShieldCheck className="h-5 w-5 text-primary" />
-          <h4 className="text-sm font-semibold text-foreground">Autenticación requerida</h4>
-        </div>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Solo Dirección, Calidad Senior o Administrador pueden modificar especificaciones.
-          Se requiere revalidar credenciales aunque exista sesión iniciada.
-        </p>
-        <div className="mt-4 space-y-3">
-          <div>
-            <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Usuario</label>
-            <input
-              value={user}
-              onChange={(e) => setUser(e.target.value)}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              placeholder="jonathan.pelaez"
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Contraseña</label>
-            <input
-              type="password" value={pass}
-              onChange={(e) => setPass(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && submit()}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              placeholder="••••••••"
-            />
-          </div>
-          {err && <div className="text-xs font-medium text-destructive">{err}</div>}
-        </div>
-        <div className="mt-5 flex justify-end gap-2">
-          <button onClick={onCancel} className="rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium hover:bg-accent">Cancelar</button>
-          <button onClick={submit} className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:opacity-90">Autenticar</button>
-        </div>
-      </div>
-    </div>
   );
 }
