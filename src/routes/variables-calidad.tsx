@@ -5,7 +5,6 @@ import {
   useQuery,
   useMutation,
   useQueryClient,
-  useSuspenseQuery,
 } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
