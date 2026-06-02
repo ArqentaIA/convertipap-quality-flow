@@ -205,7 +205,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
         toast.success("Muestra enviada a revisión");
         setMediciones((prev) => {
           const r: MedicionInputState = {};
-          Object.keys(prev).forEach((k) => { r[k] = { valor: "", observacion: "" }; });
+          Object.keys(prev).forEach((k) => { r[k] = { valor: "" }; });
           return r;
         });
         setObservaciones("");
