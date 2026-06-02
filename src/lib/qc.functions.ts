@@ -1,0 +1,608 @@
+// =============================================================================
+// Fase 1 QC — Data layer real contra Supabase.
+// =============================================================================
+// Server functions que sustituyen al store mock (src/lib/qc-mock/*). En esta
+// fase NO se tocan pantallas ni se elimina el mock; sólo se publica la API.
+// Fase 2 cablea las rutas de calidad.* contra estos serverFns.
+//
+// Regla medular:
+//  - El capturista captura mediciones.
+//  - El sistema calcula automáticamente conforme/no_conforme contra el snapshot.
+//  - Sólo Calidad / Gerencia de Calidad (rol calidad) — o Administrador /
+//    Gerente General como excepción — pueden autorizar el dictamen final.
+//  - resolveRolloStatus es la única fuente de verdad del estatus del rollo.
+// =============================================================================
+
+import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
+import {
+  resolveRolloStatusFrom,
+  type ResolveRolloInput,
+  type RolloStatusInfo,
+} from "@/lib/roll-status";
+import type { MuestraCalidad, AjusteCalidad } from "@/lib/qc-mock/types";
+
+type SB = SupabaseClient<Database>;
+
+// ------------------------- Roles -------------------------
+
+const ROLES_CAPTURA = [
+  "capturista",
+  "calidad",
+  "gerente_general",
+  "administrador",
+] as const;
+const ROLES_DICTAMEN = ["calidad", "gerente_general", "administrador"] as const;
+const ROLES_AUTORIZA = ["calidad", "gerente_general", "administrador"] as const;
+const ROLES_ADMIN = ["gerente_general", "administrador"] as const;
+
+async function getUserRoles(sb: SB, userId: string): Promise<string[]> {
+  const { data, error } = await sb
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId);
+  if (error) throw new Error(`No se pudieron leer roles: ${error.message}`);
+  return (data ?? []).map((r) => r.role as string);
+}
+
+function requireAnyRole(roles: string[], allowed: readonly string[]) {
+  if (!roles.some((r) => allowed.includes(r))) {
+    throw new Error(
+      `Acceso denegado. Roles requeridos: ${allowed.join(", ")}`,
+    );
+  }
+}
+
+// ------------------------- Estado de medición -------------------------
+
+function calcularEstadoMedicion(
+  valor: number,
+  min: number,
+  max: number,
+): Database["public"]["Enums"]["qc_medicion_estado"] {
+  if (!Number.isFinite(valor)) return "pendiente";
+  // fuera_rango_critico: >20% fuera de tolerancia
+  const rango = max - min;
+  const tol = Math.abs(rango) * 0.2;
+  if (valor < min - tol || valor > max + tol) return "fuera_rango_critico";
+  if (valor < min || valor > max) return "no_conforme";
+  return "conforme";
+}
+
+// =============================================================================
+// READS
+// =============================================================================
+
+export const listOrdenesContexto = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const sb = context.supabase as SB;
+    const { data, error } = await sb
+      .from("ordenes_fabricacion")
+      .select(
+        `id, folio, estado, turno, planta_id, maquina_id, producto_id,
+         especificacion_id, producido_rollos,
+         productos(id, nombre, codigo),
+         maquinas(id, nombre, codigo),
+         plantas(id, nombre, codigo)`,
+      )
+      .in("estado", ["en_proceso", "pausada"])
+      .order("created_at", { ascending: false });
+    if (error) throw new Error(error.message);
+    return data ?? [];
+  });
+
+export const getOrdenSpec = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { ordenId: string }) =>
+    z.object({ ordenId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const sb = context.supabase as SB;
+    const { data: orden, error: eOrden } = await sb
+      .from("ordenes_fabricacion")
+      .select("id, especificacion_id, producto_id, maquina_id, planta_id, turno")
+      .eq("id", data.ordenId)
+      .single();
+    if (eOrden) throw new Error(eOrden.message);
+
+    const { data: spec, error: eSpec } = await sb
+      .from("producto_especificaciones")
+      .select("id, version, estado")
+      .eq("id", orden.especificacion_id)
+      .single();
+    if (eSpec) throw new Error(eSpec.message);
+
+    const { data: vars, error: eVars } = await sb
+      .from("producto_variables")
+      .select(
+        `id, variable_id, min_valor, objetivo, max_valor, tolerancia,
+         variables_calidad(id, clave, etiqueta, unidad)`,
+      )
+      .eq("especificacion_id", spec.id);
+    if (eVars) throw new Error(eVars.message);
+
+    return { orden, spec, variables: vars ?? [] };
+  });
+
+export const listMuestras = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { ordenId?: string; desde?: string; hasta?: string }) =>
+    z
+      .object({
+        ordenId: z.string().uuid().optional(),
+        desde: z.string().optional(),
+        hasta: z.string().optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const sb = context.supabase as SB;
+    let q = sb
+      .from("muestras_calidad")
+      .select(
+        `*, mediciones_calidad(*)`,
+      )
+      .order("capturado_at", { ascending: false })
+      .limit(500);
+    if (data.ordenId) q = q.eq("orden_id", data.ordenId);
+    if (data.desde) q = q.gte("capturado_at", data.desde);
+    if (data.hasta) q = q.lte("capturado_at", data.hasta);
+    const { data: rows, error } = await q;
+    if (error) throw new Error(error.message);
+    return rows ?? [];
+  });
+
+export const listAjustes = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { ordenId?: string }) =>
+    z.object({ ordenId: z.string().uuid().optional() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const sb = context.supabase as SB;
+    let q = sb
+      .from("ajustes_calidad")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(500);
+    if (data.ordenId) q = q.eq("orden_id", data.ordenId);
+    const { data: rows, error } = await q;
+    if (error) throw new Error(error.message);
+    return rows ?? [];
+  });
+
+export const listSpecAudit = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { especificacionId?: string; productoId?: string }) =>
+    z
+      .object({
+        especificacionId: z.string().uuid().optional(),
+        productoId: z.string().uuid().optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const sb = context.supabase as SB;
+    let q = sb
+      .from("spec_audit_log")
+      .select("*")
+      .order("modificado_at", { ascending: false })
+      .limit(500);
+    if (data.especificacionId) q = q.eq("especificacion_id", data.especificacionId);
+    if (data.productoId) q = q.eq("producto_id", data.productoId);
+    const { data: rows, error } = await q;
+    if (error) throw new Error(error.message);
+    return rows ?? [];
+  });
+
+// =============================================================================
+// WRITES
+// =============================================================================
+
+const medicionInputSchema = z.object({
+  variable_id: z.string().uuid(),
+  variable_clave: z.string().min(1),
+  valor: z.number(),
+  min_snapshot: z.number(),
+  objetivo_snapshot: z.number(),
+  max_snapshot: z.number(),
+  observacion: z.string().default(""),
+});
+
+export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        muestra_id: z.string().uuid().optional(),
+        orden_id: z.string().uuid(),
+        especificacion_id: z.string().uuid(),
+        especificacion_version: z.string(),
+        planta_id: z.string().uuid(),
+        maquina_id: z.string().uuid(),
+        producto_id: z.string().uuid(),
+        turno: z.string().min(1),
+        operario_id: z.string().uuid().nullable().optional(),
+        numero_rollo: z.number().int().nullable().optional(),
+        tipo_muestreo: z.enum(["por_rollo", "por_tiempo"]),
+        hora_muestreo: z.string(),
+        observaciones_generales: z.string().default(""),
+        variables_snapshot_json: z.record(z.string(), z.unknown()).default({}),
+        mediciones: z.array(medicionInputSchema),
+        enviar_a_revision: z.boolean().default(false),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const sb = context.supabase as SB;
+    const userId = context.userId;
+    const roles = await getUserRoles(sb, userId);
+    requireAnyRole(roles, ROLES_CAPTURA);
+
+    // ¿Modificación posterior a dictamen autorizado? → marca trazabilidad.
+    let dictamenPrevioAt: string | null = null;
+    if (data.muestra_id) {
+      const { data: prev } = await sb
+        .from("muestras_calidad")
+        .select("dictamen_at, autorizado_at")
+        .eq("id", data.muestra_id)
+        .maybeSingle();
+      dictamenPrevioAt = prev?.autorizado_at ?? prev?.dictamen_at ?? null;
+    }
+
+    const estadoMuestra: Database["public"]["Enums"]["qc_muestra_estado"] = data
+      .enviar_a_revision
+      ? "pendiente_revision"
+      : "borrador";
+
+    const muestraPayload = {
+      orden_id: data.orden_id,
+      especificacion_id: data.especificacion_id,
+      especificacion_version: data.especificacion_version,
+      planta_id: data.planta_id,
+      maquina_id: data.maquina_id,
+      producto_id: data.producto_id,
+      turno: data.turno,
+      operario_id: data.operario_id ?? null,
+      numero_rollo: data.numero_rollo ?? null,
+      tipo_muestreo: data.tipo_muestreo,
+      hora_muestreo: data.hora_muestreo,
+      observaciones_generales: data.observaciones_generales,
+      variables_snapshot_json: data.variables_snapshot_json as never,
+      estado: estadoMuestra,
+      capturado_por: userId,
+      ...(dictamenPrevioAt
+        ? {
+            mediciones_modificadas_at: new Date().toISOString(),
+            mediciones_modificadas_por: userId,
+            mediciones_modificacion_motivo:
+              "Modificación posterior al dictamen — requiere nuevo dictamen",
+          }
+        : {}),
+    };
+
+    let muestraId = data.muestra_id;
+    if (muestraId) {
+      const { error } = await sb
+        .from("muestras_calidad")
+        .update(muestraPayload)
+        .eq("id", muestraId);
+      if (error) throw new Error(error.message);
+      // borrar mediciones previas y reinsertar
+      const { error: eDel } = await sb
+        .from("mediciones_calidad")
+        .delete()
+        .eq("muestra_id", muestraId);
+      if (eDel) throw new Error(eDel.message);
+    } else {
+      const { data: nueva, error } = await sb
+        .from("muestras_calidad")
+        .insert(muestraPayload)
+        .select("id")
+        .single();
+      if (error) throw new Error(error.message);
+      muestraId = nueva.id;
+    }
+
+    const medsPayload = data.mediciones.map((m) => ({
+      muestra_id: muestraId!,
+      variable_id: m.variable_id,
+      variable_clave: m.variable_clave,
+      valor: m.valor,
+      min_snapshot: m.min_snapshot,
+      objetivo_snapshot: m.objetivo_snapshot,
+      max_snapshot: m.max_snapshot,
+      observacion: m.observacion,
+      estado: calcularEstadoMedicion(m.valor, m.min_snapshot, m.max_snapshot),
+      capturado_por: userId,
+    }));
+    if (medsPayload.length > 0) {
+      const { error } = await sb.from("mediciones_calidad").insert(medsPayload);
+      if (error) throw new Error(error.message);
+    }
+
+    return { muestra_id: muestraId, reabre_dictamen: !!dictamenPrevioAt };
+  });
+
+export const dictaminarMuestra = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        muestra_id: z.string().uuid(),
+        dictamen: z.enum(["liberada", "rechazada", "concesion"]),
+        motivo: z.string().min(1),
+        observaciones: z.string().default(""),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const sb = context.supabase as SB;
+    const roles = await getUserRoles(sb, context.userId);
+    requireAnyRole(roles, ROLES_DICTAMEN);
+
+    const now = new Date().toISOString();
+    const { error } = await sb
+      .from("muestras_calidad")
+      .update({
+        dictamen: data.dictamen,
+        dictamen_motivo: data.motivo,
+        dictamen_observaciones: data.observaciones,
+        dictamen_at: now,
+        revisado_por: context.userId,
+        revisado_at: now,
+        // Estado se sincroniza con dictamen
+        estado:
+          data.dictamen === "liberada"
+            ? "liberada"
+            : data.dictamen === "rechazada"
+              ? "rechazada"
+              : "concesion",
+      })
+      .eq("id", data.muestra_id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const autorizarMuestra = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        muestra_id: z.string().uuid(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const sb = context.supabase as SB;
+    const roles = await getUserRoles(sb, context.userId);
+    requireAnyRole(roles, ROLES_AUTORIZA);
+
+    const rolAutorizador = roles.includes("calidad")
+      ? "calidad"
+      : roles.includes("gerente_general")
+        ? "gerente_general"
+        : "administrador";
+
+    // Validar que tenga dictamen técnico
+    const { data: prev, error: ePrev } = await sb
+      .from("muestras_calidad")
+      .select("dictamen")
+      .eq("id", data.muestra_id)
+      .single();
+    if (ePrev) throw new Error(ePrev.message);
+    if (!prev.dictamen) {
+      throw new Error("La muestra no tiene dictamen técnico para autorizar.");
+    }
+
+    const { error } = await sb
+      .from("muestras_calidad")
+      .update({
+        autorizado_por: context.userId,
+        autorizado_at: new Date().toISOString(),
+        rol_autorizador: rolAutorizador as never,
+      })
+      .eq("id", data.muestra_id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const crearAjuste = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        muestra_id: z.string().uuid().nullable().optional(),
+        orden_id: z.string().uuid(),
+        maquina_id: z.string().uuid(),
+        planta_id: z.string().uuid(),
+        tipo_ajuste: z.enum([
+          "ajuste_calidad",
+          "ajuste_maquina",
+          "ajuste_parametros",
+          "cambio_materia_prima",
+          "reproceso",
+          "otro",
+        ]),
+        motivo: z.string().min(1),
+        sla_objetivo_horas: z.number().default(4),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const sb = context.supabase as SB;
+    const roles = await getUserRoles(sb, context.userId);
+    requireAnyRole(roles, ROLES_CAPTURA);
+
+    const { data: row, error } = await sb
+      .from("ajustes_calidad")
+      .insert({
+        muestra_id: data.muestra_id ?? null,
+        orden_id: data.orden_id,
+        maquina_id: data.maquina_id,
+        planta_id: data.planta_id,
+        tipo_ajuste: data.tipo_ajuste,
+        motivo: data.motivo,
+        detectado_en: new Date().toISOString(),
+        solicitado_por: context.userId,
+        sla_objetivo_horas: data.sla_objetivo_horas,
+        estado_flujo: "solicitado",
+        resultado: "pendiente",
+      })
+      .select("id")
+      .single();
+    if (error) throw new Error(error.message);
+    return { id: row.id };
+  });
+
+export const actualizarAjuste = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        id: z.string().uuid(),
+        estado_flujo: z
+          .enum(["solicitado", "autorizado", "en_ejecucion", "cerrado", "rechazado"])
+          .optional(),
+        resultado: z
+          .enum(["pendiente", "exitoso", "parcial", "fallido"])
+          .optional(),
+        accion_realizada: z.string().nullable().optional(),
+        observacion_ajuste: z.string().nullable().optional(),
+        muestra_verificacion_id: z.string().uuid().nullable().optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const sb = context.supabase as SB;
+    const roles = await getUserRoles(sb, context.userId);
+    requireAnyRole(roles, ROLES_CAPTURA);
+
+    const patch: Record<string, unknown> = {};
+    if (data.estado_flujo) patch.estado_flujo = data.estado_flujo;
+    if (data.resultado) patch.resultado = data.resultado;
+    if (data.accion_realizada !== undefined) patch.accion_realizada = data.accion_realizada;
+    if (data.observacion_ajuste !== undefined) patch.observacion_ajuste = data.observacion_ajuste;
+    if (data.muestra_verificacion_id !== undefined)
+      patch.muestra_verificacion_id = data.muestra_verificacion_id;
+
+    if (data.estado_flujo === "autorizado") {
+      patch.autorizado_por = context.userId;
+      patch.autorizado_at = new Date().toISOString();
+    }
+    if (data.estado_flujo === "cerrado") {
+      patch.ajustado_por = context.userId;
+      patch.ajustado_at = new Date().toISOString();
+    }
+
+    const { error } = await sb.from("ajustes_calidad").update(patch).eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const registrarSpecAudit = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        especificacion_id: z.string().uuid(),
+        producto_id: z.string().uuid(),
+        variable_id: z.string().uuid().nullable().optional(),
+        variable_clave: z.string().min(1),
+        variable_etiqueta: z.string().min(1),
+        campo: z.enum(["min", "objetivo", "max"]),
+        valor_anterior: z.number().nullable(),
+        valor_nuevo: z.number().nullable(),
+        motivo: z.string().min(1),
+        planta_id: z.string().uuid().nullable().optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const sb = context.supabase as SB;
+    const roles = await getUserRoles(sb, context.userId);
+    requireAnyRole(roles, ["calidad", ...ROLES_ADMIN, "direccion"]);
+
+    const { data: profile } = await sb
+      .from("profiles")
+      .select("nombre")
+      .eq("id", context.userId)
+      .maybeSingle();
+
+    const rolAuditor = roles.includes("calidad")
+      ? "calidad"
+      : roles.includes("gerente_general")
+        ? "gerente_general"
+        : roles.includes("administrador")
+          ? "administrador"
+          : "direccion";
+
+    const { error } = await sb.from("spec_audit_log").insert({
+      especificacion_id: data.especificacion_id,
+      producto_id: data.producto_id,
+      variable_id: data.variable_id ?? null,
+      variable_clave: data.variable_clave,
+      variable_etiqueta: data.variable_etiqueta,
+      campo: data.campo,
+      valor_anterior: data.valor_anterior,
+      valor_nuevo: data.valor_nuevo,
+      motivo: data.motivo,
+      modificado_por: context.userId,
+      modificado_por_nombre: profile?.nombre ?? null,
+      modificado_por_rol: rolAuditor as never,
+      planta_id: data.planta_id ?? null,
+    });
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+// =============================================================================
+// resolveRolloStatus — server-side (lee de Supabase, no del mock)
+// =============================================================================
+
+/**
+ * Carga muestras + ajustes mínimos necesarios y delega en el resolver puro
+ * `resolveRolloStatusFrom`. Esta es la única función que cualquier consumidor
+ * (etiqueta, QR, reporte, dashboard) debe usar para obtener el estatus actual.
+ */
+export const resolveRolloStatusServer = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: ResolveRolloInput) =>
+    z
+      .object({
+        rolloId: z.union([z.string(), z.number()]).nullable().optional(),
+        folio: z.string().nullable().optional(),
+        ordenId: z.string().uuid().nullable().optional(),
+        legacyEstatus: z.enum(["L", "NC", "C"]).nullable().optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }): Promise<RolloStatusInfo> => {
+    const sb = context.supabase as SB;
+    let q = sb.from("muestras_calidad").select("*").limit(200);
+    if (data.ordenId) q = q.eq("orden_id", data.ordenId);
+    const { data: muestras, error } = await q;
+    if (error) throw new Error(error.message);
+
+    const muestraIds = (muestras ?? []).map((m) => m.id);
+    let ajustes: AjusteCalidad[] = [];
+    if (muestraIds.length > 0) {
+      const { data: aj, error: eAj } = await sb
+        .from("ajustes_calidad")
+        .select("*")
+        .in("muestra_id", muestraIds);
+      if (eAj) throw new Error(eAj.message);
+      ajustes = (aj ?? []) as unknown as AjusteCalidad[];
+    }
+
+    return resolveRolloStatusFrom(
+      {
+        muestras: (muestras ?? []) as unknown as MuestraCalidad[],
+        ajustes,
+      },
+      data,
+    );
+  });
