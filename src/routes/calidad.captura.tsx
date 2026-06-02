@@ -585,17 +585,37 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
                         <div className="text-sm font-medium tabular-nums text-muted-foreground">{vs.max_valor}</div>
                       </div>
                     </div>
-                    <Input
-                      type="number" step={0.1} inputMode="decimal"
-                      disabled={isBlocked}
-                      value={input.valor}
-                      onChange={(e) => setMediciones((prev) => ({
-                        ...prev,
-                        [vs.variable_id]: { ...prev[vs.variable_id], valor: e.target.value },
-                      }))}
-                      className="h-12 text-lg font-semibold w-full"
-                      placeholder="Capturar valor"
-                    />
+                    {vs.clave === "uniones" ? (
+                      <Select
+                        disabled={isBlocked}
+                        value={input.valor}
+                        onValueChange={(val) => setMediciones((prev) => ({
+                          ...prev,
+                          [vs.variable_id]: { ...prev[vs.variable_id], valor: val },
+                        }))}
+                      >
+                        <SelectTrigger className="h-12 text-lg font-semibold w-full">
+                          <SelectValue placeholder="Capturar valor" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {["0","1","2","3","4","5"].map((o) => (
+                            <SelectItem key={o} value={o}>{o === "5" ? "5+" : o}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Input
+                        type="number" step={vs.clave === "peso" ? 1 : 0.1} inputMode="decimal"
+                        disabled={isBlocked}
+                        value={input.valor}
+                        onChange={(e) => setMediciones((prev) => ({
+                          ...prev,
+                          [vs.variable_id]: { ...prev[vs.variable_id], valor: e.target.value },
+                        }))}
+                        className="h-12 text-lg font-semibold w-full"
+                        placeholder="Capturar valor"
+                      />
+                    )}
                   </div>
                 ))}
               </div>
