@@ -171,7 +171,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
   // Reinicializar mediciones cuando cambia el producto / spec
   useEffect(() => {
     const base: MedicionInputState = {};
-    variables.forEach((v) => { base[v.variable_id] = { valor: "", observacion: "" }; });
+    variables.forEach((v) => { base[v.variable_id] = { valor: "" }; });
     setMediciones(base);
   }, [productoId, variables.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
