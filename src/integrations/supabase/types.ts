@@ -14,6 +14,120 @@ export type Database = {
   }
   public: {
     Tables: {
+      ajustes_calidad: {
+        Row: {
+          accion_realizada: string | null
+          ajustado_at: string | null
+          ajustado_por: string | null
+          autorizado_at: string | null
+          autorizado_por: string | null
+          created_at: string
+          detectado_en: string
+          estado_flujo: Database["public"]["Enums"]["qc_ajuste_flujo"]
+          evidencia_url: string | null
+          id: string
+          maquina_id: string
+          motivo: string
+          muestra_id: string | null
+          muestra_verificacion_id: string | null
+          observacion_ajuste: string | null
+          orden_id: string
+          planta_id: string
+          resultado: Database["public"]["Enums"]["qc_resultado_ajuste"]
+          sla_objetivo_horas: number
+          solicitado_at: string
+          solicitado_por: string
+          tipo_ajuste: Database["public"]["Enums"]["qc_tipo_ajuste"]
+          updated_at: string
+        }
+        Insert: {
+          accion_realizada?: string | null
+          ajustado_at?: string | null
+          ajustado_por?: string | null
+          autorizado_at?: string | null
+          autorizado_por?: string | null
+          created_at?: string
+          detectado_en?: string
+          estado_flujo?: Database["public"]["Enums"]["qc_ajuste_flujo"]
+          evidencia_url?: string | null
+          id?: string
+          maquina_id: string
+          motivo: string
+          muestra_id?: string | null
+          muestra_verificacion_id?: string | null
+          observacion_ajuste?: string | null
+          orden_id: string
+          planta_id: string
+          resultado?: Database["public"]["Enums"]["qc_resultado_ajuste"]
+          sla_objetivo_horas?: number
+          solicitado_at?: string
+          solicitado_por: string
+          tipo_ajuste: Database["public"]["Enums"]["qc_tipo_ajuste"]
+          updated_at?: string
+        }
+        Update: {
+          accion_realizada?: string | null
+          ajustado_at?: string | null
+          ajustado_por?: string | null
+          autorizado_at?: string | null
+          autorizado_por?: string | null
+          created_at?: string
+          detectado_en?: string
+          estado_flujo?: Database["public"]["Enums"]["qc_ajuste_flujo"]
+          evidencia_url?: string | null
+          id?: string
+          maquina_id?: string
+          motivo?: string
+          muestra_id?: string | null
+          muestra_verificacion_id?: string | null
+          observacion_ajuste?: string | null
+          orden_id?: string
+          planta_id?: string
+          resultado?: Database["public"]["Enums"]["qc_resultado_ajuste"]
+          sla_objetivo_horas?: number
+          solicitado_at?: string
+          solicitado_por?: string
+          tipo_ajuste?: Database["public"]["Enums"]["qc_tipo_ajuste"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ajustes_calidad_maquina_id_fkey"
+            columns: ["maquina_id"]
+            isOneToOne: false
+            referencedRelation: "maquinas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ajustes_calidad_muestra_id_fkey"
+            columns: ["muestra_id"]
+            isOneToOne: false
+            referencedRelation: "muestras_calidad"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ajustes_calidad_muestra_verificacion_id_fkey"
+            columns: ["muestra_verificacion_id"]
+            isOneToOne: false
+            referencedRelation: "muestras_calidad"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ajustes_calidad_orden_id_fkey"
+            columns: ["orden_id"]
+            isOneToOne: false
+            referencedRelation: "ordenes_fabricacion"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ajustes_calidad_planta_id_fkey"
+            columns: ["planta_id"]
+            isOneToOne: false
+            referencedRelation: "plantas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       familias_producto: {
         Row: {
           activo: boolean
@@ -140,6 +254,66 @@ export type Database = {
           },
         ]
       }
+      mediciones_calidad: {
+        Row: {
+          capturado_por: string | null
+          created_at: string
+          estado: Database["public"]["Enums"]["qc_medicion_estado"]
+          id: string
+          max_snapshot: number
+          min_snapshot: number
+          muestra_id: string
+          objetivo_snapshot: number
+          observacion: string
+          valor: number
+          variable_clave: string
+          variable_id: string
+        }
+        Insert: {
+          capturado_por?: string | null
+          created_at?: string
+          estado?: Database["public"]["Enums"]["qc_medicion_estado"]
+          id?: string
+          max_snapshot: number
+          min_snapshot: number
+          muestra_id: string
+          objetivo_snapshot: number
+          observacion?: string
+          valor: number
+          variable_clave: string
+          variable_id: string
+        }
+        Update: {
+          capturado_por?: string | null
+          created_at?: string
+          estado?: Database["public"]["Enums"]["qc_medicion_estado"]
+          id?: string
+          max_snapshot?: number
+          min_snapshot?: number
+          muestra_id?: string
+          objetivo_snapshot?: number
+          observacion?: string
+          valor?: number
+          variable_clave?: string
+          variable_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mediciones_calidad_muestra_id_fkey"
+            columns: ["muestra_id"]
+            isOneToOne: false
+            referencedRelation: "muestras_calidad"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mediciones_calidad_variable_id_fkey"
+            columns: ["variable_id"]
+            isOneToOne: false
+            referencedRelation: "variables_calidad"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       module_permissions: {
         Row: {
           module: Database["public"]["Enums"]["app_module"]
@@ -154,6 +328,147 @@ export type Database = {
           role?: Database["public"]["Enums"]["app_role"]
         }
         Relationships: []
+      }
+      muestras_calidad: {
+        Row: {
+          autorizado_at: string | null
+          autorizado_por: string | null
+          capturado_at: string
+          capturado_por: string
+          created_at: string
+          dictamen: Database["public"]["Enums"]["qc_dictamen"] | null
+          dictamen_at: string | null
+          dictamen_motivo: string | null
+          dictamen_observaciones: string | null
+          especificacion_id: string
+          especificacion_version: string
+          estado: Database["public"]["Enums"]["qc_muestra_estado"]
+          evidencia_url: string | null
+          hora_muestreo: string
+          id: string
+          maquina_id: string
+          mediciones_modificacion_motivo: string | null
+          mediciones_modificadas_at: string | null
+          mediciones_modificadas_por: string | null
+          numero_rollo: number | null
+          observaciones_generales: string
+          operario_id: string | null
+          orden_id: string
+          planta_id: string
+          producto_id: string
+          revisado_at: string | null
+          revisado_por: string | null
+          rol_autorizador: Database["public"]["Enums"]["app_role"] | null
+          tipo_muestreo: Database["public"]["Enums"]["qc_tipo_muestreo"]
+          turno: string
+          updated_at: string
+          variables_snapshot_json: Json
+        }
+        Insert: {
+          autorizado_at?: string | null
+          autorizado_por?: string | null
+          capturado_at?: string
+          capturado_por: string
+          created_at?: string
+          dictamen?: Database["public"]["Enums"]["qc_dictamen"] | null
+          dictamen_at?: string | null
+          dictamen_motivo?: string | null
+          dictamen_observaciones?: string | null
+          especificacion_id: string
+          especificacion_version: string
+          estado?: Database["public"]["Enums"]["qc_muestra_estado"]
+          evidencia_url?: string | null
+          hora_muestreo?: string
+          id?: string
+          maquina_id: string
+          mediciones_modificacion_motivo?: string | null
+          mediciones_modificadas_at?: string | null
+          mediciones_modificadas_por?: string | null
+          numero_rollo?: number | null
+          observaciones_generales?: string
+          operario_id?: string | null
+          orden_id: string
+          planta_id: string
+          producto_id: string
+          revisado_at?: string | null
+          revisado_por?: string | null
+          rol_autorizador?: Database["public"]["Enums"]["app_role"] | null
+          tipo_muestreo: Database["public"]["Enums"]["qc_tipo_muestreo"]
+          turno: string
+          updated_at?: string
+          variables_snapshot_json?: Json
+        }
+        Update: {
+          autorizado_at?: string | null
+          autorizado_por?: string | null
+          capturado_at?: string
+          capturado_por?: string
+          created_at?: string
+          dictamen?: Database["public"]["Enums"]["qc_dictamen"] | null
+          dictamen_at?: string | null
+          dictamen_motivo?: string | null
+          dictamen_observaciones?: string | null
+          especificacion_id?: string
+          especificacion_version?: string
+          estado?: Database["public"]["Enums"]["qc_muestra_estado"]
+          evidencia_url?: string | null
+          hora_muestreo?: string
+          id?: string
+          maquina_id?: string
+          mediciones_modificacion_motivo?: string | null
+          mediciones_modificadas_at?: string | null
+          mediciones_modificadas_por?: string | null
+          numero_rollo?: number | null
+          observaciones_generales?: string
+          operario_id?: string | null
+          orden_id?: string
+          planta_id?: string
+          producto_id?: string
+          revisado_at?: string | null
+          revisado_por?: string | null
+          rol_autorizador?: Database["public"]["Enums"]["app_role"] | null
+          tipo_muestreo?: Database["public"]["Enums"]["qc_tipo_muestreo"]
+          turno?: string
+          updated_at?: string
+          variables_snapshot_json?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "muestras_calidad_especificacion_id_fkey"
+            columns: ["especificacion_id"]
+            isOneToOne: false
+            referencedRelation: "producto_especificaciones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "muestras_calidad_maquina_id_fkey"
+            columns: ["maquina_id"]
+            isOneToOne: false
+            referencedRelation: "maquinas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "muestras_calidad_orden_id_fkey"
+            columns: ["orden_id"]
+            isOneToOne: false
+            referencedRelation: "ordenes_fabricacion"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "muestras_calidad_planta_id_fkey"
+            columns: ["planta_id"]
+            isOneToOne: false
+            referencedRelation: "plantas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "muestras_calidad_producto_id_fkey"
+            columns: ["producto_id"]
+            isOneToOne: false
+            referencedRelation: "productos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       operarios: {
         Row: {
@@ -690,6 +1005,89 @@ export type Database = {
           },
         ]
       }
+      spec_audit_log: {
+        Row: {
+          campo: Database["public"]["Enums"]["qc_spec_audit_field"]
+          especificacion_id: string
+          id: string
+          modificado_at: string
+          modificado_por: string
+          modificado_por_nombre: string | null
+          modificado_por_rol: Database["public"]["Enums"]["app_role"] | null
+          motivo: string
+          planta_id: string | null
+          producto_id: string
+          valor_anterior: number | null
+          valor_nuevo: number | null
+          variable_clave: string
+          variable_etiqueta: string
+          variable_id: string | null
+        }
+        Insert: {
+          campo: Database["public"]["Enums"]["qc_spec_audit_field"]
+          especificacion_id: string
+          id?: string
+          modificado_at?: string
+          modificado_por: string
+          modificado_por_nombre?: string | null
+          modificado_por_rol?: Database["public"]["Enums"]["app_role"] | null
+          motivo: string
+          planta_id?: string | null
+          producto_id: string
+          valor_anterior?: number | null
+          valor_nuevo?: number | null
+          variable_clave: string
+          variable_etiqueta: string
+          variable_id?: string | null
+        }
+        Update: {
+          campo?: Database["public"]["Enums"]["qc_spec_audit_field"]
+          especificacion_id?: string
+          id?: string
+          modificado_at?: string
+          modificado_por?: string
+          modificado_por_nombre?: string | null
+          modificado_por_rol?: Database["public"]["Enums"]["app_role"] | null
+          motivo?: string
+          planta_id?: string | null
+          producto_id?: string
+          valor_anterior?: number | null
+          valor_nuevo?: number | null
+          variable_clave?: string
+          variable_etiqueta?: string
+          variable_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spec_audit_log_especificacion_id_fkey"
+            columns: ["especificacion_id"]
+            isOneToOne: false
+            referencedRelation: "producto_especificaciones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "spec_audit_log_planta_id_fkey"
+            columns: ["planta_id"]
+            isOneToOne: false
+            referencedRelation: "plantas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "spec_audit_log_producto_id_fkey"
+            columns: ["producto_id"]
+            isOneToOne: false
+            referencedRelation: "productos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "spec_audit_log_variable_id_fkey"
+            columns: ["variable_id"]
+            isOneToOne: false
+            referencedRelation: "variables_calidad"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tipos_paro: {
         Row: {
           activo: boolean
@@ -887,6 +1285,36 @@ export type Database = {
         | "servicios"
         | "planeado"
         | "otro"
+      qc_ajuste_flujo:
+        | "solicitado"
+        | "autorizado"
+        | "en_ejecucion"
+        | "cerrado"
+        | "rechazado"
+      qc_dictamen: "liberada" | "rechazada" | "concesion"
+      qc_medicion_estado:
+        | "pendiente"
+        | "conforme"
+        | "no_conforme"
+        | "fuera_rango_critico"
+      qc_muestra_estado:
+        | "borrador"
+        | "pendiente_revision"
+        | "en_ajuste"
+        | "reproceso"
+        | "liberada"
+        | "rechazada"
+        | "concesion"
+      qc_resultado_ajuste: "pendiente" | "exitoso" | "parcial" | "fallido"
+      qc_spec_audit_field: "min" | "objetivo" | "max"
+      qc_tipo_ajuste:
+        | "ajuste_calidad"
+        | "ajuste_maquina"
+        | "ajuste_parametros"
+        | "cambio_materia_prima"
+        | "reproceso"
+        | "otro"
+      qc_tipo_muestreo: "por_rollo" | "por_tiempo"
       shift_code: "1" | "2" | "3"
       spec_status: "borrador" | "vigente" | "obsoleta"
       unidad_objetivo: "kg" | "rollos" | "ambos"
@@ -1054,6 +1482,40 @@ export const Constants = {
         "planeado",
         "otro",
       ],
+      qc_ajuste_flujo: [
+        "solicitado",
+        "autorizado",
+        "en_ejecucion",
+        "cerrado",
+        "rechazado",
+      ],
+      qc_dictamen: ["liberada", "rechazada", "concesion"],
+      qc_medicion_estado: [
+        "pendiente",
+        "conforme",
+        "no_conforme",
+        "fuera_rango_critico",
+      ],
+      qc_muestra_estado: [
+        "borrador",
+        "pendiente_revision",
+        "en_ajuste",
+        "reproceso",
+        "liberada",
+        "rechazada",
+        "concesion",
+      ],
+      qc_resultado_ajuste: ["pendiente", "exitoso", "parcial", "fallido"],
+      qc_spec_audit_field: ["min", "objetivo", "max"],
+      qc_tipo_ajuste: [
+        "ajuste_calidad",
+        "ajuste_maquina",
+        "ajuste_parametros",
+        "cambio_materia_prima",
+        "reproceso",
+        "otro",
+      ],
+      qc_tipo_muestreo: ["por_rollo", "por_tiempo"],
       shift_code: ["1", "2", "3"],
       spec_status: ["borrador", "vigente", "obsoleta"],
       unidad_objetivo: ["kg", "rollos", "ambos"],
