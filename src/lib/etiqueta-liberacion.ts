@@ -99,8 +99,8 @@ function buildHtml(data: EtiquetaData, qrDataUrl: string, logoDataUrl: string): 
   .head{display:grid;grid-template-columns:1fr 1.6fr 1fr;border-bottom:2px solid #0f172a}
   .head > div{padding:10px 14px;border-right:1px solid #0f172a}
   .head > div:last-child{border-right:0}
-  .brand{font-weight:800;font-size:13px;text-align:center;line-height:1.3}
-  .brand small{font-size:10px;color:#475569;font-weight:600;letter-spacing:.08em}
+  .brand{display:flex;align-items:center;justify-content:center;padding:8px}
+  .brand img{max-width:100%;max-height:64px;width:auto;height:auto;object-fit:contain;display:block}
   .title{display:flex;flex-direction:column;justify-content:center;text-align:center}
   .title b{font-size:12px}
   .title .sub{margin-top:4px;font-size:14px;font-weight:800;letter-spacing:.08em}
