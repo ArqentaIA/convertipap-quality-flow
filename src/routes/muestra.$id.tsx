@@ -110,6 +110,28 @@ function MuestraTracePage() {
               <div className="text-xs text-muted-foreground">Turno {trace.turno || "—"}</div>
             </div>
           </div>
+
+          {/* Personal */}
+          {(trace.jefe_maquina || trace.operador || trace.prensero || trace.analista) && (
+            <div className="grid grid-cols-2 divide-x divide-border border-t border-border text-xs">
+              <div className="p-2.5">
+                <div className="text-[10px] uppercase text-muted-foreground tracking-wide">Jefe de Máquina</div>
+                <div className="font-medium">{trace.jefe_maquina || "—"}</div>
+              </div>
+              <div className="p-2.5">
+                <div className="text-[10px] uppercase text-muted-foreground tracking-wide">Operador</div>
+                <div className="font-medium">{trace.operador || "—"}</div>
+              </div>
+              <div className="p-2.5 border-t border-border">
+                <div className="text-[10px] uppercase text-muted-foreground tracking-wide">Prensero</div>
+                <div className="font-medium">{trace.prensero || "—"}</div>
+              </div>
+              <div className="p-2.5 border-t border-border">
+                <div className="text-[10px] uppercase text-muted-foreground tracking-wide">Analista</div>
+                <div className="font-medium">{trace.analista || "—"}</div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Mediciones */}
