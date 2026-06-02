@@ -253,14 +253,8 @@ function EstadoChip({ estado }: { estado: MaquinaRow["estado"] }) {
       <Icon className="h-3 w-3" /> {txt}
     </span>
   );
-}
-  const { cls, icon: Icon, txt } = map[estado];
-  return (
-    <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${cls}`}>
-      <Icon className="h-3 w-3" /> {txt}
-    </span>
-  );
-}
+
+
 
 function KPI({ icon: Icon, label, value, tone = "default" }: { icon: React.ComponentType<{ className?: string }>; label: string; value: string; tone?: "default" | "primary" | "success" | "warning" }) {
   const tones: Record<string, string> = {
