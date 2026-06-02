@@ -603,7 +603,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
         {spec && (
           <Card className={cn(isBlocked && "opacity-60 pointer-events-none")}>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">C. Mediciones por variable</CardTitle>
+              <CardTitle className="text-sm font-medium">D. Mediciones por variable</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               {/* Desktop / tablet landscape: tabla clásica */}
