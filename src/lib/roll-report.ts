@@ -99,7 +99,7 @@ export async function printRollReport(data: RollReportData) {
       <h1>Reporte de rollo · trazabilidad</h1>
       <div class="folio">Folio: <strong>${data.folio}</strong>${data.rollo ? ` · Rollo: <strong>${data.rollo}</strong>` : ""}</div>
     </div>
-    <span class="badge">${est.txt}</span>
+    <span class="badge">${est.label.toUpperCase()}</span>
   </header>
 
   <div class="grid">
