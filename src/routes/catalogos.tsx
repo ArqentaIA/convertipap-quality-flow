@@ -177,7 +177,7 @@ type Maquina = {
   area: string | null; activo: boolean; plantas?: { nombre: string; codigo: string } | null;
 };
 
-function MaquinasTab({ maquinas, plantas }: { maquinas: Maquina[]; plantas: Planta[] }) {
+function MaquinasTab({ maquinas, plantas, isAdmin }: { maquinas: Maquina[]; plantas: Planta[]; isAdmin: boolean }) {
   const qc = useQueryClient();
   const upsertFn = useServerFn(upsertMaquina);
   const toggleFn = useServerFn(toggleMaquina);
