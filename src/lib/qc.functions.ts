@@ -23,7 +23,7 @@ import {
   type ResolveRolloInput,
   type RolloStatusInfo,
 } from "@/lib/roll-status";
-import type { MuestraCalidad, AjusteCalidad } from "@/lib/qc-mock/types";
+import type { MuestraCalidad, AjusteCalidad } from "@/lib/qc-types";
 
 type SB = SupabaseClient<Database>;
 

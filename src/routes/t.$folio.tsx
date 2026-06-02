@@ -3,7 +3,6 @@ import { ShieldCheck, QrCode, Factory, User, Calendar, Package, Hash, AlertTrian
 import { useMemo } from "react";
 import logoUrl from "@/assets/logo-convertipap.png";
 import { resolveRolloStatus, type RolloStatusInfo } from "@/lib/roll-status";
-import { useQcMock } from "@/lib/qc-mock/store";
 
 export const Route = createFileRoute("/t/$folio")({ component: TracePage });
 
@@ -72,7 +71,6 @@ function TracePage() {
     folio === "CAL-2026-04811" ? "NC" :
     folio === "CAL-2026-04830" ? "L" : undefined;
 
-  const qcState = useQcMock((s) => s);
   const est: RolloStatusInfo = useMemo(
     () =>
       resolveRolloStatus({
@@ -81,7 +79,7 @@ function TracePage() {
         ordenId: ctx.ordenId,
         legacyEstatus: legacy ?? null,
       }),
-    [qcState, ctx.rollo, ctx.folio, ctx.ordenId, legacy],
+    [ctx.rollo, ctx.folio, ctx.ordenId, legacy],
   );
 
   return (

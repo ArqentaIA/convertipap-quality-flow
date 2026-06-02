@@ -21,8 +21,7 @@
 // NO se modifican tablas, RLS ni migraciones.
 // =============================================================================
 
-import type { MuestraCalidad, AjusteCalidad } from "./qc-mock/types";
-import { getQcSnapshot } from "./qc-mock/store";
+import type { MuestraCalidad, AjusteCalidad } from "./qc-types";
 
 export type RolloStatusKey =
   | "pendiente_revision"
@@ -308,14 +307,11 @@ export function resolveRolloStatusFrom(
 }
 
 /**
- * Versión navegador: lee el snapshot actual del store de Calidad (mock).
- * Cuando se conecte el backend real, esta función pasará a hacer una consulta
- * a Supabase con la misma forma de retorno.
+ * Versión sincrónica para etiquetas/reportes/PDF que se generan sin acceso a
+ * datos QC. Sólo evalúa el `legacyEstatus` recibido; cuando no hay info cae
+ * a `pendiente_revision`. Para estatus en vivo desde Supabase usar
+ * `resolveRolloStatusServer` (server fn) o `resolveRolloStatusFrom`.
  */
 export function resolveRolloStatus(input: ResolveRolloInput): RolloStatusInfo {
-  const snap = getQcSnapshot();
-  return resolveRolloStatusFrom(
-    { muestras: snap.muestras, ajustes: snap.ajustes },
-    input,
-  );
+  return resolveRolloStatusFrom({ muestras: [], ajustes: [] }, input);
 }
