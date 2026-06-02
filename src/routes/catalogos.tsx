@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { queryOptions, useSuspenseQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { queryOptions, useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Plus, Pencil, Power, Ban } from "lucide-react";
@@ -54,9 +54,33 @@ type Tab = "plantas" | "maquinas" | "productos" | "ordenes";
 
 function CatalogosPage() {
   const [tab, setTab] = useState<Tab>("plantas");
-  const { data } = useSuspenseQuery(catalogosQO);
-  const { hasRole } = useAuth();
+  const { hasRole, session } = useAuth();
+  const catalogosQuery = useQuery({
+    ...catalogosQO,
+    enabled: !!session?.access_token,
+    retry: false,
+  });
   const isAdmin = hasRole("administrador");
+
+  if (catalogosQuery.error) {
+    return (
+      <AppLayout title="Catálogos">
+        <div role="alert" className="rounded-md border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
+          No se pudieron cargar los catálogos: {catalogosQuery.error.message}
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (catalogosQuery.isLoading || !catalogosQuery.data) {
+    return (
+      <AppLayout title="Catálogos">
+        <div className="rounded-md border border-border bg-card p-4 text-sm text-muted-foreground">Cargando catálogos…</div>
+      </AppLayout>
+    );
+  }
+
+  const data = catalogosQuery.data;
 
   return (
     <AppLayout title="Catálogos">
@@ -294,8 +318,18 @@ function ProductosTab({ productos, isAdmin }: { productos: Producto[]; isAdmin: 
   const qc = useQueryClient();
   const upsertFn = useServerFn(upsertProducto);
   const toggleFn = useServerFn(toggleProducto);
-  const { data: tipos } = useSuspenseQuery(tiposProductoQO);
+  const { session } = useAuth();
+  const tiposQuery = useQuery({
+    ...tiposProductoQO,
+    enabled: !!session?.access_token,
+    retry: false,
+  });
+  const tipos = tiposQuery.data ?? [];
   const [editing, setEditing] = useState<Partial<Producto> | null>(null);
+
+  if (tiposQuery.error) {
+    return <div className="rounded-md border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">No se cargaron los tipos de producto: {tiposQuery.error.message}</div>;
+  }
 
   const upsert = useMutation({
     mutationFn: upsertFn,
