@@ -16,7 +16,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { RangoSelector, MESES, rangoLabel, type Rango } from "@/components/qc/RangoSelector";
 import { getDashboard } from "@/lib/dashboard.functions";
 
-export const Route = createFileRoute("/")({ component: Dashboard });
+export const Route = createFileRoute("/")({ component: DashboardGate, ssr: false });
 
 function computeWindow(rango: Rango, mesesSel: number[]): { start: Date; end: Date } {
   const now = new Date();
