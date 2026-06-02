@@ -24,6 +24,8 @@ export type TraceMuestra = {
   turno: string;
   estado: string;
   dictamen: string | null;
+  estatus_liberacion: string | null;
+  defectos: string[];
   observaciones_generales: string;
   jefe_maquina: string | null;
   operador: string | null;
