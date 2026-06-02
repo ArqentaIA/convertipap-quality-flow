@@ -4,6 +4,7 @@ import html2canvas from "html2canvas";
 import logoUrl from "@/assets/logo-convertipap.png";
 import type { Measurement, GeneralInfo } from "@/lib/qc-data";
 import { buildTraceUrl } from "@/lib/roll-report";
+import { resolveRolloStatus } from "@/lib/roll-status";
 
 export type RollLabelData = {
   m: Measurement;
@@ -12,11 +13,8 @@ export type RollLabelData = {
   productoNombre: string;
 };
 
-const ESTATUS = {
-  L:  { txt: "LIBERADO",     color: "#16a34a", bg: "#dcfce7" },
-  C:  { txt: "CONDICIONADO", color: "#a16207", bg: "#fef3c7" },
-  NC: { txt: "NO CONFORME",  color: "#b91c1c", bg: "#fee2e2" },
-} as const;
+// El estatus impreso SIEMPRE proviene de resolveRolloStatus().
+// `Measurement.estatus` es solo la sugerencia del capturista (referencia interna).
 
 function parseNotas(notas: string): string[] {
   return notas.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
