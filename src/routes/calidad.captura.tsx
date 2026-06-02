@@ -753,10 +753,10 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
           </Alert>
         )}
 
-        {/* D. Producción capturada recientemente */}
+        {/* E. Producción capturada recientemente */}
         <Card>
           <CardHeader className="pb-2 flex flex-row items-center justify-between">
-            <CardTitle className="text-sm font-medium">D. Producción capturada recientemente</CardTitle>
+            <CardTitle className="text-sm font-medium">E. Producción capturada recientemente</CardTitle>
             <Badge variant="outline" className="text-xs">
               {misMuestrasQuery.data?.length ?? 0} muestras
             </Badge>
