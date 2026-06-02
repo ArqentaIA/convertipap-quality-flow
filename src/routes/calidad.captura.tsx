@@ -6,7 +6,7 @@ import { queryOptions, useSuspenseQuery, useMutation, useQueryClient } from "@ta
 import { useServerFn } from "@tanstack/react-start";
 import {
   ArrowLeft, AlertTriangle, Ban, CheckCircle2, Save, Send, Lock,
-  ClipboardCheck, Info,
+  ClipboardCheck, Info, Factory,
 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
@@ -83,16 +83,8 @@ function evaluarMedicion(v: number, min: number, max: number): MedicionEstadoUI 
 }
 
 function CapturaCalidadPage() {
-  const search = Route.useSearch();
-  const navigate = useNavigate();
-  const router = useRouter();
-  const auth = useAuth();
   const labFilter = useLabFilter();
-  const queryClient = useQueryClient();
-
   const { data: ordenesAll } = useSuspenseQuery(ordenesQO);
-
-  // Filtrado por laboratorio basado en código de máquina ("MP-04", etc.)
   const ordenes = useMemo(
     () => ordenesAll.filter((o) => {
       const codigo = o.maquinas?.codigo;
@@ -101,14 +93,43 @@ function CapturaCalidadPage() {
     [ordenesAll, labFilter],
   );
 
-  const [ordenId, setOrdenId] = useState<string>(search.orden ?? ordenes[0]?.id ?? "");
-  const orden = ordenes.find((o) => o.id === ordenId);
+  if (ordenes.length === 0) {
+    return (
+      <AppLayout title="Captura de Muestra de Calidad">
+        <div className="mx-auto mt-12 max-w-xl rounded-xl border border-border bg-card p-8 text-center shadow-sm">
+          <Factory className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+          <h2 className="text-lg font-semibold text-foreground">No hay órdenes activas</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Ve a <strong>Producción</strong> para crear una orden antes de capturar muestras de calidad.
+          </p>
+          <Button asChild className="mt-6">
+            <Link to="/produccion">
+              <Factory className="mr-1.5 h-4 w-4" /> Ir a Producción
+            </Link>
+          </Button>
+        </div>
+      </AppLayout>
+    );
+  }
 
-  // Spec real + muestras existentes para warning de duplicado
-  const specQuery = useSuspenseQuery(specQO(ordenId || ordenes[0]?.id || ""));
-  const muestrasQuery = useSuspenseQuery(muestrasOrdenQO(ordenId || ordenes[0]?.id || ""));
-  const spec = ordenId ? specQuery.data : null;
-  const muestrasExistentes = ordenId ? muestrasQuery.data : [];
+  return <CapturaInner ordenes={ordenes} />;
+}
+
+function CapturaInner({ ordenes }: { ordenes: Awaited<ReturnType<typeof listOrdenesContexto>> }) {
+  const search = Route.useSearch();
+  const navigate = useNavigate();
+  const router = useRouter();
+  const auth = useAuth();
+  const queryClient = useQueryClient();
+
+  const [ordenId, setOrdenId] = useState<string>(search.orden ?? ordenes[0]!.id);
+  const orden = ordenes.find((o) => o.id === ordenId) ?? ordenes[0]!;
+  const effectiveId = orden.id;
+
+  const specQuery = useSuspenseQuery(specQO(effectiveId));
+  const muestrasQuery = useSuspenseQuery(muestrasOrdenQO(effectiveId));
+  const spec = specQuery.data;
+  const muestrasExistentes = muestrasQuery.data;
 
   const variables = useMemo(() => {
     if (!spec) return [];

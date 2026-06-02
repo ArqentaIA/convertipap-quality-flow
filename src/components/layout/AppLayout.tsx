@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   LayoutDashboard, Factory, ClipboardCheck, FileBarChart2,
   Settings, ChevronLeft, ChevronRight, Bell, ChevronDown, SlidersHorizontal,
-  LogOut, Lock, Loader2,
+  LogOut, Lock, Loader2, BookOpen,
 } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { PLANTS } from "@/lib/qc-data";
@@ -18,14 +18,12 @@ type NavItem = {
   pathPrefixes?: string[];
 };
 
-// Nota: "Catálogos" y "Usuarios y permisos" se ocultan del menú lateral
-// para todos los roles. Las rutas /catalogos y /usuarios siguen existiendo
-// protegidas por ROUTE_MODULE para uso técnico por URL directa.
 const NAV: NavItem[] = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, module: "dashboard" },
   { to: "/produccion", label: "Producción", icon: Factory, module: "produccion", pathPrefixes: ["/produccion", "/historial"] },
   { to: "/calidad/captura", label: "Control de Calidad", icon: ClipboardCheck, module: "control_calidad" },
   { to: "/variables-calidad", label: "Variables de Calidad", icon: SlidersHorizontal, module: "variables_calidad" },
+  { to: "/catalogos", label: "Catálogos", icon: BookOpen, module: "configuracion" },
   { to: "/reportes", label: "Reportes", icon: FileBarChart2, module: "reportes" },
   { to: "/configuracion", label: "Configuración", icon: Settings, module: "configuracion" },
 ];
