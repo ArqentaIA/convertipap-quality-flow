@@ -57,12 +57,25 @@ function MuestraTracePage() {
 
   const conformes = trace.mediciones.filter((m) => m.estado === "conforme").length;
   const total = trace.mediciones.length;
-  const liberada = trace.dictamen === "liberada" || (trace.estado === "liberada");
-  const noConforme = trace.dictamen === "rechazada" || trace.mediciones.some((m) => m.estado !== "conforme");
 
-  const estatusLabel = liberada ? "CONFORME" : noConforme ? "NO CONFORME" : "EN REVISIÓN";
+  // Estatus manual de liberación tiene prioridad sobre el cálculo automático
+  const estManual = trace.estatus_liberacion;
+  const liberada = estManual === "L" || trace.dictamen === "liberada" || trace.estado === "liberada";
+  const condicional = estManual === "C";
+  const noConforme = estManual === "NC" || trace.dictamen === "rechazada"
+    || (estManual == null && trace.mediciones.some((m) => m.estado !== "conforme"));
+
+  const estatusLabel = liberada
+    ? "CONFORME"
+    : condicional
+    ? "CONDICIONAL"
+    : noConforme
+    ? "NO CONFORME"
+    : "EN REVISIÓN";
   const estatusClass = liberada
     ? "bg-emerald-600 text-white"
+    : condicional
+    ? "bg-amber-500 text-white"
     : noConforme
     ? "bg-rose-600 text-white"
     : "bg-amber-500 text-white";
