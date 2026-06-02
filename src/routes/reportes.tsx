@@ -276,20 +276,20 @@ function ReportesPage() {
     [payload],
   );
 
-  if (reportesQuery.isLoading || !payload) {
-    return (
-      <AppLayout title="Reportes e Indicadores">
-        <div className="rounded-md border border-border bg-card p-4 text-sm text-muted-foreground">Cargando reportes…</div>
-      </AppLayout>
-    );
-  }
-
   if (reportesQuery.error) {
     return (
       <AppLayout title="Reportes e Indicadores">
         <div role="alert" className="rounded-md border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
           No se pudieron cargar los reportes: {reportesQuery.error.message}
         </div>
+      </AppLayout>
+    );
+  }
+
+  if (reportesQuery.isLoading || !payload) {
+    return (
+      <AppLayout title="Reportes e Indicadores">
+        <div className="rounded-md border border-border bg-card p-4 text-sm text-muted-foreground">Cargando reportes…</div>
       </AppLayout>
     );
   }
