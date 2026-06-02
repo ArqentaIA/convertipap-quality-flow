@@ -183,7 +183,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
 
   const evalMediciones = useMemo(() => {
     return variables.map((v) => {
-      const input = mediciones[v.variable_id] ?? { valor: "", observacion: "" };
+      const input = mediciones[v.variable_id] ?? { valor: "" };
       const num = input.valor === "" ? NaN : Number(input.valor);
       const estado = evaluarMedicion(num, v.min_valor, v.max_valor);
       return { spec: v, input, estado, num };
