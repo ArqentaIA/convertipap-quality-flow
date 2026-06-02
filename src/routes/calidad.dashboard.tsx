@@ -41,6 +41,7 @@ function DashboardPage() {
   const labFilter = useLabFilter();
   const listMuestrasFn = useServerFn(listMuestras);
   const listAjustesFn = useServerFn(listAjustes);
+  const queryClient = useQueryClient();
 
   const muestrasQuery = useSuspenseQuery({
     queryKey: ["qc", "muestras", "all"],
@@ -52,6 +53,21 @@ function DashboardPage() {
     queryFn: () => listAjustesFn({ data: {} }),
     refetchInterval: 30_000,
   });
+
+  // Realtime: invalida muestras/mediciones para refrescar sin recargar.
+  useEffect(() => {
+    const ch = supabase
+      .channel("calidad-dashboard-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "muestras_calidad" }, () => {
+        queryClient.invalidateQueries({ queryKey: ["qc", "muestras"] });
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "mediciones_calidad" }, () => {
+        queryClient.invalidateQueries({ queryKey: ["qc", "muestras"] });
+      })
+      .subscribe();
+    return () => { void supabase.removeChannel(ch); };
+  }, [queryClient]);
+
 
   const muestrasAll = muestrasQuery.data as MuestraRow[];
   const ajustesAll = ajustesQuery.data as AjusteRow[];
