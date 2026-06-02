@@ -644,7 +644,7 @@ export const registrarSpecAuditByCode = createServerFn({ method: "POST" })
           : "direccion";
 
     // Persistir el cambio en producto_variables (fuente de verdad de la spec)
-    if (variable?.id) {
+    if (variable?.id && data.valor_nuevo !== null) {
       const { data: pv } = await sb
         .from("producto_variables")
         .select("id")
@@ -654,9 +654,10 @@ export const registrarSpecAuditByCode = createServerFn({ method: "POST" })
       if (pv?.id) {
         const colMap = { min: "min_valor", objetivo: "objetivo", max: "max_valor" } as const;
         const col = colMap[data.campo];
+        const payload: Record<string, number> = { [col]: data.valor_nuevo };
         const { error: upErr } = await sb
           .from("producto_variables")
-          .update({ [col]: data.valor_nuevo })
+          .update(payload as never)
           .eq("id", pv.id);
         if (upErr) throw new Error(`No se pudo actualizar la especificación: ${upErr.message}`);
       }
