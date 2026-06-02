@@ -69,6 +69,12 @@ const PIE_COLORS = ["hsl(330,75%,55%)", "hsl(40,90%,55%)", "hsl(210,75%,50%)", "
 
 function DashboardGate() {
   const auth = useAuth();
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (!auth.loading && !auth.isAuthenticated) {
+      void navigate({ to: "/login", replace: true });
+    }
+  }, [auth.loading, auth.isAuthenticated, navigate]);
   if (auth.loading || !auth.isAuthenticated) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
