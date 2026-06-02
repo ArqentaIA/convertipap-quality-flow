@@ -6,6 +6,10 @@ import {
   AlertTriangle, Wrench, PlayCircle, ShieldCheck, ClipboardCheck, Lock,
   ExternalLink, TrendingUp,
 } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import {
+  useMutation, useQueryClient, useSuspenseQuery, queryOptions,
+} from "@tanstack/react-query";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,24 +17,28 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { useAuth } from "@/lib/auth";
 import {
-  useQcMock, autorizarAjuste, iniciarAjuste, cerrarAjuste, calcularSla,
-  SLA_HORAS,
-} from "@/lib/qc-mock/store";
-import type { AjusteCalidad, ResultadoAjuste } from "@/lib/qc-mock/types";
+  listOrdenesContexto, listMuestras, listAjustes, actualizarAjuste,
+} from "@/lib/qc.functions";
 import { useLabFilter } from "@/lib/lab";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/calidad/ajustes")({
-  component: AjustesPage,
-});
+type TipoAjuste =
+  | "ajuste_calidad" | "ajuste_maquina" | "ajuste_parametros"
+  | "cambio_materia_prima" | "reproceso" | "otro";
 
-const TIPO_LABEL: Record<AjusteCalidad["tipo_ajuste"], string> = {
+type FlujoAjuste =
+  | "solicitado" | "autorizado" | "en_ejecucion" | "cerrado" | "rechazado";
+
+type ResultadoAjuste = "pendiente" | "exitoso" | "parcial" | "fallido";
+
+const TIPO_LABEL: Record<TipoAjuste, string> = {
   ajuste_calidad: "Ajuste calidad",
   ajuste_maquina: "Ajuste máquina",
   ajuste_parametros: "Ajuste parámetros",
@@ -39,7 +47,7 @@ const TIPO_LABEL: Record<AjusteCalidad["tipo_ajuste"], string> = {
   otro: "Otro",
 };
 
-const FLUJO_LABEL: Record<AjusteCalidad["estado_flujo"], string> = {
+const FLUJO_LABEL: Record<FlujoAjuste, string> = {
   solicitado: "Solicitado",
   autorizado: "Autorizado",
   en_ejecucion: "En ejecución",
@@ -47,28 +55,115 @@ const FLUJO_LABEL: Record<AjusteCalidad["estado_flujo"], string> = {
   rechazado: "Rechazado",
 };
 
+const SLA_HORAS: Record<TipoAjuste, number> = {
+  ajuste_calidad: 2,
+  ajuste_maquina: 4,
+  ajuste_parametros: 1,
+  cambio_materia_prima: 8,
+  reproceso: 12,
+  otro: 6,
+};
+
+type SlaEstado = "verde" | "amarillo" | "rojo" | "cumplido";
+
+function calcularSla(
+  a: {
+    solicitado_at: string;
+    ajustado_at: string | null;
+    sla_objetivo_horas: number;
+    estado_flujo: FlujoAjuste;
+  },
+  ahora: Date = new Date(),
+): { estado: SlaEstado; transcurridoHoras: number; restantesHoras: number } {
+  const inicio = new Date(a.solicitado_at).getTime();
+  const fin = a.ajustado_at ? new Date(a.ajustado_at).getTime() : ahora.getTime();
+  const transcurridoHoras = (fin - inicio) / 36e5;
+  const restantesHoras = a.sla_objetivo_horas - transcurridoHoras;
+  let estado: SlaEstado;
+  if (a.estado_flujo === "cerrado") {
+    estado = transcurridoHoras <= a.sla_objetivo_horas ? "cumplido" : "rojo";
+  } else if (restantesHoras < 0) estado = "rojo";
+  else if (restantesHoras < a.sla_objetivo_horas * 0.25) estado = "amarillo";
+  else estado = "verde";
+  return { estado, transcurridoHoras, restantesHoras };
+}
+
+const ordenesQO = queryOptions({
+  queryKey: ["qc", "ordenes-contexto"],
+  queryFn: () => listOrdenesContexto(),
+});
+const muestrasQO = queryOptions({
+  queryKey: ["qc", "muestras", "all"],
+  queryFn: () => listMuestras({ data: {} }),
+});
+const ajustesQO = queryOptions({
+  queryKey: ["qc", "ajustes", "all"],
+  queryFn: () => listAjustes({ data: {} }),
+});
+
+export const Route = createFileRoute("/calidad/ajustes")({
+  loader: ({ context }) => {
+    context.queryClient.ensureQueryData(ordenesQO);
+    context.queryClient.ensureQueryData(muestrasQO);
+    context.queryClient.ensureQueryData(ajustesQO);
+  },
+  component: AjustesPage,
+  errorComponent: ({ error }) => (
+    <AppLayout title="Historial de Ajustes y Reprocesos">
+      <Alert variant="destructive">
+        <AlertTitle>No se pudo cargar el historial</AlertTitle>
+        <AlertDescription>{error.message}</AlertDescription>
+      </Alert>
+    </AppLayout>
+  ),
+});
+
 function AjustesPage() {
   const router = useRouter();
   const auth = useAuth();
   const labFilter = useLabFilter();
-  const ajustesAll = useQcMock((s) => s.ajustes);
-  const muestras = useQcMock((s) => s.muestras);
-  const ordenesAll = useQcMock((s) => s.ordenes);
+  const qc = useQueryClient();
 
-  // Filtrado por laboratorio.
-  const ajustes = useMemo(
-    () => ajustesAll.filter((a) => labFilter.isMachineIdAllowed(a.maquina_id)),
-    [ajustesAll, labFilter],
-  );
+  const { data: ordenesRaw } = useSuspenseQuery(ordenesQO);
+  const { data: muestrasRaw } = useSuspenseQuery(muestrasQO);
+  const { data: ajustesRaw } = useSuspenseQuery(ajustesQO);
+
   const ordenes = useMemo(
-    () => ordenesAll.filter((o) => labFilter.isMachineIdAllowed(o.maquina_id)),
-    [ordenesAll, labFilter],
+    () =>
+      (ordenesRaw ?? [])
+        .map((o) => ({
+          orden_id: o.id,
+          folio: o.folio,
+          planta_id: o.planta_id,
+          planta_nombre: o.plantas?.nombre ?? "",
+          maquina_id: o.maquina_id,
+          maquina_codigo: o.maquinas?.codigo ?? "",
+          maquina_nombre: o.maquinas?.nombre ?? "",
+          producto_id: o.producto_id,
+          producto_codigo: o.productos?.codigo ?? "",
+          producto_nombre: o.productos?.nombre ?? "",
+        }))
+        .filter((o) => labFilter.isMachineAllowed(o.maquina_codigo)),
+    [ordenesRaw, labFilter],
+  );
+
+  const allowedMaquinaIds = useMemo(
+    () => new Set(ordenes.map((o) => o.maquina_id)),
+    [ordenes],
+  );
+
+  const ajustes = useMemo(
+    () => (ajustesRaw ?? []).filter((a) => allowedMaquinaIds.has(a.maquina_id)),
+    [ajustesRaw, allowedMaquinaIds],
+  );
+  const muestras = useMemo(
+    () => (muestrasRaw ?? []).filter((m) => allowedMaquinaIds.has(m.maquina_id)),
+    [muestrasRaw, allowedMaquinaIds],
   );
 
   const canAuthorize =
     auth.hasRole("calidad") || auth.hasRole("gerente_general") || auth.hasRole("administrador");
-  const canExecute =
-    canAuthorize || auth.hasRole("capturista"); // operadores ejecutan
+  const canExecute = canAuthorize || auth.hasRole("capturista");
 
   // --- Filtros ------------------------------------------------------------
   const [fPlanta, setFPlanta] = useState("all");
@@ -94,7 +189,12 @@ function AjustesPage() {
       ajustes.map((a) => {
         const ord = ordenes.find((o) => o.orden_id === a.orden_id);
         const muestra = muestras.find((m) => m.id === a.muestra_id);
-        const sla = calcularSla(a);
+        const sla = calcularSla({
+          solicitado_at: a.solicitado_at,
+          ajustado_at: a.ajustado_at ?? null,
+          sla_objetivo_horas: Number(a.sla_objetivo_horas ?? 4),
+          estado_flujo: a.estado_flujo as FlujoAjuste,
+        });
         return { a, ord, muestra, sla };
       }),
     [ajustes, ordenes, muestras],
@@ -113,7 +213,7 @@ function AjustesPage() {
         if (fDesde && new Date(a.solicitado_at) < new Date(fDesde)) return false;
         if (fHasta && new Date(a.solicitado_at) > new Date(fHasta + "T23:59:59")) return false;
         if (fBusqueda) {
-          const txt = `${ord?.folio ?? ""} ${a.motivo} ${a.solicitado_por}`.toLowerCase();
+          const txt = `${ord?.folio ?? ""} ${a.motivo} ${a.solicitado_por ?? ""}`.toLowerCase();
           if (!txt.includes(fBusqueda.toLowerCase())) return false;
         }
         return true;
@@ -122,7 +222,6 @@ function AjustesPage() {
   }, [enriched, fFlujo, fPlanta, fMaquina, fTipo, fResultado, fDesde, fHasta, fBusqueda]);
 
   // --- KPIs ---------------------------------------------------------------
-
   const kpis = useMemo(() => {
     const total = filtradas.length;
     const cerrados = filtradas.filter((x) => x.a.estado_flujo === "cerrado");
@@ -135,7 +234,6 @@ function AjustesPage() {
       ? cerrados.reduce((s, x) => s + x.sla.transcurridoHoras, 0) / cerrados.length
       : 0;
 
-    // Reincidencia: top máquinas
     const porMaquina = new Map<string, { nombre: string; n: number }>();
     filtradas.forEach((x) => {
       const k = x.a.maquina_id;
@@ -144,7 +242,6 @@ function AjustesPage() {
     });
     const topMaquinas = [...porMaquina.values()].sort((a, b) => b.n - a.n).slice(0, 3);
 
-    // Top productos
     const porProducto = new Map<string, { nombre: string; n: number }>();
     filtradas.forEach((x) => {
       const k = x.ord?.producto_id ?? "—";
@@ -153,23 +250,22 @@ function AjustesPage() {
     });
     const topProductos = [...porProducto.values()].sort((a, b) => b.n - a.n).slice(0, 3);
 
-    // Top causas (motivo normalizado / tipo)
     const porTipo = new Map<string, number>();
     filtradas.forEach((x) => {
       porTipo.set(x.a.tipo_ajuste, (porTipo.get(x.a.tipo_ajuste) ?? 0) + 1);
     });
     const topCausas = [...porTipo.entries()]
-      .map(([k, n]) => ({ nombre: TIPO_LABEL[k as AjusteCalidad["tipo_ajuste"]], n }))
+      .map(([k, n]) => ({ nombre: TIPO_LABEL[k as TipoAjuste] ?? k, n }))
       .sort((a, b) => b.n - a.n)
       .slice(0, 3);
 
-    // Tiempo promedio de respuesta por responsable (autorizado_at - solicitado_at)
     type Resp = { nombre: string; horas: number; n: number };
     const porResp = new Map<string, Resp>();
     filtradas.forEach((x) => {
       const who = x.a.autorizado_por;
       if (!who || !x.a.autorizado_at) return;
-      const horas = (new Date(x.a.autorizado_at).getTime() - new Date(x.a.solicitado_at).getTime()) / 36e5;
+      const horas =
+        (new Date(x.a.autorizado_at).getTime() - new Date(x.a.solicitado_at).getTime()) / 36e5;
       const prev = porResp.get(who) ?? { nombre: who, horas: 0, n: 0 };
       porResp.set(who, { nombre: who, horas: prev.horas + horas, n: prev.n + 1 });
     });
@@ -195,30 +291,64 @@ function AjustesPage() {
   const [resultado, setResultado] = useState<ResultadoAjuste>("exitoso");
   const [muestraVerifId, setMuestraVerifId] = useState<string>("none");
 
+  // --- Mutations ----------------------------------------------------------
+  const actualizarFn = useServerFn(actualizarAjuste);
+  const ajusteMut = useMutation({
+    mutationFn: actualizarFn,
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["qc"] });
+    },
+    onError: (e: unknown) => {
+      toast.error(e instanceof Error ? e.message : "No se pudo actualizar el ajuste");
+    },
+  });
+
   function actuar(action: "autorizar" | "iniciar") {
     if (!detail) return;
-    const u = auth.profile?.nombre ?? auth.profile?.email ?? "operador";
-    const fn = action === "autorizar" ? autorizarAjuste : iniciarAjuste;
-    const res = fn(detail.a.id, u);
-    if (!res.ok) toast.error(res.error);
-    else toast.success(action === "autorizar" ? "Ajuste autorizado" : "Ejecución iniciada");
+    if (action === "autorizar" && detail.a.estado_flujo !== "solicitado") {
+      toast.error("Sólo se puede autorizar un ajuste en estado solicitado");
+      return;
+    }
+    if (action === "iniciar" && detail.a.estado_flujo !== "autorizado") {
+      toast.error("Sólo se puede iniciar un ajuste autorizado");
+      return;
+    }
+    const estado_flujo: FlujoAjuste = action === "autorizar" ? "autorizado" : "en_ejecucion";
+    ajusteMut.mutate(
+      { data: { id: detail.a.id, estado_flujo } },
+      {
+        onSuccess: () =>
+          toast.success(action === "autorizar" ? "Ajuste autorizado" : "Ejecución iniciada"),
+      },
+    );
   }
 
   function ejecutarCierre() {
     if (!detail) return;
-    const u = auth.profile?.nombre ?? auth.profile?.email ?? "operador";
-    const res = cerrarAjuste({
-      ajuste_id: detail.a.id,
-      usuario: u,
-      accion_realizada: accionTxt,
-      observacion,
-      resultado,
-      muestra_verificacion_id: muestraVerifId === "none" ? null : muestraVerifId,
-    });
-    if (!res.ok) { toast.error(res.error); return; }
-    toast.success("Ajuste cerrado");
-    setCloseOpen(false);
-    setAccionTxt(""); setObservacion(""); setResultado("exitoso"); setMuestraVerifId("none");
+    if (!accionTxt.trim()) {
+      toast.error("Captura la acción realizada");
+      return;
+    }
+    ajusteMut.mutate(
+      {
+        data: {
+          id: detail.a.id,
+          estado_flujo: "cerrado",
+          resultado,
+          accion_realizada: accionTxt,
+          observacion_ajuste: observacion,
+          muestra_verificacion_id: muestraVerifId === "none" ? null : muestraVerifId,
+        },
+      },
+      {
+        onSuccess: () => {
+          toast.success("Ajuste cerrado");
+          setCloseOpen(false);
+          setAccionTxt(""); setObservacion("");
+          setResultado("exitoso"); setMuestraVerifId("none");
+        },
+      },
+    );
   }
 
   // --- Export -------------------------------------------------------------
@@ -234,8 +364,10 @@ function AjustesPage() {
     filtradas.forEach(({ a, ord, sla }) => {
       rows.push([
         a.id, ord?.folio ?? "", ord?.planta_nombre ?? "", ord?.maquina_nombre ?? "",
-        TIPO_LABEL[a.tipo_ajuste], a.motivo, FLUJO_LABEL[a.estado_flujo], a.resultado,
-        a.solicitado_por, a.solicitado_at, a.autorizado_por ?? "", a.autorizado_at ?? "",
+        TIPO_LABEL[a.tipo_ajuste as TipoAjuste] ?? a.tipo_ajuste, a.motivo,
+        FLUJO_LABEL[a.estado_flujo as FlujoAjuste] ?? a.estado_flujo, a.resultado,
+        a.solicitado_por ?? "", a.solicitado_at,
+        a.autorizado_por ?? "", a.autorizado_at ?? "",
         a.ajustado_por ?? "", a.ajustado_at ?? "", a.sla_objetivo_horas,
         sla.transcurridoHoras.toFixed(2), sla.estado,
         a.muestra_id ?? "", a.muestra_verificacion_id ?? "",
@@ -243,16 +375,14 @@ function AjustesPage() {
     });
     const blob = new Blob([rows.join("\n")], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `historial-ajustes-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `historial-ajustes-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
     URL.revokeObjectURL(url);
     toast.success(`Exportados ${filtradas.length} ajustes`);
   }
 
-  // muestras candidatas para verificación: pertenecen a la misma orden,
-  // posteriores al solicitado_at, liberadas o pendientes
   const muestrasVerif = useMemo(() => {
     if (!detail) return [];
     return muestras
@@ -268,7 +398,6 @@ function AjustesPage() {
   return (
     <AppLayout title="Historial de Ajustes y Reprocesos">
       <div className="space-y-4">
-        {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="sm" onClick={() => router.history.back()}>
@@ -277,7 +406,7 @@ function AjustesPage() {
             <div>
               <h1 className="text-xl font-semibold">Historial de Ajustes y Reprocesos</h1>
               <p className="text-xs text-muted-foreground">
-                Prototipo Fase 5 — {filtradas.length} ajuste(s) en vista
+                {filtradas.length} ajuste(s) en vista
               </p>
             </div>
           </div>
@@ -299,7 +428,6 @@ function AjustesPage() {
           </div>
         </div>
 
-        {/* KPIs principales */}
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           <KpiCard title="Ajustes totales" value={String(kpis.total)} icon={Wrench} />
           <KpiCard title="Tasa de éxito" value={`${kpis.tasaExito}%`} icon={CheckCircle2} tone="success" />
@@ -316,7 +444,6 @@ function AjustesPage() {
           />
         </div>
 
-        {/* KPIs de reincidencia y respuesta */}
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-4">
           <RankingCard title="Top máquinas con más ajustes" items={kpis.topMaquinas} />
           <RankingCard title="Top productos con más ajustes" items={kpis.topProductos} />
@@ -333,7 +460,7 @@ function AjustesPage() {
               ) : (
                 kpis.tiempoRespResp.map((r) => (
                   <div key={r.nombre} className="flex justify-between gap-2">
-                    <span className="truncate">{r.nombre}</span>
+                    <span className="truncate font-mono text-xs">{r.nombre.slice(0, 8)}…</span>
                     <span className="tabular-nums text-muted-foreground">
                       {r.promedio.toFixed(1)} h <span className="text-xs">({r.n})</span>
                     </span>
@@ -344,7 +471,6 @@ function AjustesPage() {
           </Card>
         </div>
 
-        {/* Filtros */}
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Filtros</CardTitle></CardHeader>
           <CardContent className="grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-7">
@@ -383,7 +509,6 @@ function AjustesPage() {
           </CardContent>
         </Card>
 
-        {/* Tabla */}
         <Card>
           <CardContent className="p-0">
             {filtradas.length === 0 ? (
@@ -401,7 +526,6 @@ function AjustesPage() {
                       <th className="px-3 py-2 text-left">Tipo</th>
                       <th className="px-3 py-2 text-left">Motivo</th>
                       <th className="px-3 py-2 text-left">Solicitado</th>
-                      <th className="px-3 py-2 text-left">Solicitante</th>
                       <th className="px-3 py-2 text-left">Estado</th>
                       <th className="px-3 py-2 text-left">Resultado</th>
                       <th className="px-3 py-2"></th>
@@ -415,14 +539,13 @@ function AjustesPage() {
                         </td>
                         <td className="px-3 py-2 font-mono text-xs">{ord?.folio ?? "—"}</td>
                         <td className="px-3 py-2">{ord?.maquina_nombre ?? "—"}</td>
-                        <td className="px-3 py-2">{TIPO_LABEL[a.tipo_ajuste]}</td>
+                        <td className="px-3 py-2">{TIPO_LABEL[a.tipo_ajuste as TipoAjuste] ?? a.tipo_ajuste}</td>
                         <td className="px-3 py-2 max-w-xs truncate" title={a.motivo}>{a.motivo}</td>
                         <td className="px-3 py-2 text-xs text-muted-foreground">
                           {new Date(a.solicitado_at).toLocaleString()}
                         </td>
-                        <td className="px-3 py-2 text-xs">{a.solicitado_por}</td>
-                        <td className="px-3 py-2"><FlujoBadge flujo={a.estado_flujo} /></td>
-                        <td className="px-3 py-2"><ResultadoBadge r={a.resultado} /></td>
+                        <td className="px-3 py-2"><FlujoBadge flujo={a.estado_flujo as FlujoAjuste} /></td>
+                        <td className="px-3 py-2"><ResultadoBadge r={a.resultado as ResultadoAjuste} /></td>
                         <td className="px-3 py-2 text-right">
                           <Button size="sm" variant="outline" onClick={() => setOpenId(a.id)}>
                             Detalle
@@ -438,19 +561,18 @@ function AjustesPage() {
         </Card>
       </div>
 
-      {/* Drawer / detalle como Dialog */}
       <Dialog open={!!detail} onOpenChange={(v) => !v && setOpenId(null)}>
         <DialogContent className="max-w-2xl">
           {detail && (
             <>
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2">
-                  <Wrench className="h-4 w-4" /> Ajuste — {detail.ord?.folio}
+                  <Wrench className="h-4 w-4" /> Ajuste — {detail.ord?.folio ?? "—"}
                   <SlaDot sla={detail.sla} withLabel />
                 </DialogTitle>
                 <DialogDescription>
-                  {TIPO_LABEL[detail.a.tipo_ajuste]} · SLA objetivo {detail.a.sla_objetivo_horas} h
-                  {" · "}{SLA_HORAS[detail.a.tipo_ajuste]} h estándar
+                  {TIPO_LABEL[detail.a.tipo_ajuste as TipoAjuste]} · SLA objetivo {detail.a.sla_objetivo_horas} h
+                  {" · "}{SLA_HORAS[detail.a.tipo_ajuste as TipoAjuste] ?? 4} h estándar
                 </DialogDescription>
               </DialogHeader>
 
@@ -459,13 +581,12 @@ function AjustesPage() {
                   <CardContent className="p-3 space-y-2 text-sm">
                     <div><span className="text-muted-foreground">Motivo:</span> {detail.a.motivo}</div>
                     <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div><span className="text-muted-foreground">Máquina:</span> {detail.ord?.maquina_nombre}</div>
-                      <div><span className="text-muted-foreground">Producto:</span> {detail.ord?.producto_codigo}</div>
+                      <div><span className="text-muted-foreground">Máquina:</span> {detail.ord?.maquina_nombre ?? "—"}</div>
+                      <div><span className="text-muted-foreground">Producto:</span> {detail.ord?.producto_codigo ?? "—"}</div>
                     </div>
                   </CardContent>
                 </Card>
 
-                {/* Timeline */}
                 <Card>
                   <CardHeader className="pb-1"><CardTitle className="text-xs uppercase tracking-wide text-muted-foreground">Trazabilidad</CardTitle></CardHeader>
                   <CardContent className="text-xs space-y-1.5">
@@ -486,7 +607,6 @@ function AjustesPage() {
                   </CardContent>
                 </Card>
 
-                {/* Vínculos */}
                 <Card>
                   <CardHeader className="pb-1"><CardTitle className="text-xs uppercase tracking-wide text-muted-foreground">Vínculos</CardTitle></CardHeader>
                   <CardContent className="text-xs space-y-1.5">
@@ -521,12 +641,12 @@ function AjustesPage() {
 
               <DialogFooter className="flex-wrap gap-2">
                 {detail.a.estado_flujo === "solicitado" && canAuthorize && (
-                  <Button onClick={() => actuar("autorizar")}>
+                  <Button onClick={() => actuar("autorizar")} disabled={ajusteMut.isPending}>
                     <ShieldCheck className="mr-1.5 h-4 w-4" /> Autorizar
                   </Button>
                 )}
                 {detail.a.estado_flujo === "autorizado" && canExecute && (
-                  <Button onClick={() => actuar("iniciar")}>
+                  <Button onClick={() => actuar("iniciar")} disabled={ajusteMut.isPending}>
                     <PlayCircle className="mr-1.5 h-4 w-4" /> Iniciar ejecución
                   </Button>
                 )}
@@ -542,7 +662,6 @@ function AjustesPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog de cierre */}
       <Dialog open={closeOpen} onOpenChange={setCloseOpen}>
         <DialogContent>
           <DialogHeader>
@@ -593,7 +712,7 @@ function AjustesPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setCloseOpen(false)}>Cancelar</Button>
-            <Button onClick={ejecutarCierre}>Confirmar cierre</Button>
+            <Button onClick={ejecutarCierre} disabled={ajusteMut.isPending}>Confirmar cierre</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -651,7 +770,7 @@ function RankingCard({ title, items }: { title: string; items: { nombre: string;
 function SlaDot({
   sla, withLabel = false,
 }: {
-  sla: { estado: "verde" | "amarillo" | "rojo" | "cumplido"; transcurridoHoras: number; restantesHoras: number };
+  sla: { estado: SlaEstado; transcurridoHoras: number; restantesHoras: number };
   withLabel?: boolean;
 }) {
   const map = {
@@ -675,8 +794,8 @@ function SlaDot({
   );
 }
 
-function FlujoBadge({ flujo }: { flujo: AjusteCalidad["estado_flujo"] }) {
-  const map: Record<AjusteCalidad["estado_flujo"], string> = {
+function FlujoBadge({ flujo }: { flujo: FlujoAjuste }) {
+  const map: Record<FlujoAjuste, string> = {
     solicitado: "bg-muted text-foreground",
     autorizado: "bg-primary/15 text-primary",
     en_ejecucion: "bg-warning/20 text-warning-foreground",
@@ -702,7 +821,7 @@ function TimelineRow({ label, by, at }: { label: string; by: string | null; at: 
     <div className="flex items-center justify-between gap-2">
       <span className="text-muted-foreground">{label}:</span>
       <span>
-        {by ? by : <span className="text-muted-foreground">— pendiente —</span>}
+        {by ? <span className="font-mono text-xs">{by.slice(0, 8)}…</span> : <span className="text-muted-foreground">— pendiente —</span>}
         {at && <span className="text-muted-foreground ml-1">· {new Date(at).toLocaleString()}</span>}
       </span>
     </div>
