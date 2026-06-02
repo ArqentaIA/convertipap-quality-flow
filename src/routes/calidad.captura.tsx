@@ -29,8 +29,14 @@ import {
   listProductosConSpec,
   getSpecPorProducto,
   upsertMuestraConMediciones,
+  listMisMuestrasRecientes,
 } from "@/lib/qc.functions";
 import { cn } from "@/lib/utils";
+
+const misMuestrasQO = queryOptions({
+  queryKey: ["qc", "mis-muestras-recientes"],
+  queryFn: () => listMisMuestrasRecientes(),
+});
 
 const maquinasQO = queryOptions({
   queryKey: ["qc", "maquinas-captura"],
