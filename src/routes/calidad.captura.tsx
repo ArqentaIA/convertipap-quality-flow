@@ -283,6 +283,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
     if (new Date(horaMuestreo).getTime() > Date.now() + 60_000)
       return "La hora de muestreo no puede ser futura";
     if (modo === "envio") {
+      if (!numeroRollo.trim()) return "Captura el número de rollo";
       const faltantes = evalMediciones.filter((m) => m.input.valor === "").map((m) => m.spec.etiqueta);
       if (faltantes.length) return `Falta capturar: ${faltantes.join(", ")}`;
       const inverosimil = evalMediciones.find(
@@ -446,7 +447,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
             </CardHeader>
             <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-3">
               <div className="space-y-1.5">
-                <Label htmlFor="rollo">Número de rollo (opcional)</Label>
+                <Label htmlFor="rollo">Número de rollo</Label>
                 <Input
                   id="rollo" type="number" min={1}
                   value={numeroRollo} onChange={(e) => setNumeroRollo(e.target.value)}
