@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo } from "react";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useEffect, useMemo } from "react";
+import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
   ArrowLeft, TrendingUp, TrendingDown, CheckCircle2, XCircle, ShieldAlert,
@@ -19,6 +19,7 @@ import { listMuestras, listAjustes } from "@/lib/qc.functions";
 import { calcularSla } from "@/lib/qc-sla";
 import { useLabFilter } from "@/lib/lab";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/calidad/dashboard")({
   component: DashboardPage,
@@ -31,12 +32,9 @@ function pct(n: number, d: number) {
   return Math.round((n / d) * 1000) / 10;
 }
 
-function dayKey(iso: string) {
-  return iso.slice(0, 10);
-}
-
 type MuestraRow = Awaited<ReturnType<typeof listMuestras>>[number];
 type AjusteRow = Awaited<ReturnType<typeof listAjustes>>[number];
+
 
 function DashboardPage() {
   const auth = useAuth();
