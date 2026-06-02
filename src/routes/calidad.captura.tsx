@@ -389,6 +389,8 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
         operador: operador.trim() || null,
         prensero: prensero.trim() || null,
         analista: analista.trim() || null,
+        estatus_liberacion: estatusLiberacion || null,
+        defectos,
         tipo_muestreo: "por_rollo" as const,
         hora_muestreo: new Date(horaMuestreo).toISOString(),
         observaciones_generales: observaciones,
