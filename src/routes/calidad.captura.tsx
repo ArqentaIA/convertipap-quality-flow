@@ -238,6 +238,7 @@ function CapturaCalidadPage() {
       };
     });
 
+    setLastSubmitMode(modo);
     mutation.mutate({
       data: {
         orden_id: orden.id,
