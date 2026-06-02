@@ -606,6 +606,81 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
           </Alert>
         )}
 
+        {/* D. Producción capturada recientemente */}
+        <Card>
+          <CardHeader className="pb-2 flex flex-row items-center justify-between">
+            <CardTitle className="text-sm font-medium">D. Producción capturada recientemente</CardTitle>
+            <Badge variant="outline" className="text-xs">
+              {misMuestrasQuery.data?.length ?? 0} muestras
+            </Badge>
+          </CardHeader>
+          <CardContent className="p-0">
+            {misMuestrasQuery.isLoading ? (
+              <div className="px-4 py-6 text-sm text-muted-foreground">Cargando…</div>
+            ) : !misMuestrasQuery.data || misMuestrasQuery.data.length === 0 ? (
+              <div className="px-4 py-6 text-sm text-muted-foreground">
+                Aún no has capturado muestras. Cuando envíes una a revisión aparecerá aquí
+                con su botón para reimprimir la etiqueta con código QR.
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="text-[11px] uppercase tracking-wide text-muted-foreground bg-muted/40">
+                    <tr className="border-b">
+                      <th className="py-2.5 px-3 text-left font-semibold">Fecha</th>
+                      <th className="py-2.5 px-3 text-left font-semibold">Máquina</th>
+                      <th className="py-2.5 px-3 text-left font-semibold">Producto</th>
+                      <th className="py-2.5 px-3 text-right font-semibold">Rollo</th>
+                      <th className="py-2.5 px-3 text-left font-semibold">Estatus</th>
+                      <th className="py-2.5 px-3 text-right font-semibold">Etiqueta</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {misMuestrasQuery.data.map((m) => {
+                      const fueraSpec = (m.mediciones_calidad ?? []).some(
+                        (md) => md.estado === "no_conforme" || md.estado === "fuera_rango_critico",
+                      );
+                      const fecha = new Date(m.hora_muestreo || m.capturado_at).toLocaleString("es-MX", {
+                        day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit",
+                      });
+                      return (
+                        <tr key={m.id} className="border-b last:border-0 hover:bg-muted/20">
+                          <td className="py-2.5 px-3 align-middle whitespace-nowrap text-xs tabular-nums">{fecha}</td>
+                          <td className="py-2.5 px-3 align-middle">
+                            <span className="font-mono text-xs">{m.maquinas?.codigo ?? "—"}</span>
+                          </td>
+                          <td className="py-2.5 px-3 align-middle">
+                            <span className="font-mono text-xs mr-2">{m.productos?.codigo ?? ""}</span>
+                            <span className="text-xs text-muted-foreground">{m.productos?.nombre ?? ""}</span>
+                          </td>
+                          <td className="py-2.5 px-3 align-middle text-right tabular-nums">{m.numero_rollo ?? "—"}</td>
+                          <td className="py-2.5 px-3 align-middle">
+                            {fueraSpec ? (
+                              <Badge variant="destructive" className="gap-1">
+                                <AlertTriangle className="h-3 w-3" /> No conforme
+                              </Badge>
+                            ) : (
+                              <Badge className="bg-emerald-500/15 text-emerald-700 border-emerald-500/40 gap-1 hover:bg-emerald-500/20">
+                                <CheckCircle2 className="h-3 w-3" /> Conforme
+                              </Badge>
+                            )}
+                          </td>
+                          <td className="py-2.5 px-3 align-middle text-right">
+                            <Button size="sm" variant="outline" onClick={() => imprimirEtiquetaMuestra(m)}>
+                              <Printer className="mr-1.5 h-4 w-4" /> Imprimir
+                            </Button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+
         {spec && (
           <div className="flex flex-wrap items-center justify-end gap-2 sticky bottom-0 bg-background/95 backdrop-blur py-3 border-t">
             <Button
