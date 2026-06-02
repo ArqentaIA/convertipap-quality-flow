@@ -18,13 +18,17 @@ export type TraceMuestra = {
   found: true;
   id: string;
   folio: string;
-  numero_rollo: number | null;
+  numero_rollo: string | null;
   hora_muestreo: string;
   capturado_at: string;
   turno: string;
   estado: string;
   dictamen: string | null;
   observaciones_generales: string;
+  jefe_maquina: string | null;
+  operador: string | null;
+  prensero: string | null;
+  analista: string | null;
   producto: { codigo: string; nombre: string };
   maquina: { codigo: string; nombre: string };
   planta: { codigo: string; nombre: string };
