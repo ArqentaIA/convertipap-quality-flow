@@ -260,6 +260,32 @@ export const listMuestras = createServerFn({ method: "GET" })
     return rows ?? [];
   });
 
+/**
+ * Últimas muestras capturadas por el usuario actual (para reimprimir etiquetas).
+ */
+export const listMisMuestrasRecientes = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const sb = context.supabase as SB;
+    const userId = context.userId;
+    const { data, error } = await sb
+      .from("muestras_calidad")
+      .select(
+        `id, hora_muestreo, capturado_at, numero_rollo, estado, observaciones_generales,
+         producto_id, maquina_id,
+         productos(id, codigo, nombre),
+         maquinas(id, codigo, nombre),
+         mediciones_calidad(variable_id, variable_clave, valor, min_snapshot, objetivo_snapshot, max_snapshot, estado)`
+      )
+      .eq("capturado_por", userId)
+      .order("capturado_at", { ascending: false })
+      .limit(20);
+    if (error) throw new Error(error.message);
+    return data ?? [];
+  });
+
+
+
 export const listAjustes = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { ordenId?: string }) =>
