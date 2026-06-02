@@ -45,7 +45,12 @@ export async function printRollReport(data: RollReportData) {
     errorCorrectionLevel: "M",
   });
 
-  const est = ESTATUS_LABEL[data.estatus];
+  const est = resolveRolloStatus({
+    rolloId: data.rollo,
+    folio: data.folio,
+    ordenId: data.ordenId,
+    legacyEstatus: data.estatus,
+  });
   const html = `<!doctype html>
 <html lang="es">
 <head>
