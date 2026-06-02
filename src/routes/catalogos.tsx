@@ -46,6 +46,8 @@ type Tab = "plantas" | "maquinas" | "productos" | "ordenes";
 function CatalogosPage() {
   const [tab, setTab] = useState<Tab>("plantas");
   const { data } = useSuspenseQuery(catalogosQO);
+  const { hasRole } = useAuth();
+  const isAdmin = hasRole("administrador");
 
   return (
     <AppLayout title="Catálogos">
@@ -67,12 +69,17 @@ function CatalogosPage() {
               >{label}</button>
             ))}
           </div>
+          {!isAdmin && (
+            <p className="text-xs text-muted-foreground">
+              Solo lectura · Solo el rol <strong>administrador</strong> puede modificar catálogos.
+            </p>
+          )}
         </div>
 
-        {tab === "plantas" && <PlantasTab plantas={data.plantas} />}
-        {tab === "maquinas" && <MaquinasTab maquinas={data.maquinas} plantas={data.plantas} />}
-        {tab === "productos" && <ProductosTab productos={data.productos} />}
-        {tab === "ordenes" && <OrdenesTab ordenes={data.ordenes} />}
+        {tab === "plantas" && <PlantasTab plantas={data.plantas} isAdmin={isAdmin} />}
+        {tab === "maquinas" && <MaquinasTab maquinas={data.maquinas} plantas={data.plantas} isAdmin={isAdmin} />}
+        {tab === "productos" && <ProductosTab productos={data.productos} isAdmin={isAdmin} />}
+        {tab === "ordenes" && <OrdenesTab ordenes={data.ordenes} isAdmin={isAdmin} />}
       </div>
     </AppLayout>
   );
