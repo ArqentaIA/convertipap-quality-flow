@@ -327,10 +327,6 @@ function ProductosTab({ productos, isAdmin }: { productos: Producto[]; isAdmin: 
   const tipos = tiposQuery.data ?? [];
   const [editing, setEditing] = useState<Partial<Producto> | null>(null);
 
-  if (tiposQuery.error) {
-    return <div className="rounded-md border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">No se cargaron los tipos de producto: {tiposQuery.error.message}</div>;
-  }
-
   const upsert = useMutation({
     mutationFn: upsertFn,
     onSuccess: () => {
@@ -348,6 +344,10 @@ function ProductosTab({ productos, isAdmin }: { productos: Producto[]; isAdmin: 
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  if (tiposQuery.error) {
+    return <div className="rounded-md border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">No se cargaron los tipos de producto: {tiposQuery.error.message}</div>;
+  }
 
   return (
     <>
