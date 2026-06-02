@@ -1,5 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { FileBarChart2, Download, FileSpreadsheet, TrendingUp, TrendingDown, CalendarRange } from "lucide-react";
@@ -7,9 +7,11 @@ import logoUrl from "@/assets/logo-convertipap.png";
 import { RangoSelector, MESES, rangoLabel, rangoToFreq, type Rango } from "@/components/qc/RangoSelector";
 import { useLabFilter, LAB_LABEL } from "@/lib/lab";
 import { getReportes } from "@/lib/reportes.functions";
+import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/reportes")({
-  component: ReportesPage,
+  component: ReportesGate,
+  ssr: false,
   errorComponent: ({ error }) => (
     <AppLayout title="Reportes e Indicadores">
       <div role="alert" className="rounded-md border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
@@ -18,6 +20,25 @@ export const Route = createFileRoute("/reportes")({
     </AppLayout>
   ),
 });
+
+function ReportesGate() {
+  const auth = useAuth();
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (auth.loading) return;
+    if (!auth.isAuthenticated) {
+      void navigate({ to: "/login", replace: true });
+    }
+  }, [auth, navigate]);
+  if (auth.loading || !auth.isAuthenticated) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="text-sm text-muted-foreground">Cargando…</div>
+      </div>
+    );
+  }
+  return <ReportesPage />;
+}
 
 const META_EMPRESA = {
   empresa: "ConvertiPap S.A. de C.V.",
