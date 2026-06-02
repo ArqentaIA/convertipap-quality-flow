@@ -66,7 +66,7 @@ export const Route = createFileRoute("/calidad/captura")({
   ),
 });
 
-type MedicionInputState = Record<string, { valor: string; observacion: string }>;
+type MedicionInputState = Record<string, { valor: string }>;
 type MedicionEstadoUI = "pendiente" | "conforme" | "no_conforme" | "fuera_rango_critico";
 
 function evaluarMedicion(v: number, min: number, max: number): MedicionEstadoUI {
@@ -171,7 +171,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
   // Reinicializar mediciones cuando cambia el producto / spec
   useEffect(() => {
     const base: MedicionInputState = {};
-    variables.forEach((v) => { base[v.variable_id] = { valor: "", observacion: "" }; });
+    variables.forEach((v) => { base[v.variable_id] = { valor: "" }; });
     setMediciones(base);
   }, [productoId, variables.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -183,7 +183,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
 
   const evalMediciones = useMemo(() => {
     return variables.map((v) => {
-      const input = mediciones[v.variable_id] ?? { valor: "", observacion: "" };
+      const input = mediciones[v.variable_id] ?? { valor: "" };
       const num = input.valor === "" ? NaN : Number(input.valor);
       const estado = evaluarMedicion(num, v.min_valor, v.max_valor);
       return { spec: v, input, estado, num };
@@ -205,7 +205,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
         toast.success("Muestra enviada a revisión");
         setMediciones((prev) => {
           const r: MedicionInputState = {};
-          Object.keys(prev).forEach((k) => { r[k] = { valor: "", observacion: "" }; });
+          Object.keys(prev).forEach((k) => { r[k] = { valor: "" }; });
           return r;
         });
         setObservaciones("");
@@ -273,7 +273,6 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
             min_snapshot: m.spec.min_valor,
             objetivo_snapshot: m.spec.objetivo,
             max_snapshot: m.spec.max_valor,
-            observacion: m.input.observacion,
           })),
         enviar_a_revision: modo === "envio",
       },
@@ -438,31 +437,31 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium">C. Mediciones por variable</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="text-xs text-muted-foreground">
+            <CardContent className="p-0">
+              {/* Desktop / tablet landscape: tabla clásica */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-sm min-w-[680px]">
+                  <thead className="text-[11px] uppercase tracking-wide text-muted-foreground bg-muted/40">
                     <tr className="border-b">
-                      <th className="py-2 text-left font-medium">Variable</th>
-                      <th className="py-2 text-right font-medium">Min</th>
-                      <th className="py-2 text-right font-medium">Objetivo</th>
-                      <th className="py-2 text-right font-medium">Max</th>
-                      <th className="py-2 text-left font-medium w-[140px]">Valor</th>
-                      <th className="py-2 text-left font-medium w-[130px]">Estado</th>
-                      <th className="py-2 text-left font-medium">Observación</th>
+                      <th className="py-2.5 px-3 text-left font-semibold w-[30%]">Variable</th>
+                      <th className="py-2.5 px-2 text-right font-semibold w-16">Min</th>
+                      <th className="py-2.5 px-2 text-right font-semibold w-20">Objetivo</th>
+                      <th className="py-2.5 px-2 text-right font-semibold w-16">Max</th>
+                      <th className="py-2.5 px-3 text-left font-semibold w-[26%]">Valor</th>
+                      <th className="py-2.5 px-3 text-left font-semibold w-[140px]">Estado</th>
                     </tr>
                   </thead>
                   <tbody>
                     {evalMediciones.map(({ spec: vs, input, estado }) => (
-                      <tr key={vs.variable_id} className="border-b last:border-0">
-                        <td className="py-2 font-medium">
-                          {vs.etiqueta}
-                          <span className="ml-1 text-xs text-muted-foreground">({vs.unidad})</span>
+                      <tr key={vs.variable_id} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
+                        <td className="py-3 px-3 align-middle">
+                          <div className="font-medium text-sm leading-tight">{vs.etiqueta}</div>
+                          <div className="text-[11px] text-muted-foreground">{vs.unidad}</div>
                         </td>
-                        <td className="py-2 text-right tabular-nums">{vs.min_valor}</td>
-                        <td className="py-2 text-right tabular-nums font-medium">{vs.objetivo}</td>
-                        <td className="py-2 text-right tabular-nums">{vs.max_valor}</td>
-                        <td className="py-2">
+                        <td className="py-3 px-2 text-right tabular-nums text-muted-foreground align-middle">{vs.min_valor}</td>
+                        <td className="py-3 px-2 text-right tabular-nums font-semibold text-foreground align-middle">{vs.objetivo}</td>
+                        <td className="py-3 px-2 text-right tabular-nums text-muted-foreground align-middle">{vs.max_valor}</td>
+                        <td className="py-3 px-3 align-middle">
                           <Input
                             type="number" step={0.1} inputMode="decimal"
                             disabled={isBlocked}
@@ -471,27 +470,55 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
                               ...prev,
                               [vs.variable_id]: { ...prev[vs.variable_id], valor: e.target.value },
                             }))}
-                            className="h-9"
+                            className="h-11 text-base font-medium w-full"
                             placeholder="—"
                           />
                         </td>
-                        <td className="py-2"><EstadoMedicionBadge estado={estado} /></td>
-                        <td className="py-2">
-                          <Input
-                            maxLength={200} disabled={isBlocked}
-                            value={input.observacion}
-                            onChange={(e) => setMediciones((prev) => ({
-                              ...prev,
-                              [vs.variable_id]: { ...prev[vs.variable_id], observacion: e.target.value },
-                            }))}
-                            className="h-9"
-                            placeholder="Opcional"
-                          />
-                        </td>
+                        <td className="py-3 px-3 align-middle"><EstadoMedicionBadge estado={estado} /></td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
+              </div>
+
+              {/* Mobile / tablet portrait: tarjetas por variable */}
+              <div className="md:hidden space-y-3 p-4">
+                {evalMediciones.map(({ spec: vs, input, estado }) => (
+                  <div key={vs.variable_id} className="rounded-xl border border-border bg-card p-4 shadow-sm">
+                    <div className="flex items-start justify-between gap-2 mb-3">
+                      <div>
+                        <div className="font-semibold text-sm">{vs.etiqueta}</div>
+                        <div className="text-xs text-muted-foreground">{vs.unidad}</div>
+                      </div>
+                      <EstadoMedicionBadge estado={estado} />
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 mb-3 text-center">
+                      <div className="rounded-md bg-muted/50 px-2 py-1.5">
+                        <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Min</div>
+                        <div className="text-sm font-medium tabular-nums text-muted-foreground">{vs.min_valor}</div>
+                      </div>
+                      <div className="rounded-md bg-primary/5 px-2 py-1.5 border border-primary/10">
+                        <div className="text-[10px] uppercase tracking-wide text-primary/70">Objetivo</div>
+                        <div className="text-sm font-bold tabular-nums text-primary">{vs.objetivo}</div>
+                      </div>
+                      <div className="rounded-md bg-muted/50 px-2 py-1.5">
+                        <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Max</div>
+                        <div className="text-sm font-medium tabular-nums text-muted-foreground">{vs.max_valor}</div>
+                      </div>
+                    </div>
+                    <Input
+                      type="number" step={0.1} inputMode="decimal"
+                      disabled={isBlocked}
+                      value={input.valor}
+                      onChange={(e) => setMediciones((prev) => ({
+                        ...prev,
+                        [vs.variable_id]: { ...prev[vs.variable_id], valor: e.target.value },
+                      }))}
+                      className="h-12 text-lg font-semibold w-full"
+                      placeholder="Capturar valor"
+                    />
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>
