@@ -31,7 +31,15 @@ import {
   upsertMuestraConMediciones,
   listMisMuestrasRecientes,
 } from "@/lib/qc.functions";
+import { getAppSettings } from "@/lib/settings.functions";
 import { cn } from "@/lib/utils";
+
+const ROLLO_REGEX = /^\d{1,5}-\d{1,2}$/;
+
+const settingsQO = queryOptions({
+  queryKey: ["app", "settings"],
+  queryFn: () => getAppSettings(),
+});
 
 const misMuestrasQO = queryOptions({
   queryKey: ["qc", "mis-muestras-recientes"],
