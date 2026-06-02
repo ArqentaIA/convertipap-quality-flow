@@ -154,7 +154,7 @@ function Dashboard() {
                 setMesesSel={setMesesSel}
               />
               <Link
-                to="/control-calidad"
+                to="/calidad/captura"
                 className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm hover:opacity-90"
               >
                 Nuevo registro <ArrowRight className="h-4 w-4" />

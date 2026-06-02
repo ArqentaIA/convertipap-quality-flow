@@ -65,7 +65,7 @@ function UsuariosPage() {
       const ORDEN: Array<{ mod: AppModule; to: string }> = [
         { mod: "dashboard", to: "/" },
         { mod: "produccion", to: "/produccion" },
-        { mod: "control_calidad", to: "/control-calidad" },
+        { mod: "control_calidad", to: "/calidad/captura" },
         { mod: "variables_calidad", to: "/variables-calidad" },
         { mod: "reportes", to: "/reportes" },
         { mod: "configuracion", to: "/configuracion" },
