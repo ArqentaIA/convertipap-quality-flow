@@ -182,16 +182,16 @@ function CapturaCalidadPage() {
   }, [orden, numeroRollo, muestrasExistentes]);
 
   const upsertFn = useServerFn(upsertMuestraConMediciones);
+  const [lastSubmitMode, setLastSubmitMode] = useState<"borrador" | "envio">("borrador");
   const mutation = useMutation({
     mutationFn: upsertFn,
-    onSuccess: (res, vars) => {
+    onSuccess: (res: { muestra_id: string; reabre_dictamen: boolean }) => {
       void queryClient.invalidateQueries({ queryKey: ["qc"] });
-      if (vars.data.enviar_a_revision) {
+      if (lastSubmitMode === "envio") {
         toast.success("Muestra enviada a revisión");
         if (res.reabre_dictamen) {
           toast.warning("Se modificaron mediciones de una muestra ya autorizada — requiere nuevo dictamen");
         }
-        // reset
         setMediciones((prev) => {
           const r: MedicionInputState = {};
           Object.keys(prev).forEach((k) => { r[k] = { valor: "", observacion: "" }; });
