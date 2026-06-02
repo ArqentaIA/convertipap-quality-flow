@@ -7,8 +7,9 @@ import {
 import { useServerFn } from "@tanstack/react-start";
 import {
   ArrowLeft, AlertTriangle, CheckCircle2, Save, Send, Lock,
-  ClipboardCheck, Info, Factory,
+  ClipboardCheck, Info, Factory, Printer,
 } from "lucide-react";
+import { printEtiquetaLiberacion, type EtiquetaData } from "@/lib/etiqueta-liberacion";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
