@@ -190,7 +190,7 @@ export const getSpecPorProducto = createServerFn({ method: "GET" })
       .from("producto_variables")
       .select(
         `id, variable_id, min_valor, objetivo, max_valor, tolerancia,
-         variables_calidad(id, clave, etiqueta, unidad)`,
+         variables_calidad(id, clave, etiqueta, unidad, orden)`,
       )
       .eq("especificacion_id", spec.id);
     if (eVars) throw new Error(eVars.message);
