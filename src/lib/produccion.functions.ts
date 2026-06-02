@@ -522,3 +522,179 @@ export const cancelarOrden = createServerFn({ method: "POST" })
 
     return updated;
   });
+
+// =====================================================================
+// 7) LECTURAS — Estado de máquinas, OEE, historial
+// =====================================================================
+
+/**
+ * Lista todas las máquinas con su estado actual, orden activa, paro abierto
+ * y métricas del turno actual (rollos, OEE estimado).
+ */
+export const listMaquinasConEstado = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const sb = context.supabase as SB;
+
+    const { data: maquinas, error: errMaq } = await sb
+      .from("maquinas")
+      .select("id, codigo, nombre, area, planta_id, activo, plantas(nombre, codigo)")
+      .eq("activo", true)
+      .order("codigo");
+    if (errMaq) throw new Error(errMaq.message);
+
+    const ids = (maquinas ?? []).map((m) => m.id);
+    if (ids.length === 0) return [];
+
+    const [
+      { data: estados },
+      { data: ordenes },
+      { data: paros },
+      { data: rollos },
+    ] = await Promise.all([
+      sb.from("maquina_estado_actual").select("*").in("maquina_id", ids),
+      sb
+        .from("ordenes_fabricacion")
+        .select("id, folio, estado, maquina_id, producto_id, turno, fecha_inicio, productos(nombre, codigo)")
+        .in("maquina_id", ids)
+        .in("estado", ["en_proceso", "pausada"]),
+      sb
+        .from("paros_maquina")
+        .select("id, maquina_id, inicio, fin, tipo_paro_id, descripcion, tipos_paro:tipo_paro_id(codigo, nombre)")
+        .in("maquina_id", ids)
+        .gte("inicio", new Date(Date.now() - 24 * 3600 * 1000).toISOString()),
+      sb
+        .from("rollos_producidos")
+        .select("id, orden_id, peso_kg, registrado_at, ordenes_fabricacion:orden_id(maquina_id, fecha_inicio)")
+        .gte("registrado_at", new Date(Date.now() - 24 * 3600 * 1000).toISOString()),
+    ]);
+
+    return (maquinas ?? []).map((m) => {
+      const estado = estados?.find((e) => e.maquina_id === m.id) ?? null;
+      const orden = ordenes?.find((o) => o.id === estado?.orden_activa_id)
+        ?? ordenes?.find((o) => o.maquina_id === m.id)
+        ?? null;
+      const paroActivo = paros?.find((p) => p.maquina_id === m.id && p.fin === null) ?? null;
+
+      const rollosMaq = (rollos ?? []).filter(
+        (r) => (r as { ordenes_fabricacion?: { maquina_id?: string } | null })?.ordenes_fabricacion?.maquina_id === m.id,
+      );
+      const rollosTurno = rollosMaq.length;
+      const kgTurno = rollosMaq.reduce((s, r) => s + (Number(r.peso_kg) || 0), 0);
+
+      // OEE estimado simple: 1 - (minutos parados últimas 24h / 1440)
+      const parosMaq = (paros ?? []).filter((p) => p.maquina_id === m.id);
+      const minutosParo = parosMaq.reduce((s, p) => {
+        const fin = p.fin ? new Date(p.fin).getTime() : Date.now();
+        const ini = new Date(p.inicio).getTime();
+        return s + Math.max(0, (fin - ini) / 60000);
+      }, 0);
+      const oee = Math.max(0, Math.min(100, (1 - minutosParo / 1440) * 100));
+
+      let estadoUI: "operando" | "paro" | "ajuste" | "libre" = "libre";
+      if (estado?.estado === "produciendo") estadoUI = "operando";
+      else if (estado?.estado === "paro") estadoUI = "paro";
+      else if (estado?.estado === "ajuste") estadoUI = "ajuste";
+
+      return {
+        id: m.id,
+        codigo: m.codigo,
+        nombre: m.nombre,
+        planta: (m as { plantas?: { nombre?: string } | null }).plantas?.nombre ?? "—",
+        estado: estadoUI,
+        orden: orden ? { id: orden.id, folio: orden.folio, producto: orden.productos?.nombre ?? "—", turno: orden.turno ?? "—" } : null,
+        paroActivo: paroActivo
+          ? {
+              id: paroActivo.id,
+              inicio: paroActivo.inicio,
+              tipo: (paroActivo as { tipos_paro?: { nombre?: string } | null }).tipos_paro?.nombre ?? "—",
+              descripcion: paroActivo.descripcion,
+            }
+          : null,
+        rollosTurno,
+        kgTurno: Math.round(kgTurno * 10) / 10,
+        oee: Math.round(oee * 10) / 10,
+        ultimoCambio: estado?.ultimo_cambio ?? null,
+      };
+    });
+  });
+
+/**
+ * Historial de órdenes de una máquina, con métricas de calidad.
+ */
+const histSchema = z.object({ maquina_id: z.string().uuid() });
+export const listHistorialMaquina = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => histSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const sb = context.supabase as SB;
+    const { data: ordenes, error } = await sb
+      .from("ordenes_fabricacion")
+      .select(
+        `id, folio, estado, turno, fecha_inicio, fecha_fin,
+         producido_kg, producido_rollos,
+         producto_id, productos(nombre, codigo),
+         maquina_id, maquinas(codigo, nombre),
+         planta_id, plantas(nombre)`,
+      )
+      .eq("maquina_id", data.maquina_id)
+      .order("created_at", { ascending: false })
+      .limit(200);
+    if (error) throw new Error(error.message);
+
+    const ordIds = (ordenes ?? []).map((o) => o.id);
+    let muestrasPorOrden: Record<string, { total: number; liberadas: number; rechazadas: number }> = {};
+    if (ordIds.length > 0) {
+      const { data: muestras } = await sb
+        .from("muestras_calidad")
+        .select("orden_id, dictamen")
+        .in("orden_id", ordIds);
+      muestrasPorOrden = (muestras ?? []).reduce<typeof muestrasPorOrden>((acc, m) => {
+        const k = m.orden_id;
+        acc[k] ??= { total: 0, liberadas: 0, rechazadas: 0 };
+        acc[k].total++;
+        if (m.dictamen === "liberada") acc[k].liberadas++;
+        if (m.dictamen === "rechazada") acc[k].rechazadas++;
+        return acc;
+      }, {});
+    }
+
+    return (ordenes ?? []).map((o) => {
+      const ms = muestrasPorOrden[o.id] ?? { total: 0, liberadas: 0, rechazadas: 0 };
+      const cumplimiento = ms.total > 0 ? Math.round((ms.liberadas / ms.total) * 1000) / 10 : null;
+      const estatus: "L" | "NC" | "C" = ms.rechazadas > 0 ? "NC" : ms.liberadas > 0 ? "L" : "C";
+      return {
+        ordenId: o.id,
+        folio: o.folio,
+        estado: o.estado,
+        fecha: (o.fecha_inicio ?? o.fecha_fin ?? "").slice(0, 10),
+        turno: o.turno ?? "—",
+        producto: o.productos?.nombre ?? "—",
+        maquina: o.maquinas?.codigo ?? "—",
+        planta: o.plantas?.nombre ?? "—",
+        rollos: o.producido_rollos ?? 0,
+        kg: Number(o.producido_kg ?? 0),
+        muestrasTotal: ms.total,
+        muestrasLiberadas: ms.liberadas,
+        muestrasRechazadas: ms.rechazadas,
+        cumplimiento,
+        estatus,
+      };
+    });
+  });
+
+/**
+ * Catálogo de tipos de paro (para el modal de "registrar paro").
+ */
+export const listTiposParo = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const sb = context.supabase as SB;
+    const { data, error } = await sb
+      .from("tipos_paro")
+      .select("id, codigo, nombre, categoria")
+      .eq("activo", true)
+      .order("orden");
+    if (error) throw new Error(error.message);
+    return data ?? [];
+  });
