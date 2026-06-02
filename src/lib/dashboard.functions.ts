@@ -106,6 +106,24 @@ export const getDashboard = createServerFn({ method: "POST" })
     const maquinaCodeById = new Map((maquinas ?? []).map((m) => [m.id, m.codigo]));
     const ordenMaquinaById = new Map((ordenes ?? []).map((o) => [o.id, o.maquina_id]));
 
+    // Una muestra cuenta como "liberada" si dictamen='liberada' o si el capturista
+    // marcó estatus_liberacion='L' en la captura FOR-CAL-04.
+    const isLiberada = (m: { dictamen: string | null; estatus_liberacion: string | null }) =>
+      m.dictamen === "liberada" || m.estatus_liberacion === "L";
+    const isRechazada = (m: { dictamen: string | null; estatus_liberacion: string | null }) =>
+      m.dictamen === "rechazada" || m.estatus_liberacion === "NC";
+
+    console.log("[getDashboard]", {
+      rango: data.rango,
+      start: data.start,
+      end: data.end,
+      maquinas: maquinaList.length,
+      muestras: muestras?.length ?? 0,
+      mediciones: mediciones?.length ?? 0,
+      rollos: rollos?.length ?? 0,
+      paros: paros?.length ?? 0,
+    });
+
     const buckets = bucketsForRango(data.rango, start, end);
 
     const serie = buckets.map((b) => {
@@ -118,7 +136,7 @@ export const getDashboard = createServerFn({ method: "POST" })
           const t = new Date(m.hora_muestreo).getTime();
           return maquinaCodeById.get(m.maquina_id) === codigo && t >= b.start.getTime() && t < b.end.getTime();
         });
-        const liberadas = muestrasBucket.filter((m) => m.dictamen === "liberada").length;
+        const liberadas = muestrasBucket.filter(isLiberada).length;
         cumplimiento[codigo] = muestrasBucket.length ? Math.round((liberadas / muestrasBucket.length) * 1000) / 10 : 0;
 
         const rollosBucket = (rollos ?? []).filter((r) => {
@@ -142,11 +160,20 @@ export const getDashboard = createServerFn({ method: "POST" })
       return { label: b.label, cumplimiento, rollos: rollosMap, oee: oeeMap };
     });
 
-    // No conformidades por variable
+    // No conformidades: mediciones fuera de spec + defectos visuales reportados
     const ncMap = new Map<string, number>();
     for (const med of mediciones ?? []) {
       if (med.estado === "no_conforme" || med.estado === "fuera_rango_critico") {
         ncMap.set(med.variable_clave, (ncMap.get(med.variable_clave) ?? 0) + 1);
+      }
+    }
+    for (const m of muestras ?? []) {
+      for (const d of (m.defectos ?? []) as string[]) {
+        if (!d) continue;
+        ncMap.set(d, (ncMap.get(d) ?? 0) + 1);
+      }
+      if (isRechazada(m)) {
+        ncMap.set("Rechazo", (ncMap.get("Rechazo") ?? 0) + 1);
       }
     }
     const noConformidades = Array.from(ncMap.entries())
@@ -154,5 +181,11 @@ export const getDashboard = createServerFn({ method: "POST" })
       .sort((a, b) => b.value - a.value)
       .slice(0, 6);
 
+    console.log("[getDashboard] resultado", {
+      buckets: serie.length,
+      noConformidades: noConformidades.length,
+    });
+
     return { serie, maquinas: maquinaList, noConformidades };
   });
+
