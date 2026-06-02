@@ -928,6 +928,11 @@ function buildEtiquetaFromMuestra(m: MuestraReciente): EtiquetaData {
     productoCodigo: m.productos?.codigo ?? "",
     productoNombre: m.productos?.nombre ?? "",
     observacionesGenerales: m.observaciones_generales ?? "",
+    turno: (m as { turno?: string | null }).turno ?? null,
+    jefeMaquina: (m as { jefe_maquina?: string | null }).jefe_maquina ?? null,
+    operador: (m as { operador?: string | null }).operador ?? null,
+    prensero: (m as { prensero?: string | null }).prensero ?? null,
+    analista: (m as { analista?: string | null }).analista ?? null,
     mediciones: meds,
     estatus: fueraSpec ? "NO CONFORME" : "CONFORME",
   };
