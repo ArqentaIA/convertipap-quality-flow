@@ -97,6 +97,8 @@ export const getMuestraTrace = createServerFn({ method: "GET" })
       turno: m.turno,
       estado: m.estado,
       dictamen: m.dictamen,
+      estatus_liberacion: (m as { estatus_liberacion?: string | null }).estatus_liberacion ?? null,
+      defectos: ((m as { defectos?: string[] | null }).defectos ?? []) as string[],
       observaciones_generales: m.observaciones_generales ?? "",
       jefe_maquina: (m as { jefe_maquina?: string | null }).jefe_maquina ?? null,
       operador: (m as { operador?: string | null }).operador ?? null,
