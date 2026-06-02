@@ -28,51 +28,44 @@ function bucketsForRango(
   end: Date,
 ): { label: string; start: Date; end: Date }[] {
   const buckets: { label: string; start: Date; end: Date }[] = [];
+  const HOUR = 3600_000;
   if (rango === "dia") {
-    // 6 buckets de 4h
+    // 6 buckets de 4h, relativos al inicio (preserva zona horaria del cliente)
     const hours = ["00h", "04h", "08h", "12h", "16h", "20h"];
-    const dayStart = new Date(start);
-    dayStart.setHours(0, 0, 0, 0);
     for (let i = 0; i < 6; i++) {
-      const s = new Date(dayStart); s.setHours(i * 4);
-      const e = new Date(dayStart); e.setHours(i * 4 + 4);
+      const s = new Date(start.getTime() + i * 4 * HOUR);
+      const e = new Date(start.getTime() + (i + 1) * 4 * HOUR);
       buckets.push({ label: hours[i], start: s, end: e });
     }
   } else if (rango === "semana") {
-    const dayNames = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
-    const weekStart = new Date(start);
-    weekStart.setHours(0, 0, 0, 0);
-    // start from Monday
-    const dow = weekStart.getDay();
-    const offset = dow === 0 ? -6 : 1 - dow;
-    weekStart.setDate(weekStart.getDate() + offset);
+    const dayNames = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
     for (let i = 0; i < 7; i++) {
-      const s = new Date(weekStart); s.setDate(weekStart.getDate() + i);
-      const e = new Date(s); e.setDate(s.getDate() + 1);
-      buckets.push({ label: dayNames[s.getDay()], start: s, end: e });
+      const s = new Date(start.getTime() + i * 24 * HOUR);
+      const e = new Date(start.getTime() + (i + 1) * 24 * HOUR);
+      buckets.push({ label: dayNames[i], start: s, end: e });
     }
   } else if (rango === "mes") {
-    // 4 semanas
-    const mStart = new Date(start.getFullYear(), start.getMonth(), 1);
+    // 4 semanas relativas
     for (let i = 0; i < 4; i++) {
-      const s = new Date(mStart); s.setDate(1 + i * 7);
-      const e = new Date(mStart); e.setDate(1 + (i + 1) * 7);
+      const s = new Date(start.getTime() + i * 7 * 24 * HOUR);
+      const e = new Date(start.getTime() + (i + 1) * 7 * 24 * HOUR);
       buckets.push({ label: `S${i + 1}`, start: s, end: e });
     }
   } else {
-    // año / custom → meses
+    // año / custom → meses (basados en UTC del start)
     const MES_ABBR = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
-    const cursor = new Date(start.getFullYear(), start.getMonth(), 1);
-    const stop = new Date(end.getFullYear(), end.getMonth(), 1);
+    const cursor = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), 1));
+    const stop = new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth(), 1));
     while (cursor <= stop) {
       const s = new Date(cursor);
-      const e = new Date(cursor); e.setMonth(e.getMonth() + 1);
-      buckets.push({ label: MES_ABBR[s.getMonth()], start: s, end: e });
-      cursor.setMonth(cursor.getMonth() + 1);
+      const e = new Date(Date.UTC(cursor.getUTCFullYear(), cursor.getUTCMonth() + 1, 1));
+      buckets.push({ label: MES_ABBR[s.getUTCMonth()], start: s, end: e });
+      cursor.setUTCMonth(cursor.getUTCMonth() + 1);
     }
   }
   return buckets;
 }
+
 
 export const getDashboard = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
