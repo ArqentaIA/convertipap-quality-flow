@@ -5,6 +5,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Plus, Pencil, Power, Ban } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { SessionGate } from "@/components/SessionGate";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,9 +28,17 @@ import {
 } from "@/lib/catalogos.functions";
 
 export const Route = createFileRoute("/catalogos")({
-  loader: ({ context }) => context.queryClient.ensureQueryData(catalogosQO),
-  component: CatalogosPage,
+  component: CatalogosGate,
+  ssr: false,
 });
+
+function CatalogosGate() {
+  return (
+    <SessionGate>
+      <CatalogosPage />
+    </SessionGate>
+  );
+}
 
 const catalogosQO = queryOptions({
   queryKey: ["catalogos"],
