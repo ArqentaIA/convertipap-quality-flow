@@ -70,9 +70,9 @@ export const getAppSettings = createServerFn({ method: "GET" })
         .select(SELECT_COLS)
         .single();
       if (insErr) throw new Error(`No se pudo crear la configuración: ${insErr.message}`);
-      return created as AppSettings;
+      return created as unknown as AppSettings;
     }
-    return data as AppSettings;
+    return data as unknown as AppSettings;
   });
 
 export const updateAppSettings = createServerFn({ method: "POST" })
@@ -93,5 +93,5 @@ export const updateAppSettings = createServerFn({ method: "POST" })
           `Solo administradores o gerencia general pueden modificarla.`,
       );
     }
-    return updated as AppSettings;
+    return updated as unknown as AppSettings;
   });
