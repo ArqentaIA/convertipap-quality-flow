@@ -689,6 +689,13 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
                                 ))}
                               </SelectContent>
                             </Select>
+                          ) : vs.clave === "relMDCD" ? (
+                            <Input
+                              type="text" readOnly tabIndex={-1}
+                              value={input.valor === "" ? "—" : input.valor}
+                              className="h-11 text-base font-medium w-full bg-muted/40 cursor-not-allowed"
+                              title="Calculado automáticamente: Tensión seca MD ÷ Tensión seca CD"
+                            />
                           ) : (
                             <Input
                               type="number" step={vs.clave === "peso" ? 1 : 0.1} inputMode="decimal"
