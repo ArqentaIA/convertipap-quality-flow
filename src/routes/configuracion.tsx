@@ -1,16 +1,19 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { queryOptions, useSuspenseQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { queryOptions, useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { SessionGate } from "@/components/SessionGate";
 import { Save, Eye, X, Mail, Sliders, Bell } from "lucide-react";
 import logoConvertipap from "@/assets/logo-convertipap.png";
 import { toast } from "sonner";
 import { getAppSettings, updateAppSettings, type AppSettings } from "@/lib/settings.functions";
 import { listMaquinasConEstado } from "@/lib/produccion.functions";
+import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/configuracion")({
-  component: ConfigPage,
+  component: ConfigGate,
+  ssr: false,
   errorComponent: ({ error }) => (
     <AppLayout title="Configuración del sistema">
       <div role="alert" className="rounded-md border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
@@ -20,13 +23,49 @@ export const Route = createFileRoute("/configuracion")({
   ),
 });
 
+function ConfigGate() {
+  return (
+    <SessionGate>
+      <ConfigPage />
+    </SessionGate>
+  );
+}
+
 const settingsQueryOptions = queryOptions({
   queryKey: ["app_settings"],
   queryFn: () => getAppSettings(),
 });
 
 function ConfigPage() {
-  const { data: settings } = useSuspenseQuery(settingsQueryOptions);
+  const { session } = useAuth();
+  const settingsQuery = useQuery({
+    ...settingsQueryOptions,
+    enabled: !!session?.access_token,
+    retry: false,
+  });
+
+  if (settingsQuery.error) {
+    return (
+      <AppLayout title="Configuración del sistema">
+        <div role="alert" className="rounded-md border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
+          No se pudo cargar la configuración: {settingsQuery.error.message}
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (settingsQuery.isLoading || !settingsQuery.data) {
+    return (
+      <AppLayout title="Configuración del sistema">
+        <div className="rounded-md border border-border bg-card p-4 text-sm text-muted-foreground">Cargando configuración…</div>
+      </AppLayout>
+    );
+  }
+
+  return <ConfigContent settings={settingsQuery.data} />;
+}
+
+function ConfigContent({ settings }: { settings: AppSettings }) {
   const [previewCEO, setPreviewCEO] = useState(false);
   const [form, setForm] = useState<AppSettings>(settings);
   const qc = useQueryClient();
@@ -263,17 +302,21 @@ function Toggle({ label, on, hint, onChange }: { label: string; on?: boolean; hi
 }
 
 function CEOReportPreview({ onClose }: { onClose: () => void }) {
-  const { data: maquinas } = useSuspenseQuery({
+  const { session } = useAuth();
+  const maquinasQuery = useQuery({
     queryKey: ["produccion", "maquinas-estado"],
     queryFn: () => listMaquinasConEstado(),
+    enabled: !!session?.access_token,
+    retry: false,
   });
+  const maquinas = maquinasQuery.data ?? [];
 
   const now = new Date();
   const fecha = now.toLocaleDateString("es-MX", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
   const hora = now.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", hour12: true });
   const planta = "Planta Tlaxcala";
 
-  const rows = (maquinas ?? []).map((m) => {
+  const rows = maquinas.map((m) => {
     const estadoLabel =
       m.estado === "operando" ? "Operando" :
       m.estado === "paro" ? "En paro" :
@@ -289,6 +332,16 @@ function CEOReportPreview({ onClose }: { onClose: () => void }) {
   const efGeneral = rows.length
     ? Number((rows.reduce((a, r) => a + r.eficiencia, 0) / rows.length).toFixed(1))
     : 0;
+
+  if (maquinasQuery.error) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
+        <div className="w-full max-w-md rounded-xl bg-card p-5 text-sm text-destructive shadow-2xl" onClick={(e) => e.stopPropagation()}>
+          No se pudo cargar la previsualización: {maquinasQuery.error.message}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>

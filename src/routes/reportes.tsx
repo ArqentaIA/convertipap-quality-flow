@@ -1,7 +1,8 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
-import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
+import { createFileRoute } from "@tanstack/react-router";
+import { useMemo, useState } from "react";
+import { queryOptions, useQuery } from "@tanstack/react-query";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { SessionGate } from "@/components/SessionGate";
 import { FileBarChart2, Download, FileSpreadsheet, TrendingUp, TrendingDown, CalendarRange } from "lucide-react";
 import logoUrl from "@/assets/logo-convertipap.png";
 import { RangoSelector, MESES, rangoLabel, rangoToFreq, type Rango } from "@/components/qc/RangoSelector";
@@ -22,22 +23,11 @@ export const Route = createFileRoute("/reportes")({
 });
 
 function ReportesGate() {
-  const auth = useAuth();
-  const navigate = useNavigate();
-  useEffect(() => {
-    if (auth.loading) return;
-    if (!auth.isAuthenticated) {
-      void navigate({ to: "/login", replace: true });
-    }
-  }, [auth, navigate]);
-  if (auth.loading || !auth.isAuthenticated) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="text-sm text-muted-foreground">Cargando…</div>
-      </div>
-    );
-  }
-  return <ReportesPage />;
+  return (
+    <SessionGate>
+      <ReportesPage />
+    </SessionGate>
+  );
 }
 
 const META_EMPRESA = {
@@ -250,6 +240,7 @@ const REPORTES = [
 ];
 
 function ReportesPage() {
+  const auth = useAuth();
   const [rango, setRango] = useState<Rango>("semana");
   const [mesesSel, setMesesSel] = useState<number[]>(MESES.map((_, i) => i));
   const periodo = rangoLabel(rango, mesesSel);
@@ -257,12 +248,17 @@ function ReportesPage() {
   const labFilter = useLabFilter();
   const { start, end } = useMemo(() => computeWindow(rango, mesesSel), [rango, mesesSel]);
 
-  const { data: payload } = useSuspenseQuery(reportesQueryOptions(start, end));
+  const reportesQuery = useQuery({
+    ...reportesQueryOptions(start, end),
+    enabled: !!auth.session?.access_token,
+    retry: false,
+  });
+  const payload = reportesQuery.data;
 
   // Filtrado por laboratorio
   const datasetsFiltrados = useMemo(() => {
     const out: Record<string, { sheet: string; rows: Record<string, string | number>[] }[]> = {};
-    for (const [nombre, hojas] of Object.entries(payload.datasets)) {
+    for (const [nombre, hojas] of Object.entries(payload?.datasets ?? {})) {
       out[nombre] = hojas.map((h) => ({
         ...h,
         rows: h.rows.filter((row) => {
@@ -276,9 +272,27 @@ function ReportesPage() {
   }, [payload, labFilter]);
 
   const plantasPerf = useMemo(
-    () => payload.desempenoPlanta,
+    () => payload?.desempenoPlanta ?? [],
     [payload],
   );
+
+  if (reportesQuery.error) {
+    return (
+      <AppLayout title="Reportes e Indicadores">
+        <div role="alert" className="rounded-md border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
+          No se pudieron cargar los reportes: {reportesQuery.error.message}
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (reportesQuery.isLoading || !payload) {
+    return (
+      <AppLayout title="Reportes e Indicadores">
+        <div className="rounded-md border border-border bg-card p-4 text-sm text-muted-foreground">Cargando reportes…</div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout title="Reportes e Indicadores">
