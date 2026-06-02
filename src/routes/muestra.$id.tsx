@@ -177,6 +177,19 @@ function MuestraTracePage() {
           )}
         </div>
 
+        {trace.defectos.length > 0 && (
+          <div className="bg-card border border-border rounded-lg p-4 text-sm">
+            <div className="text-[10px] uppercase text-muted-foreground tracking-wide mb-2">Defectos observados</div>
+            <div className="flex flex-wrap gap-1.5">
+              {trace.defectos.map((d) => (
+                <span key={d} className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-rose-100 text-rose-800 border border-rose-300">
+                  {d}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
         {trace.observaciones_generales && (
           <div className="bg-card border border-border rounded-lg p-4 text-sm">
             <div className="text-[10px] uppercase text-muted-foreground tracking-wide mb-1">Observaciones</div>
