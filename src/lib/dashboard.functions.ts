@@ -20,6 +20,13 @@ export type DashboardPayload = {
   }[];
   maquinas: string[];
   noConformidades: { name: string; value: number }[];
+  costoNoCalidad: {
+    costoKg: number;
+    rollosNoLiberados: number;
+    kgNoLiberados: number;
+    costoTotal: number;
+    costoPromedio: number;
+  };
 };
 
 function bucketsForRango(
@@ -75,7 +82,7 @@ export const getDashboard = createServerFn({ method: "POST" })
     const start = new Date(data.start);
     const end = new Date(data.end);
 
-    const [{ data: maquinas }, { data: muestras }, { data: mediciones }, { data: rollos }, { data: ordenes }, { data: paros }] =
+    const [{ data: maquinas }, { data: muestras }, { data: mediciones }, { data: rollos }, { data: ordenes }, { data: paros }, settingsResp] =
       await Promise.all([
         sb.from("maquinas").select("id, codigo").order("codigo"),
         sb
@@ -85,7 +92,7 @@ export const getDashboard = createServerFn({ method: "POST" })
           .lte("hora_muestreo", end.toISOString()),
         sb
           .from("mediciones_calidad")
-          .select("id, muestra_id, variable_clave, estado, created_at")
+          .select("id, muestra_id, variable_clave, valor, estado, created_at")
           .gte("created_at", start.toISOString())
           .lte("created_at", end.toISOString()),
 
@@ -100,6 +107,7 @@ export const getDashboard = createServerFn({ method: "POST" })
           .select("maquina_id, duracion_min, inicio")
           .gte("inicio", start.toISOString())
           .lte("inicio", end.toISOString()),
+        sb.from("app_settings").select("costo_no_calidad_kg").limit(1).maybeSingle(),
       ]);
 
     const maquinaList = (maquinas ?? []).map((m) => m.codigo);
@@ -201,11 +209,51 @@ export const getDashboard = createServerFn({ method: "POST" })
       .sort((a, b) => b.value - a.value)
       .slice(0, 6);
 
+    // ---- Costo de No Calidad ----
+    // Toma el costo configurado en app_settings (MXN/kg), default 18.00
+    const costoKg = Number((settingsResp?.data as any)?.costo_no_calidad_kg ?? 18.0);
+
+    // Peso REAL por muestra: valor de la medición con variable_clave='peso'
+    const pesoPorMuestra = new Map<string, number>();
+    for (const med of mediciones ?? []) {
+      if (med.variable_clave === "peso" && med.valor != null) {
+        const v = Number(med.valor);
+        if (!Number.isNaN(v)) pesoPorMuestra.set(med.muestra_id, v);
+      }
+    }
+
+    // "Rollo no liberado": muestra cuyo estatus NO es liberado/conforme
+    // (incluye rechazados y pendientes con mediciones fuera de spec o defectos)
+    let rollosNoLiberados = 0;
+    let kgNoLiberados = 0;
+    for (const m of muestras ?? []) {
+      if (isConforme(m as any)) continue;
+      rollosNoLiberados += 1;
+      const peso = pesoPorMuestra.get(m.id) ?? 0;
+      kgNoLiberados += peso;
+    }
+    const costoTotal = Math.round(kgNoLiberados * costoKg * 100) / 100;
+    const costoPromedio = rollosNoLiberados > 0 ? Math.round((costoTotal / rollosNoLiberados) * 100) / 100 : 0;
+
     console.log("[getDashboard] resultado", {
       buckets: serie.length,
       noConformidades: noConformidades.length,
+      rollosNoLiberados,
+      kgNoLiberados,
+      costoTotal,
     });
 
-    return { serie, maquinas: maquinaList, noConformidades };
+    return {
+      serie,
+      maquinas: maquinaList,
+      noConformidades,
+      costoNoCalidad: {
+        costoKg,
+        rollosNoLiberados,
+        kgNoLiberados: Math.round(kgNoLiberados * 100) / 100,
+        costoTotal,
+        costoPromedio,
+      },
+    };
   });
 

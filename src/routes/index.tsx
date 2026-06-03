@@ -6,11 +6,10 @@ import {
   LineChart, Line,
   BarChart, Bar,
   XAxis, YAxis, Tooltip, CartesianGrid, Legend,
-  PieChart, Pie, Cell,
 } from "recharts";
 import {
-  ArrowRight, Factory, AlertTriangle, Gauge,
-  Activity, Target,
+  ArrowRight, Factory, Gauge,
+  Activity, Target, DollarSign, PackageX, TrendingDown,
 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { RangoSelector, MESES, rangoLabel, type Rango } from "@/components/qc/RangoSelector";
@@ -86,7 +85,7 @@ const COLORS_BASE = [
   "hsl(270, 60%, 55%)",
   "hsl(15, 80%, 55%)",
 ];
-const PIE_COLORS = ["hsl(330,75%,55%)", "hsl(40,90%,55%)", "hsl(210,75%,50%)", "hsl(0,70%,55%)", "hsl(150,55%,45%)", "hsl(270,60%,55%)"];
+
 
 function DashboardGate() {
   const auth = useAuth();
@@ -127,7 +126,7 @@ function Dashboard() {
     ...dashboardQO(rango, mesesSel),
     refetchInterval: 30_000,
   });
-  const { serie, maquinas, noConformidades } = data;
+  const { serie, maquinas, costoNoCalidad } = data;
 
   // Realtime: invalida el dashboard al cambiar muestras/mediciones
   useEffect(() => {
@@ -168,7 +167,7 @@ function Dashboard() {
   const totalRollos = promedios.reduce((a, p) => a + p.rollos, 0);
   const promCumpl = promedios.length ? +(promedios.reduce((a, p) => a + p.cumplimiento, 0) / promedios.length).toFixed(1) : 0;
   const promOEE = promedios.length ? +(promedios.reduce((a, p) => a + p.oee, 0) / promedios.length).toFixed(1) : 0;
-  const totalNC = noConformidades.reduce((a, n) => a + n.value, 0);
+  
 
   return (
     <AppLayout title="Dashboard · Calidad y Producción">
@@ -242,21 +241,42 @@ function Dashboard() {
             </div>
           </Card>
 
-          <Card title="No conformidades" subtitle="Distribución por variable">
-            <div className="h-72">
-              {noConformidades.length === 0 ? (
-                <EmptyChart message="Sin no conformidades en el periodo" />
-              ) : (
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie data={noConformidades} dataKey="value" nameKey="name" innerRadius={50} outerRadius={90} paddingAngle={2}>
-                      {noConformidades.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
-                    </Pie>
-                    <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
-                    <Legend iconType="circle" wrapperStyle={{ fontSize: 11 }} />
-                  </PieChart>
-                </ResponsiveContainer>
-              )}
+          <Card title="Costo de No Calidad" subtitle={`MXN · ${rangoLabel(rango, mesesSel)}`}>
+            <div className="flex h-72 flex-col justify-between gap-3">
+              <div className="rounded-xl border border-destructive/30 bg-gradient-to-br from-destructive/15 via-destructive/5 to-transparent p-4">
+                <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-destructive">
+                  <DollarSign className="h-3.5 w-3.5" /> Costo total
+                </div>
+                <div className="mt-1 text-3xl font-bold text-foreground tabular-nums">
+                  {costoNoCalidad.costoTotal.toLocaleString("es-MX", { style: "currency", currency: "MXN", maximumFractionDigits: 2 })}
+                </div>
+                <div className="mt-1 text-[11px] text-muted-foreground">
+                  {costoNoCalidad.kgNoLiberados.toLocaleString("es-MX", { maximumFractionDigits: 1 })} kg no liberados · {costoNoCalidad.costoKg.toLocaleString("es-MX", { style: "currency", currency: "MXN" })}/kg
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-lg border border-border bg-card/60 p-3">
+                  <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    <TrendingDown className="h-3 w-3" /> Costo promedio
+                  </div>
+                  <div className="mt-1 text-xl font-bold text-foreground tabular-nums">
+                    {costoNoCalidad.costoPromedio.toLocaleString("es-MX", { style: "currency", currency: "MXN", maximumFractionDigits: 2 })}
+                  </div>
+                  <div className="text-[10px] text-muted-foreground">por rollo no liberado</div>
+                </div>
+                <div className="rounded-lg border border-border bg-card/60 p-3">
+                  <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    <PackageX className="h-3 w-3" /> Rollos
+                  </div>
+                  <div className="mt-1 text-xl font-bold text-foreground tabular-nums">
+                    {costoNoCalidad.rollosNoLiberados}
+                  </div>
+                  <div className="text-[10px] text-muted-foreground">no liberados en el periodo</div>
+                </div>
+              </div>
+              <p className="text-[10px] leading-relaxed text-muted-foreground">
+                Cálculo: Σ (peso real de cada rollo no liberado × costo configurado por kg). Sin peso estándar.
+              </p>
             </div>
           </Card>
         </div>
@@ -302,7 +322,7 @@ function Dashboard() {
           <Kpi icon={Target} label="Cumplimiento prom." value={`${promCumpl}%`} tone="primary" />
           <Kpi icon={Activity} label="OEE promedio" value={`${promOEE}%`} tone="success" />
           <Kpi icon={Factory} label="Rollos producidos" value={String(totalRollos)} tone="primary" />
-          <Kpi icon={AlertTriangle} label="No conformidades" value={String(totalNC)} tone="warning" />
+          <Kpi icon={DollarSign} label="Costo no calidad" value={costoNoCalidad.costoTotal.toLocaleString("es-MX", { style: "currency", currency: "MXN", maximumFractionDigits: 0 })} tone="warning" />
         </div>
       </div>
     </AppLayout>
