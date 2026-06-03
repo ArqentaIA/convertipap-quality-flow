@@ -2,11 +2,11 @@ import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
-  queryOptions, useSuspenseQuery, useMutation, useQuery, useQueryClient,
+  queryOptions, useMutation, useQuery, useQueryClient,
 } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
-  ArrowLeft, AlertTriangle, CheckCircle2, Save, Send, Lock,
+  ArrowLeft, AlertTriangle, CheckCircle2, Lock,
   ClipboardCheck, Info, Factory, Printer,
 } from "lucide-react";
 import { printEtiquetaLiberacion, type EtiquetaData } from "@/lib/etiqueta-liberacion";
@@ -21,10 +21,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { useAuth } from "@/lib/auth";
 import {
   listMaquinasCaptura,
@@ -66,11 +62,6 @@ const specQO = (productoId: string) =>
   });
 
 export const Route = createFileRoute("/calidad/captura")({
-  loader: ({ context }) =>
-    Promise.all([
-      context.queryClient.ensureQueryData(maquinasQO),
-      context.queryClient.ensureQueryData(productosQO),
-    ]),
   component: CapturaCalidadPage,
   errorComponent: ({ error }) => (
     <AppLayout title="Captura de Muestra de Calidad">
