@@ -665,8 +665,8 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
                     </tr>
                   </thead>
                   <tbody>
-                    {evalMediciones.map(({ spec: vs, input, estado }) => (
-                      <tr key={vs.variable_id} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
+                    {evalMediciones.map(({ spec: vs, input, estado }, idx) => (
+                      <tr key={vs.variable_id} className={`border-b last:border-0 transition-colors hover:bg-primary/10 ${idx % 2 === 0 ? "bg-primary/5" : "bg-background"}`}>
                         <td className="py-3 px-3 align-middle">
                           <div className="font-medium text-sm leading-tight">{vs.etiqueta}</div>
                           <div className="text-[11px] text-muted-foreground">{vs.unidad}</div>
