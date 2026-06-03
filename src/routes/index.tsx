@@ -85,7 +85,7 @@ const COLORS_BASE = [
   "hsl(270, 60%, 55%)",
   "hsl(15, 80%, 55%)",
 ];
-const PIE_COLORS = ["hsl(330,75%,55%)", "hsl(40,90%,55%)", "hsl(210,75%,50%)", "hsl(0,70%,55%)", "hsl(150,55%,45%)", "hsl(270,60%,55%)"];
+
 
 function DashboardGate() {
   const auth = useAuth();
