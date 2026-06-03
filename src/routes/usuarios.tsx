@@ -40,6 +40,7 @@ const MODULO_LABEL: Record<AppModule, string> = {
   reportes: "Reportes",
   configuracion: "Configuración",
   usuarios_permisos: "Usuarios y permisos",
+  auditoria: "Auditoría",
 };
 
 function UsuariosPage() {
