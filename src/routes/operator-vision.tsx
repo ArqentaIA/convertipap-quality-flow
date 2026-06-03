@@ -276,9 +276,10 @@ function OperatorVisionPage() {
   const { data, isLoading, error } = useQuery({
     queryKey: ["operator-vision", maquina],
     queryFn: () => getOperatorVisionData({ data: { maquina } }),
-    refetchInterval: 10_000,
+    refetchInterval: 30_000,
     refetchIntervalInBackground: true,
   });
+
 
   const muestras = data?.muestras ?? [];
   const current = muestras[muestras.length - 1];
