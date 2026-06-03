@@ -573,7 +573,7 @@ export const crearAjuste = createServerFn({ method: "POST" })
     z
       .object({
         muestra_id: z.string().uuid().nullable().optional(),
-        orden_id: z.string().uuid(),
+        orden_id: z.string().uuid().nullable().optional(),
         maquina_id: z.string().uuid(),
         planta_id: z.string().uuid(),
         tipo_ajuste: z.enum([
