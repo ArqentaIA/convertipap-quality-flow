@@ -378,7 +378,10 @@ function ReportesPage() {
             {REPORTES.map((rep) => {
               const nombre = rep.nombre;
               const titulo = `${nombre} · ${periodo}`;
-              const hojas = datasetsFiltrados[nombre] ?? [{ sheet: "Datos", rows: [] }];
+              const hojasPdf = datasetsFiltrados[nombre] ?? [{ sheet: "Datos", rows: [] }];
+              const hojasXlsx = rep.xlsxDataset
+                ? (datasetsFiltrados[rep.xlsxDataset] ?? hojasPdf)
+                : hojasPdf;
               return (
                 <li key={nombre} className="flex items-center justify-between gap-3 px-5 py-3">
                   <div>
@@ -388,7 +391,7 @@ function ReportesPage() {
                   <div className="flex items-center gap-2">
                     {!rep.xlsxOnly && (
                       <button
-                        onClick={() => descargarPDF(titulo, `${freq} · ${periodo}`, hojas)}
+                        onClick={() => descargarPDF(titulo, `${freq} · ${periodo}`, hojasPdf)}
                         className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium hover:bg-accent"
                         title="Descargar reporte ejecutivo en PDF"
                       >
@@ -396,7 +399,7 @@ function ReportesPage() {
                       </button>
                     )}
                     <button
-                      onClick={() => descargarXLSX(nombre, hojas)}
+                      onClick={() => descargarXLSX(nombre, hojasXlsx)}
                       className="inline-flex items-center gap-2 rounded-md border border-success/40 bg-success/10 px-3 py-1.5 text-xs font-medium text-success hover:bg-success/20"
                       title="Descargar archivo XLSX para manejo de BD"
                     >
