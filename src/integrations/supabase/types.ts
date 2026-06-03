@@ -1411,6 +1411,7 @@ export type Database = {
         | "configuracion"
         | "usuarios_permisos"
         | "auditoria"
+        | "catalogos"
       app_role:
         | "administrador"
         | "gerente_general"
@@ -1605,6 +1606,7 @@ export const Constants = {
         "configuracion",
         "usuarios_permisos",
         "auditoria",
+        "catalogos",
       ],
       app_role: [
         "administrador",
