@@ -546,11 +546,13 @@ export const listMaquinasConEstado = createServerFn({ method: "GET" })
     const ids = (maquinas ?? []).map((m) => m.id);
     if (ids.length === 0) return [];
 
+    const desde24h = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
     const [
       { data: estados },
       { data: ordenes },
       { data: paros },
       { data: rollos },
+      { data: muestras },
     ] = await Promise.all([
       sb.from("maquina_estado_actual").select("*").in("maquina_id", ids),
       sb
@@ -562,11 +564,16 @@ export const listMaquinasConEstado = createServerFn({ method: "GET" })
         .from("paros_maquina")
         .select("id, maquina_id, inicio, fin, tipo_paro_id, descripcion, tipos_paro:tipo_paro_id(codigo, nombre)")
         .in("maquina_id", ids)
-        .gte("inicio", new Date(Date.now() - 24 * 3600 * 1000).toISOString()),
+        .gte("inicio", desde24h),
       sb
         .from("rollos_producidos")
         .select("id, orden_id, peso_kg, registrado_at, ordenes_fabricacion:orden_id(maquina_id, fecha_inicio)")
-        .gte("registrado_at", new Date(Date.now() - 24 * 3600 * 1000).toISOString()),
+        .gte("registrado_at", desde24h),
+      sb
+        .from("muestras_calidad")
+        .select("id, maquina_id, hora_muestreo, numero_rollo, mediciones_calidad(variable_clave, valor)")
+        .in("maquina_id", ids)
+        .gte("hora_muestreo", desde24h),
     ]);
 
     return (maquinas ?? []).map((m) => {
@@ -579,8 +586,14 @@ export const listMaquinasConEstado = createServerFn({ method: "GET" })
       const rollosMaq = (rollos ?? []).filter(
         (r) => (r as { ordenes_fabricacion?: { maquina_id?: string } | null })?.ordenes_fabricacion?.maquina_id === m.id,
       );
-      const rollosTurno = rollosMaq.length;
-      const kgTurno = rollosMaq.reduce((s, r) => s + (Number(r.peso_kg) || 0), 0);
+      const muestrasMaq = (muestras ?? []).filter((ms) => ms.maquina_id === m.id);
+      const rollosTurno = rollosMaq.length > 0 ? rollosMaq.length : muestrasMaq.length;
+      const kgTurno = rollosMaq.length > 0
+        ? rollosMaq.reduce((s, r) => s + (Number(r.peso_kg) || 0), 0)
+        : muestrasMaq.reduce((s, ms) => {
+            const peso = (ms.mediciones_calidad ?? []).find((md) => md.variable_clave === "peso")?.valor;
+            return s + (Number(peso) || 0);
+          }, 0);
 
       // OEE estimado simple: 1 - (minutos parados últimas 24h / 1440)
       const parosMaq = (paros ?? []).filter((p) => p.maquina_id === m.id);
