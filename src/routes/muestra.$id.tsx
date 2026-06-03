@@ -1,8 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { ShieldCheck, AlertTriangle, Factory, Calendar, Package, Hash } from "lucide-react";
 import logoUrl from "@/assets/logo-convertipap.png";
 import { getMuestraTrace, type TraceMuestra } from "@/lib/trace.functions";
+import { auditAction } from "@/lib/audit";
 
 const traceQO = (id: string) =>
   queryOptions({
