@@ -1,105 +1,43 @@
-import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Download, X, CheckCircle2, AlertTriangle, Loader2 } from "lucide-react";
+import { CheckCircle2, AlertTriangle, Loader2, Clock } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { getDetalleCalidadOrden } from "@/lib/produccion.functions";
+import { getDetalleRollo } from "@/lib/produccion.functions";
 
-type Rango = "dia" | "semana" | "mes" | "año" | "todo";
-
-const RANGOS: { v: Rango; label: string }[] = [
-  { v: "dia", label: "Día" },
-  { v: "semana", label: "Semana" },
-  { v: "mes", label: "Mes" },
-  { v: "año", label: "Año" },
-  { v: "todo", label: "Todo" },
-];
-
+/**
+ * Detalle de calidad de un rollo (solo consulta).
+ * Muestra las 14 variables de calidad capturadas en la muestra,
+ * con su valor, rango (mín / objetivo / máx), unidad y estado.
+ */
 export function DetalleCalidadModal({
-  ordenId,
+  muestraId,
   folio,
   open,
   onOpenChange,
 }: {
-  ordenId: string | null;
+  muestraId: string | null;
   folio: string | null;
   open: boolean;
   onOpenChange: (v: boolean) => void;
 }) {
-  const [rango, setRango] = useState<Rango>("todo");
-  const fn = useServerFn(getDetalleCalidadOrden);
-
+  const fn = useServerFn(getDetalleRollo);
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ["detalle-calidad", ordenId, rango],
-    queryFn: () => fn({ data: { orden_id: ordenId!, rango } }),
-    enabled: open && !!ordenId,
+    queryKey: ["detalle-rollo", muestraId],
+    queryFn: () => fn({ data: { muestra_id: muestraId! } }),
+    enabled: open && !!muestraId,
   });
 
-  const exportCSV = () => {
-    if (!data) return;
-    const headers = ["Rollo", "Fecha", "Turno", "Operador", "Jefe Máquina", "Analista", "Estatus", "Peso (kg)", "Cumpl. %", "NC", "Variable", "Valor", "Min", "Obj", "Max", "Estado medición", "Defectos", "Observaciones"];
-    const rows: string[][] = [];
-    for (const f of data.filas) {
-      const baseDef = (f.defectos ?? []).join("; ");
-      if (f.mediciones.length === 0) {
-        rows.push([
-          f.rollo, new Date(f.capturadoAt).toLocaleString("es-MX"), f.turno, f.operador, f.jefeMaquina, f.analista,
-          f.estatus, String(f.pesoKg ?? ""), String(f.cumplimiento ?? ""), String(f.ncCount),
-          "", "", "", "", "", "", baseDef, f.observaciones,
-        ]);
-      } else {
-        for (const m of f.mediciones) {
-          rows.push([
-            f.rollo, new Date(f.capturadoAt).toLocaleString("es-MX"), f.turno, f.operador, f.jefeMaquina, f.analista,
-            f.estatus, String(f.pesoKg ?? ""), String(f.cumplimiento ?? ""), String(f.ncCount),
-            m.clave, String(m.valor ?? ""), String(m.min ?? ""), String(m.objetivo ?? ""), String(m.max ?? ""),
-            m.estado, baseDef, f.observaciones,
-          ]);
-        }
-      }
-    }
-    const csv = [headers, ...rows].map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
-    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `detalle-calidad-${data.orden.folio}-${rango}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
+  const r = data?.rollo;
+  const meds = data?.mediciones ?? [];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="text-lg">
             Detalle de calidad{folio ? ` · ${folio}` : ""}
           </DialogTitle>
         </DialogHeader>
-
-        <div className="flex flex-wrap items-center gap-2 border-b border-border pb-3">
-          <div className="inline-flex rounded-lg border border-border bg-background p-1 shadow-sm">
-            {RANGOS.map((o) => (
-              <button
-                key={o.v}
-                onClick={() => setRango(o.v)}
-                className={`rounded-md px-3 py-1.5 text-xs font-semibold transition ${
-                  rango === o.v
-                    ? "bg-primary text-primary-foreground shadow"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {o.label}
-              </button>
-            ))}
-          </div>
-          <div className="ml-auto">
-            <Button size="sm" onClick={exportCSV} disabled={!data || data.filas.length === 0}>
-              <Download className="h-4 w-4" /> Exportar CSV
-            </Button>
-          </div>
-        </div>
 
         <div className="flex-1 overflow-auto">
           {isLoading && (
@@ -112,36 +50,109 @@ export function DetalleCalidadModal({
               Error: {(error as Error)?.message}
             </div>
           )}
-          {data && (
-            <div className="space-y-4 pt-3">
-              <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
-                <Kpi label="Rollos" value={String(data.resumen.totalRollos)} />
-                <Kpi label="OK" value={String(data.resumen.okRollos)} tone="success" />
-                <Kpi label="NC" value={String(data.resumen.ncRollos)} tone="danger" />
-                <Kpi label="Cumpl. prom." value={data.resumen.cumplimientoProm == null ? "—" : `${data.resumen.cumplimientoProm}%`} tone="primary" />
-                <Kpi label="Kg total" value={data.resumen.kgTotal.toFixed(1)} />
-              </div>
-
-              <div className="rounded-lg border border-border bg-muted/20 p-3 text-xs">
-                <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
-                  <Field label="Producto" value={`${data.orden.producto} (${data.orden.productoCodigo})`} />
-                  <Field label="Máquina" value={data.orden.maquina} />
-                  <Field label="Planta" value={data.orden.planta} />
-                  <Field label="Turno" value={data.orden.turno} />
+          {r && (
+            <div className="space-y-4 pt-2">
+              {/* Cabecera con datos del rollo */}
+              <div className="rounded-lg border border-border bg-muted/20 p-3">
+                <div className="grid grid-cols-2 gap-3 text-xs md:grid-cols-4">
+                  <Field label="Rollo" value={r.numero} strong />
+                  <Field label="Orden" value={r.folioOrden} />
+                  <Field label="Producto" value={`${r.producto}${r.productoCodigo !== "—" ? ` (${r.productoCodigo})` : ""}`} />
+                  <Field label="Máquina / Planta" value={`${r.maquina} · ${r.planta}`} />
+                  <Field label="Capturado" value={new Date(r.capturadoAt).toLocaleString("es-MX")} />
+                  <Field label="Turno" value={r.turno} />
+                  <Field label="Operador" value={r.operador} />
+                  <Field label="Jefe Máquina" value={r.jefeMaquina} />
+                  <Field label="Analista" value={r.analista} />
+                  <Field label="Estatus" value={r.estatus} />
+                  <Field label="Cumplimiento" value={r.cumplimiento == null ? "—" : `${r.cumplimiento}%`} />
+                  <Field label="No conformes" value={String(r.ncCount)} tone={r.ncCount > 0 ? "danger" : "default"} />
                 </div>
               </div>
 
-              {data.filas.length === 0 ? (
+              {/* Tabla 14 variables */}
+              {meds.length === 0 ? (
                 <div className="rounded-md border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
-                  No hay muestras en el rango seleccionado.
+                  Este rollo no tiene variables de calidad registradas.
                 </div>
               ) : (
-                <div className="space-y-3">
-                  {data.filas.map((f) => (
-                    <RolloCard key={f.muestraId} f={f} />
-                  ))}
+                <div className="overflow-x-auto rounded-lg border border-border">
+                  <table className="w-full text-sm">
+                    <thead className="bg-muted/50 text-left text-[11px] uppercase tracking-wider text-muted-foreground">
+                      <tr>
+                        <th className="px-3 py-2">#</th>
+                        <th className="px-3 py-2">Variable</th>
+                        <th className="px-3 py-2 text-right">Mín</th>
+                        <th className="px-3 py-2 text-right">Objetivo</th>
+                        <th className="px-3 py-2 text-right">Máx</th>
+                        <th className="px-3 py-2 text-right">Valor</th>
+                        <th className="px-3 py-2">Unidad</th>
+                        <th className="px-3 py-2">Estado</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {meds.map((m, i) => {
+                        const malo = m.estado === "no_conforme" || m.estado === "fuera_rango_critico";
+                        const pendiente = m.estado === "pendiente" || m.valor == null;
+                        return (
+                          <tr
+                            key={`${m.clave}-${i}`}
+                            className={`border-t border-border ${malo ? "bg-destructive/5" : pendiente ? "bg-muted/20" : ""}`}
+                          >
+                            <td className="px-3 py-2 text-muted-foreground tabular-nums">{i + 1}</td>
+                            <td className="px-3 py-2">
+                              <div className="font-medium text-foreground">{m.etiqueta}</div>
+                              <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{m.clave}</div>
+                            </td>
+                            <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">{m.min ?? "—"}</td>
+                            <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">{m.objetivo ?? "—"}</td>
+                            <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">{m.max ?? "—"}</td>
+                            <td className={`px-3 py-2 text-right tabular-nums font-semibold ${malo ? "text-destructive" : pendiente ? "text-muted-foreground" : "text-foreground"}`}>
+                              {m.valor ?? "—"}
+                            </td>
+                            <td className="px-3 py-2 text-xs text-muted-foreground">{m.unidad || "—"}</td>
+                            <td className="px-3 py-2">
+                              <span
+                                className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-semibold ${
+                                  malo
+                                    ? "bg-destructive/15 text-destructive"
+                                    : pendiente
+                                    ? "bg-muted text-muted-foreground"
+                                    : "bg-success/15 text-success"
+                                }`}
+                              >
+                                {malo ? <AlertTriangle className="h-3 w-3" /> : pendiente ? <Clock className="h-3 w-3" /> : <CheckCircle2 className="h-3 w-3" />}
+                                {m.estado}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 </div>
               )}
+
+              {(r.defectos.length > 0 || r.observaciones) && (
+                <div className="space-y-1 rounded-lg border border-border bg-muted/10 p-3 text-xs">
+                  {r.defectos.length > 0 && (
+                    <div>
+                      <span className="text-muted-foreground">Defectos: </span>
+                      <span className="text-destructive">{r.defectos.join(", ")}</span>
+                    </div>
+                  )}
+                  {r.observaciones && (
+                    <div>
+                      <span className="text-muted-foreground">Observaciones: </span>
+                      {r.observaciones}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="pt-1 text-center text-[10px] uppercase tracking-wider text-muted-foreground">
+                Vista de solo consulta · {meds.length} variables
+              </div>
             </div>
           )}
         </div>
@@ -150,101 +161,27 @@ export function DetalleCalidadModal({
   );
 }
 
-function Kpi({ label, value, tone = "default" }: { label: string; value: string; tone?: "default" | "primary" | "success" | "danger" }) {
-  const tones: Record<string, string> = {
-    default: "text-foreground",
-    primary: "text-primary",
-    success: "text-success",
-    danger: "text-destructive",
-  };
-  return (
-    <div className="rounded-lg border border-border bg-card p-3 shadow-sm">
-      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
-      <div className={`mt-0.5 text-xl font-bold tabular-nums ${tones[tone]}`}>{value}</div>
-    </div>
-  );
-}
-
-function Field({ label, value }: { label: string; value: string }) {
+function Field({
+  label,
+  value,
+  strong = false,
+  tone = "default",
+}: {
+  label: string;
+  value: string;
+  strong?: boolean;
+  tone?: "default" | "danger";
+}) {
   return (
     <div>
       <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
-      <div className="font-semibold text-foreground">{value}</div>
-    </div>
-  );
-}
-
-function RolloCard({ f }: { f: any }) {
-  const nc = f.ncCount > 0 || f.estatus === "rechazada" || f.estatus === "NC";
-  return (
-    <div className={`rounded-lg border p-3 shadow-sm ${nc ? "border-destructive/40 bg-destructive/5" : "border-border bg-card"}`}>
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-2">
-        <div className="flex items-center gap-2">
-          {nc ? <AlertTriangle className="h-4 w-4 text-destructive" /> : <CheckCircle2 className="h-4 w-4 text-success" />}
-          <strong className="text-sm">Rollo {f.rollo}</strong>
-          <span className="text-xs text-muted-foreground">{new Date(f.capturadoAt).toLocaleString("es-MX")}</span>
-          <span className="rounded-full border border-border px-2 py-0.5 text-[10px] font-semibold uppercase">{f.estatus}</span>
-        </div>
-        <div className="flex gap-4 text-xs">
-          <span><span className="text-muted-foreground">Peso:</span> <strong className="tabular-nums">{f.pesoKg == null ? "—" : `${f.pesoKg} kg`}</strong></span>
-          <span><span className="text-muted-foreground">Cumpl.:</span> <strong className="tabular-nums">{f.cumplimiento == null ? "—" : `${f.cumplimiento}%`}</strong></span>
-          <span><span className="text-muted-foreground">NC:</span> <strong className="tabular-nums text-destructive">{f.ncCount}</strong></span>
-        </div>
+      <div
+        className={`${strong ? "text-base font-bold text-primary" : "font-semibold"} ${
+          tone === "danger" ? "text-destructive" : "text-foreground"
+        }`}
+      >
+        {value}
       </div>
-
-      <div className="grid grid-cols-2 gap-2 py-2 text-xs md:grid-cols-4">
-        <Field label="Operador" value={f.operador} />
-        <Field label="Jefe Máquina" value={f.jefeMaquina} />
-        <Field label="Analista" value={f.analista} />
-        <Field label="Turno" value={f.turno} />
-      </div>
-
-      {f.mediciones.length > 0 && (
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs">
-            <thead className="bg-muted/40 text-left text-[10px] uppercase tracking-wider text-muted-foreground">
-              <tr>
-                <th className="px-2 py-1">Variable</th>
-                <th className="px-2 py-1 text-right">Mín</th>
-                <th className="px-2 py-1 text-right">Obj</th>
-                <th className="px-2 py-1 text-right">Máx</th>
-                <th className="px-2 py-1 text-right">Valor</th>
-                <th className="px-2 py-1">Estado</th>
-              </tr>
-            </thead>
-            <tbody>
-              {f.mediciones.map((m: any, i: number) => {
-                const malo = m.estado === "no_conforme" || m.estado === "fuera_rango_critico";
-                return (
-                  <tr key={i} className={`border-t border-border ${malo ? "bg-destructive/5" : ""}`}>
-                    <td className="px-2 py-1 font-medium">{m.clave}</td>
-                    <td className="px-2 py-1 text-right tabular-nums text-muted-foreground">{m.min ?? "—"}</td>
-                    <td className="px-2 py-1 text-right tabular-nums text-muted-foreground">{m.objetivo ?? "—"}</td>
-                    <td className="px-2 py-1 text-right tabular-nums text-muted-foreground">{m.max ?? "—"}</td>
-                    <td className={`px-2 py-1 text-right tabular-nums font-semibold ${malo ? "text-destructive" : ""}`}>{m.valor ?? "—"}</td>
-                    <td className="px-2 py-1">
-                      <span className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${malo ? "bg-destructive/15 text-destructive" : "bg-success/15 text-success"}`}>
-                        {m.estado}
-                      </span>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {(f.defectos.length > 0 || f.observaciones) && (
-        <div className="mt-2 space-y-1 border-t border-border pt-2 text-xs">
-          {f.defectos.length > 0 && (
-            <div><span className="text-muted-foreground">Defectos: </span><span className="text-destructive">{f.defectos.join(", ")}</span></div>
-          )}
-          {f.observaciones && (
-            <div><span className="text-muted-foreground">Observaciones: </span>{f.observaciones}</div>
-          )}
-        </div>
-      )}
     </div>
   );
 }
