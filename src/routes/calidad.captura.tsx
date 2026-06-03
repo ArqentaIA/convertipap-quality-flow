@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { queryOptions, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -341,6 +341,54 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
       return { ...prev, [relVarId]: { ...prev[relVarId], valor: calc } };
     });
   }, [mdValor, cdValor, relVarId]);
+
+  // Cierre de turno automático: al detectar cambio de turno según configuración,
+  // se limpia el formulario, se notifica y se invalida producción para todas las máquinas.
+  const lastTurnoRef = useRef<"1" | "2" | "3" | null>(null);
+  useEffect(() => {
+    if (lastTurnoRef.current === null) {
+      lastTurnoRef.current = inferirTurno(new Date(), settings);
+    }
+    const tick = () => {
+      const actual = inferirTurno(new Date(), settings);
+      const previo = lastTurnoRef.current;
+      if (previo && actual !== previo) {
+        lastTurnoRef.current = actual;
+        setNumeroRollo("");
+        setMediciones((prev) => {
+          const next: MedicionInputState = {};
+          Object.keys(prev).forEach((k) => {
+            next[k] = { valor: "" };
+          });
+          return next;
+        });
+        setJefeMaquina("");
+        setOperador("");
+        setPrensero("");
+        setAnalista("");
+        setObservaciones("");
+        setEstatusLiberacion("");
+        setDefectos([]);
+        const ahora = new Date();
+        const pad = (n: number) => String(n).padStart(2, "0");
+        setHoraMuestreo(
+          `${ahora.getFullYear()}-${pad(ahora.getMonth() + 1)}-${pad(ahora.getDate())}T${pad(ahora.getHours())}:${pad(ahora.getMinutes())}`,
+        );
+        toast.success(
+          `Cierre de turno automático · Turno ${previo} cerrado. Iniciando Turno ${actual}.`,
+          { duration: 6000 },
+        );
+        void auditAction(
+          "calidad.captura",
+          `Cierre automático de Turno ${previo} (todas las máquinas) · inicia Turno ${actual}`,
+        );
+        void queryClient.invalidateQueries({ queryKey: ["produccion"] });
+        void queryClient.invalidateQueries({ queryKey: ["qc"] });
+      }
+    };
+    const id = setInterval(tick, 30_000);
+    return () => clearInterval(id);
+  }, [settings, queryClient]);
 
   const canCapture =
     auth.hasRole("capturista") ||
