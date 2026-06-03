@@ -399,10 +399,10 @@ function OperatorVisionPage() {
 
           {/* Reloj */}
           <div className="text-right">
-            <div className="font-mono text-2xl font-black tabular-nums text-slate-900">
+            <div className="font-mono text-4xl font-black tabular-nums text-slate-900">
               {horaStr}
             </div>
-            <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+            <div className="text-[12px] font-bold uppercase tracking-wider text-slate-500">
               {fechaStr}
             </div>
           </div>
