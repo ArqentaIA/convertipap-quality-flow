@@ -747,7 +747,9 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
               <div className="space-y-1.5">
                 <Label htmlFor="rollo" className="text-base">
                   Número de rollo{" "}
-                  <span className="text-muted-foreground font-normal">(letras, números o guion)</span>
+                  <span className="text-muted-foreground font-normal">
+                    (letras, números o guion)
+                  </span>
                 </Label>
                 <Input
                   id="rollo"

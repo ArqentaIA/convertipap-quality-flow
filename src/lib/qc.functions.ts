@@ -29,30 +29,20 @@ type SB = SupabaseClient<Database>;
 
 // ------------------------- Roles -------------------------
 
-const ROLES_CAPTURA = [
-  "capturista",
-  "calidad",
-  "gerente_general",
-  "administrador",
-] as const;
+const ROLES_CAPTURA = ["capturista", "calidad", "gerente_general", "administrador"] as const;
 const ROLES_DICTAMEN = ["calidad", "gerente_general", "administrador"] as const;
 const ROLES_AUTORIZA = ["calidad", "gerente_general", "administrador"] as const;
 const ROLES_ADMIN = ["gerente_general", "administrador"] as const;
 
 async function getUserRoles(sb: SB, userId: string): Promise<string[]> {
-  const { data, error } = await sb
-    .from("user_roles")
-    .select("role")
-    .eq("user_id", userId);
+  const { data, error } = await sb.from("user_roles").select("role").eq("user_id", userId);
   if (error) throw new Error(`No se pudieron leer roles: ${error.message}`);
   return (data ?? []).map((r) => r.role as string);
 }
 
 function requireAnyRole(roles: string[], allowed: readonly string[]) {
   if (!roles.some((r) => allowed.includes(r))) {
-    throw new Error(
-      `Acceso denegado. Roles requeridos: ${allowed.join(", ")}`,
-    );
+    throw new Error(`Acceso denegado. Roles requeridos: ${allowed.join(", ")}`);
   }
 }
 
@@ -128,9 +118,7 @@ export const listMaquinasCaptura = createServerFn({ method: "GET" })
       const lab = profile?.laboratorio as "norte" | "sur" | null | undefined;
       if (!lab) return [];
       // BD usa 'Laboratorio Nte.' / 'Laboratorio Sur' — matchear ambas variantes.
-      const orExpr = lab === "norte"
-        ? "area.ilike.%Nte%,area.ilike.%Norte%"
-        : "area.ilike.%Sur%";
+      const orExpr = lab === "norte" ? "area.ilike.%Nte%,area.ilike.%Norte%" : "area.ilike.%Sur%";
       q = q.or(orExpr);
     }
 
@@ -200,7 +188,6 @@ export const getSpecPorProducto = createServerFn({ method: "GET" })
 
     return { spec, variables: vars ?? [] };
   });
-
 
 export const getOrdenSpec = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -289,7 +276,7 @@ export const listMisMuestrasRecientes = createServerFn({ method: "GET" })
          estatus_liberacion, defectos,
          productos(id, codigo, nombre),
          maquinas(id, codigo, nombre, planta_id, plantas(codigo, nombre)),
-         mediciones_calidad(variable_id, variable_clave, valor, min_snapshot, objetivo_snapshot, max_snapshot, estado, variables_calidad(clave, etiqueta, unidad))`
+         mediciones_calidad(variable_id, variable_clave, valor, min_snapshot, objetivo_snapshot, max_snapshot, estado, variables_calidad(clave, etiqueta, unidad))`,
       )
       .order("capturado_at", { ascending: false })
       .limit(seesAll ? 50 : 20);
@@ -298,8 +285,6 @@ export const listMisMuestrasRecientes = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
     return data ?? [];
   });
-
-
 
 export const listAjustes = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -371,7 +356,12 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
         producto_id: z.string().uuid(),
         turno: z.string().min(1),
         operario_id: z.string().uuid(),
-        numero_rollo: z.string().trim().min(1).max(30).regex(/^[A-Za-z0-9-]+$/, "Rollo inválido"),
+        numero_rollo: z
+          .string()
+          .trim()
+          .min(1)
+          .max(30)
+          .regex(/^[A-Za-z0-9-]+$/, "Rollo inválido"),
         jefe_maquina: z.string().trim().min(1).max(120),
         operador: z.string().trim().min(1).max(120),
         prensero: z.string().trim().min(1).max(120),
@@ -404,8 +394,7 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
       dictamenPrevioAt = prev?.autorizado_at ?? prev?.dictamen_at ?? null;
     }
 
-    const estadoMuestra: Database["public"]["Enums"]["qc_muestra_estado"] = data
-      .enviar_a_revision
+    const estadoMuestra: Database["public"]["Enums"]["qc_muestra_estado"] = data.enviar_a_revision
       ? "pendiente_revision"
       : "borrador";
 
@@ -624,9 +613,7 @@ export const actualizarAjuste = createServerFn({ method: "POST" })
         estado_flujo: z
           .enum(["solicitado", "autorizado", "en_ejecucion", "cerrado", "rechazado"])
           .optional(),
-        resultado: z
-          .enum(["pendiente", "exitoso", "parcial", "fallido"])
-          .optional(),
+        resultado: z.enum(["pendiente", "exitoso", "parcial", "fallido"]).optional(),
         accion_realizada: z.string().nullable().optional(),
         observacion_ajuste: z.string().nullable().optional(),
         muestra_verificacion_id: z.string().uuid().nullable().optional(),
@@ -849,7 +836,9 @@ export const listEspecsActivasConVariables = createServerFn({ method: "GET" })
 
     const { data: productos, error: pErr } = await sb
       .from("productos")
-      .select("id, codigo, nombre, tipo_id, activo, tipos_producto:tipo_id (id, nombre, familia_id, familias_producto:familia_id (id, nombre))")
+      .select(
+        "id, codigo, nombre, tipo_id, activo, tipos_producto:tipo_id (id, nombre, familia_id, familias_producto:familia_id (id, nombre))",
+      )
       .eq("activo", true)
       .order("codigo", { ascending: true });
     if (pErr) throw new Error(pErr.message);
@@ -879,13 +868,21 @@ export const listEspecsActivasConVariables = createServerFn({ method: "GET" })
       min_valor: number;
       objetivo: number;
       max_valor: number;
-      variables_calidad: { id: string; clave: string; etiqueta: string; unidad: string | null; orden: number } | null;
+      variables_calidad: {
+        id: string;
+        clave: string;
+        etiqueta: string;
+        unidad: string | null;
+        orden: number;
+      } | null;
     };
     let pvRows: PVRow[] = [];
     if (specIds.length > 0) {
       const { data, error: vErr } = await sb
         .from("producto_variables")
-        .select("id, especificacion_id, variable_id, min_valor, objetivo, max_valor, variables_calidad:variable_id (id, clave, etiqueta, unidad, orden)")
+        .select(
+          "id, especificacion_id, variable_id, min_valor, objetivo, max_valor, variables_calidad:variable_id (id, clave, etiqueta, unidad, orden)",
+        )
         .in("especificacion_id", specIds);
       if (vErr) throw new Error(vErr.message);
       pvRows = (data ?? []) as unknown as PVRow[];
@@ -893,12 +890,11 @@ export const listEspecsActivasConVariables = createServerFn({ method: "GET" })
 
     return productos.map((p) => {
       const spec = specByProd.get(p.id);
-      const tipo = (p as { tipos_producto?: { nombre?: string; familias_producto?: { nombre?: string } } }).tipos_producto;
+      const tipo = (
+        p as { tipos_producto?: { nombre?: string; familias_producto?: { nombre?: string } } }
+      ).tipos_producto;
       const familyName = tipo?.familias_producto?.nombre ?? tipo?.nombre ?? "Sin familia";
-      const variables = (spec
-        ? pvRows.filter((r) => r.especificacion_id === spec.id)
-        : []
-      )
+      const variables = (spec ? pvRows.filter((r) => r.especificacion_id === spec.id) : [])
         .map((r) => ({
           key: r.variables_calidad?.clave ?? "",
           label: r.variables_calidad?.etiqueta ?? r.variables_calidad?.clave ?? "—",
