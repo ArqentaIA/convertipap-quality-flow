@@ -289,12 +289,25 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
   const upsertFn = useServerFn(upsertMuestraConMediciones);
   const [lastSubmitMode, setLastSubmitMode] = useState<"borrador" | "envio">("borrador");
   const [ultimaEtiqueta, setUltimaEtiqueta] = useState<EtiquetaData | null>(null);
+  const [muestraRecienId, setMuestraRecienId] = useState<string | null>(null);
   const mutation = useMutation({
     mutationFn: upsertFn,
-    onSuccess: (res: { muestra_id: string }) => {
-      void queryClient.invalidateQueries({ queryKey: ["qc"] });
+    onSuccess: async (res: { muestra_id: string }) => {
+      await queryClient.invalidateQueries({ queryKey: ["qc"] });
       if (lastSubmitMode === "envio") {
-        toast.success("Muestra enviada a revisión");
+        const folioToast = `${numeroRollo || "SN"} · ${maquina.codigo}`;
+        toast.success(`Muestra guardada (${folioToast})`, {
+          description: "Agregada al listado de producción capturada.",
+          duration: 5000,
+        });
+        setMuestraRecienId(res.muestra_id);
+        setTimeout(() => {
+          document.getElementById("produccion-capturada")?.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          });
+        }, 150);
+        setTimeout(() => setMuestraRecienId(null), 4000);
         // Construir snapshot de etiqueta antes de limpiar el formulario
         const fechaMuestreo = new Date(horaMuestreo);
         const fueraSpecAlguno = variablesFueraDeSpec.length > 0;
@@ -912,7 +925,13 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
                         day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit",
                       });
                       return (
-                        <tr key={m.id} className="border-b last:border-0 hover:bg-muted/20">
+                        <tr
+                          key={m.id}
+                          className={cn(
+                            "border-b last:border-0 hover:bg-muted/20 transition-colors",
+                            muestraRecienId === m.id && "bg-emerald-500/15 animate-pulse",
+                          )}
+                        >
                           <td className="py-2.5 px-3 align-middle whitespace-nowrap text-xs tabular-nums">{fecha}</td>
                           <td className="py-2.5 px-3 align-middle">
                             <span className="font-mono text-xs">{m.maquinas?.codigo ?? "—"}</span>
