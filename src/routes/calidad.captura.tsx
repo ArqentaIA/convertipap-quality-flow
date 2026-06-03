@@ -1279,13 +1279,30 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
                             )}
                           </td>
                           <td className="py-2.5 px-3 align-middle text-right">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => imprimirEtiquetaMuestra(m)}
-                            >
-                              <Printer className="mr-1.5 h-4 w-4" /> Imprimir
-                            </Button>
+                            <div className="flex justify-end gap-2">
+                              {puedeLiberar && (
+                                <Button
+                                  size="sm"
+                                  variant={eff.key === "NO_CONFORME" ? "default" : "outline"}
+                                  onClick={() => {
+                                    setLiberarMuestra(m);
+                                    setLiberarDictamen("liberada");
+                                    setLiberarObservaciones("");
+                                  }}
+                                  title="Cambiar estatus (Gerente de Calidad)"
+                                >
+                                  <CheckCircle2 className="mr-1.5 h-4 w-4" />
+                                  {eff.key === "NO_CONFORME" ? "Liberar" : "Cambiar estatus"}
+                                </Button>
+                              )}
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => imprimirEtiquetaMuestra(m)}
+                              >
+                                <Printer className="mr-1.5 h-4 w-4" /> Imprimir
+                              </Button>
+                            </div>
                           </td>
                         </tr>
                       );
@@ -1296,6 +1313,98 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
             )}
           </CardContent>
         </Card>
+
+        {/* Diálogo: Cambio de estatus por Gerente de Calidad */}
+        <Dialog
+          open={!!liberarMuestra}
+          onOpenChange={(open) => {
+            if (!open) {
+              setLiberarMuestra(null);
+              setLiberarObservaciones("");
+            }
+          }}
+        >
+          <DialogContent className="sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Cambiar estatus del rollo</DialogTitle>
+              <DialogDescription>
+                Rollo <strong>{liberarMuestra?.numero_rollo ?? "—"}</strong> ·{" "}
+                {liberarMuestra?.maquinas?.codigo ?? "—"} ·{" "}
+                {liberarMuestra?.productos?.codigo ?? ""} {liberarMuestra?.productos?.nombre ?? ""}.
+                Tu usuario, fecha y observaciones quedarán registrados como evidencia en auditoría.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Dictamen</Label>
+                <Select
+                  value={liberarDictamen}
+                  onValueChange={(v) =>
+                    setLiberarDictamen(v as "liberada" | "concesion" | "rechazada")
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="liberada">Liberar (Conforme)</SelectItem>
+                    <SelectItem value="concesion">Concesión (Condicional)</SelectItem>
+                    <SelectItem value="rechazada">Rechazar (No conforme)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>
+                  Observaciones del Gerente de Calidad{" "}
+                  <span className="text-destructive">*</span>
+                </Label>
+                <Textarea
+                  value={liberarObservaciones}
+                  onChange={(e) => setLiberarObservaciones(e.target.value)}
+                  placeholder="Justifica el cambio de estatus (mínimo 10 caracteres). Esta evidencia queda en el historial."
+                  rows={4}
+                />
+                <p className="text-xs text-muted-foreground">
+                  {liberarObservaciones.trim().length}/10 caracteres mínimos.
+                </p>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setLiberarMuestra(null);
+                  setLiberarObservaciones("");
+                }}
+              >
+                Cancelar
+              </Button>
+              <Button
+                disabled={
+                  liberarMutation.isPending ||
+                  liberarObservaciones.trim().length < 10 ||
+                  !liberarMuestra
+                }
+                onClick={() => {
+                  if (!liberarMuestra) return;
+                  liberarMutation.mutate({
+                    data: {
+                      muestra_id: liberarMuestra.id,
+                      dictamen: liberarDictamen,
+                      motivo: liberarDictamen,
+                      observaciones: liberarObservaciones.trim(),
+                    },
+                  });
+                }}
+              >
+                {liberarMutation.isPending ? "Guardando..." : "Confirmar cambio"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </AppLayout>
   );
