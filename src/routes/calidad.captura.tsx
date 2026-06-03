@@ -357,8 +357,13 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
     mutationFn: upsertFn,
     onSuccess: async (res: { muestra_id: string }) => {
       await queryClient.invalidateQueries({ queryKey: ["qc"] });
+      await queryClient.invalidateQueries({ queryKey: ["produccion"] });
       await queryClient.refetchQueries({
         queryKey: ["qc", "mis-muestras-recientes"],
+        type: "active",
+      });
+      await queryClient.refetchQueries({
+        queryKey: ["produccion", "maquinas"],
         type: "active",
       });
       const folioToast = `${numeroRollo || "SN"} · ${maquina.codigo}`;
