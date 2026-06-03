@@ -8,7 +8,7 @@ import { Save, Eye, X, Mail, Sliders, Bell, Monitor, Copy, ExternalLink } from "
 import logoConvertipap from "@/assets/logo-convertipap.png";
 import { toast } from "sonner";
 import { getAppSettings, updateAppSettings, type AppSettings } from "@/lib/settings.functions";
-import { listMaquinasConEstado } from "@/lib/produccion.functions";
+import { getCEOReport } from "@/lib/ceo-report.functions";
 import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/configuracion")({
