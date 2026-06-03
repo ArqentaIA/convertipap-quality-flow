@@ -247,16 +247,25 @@ function DashboardPage() {
             </div>
           </div>
           <div className="flex gap-2">
-            <Link to="/calidad/revision">
-              <Button variant="outline" size="sm" className="gap-2">
-                <ExternalLink className="h-4 w-4" /> Bandeja de revisión
-              </Button>
-            </Link>
-            <Link to="/calidad/ajustes">
-              <Button variant="outline" size="sm" className="gap-2">
-                <ExternalLink className="h-4 w-4" /> Ajustes
-              </Button>
-            </Link>
+            {auth.canChangeRollStatus && (
+              <>
+                <Link to="/calidad/revision">
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <ExternalLink className="h-4 w-4" /> Bandeja de revisión
+                  </Button>
+                </Link>
+                <Link to="/calidad/ajustes">
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <ExternalLink className="h-4 w-4" /> Ajustes
+                  </Button>
+                </Link>
+              </>
+            )}
+            {!auth.canChangeRollStatus && (
+              <span className="inline-flex items-center gap-1.5 rounded-md border border-border bg-muted px-2.5 py-1 text-xs text-muted-foreground">
+                <ShieldAlert className="h-3.5 w-3.5" /> Solo lectura
+              </span>
+            )}
           </div>
         </div>
 
