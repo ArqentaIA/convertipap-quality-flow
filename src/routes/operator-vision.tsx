@@ -127,21 +127,21 @@ function KpiCard({
     neutral: "text-slate-900",
   };
   return (
-    <div className={`rounded-xl border-2 ${palette[state]} px-4 py-3 flex flex-col shadow-sm`}>
+    <div className={`rounded-2xl border-[3px] ${palette[state]} px-6 py-5 flex flex-col shadow-md`}>
       <div className="flex items-center justify-between">
-        <span className="text-[11px] font-black uppercase tracking-[0.15em] text-slate-500">
+        <span className="text-[16px] font-black uppercase tracking-[0.15em] text-slate-500">
           {label}
         </span>
-        <Icon className="h-5 w-5 opacity-60" />
+        <Icon className="h-8 w-8 opacity-60" />
       </div>
-      <div className="mt-1 flex items-baseline gap-2">
-        <span className={`font-mono text-[56px] font-black leading-none tabular-nums ${valueColor[state]}`}>
+      <div className="mt-2 flex items-baseline gap-2">
+        <span className={`font-mono text-[88px] font-black leading-none tabular-nums ${valueColor[state]}`}>
           {value}
         </span>
-        {unit && <span className="text-sm font-bold text-slate-500">{unit}</span>}
+        {unit && <span className="text-2xl font-bold text-slate-500">{unit}</span>}
       </div>
       {subtitle && (
-        <div className={`mt-1 text-[11px] font-black uppercase tracking-wider`}>
+        <div className={`mt-2 text-[15px] font-black uppercase tracking-wider`}>
           {subtitle}
         </div>
       )}
