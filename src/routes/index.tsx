@@ -242,21 +242,42 @@ function Dashboard() {
             </div>
           </Card>
 
-          <Card title="No conformidades" subtitle="Distribución por variable">
-            <div className="h-72">
-              {noConformidades.length === 0 ? (
-                <EmptyChart message="Sin no conformidades en el periodo" />
-              ) : (
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie data={noConformidades} dataKey="value" nameKey="name" innerRadius={50} outerRadius={90} paddingAngle={2}>
-                      {noConformidades.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
-                    </Pie>
-                    <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
-                    <Legend iconType="circle" wrapperStyle={{ fontSize: 11 }} />
-                  </PieChart>
-                </ResponsiveContainer>
-              )}
+          <Card title="Costo de No Calidad" subtitle={`MXN · ${rangoLabel(rango, mesesSel)}`}>
+            <div className="flex h-72 flex-col justify-between gap-3">
+              <div className="rounded-xl border border-destructive/30 bg-gradient-to-br from-destructive/15 via-destructive/5 to-transparent p-4">
+                <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-destructive">
+                  <DollarSign className="h-3.5 w-3.5" /> Costo total
+                </div>
+                <div className="mt-1 text-3xl font-bold text-foreground tabular-nums">
+                  {costoNoCalidad.costoTotal.toLocaleString("es-MX", { style: "currency", currency: "MXN", maximumFractionDigits: 2 })}
+                </div>
+                <div className="mt-1 text-[11px] text-muted-foreground">
+                  {costoNoCalidad.kgNoLiberados.toLocaleString("es-MX", { maximumFractionDigits: 1 })} kg no liberados · {costoNoCalidad.costoKg.toLocaleString("es-MX", { style: "currency", currency: "MXN" })}/kg
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-lg border border-border bg-card/60 p-3">
+                  <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    <TrendingDown className="h-3 w-3" /> Costo promedio
+                  </div>
+                  <div className="mt-1 text-xl font-bold text-foreground tabular-nums">
+                    {costoNoCalidad.costoPromedio.toLocaleString("es-MX", { style: "currency", currency: "MXN", maximumFractionDigits: 2 })}
+                  </div>
+                  <div className="text-[10px] text-muted-foreground">por rollo no liberado</div>
+                </div>
+                <div className="rounded-lg border border-border bg-card/60 p-3">
+                  <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    <PackageX className="h-3 w-3" /> Rollos
+                  </div>
+                  <div className="mt-1 text-xl font-bold text-foreground tabular-nums">
+                    {costoNoCalidad.rollosNoLiberados}
+                  </div>
+                  <div className="text-[10px] text-muted-foreground">no liberados en el periodo</div>
+                </div>
+              </div>
+              <p className="text-[10px] leading-relaxed text-muted-foreground">
+                Cálculo: Σ (peso real de cada rollo no liberado × costo configurado por kg). Sin peso estándar.
+              </p>
             </div>
           </Card>
         </div>
