@@ -714,7 +714,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
                             />
                           )}
                         </td>
-                        <td className="py-3 px-3 align-middle"><EstadoMedicionBadge estado={estado} /></td>
+                        <td className="py-4 px-3 align-middle"><EstadoMedicionBadge estado={estado} /></td>
                       </tr>
                     ))}
                   </tbody>
