@@ -747,14 +747,14 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
               <div className="space-y-1.5">
                 <Label htmlFor="rollo" className="text-base">
                   Número de rollo{" "}
-                  <span className="text-muted-foreground font-normal">(formato XXXX-X)</span>
+                  <span className="text-muted-foreground font-normal">(letras, números o guion)</span>
                 </Label>
                 <Input
                   id="rollo"
                   type="text"
-                  inputMode="numeric"
+                  inputMode="text"
                   placeholder="4438-6"
-                  pattern="\d{1,5}-\d{1,2}"
+                  pattern="[A-Za-z0-9-]{1,30}"
                   value={numeroRollo}
                   onChange={(e) => setNumeroRollo(e.target.value)}
                   className={cn(
@@ -764,7 +764,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
                 />
                 {numeroRollo && !ROLLO_REGEX.test(numeroRollo.trim()) && (
                   <p className="text-[11px] text-destructive">
-                    Formato esperado: XXXX-X (ej. 4438-6)
+                    Usa máximo 30 caracteres: letras, números y guion.
                   </p>
                 )}
               </div>
