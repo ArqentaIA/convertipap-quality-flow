@@ -684,6 +684,14 @@ function RevisionPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ReauthDialog
+        open={reauthOpen}
+        onOpenChange={setReauthOpen}
+        title="Confirmar cambio de estatus"
+        description="El cambio de estatus de un rollo requiere doble validación electrónica. Ingresa tu contraseña para continuar."
+        onConfirm={() => { dispatchDictamen(); }}
+      />
     </AppLayout>
   );
 }
