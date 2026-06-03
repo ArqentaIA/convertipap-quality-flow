@@ -162,6 +162,7 @@ function QualityCard({
   max,
   status,
   digits,
+  hasSpec = true,
 }: {
   label: string;
   value: number | null;
@@ -171,56 +172,76 @@ function QualityCard({
   max: number;
   status: VarStatus;
   digits: number;
+  hasSpec?: boolean;
 }) {
   const pct =
     value === null || max === min
       ? 50
       : Math.max(2, Math.min(98, ((value - min) / (max - min)) * 100));
+  const bgClass = hasSpec ? STATUS_BG[status] : "bg-white";
+  const ringClass = hasSpec
+    ? `ring-4 ${STATUS_RING[status]}`
+    : "ring-1 ring-slate-200";
+  const textClass = hasSpec ? STATUS_TEXT[status] : "text-slate-700";
   return (
     <div
-      className={`relative rounded-2xl border-2 border-slate-200 ${STATUS_BG[status]} p-5 ring-4 ${STATUS_RING[status]} transition-all`}
+      className={`relative flex flex-col rounded-2xl border-2 border-slate-200 ${bgClass} p-4 ${ringClass} transition-all`}
     >
       <div className="flex items-center justify-between">
-        <span className="text-xs font-bold uppercase tracking-[0.18em] text-slate-600">
+        <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-600">
           {label}
         </span>
-        <span
-          className={`inline-flex items-center gap-1.5 rounded-full border border-current/30 bg-white/70 px-2.5 py-1 text-[11px] font-bold ${STATUS_TEXT[status]}`}
-        >
-          <span className={`h-2 w-2 rounded-full ${STATUS_DOT[status]}`} />
-          {status === "ok" ? "OK" : status === "warn" ? "ATENCIÓN" : "CRÍTICO"}
-        </span>
+        {hasSpec ? (
+          <span
+            className={`inline-flex items-center gap-1.5 rounded-full border border-current/30 bg-white/70 px-2 py-0.5 text-[10px] font-bold ${STATUS_TEXT[status]}`}
+          >
+            <span className={`h-2 w-2 rounded-full ${STATUS_DOT[status]}`} />
+            {status === "ok" ? "OK" : status === "warn" ? "ATENCIÓN" : "CRÍTICO"}
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-bold text-slate-500">
+            <span className="h-2 w-2 rounded-full bg-slate-300" />
+            SIN SPEC
+          </span>
+        )}
       </div>
-      <div className="mt-3 flex items-baseline gap-2">
+      <div className="mt-2 flex flex-1 items-baseline gap-2">
         <span
-          className={`font-mono text-[56px] font-black leading-none tabular-nums ${STATUS_TEXT[status]}`}
+          className={`font-mono text-[clamp(38px,5vw,64px)] font-black leading-none tabular-nums ${textClass}`}
         >
           {fmt(value, digits)}
         </span>
         <span className="text-base font-semibold text-slate-500">{unit}</span>
       </div>
-      <div className="mt-4">
-        <div className="relative h-2.5 w-full rounded-full bg-slate-200">
-          <div className="absolute inset-y-0 left-[10%] right-[10%] rounded-full bg-emerald-200/70" />
-          <div
-            className="absolute top-1/2 h-5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-slate-700"
-            style={{ left: "50%" }}
-            title="Objetivo"
-          />
-          <div
-            className={`absolute top-1/2 h-6 w-6 -translate-x-1/2 -translate-y-1/2 rounded-full border-4 border-white ${STATUS_DOT[status]} shadow-md`}
-            style={{ left: `${pct}%` }}
-          />
+      {hasSpec ? (
+        <div className="mt-3">
+          <div className="relative h-2 w-full rounded-full bg-slate-200">
+            <div className="absolute inset-y-0 left-[10%] right-[10%] rounded-full bg-emerald-200/70" />
+            <div
+              className="absolute top-1/2 h-4 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-slate-700"
+              style={{ left: "50%" }}
+              title="Objetivo"
+            />
+            <div
+              className={`absolute top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-4 border-white ${STATUS_DOT[status]} shadow-md`}
+              style={{ left: `${pct}%` }}
+            />
+          </div>
+          <div className="mt-1 flex justify-between font-mono text-[10px] font-semibold text-slate-500 tabular-nums">
+            <span>{min}</span>
+            <span>obj {obj}</span>
+            <span>{max}</span>
+          </div>
         </div>
-        <div className="mt-1.5 flex justify-between font-mono text-[11px] font-semibold text-slate-500 tabular-nums">
-          <span>{min}</span>
-          <span>obj {obj}</span>
-          <span>{max}</span>
+      ) : (
+        <div className="mt-3 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+          Esperando especificación
         </div>
-      </div>
+      )}
     </div>
   );
 }
+
 
 function HeaderField({ label, value }: { label: string; value: string }) {
   return (
