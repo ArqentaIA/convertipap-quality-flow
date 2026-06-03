@@ -323,7 +323,7 @@ function Dashboard() {
           <Kpi icon={Target} label="Cumplimiento prom." value={`${promCumpl}%`} tone="primary" />
           <Kpi icon={Activity} label="OEE promedio" value={`${promOEE}%`} tone="success" />
           <Kpi icon={Factory} label="Rollos producidos" value={String(totalRollos)} tone="primary" />
-          <Kpi icon={AlertTriangle} label="No conformidades" value={String(totalNC)} tone="warning" />
+          <Kpi icon={DollarSign} label="Costo no calidad" value={costoNoCalidad.costoTotal.toLocaleString("es-MX", { style: "currency", currency: "MXN", maximumFractionDigits: 0 })} tone="warning" />
         </div>
       </div>
     </AppLayout>
