@@ -197,9 +197,18 @@ function buildHtml(data: EtiquetaData, qrDataUrl: string, logoDataUrl: string): 
 
     <div class="ident">
       <div class="producto">
-        <div class="codigo">FABRICACIÓN ${esc(data.maquinaCodigo)} · ${esc(data.productoCodigo)}</div>
-        <div class="nombre">${esc(data.productoNombre.toUpperCase())}</div>
+        <div>
+          <div class="tag">Producto Terminado</div>
+          <div class="codigo">${esc(data.productoCodigo)} · Fabricación ${esc(data.maquinaCodigo)}</div>
+          <div class="nombre">${esc((data.productoNombre || data.productoCodigo).toUpperCase())}</div>
+        </div>
+        <div class="meta-prod">
+          <div>Rollo<b>${esc(data.numeroRollo || "—")}</b></div>
+          <div>Turno<b>${data.turno ? esc(String(data.turno)) : "—"}</b></div>
+          <div>Fecha<b>${esc(data.fecha)}</b></div>
+        </div>
       </div>
+
       <div class="meta-rollo">
         <table class="kv">
           <tr>
