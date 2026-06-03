@@ -942,7 +942,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
               variant="outline" disabled={isBlocked || mutation.isPending}
               onClick={() => handleSubmit("borrador")}
             >
-              <Save className="mr-1.5 h-4 w-4" /> Guardar borrador
+              <Save className="mr-1.5 h-4 w-4" /> Guardar
             </Button>
             <Button
               disabled={isBlocked || mutation.isPending}
