@@ -2,11 +2,11 @@ import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
-  queryOptions, useSuspenseQuery, useMutation, useQuery, useQueryClient,
+  queryOptions, useMutation, useQuery, useQueryClient,
 } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
-  ArrowLeft, AlertTriangle, CheckCircle2, Save, Send, Lock,
+  ArrowLeft, AlertTriangle, CheckCircle2, Lock,
   ClipboardCheck, Info, Factory, Printer,
 } from "lucide-react";
 import { printEtiquetaLiberacion, type EtiquetaData } from "@/lib/etiqueta-liberacion";
@@ -21,10 +21,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { useAuth } from "@/lib/auth";
 import {
   listMaquinasCaptura,
@@ -66,11 +62,6 @@ const specQO = (productoId: string) =>
   });
 
 export const Route = createFileRoute("/calidad/captura")({
-  loader: ({ context }) =>
-    Promise.all([
-      context.queryClient.ensureQueryData(maquinasQO),
-      context.queryClient.ensureQueryData(productosQO),
-    ]),
   component: CapturaCalidadPage,
   errorComponent: ({ error }) => (
     <AppLayout title="Captura de Muestra de Calidad">
@@ -112,8 +103,36 @@ function inferirTurno(d: Date, settings?: { turno1_inicio: string; turno1_fin: s
 }
 
 function CapturaCalidadPage() {
-  const { data: maquinas } = useSuspenseQuery(maquinasQO);
-  const { data: productos } = useSuspenseQuery(productosQO);
+  const auth = useAuth();
+  const maquinasQuery = useQuery({ ...maquinasQO, enabled: auth.isAuthenticated });
+  const productosQuery = useQuery({ ...productosQO, enabled: auth.isAuthenticated });
+  const maquinas = maquinasQuery.data ?? [];
+  const productos = productosQuery.data ?? [];
+
+  if (auth.loading || !auth.isAuthenticated || maquinasQuery.isLoading || productosQuery.isLoading) {
+    return (
+      <AppLayout title="Captura de Muestra de Calidad">
+        <div className="mx-auto mt-12 max-w-xl rounded-xl border border-border bg-card p-8 text-center shadow-sm">
+          <ClipboardCheck className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+          <h2 className="text-lg font-semibold text-foreground">Cargando captura</h2>
+          <p className="mt-2 text-sm text-muted-foreground">Preparando máquinas y productos disponibles.</p>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (maquinasQuery.error || productosQuery.error) {
+    const message = maquinasQuery.error?.message ?? productosQuery.error?.message ?? "No se pudo cargar la información";
+    return (
+      <AppLayout title="Captura de Muestra de Calidad">
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Error al cargar captura</AlertTitle>
+          <AlertDescription>{message}</AlertDescription>
+        </Alert>
+      </AppLayout>
+    );
+  }
 
   if (maquinas.length === 0) {
     return (
@@ -198,8 +217,6 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
   const [horaMuestreo, setHoraMuestreo] = useState<string>(ahoraLocal);
   const [observaciones, setObservaciones] = useState<string>("");
   const [mediciones, setMediciones] = useState<MedicionInputState>({});
-  const [showConfirm, setShowConfirm] = useState(false);
-
   // Turno: auto-inferido por hora, editable manualmente
   const turnoInferido = useMemo(
     () => inferirTurno(new Date(horaMuestreo || Date.now()), settings),
@@ -272,7 +289,6 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
   const upsertFn = useServerFn(upsertMuestraConMediciones);
   const [lastSubmitMode, setLastSubmitMode] = useState<"borrador" | "envio">("borrador");
   const [ultimaEtiqueta, setUltimaEtiqueta] = useState<EtiquetaData | null>(null);
-  const [mostrarProduccion, setMostrarProduccion] = useState<boolean>(false);
   const mutation = useMutation({
     mutationFn: upsertFn,
     onSuccess: (res: { muestra_id: string }) => {
@@ -434,16 +450,6 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
         enviar_a_revision: modo === "envio",
       },
     });
-  }
-
-  function onClickEnviar() {
-    const err = validar("envio");
-    if (err) { toast.error(err); return; }
-    if (variablesFueraDeSpec.length > 0) {
-      setShowConfirm(true);
-    } else {
-      handleSubmit("envio");
-    }
   }
 
   return (
