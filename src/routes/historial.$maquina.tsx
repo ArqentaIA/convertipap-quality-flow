@@ -220,7 +220,7 @@ function HistorialPage() {
                       </td>
                       <td className="px-4 py-3 text-right">
                         <button
-                          onClick={() => setDetalle({ ordenId: r.ordenId, folio: `${r.folioOrden} · Rollo ${r.rollo}` })}
+                          onClick={() => setDetalle({ muestraId: r.muestraId, folio: `${r.folioOrden} · Rollo ${r.rollo}` })}
                           className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-1 text-xs font-semibold text-primary hover:bg-primary/20"
                           title="Ver detalle completo de calidad"
                         >
@@ -241,7 +241,7 @@ function HistorialPage() {
       </div>
 
       <DetalleCalidadModal
-        ordenId={detalle?.ordenId ?? null}
+        muestraId={detalle?.muestraId ?? null}
         folio={detalle?.folio ?? null}
         open={!!detalle}
         onOpenChange={(v) => !v && setDetalle(null)}

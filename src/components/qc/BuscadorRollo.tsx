@@ -90,7 +90,7 @@ export function BuscadorRollo({ className = "" }: { className?: string }) {
                   <li key={r.muestraId}>
                     <button
                       onClick={() => abrirDetalle(r)}
-                      disabled={!r.ordenId}
+                      disabled={!r.muestraId}
                       className="flex w-full items-start gap-3 px-3 py-2.5 text-left transition hover:bg-muted disabled:opacity-50"
                     >
                       <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
@@ -119,7 +119,7 @@ export function BuscadorRollo({ className = "" }: { className?: string }) {
       </div>
 
       <DetalleCalidadModal
-        ordenId={selected?.ordenId ?? null}
+        muestraId={selected?.muestraId ?? null}
         folio={selected?.folio ?? null}
         open={!!selected}
         onOpenChange={(v) => !v && setSelected(null)}
