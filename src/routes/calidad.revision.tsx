@@ -291,7 +291,7 @@ function RevisionPage() {
       "valor", "min", "objetivo", "max", "estado_medicion",
     ].join(","));
     filtradas.forEach((m) => {
-      const ord = ordenes.find((o) => o.orden_id === m.orden_id);
+      const ord = ordenes.find((o) => o.orden_id === m.id);
       const meds = m.mediciones_calidad ?? [];
       const base = [
         ord?.folio ?? "", m.id, m.hora_muestreo, ord?.planta_nombre ?? "",
