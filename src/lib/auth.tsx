@@ -39,6 +39,10 @@ interface AuthState {
   isAuthenticated: boolean;
   hasRole: (r: AppRole) => boolean;
   canAccess: (m: AppModule) => boolean;
+  /** ¿Este usuario puede modificar dentro del módulo? (no solo verlo) */
+  canEdit: (m: AppModule) => boolean;
+  /** Solo Calidad y Administrador pueden cambiar el estatus de un rollo. */
+  canChangeRollStatus: boolean;
   signOut: () => Promise<void>;
   refresh: () => Promise<void>;
 }
@@ -174,6 +178,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAuthenticated: !!session?.user,
       hasRole: (r) => roles.includes(r),
       canAccess: (m) => modules.includes(m),
+      canEdit: (m) => {
+        if (!modules.includes(m)) return false;
+        if (roles.includes("administrador")) return true;
+        if (roles.includes("calidad")) return true;
+        if (roles.includes("capturista") && m === "control_calidad") return true;
+        // gerente_general y direccion: solo lectura
+        return false;
+      },
+      canChangeRollStatus:
+        roles.includes("calidad") || roles.includes("administrador"),
       signOut: async () => {
         await supabase.auth.signOut();
       },

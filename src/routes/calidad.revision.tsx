@@ -27,6 +27,7 @@ import {
 } from "@/lib/qc.functions";
 import { useLabFilter } from "@/lib/lab";
 import { cn } from "@/lib/utils";
+import { ReauthDialog } from "@/components/ReauthDialog";
 
 const muestrasQO = queryOptions({
   queryKey: ["qc", "muestras", "all"],
@@ -121,8 +122,8 @@ function RevisionPage() {
     [muestrasRaw, allowedMuestraIds],
   );
 
-  const canReview =
-    auth.hasRole("calidad") || auth.hasRole("gerente_general") || auth.hasRole("administrador");
+  // Solo Calidad / Administrador pueden dictaminar (cambiar estatus de rollo).
+  const canReview = auth.canChangeRollStatus;
 
   // --- Filtros ------------------------------------------------------------
   const [fPlanta, setFPlanta] = useState("all");
@@ -225,10 +226,11 @@ function RevisionPage() {
   const [evidenciaUrl, setEvidenciaUrl] = useState("");
   const [observaciones, setObservaciones] = useState("");
   const [tipoAjuste, setTipoAjuste] = useState<TipoAjuste>("ajuste_calidad");
+  const [reauthOpen, setReauthOpen] = useState(false);
 
   function openDialog(a: AccionDialog) {
     if (!canReview && a !== null) {
-      toast.error("Solo Gerencia de Calidad puede dictaminar.");
+      toast.error("Acceso denegado. Solo el responsable de Calidad está autorizado para modificar el estatus de un rollo.");
       return;
     }
     setMotivo("");
@@ -238,9 +240,29 @@ function RevisionPage() {
     setAccion(a);
   }
 
+  function dispatchDictamen() {
+    if (!selected) return;
+    const dictamen =
+      accion === "liberar" ? "liberada" :
+      accion === "rechazar" ? "rechazada" :
+      accion === "concesion" ? "concesion" : null;
+    if (!dictamen) return;
+    const obsParts = [observaciones];
+    if (evidenciaUrl) obsParts.push(`Evidencia: ${evidenciaUrl}`);
+    dictaminarMut.mutate({
+      muestra_id: selected.id,
+      dictamen,
+      motivo: motivo || "(sin motivo)",
+      observaciones: obsParts.filter(Boolean).join(" — "),
+    });
+  }
+
   function ejecutar() {
     if (!selected || !selectedOrden) return;
-    if (!canReview) { toast.error("Acción bloqueada para tu rol."); return; }
+    if (!canReview) {
+      toast.error("Acceso denegado. Solo el responsable de Calidad está autorizado para modificar el estatus de un rollo.");
+      return;
+    }
 
     if (accion === "ajuste") {
       if (!motivo.trim()) { toast.error("El motivo es obligatorio"); return; }
@@ -264,22 +286,12 @@ function RevisionPage() {
     if ((accion === "rechazar" || accion === "concesion") && !motivo.trim()) {
       toast.error("El motivo es obligatorio"); return;
     }
+    if (!motivo.trim() || motivo.trim().length < 5) {
+      toast.error("El motivo es obligatorio (mín. 5 caracteres)."); return;
+    }
 
-    const dictamen =
-      accion === "liberar" ? "liberada" :
-      accion === "rechazar" ? "rechazada" :
-      accion === "concesion" ? "concesion" : null;
-    if (!dictamen) return;
-
-    const obsParts = [observaciones];
-    if (evidenciaUrl) obsParts.push(`Evidencia: ${evidenciaUrl}`);
-
-    dictaminarMut.mutate({
-      muestra_id: selected.id,
-      dictamen,
-      motivo: motivo || "(sin motivo)",
-      observaciones: obsParts.filter(Boolean).join(" — "),
-    });
+    // Doble validación electrónica antes de cambiar el estatus.
+    setReauthOpen(true);
   }
 
   // --- Exportación CSV ----------------------------------------------------
@@ -672,6 +684,14 @@ function RevisionPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ReauthDialog
+        open={reauthOpen}
+        onOpenChange={setReauthOpen}
+        title="Confirmar cambio de estatus"
+        description="El cambio de estatus de un rollo requiere doble validación electrónica. Ingresa tu contraseña para continuar."
+        onConfirm={() => { dispatchDictamen(); }}
+      />
     </AppLayout>
   );
 }
