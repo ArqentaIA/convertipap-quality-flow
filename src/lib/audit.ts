@@ -20,12 +20,13 @@ export async function auditAction(
   datos?: Record<string, unknown> | null,
 ): Promise<void> {
   try {
-    const { error } = await supabase.rpc("audit_action", {
+    const args: Record<string, unknown> = {
       p_modulo: modulo,
       p_descripcion: descripcion,
-      p_registro_id: registroId ?? null,
-      p_datos: (datos ?? null) as never,
-    });
+    };
+    if (registroId) args.p_registro_id = registroId;
+    if (datos) args.p_datos = datos;
+    const { error } = await supabase.rpc("audit_action", args as never);
     if (error) console.warn("[audit] rpc error", error.message);
   } catch (e) {
     console.warn("[audit] threw", e);
