@@ -17,7 +17,8 @@ export type AppModule =
   | "variables_calidad"
   | "reportes"
   | "configuracion"
-  | "usuarios_permisos";
+  | "usuarios_permisos"
+  | "auditoria";
 
 export interface Profile {
   id: string;
