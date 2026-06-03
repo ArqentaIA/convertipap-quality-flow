@@ -131,6 +131,7 @@ function HistorialPage() {
             Volver a Producción
           </Link>
           <div className="flex items-center gap-3">
+            <BuscadorRollo />
             <RangoTabs rango={rango} setRango={setRango} />
             <span className="text-xs text-muted-foreground">
               60s {isFetching && <span className="animate-pulse">●</span>}
