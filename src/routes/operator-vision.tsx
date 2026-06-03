@@ -646,16 +646,16 @@ function OperatorVisionPage() {
                 return (
                   <div
                     key={m.id}
-                    className={`flex flex-col rounded-xl border-2 ${styles} px-3 py-2 shadow-sm`}
+                    className={`flex flex-col rounded-xl border-[3px] ${styles} px-4 py-3 shadow-sm`}
                   >
-                    <div className="flex items-center justify-between text-[11px] font-black uppercase">
+                    <div className="flex items-center justify-between text-[14px] font-black uppercase">
                       <span>{hora}</span>
-                      <Icon className="h-4 w-4" />
+                      <Icon className="h-6 w-6" />
                     </div>
-                    <div className="mt-0.5 font-mono text-lg font-black tabular-nums">
+                    <div className="mt-1 font-mono text-2xl font-black tabular-nums">
                       ROLLO #{m.rollo}
                     </div>
-                    <div className="text-[11px] font-black uppercase tracking-wider">
+                    <div className="text-[13px] font-black uppercase tracking-wider">
                       {labelLiberacion(st)}
                     </div>
                   </div>
