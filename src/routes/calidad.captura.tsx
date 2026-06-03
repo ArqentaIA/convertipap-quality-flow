@@ -643,8 +643,8 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
             <CardContent className="p-0">
               {/* Desktop / tablet landscape: tabla clásica */}
               <div className="hidden md:block overflow-x-auto">
-                <table className="w-full text-base min-w-[680px]">
-                  <thead className="text-sm uppercase tracking-wide text-muted-foreground bg-muted/40">
+                <table className="w-full text-lg min-w-[680px]">
+                  <thead className="text-base uppercase tracking-wide text-muted-foreground bg-muted/40">
                     <tr className="border-b">
                       <th className="py-3 px-3 text-left font-semibold w-[30%]">Variable</th>
                       <th className="py-3 px-2 text-right font-semibold w-16">Min</th>
@@ -658,12 +658,12 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
                     {evalMediciones.map(({ spec: vs, input, estado }, idx) => (
                       <tr key={vs.variable_id} className={`border-b last:border-0 transition-colors hover:bg-primary/10 ${idx % 2 === 0 ? "bg-primary/15" : "bg-background"}`}>
                         <td className="py-4 px-3 align-middle">
-                          <div className="font-medium text-base leading-snug">{vs.etiqueta}</div>
+                          <div className="font-semibold text-lg leading-snug">{vs.etiqueta}</div>
                           <div className="text-sm text-muted-foreground">{vs.unidad}</div>
                         </td>
-                        <td className="py-4 px-2 text-base text-right tabular-nums text-muted-foreground align-middle">{vs.min_valor}</td>
-                        <td className="py-4 px-2 text-base text-right tabular-nums font-semibold text-foreground align-middle">{vs.objetivo}</td>
-                        <td className="py-4 px-2 text-base text-right tabular-nums text-muted-foreground align-middle">{vs.max_valor}</td>
+                        <td className="py-4 px-2 text-lg text-right tabular-nums text-muted-foreground align-middle">{vs.min_valor}</td>
+                        <td className="py-4 px-2 text-lg text-right tabular-nums font-semibold text-foreground align-middle">{vs.objetivo}</td>
+                        <td className="py-4 px-2 text-lg text-right tabular-nums text-muted-foreground align-middle">{vs.max_valor}</td>
                         <td className="py-4 px-3 align-middle">
                           {vs.clave === "uniones" ? (
                             <Select
@@ -674,7 +674,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
                                 [vs.variable_id]: { ...prev[vs.variable_id], valor: val },
                               }))}
                             >
-                              <SelectTrigger className="h-11 text-base font-medium w-full">
+                              <SelectTrigger className="h-12 text-lg font-bold text-capture w-full">
                                 <SelectValue placeholder="—" />
                               </SelectTrigger>
                               <SelectContent>
@@ -687,7 +687,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
                             <Input
                               type="text" readOnly tabIndex={-1}
                               value={input.valor === "" ? "—" : input.valor}
-                              className="h-11 text-base font-medium w-full bg-muted/40 cursor-not-allowed"
+                              className="h-12 text-lg font-bold text-capture w-full bg-muted/40 cursor-not-allowed"
                               title="Calculado automáticamente: Tensión seca MD ÷ Tensión seca CD"
                             />
                           ) : (
@@ -699,7 +699,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
                                 ...prev,
                                 [vs.variable_id]: { ...prev[vs.variable_id], valor: e.target.value },
                               }))}
-                              className="h-11 text-base font-medium w-full"
+                              className="h-12 text-lg font-bold text-capture w-full"
                               placeholder="—"
                             />
                           )}
@@ -745,7 +745,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
                           [vs.variable_id]: { ...prev[vs.variable_id], valor: val },
                         }))}
                       >
-                        <SelectTrigger className="h-12 text-lg font-semibold w-full">
+                        <SelectTrigger className="h-12 text-lg font-bold text-capture w-full">
                           <SelectValue placeholder="Capturar valor" />
                         </SelectTrigger>
                         <SelectContent>
@@ -758,7 +758,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
                       <Input
                         type="text" readOnly tabIndex={-1}
                         value={input.valor === "" ? "—" : input.valor}
-                        className="h-12 text-lg font-semibold w-full bg-muted/40 cursor-not-allowed"
+                        className="h-12 text-lg font-bold text-capture w-full bg-muted/40 cursor-not-allowed"
                         title="Calculado automáticamente: Tensión seca MD ÷ Tensión seca CD"
                       />
                     ) : (
@@ -770,7 +770,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
                           ...prev,
                           [vs.variable_id]: { ...prev[vs.variable_id], valor: e.target.value },
                         }))}
-                        className="h-12 text-lg font-semibold w-full"
+                        className="h-12 text-lg font-bold text-capture w-full"
                         placeholder="Capturar valor"
                       />
                     )}
