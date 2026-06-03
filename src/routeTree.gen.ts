@@ -18,6 +18,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as ControlCalidadRouteImport } from './routes/control-calidad'
 import { Route as ConfiguracionRouteImport } from './routes/configuracion'
 import { Route as CatalogosRouteImport } from './routes/catalogos'
+import { Route as AuditoriaRouteImport } from './routes/auditoria'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TFolioRouteImport } from './routes/t.$folio'
 import { Route as MuestraIdRouteImport } from './routes/muestra.$id'
@@ -72,6 +73,11 @@ const CatalogosRoute = CatalogosRouteImport.update({
   path: '/catalogos',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuditoriaRoute = AuditoriaRouteImport.update({
+  id: '/auditoria',
+  path: '/auditoria',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -115,6 +121,7 @@ const CalidadAjustesRoute = CalidadAjustesRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auditoria': typeof AuditoriaRoute
   '/catalogos': typeof CatalogosRoute
   '/configuracion': typeof ConfiguracionRoute
   '/control-calidad': typeof ControlCalidadRoute
@@ -134,6 +141,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auditoria': typeof AuditoriaRoute
   '/catalogos': typeof CatalogosRoute
   '/configuracion': typeof ConfiguracionRoute
   '/control-calidad': typeof ControlCalidadRoute
@@ -154,6 +162,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/auditoria': typeof AuditoriaRoute
   '/catalogos': typeof CatalogosRoute
   '/configuracion': typeof ConfiguracionRoute
   '/control-calidad': typeof ControlCalidadRoute
@@ -175,6 +184,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/auditoria'
     | '/catalogos'
     | '/configuracion'
     | '/control-calidad'
@@ -194,6 +204,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/auditoria'
     | '/catalogos'
     | '/configuracion'
     | '/control-calidad'
@@ -213,6 +224,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/auditoria'
     | '/catalogos'
     | '/configuracion'
     | '/control-calidad'
@@ -233,6 +245,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuditoriaRoute: typeof AuditoriaRoute
   CatalogosRoute: typeof CatalogosRoute
   ConfiguracionRoute: typeof ConfiguracionRoute
   ControlCalidadRoute: typeof ControlCalidadRoute
@@ -316,6 +329,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CatalogosRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auditoria': {
+      id: '/auditoria'
+      path: '/auditoria'
+      fullPath: '/auditoria'
+      preLoaderRoute: typeof AuditoriaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -377,6 +397,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuditoriaRoute: AuditoriaRoute,
   CatalogosRoute: CatalogosRoute,
   ConfiguracionRoute: ConfiguracionRoute,
   ControlCalidadRoute: ControlCalidadRoute,

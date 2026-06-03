@@ -1,8 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { ShieldCheck, AlertTriangle, Factory, Calendar, Package, Hash } from "lucide-react";
 import logoUrl from "@/assets/logo-convertipap.png";
 import { getMuestraTrace, type TraceMuestra } from "@/lib/trace.functions";
+import { auditAction } from "@/lib/audit";
 
 const traceQO = (id: string) =>
   queryOptions({
@@ -52,6 +54,10 @@ function MuestraTracePage() {
   const { id } = Route.useParams();
   const { data } = useSuspenseQuery(traceQO(id));
   const trace = data as TraceMuestra;
+
+  useEffect(() => {
+    if (trace.found) void auditAction("qr", `Visualización QR muestra ${id.slice(0, 8)}`, id);
+  }, [id, trace.found]);
 
   if (!trace.found) return <NotFound />;
 

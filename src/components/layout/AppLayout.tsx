@@ -9,6 +9,8 @@ import logo from "@/assets/logo.png";
 import { PLANTS } from "@/lib/qc-data";
 import { useAuth, type AppModule } from "@/lib/auth";
 import { useLabFilter, LAB_LABEL } from "@/lib/lab";
+import { ShieldCheck } from "lucide-react";
+import { auditAction } from "@/lib/audit";
 
 type NavItem = {
   to: string;
@@ -25,6 +27,7 @@ const NAV: NavItem[] = [
   { to: "/variables-calidad", label: "Variables de Calidad", icon: SlidersHorizontal, module: "variables_calidad" },
   { to: "/catalogos", label: "Catálogos", icon: BookOpen, module: "configuracion" },
   { to: "/reportes", label: "Reportes", icon: FileBarChart2, module: "reportes" },
+  { to: "/auditoria", label: "Auditoría", icon: ShieldCheck, module: "auditoria" },
   { to: "/configuracion", label: "Configuración", icon: Settings, module: "configuracion" },
 ];
 
@@ -197,6 +200,7 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
               </div>
               <button
                 onClick={async () => {
+                  void auditAction("auth", `Logout: ${auth.user?.email ?? ""}`);
                   await auth.signOut();
                   void navigate({ to: "/login", replace: true });
                 }}

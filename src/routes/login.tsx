@@ -4,6 +4,7 @@ import { Loader2 } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
+import { auditAction } from "@/lib/audit";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -47,6 +48,7 @@ function LoginPage() {
       );
       return;
     }
+    void auditAction("auth", `Login exitoso: ${email.trim()}`);
     void navigate({ to: "/", replace: true });
   };
 
