@@ -1,13 +1,17 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import {
-  queryOptions, useMutation, useQuery, useQueryClient,
-} from "@tanstack/react-query";
+import { queryOptions, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
-  ArrowLeft, AlertTriangle, CheckCircle2, Lock,
-  ClipboardCheck, Info, Factory, Printer,
+  ArrowLeft,
+  AlertTriangle,
+  CheckCircle2,
+  Lock,
+  ClipboardCheck,
+  Info,
+  Factory,
+  Printer,
 } from "lucide-react";
 import { printEtiquetaLiberacion, type EtiquetaData } from "@/lib/etiqueta-liberacion";
 import { auditAction } from "@/lib/audit";
@@ -20,7 +24,13 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useAuth } from "@/lib/auth";
 import {
   listMaquinasCaptura,
@@ -86,16 +96,34 @@ function evaluarMedicion(v: number, min: number, max: number): MedicionEstadoUI 
   return "conforme";
 }
 
-function inferirTurno(d: Date, settings?: { turno1_inicio: string; turno1_fin: string; turno2_inicio: string; turno2_fin: string; turno3_inicio: string; turno3_fin: string } | null): "1" | "2" | "3" {
+function inferirTurno(
+  d: Date,
+  settings?: {
+    turno1_inicio: string;
+    turno1_fin: string;
+    turno2_inicio: string;
+    turno2_fin: string;
+    turno3_inicio: string;
+    turno3_fin: string;
+  } | null,
+): "1" | "2" | "3" {
   const mins = d.getHours() * 60 + d.getMinutes();
   const toMin = (hhmm: string) => {
     const [h, m] = hhmm.split(":").map(Number);
     return (h ?? 0) * 60 + (m ?? 0);
   };
-  const s = settings ?? { turno1_inicio: "07:00", turno1_fin: "15:00", turno2_inicio: "15:00", turno2_fin: "23:00", turno3_inicio: "23:00", turno3_fin: "07:00" };
+  const s = settings ?? {
+    turno1_inicio: "07:00",
+    turno1_fin: "15:00",
+    turno2_inicio: "15:00",
+    turno2_fin: "23:00",
+    turno3_inicio: "23:00",
+    turno3_fin: "07:00",
+  };
   const inRange = (start: string, end: string) => {
-    const a = toMin(start), b = toMin(end);
-    return a <= b ? (mins >= a && mins < b) : (mins >= a || mins < b);
+    const a = toMin(start),
+      b = toMin(end);
+    return a <= b ? mins >= a && mins < b : mins >= a || mins < b;
   };
   if (inRange(s.turno1_inicio, s.turno1_fin)) return "1";
   if (inRange(s.turno2_inicio, s.turno2_fin)) return "2";
@@ -116,14 +144,19 @@ function CapturaCalidadPage() {
         <div className="mx-auto mt-12 max-w-xl rounded-xl border border-border bg-card p-8 text-center shadow-sm">
           <ClipboardCheck className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
           <h2 className="text-lg font-semibold text-foreground">Cargando captura</h2>
-          <p className="mt-2 text-sm text-muted-foreground">Preparando máquinas y productos disponibles.</p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Preparando máquinas y productos disponibles.
+          </p>
         </div>
       </AppLayout>
     );
   }
 
   if (maquinasQuery.error || productosQuery.error) {
-    const message = maquinasQuery.error?.message ?? productosQuery.error?.message ?? "No se pudo cargar la información";
+    const message =
+      maquinasQuery.error?.message ??
+      productosQuery.error?.message ??
+      "No se pudo cargar la información";
     return (
       <AppLayout title="Captura de Muestra de Calidad">
         <Alert variant="destructive">
@@ -155,7 +188,9 @@ function CapturaCalidadPage() {
       <AppLayout title="Captura de Muestra de Calidad">
         <div className="mx-auto mt-12 max-w-xl rounded-xl border border-border bg-card p-8 text-center shadow-sm">
           <ClipboardCheck className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-          <h2 className="text-lg font-semibold text-foreground">Sin productos con especificación vigente</h2>
+          <h2 className="text-lg font-semibold text-foreground">
+            Sin productos con especificación vigente
+          </h2>
           <p className="mt-2 text-sm text-muted-foreground">
             Pide a un administrador que cargue las especificaciones de producto.
           </p>
@@ -197,14 +232,22 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
 
   const variables = useMemo(() => {
     if (!spec) return [];
-    return (spec.variables as Array<{
-      id: string;
-      variable_id: string;
-      min_valor: number;
-      objetivo: number;
-      max_valor: number;
-      variables_calidad: { id: string; clave: string; etiqueta: string; unidad: string | null; orden?: number } | null;
-    }>)
+    return (
+      spec.variables as Array<{
+        id: string;
+        variable_id: string;
+        min_valor: number;
+        objetivo: number;
+        max_valor: number;
+        variables_calidad: {
+          id: string;
+          clave: string;
+          etiqueta: string;
+          unidad: string | null;
+          orden?: number;
+        } | null;
+      }>
+    )
       .map((v) => ({
         variable_id: v.variable_id,
         clave: v.variables_calidad?.clave ?? "",
@@ -229,7 +272,9 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
     [horaMuestreo, settings],
   );
   const [turno, setTurno] = useState<"1" | "2" | "3">(turnoInferido);
-  useEffect(() => { setTurno(turnoInferido); }, [turnoInferido]);
+  useEffect(() => {
+    setTurno(turnoInferido);
+  }, [turnoInferido]);
 
   // Personal del turno
   const [jefeMaquina, setJefeMaquina] = useState<string>("");
@@ -242,21 +287,32 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
   const [estatusLiberacion, setEstatusLiberacion] = useState<"" | "L" | "NC" | "C">("");
   const [defectos, setDefectos] = useState<string[]>([]);
   const toggleDefecto = (d: string) =>
-    setDefectos((prev) => prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]);
+    setDefectos((prev) => (prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]));
 
   // Reinicializar mediciones cuando cambia el producto / spec
   useEffect(() => {
     const base: MedicionInputState = {};
-    variables.forEach((v) => { base[v.variable_id] = { valor: "" }; });
+    variables.forEach((v) => {
+      base[v.variable_id] = { valor: "" };
+    });
     setMediciones(base);
   }, [productoId, variables.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Cálculo automático de Relación MD/CD = tensionMD / tensionCD
-  const mdVarId = useMemo(() => variables.find((v) => v.clave === "tensionMD")?.variable_id, [variables]);
-  const cdVarId = useMemo(() => variables.find((v) => v.clave === "tensionCD")?.variable_id, [variables]);
-  const relVarId = useMemo(() => variables.find((v) => v.clave === "relMDCD")?.variable_id, [variables]);
-  const mdValor = mdVarId ? mediciones[mdVarId]?.valor ?? "" : "";
-  const cdValor = cdVarId ? mediciones[cdVarId]?.valor ?? "" : "";
+  const mdVarId = useMemo(
+    () => variables.find((v) => v.clave === "tensionMD")?.variable_id,
+    [variables],
+  );
+  const cdVarId = useMemo(
+    () => variables.find((v) => v.clave === "tensionCD")?.variable_id,
+    [variables],
+  );
+  const relVarId = useMemo(
+    () => variables.find((v) => v.clave === "relMDCD")?.variable_id,
+    [variables],
+  );
+  const mdValor = mdVarId ? (mediciones[mdVarId]?.valor ?? "") : "";
+  const cdValor = cdVarId ? (mediciones[cdVarId]?.valor ?? "") : "";
   useEffect(() => {
     if (!relVarId) return;
     const md = Number(mdValor);
@@ -273,8 +329,10 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
   }, [mdValor, cdValor, relVarId]);
 
   const canCapture =
-    auth.hasRole("capturista") || auth.hasRole("calidad") ||
-    auth.hasRole("gerente_general") || auth.hasRole("administrador");
+    auth.hasRole("capturista") ||
+    auth.hasRole("calidad") ||
+    auth.hasRole("gerente_general") ||
+    auth.hasRole("administrador");
 
   const isBlocked = !spec || !canCapture;
 
@@ -299,75 +357,87 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
     mutationFn: upsertFn,
     onSuccess: async (res: { muestra_id: string }) => {
       await queryClient.invalidateQueries({ queryKey: ["qc"] });
-      await queryClient.refetchQueries({ queryKey: ["qc", "mis-muestras-recientes"], type: "active" });
+      await queryClient.refetchQueries({
+        queryKey: ["qc", "mis-muestras-recientes"],
+        type: "active",
+      });
       const folioToast = `${numeroRollo || "SN"} · ${maquina.codigo}`;
       toast.success(`Muestra guardada (${folioToast})`, {
         description: "Agregada al listado de producción capturada.",
         duration: 5000,
       });
       setMuestraRecienId(res.muestra_id);
-        setTimeout(() => {
-          document.getElementById("produccion-capturada")?.scrollIntoView({
-            behavior: "smooth",
-            block: "start",
-          });
-        }, 150);
-        setTimeout(() => setMuestraRecienId(null), 4000);
-        // Construir snapshot de etiqueta antes de limpiar el formulario
-        const fechaMuestreo = new Date(horaMuestreo);
-        const fueraSpecAlguno = variablesFueraDeSpec.length > 0;
-        const etiqueta: EtiquetaData = {
-          muestraId: res.muestra_id,
-          folio: `${maquina.codigo}-${fechaMuestreo.toISOString().slice(0,10)}-${numeroRollo || "SN"}`.replace(/\s+/g,""),
-          fecha: fechaMuestreo.toLocaleDateString("es-MX"),
-          numeroRollo: numeroRollo || "",
-          maquinaCodigo: maquina.codigo,
-          maquinaNombre: maquina.nombre,
-          productoCodigo: producto.codigo,
-          productoNombre: producto.nombre,
-          observacionesGenerales: observaciones,
-          turno,
-          jefeMaquina,
-          operador,
-          prensero,
-          analista,
-          mediciones: evalMediciones
-            .map((m) => ({
-              clave: m.spec.clave,
-              etiqueta: m.spec.etiqueta,
-              valor: m.input.valor !== "" && Number.isFinite(m.num) ? m.num : null,
-              unidad: m.spec.unidad,
-              min: m.spec.min_valor,
-              max: m.spec.max_valor,
-              fueraSpec: m.estado === "no_conforme" || m.estado === "fuera_rango_critico",
-            })),
-          estatusLiberacion: estatusLiberacion || null,
-          defectos,
-          estatus: estatusLiberacion === "L"
+      setTimeout(() => {
+        document.getElementById("produccion-capturada")?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      }, 150);
+      setTimeout(() => setMuestraRecienId(null), 4000);
+      // Construir snapshot de etiqueta antes de limpiar el formulario
+      const fechaMuestreo = new Date(horaMuestreo);
+      const fueraSpecAlguno = variablesFueraDeSpec.length > 0;
+      const etiqueta: EtiquetaData = {
+        muestraId: res.muestra_id,
+        folio:
+          `${maquina.codigo}-${fechaMuestreo.toISOString().slice(0, 10)}-${numeroRollo || "SN"}`.replace(
+            /\s+/g,
+            "",
+          ),
+        fecha: fechaMuestreo.toLocaleDateString("es-MX"),
+        numeroRollo: numeroRollo || "",
+        maquinaCodigo: maquina.codigo,
+        maquinaNombre: maquina.nombre,
+        productoCodigo: producto.codigo,
+        productoNombre: producto.nombre,
+        observacionesGenerales: observaciones,
+        turno,
+        jefeMaquina,
+        operador,
+        prensero,
+        analista,
+        mediciones: evalMediciones.map((m) => ({
+          clave: m.spec.clave,
+          etiqueta: m.spec.etiqueta,
+          valor: m.input.valor !== "" && Number.isFinite(m.num) ? m.num : null,
+          unidad: m.spec.unidad,
+          min: m.spec.min_valor,
+          max: m.spec.max_valor,
+          fueraSpec: m.estado === "no_conforme" || m.estado === "fuera_rango_critico",
+        })),
+        estatusLiberacion: estatusLiberacion || null,
+        defectos,
+        estatus:
+          estatusLiberacion === "L"
             ? "LIBERADO"
             : estatusLiberacion === "NC"
-            ? "NO CONFORME"
-            : estatusLiberacion === "C"
-            ? "CONDICIONAL"
-            : (fueraSpecAlguno ? "NO CONFORME" : "CONFORME"),
-        };
-        setUltimaEtiqueta(etiqueta);
-        setMediciones((prev) => {
-          const r: MedicionInputState = {};
-          Object.keys(prev).forEach((k) => { r[k] = { valor: "" }; });
-          return r;
+              ? "NO CONFORME"
+              : estatusLiberacion === "C"
+                ? "CONDICIONAL"
+                : fueraSpecAlguno
+                  ? "NO CONFORME"
+                  : "CONFORME",
+      };
+      setUltimaEtiqueta(etiqueta);
+      setMediciones((prev) => {
+        const r: MedicionInputState = {};
+        Object.keys(prev).forEach((k) => {
+          r[k] = { valor: "" };
         });
+        return r;
+      });
       setJefeMaquina("");
       setOperador("");
       setPrensero("");
       setAnalista("");
-        setObservaciones("");
-        setNumeroRollo("");
-        setEstatusLiberacion("");
-        setDefectos([]);
+      setObservaciones("");
+      setNumeroRollo("");
+      setEstatusLiberacion("");
+      setDefectos([]);
       setHoraMuestreo(toLocalDateTimeInputValue(new Date()));
     },
-    onError: (err: Error) => toast.error("No se pudo guardar la captura", { description: err.message, duration: 7000 }),
+    onError: (err: Error) =>
+      toast.error("No se pudo guardar la captura", { description: err.message, duration: 7000 }),
   });
 
   async function handlePrintEtiqueta() {
@@ -383,17 +453,19 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
   // ---- Listado de muestras recientes del capturista ----
   const misMuestrasQuery = useQuery({ ...misMuestrasQO, enabled: hasAuthToken, retry: false });
 
-
   async function imprimirEtiquetaMuestra(muestra: MuestraReciente) {
     try {
       const data = buildEtiquetaFromMuestra(muestra);
       await printEtiquetaLiberacion(data);
-      void auditAction("etiqueta", `Reimpresión etiqueta FOR-CAL-04 folio ${muestra.id.slice(0, 8)}`, muestra.id);
+      void auditAction(
+        "etiqueta",
+        `Reimpresión etiqueta FOR-CAL-04 folio ${muestra.id.slice(0, 8)}`,
+        muestra.id,
+      );
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "No se pudo abrir la etiqueta");
     }
   }
-
 
   function validar(modo: "borrador" | "envio"): string | null {
     if (!spec) return "Selecciona un producto con especificación vigente";
@@ -411,7 +483,9 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
     if (!analista.trim()) return "Captura el Analista";
     if (!estatusLiberacion) return "Selecciona el Estatus de Liberación (L / NC / C)";
     if (modo === "envio") {
-      const faltantes = evalMediciones.filter((m) => m.input.valor === "").map((m) => m.spec.etiqueta);
+      const faltantes = evalMediciones
+        .filter((m) => m.input.valor === "")
+        .map((m) => m.spec.etiqueta);
       if (faltantes.length) return `Falta capturar: ${faltantes.join(", ")}`;
       const inverosimil = evalMediciones.find(
         (m) => Number.isFinite(m.num) && (m.num <= 0 || m.num > 10000),
@@ -423,14 +497,20 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
 
   function handleSubmit(modo: "borrador" | "envio") {
     const err = validar(modo);
-    if (err) { toast.error(err); return; }
+    if (err) {
+      toast.error(err);
+      return;
+    }
     if (!spec) return;
 
     const variablesSnapshot: Record<string, unknown> = {};
     variables.forEach((v) => {
       variablesSnapshot[v.variable_id] = {
-        min: v.min_valor, obj: v.objetivo, max: v.max_valor,
-        unidad: v.unidad, etiqueta: v.etiqueta,
+        min: v.min_valor,
+        obj: v.objetivo,
+        max: v.max_valor,
+        unidad: v.unidad,
+        etiqueta: v.etiqueta,
       };
     });
 
@@ -511,13 +591,16 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="1">
-                    Turno 1 · {settings?.turno1_inicio ?? "07:00"} – {settings?.turno1_fin ?? "15:00"}
+                    Turno 1 · {settings?.turno1_inicio ?? "07:00"} –{" "}
+                    {settings?.turno1_fin ?? "15:00"}
                   </SelectItem>
                   <SelectItem value="2">
-                    Turno 2 · {settings?.turno2_inicio ?? "15:00"} – {settings?.turno2_fin ?? "23:00"}
+                    Turno 2 · {settings?.turno2_inicio ?? "15:00"} –{" "}
+                    {settings?.turno2_fin ?? "23:00"}
                   </SelectItem>
                   <SelectItem value="3">
-                    Turno 3 · {settings?.turno3_inicio ?? "23:00"} – {settings?.turno3_fin ?? "07:00"}
+                    Turno 3 · {settings?.turno3_inicio ?? "23:00"} –{" "}
+                    {settings?.turno3_fin ?? "07:00"}
                   </SelectItem>
                 </SelectContent>
               </Select>
@@ -587,24 +670,52 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
             </CardHeader>
             <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-4">
               <div className="space-y-1.5">
-                <Label htmlFor="jefe" className="text-base">Jefe de Máquina</Label>
-                <Input id="jefe" maxLength={120} value={jefeMaquina}
-                  onChange={(e) => setJefeMaquina(e.target.value)} placeholder="Nombre" />
+                <Label htmlFor="jefe" className="text-base">
+                  Jefe de Máquina
+                </Label>
+                <Input
+                  id="jefe"
+                  maxLength={120}
+                  value={jefeMaquina}
+                  onChange={(e) => setJefeMaquina(e.target.value)}
+                  placeholder="Nombre"
+                />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="oper" className="text-base">Operador</Label>
-                <Input id="oper" maxLength={120} value={operador}
-                  onChange={(e) => setOperador(e.target.value)} placeholder="Nombre" />
+                <Label htmlFor="oper" className="text-base">
+                  Operador
+                </Label>
+                <Input
+                  id="oper"
+                  maxLength={120}
+                  value={operador}
+                  onChange={(e) => setOperador(e.target.value)}
+                  placeholder="Nombre"
+                />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="prens" className="text-base">Prensero</Label>
-                <Input id="prens" maxLength={120} value={prensero}
-                  onChange={(e) => setPrensero(e.target.value)} placeholder="Nombre" />
+                <Label htmlFor="prens" className="text-base">
+                  Prensero
+                </Label>
+                <Input
+                  id="prens"
+                  maxLength={120}
+                  value={prensero}
+                  onChange={(e) => setPrensero(e.target.value)}
+                  placeholder="Nombre"
+                />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="anal" className="text-base">Analista</Label>
-                <Input id="anal" maxLength={120} value={analista}
-                  onChange={(e) => setAnalista(e.target.value)} placeholder="Nombre" />
+                <Label htmlFor="anal" className="text-base">
+                  Analista
+                </Label>
+                <Input
+                  id="anal"
+                  maxLength={120}
+                  value={analista}
+                  onChange={(e) => setAnalista(e.target.value)}
+                  placeholder="Nombre"
+                />
               </div>
             </CardContent>
           </Card>
@@ -617,9 +728,15 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
             </CardHeader>
             <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-3">
               <div className="space-y-1.5">
-                <Label htmlFor="rollo" className="text-base">Número de rollo <span className="text-muted-foreground font-normal">(formato XXXX-X)</span></Label>
+                <Label htmlFor="rollo" className="text-base">
+                  Número de rollo{" "}
+                  <span className="text-muted-foreground font-normal">(formato XXXX-X)</span>
+                </Label>
                 <Input
-                  id="rollo" type="text" inputMode="numeric" placeholder="4438-6"
+                  id="rollo"
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="4438-6"
                   pattern="\d{1,5}-\d{1,2}"
                   value={numeroRollo}
                   onChange={(e) => setNumeroRollo(e.target.value)}
@@ -629,21 +746,30 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
                   )}
                 />
                 {numeroRollo && !ROLLO_REGEX.test(numeroRollo.trim()) && (
-                  <p className="text-[11px] text-destructive">Formato esperado: XXXX-X (ej. 4438-6)</p>
+                  <p className="text-[11px] text-destructive">
+                    Formato esperado: XXXX-X (ej. 4438-6)
+                  </p>
                 )}
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="hora" className="text-base">Hora de muestreo</Label>
+                <Label htmlFor="hora" className="text-base">
+                  Hora de muestreo
+                </Label>
                 <Input
-                  id="hora" type="datetime-local" className="h-11 text-base"
-                  value={horaMuestreo} onChange={(e) => setHoraMuestreo(e.target.value)}
+                  id="hora"
+                  type="datetime-local"
+                  className="h-11 text-base"
+                  value={horaMuestreo}
+                  onChange={(e) => setHoraMuestreo(e.target.value)}
                 />
               </div>
               <div className="space-y-1.5">
                 <Label className="text-base">Especificación vigente</Label>
                 <div className="flex items-center gap-2 h-11 px-3 rounded-md border border-border bg-muted text-base">
                   <Badge variant="secondary">v{spec.spec.version}</Badge>
-                  <span className="text-muted-foreground text-sm">{variables.length} variables</span>
+                  <span className="text-muted-foreground text-sm">
+                    {variables.length} variables
+                  </span>
                 </div>
               </div>
             </CardContent>
@@ -651,13 +777,23 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
         )}
 
         {variablesFueraDeSpec.length > 0 && !isBlocked && (
-          <Alert variant={hayCritico ? "destructive" : "default"} className={cn(!hayCritico && "border-amber-500 bg-amber-50 text-amber-900 dark:bg-amber-950/30 dark:text-amber-100")}>
+          <Alert
+            variant={hayCritico ? "destructive" : "default"}
+            className={cn(
+              !hayCritico &&
+                "border-amber-500 bg-amber-50 text-amber-900 dark:bg-amber-950/30 dark:text-amber-100",
+            )}
+          >
             <AlertTriangle className="h-4 w-4" />
             <AlertTitle>
-              {hayCritico ? "Mediciones críticas fuera de especificación" : "Mediciones fuera de especificación"}
+              {hayCritico
+                ? "Mediciones críticas fuera de especificación"
+                : "Mediciones fuera de especificación"}
             </AlertTitle>
             <AlertDescription>
-              {variablesFueraDeSpec.length} variable(s) fuera de spec ({variablesFueraDeSpec.map((m) => m.spec.etiqueta).join(", ")}). Calidad deberá evaluar esta muestra.
+              {variablesFueraDeSpec.length} variable(s) fuera de spec (
+              {variablesFueraDeSpec.map((m) => m.spec.etiqueta).join(", ")}). Calidad deberá evaluar
+              esta muestra.
             </AlertDescription>
           </Alert>
         )}
@@ -683,55 +819,79 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
                   </thead>
                   <tbody>
                     {evalMediciones.map(({ spec: vs, input, estado }, idx) => (
-                      <tr key={vs.variable_id} className={`border-b last:border-0 transition-colors hover:bg-primary/10 ${idx % 2 === 0 ? "bg-primary/15" : "bg-background"}`}>
+                      <tr
+                        key={vs.variable_id}
+                        className={`border-b last:border-0 transition-colors hover:bg-primary/10 ${idx % 2 === 0 ? "bg-primary/15" : "bg-background"}`}
+                      >
                         <td className="py-4 px-3 align-middle">
                           <div className="font-semibold text-lg leading-snug">{vs.etiqueta}</div>
                           <div className="text-sm text-muted-foreground">{vs.unidad}</div>
                         </td>
-                        <td className="py-4 px-2 text-lg text-right tabular-nums text-muted-foreground align-middle">{vs.min_valor}</td>
-                        <td className="py-4 px-2 text-lg text-right tabular-nums font-semibold text-foreground align-middle">{vs.objetivo}</td>
-                        <td className="py-4 px-2 text-lg text-right tabular-nums text-muted-foreground align-middle">{vs.max_valor}</td>
+                        <td className="py-4 px-2 text-lg text-right tabular-nums text-muted-foreground align-middle">
+                          {vs.min_valor}
+                        </td>
+                        <td className="py-4 px-2 text-lg text-right tabular-nums font-semibold text-foreground align-middle">
+                          {vs.objetivo}
+                        </td>
+                        <td className="py-4 px-2 text-lg text-right tabular-nums text-muted-foreground align-middle">
+                          {vs.max_valor}
+                        </td>
                         <td className="py-4 px-3 align-middle">
                           {vs.clave === "uniones" ? (
                             <Select
                               disabled={isBlocked}
                               value={input.valor}
-                              onValueChange={(val) => setMediciones((prev) => ({
-                                ...prev,
-                                [vs.variable_id]: { ...prev[vs.variable_id], valor: val },
-                              }))}
+                              onValueChange={(val) =>
+                                setMediciones((prev) => ({
+                                  ...prev,
+                                  [vs.variable_id]: { ...prev[vs.variable_id], valor: val },
+                                }))
+                              }
                             >
                               <SelectTrigger className="h-12 text-lg font-bold text-capture w-full">
                                 <SelectValue placeholder="—" />
                               </SelectTrigger>
                               <SelectContent>
-                                {["0","1","2","3","4","5"].map((o) => (
-                                  <SelectItem key={o} value={o}>{o === "5" ? "5+" : o}</SelectItem>
+                                {["0", "1", "2", "3", "4", "5"].map((o) => (
+                                  <SelectItem key={o} value={o}>
+                                    {o === "5" ? "5+" : o}
+                                  </SelectItem>
                                 ))}
                               </SelectContent>
                             </Select>
                           ) : vs.clave === "relMDCD" ? (
                             <Input
-                              type="text" readOnly tabIndex={-1}
+                              type="text"
+                              readOnly
+                              tabIndex={-1}
                               value={input.valor === "" ? "—" : input.valor}
                               className="h-12 text-lg font-bold text-capture w-full bg-muted/40 cursor-not-allowed"
                               title="Calculado automáticamente: Tensión seca MD ÷ Tensión seca CD"
                             />
                           ) : (
                             <Input
-                              type="number" step={vs.clave === "peso" ? 1 : 0.1} inputMode="decimal"
+                              type="number"
+                              step={vs.clave === "peso" ? 1 : 0.1}
+                              inputMode="decimal"
                               disabled={isBlocked}
                               value={input.valor}
-                              onChange={(e) => setMediciones((prev) => ({
-                                ...prev,
-                                [vs.variable_id]: { ...prev[vs.variable_id], valor: e.target.value },
-                              }))}
+                              onChange={(e) =>
+                                setMediciones((prev) => ({
+                                  ...prev,
+                                  [vs.variable_id]: {
+                                    ...prev[vs.variable_id],
+                                    valor: e.target.value,
+                                  },
+                                }))
+                              }
                               className="h-12 text-lg font-bold text-capture w-full"
                               placeholder="—"
                             />
                           )}
                         </td>
-                        <td className="py-4 px-3 align-middle"><EstadoMedicionBadge estado={estado} /></td>
+                        <td className="py-4 px-3 align-middle">
+                          <EstadoMedicionBadge estado={estado} />
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -741,7 +901,10 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
               {/* Mobile / tablet portrait: tarjetas por variable */}
               <div className="md:hidden space-y-4 p-4">
                 {evalMediciones.map(({ spec: vs, input, estado }, idx) => (
-                  <div key={vs.variable_id} className={`rounded-xl border border-border p-5 shadow-sm ${idx % 2 === 0 ? "bg-primary/15" : "bg-card"}`}>
+                  <div
+                    key={vs.variable_id}
+                    className={`rounded-xl border border-border p-5 shadow-sm ${idx % 2 === 0 ? "bg-primary/15" : "bg-card"}`}
+                  >
                     <div className="flex items-start justify-between gap-2 mb-4">
                       <div>
                         <div className="font-semibold text-base">{vs.etiqueta}</div>
@@ -751,52 +914,74 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
                     </div>
                     <div className="grid grid-cols-3 gap-2 mb-4 text-center">
                       <div className="rounded-md bg-muted/50 px-2 py-2">
-                        <div className="text-xs uppercase tracking-wide text-muted-foreground">Min</div>
-                        <div className="text-base font-medium tabular-nums text-muted-foreground">{vs.min_valor}</div>
+                        <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                          Min
+                        </div>
+                        <div className="text-base font-medium tabular-nums text-muted-foreground">
+                          {vs.min_valor}
+                        </div>
                       </div>
                       <div className="rounded-md bg-primary/15 px-2 py-2 border border-primary/20">
-                        <div className="text-xs uppercase tracking-wide text-primary/70">Objetivo</div>
-                        <div className="text-base font-bold tabular-nums text-primary">{vs.objetivo}</div>
+                        <div className="text-xs uppercase tracking-wide text-primary/70">
+                          Objetivo
+                        </div>
+                        <div className="text-base font-bold tabular-nums text-primary">
+                          {vs.objetivo}
+                        </div>
                       </div>
                       <div className="rounded-md bg-muted/50 px-2 py-2">
-                        <div className="text-xs uppercase tracking-wide text-muted-foreground">Max</div>
-                        <div className="text-base font-medium tabular-nums text-muted-foreground">{vs.max_valor}</div>
+                        <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                          Max
+                        </div>
+                        <div className="text-base font-medium tabular-nums text-muted-foreground">
+                          {vs.max_valor}
+                        </div>
                       </div>
                     </div>
                     {vs.clave === "uniones" ? (
                       <Select
                         disabled={isBlocked}
                         value={input.valor}
-                        onValueChange={(val) => setMediciones((prev) => ({
-                          ...prev,
-                          [vs.variable_id]: { ...prev[vs.variable_id], valor: val },
-                        }))}
+                        onValueChange={(val) =>
+                          setMediciones((prev) => ({
+                            ...prev,
+                            [vs.variable_id]: { ...prev[vs.variable_id], valor: val },
+                          }))
+                        }
                       >
                         <SelectTrigger className="h-12 text-lg font-bold text-capture w-full">
                           <SelectValue placeholder="Capturar valor" />
                         </SelectTrigger>
                         <SelectContent>
-                          {["0","1","2","3","4","5"].map((o) => (
-                            <SelectItem key={o} value={o}>{o === "5" ? "5+" : o}</SelectItem>
+                          {["0", "1", "2", "3", "4", "5"].map((o) => (
+                            <SelectItem key={o} value={o}>
+                              {o === "5" ? "5+" : o}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                     ) : vs.clave === "relMDCD" ? (
                       <Input
-                        type="text" readOnly tabIndex={-1}
+                        type="text"
+                        readOnly
+                        tabIndex={-1}
                         value={input.valor === "" ? "—" : input.valor}
                         className="h-12 text-lg font-bold text-capture w-full bg-muted/40 cursor-not-allowed"
                         title="Calculado automáticamente: Tensión seca MD ÷ Tensión seca CD"
                       />
                     ) : (
                       <Input
-                        type="number" step={vs.clave === "peso" ? 1 : 0.1} inputMode="decimal"
+                        type="number"
+                        step={vs.clave === "peso" ? 1 : 0.1}
+                        inputMode="decimal"
                         disabled={isBlocked}
                         value={input.valor}
-                        onChange={(e) => setMediciones((prev) => ({
-                          ...prev,
-                          [vs.variable_id]: { ...prev[vs.variable_id], valor: e.target.value },
-                        }))}
+                        onChange={(e) =>
+                          setMediciones((prev) => ({
+                            ...prev,
+                            [vs.variable_id]: { ...prev[vs.variable_id], valor: e.target.value },
+                          }))
+                        }
                         className="h-12 text-lg font-bold text-capture w-full"
                         placeholder="Capturar valor"
                       />
@@ -811,7 +996,9 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
         {spec && (
           <Card className={cn(isBlocked && "opacity-60 pointer-events-none")}>
             <CardHeader className="pb-2">
-              <CardTitle className="text-base font-semibold">F. Cierre — Estatus de liberación y defectos</CardTitle>
+              <CardTitle className="text-base font-semibold">
+                F. Cierre — Estatus de liberación y defectos
+              </CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-3">
               <div className="space-y-1.5">
@@ -851,7 +1038,8 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
                 </div>
                 {defectos.includes("Otro") && (
                   <p className="text-[11px] text-muted-foreground">
-                    Describe el detalle de "Otro" en el campo de observaciones generales (sección C).
+                    Describe el detalle de "Otro" en el campo de observaciones generales (sección
+                    C).
                   </p>
                 )}
               </div>
@@ -866,7 +1054,8 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
             <AlertDescription className="flex flex-wrap items-center justify-between gap-3">
               <span>
                 Folio <strong className="font-mono">{ultimaEtiqueta.folio}</strong> · estatus{" "}
-                <strong>{ultimaEtiqueta.estatus}</strong>. Imprime la etiqueta de liberación para el rollo.
+                <strong>{ultimaEtiqueta.estatus}</strong>. Imprime la etiqueta de liberación para el
+                rollo.
               </span>
               <div className="flex gap-2">
                 <Button size="sm" variant="ghost" onClick={() => setUltimaEtiqueta(null)}>
@@ -897,7 +1086,9 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
         {/* E. Producción capturada recientemente */}
         <Card id="produccion-capturada">
           <CardHeader className="pb-2 flex flex-row items-center justify-between">
-            <CardTitle className="text-base font-semibold">E. Producción capturada recientemente</CardTitle>
+            <CardTitle className="text-base font-semibold">
+              E. Producción capturada recientemente
+            </CardTitle>
             <Badge variant="outline" className="text-xs">
               {misMuestrasQuery.data?.length ?? 0} muestras
             </Badge>
@@ -907,8 +1098,8 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
               <div className="px-4 py-6 text-sm text-muted-foreground">Cargando…</div>
             ) : !misMuestrasQuery.data || misMuestrasQuery.data.length === 0 ? (
               <div className="px-4 py-6 text-sm text-muted-foreground">
-                Aún no has capturado muestras. Cuando envíes una a revisión aparecerá aquí
-                con su botón para reimprimir la etiqueta con código QR.
+                Aún no has capturado muestras. Cuando envíes una a revisión aparecerá aquí con su
+                botón para reimprimir la etiqueta con código QR.
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -928,9 +1119,16 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
                       const fueraSpec = (m.mediciones_calidad ?? []).some(
                         (md) => md.estado === "no_conforme" || md.estado === "fuera_rango_critico",
                       );
-                      const fecha = new Date(m.hora_muestreo || m.capturado_at).toLocaleString("es-MX", {
-                        day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit",
-                      });
+                      const fecha = new Date(m.hora_muestreo || m.capturado_at).toLocaleString(
+                        "es-MX",
+                        {
+                          day: "2-digit",
+                          month: "2-digit",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        },
+                      );
                       return (
                         <tr
                           key={m.id}
@@ -939,15 +1137,23 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
                             muestraRecienId === m.id && "bg-emerald-500/15 animate-pulse",
                           )}
                         >
-                          <td className="py-2.5 px-3 align-middle whitespace-nowrap text-xs tabular-nums">{fecha}</td>
+                          <td className="py-2.5 px-3 align-middle whitespace-nowrap text-xs tabular-nums">
+                            {fecha}
+                          </td>
                           <td className="py-2.5 px-3 align-middle">
                             <span className="font-mono text-xs">{m.maquinas?.codigo ?? "—"}</span>
                           </td>
                           <td className="py-2.5 px-3 align-middle">
-                            <span className="font-mono text-xs mr-2">{m.productos?.codigo ?? ""}</span>
-                            <span className="text-xs text-muted-foreground">{m.productos?.nombre ?? ""}</span>
+                            <span className="font-mono text-xs mr-2">
+                              {m.productos?.codigo ?? ""}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              {m.productos?.nombre ?? ""}
+                            </span>
                           </td>
-                          <td className="py-2.5 px-3 align-middle text-right tabular-nums">{m.numero_rollo ?? "—"}</td>
+                          <td className="py-2.5 px-3 align-middle text-right tabular-nums">
+                            {m.numero_rollo ?? "—"}
+                          </td>
                           <td className="py-2.5 px-3 align-middle">
                             {fueraSpec ? (
                               <Badge variant="destructive" className="gap-1">
@@ -960,7 +1166,11 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
                             )}
                           </td>
                           <td className="py-2.5 px-3 align-middle text-right">
-                            <Button size="sm" variant="outline" onClick={() => imprimirEtiquetaMuestra(m)}>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => imprimirEtiquetaMuestra(m)}
+                            >
                               <Printer className="mr-1.5 h-4 w-4" /> Imprimir
                             </Button>
                           </td>
@@ -973,14 +1183,18 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
             )}
           </CardContent>
         </Card>
-
       </div>
     </AppLayout>
   );
 }
 
 function EstadoMedicionBadge({ estado }: { estado: MedicionEstadoUI }) {
-  if (estado === "pendiente") return <Badge variant="outline" className="text-muted-foreground">—</Badge>;
+  if (estado === "pendiente")
+    return (
+      <Badge variant="outline" className="text-muted-foreground">
+        —
+      </Badge>
+    );
   if (estado === "conforme") {
     return (
       <Badge className="bg-emerald-500/15 text-emerald-700 hover:bg-emerald-500/20 dark:text-emerald-300 border-emerald-500/40 gap-1">
@@ -1012,7 +1226,11 @@ type MuestraReciente = Awaited<ReturnType<typeof listMisMuestrasRecientes>>[numb
 function buildEtiquetaFromMuestra(m: MuestraReciente): EtiquetaData {
   const fecha = new Date(m.hora_muestreo || m.capturado_at || new Date().toISOString());
   const codigoMaq = m.maquinas?.codigo ?? "MQ";
-  const folio = `${codigoMaq}-${fecha.toISOString().slice(0, 10)}-${m.numero_rollo ?? "SN"}`.replace(/\s+/g, "");
+  const folio =
+    `${codigoMaq}-${fecha.toISOString().slice(0, 10)}-${m.numero_rollo ?? "SN"}`.replace(
+      /\s+/g,
+      "",
+    );
   const meds = (m.mediciones_calidad ?? []).map((md) => {
     const min = Number(md.min_snapshot);
     const max = Number(md.max_snapshot);
@@ -1030,13 +1248,16 @@ function buildEtiquetaFromMuestra(m: MuestraReciente): EtiquetaData {
   const fueraSpec = meds.some((x) => x.fueraSpec);
   const est = (m as { estatus_liberacion?: string | null }).estatus_liberacion ?? null;
   const defectos = ((m as { defectos?: string[] | null }).defectos ?? []) as string[];
-  const estatus: EtiquetaData["estatus"] = est === "L"
-    ? "LIBERADO"
-    : est === "NC"
-    ? "NO CONFORME"
-    : est === "C"
-    ? "CONDICIONAL"
-    : (fueraSpec ? "NO CONFORME" : "CONFORME");
+  const estatus: EtiquetaData["estatus"] =
+    est === "L"
+      ? "LIBERADO"
+      : est === "NC"
+        ? "NO CONFORME"
+        : est === "C"
+          ? "CONDICIONAL"
+          : fueraSpec
+            ? "NO CONFORME"
+            : "CONFORME";
   return {
     muestraId: m.id,
     folio,
@@ -1058,4 +1279,3 @@ function buildEtiquetaFromMuestra(m: MuestraReciente): EtiquetaData {
     estatus,
   };
 }
-

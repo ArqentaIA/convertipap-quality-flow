@@ -14,28 +14,18 @@ type SB = SupabaseClient<Database>;
 
 // ------------------------- Helpers -------------------------
 
-const ROLES_OPERATIVOS = [
-  "capturista",
-  "calidad",
-  "gerente_general",
-  "administrador",
-] as const;
+const ROLES_OPERATIVOS = ["capturista", "calidad", "gerente_general", "administrador"] as const;
 const ROLES_ADMIN = ["gerente_general", "administrador"] as const;
 
 async function getUserRoles(sb: SB, userId: string): Promise<string[]> {
-  const { data, error } = await sb
-    .from("user_roles")
-    .select("role")
-    .eq("user_id", userId);
+  const { data, error } = await sb.from("user_roles").select("role").eq("user_id", userId);
   if (error) throw new Error(`No se pudieron leer roles: ${error.message}`);
   return (data ?? []).map((r) => r.role as string);
 }
 
 function requireAnyRole(userRoles: string[], allowed: readonly string[]) {
   if (!userRoles.some((r) => allowed.includes(r))) {
-    throw new Error(
-      `Acceso denegado. Roles requeridos: ${allowed.join(", ")}`,
-    );
+    throw new Error(`Acceso denegado. Roles requeridos: ${allowed.join(", ")}`);
   }
 }
 
@@ -56,10 +46,7 @@ async function generarFolio(sb: SB): Promise<string> {
   return `${prefix}-${next}`;
 }
 
-async function getEspecificacionVigente(
-  sb: SB,
-  productoId: string,
-): Promise<string> {
+async function getEspecificacionVigente(sb: SB, productoId: string): Promise<string> {
   const { data, error } = await sb
     .from("producto_especificaciones")
     .select("id")
@@ -87,21 +74,18 @@ async function upsertEstadoMaquina(
     actualizado_por: string;
   },
 ) {
-  const { error } = await sb
-    .from("maquina_estado_actual")
-    .upsert(
-      {
-        maquina_id: maquinaId,
-        estado: patch.estado,
-        orden_activa_id: patch.orden_activa_id ?? null,
-        paro_activo_id: patch.paro_activo_id ?? null,
-        ultimo_cambio: new Date().toISOString(),
-        actualizado_por: patch.actualizado_por,
-      },
-      { onConflict: "maquina_id" },
-    );
-  if (error)
-    throw new Error(`No se pudo actualizar estado de máquina: ${error.message}`);
+  const { error } = await sb.from("maquina_estado_actual").upsert(
+    {
+      maquina_id: maquinaId,
+      estado: patch.estado,
+      orden_activa_id: patch.orden_activa_id ?? null,
+      paro_activo_id: patch.paro_activo_id ?? null,
+      ultimo_cambio: new Date().toISOString(),
+      actualizado_por: patch.actualizado_por,
+    },
+    { onConflict: "maquina_id" },
+  );
+  if (error) throw new Error(`No se pudo actualizar estado de máquina: ${error.message}`);
 }
 
 // =====================================================================
@@ -128,10 +112,7 @@ export const crearOrden = createServerFn({ method: "POST" })
     requireAnyRole(roles, ROLES_OPERATIVOS);
 
     // Especificación vigente al momento de crear (se reconfirma al iniciar)
-    const especificacion_id = await getEspecificacionVigente(
-      supabase,
-      data.producto_id,
-    );
+    const especificacion_id = await getEspecificacionVigente(supabase, data.producto_id);
 
     const folio = await generarFolio(supabase);
     const estado = data.fecha_programada ? "programada" : "borrador";
@@ -180,9 +161,7 @@ export const iniciarOrden = createServerFn({ method: "POST" })
     if (errOrden) throw new Error(errOrden.message);
 
     if (!["borrador", "programada"].includes(orden.estado)) {
-      throw new Error(
-        `No se puede iniciar una orden en estado '${orden.estado}'.`,
-      );
+      throw new Error(`No se puede iniciar una orden en estado '${orden.estado}'.`);
     }
 
     // Validar que la máquina no tenga otra orden activa
@@ -201,10 +180,7 @@ export const iniciarOrden = createServerFn({ method: "POST" })
     }
 
     // Congelar especificación vigente al momento de iniciar
-    const especificacion_id = await getEspecificacionVigente(
-      supabase,
-      orden.producto_id,
-    );
+    const especificacion_id = await getEspecificacionVigente(supabase, orden.producto_id);
 
     const nowIso = new Date().toISOString();
     const { data: updated, error: errUpd } = await supabase
@@ -254,9 +230,7 @@ export const pausarOrden = createServerFn({ method: "POST" })
       .single();
     if (error) throw new Error(error.message);
     if (orden.estado !== "en_proceso") {
-      throw new Error(
-        `Solo se puede pausar una orden 'en_proceso' (actual: '${orden.estado}').`,
-      );
+      throw new Error(`Solo se puede pausar una orden 'en_proceso' (actual: '${orden.estado}').`);
     }
 
     // Verificar que no haya paro abierto en la máquina
@@ -318,9 +292,7 @@ export const reanudarOrden = createServerFn({ method: "POST" })
       .single();
     if (error) throw new Error(error.message);
     if (orden.estado !== "pausada") {
-      throw new Error(
-        `Solo se puede reanudar una orden 'pausada' (actual: '${orden.estado}').`,
-      );
+      throw new Error(`Solo se puede reanudar una orden 'pausada' (actual: '${orden.estado}').`);
     }
 
     // Cerrar paro abierto de la máquina
@@ -332,9 +304,7 @@ export const reanudarOrden = createServerFn({ method: "POST" })
       .maybeSingle();
     if (errParo) throw new Error(errParo.message);
     if (!paro) {
-      throw new Error(
-        "No hay paro abierto que cerrar. Verifica el estado de la máquina.",
-      );
+      throw new Error("No hay paro abierto que cerrar. Verifica el estado de la máquina.");
     }
 
     const nowIso = new Date().toISOString();
@@ -415,10 +385,7 @@ export const cerrarOrden = createServerFn({ method: "POST" })
         .eq("orden_id", orden.id);
       if (agg) {
         producido_rollos ??= agg.length;
-        producido_kg ??= agg.reduce(
-          (acc, r) => acc + (Number(r.peso_kg) || 0),
-          0,
-        );
+        producido_kg ??= agg.reduce((acc, r) => acc + (Number(r.peso_kg) || 0), 0);
       }
     }
 
@@ -470,9 +437,7 @@ export const cancelarOrden = createServerFn({ method: "POST" })
       .single();
     if (error) throw new Error(error.message);
     if (["finalizada", "cancelada"].includes(orden.estado)) {
-      throw new Error(
-        `No se puede cancelar una orden en estado '${orden.estado}'.`,
-      );
+      throw new Error(`No se puede cancelar una orden en estado '${orden.estado}'.`);
     }
 
     // Cerrar paro abierto si existe
@@ -557,43 +522,57 @@ export const listMaquinasConEstado = createServerFn({ method: "GET" })
       sb.from("maquina_estado_actual").select("*").in("maquina_id", ids),
       sb
         .from("ordenes_fabricacion")
-        .select("id, folio, estado, maquina_id, producto_id, turno, fecha_inicio, productos(nombre, codigo)")
+        .select(
+          "id, folio, estado, maquina_id, producto_id, turno, fecha_inicio, productos(nombre, codigo)",
+        )
         .in("maquina_id", ids)
         .in("estado", ["en_proceso", "pausada"]),
       sb
         .from("paros_maquina")
-        .select("id, maquina_id, inicio, fin, tipo_paro_id, descripcion, tipos_paro:tipo_paro_id(codigo, nombre)")
+        .select(
+          "id, maquina_id, inicio, fin, tipo_paro_id, descripcion, tipos_paro:tipo_paro_id(codigo, nombre)",
+        )
         .in("maquina_id", ids)
         .gte("inicio", desde24h),
       sb
         .from("rollos_producidos")
-        .select("id, orden_id, peso_kg, registrado_at, ordenes_fabricacion:orden_id(maquina_id, fecha_inicio)")
+        .select(
+          "id, orden_id, peso_kg, registrado_at, ordenes_fabricacion:orden_id(maquina_id, fecha_inicio)",
+        )
         .gte("registrado_at", desde24h),
       sb
         .from("muestras_calidad")
-        .select("id, maquina_id, hora_muestreo, numero_rollo, mediciones_calidad(variable_clave, valor)")
+        .select(
+          "id, maquina_id, hora_muestreo, numero_rollo, mediciones_calidad(variable_clave, valor)",
+        )
         .in("maquina_id", ids)
         .gte("hora_muestreo", desde24h),
     ]);
 
     return (maquinas ?? []).map((m) => {
       const estado = estados?.find((e) => e.maquina_id === m.id) ?? null;
-      const orden = ordenes?.find((o) => o.id === estado?.orden_activa_id)
-        ?? ordenes?.find((o) => o.maquina_id === m.id)
-        ?? null;
+      const orden =
+        ordenes?.find((o) => o.id === estado?.orden_activa_id) ??
+        ordenes?.find((o) => o.maquina_id === m.id) ??
+        null;
       const paroActivo = paros?.find((p) => p.maquina_id === m.id && p.fin === null) ?? null;
 
       const rollosMaq = (rollos ?? []).filter(
-        (r) => (r as { ordenes_fabricacion?: { maquina_id?: string } | null })?.ordenes_fabricacion?.maquina_id === m.id,
+        (r) =>
+          (r as { ordenes_fabricacion?: { maquina_id?: string } | null })?.ordenes_fabricacion
+            ?.maquina_id === m.id,
       );
       const muestrasMaq = (muestras ?? []).filter((ms) => ms.maquina_id === m.id);
       const rollosTurno = rollosMaq.length > 0 ? rollosMaq.length : muestrasMaq.length;
-      const kgTurno = rollosMaq.length > 0
-        ? rollosMaq.reduce((s, r) => s + (Number(r.peso_kg) || 0), 0)
-        : muestrasMaq.reduce((s, ms) => {
-            const peso = (ms.mediciones_calidad ?? []).find((md) => md.variable_clave === "peso")?.valor;
-            return s + (Number(peso) || 0);
-          }, 0);
+      const kgTurno =
+        rollosMaq.length > 0
+          ? rollosMaq.reduce((s, r) => s + (Number(r.peso_kg) || 0), 0)
+          : muestrasMaq.reduce((s, ms) => {
+              const peso = (ms.mediciones_calidad ?? []).find(
+                (md) => md.variable_clave === "peso",
+              )?.valor;
+              return s + (Number(peso) || 0);
+            }, 0);
 
       // OEE estimado simple: 1 - (minutos parados últimas 24h / 1440)
       const parosMaq = (paros ?? []).filter((p) => p.maquina_id === m.id);
@@ -615,12 +594,21 @@ export const listMaquinasConEstado = createServerFn({ method: "GET" })
         nombre: m.nombre,
         planta: (m as { plantas?: { nombre?: string } | null }).plantas?.nombre ?? "—",
         estado: estadoUI,
-        orden: orden ? { id: orden.id, folio: orden.folio, producto: orden.productos?.nombre ?? "—", turno: orden.turno ?? "—" } : null,
+        orden: orden
+          ? {
+              id: orden.id,
+              folio: orden.folio,
+              producto: orden.productos?.nombre ?? "—",
+              turno: orden.turno ?? "—",
+            }
+          : null,
         paroActivo: paroActivo
           ? {
               id: paroActivo.id,
               inicio: paroActivo.inicio,
-              tipo: (paroActivo as { tipos_paro?: { nombre?: string } | null }).tipos_paro?.nombre ?? "—",
+              tipo:
+                (paroActivo as { tipos_paro?: { nombre?: string } | null }).tipos_paro?.nombre ??
+                "—",
               descripcion: paroActivo.descripcion,
             }
           : null,
@@ -656,7 +644,8 @@ export const listHistorialMaquina = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
 
     const ordIds = (ordenes ?? []).map((o) => o.id);
-    let muestrasPorOrden: Record<string, { total: number; liberadas: number; rechazadas: number }> = {};
+    let muestrasPorOrden: Record<string, { total: number; liberadas: number; rechazadas: number }> =
+      {};
     if (ordIds.length > 0) {
       const { data: muestras } = await sb
         .from("muestras_calidad")
