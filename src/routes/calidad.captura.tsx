@@ -296,11 +296,10 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
           prensero,
           analista,
           mediciones: evalMediciones
-            .filter((m) => m.input.valor !== "" && Number.isFinite(m.num))
             .map((m) => ({
               clave: m.spec.clave,
               etiqueta: m.spec.etiqueta,
-              valor: m.num,
+              valor: m.input.valor !== "" && Number.isFinite(m.num) ? m.num : null,
               unidad: m.spec.unidad,
               min: m.spec.min_valor,
               max: m.spec.max_valor,
@@ -360,17 +359,19 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
   function validar(modo: "borrador" | "envio"): string | null {
     if (!spec) return "Selecciona un producto con especificación vigente";
     if (!canCapture) return "Sin permiso de captura";
+    if (!auth.user?.id) return "Sesión inválida — vuelve a iniciar sesión";
     if (!horaMuestreo) return "Indica la hora de muestreo";
     if (new Date(horaMuestreo).getTime() > Date.now() + 60_000)
       return "La hora de muestreo no puede ser futura";
     if (!numeroRollo.trim()) return "Captura el número de rollo (formato XXXX-X)";
     if (!ROLLO_REGEX.test(numeroRollo.trim()))
       return "El número de rollo debe tener el formato XXXX-X (ej. 4438-6)";
+    if (!jefeMaquina.trim()) return "Captura el Jefe de Máquina";
+    if (!operador.trim()) return "Captura el Operador";
+    if (!prensero.trim()) return "Captura el Prensero";
+    if (!analista.trim()) return "Captura el Analista";
+    if (!estatusLiberacion) return "Selecciona el Estatus de Liberación (L / NC / C)";
     if (modo === "envio") {
-      if (!jefeMaquina.trim()) return "Captura el Jefe de Máquina";
-      if (!operador.trim()) return "Captura el Operador";
-      if (!prensero.trim()) return "Captura el Prensero";
-      if (!analista.trim()) return "Captura el Analista";
       const faltantes = evalMediciones.filter((m) => m.input.valor === "").map((m) => m.spec.etiqueta);
       if (faltantes.length) return `Falta capturar: ${faltantes.join(", ")}`;
       const inverosimil = evalMediciones.find(
@@ -404,13 +405,13 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
         maquina_id: maquina.id,
         producto_id: producto.producto_id,
         turno,
-        operario_id: null,
-        numero_rollo: numeroRollo.trim() || null,
-        jefe_maquina: jefeMaquina.trim() || null,
-        operador: operador.trim() || null,
-        prensero: prensero.trim() || null,
-        analista: analista.trim() || null,
-        estatus_liberacion: estatusLiberacion || null,
+        operario_id: auth.user!.id,
+        numero_rollo: numeroRollo.trim(),
+        jefe_maquina: jefeMaquina.trim(),
+        operador: operador.trim(),
+        prensero: prensero.trim(),
+        analista: analista.trim(),
+        estatus_liberacion: estatusLiberacion as "L" | "NC" | "C",
         defectos,
         tipo_muestreo: "por_rollo" as const,
         hora_muestreo: new Date(horaMuestreo).toISOString(),

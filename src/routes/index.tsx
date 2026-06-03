@@ -21,18 +21,37 @@ import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/")({ component: DashboardGate, ssr: false });
 
+function mexicoMidnight(now: Date): Date {
+  // Devuelve el instante UTC correspondiente a las 00:00 de la fecha actual en CDMX.
+  const fmt = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Mexico_City",
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false,
+  });
+  const parts = Object.fromEntries(fmt.formatToParts(now).map((p) => [p.type, p.value]));
+  // Offset de CDMX respecto a UTC en ms (negativo: CDMX va detrás)
+  const asUtc = Date.UTC(
+    Number(parts.year), Number(parts.month) - 1, Number(parts.day),
+    Number(parts.hour), Number(parts.minute), Number(parts.second),
+  );
+  const offset = asUtc - now.getTime();
+  const midnightMx = Date.UTC(Number(parts.year), Number(parts.month) - 1, Number(parts.day), 0, 0, 0);
+  return new Date(midnightMx - offset);
+}
+
 function computeWindow(rango: Rango, mesesSel: number[]): { start: Date; end: Date } {
   const now = new Date();
   if (rango === "dia") {
-    const s = new Date(now); s.setHours(0, 0, 0, 0);
-    const e = new Date(s); e.setDate(e.getDate() + 1);
+    const s = mexicoMidnight(now);
+    const e = new Date(s.getTime() + 24 * 3600_000);
     return { start: s, end: e };
   }
   if (rango === "semana") {
-    const s = new Date(now); s.setHours(0, 0, 0, 0);
-    const dow = s.getDay();
-    s.setDate(s.getDate() + (dow === 0 ? -6 : 1 - dow));
-    const e = new Date(s); e.setDate(e.getDate() + 7);
+    const today = mexicoMidnight(now);
+    const dow = new Date(today.getTime()).getUTCDay();
+    const s = new Date(today);
+    s.setUTCDate(s.getUTCDate() + (dow === 0 ? -6 : 1 - dow));
+    const e = new Date(s.getTime() + 7 * 24 * 3600_000);
     return { start: s, end: e };
   }
   if (rango === "mes") {

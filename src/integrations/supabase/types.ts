@@ -423,7 +423,7 @@ export type Database = {
           mediciones_modificacion_motivo: string | null
           mediciones_modificadas_at: string | null
           mediciones_modificadas_por: string | null
-          numero_rollo: string | null
+          numero_rollo: string
           observaciones_generales: string
           operador: string | null
           operario_id: string | null
@@ -463,7 +463,7 @@ export type Database = {
           mediciones_modificacion_motivo?: string | null
           mediciones_modificadas_at?: string | null
           mediciones_modificadas_por?: string | null
-          numero_rollo?: string | null
+          numero_rollo: string
           observaciones_generales?: string
           operador?: string | null
           operario_id?: string | null
@@ -503,7 +503,7 @@ export type Database = {
           mediciones_modificacion_motivo?: string | null
           mediciones_modificadas_at?: string | null
           mediciones_modificadas_por?: string | null
-          numero_rollo?: string | null
+          numero_rollo?: string
           observaciones_generales?: string
           operador?: string | null
           operario_id?: string | null

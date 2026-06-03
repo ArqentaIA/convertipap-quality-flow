@@ -127,8 +127,11 @@ export const listMaquinasCaptura = createServerFn({ method: "GET" })
     if (!seesAll && isCapturista) {
       const lab = profile?.laboratorio as "norte" | "sur" | null | undefined;
       if (!lab) return [];
-      const areaPattern = lab === "norte" ? "%Norte%" : "%Sur%";
-      q = q.ilike("area", areaPattern);
+      // BD usa 'Laboratorio Nte.' / 'Laboratorio Sur' — matchear ambas variantes.
+      const orExpr = lab === "norte"
+        ? "area.ilike.%Nte%,area.ilike.%Norte%"
+        : "area.ilike.%Sur%";
+      q = q.or(orExpr);
     }
 
     const { data, error } = await q;
@@ -364,13 +367,13 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
         maquina_id: z.string().uuid(),
         producto_id: z.string().uuid(),
         turno: z.string().min(1),
-        operario_id: z.string().uuid().nullable().optional(),
-        numero_rollo: z.string().regex(/^\d{1,5}-\d{1,2}$/, "Formato XXXX-X").nullable().optional(),
-        jefe_maquina: z.string().max(120).nullable().optional(),
-        operador: z.string().max(120).nullable().optional(),
-        prensero: z.string().max(120).nullable().optional(),
-        analista: z.string().max(120).nullable().optional(),
-        estatus_liberacion: z.enum(["L", "NC", "C"]).nullable().optional(),
+        operario_id: z.string().uuid(),
+        numero_rollo: z.string().regex(/^\d{1,5}-\d{1,2}$/, "Formato XXXX-X"),
+        jefe_maquina: z.string().trim().min(1).max(120),
+        operador: z.string().trim().min(1).max(120),
+        prensero: z.string().trim().min(1).max(120),
+        analista: z.string().trim().min(1).max(120),
+        estatus_liberacion: z.enum(["L", "NC", "C"]),
         defectos: z.array(z.string().max(60)).max(20).default([]),
         tipo_muestreo: z.enum(["por_rollo", "por_tiempo"]),
         hora_muestreo: z.string(),
@@ -411,13 +414,13 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
       maquina_id: data.maquina_id,
       producto_id: data.producto_id,
       turno: data.turno,
-      operario_id: data.operario_id ?? null,
-      numero_rollo: data.numero_rollo ?? null,
-      jefe_maquina: data.jefe_maquina ?? null,
-      operador: data.operador ?? null,
-      prensero: data.prensero ?? null,
-      analista: data.analista ?? null,
-      estatus_liberacion: data.estatus_liberacion ?? null,
+      operario_id: data.operario_id,
+      numero_rollo: data.numero_rollo,
+      jefe_maquina: data.jefe_maquina,
+      operador: data.operador,
+      prensero: data.prensero,
+      analista: data.analista,
+      estatus_liberacion: data.estatus_liberacion,
       defectos: data.defectos ?? [],
       tipo_muestreo: data.tipo_muestreo,
       hora_muestreo: data.hora_muestreo,

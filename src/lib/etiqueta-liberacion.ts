@@ -21,7 +21,7 @@ async function toDataUrl(url: string): Promise<string> {
 export type EtiquetaMedicion = {
   clave: string;
   etiqueta: string;
-  valor: number;
+  valor: number | null;
   unidad: string;
   min: number;
   max: number;
@@ -91,7 +91,7 @@ function buildHtml(data: EtiquetaData, qrDataUrl: string, logoDataUrl: string): 
   const left: string[] = [];
   const right: string[] = [];
   data.mediciones.forEach((m, i) => {
-    const cell = row(m.etiqueta, m.valor, m.unidad);
+    const cell = row(m.etiqueta, m.valor ?? "", m.unidad);
     (i % 2 === 0 ? left : right).push(cell);
   });
 
