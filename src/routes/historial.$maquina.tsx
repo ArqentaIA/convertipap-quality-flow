@@ -235,9 +235,17 @@ function HistorialPage() {
           </div>
         </div>
       </div>
+
+      <DetalleCalidadModal
+        ordenId={detalle?.ordenId ?? null}
+        folio={detalle?.folio ?? null}
+        open={!!detalle}
+        onOpenChange={(v) => !v && setDetalle(null)}
+      />
     </AppLayout>
   );
 }
+
 
 function StatCard({
   label, value, hint, tone = "default",
