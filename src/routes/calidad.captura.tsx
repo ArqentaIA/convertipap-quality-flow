@@ -39,7 +39,16 @@ import {
   getSpecPorProducto,
   upsertMuestraConMediciones,
   listMisMuestrasRecientes,
+  dictaminarMuestra,
 } from "@/lib/qc.functions";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { getAppSettings } from "@/lib/settings.functions";
 import { cn } from "@/lib/utils";
 
