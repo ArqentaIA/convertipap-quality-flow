@@ -387,6 +387,108 @@ export const getReportes = createServerFn({ method: "POST" })
       return row;
     });
 
+    // ====================================================
+    // Costo de No Calidad
+    // ====================================================
+    const { data: cfgRow } = await sb
+      .from("app_settings")
+      .select("costo_no_calidad_kg")
+      .limit(1)
+      .maybeSingle();
+    const costoKg = Number((cfgRow as any)?.costo_no_calidad_kg ?? 18.0);
+
+    const pesoPorMuestra = new Map<string, number>();
+    for (const med of mediciones ?? []) {
+      if (med.variable_clave === "peso" && med.valor != null) {
+        const v = Number(med.valor);
+        if (!Number.isNaN(v)) pesoPorMuestra.set(med.muestra_id, v);
+      }
+    }
+    const esNoLiberado = (m: any) =>
+      !(m.dictamen === "liberada" || m.estatus_liberacion === "L");
+
+    const noLibBase: Array<{ m: any; pesoKg: number; costoMxn: number }> = [];
+    let totalKg = 0;
+    for (const m of muestrasFull ?? []) {
+      if (!esNoLiberado(m)) continue;
+      const pesoKg = pesoPorMuestra.get(m.id) ?? 0;
+      const costoMxn = Math.round(pesoKg * costoKg * 100) / 100;
+      totalKg += pesoKg;
+      noLibBase.push({ m, pesoKg, costoMxn });
+    }
+    const costoTotal = Math.round(totalKg * costoKg * 100) / 100;
+    const costoPromedio =
+      noLibBase.length > 0
+        ? Math.round((costoTotal / noLibBase.length) * 100) / 100
+        : 0;
+
+    const resumenRows: Record<string, string | number>[] = [
+      {
+        rollos_no_liberados: noLibBase.length,
+        kg_no_liberados: Math.round(totalKg * 100) / 100,
+        costo_kg_mxn: costoKg,
+        costo_total_mxn: costoTotal,
+        costo_promedio_mxn: costoPromedio,
+        periodo_inicio: start.slice(0, 10),
+        periodo_fin: end.slice(0, 10),
+      },
+    ];
+
+    const rollosNoLibBasic: Record<string, string | number>[] = noLibBase.map(
+      ({ m, pesoKg, costoMxn }) => {
+        const maq = maquinaById.get(m.maquina_id);
+        const planta = plantaById.get(m.planta_id);
+        const orden = m.ordenes_fabricacion;
+        return {
+          fecha: (m.hora_muestreo as string)?.slice(0, 10) ?? "",
+          hora: (m.hora_muestreo as string)?.slice(11, 16) ?? "",
+          planta: planta?.nombre ?? "—",
+          maquina: maq?.codigo ?? "—",
+          turno: m.turno ?? "—",
+          orden: orden?.folio ?? "—",
+          producto: orden?.productos?.nombre ?? "—",
+          rollo: m.numero_rollo ?? "—",
+          operador: m.operador ?? "—",
+          analista: m.analista ?? "—",
+          peso_kg: Math.round(pesoKg * 100) / 100,
+          costo_mxn: costoMxn,
+          estatus: m.estatus_liberacion ?? m.dictamen ?? "pendiente",
+        };
+      },
+    );
+
+    const rollosNoLibFull: Record<string, string | number>[] = noLibBase.map(
+      ({ m, pesoKg, costoMxn }) => {
+        const maq = maquinaById.get(m.maquina_id);
+        const planta = plantaById.get(m.planta_id);
+        const orden = m.ordenes_fabricacion;
+        const meds = medsByMuestra.get(m.id) ?? [];
+        const medsByClave = new Map(meds.map((x) => [x.variable_clave, x]));
+        const row: Record<string, string | number> = {
+          fecha: (m.hora_muestreo as string)?.slice(0, 10) ?? "",
+          hora: (m.hora_muestreo as string)?.slice(11, 16) ?? "",
+          planta: planta?.nombre ?? "—",
+          maquina: maq?.codigo ?? "—",
+          turno: m.turno ?? "—",
+          orden: orden?.folio ?? "—",
+          producto: orden?.productos?.nombre ?? "—",
+          codigo_producto: orden?.productos?.codigo ?? "—",
+          rollo: m.numero_rollo ?? "—",
+          operador: m.operador ?? "—",
+          analista: m.analista ?? "—",
+          peso_kg: Math.round(pesoKg * 100) / 100,
+          costo_mxn: costoMxn,
+          estatus: m.estatus_liberacion ?? m.dictamen ?? "pendiente",
+        };
+        for (const clave of clavesOrden) {
+          const etiqueta = etiquetaPorClave.get(clave) ?? clave;
+          const med = medsByClave.get(clave);
+          row[etiqueta] = med && med.valor !== null ? med.valor : "";
+        }
+        return row;
+      },
+    );
+
     const datasets: ReportePayload["datasets"] = {
       "Detalle de no conformidades": [
         { sheet: "No conformidades", rows: ncRows.length ? ncRows : [{ aviso: "Sin no conformidades en el periodo" }] },
@@ -396,6 +498,14 @@ export const getReportes = createServerFn({ method: "POST" })
       ],
       "Reporte General": [
         { sheet: "Rollos producidos", rows: generalRows.length ? generalRows : [{ aviso: "Sin rollos en el periodo" }] },
+      ],
+      "Costo de No Calidad": [
+        { sheet: "Resumen", rows: resumenRows },
+        { sheet: "Rollos no liberados", rows: rollosNoLibBasic.length ? rollosNoLibBasic : [{ aviso: "Sin rollos no liberados en el periodo" }] },
+      ],
+      "Costo de No Calidad (detalle)": [
+        { sheet: "Resumen", rows: resumenRows },
+        { sheet: "Rollos no liberados", rows: rollosNoLibFull.length ? rollosNoLibFull : [{ aviso: "Sin rollos no liberados en el periodo" }] },
       ],
     };
 
