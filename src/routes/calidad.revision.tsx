@@ -399,7 +399,7 @@ function RevisionPage() {
               ) : (
                 <ul className="divide-y max-h-[600px] overflow-y-auto">
                   {filtradas.map((m) => {
-                    const ord = ordenes.find((o) => o.orden_id === m.orden_id);
+                    const ord = ordenes.find((o) => o.orden_id === m.id);
                     const meds = m.mediciones_calidad ?? [];
                     const fuera = meds.filter((x) => x.estado !== "conforme").length;
                     const isSel = (selected?.id ?? "") === m.id;
