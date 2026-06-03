@@ -338,6 +338,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
     if (!ultimaEtiqueta) return;
     try {
       await printEtiquetaLiberacion(ultimaEtiqueta);
+      void auditAction("etiqueta", `Impresión etiqueta FOR-CAL-04 ${ultimaEtiqueta.folio ?? ""}`);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "No se pudo abrir la etiqueta");
     }
