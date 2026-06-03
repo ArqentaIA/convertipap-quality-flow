@@ -34,7 +34,7 @@ const META_EMPRESA = {
   empresa: "ConvertiPap S.A. de C.V.",
   planta: "Planta Tlaxcala",
   direccion: "Parque Industrial Xicohténcatl, Tlaxcala, México",
-  responsable: "Ing. Laura Méndez · Gerente de Calidad",
+  responsable: "Ing. Jonatan Alberto Pelaez · Gerente de Calidad",
   operador: "Carlos Ramírez · Supervisor de turno",
   sistema: "ConvertiPap QMS · v1.0",
 };
