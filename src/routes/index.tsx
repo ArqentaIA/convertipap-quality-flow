@@ -127,7 +127,7 @@ function Dashboard() {
     ...dashboardQO(rango, mesesSel),
     refetchInterval: 30_000,
   });
-  const { serie, maquinas, noConformidades } = data;
+  const { serie, maquinas, noConformidades, costoNoCalidad } = data;
 
   // Realtime: invalida el dashboard al cambiar muestras/mediciones
   useEffect(() => {
