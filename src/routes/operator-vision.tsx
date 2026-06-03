@@ -216,10 +216,10 @@ function VarCard({
 function HeaderField({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex flex-col">
-      <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">
+      <span className="text-[13px] font-bold uppercase tracking-[0.18em] text-slate-400">
         {label}
       </span>
-      <span className="truncate text-sm font-bold text-slate-800">{value || "-"}</span>
+      <span className="truncate text-lg font-bold text-slate-800">{value || "-"}</span>
     </div>
   );
 }
