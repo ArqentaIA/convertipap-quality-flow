@@ -371,7 +371,7 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
         producto_id: z.string().uuid(),
         turno: z.string().min(1),
         operario_id: z.string().uuid(),
-        numero_rollo: z.string().regex(/^\d{1,5}-\d{1,2}$/, "Formato XXXX-X"),
+        numero_rollo: z.string().trim().min(1).max(30).regex(/^[A-Za-z0-9-]+$/, "Rollo inválido"),
         jefe_maquina: z.string().trim().min(1).max(120),
         operador: z.string().trim().min(1).max(120),
         prensero: z.string().trim().min(1).max(120),
