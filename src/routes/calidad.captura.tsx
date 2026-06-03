@@ -671,10 +671,10 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
                           <div className="font-medium text-base leading-snug">{vs.etiqueta}</div>
                           <div className="text-sm text-muted-foreground">{vs.unidad}</div>
                         </td>
-                        <td className="py-3 px-2 text-right tabular-nums text-muted-foreground align-middle">{vs.min_valor}</td>
-                        <td className="py-3 px-2 text-right tabular-nums font-semibold text-foreground align-middle">{vs.objetivo}</td>
-                        <td className="py-3 px-2 text-right tabular-nums text-muted-foreground align-middle">{vs.max_valor}</td>
-                        <td className="py-3 px-3 align-middle">
+                        <td className="py-4 px-2 text-base text-right tabular-nums text-muted-foreground align-middle">{vs.min_valor}</td>
+                        <td className="py-4 px-2 text-base text-right tabular-nums font-semibold text-foreground align-middle">{vs.objetivo}</td>
+                        <td className="py-4 px-2 text-base text-right tabular-nums text-muted-foreground align-middle">{vs.max_valor}</td>
+                        <td className="py-4 px-3 align-middle">
                           {vs.clave === "uniones" ? (
                             <Select
                               disabled={isBlocked}
