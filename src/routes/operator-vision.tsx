@@ -258,7 +258,7 @@ function OperatorVisionPage() {
     // Evalúa variables vs spec si hay
     let worst: VarStatus = "ok";
     for (const v of variables) {
-      const med = m.mediciones.find((x) => x.clave === v.clave);
+      const med = m.mediciones.find((x: { clave: string; valor: number | null }) => x.clave === v.clave);
       if (!med || med.valor === null) continue;
       const s = evaluate(Number(med.valor), v.min, v.max);
       if (s === "bad") return "bad";
