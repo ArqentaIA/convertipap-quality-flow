@@ -293,14 +293,15 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
   const hayCritico = evalMediciones.some((m) => m.estado === "fuera_rango_critico");
 
   const upsertFn = useServerFn(upsertMuestraConMediciones);
-  const [lastSubmitMode, setLastSubmitMode] = useState<"borrador" | "envio">("borrador");
   const [ultimaEtiqueta, setUltimaEtiqueta] = useState<EtiquetaData | null>(null);
   const [muestraRecienId, setMuestraRecienId] = useState<string | null>(null);
   const mutation = useMutation({
     mutationFn: upsertFn,
-    onSuccess: async (res: { muestra_id: string }) => {
+    onSuccess: async (res: { muestra_id: string }, variables) => {
+      const submitMode = variables.data.enviar_a_revision ? "envio" : "borrador";
       await queryClient.invalidateQueries({ queryKey: ["qc"] });
-      if (lastSubmitMode === "envio") {
+      await queryClient.refetchQueries({ queryKey: ["qc", "mis-muestras-recientes"], type: "active" });
+      if (submitMode === "envio") {
         const folioToast = `${numeroRollo || "SN"} · ${maquina.codigo}`;
         toast.success(`Muestra guardada (${folioToast})`, {
           description: "Agregada al listado de producción capturada.",
@@ -434,7 +435,6 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
       };
     });
 
-    setLastSubmitMode(modo);
     mutation.mutate({
       data: {
         orden_id: null,
