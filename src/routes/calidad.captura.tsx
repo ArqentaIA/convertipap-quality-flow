@@ -1085,7 +1085,11 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
                           }))
                         }
                       >
-                        <SelectTrigger className="h-12 text-lg font-bold text-capture w-full">
+                        <SelectTrigger
+                          data-capture-field
+                          onFocus={(e) => scrollFieldIntoView(e.currentTarget)}
+                          className="h-12 text-lg font-bold text-capture w-full"
+                        >
                           <SelectValue placeholder="Capturar valor" />
                         </SelectTrigger>
                         <SelectContent>
@@ -1112,6 +1116,14 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
                         inputMode="decimal"
                         disabled={isBlocked}
                         value={input.valor}
+                        data-capture-field
+                        onFocus={(e) => scrollFieldIntoView(e.currentTarget)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            focusNextCaptureField(e.currentTarget);
+                          }
+                        }}
                         onChange={(e) =>
                           setMediciones((prev) => ({
                             ...prev,
