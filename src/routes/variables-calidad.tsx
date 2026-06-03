@@ -43,7 +43,8 @@ function VariablesCalidadGate() {
 
 type DraftMap = Record<string, { min: number; objective: number; max: number }>;
 
-const ROLES_EDIT = ["calidad", "direccion", "gerente_general", "administrador"] as const;
+// Spec: Dirección y Gerencia General solo pueden CONSULTAR variables de calidad.
+const ROLES_EDIT = ["calidad", "administrador"] as const;
 
 type AuditRow = {
   id: string;
