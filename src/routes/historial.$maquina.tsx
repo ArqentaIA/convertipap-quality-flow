@@ -210,9 +210,17 @@ function HistorialPage() {
                           >
                             <QrCode className="h-3.5 w-3.5" /> Imprimir
                           </button>
+                          <button
+                            onClick={() => setDetalle({ ordenId: r.ordenId, folio: r.folio })}
+                            className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-1 text-xs font-semibold text-primary hover:bg-primary/20"
+                            title="Ver detalle completo de calidad"
+                          >
+                            <ClipboardCheck className="h-3.5 w-3.5" /> Detalle de calidad
+                          </button>
                           <button className="inline-flex items-center gap-1 text-xs text-primary hover:underline">
                             <Eye className="h-3.5 w-3.5" /> Ver
                           </button>
+
                         </div>
                       </td>
                     </tr>
