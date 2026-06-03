@@ -600,6 +600,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
                   value={numeroRollo}
                   onChange={(e) => setNumeroRollo(e.target.value)}
                   className={cn(
+                    "h-11 text-base",
                     numeroRollo && !ROLLO_REGEX.test(numeroRollo.trim()) && "border-destructive",
                   )}
                 />
@@ -610,7 +611,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
               <div className="space-y-1.5">
                 <Label htmlFor="hora" className="text-base">Hora de muestreo</Label>
                 <Input
-                  id="hora" type="datetime-local"
+                  id="hora" type="datetime-local" className="h-11 text-base"
                   value={horaMuestreo} onChange={(e) => setHoraMuestreo(e.target.value)}
                 />
               </div>
