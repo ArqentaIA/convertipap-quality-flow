@@ -7,6 +7,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { useLabFilter, LAB_LABEL } from "@/lib/lab";
 import { listMaquinasConEstado, listRollosMaquina } from "@/lib/produccion.functions";
 import { DetalleCalidadModal } from "@/components/qc/DetalleCalidadModal";
+import { BuscadorRollo } from "@/components/qc/BuscadorRollo";
 
 type Rango = "dia" | "semana" | "mes" | "año";
 const RANGO_LABEL: Record<Rango, string> = { dia: "Día", semana: "Semana", mes: "Mes", año: "Año" };
