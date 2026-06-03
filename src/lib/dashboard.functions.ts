@@ -92,7 +92,7 @@ export const getDashboard = createServerFn({ method: "POST" })
           .lte("hora_muestreo", end.toISOString()),
         sb
           .from("mediciones_calidad")
-          .select("id, muestra_id, variable_clave, estado, created_at")
+          .select("id, muestra_id, variable_clave, valor, estado, created_at")
           .gte("created_at", start.toISOString())
           .lte("created_at", end.toISOString()),
 
@@ -107,6 +107,7 @@ export const getDashboard = createServerFn({ method: "POST" })
           .select("maquina_id, duracion_min, inicio")
           .gte("inicio", start.toISOString())
           .lte("inicio", end.toISOString()),
+        sb.from("app_settings").select("costo_no_calidad_kg").limit(1).maybeSingle(),
       ]);
 
     const maquinaList = (maquinas ?? []).map((m) => m.codigo);
