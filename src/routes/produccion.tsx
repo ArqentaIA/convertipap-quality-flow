@@ -6,6 +6,7 @@ import { Factory, Gauge, Clock, Pause, Play, AlertTriangle, AlertOctagon, Circle
 import { AppLayout } from "@/components/layout/AppLayout";
 import { listMaquinasConEstado } from "@/lib/produccion.functions";
 import { useLabFilter } from "@/lib/lab";
+import { BuscadorRollo } from "@/components/qc/BuscadorRollo";
 
 type Rango = "dia" | "semana" | "mes" | "año";
 const RANGO_LABEL: Record<Rango, string> = { dia: "Día", semana: "Semana", mes: "Mes", año: "Año" };
