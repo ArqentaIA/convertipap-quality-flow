@@ -480,9 +480,9 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
           </CardHeader>
           <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <div className="space-y-1.5">
-              <Label>Turno</Label>
+              <Label className="text-base">Turno</Label>
               <Select value={turno} onValueChange={(v) => setTurno(v as "1" | "2" | "3")}>
-                <SelectTrigger>
+                <SelectTrigger className="h-11 text-base">
                   <SelectValue placeholder="Selecciona turno" />
                 </SelectTrigger>
                 <SelectContent>
@@ -499,9 +499,9 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label>Máquina</Label>
+              <Label className="text-base">Máquina</Label>
               <Select value={maquinaId} onValueChange={setMaquinaId}>
-                <SelectTrigger>
+                <SelectTrigger className="h-11 text-base">
                   <SelectValue placeholder="Selecciona máquina" />
                 </SelectTrigger>
                 <SelectContent>
@@ -519,9 +519,9 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label>Producto</Label>
+              <Label className="text-base">Producto</Label>
               <Select value={productoId} onValueChange={setProductoId}>
-                <SelectTrigger>
+                <SelectTrigger className="h-11 text-base">
                   <SelectValue placeholder="Selecciona producto" />
                 </SelectTrigger>
                 <SelectContent>
@@ -563,22 +563,22 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
             </CardHeader>
             <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-4">
               <div className="space-y-1.5">
-                <Label htmlFor="jefe">Jefe de Máquina</Label>
+                <Label htmlFor="jefe" className="text-base">Jefe de Máquina</Label>
                 <Input id="jefe" maxLength={120} value={jefeMaquina}
                   onChange={(e) => setJefeMaquina(e.target.value)} placeholder="Nombre" />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="oper">Operador</Label>
+                <Label htmlFor="oper" className="text-base">Operador</Label>
                 <Input id="oper" maxLength={120} value={operador}
                   onChange={(e) => setOperador(e.target.value)} placeholder="Nombre" />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="prens">Prensero</Label>
+                <Label htmlFor="prens" className="text-base">Prensero</Label>
                 <Input id="prens" maxLength={120} value={prensero}
                   onChange={(e) => setPrensero(e.target.value)} placeholder="Nombre" />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="anal">Analista</Label>
+                <Label htmlFor="anal" className="text-base">Analista</Label>
                 <Input id="anal" maxLength={120} value={analista}
                   onChange={(e) => setAnalista(e.target.value)} placeholder="Nombre" />
               </div>
@@ -593,7 +593,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
             </CardHeader>
             <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-3">
               <div className="space-y-1.5">
-                <Label htmlFor="rollo">Número de rollo <span className="text-muted-foreground font-normal">(formato XXXX-X)</span></Label>
+                <Label htmlFor="rollo" className="text-base">Número de rollo <span className="text-muted-foreground font-normal">(formato XXXX-X)</span></Label>
                 <Input
                   id="rollo" type="text" inputMode="numeric" placeholder="4438-6"
                   pattern="\d{1,5}-\d{1,2}"
@@ -608,22 +608,22 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
                 )}
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="hora">Hora de muestreo</Label>
+                <Label htmlFor="hora" className="text-base">Hora de muestreo</Label>
                 <Input
                   id="hora" type="datetime-local"
                   value={horaMuestreo} onChange={(e) => setHoraMuestreo(e.target.value)}
                 />
               </div>
               <div className="space-y-1.5">
-                <Label>Especificación vigente</Label>
+                <Label className="text-base">Especificación vigente</Label>
                 <div className="flex items-center gap-2 h-9 px-3 rounded-md border border-border bg-muted text-sm">
                   <Badge variant="secondary">v{spec.spec.version}</Badge>
                   <span className="text-muted-foreground text-xs">{variables.length} variables</span>
                 </div>
               </div>
               <div className="md:col-span-3 space-y-1.5">
-                <Label htmlFor="obs">Observaciones generales</Label>
-                <Textarea
+                <Label htmlFor="obs" className="text-base">Observaciones generales</Label>
+                <Textarea className="text-base"
                   id="obs" maxLength={500} rows={2}
                   value={observaciones} onChange={(e) => setObservaciones(e.target.value)}
                   placeholder="Condiciones del turno, observaciones, etc."
@@ -798,12 +798,12 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
             </CardHeader>
             <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-3">
               <div className="space-y-1.5">
-                <Label>Estatus de liberación</Label>
+                <Label className="text-base">Estatus de liberación</Label>
                 <Select
                   value={estatusLiberacion}
                   onValueChange={(v) => setEstatusLiberacion(v as "" | "L" | "NC" | "C")}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="h-11 text-base">
                     <SelectValue placeholder="Selecciona estatus" />
                   </SelectTrigger>
                   <SelectContent>
@@ -817,7 +817,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
                 </p>
               </div>
               <div className="md:col-span-2 space-y-2">
-                <Label>Defectos observados</Label>
+                <Label className="text-base">Defectos observados</Label>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {DEFECTOS_OPCIONES.map((d) => (
                     <label
