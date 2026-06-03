@@ -2,17 +2,20 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
-  Activity,
   AlertTriangle,
+  Bell,
   CheckCircle2,
+  CircleDot,
+  Droplets,
   Gauge,
   Maximize2,
+  Move3d,
+  PlayCircle,
   Radio,
+  Ruler,
+  Scale,
   Timer,
-  TrendingUp,
-  XCircle,
 } from "lucide-react";
-import logoConvertipap from "@/assets/logo-convertipap.png";
 import { getOperatorVisionData } from "@/lib/operator-vision.functions";
 
 const MAQUINAS_VALIDAS = ["MP-04", "MP-05", "MP-06", "MP-07"] as const;
@@ -37,28 +40,7 @@ export const Route = createFileRoute("/operator-vision")({
 });
 
 // ---------- helpers ----------
-type VarStatus = "ok" | "warn" | "bad";
-
-const STATUS_RING: Record<VarStatus, string> = {
-  ok: "ring-emerald-400/60 shadow-[0_0_40px_-10px_rgba(16,185,129,0.6)]",
-  warn: "ring-amber-400/70 shadow-[0_0_40px_-10px_rgba(245,158,11,0.7)]",
-  bad: "ring-rose-500/70 shadow-[0_0_50px_-8px_rgba(244,63,94,0.8)] animate-pulse",
-};
-const STATUS_BG: Record<VarStatus, string> = {
-  ok: "bg-emerald-50",
-  warn: "bg-amber-50",
-  bad: "bg-rose-50",
-};
-const STATUS_TEXT: Record<VarStatus, string> = {
-  ok: "text-emerald-700",
-  warn: "text-amber-700",
-  bad: "text-rose-700",
-};
-const STATUS_DOT: Record<VarStatus, string> = {
-  ok: "bg-emerald-500",
-  warn: "bg-amber-400",
-  bad: "bg-rose-500",
-};
+type VarStatus = "ok" | "warn" | "bad" | "none";
 
 function useTicker(ms = 1000) {
   const [now, setNow] = useState(() => new Date());
@@ -69,15 +51,16 @@ function useTicker(ms = 1000) {
   return now;
 }
 
-function fmt(n: number | null, digits = 2) {
-  if (n === null || isNaN(n)) return "—";
+function fmt(n: number | null | undefined, digits = 2) {
+  if (n === null || n === undefined || isNaN(n)) return "-";
   return n.toFixed(digits);
 }
 
 function evaluate(value: number | null, min: number, max: number): VarStatus {
-  if (value === null || isNaN(value)) return "ok";
+  if (value === null || isNaN(value)) return "none";
   if (value < min || value > max) return "bad";
   const range = max - min;
+  if (range <= 0) return "ok";
   const margin = range * 0.1;
   if (value < min + margin || value > max - margin) return "warn";
   return "ok";
@@ -86,162 +69,148 @@ function evaluate(value: number | null, min: number, max: number): VarStatus {
 function statusFromLiberacion(s: string): VarStatus {
   const v = (s || "").toLowerCase();
   if (v === "liberado" || v === "l" || v === "ok") return "ok";
-  if (v === "condicional" || v === "c") return "warn";
-  if (v === "no_conforme" || v === "no conforme" || v === "nc") return "bad";
+  if (v === "condicional" || v === "c" || v === "advertencia") return "warn";
+  if (v === "no_conforme" || v === "no conforme" || v === "nc" || v === "rechazado")
+    return "bad";
   return "warn";
 }
 
-function labelLiberacion(s: string): string {
-  const v = (s || "").toLowerCase();
-  if (v === "liberado" || v === "l" || v === "ok") return "OK";
-  if (v === "condicional" || v === "c") return "COND.";
-  if (v === "no_conforme" || v === "no conforme" || v === "nc") return "NC";
+function labelLiberacion(s: VarStatus): string {
+  if (s === "ok") return "CONFORME";
+  if (s === "warn") return "ADVERTENCIA";
+  if (s === "bad") return "NO CONFORME";
   return "—";
 }
 
-function KpiTile({
+// ---------- Variables del rollo actual ----------
+type CardKey = "pesoBase" | "calibre" | "humedad" | "anchoUtil" | "diametro";
+
+const CARD_DEF: Record<
+  CardKey,
+  { etiqueta: string; unidad: string; digits: number; icon: React.ComponentType<{ className?: string }> }
+> = {
+  pesoBase: { etiqueta: "Peso Base", unidad: "g/m²", digits: 2, icon: Scale },
+  calibre: { etiqueta: "Calibre", unidad: "mm", digits: 3, icon: Move3d },
+  humedad: { etiqueta: "Humedad", unidad: "%", digits: 2, icon: Droplets },
+  anchoUtil: { etiqueta: "Ancho Útil", unidad: "mm", digits: 0, icon: Ruler },
+  diametro: { etiqueta: "Diámetro", unidad: "mm", digits: 0, icon: CircleDot },
+};
+const CARD_KEYS: CardKey[] = ["pesoBase", "calibre", "humedad", "anchoUtil", "diametro"];
+
+// ---------- KPI ----------
+function KpiCard({
   label,
   value,
   unit,
-  tone,
+  state,
   icon: Icon,
-  pulse,
+  subtitle,
 }: {
   label: string;
   value: string;
   unit?: string;
-  tone: "cyan" | "green" | "amber" | "red" | "slate";
+  state: "ok" | "warn" | "bad" | "neutral";
   icon: React.ComponentType<{ className?: string }>;
-  pulse?: boolean;
+  subtitle?: string;
 }) {
-  const tones: Record<string, string> = {
-    cyan: "from-cyan-50 to-white border-cyan-300/70 text-cyan-700",
-    green: "from-emerald-50 to-white border-emerald-300/70 text-emerald-700",
-    amber: "from-amber-50 to-white border-amber-300/70 text-amber-700",
-    red: "from-rose-50 to-white border-rose-300/70 text-rose-700",
-    slate: "from-slate-50 to-white border-slate-300/70 text-slate-700",
+  const palette: Record<typeof state, string> = {
+    ok: "bg-white border-emerald-300 text-emerald-700",
+    warn: "bg-amber-50 border-amber-400 text-amber-700",
+    bad: "bg-rose-50 border-rose-500 text-rose-700 animate-pulse",
+    neutral: "bg-white border-slate-300 text-slate-600",
   };
-  const dots: Record<string, string> = {
-    cyan: "bg-cyan-500",
-    green: "bg-emerald-500",
-    amber: "bg-amber-400",
-    red: "bg-rose-500",
-    slate: "bg-slate-400",
+  const valueColor: Record<typeof state, string> = {
+    ok: "text-slate-900",
+    warn: "text-amber-700",
+    bad: "text-rose-700",
+    neutral: "text-slate-900",
   };
   return (
-    <div
-      className={`relative overflow-hidden rounded-2xl border-2 bg-gradient-to-br ${tones[tone]} p-5 shadow-sm`}
-    >
-      <div className="absolute right-3 top-3 flex items-center gap-2">
-        <span
-          className={`h-2.5 w-2.5 rounded-full ${dots[tone]} ${pulse ? "animate-pulse" : ""}`}
-        />
-        <Icon className="h-5 w-5 opacity-70" />
-      </div>
-      <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
-        {label}
-      </div>
-      <div className="mt-3 flex items-baseline gap-2">
-        <span className="font-mono text-[68px] font-black leading-none tracking-tight text-slate-900 tabular-nums">
-          {value}
-        </span>
-        {unit && (
-          <span className="text-lg font-semibold text-slate-500">{unit}</span>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function QualityCard({
-  label,
-  value,
-  unit,
-  min,
-  obj,
-  max,
-  status,
-  digits,
-  hasSpec = true,
-}: {
-  label: string;
-  value: number | null;
-  unit: string;
-  min: number;
-  obj: number;
-  max: number;
-  status: VarStatus;
-  digits: number;
-  hasSpec?: boolean;
-}) {
-  const pct =
-    value === null || max === min
-      ? 50
-      : Math.max(2, Math.min(98, ((value - min) / (max - min)) * 100));
-  const bgClass = hasSpec ? STATUS_BG[status] : "bg-white";
-  const ringClass = hasSpec
-    ? `ring-4 ${STATUS_RING[status]}`
-    : "ring-1 ring-slate-200";
-  const textClass = hasSpec ? STATUS_TEXT[status] : "text-slate-700";
-  return (
-    <div
-      className={`relative flex flex-col rounded-2xl border-2 border-slate-200 ${bgClass} p-4 ${ringClass} transition-all`}
-    >
+    <div className={`rounded-xl border-2 ${palette[state]} px-4 py-3 flex flex-col shadow-sm`}>
       <div className="flex items-center justify-between">
-        <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-600">
+        <span className="text-[11px] font-black uppercase tracking-[0.15em] text-slate-500">
           {label}
         </span>
-        {hasSpec ? (
-          <span
-            className={`inline-flex items-center gap-1.5 rounded-full border border-current/30 bg-white/70 px-2 py-0.5 text-[10px] font-bold ${STATUS_TEXT[status]}`}
-          >
-            <span className={`h-2 w-2 rounded-full ${STATUS_DOT[status]}`} />
-            {status === "ok" ? "OK" : status === "warn" ? "ATENCIÓN" : "CRÍTICO"}
-          </span>
-        ) : (
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-bold text-slate-500">
-            <span className="h-2 w-2 rounded-full bg-slate-300" />
-            SIN SPEC
-          </span>
-        )}
+        <Icon className="h-5 w-5 opacity-60" />
       </div>
-      <div className="mt-2 flex flex-1 items-baseline gap-2">
-        <span
-          className={`font-mono text-[clamp(38px,5vw,64px)] font-black leading-none tabular-nums ${textClass}`}
-        >
-          {fmt(value, digits)}
+      <div className="mt-1 flex items-baseline gap-2">
+        <span className={`font-mono text-[56px] font-black leading-none tabular-nums ${valueColor[state]}`}>
+          {value}
         </span>
-        <span className="text-base font-semibold text-slate-500">{unit}</span>
+        {unit && <span className="text-sm font-bold text-slate-500">{unit}</span>}
       </div>
-      {hasSpec ? (
-        <div className="mt-3">
-          <div className="relative h-2 w-full rounded-full bg-slate-200">
-            <div className="absolute inset-y-0 left-[10%] right-[10%] rounded-full bg-emerald-200/70" />
-            <div
-              className="absolute top-1/2 h-4 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-slate-700"
-              style={{ left: "50%" }}
-              title="Objetivo"
-            />
-            <div
-              className={`absolute top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-4 border-white ${STATUS_DOT[status]} shadow-md`}
-              style={{ left: `${pct}%` }}
-            />
-          </div>
-          <div className="mt-1 flex justify-between font-mono text-[10px] font-semibold text-slate-500 tabular-nums">
-            <span>{min}</span>
-            <span>obj {obj}</span>
-            <span>{max}</span>
-          </div>
-        </div>
-      ) : (
-        <div className="mt-3 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-          Esperando especificación
+      {subtitle && (
+        <div className={`mt-1 text-[11px] font-black uppercase tracking-wider`}>
+          {subtitle}
         </div>
       )}
     </div>
   );
 }
 
+// ---------- Variable card ----------
+function VarCard({
+  ck,
+  value,
+  min,
+  max,
+  obj,
+  hasSpec,
+}: {
+  ck: CardKey;
+  value: number | null;
+  min: number;
+  max: number;
+  obj: number;
+  hasSpec: boolean;
+}) {
+  const def = CARD_DEF[ck];
+  const Icon = def.icon;
+  const st = hasSpec ? evaluate(value, min, max) : "none";
+
+  const ring =
+    st === "bad"
+      ? "border-rose-500 bg-rose-50 ring-2 ring-rose-400/60 animate-[varPulse_1.6s_ease-in-out_infinite]"
+      : st === "warn"
+        ? "border-amber-400 bg-amber-50"
+        : st === "ok"
+          ? "border-emerald-300 bg-white"
+          : "border-slate-200 bg-white";
+
+  const stateLabel =
+    st === "bad" ? "FUERA" : st === "warn" ? "CERCA" : st === "ok" ? "OK" : "—";
+  const stateColor =
+    st === "bad"
+      ? "text-rose-700"
+      : st === "warn"
+        ? "text-amber-700"
+        : st === "ok"
+          ? "text-emerald-700"
+          : "text-slate-400";
+
+  return (
+    <div className={`rounded-xl border-2 ${ring} p-3 flex flex-col`}>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Icon className="h-4 w-4 text-slate-500" />
+          <span className="text-[11px] font-black uppercase tracking-wider text-slate-600">
+            {def.etiqueta}
+          </span>
+        </div>
+        <span className={`text-[10px] font-black uppercase ${stateColor}`}>{stateLabel}</span>
+      </div>
+      <div className="mt-1 flex items-baseline gap-1.5">
+        <span className="font-mono text-[44px] font-black leading-none tabular-nums text-slate-900">
+          {fmt(value, def.digits)}
+        </span>
+        <span className="text-sm font-bold text-slate-500">{def.unidad}</span>
+      </div>
+      <div className="mt-1 text-[11px] font-semibold text-slate-500 tabular-nums">
+        {hasSpec ? `(${fmt(min, def.digits)} – ${fmt(max, def.digits)})` : "Sin especificación"}
+      </div>
+    </div>
+  );
+}
 
 function HeaderField({ label, value }: { label: string; value: string }) {
   return (
@@ -249,143 +218,105 @@ function HeaderField({ label, value }: { label: string; value: string }) {
       <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">
         {label}
       </span>
-      <span className="truncate text-sm font-bold text-slate-800">
-        {value || "—"}
-      </span>
+      <span className="truncate text-sm font-bold text-slate-800">{value || "-"}</span>
     </div>
   );
 }
-
-function LegendDot({ tone, label }: { tone: VarStatus; label: string }) {
-  return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2 py-1 text-slate-600">
-      <span className={`h-2 w-2 rounded-full ${STATUS_DOT[tone]}`} />
-      {label}
-    </span>
-  );
-}
-
-// ---------- variables prioritarias para tarjetas grandes ----------
-const TARJETAS_CLAVE = [
-  "pesoBase",
-  "humedad",
-  "calibre",
-  "diametro",
-  "relMDCD",
-  "anchoUtil",
-];
-
-// Fallback usado cuando la OF no tiene especificación activa.
-// Permite renderizar siempre las tarjetas con los valores capturados.
-const TARJETAS_FALLBACK: Record<
-  string,
-  { etiqueta: string; unidad: string; digits: number }
-> = {
-  pesoBase: { etiqueta: "Peso Base", unidad: "g/m²", digits: 2 },
-  humedad: { etiqueta: "Humedad", unidad: "%", digits: 2 },
-  calibre: { etiqueta: "Calibre", unidad: "mm", digits: 3 },
-  diametro: { etiqueta: "Diámetro", unidad: "mm", digits: 0 },
-  relMDCD: { etiqueta: "Rel. MD/CD", unidad: "", digits: 2 },
-  anchoUtil: { etiqueta: "Ancho Útil", unidad: "mm", digits: 0 },
-};
-
 
 function OperatorVisionPage() {
   const { maquina } = Route.useSearch();
   const now = useTicker(1000);
 
-  const { data, isLoading, error } = useQuery({
+  const { data, error } = useQuery({
     queryKey: ["operator-vision", maquina],
     queryFn: () => getOperatorVisionData({ data: { maquina } }),
     refetchInterval: 30_000,
     refetchIntervalInBackground: true,
   });
 
-
-  const muestras = data?.muestras ?? [];
-  const current = muestras[muestras.length - 1];
+  const muestrasAll = data?.muestras ?? [];
+  const muestras = muestrasAll.slice(-5);
+  const current = muestrasAll[muestrasAll.length - 1];
   const orden = data?.orden;
   const variables = data?.variables ?? [];
 
-  const rollosOK = muestras.filter((m) => statusFromLiberacion(m.estatus) === "ok").length;
-  const rollosNC = muestras.filter((m) => statusFromLiberacion(m.estatus) === "bad").length;
+  // Estatus efectivo del rollo actual evaluando sus variables vs spec
+  const mapMedActual = useMemo(() => {
+    const m = new Map<string, number | null>();
+    current?.mediciones.forEach((x: { clave: string; valor: number | null }) => m.set(x.clave, x.valor));
+    return m;
+  }, [current]);
 
+  function evalRollo(m: typeof muestrasAll[number] | undefined): VarStatus {
+    if (!m) return "none";
+    // Si hay dictamen explícito úsalo
+    const fromDict = statusFromLiberacion(m.estatus);
+    if (fromDict !== "warn" || m.estatus) {
+      // si está liberado o no conforme, respeta
+      if (fromDict === "ok" || fromDict === "bad") return fromDict;
+    }
+    // Evalúa variables vs spec si hay
+    let worst: VarStatus = "ok";
+    for (const v of variables) {
+      const med = m.mediciones.find((x: { clave: string; valor: number | null }) => x.clave === v.clave);
+      if (!med || med.valor === null) continue;
+      const s = evaluate(Number(med.valor), v.min, v.max);
+      if (s === "bad") return "bad";
+      if (s === "warn") worst = "warn";
+    }
+    return worst;
+  }
+
+  const currentStatus = evalRollo(current);
+
+  // Contadores sobre todas las muestras conocidas
+  const rollosOK = muestrasAll.filter((m) => evalRollo(m) === "ok").length;
+  const rollosNC = muestrasAll.filter((m) => evalRollo(m) === "bad").length;
+
+  // NC consecutivos al final
   const ncConsecutivos = useMemo(() => {
     let count = 0;
-    for (let i = muestras.length - 1; i >= 0; i--) {
-      if (statusFromLiberacion(muestras[i].estatus) === "bad") count++;
+    for (let i = muestrasAll.length - 1; i >= 0; i--) {
+      if (evalRollo(muestrasAll[i]) === "bad") count++;
       else break;
     }
     return count;
-  }, [muestras]);
-  const ncAlerta = ncConsecutivos >= 2;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [muestrasAll, variables]);
 
-  // Minutos desde la última captura real
+  const alertaCritica = ncConsecutivos >= 2;
+  const advertencia = ncConsecutivos === 1;
+
+  // Total de alertas activas (warn + bad recientes)
+  const alertasCount = muestrasAll.slice(-10).filter((m) => {
+    const s = evalRollo(m);
+    return s === "warn" || s === "bad";
+  }).length;
+
+  // Minutos sin captura
   const lastCaptureMin = useMemo(() => {
-    if (!current) return 0;
+    if (!current) return null;
     const diff = now.getTime() - new Date(current.capturadoAt).getTime();
     return Math.max(0, Math.floor(diff / 60_000));
   }, [now, current]);
 
-  const sinCapturaTone: "green" | "amber" | "red" =
-    lastCaptureMin < 30 ? "green" : lastCaptureMin < 60 ? "amber" : "red";
+  const sinCapturaState: "ok" | "warn" | "bad" | "neutral" =
+    lastCaptureMin === null
+      ? "neutral"
+      : lastCaptureMin < 30
+        ? "ok"
+        : lastCaptureMin < 60
+          ? "warn"
+          : "bad";
 
   // Estado de máquina
-  const estadoMaquinaRaw = data?.estadoMaquina?.estado ?? "libre";
-  const machineStatus: VarStatus =
-    estadoMaquinaRaw === "produciendo"
-      ? "ok"
-      : estadoMaquinaRaw === "paro"
-        ? "bad"
-        : "warn";
-  const machineLabel = estadoMaquinaRaw.toUpperCase();
+  const estadoMaquinaRaw = data?.estadoMaquina?.estado ?? null;
+  const produciendo = estadoMaquinaRaw === "produciendo";
+  const enParo = estadoMaquinaRaw === "paro";
 
-  // % cumplimiento de la orden
-  const cumplimiento =
-    orden && orden.objetivoKg && orden.objetivoKg > 0
-      ? (orden.producidoKg / orden.objetivoKg) * 100
-      : null;
-
-  // Mapa rápido de mediciones del rollo actual por clave
-  const mapMedActual = useMemo(() => {
-    const m = new Map<string, number | null>();
-    current?.mediciones.forEach((x: { clave: string; valor: number | null }) =>
-      m.set(x.clave, x.valor),
-    );
-    return m;
-  }, [current]);
-
-  // Tarjetas de calidad: usa los rangos del spec. Si no hay especificación,
-  // genera tarjetas vacías esperando captura con las claves estándar.
-  const qualityCards: Array<{
-    clave: string;
-    etiqueta: string;
-    unidad: string | null;
-    min: number;
-    objetivo: number;
-    max: number;
-    hasSpec: boolean;
-  }> = TARJETAS_CLAVE.map((clave) => {
-    const v = variables.find((x) => x.clave === clave);
-    if (v) return { ...v, hasSpec: true };
-    const fb = TARJETAS_FALLBACK[clave];
-    return {
-      clave,
-      etiqueta: fb.etiqueta,
-      unidad: fb.unidad,
-      min: 0,
-      objetivo: 0,
-      max: 0,
-      hasSpec: false,
-    };
-  });
-
-
-  const fechaStr = now.toLocaleDateString("es-MX", {
-    weekday: "long",
-    day: "2-digit",
-    month: "long",
-  });
+  const fechaStr = now
+    .toLocaleDateString("es-MX", { weekday: "long", day: "2-digit", month: "long" })
+    .toUpperCase();
   const horaStr = now.toLocaleTimeString("es-MX", { hour12: false });
 
   function goFullscreen() {
@@ -395,285 +326,346 @@ function OperatorVisionPage() {
   }
 
   return (
-    <div
-      className="flex h-screen w-full flex-col overflow-hidden bg-slate-50 text-slate-900"
-      style={{
-        backgroundImage:
-          "linear-gradient(rgba(15,23,42,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(15,23,42,0.05) 1px, transparent 1px)",
-        backgroundSize: "48px 48px",
-      }}
-    >
-
-      {/* Alerta NC consecutivos */}
-      {ncAlerta && (
-        <div className="pointer-events-none fixed inset-0 z-[60] animate-[ncFlash_2s_ease-in-out_infinite]">
-          <div className="absolute inset-0 bg-rose-600/25 mix-blend-multiply" />
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div
-              className="select-none font-black uppercase tracking-[0.25em] text-rose-600/30"
-              style={{ fontSize: "clamp(80px, 14vw, 260px)", transform: "rotate(-18deg)" }}
-            >
-              NO CONFORME
-            </div>
-          </div>
-          <div className="absolute left-1/2 top-6 -translate-x-1/2 rounded-full border-2 border-rose-600 bg-white/95 px-6 py-2 text-base font-black uppercase tracking-widest text-rose-700 shadow-lg">
-            ⚠ {ncConsecutivos} rollos NC consecutivos — atención inmediata
-          </div>
-          <style>{`@keyframes ncFlash { 0%,100% { opacity: 0.25 } 50% { opacity: 1 } }`}</style>
-        </div>
-      )}
+    <div className="flex h-screen w-full flex-col overflow-hidden bg-slate-100 text-slate-900">
+      <style>{`
+        @keyframes varPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(244,63,94,0.5);} 50% { box-shadow: 0 0 0 8px rgba(244,63,94,0);} }
+        @keyframes critFlash { 0%,100% { background-color: rgb(225,29,72); } 50% { background-color: rgb(159,18,57); } }
+      `}</style>
 
       {/* HEADER */}
-      <header className="relative border-b-2 border-slate-200 bg-white/80 backdrop-blur">
-        <div className="flex items-center gap-6 px-8 py-4">
+      <header className="shrink-0 border-b-2 border-slate-200 bg-white">
+        <div className="flex items-center gap-4 px-6 py-3">
+          {/* Título + máquina */}
           <div className="flex items-center gap-3">
-            <img
-              src={logoConvertipap}
-              alt="Convertipap"
-              className="h-15 w-auto object-contain"
-              style={{ height: "3.75rem" }}
-            />
             <div>
-              <div className="text-2xl font-black tracking-tight text-slate-900">
-                Fabricación <span className="text-cyan-700">Tissue</span>
-                <span className="ml-3 rounded-md bg-slate-900 px-2.5 py-1 align-middle font-mono text-base font-black tracking-wider text-white">
+              <div className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-500">
+                Máquina{" "}
+                <span className="ml-1 rounded bg-emerald-600 px-2 py-0.5 font-mono text-white">
                   {maquina}
                 </span>
               </div>
+              <div className="text-2xl font-black tracking-tight text-slate-900">
+                VISIÓN OPERADOR
+              </div>
             </div>
           </div>
 
-          <div className="ml-auto grid grid-cols-5 gap-x-8 gap-y-1 text-sm">
+          {/* Estado producción central */}
+          <div className="mx-auto">
+            {enParo ? (
+              <div className="flex items-center gap-3 rounded-xl border-2 border-rose-400 bg-rose-50 px-5 py-2">
+                <AlertTriangle className="h-6 w-6 text-rose-600" />
+                <div>
+                  <div className="text-sm font-black uppercase tracking-wider text-rose-700">
+                    Máquina en paro
+                  </div>
+                  <div className="text-[11px] font-semibold text-rose-600">
+                    Sin producción activa
+                  </div>
+                </div>
+              </div>
+            ) : produciendo ? (
+              <div className="flex items-center gap-3 rounded-xl border-2 border-emerald-400 bg-emerald-50 px-5 py-2">
+                <PlayCircle className="h-6 w-6 text-emerald-600" />
+                <div>
+                  <div className="text-sm font-black uppercase tracking-wider text-emerald-700">
+                    Producción Activa
+                  </div>
+                  <div className="text-[11px] font-semibold text-emerald-600">
+                    Sistema funcionando correctamente
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3 rounded-xl border-2 border-slate-300 bg-slate-50 px-5 py-2">
+                <Radio className="h-6 w-6 text-slate-500" />
+                <div>
+                  <div className="text-sm font-black uppercase tracking-wider text-slate-700">
+                    {(estadoMaquinaRaw ?? "Sin estado").toUpperCase()}
+                  </div>
+                  <div className="text-[11px] font-semibold text-slate-500">
+                    Esperando datos en tiempo real
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Reloj */}
+          <div className="text-right">
+            <div className="font-mono text-2xl font-black tabular-nums text-slate-900">
+              {horaStr}
+            </div>
+            <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+              {fechaStr}
+            </div>
+          </div>
+
+          {/* Alertas */}
+          <div className="relative flex flex-col items-center">
+            <Bell className={`h-7 w-7 ${alertasCount > 0 ? "text-rose-600" : "text-slate-400"}`} />
+            {alertasCount > 0 && (
+              <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-600 px-1 text-[11px] font-black text-white">
+                {alertasCount}
+              </span>
+            )}
+            <span className="mt-0.5 text-[10px] font-black uppercase tracking-wider text-slate-500">
+              Alertas
+            </span>
+          </div>
+
+          {/* Estado de máquina pill */}
+          <div
+            className={`flex items-center gap-2 rounded-full border-2 px-4 py-2 text-sm font-black uppercase tracking-wider ${
+              produciendo
+                ? "border-emerald-500 bg-emerald-50 text-emerald-700"
+                : enParo
+                  ? "border-rose-500 bg-rose-50 text-rose-700"
+                  : "border-slate-300 bg-white text-slate-600"
+            }`}
+          >
+            <Radio className="h-4 w-4 animate-pulse" />
+            {(estadoMaquinaRaw ?? "LIBRE").toUpperCase()}
+          </div>
+
+          <button
+            onClick={goFullscreen}
+            className="rounded-lg border border-slate-300 bg-white p-2 text-slate-600 hover:bg-slate-100"
+            title="Pantalla completa"
+          >
+            <Maximize2 className="h-5 w-5" />
+          </button>
+        </div>
+        {/* Línea contextual */}
+        <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50 px-6 py-1.5">
+          <div className="grid grid-cols-5 gap-x-8 text-xs">
             <HeaderField label="Producto" value={orden?.producto ?? ""} />
             <HeaderField label="OF" value={orden?.folio ?? ""} />
-            <HeaderField label="Turno" value={orden?.turno ? `T${orden.turno}` : current?.turno ? `T${current.turno}` : ""} />
+            <HeaderField
+              label="Turno"
+              value={orden?.turno ? `T${orden.turno}` : current?.turno ? `T${current.turno}` : ""}
+            />
             <HeaderField label="Operador" value={current?.operador ?? ""} />
             <HeaderField label="Analista" value={current?.analista ?? ""} />
-          </div>
-
-          <div className="flex items-center gap-4 pl-6">
-            <div
-              className={`flex items-center gap-2 rounded-full border-2 px-4 py-2 text-sm font-black uppercase tracking-wider ${
-                machineStatus === "ok"
-                  ? "border-cyan-500 bg-cyan-50 text-cyan-700"
-                  : machineStatus === "warn"
-                    ? "border-amber-500 bg-amber-50 text-amber-700"
-                    : "border-rose-500 bg-rose-50 text-rose-700"
-              }`}
-            >
-              <Radio className="h-4 w-4 animate-pulse" />
-              {machineLabel}
-            </div>
-            <div className="text-right">
-              <div className="font-mono text-3xl font-black tabular-nums text-slate-900">
-                {horaStr}
-              </div>
-              <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-                {fechaStr}
-              </div>
-            </div>
-            <button
-              onClick={goFullscreen}
-              className="rounded-lg border border-slate-300 bg-white p-2 text-slate-600 hover:bg-slate-100"
-              title="Pantalla completa"
-            >
-              <Maximize2 className="h-5 w-5" />
-            </button>
           </div>
         </div>
       </header>
 
-      {/* Banner de estado de carga / error */}
       {error && (
-        <div className="mx-8 mt-2 rounded-lg border-2 border-rose-300 bg-rose-50 p-2 text-sm font-bold text-rose-700">
-          Error al consultar datos en tiempo real: {(error as Error).message}
+        <div className="mx-6 mt-2 rounded-lg border-2 border-rose-300 bg-rose-50 p-2 text-sm font-bold text-rose-700">
+          Error al consultar datos: {(error as Error).message}
         </div>
       )}
 
-      {/* CONTENIDO PRINCIPAL — flex que ocupa la altura disponible */}
+      {/* MAIN */}
       <main className="flex min-h-0 flex-1 flex-col gap-3 px-6 py-3">
         {/* KPIs */}
-        <section className="shrink-0">
-          <div className="grid grid-cols-6 gap-3">
-            <KpiTile
-              label="Cumplimiento"
-              value={cumplimiento === null ? "—" : cumplimiento.toFixed(1)}
-              unit="%"
-              tone={
-                cumplimiento === null
-                  ? "slate"
-                  : cumplimiento >= 90
-                    ? "green"
-                    : cumplimiento >= 80
-                      ? "amber"
-                      : "red"
-              }
-              icon={TrendingUp}
-            />
-            <KpiTile
-              label="Producido"
-              value={orden ? Math.round(orden.producidoKg).toString() : "—"}
-              unit="kg"
-              tone="cyan"
-              icon={Gauge}
-            />
-            <KpiTile
-              label="Rollos prod."
-              value={orden ? orden.producidoRollos.toString() : "—"}
-              tone="cyan"
-              icon={Activity}
-              pulse
-            />
-            <KpiTile
-              label="Rollos OK"
-              value={rollosOK.toString()}
-              tone="green"
-              icon={CheckCircle2}
-            />
-            <KpiTile
-              label="No Conformes"
-              value={rollosNC.toString()}
-              tone={rollosNC === 0 ? "slate" : "red"}
-              icon={XCircle}
-              pulse={rollosNC > 0}
-            />
-            <KpiTile
-              label="Sin Captura"
-              value={`${lastCaptureMin}`}
-              unit="min"
-              tone={sinCapturaTone}
-              icon={Timer}
-              pulse={sinCapturaTone === "red"}
-            />
-          </div>
+        <section className="shrink-0 grid grid-cols-5 gap-3">
+          <KpiCard
+            label="Rollos Producidos"
+            value={rollosOK.toString()}
+            state={rollosOK > 0 ? "ok" : "neutral"}
+            icon={CheckCircle2}
+            subtitle="OK"
+          />
+          <KpiCard
+            label="No Conformes"
+            value={rollosNC.toString()}
+            state={rollosNC === 0 ? "ok" : "bad"}
+            icon={AlertTriangle}
+            subtitle={rollosNC === 0 ? "OK" : "REVISAR"}
+          />
+          <KpiCard
+            label="Rollo Actual"
+            value={current?.rollo ? String(current.rollo) : "-"}
+            state={
+              currentStatus === "bad"
+                ? "bad"
+                : currentStatus === "warn"
+                  ? "warn"
+                  : currentStatus === "ok"
+                    ? "ok"
+                    : "neutral"
+            }
+            icon={CircleDot}
+            subtitle={labelLiberacion(currentStatus)}
+          />
+          <KpiCard
+            label="Tiempo Sin Captura"
+            value={lastCaptureMin === null ? "-" : String(lastCaptureMin)}
+            unit="min"
+            state={sinCapturaState}
+            icon={Timer}
+            subtitle={
+              lastCaptureMin === null
+                ? "—"
+                : sinCapturaState === "ok"
+                  ? "EN RANGO"
+                  : sinCapturaState === "warn"
+                    ? "ATENCIÓN"
+                    : "CRÍTICO"
+            }
+          />
+          <KpiCard
+            label="Velocidad Máquina"
+            value="-"
+            unit="m/min"
+            state="neutral"
+            icon={Gauge}
+            subtitle="SIN DATO"
+          />
         </section>
 
-        {/* CALIDAD ROLLO ACTUAL — ocupa la mayor parte del espacio */}
+        {/* ROLLO ACTUAL — variables críticas */}
         <section className="flex min-h-0 flex-1 flex-col">
-          <div className="mb-2 flex items-end justify-between">
-            <div className="flex items-baseline gap-3">
-              <h2 className="text-xs font-black uppercase tracking-[0.25em] text-slate-500">
-                Calidad · Rollo
-              </h2>
-              <span className="font-mono text-3xl font-black tracking-tight text-slate-900">
-                {current?.rollo ?? "—"}
-              </span>
-              {current && (
-                <span className="text-xs font-semibold text-slate-500">
-                  capturado{" "}
-                  {new Date(current.capturadoAt).toLocaleTimeString("es-MX", {
-                    hour12: false,
-                  })}
-                </span>
-              )}
-              {isLoading && !data && (
-                <span className="text-xs font-semibold text-slate-400">
-                  cargando…
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider">
-              <LegendDot tone="ok" label="En rango" />
-              <LegendDot tone="warn" label="Cerca del límite" />
-              <LegendDot tone="bad" label="Fuera de rango" />
-            </div>
+          <div
+            className={`mb-2 flex items-center justify-between rounded-t-lg border-2 px-4 py-2 ${
+              currentStatus === "bad"
+                ? "border-rose-500 bg-rose-600 text-white"
+                : currentStatus === "warn"
+                  ? "border-amber-500 bg-amber-500 text-white"
+                  : "border-emerald-500 bg-emerald-600 text-white"
+            }`}
+          >
+            <h2 className="text-sm font-black uppercase tracking-[0.2em]">
+              Rollo Actual
+              {current?.rollo && <span className="ml-3 font-mono">#{current.rollo}</span>}
+            </h2>
+            <span className="text-sm font-black uppercase tracking-wider">
+              {labelLiberacion(currentStatus)}
+            </span>
           </div>
 
-          <div className="grid min-h-0 flex-1 grid-cols-3 gap-3 xl:grid-cols-6">
-            {qualityCards.map((v) => {
-              const raw = mapMedActual.get(v.clave) ?? null;
-              const status = v.hasSpec ? evaluate(raw, v.min, v.max) : "ok";
-              const digits =
-                TARJETAS_FALLBACK[v.clave]?.digits ??
-                (v.clave === "diametro" || v.clave === "anchoUtil" ? 0 : 2);
+          <div className="grid min-h-0 flex-1 grid-cols-5 gap-3">
+            {CARD_KEYS.map((ck) => {
+              const v = variables.find((x) => x.clave === ck);
+              const value = mapMedActual.get(ck);
               return (
-                <QualityCard
-                  key={v.clave}
-                  label={v.etiqueta}
-                  value={raw}
-                  unit={v.unidad ?? ""}
-                  min={v.min}
-                  obj={v.objetivo}
-                  max={v.max}
-                  status={status}
-                  digits={digits}
-                  hasSpec={v.hasSpec}
+                <VarCard
+                  key={ck}
+                  ck={ck}
+                  value={value === undefined ? null : value}
+                  min={v?.min ?? 0}
+                  max={v?.max ?? 0}
+                  obj={v?.objetivo ?? 0}
+                  hasSpec={!!v}
                 />
               );
             })}
           </div>
         </section>
 
-        {/* TIMELINE ROLLOS — banda inferior compacta */}
+        {/* ALERTA CRÍTICA */}
+        {alertaCritica && (
+          <section className="shrink-0">
+            <div
+              className="flex items-center gap-4 rounded-xl border-2 border-rose-700 px-5 py-3 text-white shadow-lg"
+              style={{ animation: "critFlash 1s ease-in-out infinite" }}
+            >
+              <AlertTriangle className="h-10 w-10" />
+              <div className="flex-1">
+                <div className="text-lg font-black uppercase tracking-widest">
+                  Alerta Crítica
+                </div>
+                <div className="text-sm font-bold">
+                  {ncConsecutivos} rollos consecutivos fuera de especificación · revisar ajustes
+                  de máquina
+                </div>
+              </div>
+              <div className="rounded-lg bg-white/20 px-3 py-2 text-2xl">🚨</div>
+            </div>
+          </section>
+        )}
+        {!alertaCritica && advertencia && (
+          <section className="shrink-0">
+            <div className="flex items-center gap-3 rounded-xl border-2 border-amber-500 bg-amber-50 px-5 py-2 text-amber-800">
+              <AlertTriangle className="h-6 w-6" />
+              <div className="text-sm font-black uppercase tracking-wider">
+                Advertencia · 1 rollo fuera de especificación
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* HISTORIAL ÚLTIMOS 5 */}
         <section className="shrink-0">
           <div className="mb-1.5 flex items-center justify-between">
             <h2 className="text-xs font-black uppercase tracking-[0.25em] text-slate-500">
               Últimos rollos producidos
             </h2>
-            <div className="text-[11px] font-semibold text-slate-400">
-              ◄ más antiguos · más recientes ►
-            </div>
+            <span className="text-[11px] font-semibold text-slate-400">
+              últimos 5 · más recientes a la derecha
+            </span>
           </div>
-          <div className="relative rounded-xl border-2 border-slate-200 bg-white/70 p-2 shadow-sm">
-            {muestras.length === 0 ? (
-              <div className="py-3 text-center text-xs font-semibold text-slate-400">
-                Aún no hay capturas para esta máquina.
-              </div>
-            ) : (
-              <div className="flex items-stretch gap-2 overflow-x-auto">
-                {muestras.map((m, idx) => {
-                  const st = statusFromLiberacion(m.estatus);
-                  const color =
-                    st === "ok"
-                      ? "from-emerald-400 to-emerald-600 border-emerald-500"
-                      : st === "warn"
-                        ? "from-amber-300 to-amber-500 border-amber-500"
-                        : "from-rose-400 to-rose-600 border-rose-600";
-                  const isCurrent = idx === muestras.length - 1;
-                  const hora = new Date(m.capturadoAt).toLocaleTimeString("es-MX", {
-                    hour12: false,
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  });
+          {muestras.length === 0 ? (
+            <div className="rounded-xl border-2 border-dashed border-slate-300 bg-white py-4 text-center text-xs font-semibold text-slate-400">
+              Aún no hay capturas para esta máquina.
+            </div>
+          ) : (
+            <div className="grid grid-cols-5 gap-3">
+              {Array.from({ length: 5 }).map((_, idx) => {
+                const m = muestras[idx];
+                if (!m) {
                   return (
                     <div
-                      key={m.id}
-                      className={`min-w-[110px] flex-1 rounded-lg border-2 bg-gradient-to-br ${color} px-2.5 py-1.5 text-white shadow ${
-                        isCurrent ? "ring-4 ring-cyan-400/70" : ""
-                      }`}
+                      key={`empty-${idx}`}
+                      className="rounded-xl border-2 border-dashed border-slate-200 bg-white/50 px-3 py-2 text-center text-xs font-semibold text-slate-300"
                     >
-                      <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider opacity-90">
-                        <span>{hora}</span>
-                        <span>{labelLiberacion(m.estatus)}</span>
-                      </div>
-                      <div className="mt-0.5 font-mono text-xl font-black tabular-nums">
-                        {m.rollo}
-                      </div>
-                      <div className="mt-0.5 flex items-center gap-1 text-[10px] font-semibold opacity-90">
-                        {st === "ok" ? (
-                          <CheckCircle2 className="h-3 w-3" />
-                        ) : st === "warn" ? (
-                          <AlertTriangle className="h-3 w-3" />
-                        ) : (
-                          <XCircle className="h-3 w-3" />
-                        )}
-                        <span>T{m.turno}</span>
-                      </div>
+                      —
                     </div>
                   );
-                })}
-              </div>
-            )}
-          </div>
+                }
+                const st = evalRollo(m);
+                const hora = new Date(m.capturadoAt).toLocaleTimeString("es-MX", {
+                  hour12: false,
+                  hour: "2-digit",
+                  minute: "2-digit",
+                });
+                const styles =
+                  st === "ok"
+                    ? "border-emerald-400 bg-emerald-50 text-emerald-800"
+                    : st === "warn"
+                      ? "border-amber-400 bg-amber-50 text-amber-800"
+                      : st === "bad"
+                        ? "border-rose-500 bg-rose-50 text-rose-800"
+                        : "border-slate-300 bg-white text-slate-700";
+                const Icon =
+                  st === "ok"
+                    ? CheckCircle2
+                    : st === "warn"
+                      ? AlertTriangle
+                      : st === "bad"
+                        ? AlertTriangle
+                        : CircleDot;
+                return (
+                  <div
+                    key={m.id}
+                    className={`flex flex-col rounded-xl border-2 ${styles} px-3 py-2 shadow-sm`}
+                  >
+                    <div className="flex items-center justify-between text-[11px] font-black uppercase">
+                      <span>{hora}</span>
+                      <Icon className="h-4 w-4" />
+                    </div>
+                    <div className="mt-0.5 font-mono text-lg font-black tabular-nums">
+                      ROLLO #{m.rollo}
+                    </div>
+                    <div className="text-[11px] font-black uppercase tracking-wider">
+                      {labelLiberacion(st)}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </section>
       </main>
 
       {/* FOOTER */}
-      <footer className="shrink-0 border-t-2 border-slate-200 bg-white/90 px-8 py-1.5 backdrop-blur">
+      <footer className="shrink-0 border-t-2 border-slate-200 bg-white px-6 py-1.5">
         <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-[0.2em] text-slate-500">
           <div className="flex items-center gap-2">
             <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" />
-            Realtime conectado · Convertipap Quality Flow
+            A Tissue System · datos en tiempo real desde la base de datos
           </div>
           <div>
             Actualización cada 30 s · {data?.maquina?.area || "Conversión Tissue"}
@@ -683,4 +675,3 @@ function OperatorVisionPage() {
     </div>
   );
 }
-
