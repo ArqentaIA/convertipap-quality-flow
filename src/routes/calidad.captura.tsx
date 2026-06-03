@@ -854,6 +854,20 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
           </Alert>
         )}
 
+        {spec && (
+          <div className="flex justify-end sticky bottom-0 bg-background/95 backdrop-blur py-3 border-t z-10">
+            <Button
+              size="lg"
+              className="text-base font-semibold"
+              disabled={isBlocked || mutation.isPending}
+              onClick={() => handleSubmit("envio")}
+            >
+              <CheckCircle2 className="mr-2 h-5 w-5" />
+              {mutation.isPending ? "Validando..." : "Validar Captura"}
+            </Button>
+          </div>
+        )}
+
         {/* E. Producción capturada recientemente */}
         <Card id="produccion-capturada">
           <CardHeader className="pb-2 flex flex-row items-center justify-between">
