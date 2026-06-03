@@ -240,6 +240,29 @@ function VariablesCalidad() {
     });
 
     autoTable(doc, {
+      head: [["Variable", "Unidad", "Mínimo", "Objetivo", "Máximo"]],
+      body: activeSpec.variables.map((v) => [
+        v.label,
+        v.unit || "—",
+        v.min == null ? "—" : String(v.min),
+        v.objective == null ? "—" : String(v.objective),
+        v.max == null ? "—" : String(v.max),
+      ]),
+      styles: { fontSize: 9, cellPadding: 4 },
+      headStyles: { fillColor: [37, 99, 235] },
+      columnStyles: {
+        0: { fontStyle: "bold" },
+        2: { halign: "right" }, 3: { halign: "right" }, 4: { halign: "right" },
+      },
+      startY: (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 14,
+      didDrawPage: () => {
+        const yTitle = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY;
+        // header title drawn via separate call below before this table — left intentionally blank
+        void yTitle;
+      },
+    });
+
+    autoTable(doc, {
       head: [["Fecha y Hora", "Nombre", "Rol", "Variable", "Campo", "Anterior", "Nuevo", "Motivo"]],
       body: records.length
         ? records.map((r) => [
@@ -255,7 +278,7 @@ function VariablesCalidad() {
         : [["—", "—", "—", "Sin cambios registrados", "—", "—", "—", "—"]],
       styles: { fontSize: 8, cellPadding: 4 },
       headStyles: { fillColor: [37, 99, 235] },
-      startY: (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 14,
+      startY: (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 18,
     });
 
     const last = records[records.length - 1];
