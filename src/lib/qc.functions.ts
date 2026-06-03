@@ -508,12 +508,12 @@ export const dictaminarMuestra = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const sb = context.supabase as SB;
     const roles = await getUserRoles(sb, context.userId);
-    requireAnyRole(roles, ROLES_DICTAMEN);
+    requireRollStatusRole(roles);
 
     // Snapshot previo — sirve como evidencia de qué se modificó.
     const { data: prev } = await sb
       .from("muestras_calidad")
-      .select("dictamen, estatus_liberacion, estado, autorizado_por")
+      .select("dictamen, estatus_liberacion, estado, autorizado_por, planta_id, maquina_id, numero_rollo")
       .eq("id", data.muestra_id)
       .maybeSingle();
 
@@ -529,13 +529,10 @@ export const dictaminarMuestra = createServerFn({ method: "POST" })
         dictamen_at: now,
         revisado_por: context.userId,
         revisado_at: now,
-        // Autorización del Gerente: requerida para que getEffectiveStatus
-        // promueva el dictamen sobre el NC pegajoso (etiqueta/QR/reportes).
         autorizado_por: context.userId,
         autorizado_at: now,
         rol_autorizador: "calidad",
         estatus_liberacion: estatusLiberacion,
-        // Estado se sincroniza con dictamen
         estado:
           data.dictamen === "liberada"
             ? "liberada"
@@ -546,20 +543,44 @@ export const dictaminarMuestra = createServerFn({ method: "POST" })
       .eq("id", data.muestra_id);
     if (error) throw new Error(error.message);
 
-    // Evidencia de auditoría — quién, cuándo y qué cambió.
+    // Auditoría enriquecida: usuario, IP, dispositivo, planta, máquina, lab,
+    // folio, estatus anterior/nuevo, motivo. Inalterable por RLS.
     try {
-      await sb.rpc("audit_action", {
-        p_modulo: "calidad",
-        p_descripcion: `Dictamen ${data.dictamen} (era estatus=${prev?.estatus_liberacion ?? "—"}, dictamen previo=${prev?.dictamen ?? "—"})`,
-        p_registro_id: data.muestra_id,
-        p_datos: {
-          dictamen_nuevo: data.dictamen,
+      const { getRequest } = await import("@tanstack/react-start/server");
+      const req = getRequest();
+      const ip =
+        req?.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+        req?.headers.get("cf-connecting-ip") ?? null;
+      const ua = req?.headers.get("user-agent") ?? null;
+      let lab: string | null = null;
+      let codigoMaquina: string | null = null;
+      if (prev?.maquina_id) {
+        const { data: m } = await sb.from("maquinas").select("codigo").eq("id", prev.maquina_id).maybeSingle();
+        codigoMaquina = m?.codigo ?? null;
+        if (codigoMaquina === "MP-06" || codigoMaquina === "MP-07") lab = "norte";
+        else if (codigoMaquina === "MP-04" || codigoMaquina === "MP-05") lab = "sur";
+      }
+      await (sb as unknown as { from: (t: string) => { insert: (v: unknown) => Promise<unknown> } })
+        .from("audit_log")
+        .insert({
+          tabla_afectada: "muestras_calidad",
+          operacion: "STATUS_CHANGE",
+          registro_id: data.muestra_id,
+          datos_anteriores: { estado: prev?.estado ?? null, dictamen: prev?.dictamen ?? null, estatus_liberacion: prev?.estatus_liberacion ?? null },
+          datos_nuevos: { dictamen: data.dictamen, estatus_liberacion: estatusLiberacion },
+          usuario_id: context.userId,
+          modulo: "control_calidad",
+          descripcion_accion: `Dictamen ${data.dictamen}`,
+          ip_address: ip,
+          user_agent: ua,
+          planta_id: prev?.planta_id ?? null,
+          maquina_id: prev?.maquina_id ?? null,
+          laboratorio: lab,
+          folio_rollo: prev?.numero_rollo ?? null,
+          estatus_anterior: prev?.estatus_liberacion ?? prev?.estado ?? null,
+          estatus_nuevo: estatusLiberacion,
           motivo: data.motivo,
-          observaciones: data.observaciones,
-          estatus_previo: prev?.estatus_liberacion ?? null,
-          dictamen_previo: prev?.dictamen ?? null,
-        } as never,
-      });
+        });
     } catch {
       /* audit best-effort */
     }
