@@ -351,6 +351,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
     try {
       const data = buildEtiquetaFromMuestra(muestra);
       await printEtiquetaLiberacion(data);
+      void auditAction("etiqueta", `Reimpresión etiqueta FOR-CAL-04 folio ${muestra.id.slice(0, 8)}`, muestra.id);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "No se pudo abrir la etiqueta");
     }
