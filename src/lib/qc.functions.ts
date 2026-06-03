@@ -127,8 +127,11 @@ export const listMaquinasCaptura = createServerFn({ method: "GET" })
     if (!seesAll && isCapturista) {
       const lab = profile?.laboratorio as "norte" | "sur" | null | undefined;
       if (!lab) return [];
-      const areaPattern = lab === "norte" ? "%Norte%" : "%Sur%";
-      q = q.ilike("area", areaPattern);
+      // BD usa 'Laboratorio Nte.' / 'Laboratorio Sur' — matchear ambas variantes.
+      const orExpr = lab === "norte"
+        ? "area.ilike.%Nte%,area.ilike.%Norte%"
+        : "area.ilike.%Sur%";
+      q = q.or(orExpr);
     }
 
     const { data, error } = await q;
