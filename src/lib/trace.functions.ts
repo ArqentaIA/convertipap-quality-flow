@@ -100,10 +100,12 @@ export const getMuestraTrace = createServerFn({ method: "GET" })
       estatus_liberacion: (m as { estatus_liberacion?: string | null }).estatus_liberacion ?? null,
       defectos: ((m as { defectos?: string[] | null }).defectos ?? []) as string[],
       observaciones_generales: m.observaciones_generales ?? "",
-      jefe_maquina: (m as { jefe_maquina?: string | null }).jefe_maquina ?? null,
-      operador: (m as { operador?: string | null }).operador ?? null,
-      prensero: (m as { prensero?: string | null }).prensero ?? null,
-      analista: (m as { analista?: string | null }).analista ?? null,
+      // PII enmascarada en endpoint público: no exponer nombres de personal.
+      // La trazabilidad técnica (folio, rollo, mediciones, dictamen) se mantiene.
+      jefe_maquina: null,
+      operador: null,
+      prensero: null,
+      analista: null,
       producto: (m.producto as { codigo: string; nombre: string }) ?? { codigo: "—", nombre: "—" },
       maquina: (m.maquina as { codigo: string; nombre: string }) ?? { codigo: "—", nombre: "—" },
       planta: (m.planta as { codigo: string; nombre: string }) ?? { codigo: "—", nombre: "—" },
