@@ -103,8 +103,36 @@ function inferirTurno(d: Date, settings?: { turno1_inicio: string; turno1_fin: s
 }
 
 function CapturaCalidadPage() {
-  const { data: maquinas } = useSuspenseQuery(maquinasQO);
-  const { data: productos } = useSuspenseQuery(productosQO);
+  const auth = useAuth();
+  const maquinasQuery = useQuery({ ...maquinasQO, enabled: auth.isAuthenticated });
+  const productosQuery = useQuery({ ...productosQO, enabled: auth.isAuthenticated });
+  const maquinas = maquinasQuery.data ?? [];
+  const productos = productosQuery.data ?? [];
+
+  if (auth.loading || !auth.isAuthenticated || maquinasQuery.isLoading || productosQuery.isLoading) {
+    return (
+      <AppLayout title="Captura de Muestra de Calidad">
+        <div className="mx-auto mt-12 max-w-xl rounded-xl border border-border bg-card p-8 text-center shadow-sm">
+          <ClipboardCheck className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+          <h2 className="text-lg font-semibold text-foreground">Cargando captura</h2>
+          <p className="mt-2 text-sm text-muted-foreground">Preparando máquinas y productos disponibles.</p>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (maquinasQuery.error || productosQuery.error) {
+    const message = maquinasQuery.error?.message ?? productosQuery.error?.message ?? "No se pudo cargar la información";
+    return (
+      <AppLayout title="Captura de Muestra de Calidad">
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Error al cargar captura</AlertTitle>
+          <AlertDescription>{message}</AlertDescription>
+        </Alert>
+      </AppLayout>
+    );
+  }
 
   if (maquinas.length === 0) {
     return (
