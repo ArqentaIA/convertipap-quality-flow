@@ -488,7 +488,10 @@ export const dictaminarMuestra = createServerFn({ method: "POST" })
         muestra_id: z.string().uuid(),
         dictamen: z.enum(["liberada", "rechazada", "concesion"]),
         motivo: z.string().min(1),
-        observaciones: z.string().default(""),
+        observaciones: z
+          .string()
+          .trim()
+          .min(10, "Las observaciones del Gerente de Calidad son obligatorias (mín. 10 caracteres) y quedan registradas como evidencia."),
       })
       .parse(input),
   )
@@ -496,6 +499,13 @@ export const dictaminarMuestra = createServerFn({ method: "POST" })
     const sb = context.supabase as SB;
     const roles = await getUserRoles(sb, context.userId);
     requireAnyRole(roles, ROLES_DICTAMEN);
+
+    // Snapshot previo — sirve como evidencia de qué se modificó.
+    const { data: prev } = await sb
+      .from("muestras_calidad")
+      .select("dictamen, estatus_liberacion, estado, autorizado_por")
+      .eq("id", data.muestra_id)
+      .maybeSingle();
 
     const now = new Date().toISOString();
     const { error } = await sb
@@ -517,6 +527,24 @@ export const dictaminarMuestra = createServerFn({ method: "POST" })
       })
       .eq("id", data.muestra_id);
     if (error) throw new Error(error.message);
+
+    // Evidencia de auditoría — quién, cuándo y qué cambió.
+    try {
+      await sb.rpc("audit_action", {
+        p_modulo: "calidad",
+        p_descripcion: `Dictamen ${data.dictamen} (era estatus=${prev?.estatus_liberacion ?? "—"}, dictamen previo=${prev?.dictamen ?? "—"})`,
+        p_registro_id: data.muestra_id,
+        p_datos: {
+          dictamen_nuevo: data.dictamen,
+          motivo: data.motivo,
+          observaciones: data.observaciones,
+          estatus_previo: prev?.estatus_liberacion ?? null,
+          dictamen_previo: prev?.dictamen ?? null,
+        } as never,
+      });
+    } catch {
+      /* audit best-effort */
+    }
     return { ok: true };
   });
 
