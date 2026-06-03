@@ -480,7 +480,7 @@ export const getReportes = createServerFn({ method: "POST" })
           operador: m.operador ?? "—",
           analista: m.analista ?? "—",
           peso_kg: Math.round(pesoKg * 100) / 100,
-          costo_mxn: costoMxn,
+          costo_mxn: fmtMxn(costoMxn),
           estatus: m.estatus_liberacion ?? m.dictamen ?? "pendiente",
         };
         for (const clave of clavesOrden) {
