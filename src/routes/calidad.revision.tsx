@@ -175,7 +175,7 @@ function RevisionPage() {
     () => (selected ? (selected.mediciones_calidad ?? []) : []),
     [selected],
   );
-  const selectedOrden = selected ? ordenes.find((o) => o.orden_id === selected.orden_id) : null;
+  const selectedOrden = selected ? ordenes.find((o) => o.orden_id === selected.id) : null;
 
   const totalFueraSpec = selectedMediciones.filter(
     (m) => m.estado === "no_conforme" || m.estado === "fuera_rango_critico",
