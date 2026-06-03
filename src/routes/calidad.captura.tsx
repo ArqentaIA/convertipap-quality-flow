@@ -855,7 +855,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
         )}
 
         {/* E. Producción capturada recientemente */}
-        {mostrarProduccion && (
+        {(
         <Card id="produccion-capturada">
           <CardHeader className="pb-2 flex flex-row items-center justify-between">
             <CardTitle className="text-base font-semibold">E. Producción capturada recientemente</CardTitle>
@@ -930,59 +930,6 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
         </Card>
         )}
 
-
-
-        {spec && (
-          <div className="flex flex-wrap items-center justify-end gap-2 sticky bottom-0 bg-background/95 backdrop-blur py-3 border-t">
-            <Button
-              variant="secondary"
-              disabled={mutation.isPending}
-              onClick={() => {
-                setMostrarProduccion(true);
-                toast.success("Captura válida — revisa tu producción capturada");
-                setTimeout(() => {
-                  document.getElementById("produccion-capturada")
-                    ?.scrollIntoView({ behavior: "smooth", block: "start" });
-                }, 50);
-              }}
-            >
-              <CheckCircle2 className="mr-1.5 h-4 w-4" /> Captura válida
-            </Button>
-            <Button
-              variant="outline" disabled={isBlocked || mutation.isPending}
-              onClick={() => handleSubmit("borrador")}
-            >
-              <Save className="mr-1.5 h-4 w-4" /> Guardar
-            </Button>
-            <Button
-              disabled={isBlocked || mutation.isPending}
-              onClick={onClickEnviar}
-            >
-              <Send className="mr-1.5 h-4 w-4" />
-              {mutation.isPending ? "Enviando..." : "Enviar a Revisión"}
-            </Button>
-          </div>
-        )}
-
-
-        <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Confirmar envío a revisión</AlertDialogTitle>
-              <AlertDialogDescription>
-                Hay <strong>{variablesFueraDeSpec.length}</strong> variable(s) fuera de especificación
-                ({variablesFueraDeSpec.map((m) => m.spec.etiqueta).join(", ")}).
-                La muestra quedará marcada como no conforme y deberá ser evaluada por Calidad.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction onClick={() => { setShowConfirm(false); handleSubmit("envio"); }}>
-                Sí, enviar a revisión
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
       </div>
     </AppLayout>
   );
