@@ -243,7 +243,7 @@ function OperatorVisionPage() {
   // Estatus efectivo del rollo actual evaluando sus variables vs spec
   const mapMedActual = useMemo(() => {
     const m = new Map<string, number | null>();
-    current?.mediciones.forEach((x) => m.set(x.clave, x.valor));
+    current?.mediciones.forEach((x: { clave: string; valor: number | null }) => m.set(x.clave, x.valor));
     return m;
   }, [current]);
 
