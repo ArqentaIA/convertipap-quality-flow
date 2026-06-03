@@ -422,13 +422,16 @@ export const getReportes = createServerFn({ method: "POST" })
         ? Math.round((costoTotal / noLibBase.length) * 100) / 100
         : 0;
 
+    const fmtMxn = (n: number) =>
+      `$${n.toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
     const resumenRows: Record<string, string | number>[] = [
       {
         rollos_no_liberados: noLibBase.length,
         kg_no_liberados: Math.round(totalKg * 100) / 100,
-        costo_kg_mxn: costoKg,
-        costo_total_mxn: costoTotal,
-        costo_promedio_mxn: costoPromedio,
+        costo_kg_mxn: fmtMxn(costoKg),
+        costo_total_mxn: fmtMxn(costoTotal),
+        costo_promedio_mxn: fmtMxn(costoPromedio),
         periodo_inicio: start.slice(0, 10),
         periodo_fin: end.slice(0, 10),
       },
@@ -451,7 +454,7 @@ export const getReportes = createServerFn({ method: "POST" })
           operador: m.operador ?? "—",
           analista: m.analista ?? "—",
           peso_kg: Math.round(pesoKg * 100) / 100,
-          costo_mxn: costoMxn,
+          costo_mxn: fmtMxn(costoMxn),
           estatus: m.estatus_liberacion ?? m.dictamen ?? "pendiente",
         };
       },
@@ -477,7 +480,7 @@ export const getReportes = createServerFn({ method: "POST" })
           operador: m.operador ?? "—",
           analista: m.analista ?? "—",
           peso_kg: Math.round(pesoKg * 100) / 100,
-          costo_mxn: costoMxn,
+          costo_mxn: fmtMxn(costoMxn),
           estatus: m.estatus_liberacion ?? m.dictamen ?? "pendiente",
         };
         for (const clave of clavesOrden) {
