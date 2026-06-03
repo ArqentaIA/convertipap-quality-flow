@@ -21,7 +21,7 @@ async function toDataUrl(url: string): Promise<string> {
 export type EtiquetaMedicion = {
   clave: string;
   etiqueta: string;
-  valor: number;
+  valor: number | null;
   unidad: string;
   min: number;
   max: number;
