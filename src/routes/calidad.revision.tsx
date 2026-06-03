@@ -364,8 +364,6 @@ function RevisionPage() {
               options={productos.map(([id, n]) => ({ value: id, label: n }))} />
             <FilterSelect label="Turno" value={fTurno} onChange={setFTurno}
               options={[{ value: "A", label: "A" }, { value: "B", label: "B" }, { value: "C", label: "C" }]} />
-            <FilterSelect label="Orden" value={fOrden} onChange={setFOrden}
-              options={ordenes.map((o) => ({ value: o.orden_id, label: o.folio }))} />
             <FilterSelect label="Estado" value={fEstado} onChange={setFEstado}
               options={ESTADO_FILTROS.map((e) => ({ value: e.value, label: e.label }))} includeAll={false} />
             <div className="space-y-1">
