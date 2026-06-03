@@ -328,7 +328,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
         setDefectos([]);
         setHoraMuestreo(toLocalDateTimeInputValue(new Date()));
       } else {
-        toast.success("Borrador guardado");
+        toast.success("Muestra guardada");
       }
     },
     onError: (err: Error) => toast.error(err.message),
@@ -463,9 +463,6 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Badge variant="outline" className="gap-1">
-              <ClipboardCheck className="h-3 w-3" /> Estado: Borrador
-            </Badge>
             {!canCapture && (
               <Badge variant="destructive" className="gap-1">
                 <Lock className="h-3 w-3" /> Sin permiso de captura
@@ -945,7 +942,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
               variant="outline" disabled={isBlocked || mutation.isPending}
               onClick={() => handleSubmit("borrador")}
             >
-              <Save className="mr-1.5 h-4 w-4" /> Guardar borrador
+              <Save className="mr-1.5 h-4 w-4" /> Guardar
             </Button>
             <Button
               disabled={isBlocked || mutation.isPending}
