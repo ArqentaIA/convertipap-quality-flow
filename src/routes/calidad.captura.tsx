@@ -104,12 +104,13 @@ function inferirTurno(d: Date, settings?: { turno1_inicio: string; turno1_fin: s
 
 function CapturaCalidadPage() {
   const auth = useAuth();
-  const maquinasQuery = useQuery({ ...maquinasQO, enabled: auth.isAuthenticated });
-  const productosQuery = useQuery({ ...productosQO, enabled: auth.isAuthenticated });
+  const hasAuthToken = auth.isAuthenticated && !!auth.session?.access_token;
+  const maquinasQuery = useQuery({ ...maquinasQO, enabled: hasAuthToken, retry: false });
+  const productosQuery = useQuery({ ...productosQO, enabled: hasAuthToken, retry: false });
   const maquinas = maquinasQuery.data ?? [];
   const productos = productosQuery.data ?? [];
 
-  if (auth.loading || !auth.isAuthenticated || maquinasQuery.isLoading || productosQuery.isLoading) {
+  if (auth.loading || !hasAuthToken || maquinasQuery.isLoading || productosQuery.isLoading) {
     return (
       <AppLayout title="Captura de Muestra de Calidad">
         <div className="mx-auto mt-12 max-w-xl rounded-xl border border-border bg-card p-8 text-center shadow-sm">
@@ -186,7 +187,8 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
   const specQuery = useQuery(specQO(producto.producto_id));
   const spec = specQuery.data;
 
-  const settingsQuery = useQuery(settingsQO);
+  const hasAuthToken = auth.isAuthenticated && !!auth.session?.access_token;
+  const settingsQuery = useQuery({ ...settingsQO, enabled: hasAuthToken, retry: false });
   const settings = settingsQuery.data;
 
   const variables = useMemo(() => {
@@ -375,7 +377,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
   }
 
   // ---- Listado de muestras recientes del capturista ----
-  const misMuestrasQuery = useQuery(misMuestrasQO);
+  const misMuestrasQuery = useQuery({ ...misMuestrasQO, enabled: hasAuthToken, retry: false });
 
 
   async function imprimirEtiquetaMuestra(muestra: MuestraReciente) {
