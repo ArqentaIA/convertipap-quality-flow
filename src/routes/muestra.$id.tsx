@@ -55,6 +55,10 @@ function MuestraTracePage() {
   const { data } = useSuspenseQuery(traceQO(id));
   const trace = data as TraceMuestra;
 
+  useEffect(() => {
+    if (trace.found) void auditAction("qr", `Visualización QR muestra ${id.slice(0, 8)}`, id);
+  }, [id, trace.found]);
+
   if (!trace.found) return <NotFound />;
 
   const conformes = trace.mediciones.filter((m) => m.estado === "conforme").length;
