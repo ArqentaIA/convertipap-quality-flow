@@ -855,7 +855,8 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
         )}
 
         {/* E. Producción capturada recientemente */}
-        <Card>
+        {mostrarProduccion && (
+        <Card id="produccion-capturada">
           <CardHeader className="pb-2 flex flex-row items-center justify-between">
             <CardTitle className="text-base font-semibold">E. Producción capturada recientemente</CardTitle>
             <Badge variant="outline" className="text-xs">
@@ -927,6 +928,8 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
             )}
           </CardContent>
         </Card>
+        )}
+
 
 
         {spec && (
