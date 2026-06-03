@@ -828,6 +828,99 @@ export const getDetalleCalidadOrden = createServerFn({ method: "GET" })
 
 export type DetalleCalidadOrden = Awaited<ReturnType<typeof getDetalleCalidadOrden>>;
 
+// =====================================================================
+// 8b) DETALLE DE CALIDAD POR ROLLO (una muestra · 14 variables)
+// =====================================================================
+const detalleRolloSchema = z.object({ muestra_id: z.string().uuid() });
+
+export const getDetalleRollo = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => detalleRolloSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const sb = context.supabase as SB;
+
+    const { data: m, error } = await sb
+      .from("muestras_calidad")
+      .select(
+        `id, numero_rollo, hora_muestreo, turno, operador, jefe_maquina, analista,
+         dictamen, estatus_liberacion, defectos, observaciones_generales,
+         variables_snapshot_json,
+         ordenes_fabricacion(folio, productos(nombre, codigo), maquinas(codigo), plantas(nombre)),
+         mediciones_calidad(variable_clave, valor, min_snapshot, objetivo_snapshot, max_snapshot, estado, observacion)`,
+      )
+      .eq("id", data.muestra_id)
+      .single();
+    if (error) throw new Error(error.message);
+
+    const snap = (m.variables_snapshot_json ?? {}) as Record<
+      string,
+      { min: number; obj: number; max: number; unidad: string; etiqueta: string }
+    >;
+    const meds = ((m.mediciones_calidad ?? []) as any[]).map((x) => {
+      const s = snap[x.variable_clave] ?? null;
+      return {
+        clave: x.variable_clave as string,
+        etiqueta: s?.etiqueta ?? (x.variable_clave as string),
+        unidad: s?.unidad ?? "",
+        valor: x.valor === null ? null : Number(x.valor),
+        min: x.min_snapshot === null ? null : Number(x.min_snapshot),
+        objetivo: x.objetivo_snapshot === null ? null : Number(x.objetivo_snapshot),
+        max: x.max_snapshot === null ? null : Number(x.max_snapshot),
+        estado: x.estado as string,
+        observacion: (x.observacion as string) ?? "",
+      };
+    });
+
+    // Completar con variables del snapshot que aún no tengan medición
+    const presentes = new Set(meds.map((x) => x.clave));
+    for (const [clave, s] of Object.entries(snap)) {
+      if (presentes.has(clave)) continue;
+      meds.push({
+        clave,
+        etiqueta: s.etiqueta ?? clave,
+        unidad: s.unidad ?? "",
+        valor: null,
+        min: s.min ?? null,
+        objetivo: s.obj ?? null,
+        max: s.max ?? null,
+        estado: "pendiente",
+        observacion: "",
+      });
+    }
+
+    const ord = (m as any).ordenes_fabricacion;
+    const ncCount = meds.filter((x) => x.estado === "no_conforme" || x.estado === "fuera_rango_critico").length;
+    const totalConValor = meds.filter((x) => x.valor !== null).length;
+    const cumplimiento = totalConValor > 0
+      ? Math.round(((totalConValor - ncCount) / totalConValor) * 1000) / 10
+      : null;
+
+    return {
+      rollo: {
+        muestraId: m.id as string,
+        numero: (m.numero_rollo as string) ?? "—",
+        capturadoAt: m.hora_muestreo as string,
+        turno: (m.turno as string) ?? "—",
+        operador: (m.operador as string) ?? "—",
+        jefeMaquina: (m.jefe_maquina as string) ?? "—",
+        analista: (m.analista as string) ?? "—",
+        estatus: (m.estatus_liberacion ?? m.dictamen ?? "pendiente") as string,
+        defectos: ((m.defectos ?? []) as string[]).filter(Boolean),
+        observaciones: (m.observaciones_generales as string) ?? "",
+        folioOrden: ord?.folio ?? "—",
+        producto: ord?.productos?.nombre ?? "—",
+        productoCodigo: ord?.productos?.codigo ?? "—",
+        maquina: ord?.maquinas?.codigo ?? "—",
+        planta: ord?.plantas?.nombre ?? "—",
+        ncCount,
+        cumplimiento,
+      },
+      mediciones: meds,
+    };
+  });
+
+export type DetalleRollo = Awaited<ReturnType<typeof getDetalleRollo>>;
+
 
 // =====================================================================
 // 9) LISTAR ROLLOS INDIVIDUALES POR MÁQUINA + RANGO

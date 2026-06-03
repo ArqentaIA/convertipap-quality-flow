@@ -12,7 +12,7 @@ import { DetalleCalidadModal } from "@/components/qc/DetalleCalidadModal";
 export function BuscadorRollo({ className = "" }: { className?: string }) {
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
-  const [selected, setSelected] = useState<{ ordenId: string; folio: string } | null>(null);
+  const [selected, setSelected] = useState<{ muestraId: string; folio: string } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const fn = useServerFn(buscarRolloPorFolio);
 
@@ -35,9 +35,9 @@ export function BuscadorRollo({ className = "" }: { className?: string }) {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const abrirDetalle = (r: { ordenId: string | null; rollo: string; folioOrden: string }) => {
-    if (!r.ordenId) return;
-    setSelected({ ordenId: r.ordenId, folio: `${r.rollo} · OF ${r.folioOrden}` });
+  const abrirDetalle = (r: { muestraId: string; ordenId: string | null; rollo: string; folioOrden: string }) => {
+    if (!r.muestraId) return;
+    setSelected({ muestraId: r.muestraId, folio: `${r.rollo} · OF ${r.folioOrden}` });
     setOpen(false);
     setQ("");
   };
@@ -90,7 +90,7 @@ export function BuscadorRollo({ className = "" }: { className?: string }) {
                   <li key={r.muestraId}>
                     <button
                       onClick={() => abrirDetalle(r)}
-                      disabled={!r.ordenId}
+                      disabled={!r.muestraId}
                       className="flex w-full items-start gap-3 px-3 py-2.5 text-left transition hover:bg-muted disabled:opacity-50"
                     >
                       <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
@@ -119,7 +119,7 @@ export function BuscadorRollo({ className = "" }: { className?: string }) {
       </div>
 
       <DetalleCalidadModal
-        ordenId={selected?.ordenId ?? null}
+        muestraId={selected?.muestraId ?? null}
         folio={selected?.folio ?? null}
         open={!!selected}
         onOpenChange={(v) => !v && setSelected(null)}
