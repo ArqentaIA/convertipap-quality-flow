@@ -7,6 +7,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { useLabFilter, LAB_LABEL } from "@/lib/lab";
 import { listMaquinasConEstado, listRollosMaquina } from "@/lib/produccion.functions";
 import { DetalleCalidadModal } from "@/components/qc/DetalleCalidadModal";
+import { BuscadorRollo } from "@/components/qc/BuscadorRollo";
 
 type Rango = "dia" | "semana" | "mes" | "año";
 const RANGO_LABEL: Record<Rango, string> = { dia: "Día", semana: "Semana", mes: "Mes", año: "Año" };
@@ -130,6 +131,7 @@ function HistorialPage() {
             Volver a Producción
           </Link>
           <div className="flex items-center gap-3">
+            <BuscadorRollo />
             <RangoTabs rango={rango} setRango={setRango} />
             <span className="text-xs text-muted-foreground">
               60s {isFetching && <span className="animate-pulse">●</span>}

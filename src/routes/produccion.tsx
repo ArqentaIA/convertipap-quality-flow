@@ -6,6 +6,7 @@ import { Factory, Gauge, Clock, Pause, Play, AlertTriangle, AlertOctagon, Circle
 import { AppLayout } from "@/components/layout/AppLayout";
 import { listMaquinasConEstado } from "@/lib/produccion.functions";
 import { useLabFilter } from "@/lib/lab";
+import { BuscadorRollo } from "@/components/qc/BuscadorRollo";
 
 type Rango = "dia" | "semana" | "mes" | "año";
 const RANGO_LABEL: Record<Rango, string> = { dia: "Día", semana: "Semana", mes: "Mes", año: "Año" };
@@ -46,8 +47,11 @@ function ProduccionPage() {
       <div className="space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <RangoTabs rango={rango} setRango={setRango} />
-          <div className="text-xs text-muted-foreground">
-            Datos en tiempo real · refresco 60s {isFetching && <span className="ml-1 animate-pulse">●</span>}
+          <div className="flex items-center gap-3">
+            <BuscadorRollo />
+            <div className="text-xs text-muted-foreground">
+              Datos en tiempo real · refresco 60s {isFetching && <span className="ml-1 animate-pulse">●</span>}
+            </div>
           </div>
         </div>
 

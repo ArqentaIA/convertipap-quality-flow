@@ -889,3 +889,35 @@ export const listRollosMaquina = createServerFn({ method: "GET" })
       };
     });
   });
+
+// ------------------------- Buscador global por folio de rollo -------------------------
+const buscarRolloSchema = z.object({
+  q: z.string().trim().min(1).max(64),
+});
+
+export const buscarRolloPorFolio = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => buscarRolloSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const sb = context.supabase as SB;
+    const { data: rows, error } = await sb
+      .from("muestras_calidad")
+      .select(
+        `id, numero_rollo, hora_muestreo, orden_id, maquina_id,
+         ordenes_fabricacion:orden_id(folio),
+         maquinas:maquina_id(codigo, nombre)`,
+      )
+      .ilike("numero_rollo", `%${data.q}%`)
+      .order("hora_muestreo", { ascending: false })
+      .limit(15);
+    if (error) throw new Error(error.message);
+    return (rows ?? []).map((r: any) => ({
+      muestraId: r.id as string,
+      ordenId: r.orden_id as string | null,
+      rollo: r.numero_rollo as string,
+      folioOrden: r.ordenes_fabricacion?.folio ?? "—",
+      maquinaCodigo: r.maquinas?.codigo ?? "—",
+      maquinaNombre: r.maquinas?.nombre ?? "",
+      capturadoAt: r.hora_muestreo as string,
+    }));
+  });
