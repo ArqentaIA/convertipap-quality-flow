@@ -217,8 +217,6 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
   const [horaMuestreo, setHoraMuestreo] = useState<string>(ahoraLocal);
   const [observaciones, setObservaciones] = useState<string>("");
   const [mediciones, setMediciones] = useState<MedicionInputState>({});
-  const [showConfirm, setShowConfirm] = useState(false);
-
   // Turno: auto-inferido por hora, editable manualmente
   const turnoInferido = useMemo(
     () => inferirTurno(new Date(horaMuestreo || Date.now()), settings),
@@ -291,7 +289,6 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
   const upsertFn = useServerFn(upsertMuestraConMediciones);
   const [lastSubmitMode, setLastSubmitMode] = useState<"borrador" | "envio">("borrador");
   const [ultimaEtiqueta, setUltimaEtiqueta] = useState<EtiquetaData | null>(null);
-  const [mostrarProduccion, setMostrarProduccion] = useState<boolean>(false);
   const mutation = useMutation({
     mutationFn: upsertFn,
     onSuccess: (res: { muestra_id: string }) => {
@@ -453,16 +450,6 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
         enviar_a_revision: modo === "envio",
       },
     });
-  }
-
-  function onClickEnviar() {
-    const err = validar("envio");
-    if (err) { toast.error(err); return; }
-    if (variablesFueraDeSpec.length > 0) {
-      setShowConfirm(true);
-    } else {
-      handleSubmit("envio");
-    }
   }
 
   return (
