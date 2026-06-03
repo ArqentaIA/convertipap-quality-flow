@@ -28,7 +28,6 @@ function ProduccionPage() {
     refetchInterval: 30_000,
   });
   const maquinas = all.filter((m) => labFilter.isMachineIdAllowed(m.id));
-  const [modal, setModal] = useState<MaquinaRow | null>(null);
 
   const activos = maquinas.filter((m) => m.estado === "operando").length;
   const oeeProm = maquinas.length
@@ -52,13 +51,11 @@ function ProduccionPage() {
         ) : (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
             {maquinas.map((m) => (
-              <MaquinaCard key={m.id} m={m} onAbrirParo={() => setModal(m)} />
+              <MaquinaCard key={m.id} m={m} />
             ))}
           </div>
         )}
       </div>
-
-      {modal && <CausaModal maquina={modal} onClose={() => setModal(null)} />}
     </AppLayout>
   );
 }
@@ -73,18 +70,7 @@ function EmptyState() {
   );
 }
 
-function MaquinaCard({ m, onAbrirParo }: { m: MaquinaRow; onAbrirParo: () => void }) {
-  const queryClient = useQueryClient();
-  const reanudarFn = useServerFn(reanudarOrden);
-  const reanudarMut = useMutation({
-    mutationFn: reanudarFn,
-    onSuccess: () => {
-      toast.success("Orden reanudada");
-      queryClient.invalidateQueries({ queryKey: ["produccion"] });
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
-
+function MaquinaCard({ m }: { m: MaquinaRow }) {
   return (
     <div className="rounded-xl border border-border bg-card p-5 shadow-sm transition hover:shadow-md hover:border-primary/40">
       <Link to="/historial/$maquina" params={{ maquina: m.codigo }} className="block">
@@ -97,8 +83,6 @@ function MaquinaCard({ m, onAbrirParo }: { m: MaquinaRow; onAbrirParo: () => voi
           </div>
           <EstadoChip estado={m.estado} />
         </div>
-
-        <div className="mt-3 text-sm text-foreground">{m.nombre ?? ""}</div>
 
         <div className="mt-4 grid grid-cols-3 gap-2 border-t border-border pt-3 text-center">
           <Mini label="OEE 24h" value={`${m.oee.toFixed(1)}%`} />
