@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/dialog";
 import { useAuth } from "@/lib/auth";
 import {
-  listOrdenesContexto, listMuestras, listAjustes, actualizarAjuste,
+  listMuestras, listAjustes, actualizarAjuste,
 } from "@/lib/qc.functions";
 import { useLabFilter } from "@/lib/lab";
 import { cn } from "@/lib/utils";
