@@ -251,7 +251,10 @@ export const listMuestras = createServerFn({ method: "GET" })
     let q = sb
       .from("muestras_calidad")
       .select(
-        `*, mediciones_calidad(*)`,
+        `*,
+         productos(id, codigo, nombre),
+         maquinas(id, codigo, nombre, plantas(id, codigo, nombre)),
+         mediciones_calidad(*)`,
       )
       .order("capturado_at", { ascending: false })
       .limit(500);
