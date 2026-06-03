@@ -47,7 +47,16 @@ export type EtiquetaData = {
   operador?: string | null;
   prensero?: string | null;
   analista?: string | null;
+  autorizacion?: {
+    dictamen: "liberada" | "concesion" | "rechazada" | string;
+    observaciones: string;
+    motivo?: string | null;
+    autorizadoAt?: string | null;
+    rolAutorizador?: string | null;
+    autorizadoPor?: string | null;
+  } | null;
 };
+
 
 function esc(s: string): string {
   return String(s ?? "")
@@ -128,10 +137,16 @@ function buildHtml(data: EtiquetaData, qrDataUrl: string, logoDataUrl: string): 
   td.val .u{font-weight:500;color:#64748b;margin-left:4px;font-size:10.5px}
   .ident{display:grid;grid-template-columns:1fr 1fr;gap:0;border-bottom:1px solid #0f172a}
   .ident > div{padding:12px 14px}
-  .ident .producto{background:#0f172a;color:#fff;padding:16px 14px}
-  .ident .producto .codigo{font-size:11px;letter-spacing:.08em;color:#cbd5e1}
-  .ident .producto .nombre{font-weight:800;font-size:18px;margin-top:4px;line-height:1.2}
+  .ident .producto{background:linear-gradient(135deg,#0f172a 0%,#1e293b 60%,#334155 100%);color:#fff;padding:18px 18px;display:flex;flex-direction:column;justify-content:space-between;gap:14px;position:relative;overflow:hidden}
+  .ident .producto::after{content:"";position:absolute;right:-40px;bottom:-40px;width:160px;height:160px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.06) 0%,transparent 70%)}
+  .ident .producto .tag{font-size:9.5px;letter-spacing:.18em;color:#94a3b8;text-transform:uppercase;font-weight:600;display:inline-flex;align-items:center;gap:8px}
+  .ident .producto .tag::before{content:"";display:inline-block;width:18px;height:1px;background:#64748b}
+  .ident .producto .codigo{font-size:11px;letter-spacing:.1em;color:#cbd5e1;margin-top:6px;font-family:ui-monospace,Menlo,monospace}
+  .ident .producto .nombre{font-weight:800;font-size:22px;line-height:1.15;margin-top:4px;letter-spacing:-.01em}
+  .ident .producto .meta-prod{display:flex;gap:14px;font-size:10px;color:#cbd5e1;text-transform:uppercase;letter-spacing:.08em;border-top:1px solid rgba(255,255,255,.12);padding-top:10px;position:relative;z-index:1}
+  .ident .producto .meta-prod b{color:#fff;display:block;font-size:12px;letter-spacing:.02em;text-transform:none;margin-top:2px;font-weight:700}
   .ident .meta-rollo table td{border-color:#94a3b8}
+
   .mediciones{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid #0f172a}
   .mediciones > div{padding:0}
   .mediciones table{border-collapse:collapse;width:100%}
@@ -182,9 +197,18 @@ function buildHtml(data: EtiquetaData, qrDataUrl: string, logoDataUrl: string): 
 
     <div class="ident">
       <div class="producto">
-        <div class="codigo">FABRICACIÓN ${esc(data.maquinaCodigo)} · ${esc(data.productoCodigo)}</div>
-        <div class="nombre">${esc(data.productoNombre.toUpperCase())}</div>
+        <div>
+          <div class="tag">Producto Terminado</div>
+          <div class="codigo">${esc(data.productoCodigo)} · Fabricación ${esc(data.maquinaCodigo)}</div>
+          <div class="nombre">${esc((data.productoNombre || data.productoCodigo).toUpperCase())}</div>
+        </div>
+        <div class="meta-prod">
+          <div>Rollo<b>${esc(data.numeroRollo || "—")}</b></div>
+          <div>Turno<b>${data.turno ? esc(String(data.turno)) : "—"}</b></div>
+          <div>Fecha<b>${esc(data.fecha)}</b></div>
+        </div>
       </div>
+
       <div class="meta-rollo">
         <table class="kv">
           <tr>
@@ -236,7 +260,36 @@ function buildHtml(data: EtiquetaData, qrDataUrl: string, logoDataUrl: string): 
       <div>
         <div class="obs-title">Comentarios</div>
         <div class="comentarios">${esc(data.observacionesGenerales || "—")}</div>
+        ${
+          data.autorizacion
+            ? `<div style="margin-top:10px;padding:8px 10px;border-left:3px solid #b45309;background:#fffbeb;border-radius:4px;font-size:11px;line-height:1.4">
+                 <div style="font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#92400e;font-size:9.5px;margin-bottom:4px">Justificación · cambio de estatus por Gerente de Calidad</div>
+                 <div style="color:#1e293b;white-space:pre-wrap"><b>Dictamen:</b> ${esc(
+                   data.autorizacion.dictamen === "liberada"
+                     ? "Liberada"
+                     : data.autorizacion.dictamen === "concesion"
+                     ? "Concesión"
+                     : data.autorizacion.dictamen === "rechazada"
+                     ? "Rechazada"
+                     : String(data.autorizacion.dictamen),
+                 )}${
+                   data.autorizacion.motivo
+                     ? ` · <b>Motivo:</b> ${esc(data.autorizacion.motivo)}`
+                     : ""
+                 }</div>
+                 <div style="color:#1e293b;white-space:pre-wrap;margin-top:4px">${esc(
+                   data.autorizacion.observaciones || "—",
+                 )}</div>
+                 <div style="color:#64748b;font-size:9.5px;margin-top:6px;letter-spacing:.04em">${
+                   data.autorizacion.autorizadoAt
+                     ? esc(new Date(data.autorizacion.autorizadoAt).toLocaleString("es-MX"))
+                     : ""
+                 }${data.autorizacion.rolAutorizador ? ` · ${esc(data.autorizacion.rolAutorizador)}` : ""}</div>
+               </div>`
+            : ""
+        }
       </div>
+
       <div class="qr-box">
         <img src="${qrDataUrl}" alt="QR muestra" />
         <div class="cap">Verificar muestra</div>
