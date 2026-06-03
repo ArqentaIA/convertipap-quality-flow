@@ -1225,7 +1225,11 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
           <div className="flex justify-end sticky bottom-0 bg-background/95 backdrop-blur py-3 border-t z-10">
             <Button
               size="lg"
-              className="text-base font-semibold"
+              className={`text-base font-semibold transition-colors ${
+                puedeEnviar
+                  ? "bg-success text-success-foreground hover:bg-success/90 shadow-lg shadow-success/30 animate-pulse"
+                  : ""
+              }`}
               disabled={!puedeEnviar}
               onClick={() => handleSubmit("envio")}
             >
