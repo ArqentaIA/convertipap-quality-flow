@@ -1,11 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
-import { useSuspenseQuery, useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Factory, Gauge, Clock, Pause, Play, AlertTriangle, AlertOctagon, X, Check, CircleDashed } from "lucide-react";
-import { toast } from "sonner";
+import { Factory, Gauge, Clock, Pause, Play, AlertTriangle, AlertOctagon, CircleDashed } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { listMaquinasConEstado, listTiposParo, pausarOrden, reanudarOrden } from "@/lib/produccion.functions";
+import { listMaquinasConEstado } from "@/lib/produccion.functions";
 import { useLabFilter } from "@/lib/lab";
 
 export const Route = createFileRoute("/produccion")({
