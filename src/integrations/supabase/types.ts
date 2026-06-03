@@ -205,14 +205,22 @@ export type Database = {
           datos_anteriores: Json | null
           datos_nuevos: Json | null
           descripcion_accion: string | null
+          estatus_anterior: string | null
+          estatus_nuevo: string | null
+          folio_rollo: string | null
           id: string
           ip_address: string | null
+          laboratorio: string | null
+          maquina_id: string | null
           modulo: string | null
+          motivo: string | null
           operacion: string
+          planta_id: string | null
           registro_id: string | null
           rol: string | null
           tabla_afectada: string | null
           timestamp: string
+          user_agent: string | null
           usuario_email: string | null
           usuario_id: string | null
         }
@@ -220,14 +228,22 @@ export type Database = {
           datos_anteriores?: Json | null
           datos_nuevos?: Json | null
           descripcion_accion?: string | null
+          estatus_anterior?: string | null
+          estatus_nuevo?: string | null
+          folio_rollo?: string | null
           id?: string
           ip_address?: string | null
+          laboratorio?: string | null
+          maquina_id?: string | null
           modulo?: string | null
+          motivo?: string | null
           operacion: string
+          planta_id?: string | null
           registro_id?: string | null
           rol?: string | null
           tabla_afectada?: string | null
           timestamp?: string
+          user_agent?: string | null
           usuario_email?: string | null
           usuario_id?: string | null
         }
@@ -235,14 +251,22 @@ export type Database = {
           datos_anteriores?: Json | null
           datos_nuevos?: Json | null
           descripcion_accion?: string | null
+          estatus_anterior?: string | null
+          estatus_nuevo?: string | null
+          folio_rollo?: string | null
           id?: string
           ip_address?: string | null
+          laboratorio?: string | null
+          maquina_id?: string | null
           modulo?: string | null
+          motivo?: string | null
           operacion?: string
+          planta_id?: string | null
           registro_id?: string | null
           rol?: string | null
           tabla_afectada?: string | null
           timestamp?: string
+          user_agent?: string | null
           usuario_email?: string | null
           usuario_id?: string | null
         }
@@ -1393,11 +1417,38 @@ export type Database = {
         }
         Returns: boolean
       }
+      can_change_roll_status: { Args: { _user_id: string }; Returns: boolean }
+      can_edit_module: {
+        Args: {
+          _module: Database["public"]["Enums"]["app_module"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      change_roll_status: {
+        Args: {
+          p_dictamen: string
+          p_ip?: string
+          p_motivo: string
+          p_muestra_id: string
+          p_nuevo_estado: string
+          p_user_agent?: string
+        }
+        Returns: string
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      user_allowed_machine_codes: {
+        Args: { _user_id: string }
+        Returns: string[]
+      }
+      user_can_use_machine: {
+        Args: { _maquina_id: string; _user_id: string }
         Returns: boolean
       }
     }
