@@ -239,6 +239,10 @@ function VariablesCalidad() {
       columnStyles: { 0: { fontStyle: "bold", cellWidth: 140 } },
     });
 
+    let titleY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 22;
+    doc.setFontSize(11).setFont("helvetica", "bold");
+    doc.text("Especificaciones Vigentes", 40, titleY);
+
     autoTable(doc, {
       head: [["Variable", "Unidad", "Mínimo", "Objetivo", "Máximo"]],
       body: activeSpec.variables.map((v) => [
@@ -254,13 +258,12 @@ function VariablesCalidad() {
         0: { fontStyle: "bold" },
         2: { halign: "right" }, 3: { halign: "right" }, 4: { halign: "right" },
       },
-      startY: (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 14,
-      didDrawPage: () => {
-        const yTitle = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY;
-        // header title drawn via separate call below before this table — left intentionally blank
-        void yTitle;
-      },
+      startY: titleY + 6,
     });
+
+    titleY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 22;
+    doc.setFontSize(11).setFont("helvetica", "bold");
+    doc.text("Bitácora de Cambios", 40, titleY);
 
     autoTable(doc, {
       head: [["Fecha y Hora", "Nombre", "Rol", "Variable", "Campo", "Anterior", "Nuevo", "Motivo"]],
@@ -278,7 +281,7 @@ function VariablesCalidad() {
         : [["—", "—", "—", "Sin cambios registrados", "—", "—", "—", "—"]],
       styles: { fontSize: 8, cellPadding: 4 },
       headStyles: { fillColor: [37, 99, 235] },
-      startY: (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 18,
+      startY: titleY + 6,
     });
 
     const last = records[records.length - 1];
