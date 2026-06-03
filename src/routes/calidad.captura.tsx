@@ -619,14 +619,6 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
                   <span className="text-muted-foreground text-sm">{variables.length} variables</span>
                 </div>
               </div>
-              <div className="md:col-span-3 space-y-1.5">
-                <Label htmlFor="obs" className="text-base">Observaciones generales</Label>
-                <Textarea className="text-base"
-                  id="obs" maxLength={500} rows={2}
-                  value={observaciones} onChange={(e) => setObservaciones(e.target.value)}
-                  placeholder="Condiciones del turno, observaciones, etc."
-                />
-              </div>
             </CardContent>
           </Card>
         )}
