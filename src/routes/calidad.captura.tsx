@@ -423,8 +423,32 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
   const hayCritico = evalMediciones.some((m) => m.estado === "fuera_rango_critico");
 
   const upsertFn = useServerFn(upsertMuestraConMediciones);
+  const dictaminarFn = useServerFn(dictaminarMuestra);
   const [ultimaEtiqueta, setUltimaEtiqueta] = useState<EtiquetaData | null>(null);
   const [muestraRecienId, setMuestraRecienId] = useState<string | null>(null);
+
+  // --- Diálogo de liberación / cambio de estatus (Gerente de Calidad) ---
+  const puedeLiberar = auth.hasRole("calidad") || auth.hasRole("administrador");
+  const [liberarMuestra, setLiberarMuestra] = useState<MuestraReciente | null>(null);
+  const [liberarDictamen, setLiberarDictamen] = useState<"liberada" | "concesion" | "rechazada">(
+    "liberada",
+  );
+  const [liberarObservaciones, setLiberarObservaciones] = useState("");
+  const liberarMutation = useMutation({
+    mutationFn: dictaminarFn,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["qc"] });
+      await queryClient.invalidateQueries({ queryKey: ["produccion"] });
+      toast.success("Estatus actualizado", {
+        description: "El cambio quedó registrado en auditoría con tus observaciones.",
+      });
+      setLiberarMuestra(null);
+      setLiberarObservaciones("");
+      setLiberarDictamen("liberada");
+    },
+    onError: (e: Error) => toast.error(e.message || "No se pudo actualizar el estatus"),
+  });
+
   const mutation = useMutation({
     mutationFn: upsertFn,
     onSuccess: async (res: { muestra_id: string }) => {
