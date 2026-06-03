@@ -335,17 +335,22 @@ function OperatorVisionPage() {
 
       {/* HEADER */}
       <header className="shrink-0 border-b-2 border-slate-200 bg-white">
-        <div className="flex items-center gap-4 px-6 py-3">
-          {/* Título + máquina */}
-          <div className="flex items-center gap-3">
+        <div className="flex items-center gap-5 px-6 py-4">
+          {/* Logo + título + máquina */}
+          <div className="flex items-center gap-4">
+            <img
+              src={logoConvertipap}
+              alt="Convertipap"
+              className="h-16 w-auto shrink-0 object-contain"
+            />
             <div>
-              <div className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-500">
+              <div className="text-[14px] font-black uppercase tracking-[0.2em] text-slate-500">
                 Máquina{" "}
-                <span className="ml-1 rounded bg-emerald-600 px-2 py-0.5 font-mono text-white">
+                <span className="ml-1 rounded bg-emerald-600 px-2.5 py-1 font-mono text-lg text-white">
                   {maquina}
                 </span>
               </div>
-              <div className="text-2xl font-black tracking-tight text-slate-900">
+              <div className="text-3xl font-black tracking-tight text-slate-900">
                 VISIÓN OPERADOR
               </div>
             </div>
