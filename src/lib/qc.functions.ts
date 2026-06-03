@@ -508,6 +508,8 @@ export const dictaminarMuestra = createServerFn({ method: "POST" })
       .maybeSingle();
 
     const now = new Date().toISOString();
+    const estatusLiberacion =
+      data.dictamen === "liberada" ? "L" : data.dictamen === "concesion" ? "C" : "NC";
     const { error } = await sb
       .from("muestras_calidad")
       .update({
@@ -517,6 +519,12 @@ export const dictaminarMuestra = createServerFn({ method: "POST" })
         dictamen_at: now,
         revisado_por: context.userId,
         revisado_at: now,
+        // Autorización del Gerente: requerida para que getEffectiveStatus
+        // promueva el dictamen sobre el NC pegajoso (etiqueta/QR/reportes).
+        autorizado_por: context.userId,
+        autorizado_at: now,
+        rol_autorizador: "calidad",
+        estatus_liberacion: estatusLiberacion,
         // Estado se sincroniza con dictamen
         estado:
           data.dictamen === "liberada"
