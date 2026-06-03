@@ -35,6 +35,7 @@
   --color-warning-foreground: var(--warning-foreground);
   --color-navy: var(--navy);
   --color-cyan-soft: var(--cyan-soft);
+  --color-capture: var(--capture);
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
