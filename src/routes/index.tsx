@@ -167,7 +167,7 @@ function Dashboard() {
   const totalRollos = promedios.reduce((a, p) => a + p.rollos, 0);
   const promCumpl = promedios.length ? +(promedios.reduce((a, p) => a + p.cumplimiento, 0) / promedios.length).toFixed(1) : 0;
   const promOEE = promedios.length ? +(promedios.reduce((a, p) => a + p.oee, 0) / promedios.length).toFixed(1) : 0;
-  const totalNC = noConformidades.reduce((a, n) => a + n.value, 0);
+  
 
   return (
     <AppLayout title="Dashboard · Calidad y Producción">
