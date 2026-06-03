@@ -334,10 +334,31 @@ function OperatorVisionPage() {
     return m;
   }, [current]);
 
-  // Tarjetas de calidad: usa los rangos del spec
-  const qualityCards = TARJETAS_CLAVE.map((clave) =>
-    variables.find((v) => v.clave === clave),
-  ).filter(Boolean) as typeof variables;
+  // Tarjetas de calidad: usa los rangos del spec. Si no hay especificación,
+  // genera tarjetas vacías esperando captura con las claves estándar.
+  const qualityCards: Array<{
+    clave: string;
+    etiqueta: string;
+    unidad: string | null;
+    min: number;
+    objetivo: number;
+    max: number;
+    hasSpec: boolean;
+  }> = TARJETAS_CLAVE.map((clave) => {
+    const v = variables.find((x) => x.clave === clave);
+    if (v) return { ...v, hasSpec: true };
+    const fb = TARJETAS_FALLBACK[clave];
+    return {
+      clave,
+      etiqueta: fb.etiqueta,
+      unidad: fb.unidad,
+      min: 0,
+      objetivo: 0,
+      max: 0,
+      hasSpec: false,
+    };
+  });
+
 
   const fechaStr = now.toLocaleDateString("es-MX", {
     weekday: "long",
