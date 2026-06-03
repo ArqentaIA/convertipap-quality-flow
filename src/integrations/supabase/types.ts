@@ -1350,6 +1350,7 @@ export type Database = {
         | "reportes"
         | "configuracion"
         | "usuarios_permisos"
+        | "auditoria"
       app_role:
         | "administrador"
         | "gerente_general"
@@ -1543,6 +1544,7 @@ export const Constants = {
         "reportes",
         "configuracion",
         "usuarios_permisos",
+        "auditoria",
       ],
       app_role: [
         "administrador",
