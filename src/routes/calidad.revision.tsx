@@ -121,8 +121,8 @@ function RevisionPage() {
     [muestrasRaw, allowedMuestraIds],
   );
 
-  const canReview =
-    auth.hasRole("calidad") || auth.hasRole("gerente_general") || auth.hasRole("administrador");
+  // Solo Calidad / Administrador pueden dictaminar (cambiar estatus de rollo).
+  const canReview = auth.canChangeRollStatus;
 
   // --- Filtros ------------------------------------------------------------
   const [fPlanta, setFPlanta] = useState("all");
