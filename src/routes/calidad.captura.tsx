@@ -476,7 +476,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">A. Turno, máquina y producto</CardTitle>
+            <CardTitle className="text-base font-semibold">A. Turno, máquina y producto</CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <div className="space-y-1.5">
@@ -559,7 +559,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
         {spec && (
           <Card className={cn(isBlocked && "opacity-60 pointer-events-none")}>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">B. Personal del turno</CardTitle>
+              <CardTitle className="text-base font-semibold">B. Personal del turno</CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-4">
               <div className="space-y-1.5">
@@ -589,7 +589,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
         {spec && (
           <Card className={cn(isBlocked && "opacity-60 pointer-events-none")}>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">C. Datos de la muestra</CardTitle>
+              <CardTitle className="text-base font-semibold">C. Datos de la muestra</CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-3">
               <div className="space-y-1.5">
@@ -648,7 +648,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
         {spec && (
           <Card className={cn(isBlocked && "opacity-60 pointer-events-none")}>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">D. Mediciones por variable</CardTitle>
+              <CardTitle className="text-base font-semibold">D. Mediciones por variable</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               {/* Desktop / tablet landscape: tabla clásica */}
@@ -794,7 +794,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
         {spec && (
           <Card className={cn(isBlocked && "opacity-60 pointer-events-none")}>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">F. Cierre — Estatus de liberación y defectos</CardTitle>
+              <CardTitle className="text-base font-semibold">F. Cierre — Estatus de liberación y defectos</CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-3">
               <div className="space-y-1.5">
@@ -866,7 +866,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
         {/* E. Producción capturada recientemente */}
         <Card>
           <CardHeader className="pb-2 flex flex-row items-center justify-between">
-            <CardTitle className="text-sm font-medium">E. Producción capturada recientemente</CardTitle>
+            <CardTitle className="text-base font-semibold">E. Producción capturada recientemente</CardTitle>
             <Badge variant="outline" className="text-xs">
               {misMuestrasQuery.data?.length ?? 0} muestras
             </Badge>
