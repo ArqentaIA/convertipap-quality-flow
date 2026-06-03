@@ -828,3 +828,64 @@ export const getDetalleCalidadOrden = createServerFn({ method: "GET" })
 
 export type DetalleCalidadOrden = Awaited<ReturnType<typeof getDetalleCalidadOrden>>;
 
+
+// =====================================================================
+// 9) LISTAR ROLLOS INDIVIDUALES POR MÁQUINA + RANGO
+// =====================================================================
+const rollosSchema = z.object({
+  maquina_id: z.string().uuid(),
+  rango: rangoEnum.optional(),
+});
+
+export const listRollosMaquina = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => rollosSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const sb = context.supabase as SB;
+    const desde = rangoToDesde(data.rango ?? "dia");
+
+    let q = sb
+      .from("muestras_calidad")
+      .select(
+        `id, numero_rollo, hora_muestreo, turno, operador, jefe_maquina, analista,
+         dictamen, estatus_liberacion, defectos, orden_id,
+         ordenes_fabricacion:orden_id(folio, productos(nombre, codigo)),
+         mediciones_calidad(variable_clave, valor, estado)`,
+      )
+      .eq("maquina_id", data.maquina_id)
+      .order("hora_muestreo", { ascending: false })
+      .limit(500);
+    if (desde) q = q.gte("hora_muestreo", desde);
+
+    const { data: rows, error } = await q;
+    if (error) throw new Error(error.message);
+
+    return (rows ?? []).map((r: any) => {
+      const meds = (r.mediciones_calidad ?? []) as any[];
+      const peso = meds.find((x) => x.variable_clave === "peso")?.valor;
+      const total = meds.length;
+      const nc = meds.filter((x) => x.estado === "no_conforme" || x.estado === "fuera_rango_critico").length;
+      const cumplimiento = total > 0 ? Math.round(((total - nc) / total) * 1000) / 10 : null;
+      const estatus: "L" | "NC" | "C" =
+        r.estatus_liberacion === "rechazada" || r.dictamen === "rechazada" || nc > 0
+          ? "NC"
+          : r.estatus_liberacion === "liberada" || r.dictamen === "liberada"
+          ? "L"
+          : "C";
+      return {
+        muestraId: r.id as string,
+        ordenId: r.orden_id as string,
+        folioOrden: r.ordenes_fabricacion?.folio ?? "—",
+        rollo: r.numero_rollo as string,
+        capturadoAt: r.hora_muestreo as string,
+        turno: (r.turno as string) ?? "—",
+        operador: (r.operador as string) ?? "—",
+        producto: r.ordenes_fabricacion?.productos?.nombre ?? "—",
+        pesoKg: peso === null || peso === undefined ? null : Number(peso),
+        cumplimiento,
+        ncCount: nc,
+        totalMediciones: total,
+        estatus,
+      };
+    });
+  });
