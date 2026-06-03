@@ -12,7 +12,7 @@ import { DetalleCalidadModal } from "@/components/qc/DetalleCalidadModal";
 export function BuscadorRollo({ className = "" }: { className?: string }) {
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
-  const [selected, setSelected] = useState<{ ordenId: string; folio: string } | null>(null);
+  const [selected, setSelected] = useState<{ muestraId: string; folio: string } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const fn = useServerFn(buscarRolloPorFolio);
 
@@ -35,9 +35,9 @@ export function BuscadorRollo({ className = "" }: { className?: string }) {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const abrirDetalle = (r: { ordenId: string | null; rollo: string; folioOrden: string }) => {
-    if (!r.ordenId) return;
-    setSelected({ ordenId: r.ordenId, folio: `${r.rollo} · OF ${r.folioOrden}` });
+  const abrirDetalle = (r: { muestraId: string; ordenId: string | null; rollo: string; folioOrden: string }) => {
+    if (!r.muestraId) return;
+    setSelected({ muestraId: r.muestraId, folio: `${r.rollo} · OF ${r.folioOrden}` });
     setOpen(false);
     setQ("");
   };
