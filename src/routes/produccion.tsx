@@ -95,16 +95,12 @@ function MaquinaCard({ m, onAbrirParo }: { m: MaquinaRow; onAbrirParo: () => voi
             <div className="text-xs uppercase tracking-wider text-muted-foreground">{m.planta}</div>
             <div className="flex items-baseline gap-2">
               <h3 className="text-lg font-bold text-foreground">{m.codigo}</h3>
-              {m.orden && <span className="text-xs text-muted-foreground">· {m.orden.folio}</span>}
             </div>
           </div>
           <EstadoChip estado={m.estado} />
         </div>
 
-        <div className="mt-3 text-sm text-foreground">{m.orden?.producto ?? "Sin orden activa"}</div>
-        <div className="text-xs text-muted-foreground">
-          {m.orden ? `Turno ${m.orden.turno}` : "Máquina libre"}
-        </div>
+        <div className="mt-3 text-sm text-foreground">{m.nombre ?? ""}</div>
 
         <div className="mt-4 grid grid-cols-3 gap-2 border-t border-border pt-3 text-center">
           <Mini label="OEE 24h" value={`${m.oee.toFixed(1)}%`} />
@@ -125,25 +121,7 @@ function MaquinaCard({ m, onAbrirParo }: { m: MaquinaRow; onAbrirParo: () => voi
               </div>
             </div>
           </div>
-          {m.orden && (
-            <button
-              onClick={() => reanudarMut.mutate({ data: { orden_id: m.orden!.id } })}
-              disabled={reanudarMut.isPending}
-              className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-md bg-success px-3 py-2 text-xs font-semibold text-success-foreground shadow-sm hover:opacity-90 disabled:opacity-50"
-            >
-              <Play className="h-3.5 w-3.5" /> Reanudar producción
-            </button>
-          )}
         </div>
-      )}
-
-      {!m.paroActivo && m.orden && m.estado === "operando" && (
-        <button
-          onClick={onAbrirParo}
-          className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-xs font-semibold hover:bg-accent"
-        >
-          <Pause className="h-3.5 w-3.5" /> Registrar paro
-        </button>
       )}
     </div>
   );
