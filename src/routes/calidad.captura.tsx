@@ -300,13 +300,12 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
     onSuccess: async (res: { muestra_id: string }) => {
       await queryClient.invalidateQueries({ queryKey: ["qc"] });
       await queryClient.refetchQueries({ queryKey: ["qc", "mis-muestras-recientes"], type: "active" });
-      {
-        const folioToast = `${numeroRollo || "SN"} · ${maquina.codigo}`;
-        toast.success(`Muestra guardada (${folioToast})`, {
-          description: "Agregada al listado de producción capturada.",
-          duration: 5000,
-        });
-        setMuestraRecienId(res.muestra_id);
+      const folioToast = `${numeroRollo || "SN"} · ${maquina.codigo}`;
+      toast.success(`Muestra guardada (${folioToast})`, {
+        description: "Agregada al listado de producción capturada.",
+        duration: 5000,
+      });
+      setMuestraRecienId(res.muestra_id);
         setTimeout(() => {
           document.getElementById("produccion-capturada")?.scrollIntoView({
             behavior: "smooth",
@@ -362,10 +361,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
         setNumeroRollo("");
         setEstatusLiberacion("");
         setDefectos([]);
-        setHoraMuestreo(toLocalDateTimeInputValue(new Date()));
-      } else {
-        toast.success("Muestra guardada");
-      }
+      setHoraMuestreo(toLocalDateTimeInputValue(new Date()));
     },
     onError: (err: Error) => toast.error(err.message),
   });
