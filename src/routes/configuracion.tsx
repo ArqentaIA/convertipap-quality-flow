@@ -534,6 +534,15 @@ function CEOReportPreview({ onClose }: { onClose: () => void }) {
 const OPERATOR_VISION_BASE = "https://www.convertipap.site";
 const MAQUINAS_OV = ["MP-04", "MP-05", "MP-06", "MP-07"] as const;
 
+function KPI({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-md border border-gray-200 bg-gray-50 p-3">
+      <div className="text-[10px] font-medium uppercase tracking-wider text-gray-500">{label}</div>
+      <div className="mt-1 text-lg font-bold tabular-nums text-gray-900">{value}</div>
+    </div>
+  );
+}
+
 function OperatorVisionUrls() {
   const copy = async (url: string, label: string) => {
     try {
