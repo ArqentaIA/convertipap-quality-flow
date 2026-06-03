@@ -42,7 +42,7 @@ import {
 import { getAppSettings } from "@/lib/settings.functions";
 import { cn } from "@/lib/utils";
 
-const ROLLO_REGEX = /^\d{1,5}-\d{1,2}$/;
+const ROLLO_REGEX = /^[A-Za-z0-9-]{1,30}$/;
 
 const settingsQO = queryOptions({
   queryKey: ["app", "settings"],
@@ -94,6 +94,20 @@ function evaluarMedicion(v: number, min: number, max: number): MedicionEstadoUI 
   if (v < min - tol || v > max + tol) return "fuera_rango_critico";
   if (v < min || v > max) return "no_conforme";
   return "conforme";
+}
+
+function esValorInverosimil(m: {
+  spec: { clave: string; etiqueta: string; min_valor: number; max_valor: number };
+  num: number;
+}) {
+  if (!Number.isFinite(m.num)) return false;
+  if (m.spec.clave === "uniones") return m.num < 0 || m.num > 100;
+  if (m.spec.clave === "blancuraA" || m.spec.clave === "blancuraB") {
+    return m.num < -100 || m.num > 100;
+  }
+  if (m.spec.clave === "peso") return m.num <= 0 || m.num > 50_000;
+  const aceptaCeroONegativo = m.spec.min_valor <= 0;
+  return (!aceptaCeroONegativo && m.num <= 0) || m.num > 10_000;
 }
 
 function inferirTurno(
@@ -479,9 +493,9 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
     if (!horaMuestreo) return "Indica la hora de muestreo";
     if (new Date(horaMuestreo).getTime() > Date.now() + 60_000)
       return "La hora de muestreo no puede ser futura";
-    if (!numeroRollo.trim()) return "Captura el número de rollo (formato XXXX-X)";
+    if (!numeroRollo.trim()) return "Captura el número de rollo";
     if (!ROLLO_REGEX.test(numeroRollo.trim()))
-      return "El número de rollo debe tener el formato XXXX-X (ej. 4438-6)";
+      return "El número de rollo solo puede usar letras, números y guion";
     if (!jefeMaquina.trim()) return "Captura el Jefe de Máquina";
     if (!operador.trim()) return "Captura el Operador";
     if (!prensero.trim()) return "Captura el Prensero";
@@ -492,9 +506,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
         .filter((m) => m.input.valor === "")
         .map((m) => m.spec.etiqueta);
       if (faltantes.length) return `Falta capturar: ${faltantes.join(", ")}`;
-      const inverosimil = evalMediciones.find(
-        (m) => Number.isFinite(m.num) && (m.num <= 0 || m.num > 10000),
-      );
+      const inverosimil = evalMediciones.find(esValorInverosimil);
       if (inverosimil) return `Valor inverosímil en ${inverosimil.spec.etiqueta}`;
     }
     return null;
@@ -735,14 +747,16 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
               <div className="space-y-1.5">
                 <Label htmlFor="rollo" className="text-base">
                   Número de rollo{" "}
-                  <span className="text-muted-foreground font-normal">(formato XXXX-X)</span>
+                  <span className="text-muted-foreground font-normal">
+                    (letras, números o guion)
+                  </span>
                 </Label>
                 <Input
                   id="rollo"
                   type="text"
-                  inputMode="numeric"
+                  inputMode="text"
                   placeholder="4438-6"
-                  pattern="\d{1,5}-\d{1,2}"
+                  pattern="[A-Za-z0-9-]{1,30}"
                   value={numeroRollo}
                   onChange={(e) => setNumeroRollo(e.target.value)}
                   className={cn(
@@ -752,7 +766,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
                 />
                 {numeroRollo && !ROLLO_REGEX.test(numeroRollo.trim()) && (
                   <p className="text-[11px] text-destructive">
-                    Formato esperado: XXXX-X (ej. 4438-6)
+                    Usa máximo 30 caracteres: letras, números y guion.
                   </p>
                 )}
               </div>
