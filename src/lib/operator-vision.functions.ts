@@ -110,8 +110,9 @@ export const getOperatorVisionData = createServerFn({ method: "GET" })
       rollo: m.numero_rollo as string,
       capturadoAt: m.capturado_at as string,
       turno: m.turno as string,
-      operador: (m.operador as string) ?? "",
-      analista: (m.analista as string) ?? "",
+      // PII enmascarada en endpoint público (TV/kiosko): no exponer nombres.
+      operador: "",
+      analista: "",
       estatus: (m.estatus_liberacion ?? m.dictamen ?? "pendiente") as string,
       mediciones: (m.mediciones_calidad ?? []).map((x: any) => ({
         clave: x.variable_clave as string,

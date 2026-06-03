@@ -547,9 +547,9 @@ export const dictaminarMuestra = createServerFn({ method: "POST" })
     try {
       const { getRequest } = await import("@tanstack/react-start/server");
       const req = getRequest();
-      const ip =
-        req?.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-        req?.headers.get("cf-connecting-ip") ?? null;
+      // IP auténtica de Cloudflare (cf-connecting-ip). No usar x-forwarded-for:
+      // es manipulable por el cliente y puede falsificar la trazabilidad.
+      const ip = req?.headers.get("cf-connecting-ip") ?? null;
       const ua = req?.headers.get("user-agent") ?? null;
       let lab: string | null = null;
       let codigoMaquina: string | null = null;
