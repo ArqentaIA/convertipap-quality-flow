@@ -274,6 +274,8 @@ export const listMisMuestrasRecientes = createServerFn({ method: "GET" })
          producto_id, maquina_id, capturado_por, turno,
          jefe_maquina, operador, prensero, analista,
          estatus_liberacion, defectos,
+         dictamen, dictamen_observaciones, dictamen_motivo, dictamen_at,
+         autorizado_por, autorizado_at, rol_autorizador,
          productos(id, codigo, nombre),
          maquinas(id, codigo, nombre, planta_id, plantas(codigo, nombre)),
          mediciones_calidad(variable_id, variable_clave, valor, min_snapshot, objetivo_snapshot, max_snapshot, estado, variables_calidad(clave, etiqueta, unidad))`,
@@ -394,9 +396,14 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
       dictamenPrevioAt = prev?.autorizado_at ?? prev?.dictamen_at ?? null;
     }
 
-    const estadoMuestra: Database["public"]["Enums"]["qc_muestra_estado"] = data.enviar_a_revision
-      ? "pendiente_revision"
-      : "borrador";
+    // NC capturado se envía automáticamente a Bandeja de Revisión de Calidad,
+    // ya que solo el Gerente de Calidad puede liberarlo. Esto evita que rollos
+    // No Conformes queden "ocultos" en estado borrador sin posibilidad de
+    // dictamen autorizado.
+    const estadoMuestra: Database["public"]["Enums"]["qc_muestra_estado"] =
+      data.enviar_a_revision || data.estatus_liberacion === "NC"
+        ? "pendiente_revision"
+        : "borrador";
 
     const muestraPayload = {
       orden_id: data.orden_id ?? null,
@@ -481,7 +488,10 @@ export const dictaminarMuestra = createServerFn({ method: "POST" })
         muestra_id: z.string().uuid(),
         dictamen: z.enum(["liberada", "rechazada", "concesion"]),
         motivo: z.string().min(1),
-        observaciones: z.string().default(""),
+        observaciones: z
+          .string()
+          .trim()
+          .min(10, "Las observaciones del Gerente de Calidad son obligatorias (mín. 10 caracteres) y quedan registradas como evidencia."),
       })
       .parse(input),
   )
@@ -489,6 +499,13 @@ export const dictaminarMuestra = createServerFn({ method: "POST" })
     const sb = context.supabase as SB;
     const roles = await getUserRoles(sb, context.userId);
     requireAnyRole(roles, ROLES_DICTAMEN);
+
+    // Snapshot previo — sirve como evidencia de qué se modificó.
+    const { data: prev } = await sb
+      .from("muestras_calidad")
+      .select("dictamen, estatus_liberacion, estado, autorizado_por")
+      .eq("id", data.muestra_id)
+      .maybeSingle();
 
     const now = new Date().toISOString();
     const { error } = await sb
@@ -510,6 +527,24 @@ export const dictaminarMuestra = createServerFn({ method: "POST" })
       })
       .eq("id", data.muestra_id);
     if (error) throw new Error(error.message);
+
+    // Evidencia de auditoría — quién, cuándo y qué cambió.
+    try {
+      await sb.rpc("audit_action", {
+        p_modulo: "calidad",
+        p_descripcion: `Dictamen ${data.dictamen} (era estatus=${prev?.estatus_liberacion ?? "—"}, dictamen previo=${prev?.dictamen ?? "—"})`,
+        p_registro_id: data.muestra_id,
+        p_datos: {
+          dictamen_nuevo: data.dictamen,
+          motivo: data.motivo,
+          observaciones: data.observaciones,
+          estatus_previo: prev?.estatus_liberacion ?? null,
+          dictamen_previo: prev?.dictamen ?? null,
+        } as never,
+      });
+    } catch {
+      /* audit best-effort */
+    }
     return { ok: true };
   });
 

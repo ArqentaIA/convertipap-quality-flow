@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { printEtiquetaLiberacion, type EtiquetaData } from "@/lib/etiqueta-liberacion";
 import { auditAction } from "@/lib/audit";
+import { getEffectiveStatus, toEtiquetaEstatus } from "@/lib/qc-effective-status";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -1183,8 +1184,12 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
                   </thead>
                   <tbody>
                     {misMuestrasQuery.data.map((m) => {
-                      const fueraSpec = (m.mediciones_calidad ?? []).some(
-                        (md) => md.estado === "no_conforme" || md.estado === "fuera_rango_critico",
+                      // Estatus EFECTIVO — el badge respeta dictamen del Gerente
+                      // de Calidad si está autorizado; de lo contrario el NC
+                      // capturado o derivado de mediciones se mantiene
+                      // pegajoso hasta que Gerencia libere.
+                      const eff = getEffectiveStatus(
+                        m as Parameters<typeof getEffectiveStatus>[0],
                       );
                       const fecha = new Date(m.hora_muestreo || m.capturado_at).toLocaleString(
                         "es-MX",
@@ -1222,9 +1227,17 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
                             {m.numero_rollo ?? "—"}
                           </td>
                           <td className="py-2.5 px-3 align-middle">
-                            {fueraSpec ? (
-                              <Badge variant="destructive" className="gap-1">
+                            {eff.key === "NO_CONFORME" ? (
+                              <Badge variant="destructive" className="gap-1" title={eff.lockedNoConforme ? "Bloqueado — requiere liberación del Gerente de Calidad" : undefined}>
                                 <AlertTriangle className="h-3 w-3" /> No conforme
+                              </Badge>
+                            ) : eff.key === "LIBERADO" ? (
+                              <Badge className="bg-emerald-500/15 text-emerald-700 border-emerald-500/40 gap-1 hover:bg-emerald-500/20">
+                                <CheckCircle2 className="h-3 w-3" /> Liberado
+                              </Badge>
+                            ) : eff.key === "CONCESION" ? (
+                              <Badge className="bg-amber-500/15 text-amber-700 border-amber-500/40 gap-1 hover:bg-amber-500/20">
+                                <CheckCircle2 className="h-3 w-3" /> Concesión
                               </Badge>
                             ) : (
                               <Badge className="bg-emerald-500/15 text-emerald-700 border-emerald-500/40 gap-1 hover:bg-emerald-500/20">
@@ -1312,19 +1325,13 @@ function buildEtiquetaFromMuestra(m: MuestraReciente): EtiquetaData {
       fueraSpec: md.estado === "no_conforme" || md.estado === "fuera_rango_critico",
     };
   });
-  const fueraSpec = meds.some((x) => x.fueraSpec);
+  // Estatus EFECTIVO — la etiqueta y el QR reflejan dictamen autorizado del
+  // Gerente de Calidad; sin autorización, un NC capturado o derivado de
+  // mediciones se MANTIENE en la etiqueta impresa y se preserva al reimprimir.
+  const eff = getEffectiveStatus(m as Parameters<typeof getEffectiveStatus>[0]);
   const est = (m as { estatus_liberacion?: string | null }).estatus_liberacion ?? null;
   const defectos = ((m as { defectos?: string[] | null }).defectos ?? []) as string[];
-  const estatus: EtiquetaData["estatus"] =
-    est === "L"
-      ? "LIBERADO"
-      : est === "NC"
-        ? "NO CONFORME"
-        : est === "C"
-          ? "CONDICIONAL"
-          : fueraSpec
-            ? "NO CONFORME"
-            : "CONFORME";
+  const estatus: EtiquetaData["estatus"] = toEtiquetaEstatus(eff.key);
   return {
     muestraId: m.id,
     folio,
