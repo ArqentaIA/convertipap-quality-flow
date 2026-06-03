@@ -2,12 +2,14 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useMemo } from "react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Search, Download, Filter, Eye, Calendar, ArrowLeft, QrCode, Lock, CircleDashed } from "lucide-react";
+import { Search, Download, Filter, Eye, Calendar, ArrowLeft, QrCode, Lock, CircleDashed, ClipboardCheck } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { printRollReport } from "@/lib/roll-report";
 import { useLabFilter, LAB_LABEL } from "@/lib/lab";
 import { resolveRolloStatus } from "@/lib/roll-status";
 import { listMaquinasConEstado, listHistorialMaquina } from "@/lib/produccion.functions";
+import { DetalleCalidadModal } from "@/components/qc/DetalleCalidadModal";
+
 
 export const Route = createFileRoute("/historial/$maquina")({
   component: HistorialPage,
