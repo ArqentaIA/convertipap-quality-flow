@@ -39,6 +39,10 @@ interface AuthState {
   isAuthenticated: boolean;
   hasRole: (r: AppRole) => boolean;
   canAccess: (m: AppModule) => boolean;
+  /** ¿Este usuario puede modificar dentro del módulo? (no solo verlo) */
+  canEdit: (m: AppModule) => boolean;
+  /** Solo Calidad y Administrador pueden cambiar el estatus de un rollo. */
+  canChangeRollStatus: boolean;
   signOut: () => Promise<void>;
   refresh: () => Promise<void>;
 }
