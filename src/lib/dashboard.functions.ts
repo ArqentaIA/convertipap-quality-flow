@@ -20,6 +20,13 @@ export type DashboardPayload = {
   }[];
   maquinas: string[];
   noConformidades: { name: string; value: number }[];
+  costoNoCalidad: {
+    costoKg: number;
+    rollosNoLiberados: number;
+    kgNoLiberados: number;
+    costoTotal: number;
+    costoPromedio: number;
+  };
 };
 
 function bucketsForRango(
