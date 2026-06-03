@@ -79,6 +79,7 @@
 
   --navy: oklch(0.24 0.06 250);
   --cyan-soft: oklch(0.93 0.05 200);
+  --capture: oklch(0.4 0.13 155); /* dark green for captured input values */
 
   --border: oklch(0.91 0.015 220);
   --input: oklch(0.93 0.012 220);
