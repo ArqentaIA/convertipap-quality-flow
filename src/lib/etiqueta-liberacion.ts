@@ -47,7 +47,16 @@ export type EtiquetaData = {
   operador?: string | null;
   prensero?: string | null;
   analista?: string | null;
+  autorizacion?: {
+    dictamen: "liberada" | "concesion" | "rechazada" | string;
+    observaciones: string;
+    motivo?: string | null;
+    autorizadoAt?: string | null;
+    rolAutorizador?: string | null;
+    autorizadoPor?: string | null;
+  } | null;
 };
+
 
 function esc(s: string): string {
   return String(s ?? "")
