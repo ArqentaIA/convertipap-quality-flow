@@ -183,6 +183,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
 
   const maquina = maquinas.find((m) => m.id === maquinaId) ?? maquinas[0]!;
   const producto = productos.find((p) => p.producto_id === productoId) ?? productos[0]!;
+  const hasAuthToken = auth.isAuthenticated && !!auth.session?.access_token;
 
   const specQuery = useQuery({
     ...specQO(producto.producto_id),
@@ -191,7 +192,6 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
   });
   const spec = specQuery.data;
 
-  const hasAuthToken = auth.isAuthenticated && !!auth.session?.access_token;
   const settingsQuery = useQuery({ ...settingsQO, enabled: hasAuthToken, retry: false });
   const settings = settingsQuery.data;
 
