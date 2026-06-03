@@ -50,6 +50,12 @@ function requireAnyRole(roles: string[], allowed: readonly string[]) {
   }
 }
 
+function requireRollStatusRole(roles: string[]) {
+  if (!roles.some((r) => (ROLES_DICTAMEN as readonly string[]).includes(r))) {
+    throw new Error(ACCESO_DENEGADO_ROLLO);
+  }
+}
+
 // ------------------------- Estado de medición -------------------------
 
 function calcularEstadoMedicion(
