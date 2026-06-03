@@ -27,7 +27,7 @@ function HistorialPage() {
   const { maquina: maquinaCodigo } = Route.useParams();
   const [q, setQ] = useState("");
   const [rango, setRango] = useState<Rango>("dia");
-  const [detalle, setDetalle] = useState<{ ordenId: string; folio: string } | null>(null);
+  const [detalle, setDetalle] = useState<{ muestraId: string; folio: string } | null>(null);
   const labFilter = useLabFilter();
 
   const listMaquinasFn = useServerFn(listMaquinasConEstado);
