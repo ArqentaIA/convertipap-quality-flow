@@ -110,7 +110,7 @@ function VariablesCalidad() {
 
   const startEdit = () => {
     if (!puedeEditar) {
-      toast.error("Solo Dirección, Calidad o Administrador pueden modificar especificaciones.");
+      toast.error("Solo Calidad o Administrador pueden modificar especificaciones.");
       return;
     }
     const d: DraftMap = {};
