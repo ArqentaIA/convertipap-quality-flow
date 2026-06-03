@@ -82,7 +82,7 @@ export const getDashboard = createServerFn({ method: "POST" })
     const start = new Date(data.start);
     const end = new Date(data.end);
 
-    const [{ data: maquinas }, { data: muestras }, { data: mediciones }, { data: rollos }, { data: ordenes }, { data: paros }] =
+    const [{ data: maquinas }, { data: muestras }, { data: mediciones }, { data: rollos }, { data: ordenes }, { data: paros }, settingsResp] =
       await Promise.all([
         sb.from("maquinas").select("id, codigo").order("codigo"),
         sb
