@@ -137,10 +137,16 @@ function buildHtml(data: EtiquetaData, qrDataUrl: string, logoDataUrl: string): 
   td.val .u{font-weight:500;color:#64748b;margin-left:4px;font-size:10.5px}
   .ident{display:grid;grid-template-columns:1fr 1fr;gap:0;border-bottom:1px solid #0f172a}
   .ident > div{padding:12px 14px}
-  .ident .producto{background:#0f172a;color:#fff;padding:16px 14px}
-  .ident .producto .codigo{font-size:11px;letter-spacing:.08em;color:#cbd5e1}
-  .ident .producto .nombre{font-weight:800;font-size:18px;margin-top:4px;line-height:1.2}
+  .ident .producto{background:linear-gradient(135deg,#0f172a 0%,#1e293b 60%,#334155 100%);color:#fff;padding:18px 18px;display:flex;flex-direction:column;justify-content:space-between;gap:14px;position:relative;overflow:hidden}
+  .ident .producto::after{content:"";position:absolute;right:-40px;bottom:-40px;width:160px;height:160px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.06) 0%,transparent 70%)}
+  .ident .producto .tag{font-size:9.5px;letter-spacing:.18em;color:#94a3b8;text-transform:uppercase;font-weight:600;display:inline-flex;align-items:center;gap:8px}
+  .ident .producto .tag::before{content:"";display:inline-block;width:18px;height:1px;background:#64748b}
+  .ident .producto .codigo{font-size:11px;letter-spacing:.1em;color:#cbd5e1;margin-top:6px;font-family:ui-monospace,Menlo,monospace}
+  .ident .producto .nombre{font-weight:800;font-size:22px;line-height:1.15;margin-top:4px;letter-spacing:-.01em}
+  .ident .producto .meta-prod{display:flex;gap:14px;font-size:10px;color:#cbd5e1;text-transform:uppercase;letter-spacing:.08em;border-top:1px solid rgba(255,255,255,.12);padding-top:10px;position:relative;z-index:1}
+  .ident .producto .meta-prod b{color:#fff;display:block;font-size:12px;letter-spacing:.02em;text-transform:none;margin-top:2px;font-weight:700}
   .ident .meta-rollo table td{border-color:#94a3b8}
+
   .mediciones{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid #0f172a}
   .mediciones > div{padding:0}
   .mediciones table{border-collapse:collapse;width:100%}
