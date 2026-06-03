@@ -190,23 +190,23 @@ function VarCard({
           : "text-slate-400";
 
   return (
-    <div className={`rounded-xl border-2 ${ring} p-3 flex flex-col`}>
+    <div className={`rounded-2xl border-[3px] ${ring} p-5 flex flex-col`}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Icon className="h-4 w-4 text-slate-500" />
-          <span className="text-[11px] font-black uppercase tracking-wider text-slate-600">
+          <Icon className="h-7 w-7 text-slate-500" />
+          <span className="text-[18px] font-black uppercase tracking-wider text-slate-600">
             {def.etiqueta}
           </span>
         </div>
-        <span className={`text-[10px] font-black uppercase ${stateColor}`}>{stateLabel}</span>
+        <span className={`text-[16px] font-black uppercase ${stateColor}`}>{stateLabel}</span>
       </div>
-      <div className="mt-1 flex items-baseline gap-1.5">
-        <span className="font-mono text-[44px] font-black leading-none tabular-nums text-slate-900">
+      <div className="mt-3 flex items-baseline gap-2">
+        <span className="font-mono text-[96px] font-black leading-none tabular-nums text-slate-900">
           {fmt(value, def.digits)}
         </span>
-        <span className="text-sm font-bold text-slate-500">{def.unidad}</span>
+        <span className="text-2xl font-bold text-slate-500">{def.unidad}</span>
       </div>
-      <div className="mt-1 text-[11px] font-semibold text-slate-500 tabular-nums">
+      <div className="mt-3 text-[16px] font-semibold text-slate-500 tabular-nums">
         {hasSpec ? `(${fmt(min, def.digits)} – ${fmt(max, def.digits)})` : "Sin especificación"}
       </div>
     </div>
