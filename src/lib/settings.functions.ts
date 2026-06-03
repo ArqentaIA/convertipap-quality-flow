@@ -23,6 +23,7 @@ export type AppSettings = {
   ceo_report_enabled: boolean;
   ceo_report_hora: string;
   ceo_report_destinatarios: string;
+  costo_no_calidad_kg: number;
   updated_at: string;
 };
 
@@ -30,7 +31,7 @@ const SELECT_COLS =
   "id, tolerancia_advertencia_pct, frecuencia_muestreo_min, " +
   "turno1_inicio, turno1_fin, turno2_inicio, turno2_fin, turno3_inicio, turno3_fin, " +
   "notif_fuera_rango, notif_resumen_diario, notif_no_conformidades, notif_resumen_semanal, " +
-  "ceo_report_enabled, ceo_report_hora, ceo_report_destinatarios, updated_at";
+  "ceo_report_enabled, ceo_report_hora, ceo_report_destinatarios, costo_no_calidad_kg, updated_at";
 
 const HHMM = z.string().regex(/^\d{2}:\d{2}$/, "Formato esperado HH:MM");
 
@@ -50,6 +51,7 @@ const updateSchema = z.object({
   ceo_report_enabled: z.boolean(),
   ceo_report_hora: HHMM,
   ceo_report_destinatarios: z.string().max(2000),
+  costo_no_calidad_kg: z.number().min(0).max(10000),
 });
 
 export const getAppSettings = createServerFn({ method: "GET" })
