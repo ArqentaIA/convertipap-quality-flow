@@ -323,10 +323,10 @@ export const getReportes = createServerFn({ method: "POST" })
     const { data: muestrasFull } = await sb
       .from("muestras_calidad")
       .select(
-        `id, numero_rollo, hora_muestreo, turno, operador, jefe_maquina, analista,
-         estatus_liberacion, dictamen, variables_snapshot_json,
+        `id, numero_rollo, hora_muestreo, turno, operador, jefe_maquina, prensero, analista,
+         estatus_liberacion, dictamen, defectos, variables_snapshot_json,
          maquina_id, planta_id, orden_id,
-         ordenes_fabricacion(folio, productos(nombre, codigo))`,
+         ordenes_fabricacion(folio, productos(nombre, codigo, capas, gramaje, tipos_producto(codigo, nombre, familias_producto(codigo, nombre))))`,
       )
       .gte("hora_muestreo", start)
       .lte("hora_muestreo", end)
@@ -362,6 +362,9 @@ export const getReportes = createServerFn({ method: "POST" })
       const maq = maquinaById.get(m.maquina_id);
       const planta = plantaById.get(m.planta_id);
       const orden = m.ordenes_fabricacion;
+      const producto = orden?.productos;
+      const tipo = producto?.tipos_producto;
+      const familia = tipo?.familias_producto;
       const meds = medsByMuestra.get(m.id) ?? [];
       const medsByClave = new Map(meds.map((x) => [x.variable_clave, x]));
       const row: Record<string, string | number> = {
@@ -371,12 +374,20 @@ export const getReportes = createServerFn({ method: "POST" })
         maquina: maq?.codigo ?? "—",
         turno: m.turno ?? "—",
         orden: orden?.folio ?? "—",
-        producto: orden?.productos?.nombre ?? "—",
-        codigo_producto: orden?.productos?.codigo ?? "—",
+        familia_producto: familia?.nombre ?? "—",
+        familia_codigo: familia?.codigo ?? "—",
+        tipo_producto: tipo?.nombre ?? "—",
+        tipo_codigo: tipo?.codigo ?? "—",
+        producto: producto?.nombre ?? "—",
+        codigo_producto: producto?.codigo ?? "—",
+        capas: producto?.capas ?? "",
+        gramaje: producto?.gramaje ?? "",
         rollo: m.numero_rollo ?? "—",
         operador: m.operador ?? "—",
         jefe_maquina: m.jefe_maquina ?? "—",
+        prensero: m.prensero ?? "—",
         analista: m.analista ?? "—",
+        defectos: Array.isArray(m.defectos) ? m.defectos.join(", ") : "",
         estatus: m.estatus_liberacion ?? m.dictamen ?? "pendiente",
       };
       for (const clave of clavesOrden) {
@@ -386,6 +397,7 @@ export const getReportes = createServerFn({ method: "POST" })
       }
       return row;
     });
+
 
     // ====================================================
     // Costo de No Calidad
