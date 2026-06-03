@@ -9,6 +9,8 @@ import logo from "@/assets/logo.png";
 import { PLANTS } from "@/lib/qc-data";
 import { useAuth, type AppModule } from "@/lib/auth";
 import { useLabFilter, LAB_LABEL } from "@/lib/lab";
+import { ShieldCheck } from "lucide-react";
+import { auditAction } from "@/lib/audit";
 
 type NavItem = {
   to: string;
