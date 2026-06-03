@@ -200,6 +200,7 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
               </div>
               <button
                 onClick={async () => {
+                  void auditAction("auth", `Logout: ${auth.user?.email ?? ""}`);
                   await auth.signOut();
                   void navigate({ to: "/login", replace: true });
                 }}
