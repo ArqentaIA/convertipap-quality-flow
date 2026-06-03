@@ -484,112 +484,108 @@ function OperatorVisionPage() {
       </header>
 
       {/* Banner de estado de carga / error */}
-      {isLoading && !data && (
-        <div className="px-8 pt-4 text-center text-sm font-semibold text-slate-500">
-          Cargando datos de la máquina…
-        </div>
-      )}
       {error && (
-        <div className="mx-8 mt-4 rounded-lg border-2 border-rose-300 bg-rose-50 p-3 text-sm font-bold text-rose-700">
+        <div className="mx-8 mt-2 rounded-lg border-2 border-rose-300 bg-rose-50 p-2 text-sm font-bold text-rose-700">
           Error al consultar datos en tiempo real: {(error as Error).message}
         </div>
       )}
 
-      {/* KPIs */}
-      <section className="px-8 pt-6">
-        <div className="grid grid-cols-6 gap-4">
-          <KpiTile
-            label="Cumplimiento"
-            value={cumplimiento === null ? "—" : cumplimiento.toFixed(1)}
-            unit="%"
-            tone={
-              cumplimiento === null
-                ? "slate"
-                : cumplimiento >= 90
-                  ? "green"
-                  : cumplimiento >= 80
-                    ? "amber"
-                    : "red"
-            }
-            icon={TrendingUp}
-          />
-          <KpiTile
-            label="Producido"
-            value={orden ? Math.round(orden.producidoKg).toString() : "—"}
-            unit="kg"
-            tone="cyan"
-            icon={Gauge}
-          />
-          <KpiTile
-            label="Rollos prod."
-            value={orden ? orden.producidoRollos.toString() : "—"}
-            tone="cyan"
-            icon={Activity}
-            pulse
-          />
-          <KpiTile
-            label="Rollos OK"
-            value={rollosOK.toString()}
-            tone="green"
-            icon={CheckCircle2}
-          />
-          <KpiTile
-            label="No Conformes"
-            value={rollosNC.toString()}
-            tone={rollosNC === 0 ? "slate" : "red"}
-            icon={XCircle}
-            pulse={rollosNC > 0}
-          />
-          <KpiTile
-            label="Sin Captura"
-            value={`${lastCaptureMin}`}
-            unit="min"
-            tone={sinCapturaTone}
-            icon={Timer}
-            pulse={sinCapturaTone === "red"}
-          />
-        </div>
-      </section>
+      {/* CONTENIDO PRINCIPAL — flex que ocupa la altura disponible */}
+      <main className="flex min-h-0 flex-1 flex-col gap-3 px-6 py-3">
+        {/* KPIs */}
+        <section className="shrink-0">
+          <div className="grid grid-cols-6 gap-3">
+            <KpiTile
+              label="Cumplimiento"
+              value={cumplimiento === null ? "—" : cumplimiento.toFixed(1)}
+              unit="%"
+              tone={
+                cumplimiento === null
+                  ? "slate"
+                  : cumplimiento >= 90
+                    ? "green"
+                    : cumplimiento >= 80
+                      ? "amber"
+                      : "red"
+              }
+              icon={TrendingUp}
+            />
+            <KpiTile
+              label="Producido"
+              value={orden ? Math.round(orden.producidoKg).toString() : "—"}
+              unit="kg"
+              tone="cyan"
+              icon={Gauge}
+            />
+            <KpiTile
+              label="Rollos prod."
+              value={orden ? orden.producidoRollos.toString() : "—"}
+              tone="cyan"
+              icon={Activity}
+              pulse
+            />
+            <KpiTile
+              label="Rollos OK"
+              value={rollosOK.toString()}
+              tone="green"
+              icon={CheckCircle2}
+            />
+            <KpiTile
+              label="No Conformes"
+              value={rollosNC.toString()}
+              tone={rollosNC === 0 ? "slate" : "red"}
+              icon={XCircle}
+              pulse={rollosNC > 0}
+            />
+            <KpiTile
+              label="Sin Captura"
+              value={`${lastCaptureMin}`}
+              unit="min"
+              tone={sinCapturaTone}
+              icon={Timer}
+              pulse={sinCapturaTone === "red"}
+            />
+          </div>
+        </section>
 
-      {/* CALIDAD ROLLO ACTUAL */}
-      <section className="px-8 pt-6">
-        <div className="mb-3 flex items-end justify-between">
-          <div>
-            <h2 className="text-xs font-black uppercase tracking-[0.25em] text-slate-500">
-              Calidad · Rollo actual
-            </h2>
-            <div className="mt-1 flex items-baseline gap-3">
-              <span className="font-mono text-4xl font-black tracking-tight text-slate-900">
+        {/* CALIDAD ROLLO ACTUAL — ocupa la mayor parte del espacio */}
+        <section className="flex min-h-0 flex-1 flex-col">
+          <div className="mb-2 flex items-end justify-between">
+            <div className="flex items-baseline gap-3">
+              <h2 className="text-xs font-black uppercase tracking-[0.25em] text-slate-500">
+                Calidad · Rollo
+              </h2>
+              <span className="font-mono text-3xl font-black tracking-tight text-slate-900">
                 {current?.rollo ?? "—"}
               </span>
               {current && (
-                <span className="text-sm font-semibold text-slate-500">
+                <span className="text-xs font-semibold text-slate-500">
                   capturado{" "}
                   {new Date(current.capturadoAt).toLocaleTimeString("es-MX", {
                     hour12: false,
                   })}
                 </span>
               )}
+              {isLoading && !data && (
+                <span className="text-xs font-semibold text-slate-400">
+                  cargando…
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider">
+              <LegendDot tone="ok" label="En rango" />
+              <LegendDot tone="warn" label="Cerca del límite" />
+              <LegendDot tone="bad" label="Fuera de rango" />
             </div>
           </div>
-          <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider">
-            <LegendDot tone="ok" label="En rango" />
-            <LegendDot tone="warn" label="Cerca del límite" />
-            <LegendDot tone="bad" label="Fuera de rango" />
-          </div>
-        </div>
 
-        {qualityCards.length === 0 ? (
-          <div className="rounded-2xl border-2 border-dashed border-slate-300 bg-white/60 p-10 text-center text-sm font-semibold text-slate-500">
-            No hay especificación activa para la orden en curso.
-          </div>
-        ) : (
-          <div className="grid grid-cols-3 gap-4 xl:grid-cols-4">
+          <div className="grid min-h-0 flex-1 grid-cols-3 gap-3 xl:grid-cols-6">
             {qualityCards.map((v) => {
               const raw = mapMedActual.get(v.clave) ?? null;
-              const status = evaluate(raw, v.min, v.max);
+              const status = v.hasSpec ? evaluate(raw, v.min, v.max) : "ok";
               const digits =
-                v.clave === "diametro" || v.clave === "anchoUtil" ? 0 : 2;
+                TARJETAS_FALLBACK[v.clave]?.digits ??
+                (v.clave === "diametro" || v.clave === "anchoUtil" ? 0 : 2);
               return (
                 <QualityCard
                   key={v.clave}
@@ -601,88 +597,90 @@ function OperatorVisionPage() {
                   max={v.max}
                   status={status}
                   digits={digits}
+                  hasSpec={v.hasSpec}
                 />
               );
             })}
           </div>
-        )}
-      </section>
+        </section>
 
-      {/* TIMELINE ROLLOS */}
-      <section className="px-8 py-6 pb-16">
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-xs font-black uppercase tracking-[0.25em] text-slate-500">
-            Últimos rollos producidos
-          </h2>
-          <div className="text-[11px] font-semibold text-slate-400">
-            ◄ más antiguos · más recientes ►
+        {/* TIMELINE ROLLOS — banda inferior compacta */}
+        <section className="shrink-0">
+          <div className="mb-1.5 flex items-center justify-between">
+            <h2 className="text-xs font-black uppercase tracking-[0.25em] text-slate-500">
+              Últimos rollos producidos
+            </h2>
+            <div className="text-[11px] font-semibold text-slate-400">
+              ◄ más antiguos · más recientes ►
+            </div>
           </div>
-        </div>
-        <div className="relative rounded-2xl border-2 border-slate-200 bg-white/70 p-5 shadow-sm">
-          {muestras.length === 0 ? (
-            <div className="py-6 text-center text-sm font-semibold text-slate-400">
-              Aún no hay capturas para esta máquina.
-            </div>
-          ) : (
-            <div className="flex items-stretch gap-3 overflow-x-auto">
-              {muestras.map((m, idx) => {
-                const st = statusFromLiberacion(m.estatus);
-                const color =
-                  st === "ok"
-                    ? "from-emerald-400 to-emerald-600 border-emerald-500"
-                    : st === "warn"
-                      ? "from-amber-300 to-amber-500 border-amber-500"
-                      : "from-rose-400 to-rose-600 border-rose-600";
-                const isCurrent = idx === muestras.length - 1;
-                const hora = new Date(m.capturadoAt).toLocaleTimeString("es-MX", {
-                  hour12: false,
-                  hour: "2-digit",
-                  minute: "2-digit",
-                });
-                return (
-                  <div
-                    key={m.id}
-                    className={`min-w-[140px] flex-1 rounded-xl border-2 bg-gradient-to-br ${color} p-3 text-white shadow ${
-                      isCurrent ? "ring-4 ring-cyan-400/70" : ""
-                    }`}
-                  >
-                    <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider opacity-90">
-                      <span>{hora}</span>
-                      <span>{labelLiberacion(m.estatus)}</span>
+          <div className="relative rounded-xl border-2 border-slate-200 bg-white/70 p-2 shadow-sm">
+            {muestras.length === 0 ? (
+              <div className="py-3 text-center text-xs font-semibold text-slate-400">
+                Aún no hay capturas para esta máquina.
+              </div>
+            ) : (
+              <div className="flex items-stretch gap-2 overflow-x-auto">
+                {muestras.map((m, idx) => {
+                  const st = statusFromLiberacion(m.estatus);
+                  const color =
+                    st === "ok"
+                      ? "from-emerald-400 to-emerald-600 border-emerald-500"
+                      : st === "warn"
+                        ? "from-amber-300 to-amber-500 border-amber-500"
+                        : "from-rose-400 to-rose-600 border-rose-600";
+                  const isCurrent = idx === muestras.length - 1;
+                  const hora = new Date(m.capturadoAt).toLocaleTimeString("es-MX", {
+                    hour12: false,
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  });
+                  return (
+                    <div
+                      key={m.id}
+                      className={`min-w-[110px] flex-1 rounded-lg border-2 bg-gradient-to-br ${color} px-2.5 py-1.5 text-white shadow ${
+                        isCurrent ? "ring-4 ring-cyan-400/70" : ""
+                      }`}
+                    >
+                      <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider opacity-90">
+                        <span>{hora}</span>
+                        <span>{labelLiberacion(m.estatus)}</span>
+                      </div>
+                      <div className="mt-0.5 font-mono text-xl font-black tabular-nums">
+                        {m.rollo}
+                      </div>
+                      <div className="mt-0.5 flex items-center gap-1 text-[10px] font-semibold opacity-90">
+                        {st === "ok" ? (
+                          <CheckCircle2 className="h-3 w-3" />
+                        ) : st === "warn" ? (
+                          <AlertTriangle className="h-3 w-3" />
+                        ) : (
+                          <XCircle className="h-3 w-3" />
+                        )}
+                        <span>T{m.turno}</span>
+                      </div>
                     </div>
-                    <div className="mt-1 font-mono text-2xl font-black tabular-nums">
-                      {m.rollo}
-                    </div>
-                    <div className="mt-1 flex items-center gap-1 text-[10px] font-semibold opacity-90">
-                      {st === "ok" ? (
-                        <CheckCircle2 className="h-3 w-3" />
-                      ) : st === "warn" ? (
-                        <AlertTriangle className="h-3 w-3" />
-                      ) : (
-                        <XCircle className="h-3 w-3" />
-                      )}
-                      <span>T{m.turno}</span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </section>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </section>
+      </main>
 
       {/* FOOTER */}
-      <footer className="fixed inset-x-0 bottom-0 border-t-2 border-slate-200 bg-white/90 px-8 py-2 backdrop-blur">
+      <footer className="shrink-0 border-t-2 border-slate-200 bg-white/90 px-8 py-1.5 backdrop-blur">
         <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-[0.2em] text-slate-500">
           <div className="flex items-center gap-2">
             <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" />
             Realtime conectado · Convertipap Quality Flow
           </div>
           <div>
-            Actualización cada 10 s · {data?.maquina?.area || "Conversión Tissue"}
+            Actualización cada 30 s · {data?.maquina?.area || "Conversión Tissue"}
           </div>
         </div>
       </footer>
     </div>
   );
 }
+
