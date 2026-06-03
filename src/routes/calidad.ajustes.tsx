@@ -402,7 +402,7 @@ function AjustesPage() {
     return muestras
       .filter(
         (m) =>
-          m.orden_id === detail.a.orden_id &&
+          m.maquina_id === detail.a.maquina_id &&
           m.id !== detail.a.muestra_id &&
           new Date(m.capturado_at) >= new Date(detail.a.solicitado_at),
       )
