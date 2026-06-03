@@ -6,10 +6,9 @@ import {
   LineChart, Line,
   BarChart, Bar,
   XAxis, YAxis, Tooltip, CartesianGrid, Legend,
-  PieChart, Pie, Cell,
 } from "recharts";
 import {
-  ArrowRight, Factory, AlertTriangle, Gauge,
+  ArrowRight, Factory, Gauge,
   Activity, Target, DollarSign, PackageX, TrendingDown,
 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
