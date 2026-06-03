@@ -653,28 +653,28 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
             <CardContent className="p-0">
               {/* Desktop / tablet landscape: tabla clásica */}
               <div className="hidden md:block overflow-x-auto">
-                <table className="w-full text-sm min-w-[680px]">
-                  <thead className="text-[11px] uppercase tracking-wide text-muted-foreground bg-muted/40">
+                <table className="w-full text-base min-w-[680px]">
+                  <thead className="text-sm uppercase tracking-wide text-muted-foreground bg-muted/40">
                     <tr className="border-b">
-                      <th className="py-2.5 px-3 text-left font-semibold w-[30%]">Variable</th>
-                      <th className="py-2.5 px-2 text-right font-semibold w-16">Min</th>
-                      <th className="py-2.5 px-2 text-right font-semibold w-20">Objetivo</th>
-                      <th className="py-2.5 px-2 text-right font-semibold w-16">Max</th>
-                      <th className="py-2.5 px-3 text-left font-semibold w-[26%]">Valor</th>
-                      <th className="py-2.5 px-3 text-left font-semibold w-[140px]">Estado</th>
+                      <th className="py-3 px-3 text-left font-semibold w-[30%]">Variable</th>
+                      <th className="py-3 px-2 text-right font-semibold w-16">Min</th>
+                      <th className="py-3 px-2 text-right font-semibold w-20">Objetivo</th>
+                      <th className="py-3 px-2 text-right font-semibold w-16">Max</th>
+                      <th className="py-3 px-3 text-left font-semibold w-[26%]">Valor</th>
+                      <th className="py-3 px-3 text-left font-semibold w-[140px]">Estado</th>
                     </tr>
                   </thead>
                   <tbody>
                     {evalMediciones.map(({ spec: vs, input, estado }, idx) => (
-                      <tr key={vs.variable_id} className={`border-b last:border-0 transition-colors hover:bg-primary/10 ${idx % 2 === 0 ? "bg-primary/5" : "bg-background"}`}>
-                        <td className="py-3 px-3 align-middle">
-                          <div className="font-medium text-sm leading-tight">{vs.etiqueta}</div>
-                          <div className="text-[11px] text-muted-foreground">{vs.unidad}</div>
+                      <tr key={vs.variable_id} className={`border-b last:border-0 transition-colors hover:bg-primary/10 ${idx % 2 === 0 ? "bg-primary/15" : "bg-background"}`}>
+                        <td className="py-4 px-3 align-middle">
+                          <div className="font-medium text-base leading-snug">{vs.etiqueta}</div>
+                          <div className="text-sm text-muted-foreground">{vs.unidad}</div>
                         </td>
-                        <td className="py-3 px-2 text-right tabular-nums text-muted-foreground align-middle">{vs.min_valor}</td>
-                        <td className="py-3 px-2 text-right tabular-nums font-semibold text-foreground align-middle">{vs.objetivo}</td>
-                        <td className="py-3 px-2 text-right tabular-nums text-muted-foreground align-middle">{vs.max_valor}</td>
-                        <td className="py-3 px-3 align-middle">
+                        <td className="py-4 px-2 text-base text-right tabular-nums text-muted-foreground align-middle">{vs.min_valor}</td>
+                        <td className="py-4 px-2 text-base text-right tabular-nums font-semibold text-foreground align-middle">{vs.objetivo}</td>
+                        <td className="py-4 px-2 text-base text-right tabular-nums text-muted-foreground align-middle">{vs.max_valor}</td>
+                        <td className="py-4 px-3 align-middle">
                           {vs.clave === "uniones" ? (
                             <Select
                               disabled={isBlocked}
@@ -714,7 +714,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
                             />
                           )}
                         </td>
-                        <td className="py-3 px-3 align-middle"><EstadoMedicionBadge estado={estado} /></td>
+                        <td className="py-4 px-3 align-middle"><EstadoMedicionBadge estado={estado} /></td>
                       </tr>
                     ))}
                   </tbody>
@@ -722,28 +722,28 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
               </div>
 
               {/* Mobile / tablet portrait: tarjetas por variable */}
-              <div className="md:hidden space-y-3 p-4">
-                {evalMediciones.map(({ spec: vs, input, estado }) => (
-                  <div key={vs.variable_id} className="rounded-xl border border-border bg-card p-4 shadow-sm">
-                    <div className="flex items-start justify-between gap-2 mb-3">
+              <div className="md:hidden space-y-4 p-4">
+                {evalMediciones.map(({ spec: vs, input, estado }, idx) => (
+                  <div key={vs.variable_id} className={`rounded-xl border border-border p-5 shadow-sm ${idx % 2 === 0 ? "bg-primary/15" : "bg-card"}`}>
+                    <div className="flex items-start justify-between gap-2 mb-4">
                       <div>
-                        <div className="font-semibold text-sm">{vs.etiqueta}</div>
-                        <div className="text-xs text-muted-foreground">{vs.unidad}</div>
+                        <div className="font-semibold text-base">{vs.etiqueta}</div>
+                        <div className="text-sm text-muted-foreground">{vs.unidad}</div>
                       </div>
                       <EstadoMedicionBadge estado={estado} />
                     </div>
-                    <div className="grid grid-cols-3 gap-2 mb-3 text-center">
-                      <div className="rounded-md bg-muted/50 px-2 py-1.5">
-                        <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Min</div>
-                        <div className="text-sm font-medium tabular-nums text-muted-foreground">{vs.min_valor}</div>
+                    <div className="grid grid-cols-3 gap-2 mb-4 text-center">
+                      <div className="rounded-md bg-muted/50 px-2 py-2">
+                        <div className="text-xs uppercase tracking-wide text-muted-foreground">Min</div>
+                        <div className="text-base font-medium tabular-nums text-muted-foreground">{vs.min_valor}</div>
                       </div>
-                      <div className="rounded-md bg-primary/5 px-2 py-1.5 border border-primary/10">
-                        <div className="text-[10px] uppercase tracking-wide text-primary/70">Objetivo</div>
-                        <div className="text-sm font-bold tabular-nums text-primary">{vs.objetivo}</div>
+                      <div className="rounded-md bg-primary/15 px-2 py-2 border border-primary/20">
+                        <div className="text-xs uppercase tracking-wide text-primary/70">Objetivo</div>
+                        <div className="text-base font-bold tabular-nums text-primary">{vs.objetivo}</div>
                       </div>
-                      <div className="rounded-md bg-muted/50 px-2 py-1.5">
-                        <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Max</div>
-                        <div className="text-sm font-medium tabular-nums text-muted-foreground">{vs.max_valor}</div>
+                      <div className="rounded-md bg-muted/50 px-2 py-2">
+                        <div className="text-xs uppercase tracking-wide text-muted-foreground">Max</div>
+                        <div className="text-base font-medium tabular-nums text-muted-foreground">{vs.max_valor}</div>
                       </div>
                     </div>
                     {vs.clave === "uniones" ? (
