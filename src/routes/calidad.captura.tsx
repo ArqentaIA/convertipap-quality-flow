@@ -799,8 +799,9 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
                   id="jefe"
                   maxLength={120}
                   value={jefeMaquina}
-                  onChange={(e) => setJefeMaquina(e.target.value)}
-                  placeholder="Nombre"
+                  onChange={(e) => setJefeMaquina(e.target.value.toUpperCase())}
+                  placeholder="NOMBRE"
+                  className="uppercase"
                 />
               </div>
               <div className="space-y-1.5">
@@ -811,8 +812,9 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
                   id="oper"
                   maxLength={120}
                   value={operador}
-                  onChange={(e) => setOperador(e.target.value)}
-                  placeholder="Nombre"
+                  onChange={(e) => setOperador(e.target.value.toUpperCase())}
+                  placeholder="NOMBRE"
+                  className="uppercase"
                 />
               </div>
               <div className="space-y-1.5">
@@ -823,8 +825,9 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
                   id="prens"
                   maxLength={120}
                   value={prensero}
-                  onChange={(e) => setPrensero(e.target.value)}
-                  placeholder="Nombre"
+                  onChange={(e) => setPrensero(e.target.value.toUpperCase())}
+                  placeholder="NOMBRE"
+                  className="uppercase"
                 />
               </div>
               <div className="space-y-1.5">
@@ -835,8 +838,9 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
                   id="anal"
                   maxLength={120}
                   value={analista}
-                  onChange={(e) => setAnalista(e.target.value)}
-                  placeholder="Nombre"
+                  onChange={(e) => setAnalista(e.target.value.toUpperCase())}
+                  placeholder="NOMBRE"
+                  className="uppercase"
                 />
               </div>
             </CardContent>
