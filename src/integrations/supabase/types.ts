@@ -197,6 +197,54 @@ export type Database = {
         }
         Relationships: []
       }
+      audit_log: {
+        Row: {
+          datos_anteriores: Json | null
+          datos_nuevos: Json | null
+          descripcion_accion: string | null
+          id: string
+          ip_address: string | null
+          modulo: string | null
+          operacion: string
+          registro_id: string | null
+          rol: string | null
+          tabla_afectada: string | null
+          timestamp: string
+          usuario_email: string | null
+          usuario_id: string | null
+        }
+        Insert: {
+          datos_anteriores?: Json | null
+          datos_nuevos?: Json | null
+          descripcion_accion?: string | null
+          id?: string
+          ip_address?: string | null
+          modulo?: string | null
+          operacion: string
+          registro_id?: string | null
+          rol?: string | null
+          tabla_afectada?: string | null
+          timestamp?: string
+          usuario_email?: string | null
+          usuario_id?: string | null
+        }
+        Update: {
+          datos_anteriores?: Json | null
+          datos_nuevos?: Json | null
+          descripcion_accion?: string | null
+          id?: string
+          ip_address?: string | null
+          modulo?: string | null
+          operacion?: string
+          registro_id?: string | null
+          rol?: string | null
+          tabla_afectada?: string | null
+          timestamp?: string
+          usuario_email?: string | null
+          usuario_id?: string | null
+        }
+        Relationships: []
+      }
       familias_producto: {
         Row: {
           activo: boolean
@@ -1326,6 +1374,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      audit_action: {
+        Args: {
+          p_datos?: Json
+          p_descripcion: string
+          p_modulo: string
+          p_registro_id?: string
+        }
+        Returns: string
+      }
       can_access_module: {
         Args: {
           _module: Database["public"]["Enums"]["app_module"]
