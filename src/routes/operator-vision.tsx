@@ -254,6 +254,21 @@ const TARJETAS_CLAVE = [
   "anchoUtil",
 ];
 
+// Fallback usado cuando la OF no tiene especificación activa.
+// Permite renderizar siempre las tarjetas con los valores capturados.
+const TARJETAS_FALLBACK: Record<
+  string,
+  { etiqueta: string; unidad: string; digits: number }
+> = {
+  pesoBase: { etiqueta: "Peso Base", unidad: "g/m²", digits: 2 },
+  humedad: { etiqueta: "Humedad", unidad: "%", digits: 2 },
+  calibre: { etiqueta: "Calibre", unidad: "mm", digits: 3 },
+  diametro: { etiqueta: "Diámetro", unidad: "mm", digits: 0 },
+  relMDCD: { etiqueta: "Rel. MD/CD", unidad: "", digits: 2 },
+  anchoUtil: { etiqueta: "Ancho Útil", unidad: "mm", digits: 0 },
+};
+
+
 function OperatorVisionPage() {
   const { maquina } = Route.useSearch();
   const now = useTicker(1000);
