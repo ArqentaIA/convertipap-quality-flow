@@ -272,6 +272,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
   const upsertFn = useServerFn(upsertMuestraConMediciones);
   const [lastSubmitMode, setLastSubmitMode] = useState<"borrador" | "envio">("borrador");
   const [ultimaEtiqueta, setUltimaEtiqueta] = useState<EtiquetaData | null>(null);
+  const [mostrarProduccion, setMostrarProduccion] = useState<boolean>(false);
   const mutation = useMutation({
     mutationFn: upsertFn,
     onSuccess: (res: { muestra_id: string }) => {
@@ -854,7 +855,8 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
         )}
 
         {/* E. Producción capturada recientemente */}
-        <Card>
+        {mostrarProduccion && (
+        <Card id="produccion-capturada">
           <CardHeader className="pb-2 flex flex-row items-center justify-between">
             <CardTitle className="text-base font-semibold">E. Producción capturada recientemente</CardTitle>
             <Badge variant="outline" className="text-xs">
@@ -926,10 +928,26 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
             )}
           </CardContent>
         </Card>
+        )}
+
 
 
         {spec && (
           <div className="flex flex-wrap items-center justify-end gap-2 sticky bottom-0 bg-background/95 backdrop-blur py-3 border-t">
+            <Button
+              variant="secondary"
+              disabled={mutation.isPending}
+              onClick={() => {
+                setMostrarProduccion(true);
+                toast.success("Captura válida — revisa tu producción capturada");
+                setTimeout(() => {
+                  document.getElementById("produccion-capturada")
+                    ?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }, 50);
+              }}
+            >
+              <CheckCircle2 className="mr-1.5 h-4 w-4" /> Captura válida
+            </Button>
             <Button
               variant="outline" disabled={isBlocked || mutation.isPending}
               onClick={() => handleSubmit("borrador")}
@@ -945,6 +963,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
             </Button>
           </div>
         )}
+
 
         <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
           <AlertDialogContent>
