@@ -328,7 +328,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
         setDefectos([]);
         setHoraMuestreo(toLocalDateTimeInputValue(new Date()));
       } else {
-        toast.success("Borrador guardado");
+        toast.success("Muestra guardada");
       }
     },
     onError: (err: Error) => toast.error(err.message),
