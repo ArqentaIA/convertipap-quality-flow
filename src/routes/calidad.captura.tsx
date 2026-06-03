@@ -470,6 +470,8 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
     });
   }
 
+  const puedeEnviar = !isBlocked && !mutation.isPending && !!spec;
+
   return (
     <AppLayout title="Captura de Muestra de Calidad">
       <div className="space-y-4">
@@ -883,7 +885,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
             <Button
               size="lg"
               className="text-base font-semibold"
-              disabled={isBlocked || mutation.isPending}
+              disabled={!puedeEnviar}
               onClick={() => handleSubmit("envio")}
             >
               <CheckCircle2 className="mr-2 h-5 w-5" />
