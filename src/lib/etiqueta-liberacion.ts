@@ -260,7 +260,36 @@ function buildHtml(data: EtiquetaData, qrDataUrl: string, logoDataUrl: string): 
       <div>
         <div class="obs-title">Comentarios</div>
         <div class="comentarios">${esc(data.observacionesGenerales || "—")}</div>
+        ${
+          data.autorizacion
+            ? `<div style="margin-top:10px;padding:8px 10px;border-left:3px solid #b45309;background:#fffbeb;border-radius:4px;font-size:11px;line-height:1.4">
+                 <div style="font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#92400e;font-size:9.5px;margin-bottom:4px">Justificación · cambio de estatus por Gerente de Calidad</div>
+                 <div style="color:#1e293b;white-space:pre-wrap"><b>Dictamen:</b> ${esc(
+                   data.autorizacion.dictamen === "liberada"
+                     ? "Liberada"
+                     : data.autorizacion.dictamen === "concesion"
+                     ? "Concesión"
+                     : data.autorizacion.dictamen === "rechazada"
+                     ? "Rechazada"
+                     : String(data.autorizacion.dictamen),
+                 )}${
+                   data.autorizacion.motivo
+                     ? ` · <b>Motivo:</b> ${esc(data.autorizacion.motivo)}`
+                     : ""
+                 }</div>
+                 <div style="color:#1e293b;white-space:pre-wrap;margin-top:4px">${esc(
+                   data.autorizacion.observaciones || "—",
+                 )}</div>
+                 <div style="color:#64748b;font-size:9.5px;margin-top:6px;letter-spacing:.04em">${
+                   data.autorizacion.autorizadoAt
+                     ? esc(new Date(data.autorizacion.autorizadoAt).toLocaleString("es-MX"))
+                     : ""
+                 }${data.autorizacion.rolAutorizador ? ` · ${esc(data.autorizacion.rolAutorizador)}` : ""}</div>
+               </div>`
+            : ""
+        }
       </div>
+
       <div class="qr-box">
         <img src="${qrDataUrl}" alt="QR muestra" />
         <div class="cap">Verificar muestra</div>
