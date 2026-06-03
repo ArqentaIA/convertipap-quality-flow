@@ -27,6 +27,7 @@ import {
 } from "@/lib/qc.functions";
 import { useLabFilter } from "@/lib/lab";
 import { cn } from "@/lib/utils";
+import { ReauthDialog } from "@/components/ReauthDialog";
 
 const muestrasQO = queryOptions({
   queryKey: ["qc", "muestras", "all"],
