@@ -318,15 +318,40 @@ export const getReportes = createServerFn({ method: "POST" })
     void cumplRows; void oeeRows;
 
     // ====================================================
-    // Reporte General: todos los rollos del periodo con sus variables (hasta 14)
+    // Reporte General: todos los rollos del periodo con sus variables
     // ====================================================
+    const SIN_INFO = "Sin información";
+    const txt = (v: unknown): string => {
+      if (v === null || v === undefined) return SIN_INFO;
+      const s = String(v).trim();
+      if (!s || s === "—") return SIN_INFO;
+      return s;
+    };
+    const num = (v: unknown): string | number => {
+      if (v === null || v === undefined || v === "") return SIN_INFO;
+      const n = Number(v);
+      return Number.isFinite(n) ? n : SIN_INFO;
+    };
+
+    // Catálogo canónico de variables (etiqueta + unidad) — evita columnas duplicadas
+    const { data: varsCat } = await sb
+      .from("variables_calidad")
+      .select("clave, etiqueta, unidad")
+      .order("etiqueta", { ascending: true });
+    const etiquetaPorClave = new Map<string, string>();
+    for (const v of varsCat ?? []) {
+      const u = (v as any).unidad ? ` (${(v as any).unidad})` : "";
+      etiquetaPorClave.set((v as any).clave, `${(v as any).etiqueta ?? (v as any).clave}${u}`);
+    }
+
     const { data: muestrasFull } = await sb
       .from("muestras_calidad")
       .select(
         `id, numero_rollo, hora_muestreo, turno, operador, jefe_maquina, prensero, analista,
-         estatus_liberacion, dictamen, defectos, variables_snapshot_json,
-         maquina_id, planta_id, orden_id,
-         ordenes_fabricacion(folio, productos(nombre, codigo, capas, gramaje, tipos_producto(codigo, nombre, familias_producto(codigo, nombre))))`,
+         estatus_liberacion, dictamen, defectos,
+         maquina_id, planta_id, orden_id, producto_id,
+         productos!muestras_calidad_producto_id_fkey(nombre, codigo, capas, gramaje, tipos_producto(codigo, nombre, familias_producto(codigo, nombre))),
+         ordenes_fabricacion(folio)`,
       )
       .gte("hora_muestreo", start)
       .lte("hora_muestreo", end)
@@ -339,16 +364,7 @@ export const getReportes = createServerFn({ method: "POST" })
       medsByMuestra.set(med.muestra_id, arr);
     }
 
-    const etiquetaPorClave = new Map<string, string>();
-    for (const m of muestrasFull ?? []) {
-      const snap = ((m as any).variables_snapshot_json ?? {}) as Record<string, { etiqueta?: string; unidad?: string }>;
-      for (const [clave, s] of Object.entries(snap)) {
-        if (!etiquetaPorClave.has(clave)) {
-          const u = s?.unidad ? ` (${s.unidad})` : "";
-          etiquetaPorClave.set(clave, `${s?.etiqueta ?? clave}${u}`);
-        }
-      }
-    }
+    // Asegura etiqueta para cualquier clave presente en mediciones que no esté en catálogo
     for (const arr of medsByMuestra.values()) {
       for (const med of arr) {
         if (!etiquetaPorClave.has(med.variable_clave)) {
@@ -361,39 +377,38 @@ export const getReportes = createServerFn({ method: "POST" })
     const generalRows: Record<string, string | number>[] = (muestrasFull ?? []).map((m: any) => {
       const maq = maquinaById.get(m.maquina_id);
       const planta = plantaById.get(m.planta_id);
-      const orden = m.ordenes_fabricacion;
-      const producto = orden?.productos;
+      const producto = m.productos;
       const tipo = producto?.tipos_producto;
       const familia = tipo?.familias_producto;
       const meds = medsByMuestra.get(m.id) ?? [];
       const medsByClave = new Map(meds.map((x) => [x.variable_clave, x]));
       const row: Record<string, string | number> = {
-        fecha: (m.hora_muestreo as string)?.slice(0, 10) ?? "",
-        hora: (m.hora_muestreo as string)?.slice(11, 16) ?? "",
-        planta: planta?.nombre ?? "—",
-        maquina: maq?.codigo ?? "—",
-        turno: m.turno ?? "—",
-        orden: orden?.folio ?? "—",
-        familia_producto: familia?.nombre ?? "—",
-        familia_codigo: familia?.codigo ?? "—",
-        tipo_producto: tipo?.nombre ?? "—",
-        tipo_codigo: tipo?.codigo ?? "—",
-        producto: producto?.nombre ?? "—",
-        codigo_producto: producto?.codigo ?? "—",
-        capas: producto?.capas ?? "",
-        gramaje: producto?.gramaje ?? "",
-        rollo: m.numero_rollo ?? "—",
-        operador: m.operador ?? "—",
-        jefe_maquina: m.jefe_maquina ?? "—",
-        prensero: m.prensero ?? "—",
-        analista: m.analista ?? "—",
-        defectos: Array.isArray(m.defectos) ? m.defectos.join(", ") : "",
-        estatus: m.estatus_liberacion ?? m.dictamen ?? "pendiente",
+        fecha: (m.hora_muestreo as string)?.slice(0, 10) || SIN_INFO,
+        hora: (m.hora_muestreo as string)?.slice(11, 16) || SIN_INFO,
+        planta: txt(planta?.nombre),
+        maquina: txt(maq?.codigo),
+        turno: txt(m.turno),
+        orden: txt(m.ordenes_fabricacion?.folio),
+        familia_producto: txt(familia?.nombre),
+        familia_codigo: txt(familia?.codigo),
+        tipo_producto: txt(tipo?.nombre),
+        tipo_codigo: txt(tipo?.codigo),
+        producto: txt(producto?.nombre),
+        codigo_producto: txt(producto?.codigo),
+        capas: num(producto?.capas),
+        gramaje: num(producto?.gramaje),
+        rollo: txt(m.numero_rollo),
+        operador: txt(m.operador),
+        jefe_maquina: txt(m.jefe_maquina),
+        prensero: txt(m.prensero),
+        analista: txt(m.analista),
+        defectos: Array.isArray(m.defectos) && m.defectos.length ? m.defectos.join(", ") : SIN_INFO,
+        estatus: txt(m.estatus_liberacion ?? m.dictamen ?? "pendiente"),
       };
       for (const clave of clavesOrden) {
         const etiqueta = etiquetaPorClave.get(clave) ?? clave;
         const med = medsByClave.get(clave);
-        row[etiqueta] = med && med.valor !== null ? med.valor : "";
+        row[etiqueta] = med && med.valor !== null && med.valor !== undefined ? med.valor : SIN_INFO;
       }
       return row;
     });
