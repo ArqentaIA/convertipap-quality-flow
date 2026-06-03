@@ -48,6 +48,7 @@ function LoginPage() {
       );
       return;
     }
+    void auditAction("auth", `Login exitoso: ${email.trim()}`);
     void navigate({ to: "/", replace: true });
   };
 
