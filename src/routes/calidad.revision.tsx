@@ -23,15 +23,11 @@ import {
 } from "@/components/ui/dialog";
 import { useAuth } from "@/lib/auth";
 import {
-  listOrdenesContexto, listMuestras, dictaminarMuestra, autorizarMuestra, crearAjuste,
+  listMuestras, dictaminarMuestra, autorizarMuestra, crearAjuste,
 } from "@/lib/qc.functions";
 import { useLabFilter } from "@/lib/lab";
 import { cn } from "@/lib/utils";
 
-const ordenesQO = queryOptions({
-  queryKey: ["qc", "ordenes-contexto"],
-  queryFn: () => listOrdenesContexto(),
-});
 const muestrasQO = queryOptions({
   queryKey: ["qc", "muestras", "all"],
   queryFn: () => listMuestras({ data: {} }),
@@ -39,7 +35,6 @@ const muestrasQO = queryOptions({
 
 export const Route = createFileRoute("/calidad/revision")({
   loader: ({ context }) => {
-    context.queryClient.ensureQueryData(ordenesQO);
     context.queryClient.ensureQueryData(muestrasQO);
   },
   component: RevisionPage,
@@ -80,32 +75,50 @@ function RevisionPage() {
   const labFilter = useLabFilter();
   const qc = useQueryClient();
 
-  const { data: ordenesRaw } = useSuspenseQuery(ordenesQO);
   const { data: muestrasRaw } = useSuspenseQuery(muestrasQO);
 
-  // Normaliza ordenes con campos derivados
-  const ordenes = useMemo(() => {
-    return (ordenesRaw ?? [])
-      .map((o) => ({
-        orden_id: o.id,
-        folio: o.folio,
-        planta_id: o.planta_id,
-        planta_nombre: o.plantas?.nombre ?? "",
-        maquina_id: o.maquina_id,
-        maquina_codigo: o.maquinas?.codigo ?? "",
-        maquina_nombre: o.maquinas?.nombre ?? "",
-        producto_id: o.producto_id,
-        producto_codigo: o.productos?.codigo ?? "",
-        producto_nombre: o.productos?.nombre ?? "",
-      }))
-      .filter((o) => labFilter.isMachineAllowed(o.maquina_codigo));
-  }, [ordenesRaw, labFilter]);
+  type MuestraRow = (typeof muestrasRaw)[number];
+  type OrdenCtx = {
+    orden_id: string;
+    folio: string;
+    planta_id: string;
+    planta_nombre: string;
+    maquina_id: string;
+    maquina_codigo: string;
+    maquina_nombre: string;
+    producto_id: string;
+    producto_codigo: string;
+    producto_nombre: string;
+  };
 
-  const allowedMaquinaIds = useMemo(() => new Set(ordenes.map((o) => o.maquina_id)), [ordenes]);
+  // Contexto derivado por muestra (sin depender de órdenes de fabricación)
+  const ordenes = useMemo<OrdenCtx[]>(() => {
+    return (muestrasRaw ?? [])
+      .map((m: MuestraRow) => {
+        const maq = (m as unknown as { maquinas?: { id: string; codigo: string; nombre: string; plantas?: { id: string; codigo: string; nombre: string } | null } | null }).maquinas;
+        const prod = (m as unknown as { productos?: { id: string; codigo: string; nombre: string } | null }).productos;
+        const pl = maq?.plantas ?? null;
+        return {
+          orden_id: m.id,
+          folio: m.numero_rollo ?? "—",
+          planta_id: m.planta_id,
+          planta_nombre: pl?.nombre ?? "",
+          maquina_id: m.maquina_id,
+          maquina_codigo: maq?.codigo ?? "",
+          maquina_nombre: maq?.nombre ?? "",
+          producto_id: m.producto_id,
+          producto_codigo: prod?.codigo ?? "",
+          producto_nombre: prod?.nombre ?? "",
+        };
+      })
+      .filter((o) => !o.maquina_codigo || labFilter.isMachineAllowed(o.maquina_codigo));
+  }, [muestrasRaw, labFilter]);
+
+  const allowedMuestraIds = useMemo(() => new Set(ordenes.map((o) => o.orden_id)), [ordenes]);
 
   const muestras = useMemo(
-    () => (muestrasRaw ?? []).filter((m) => allowedMaquinaIds.has(m.maquina_id)),
-    [muestrasRaw, allowedMaquinaIds],
+    () => (muestrasRaw ?? []).filter((m) => allowedMuestraIds.has(m.id)),
+    [muestrasRaw, allowedMuestraIds],
   );
 
   const canReview =
@@ -119,19 +132,18 @@ function RevisionPage() {
   const [fEstado, setFEstado] = useState<string>("pendientes");
   const [fDesde, setFDesde] = useState("");
   const [fHasta, setFHasta] = useState("");
-  const [fOrden, setFOrden] = useState("all");
   const [fBusqueda, setFBusqueda] = useState("");
 
-  const plantas = useMemo(
-    () => Array.from(new Map(ordenes.map((o) => [o.planta_id, o.planta_nombre])).entries()),
+  const plantas = useMemo<[string, string][]>(
+    () => Array.from(new Map(ordenes.map((o) => [o.planta_id, o.planta_nombre] as [string, string])).entries()),
     [ordenes],
   );
-  const maquinas = useMemo(
-    () => Array.from(new Map(ordenes.map((o) => [o.maquina_id, o.maquina_nombre])).entries()),
+  const maquinas = useMemo<[string, string][]>(
+    () => Array.from(new Map(ordenes.map((o) => [o.maquina_id, o.maquina_nombre] as [string, string])).entries()),
     [ordenes],
   );
-  const productos = useMemo(
-    () => Array.from(new Map(ordenes.map((o) => [o.producto_id, `${o.producto_codigo} — ${o.producto_nombre}`])).entries()),
+  const productos = useMemo<[string, string][]>(
+    () => Array.from(new Map(ordenes.map((o) => [o.producto_id, `${o.producto_codigo} — ${o.producto_nombre}`] as [string, string])).entries()),
     [ordenes],
   );
 
@@ -145,18 +157,17 @@ function RevisionPage() {
         if (fMaquina !== "all" && m.maquina_id !== fMaquina) return false;
         if (fProducto !== "all" && m.producto_id !== fProducto) return false;
         if (fTurno !== "all" && m.turno !== fTurno) return false;
-        if (fOrden !== "all" && m.orden_id !== fOrden) return false;
         if (fDesde && new Date(m.hora_muestreo) < new Date(fDesde)) return false;
         if (fHasta && new Date(m.hora_muestreo) > new Date(fHasta + "T23:59:59")) return false;
         if (fBusqueda) {
-          const ord = ordenes.find((o) => o.orden_id === m.orden_id);
+          const ord = ordenes.find((o) => o.orden_id === m.id);
           const txt = `${ord?.folio ?? ""} ${m.numero_rollo ?? ""} ${m.capturado_por}`.toLowerCase();
           if (!txt.includes(fBusqueda.toLowerCase())) return false;
         }
         return true;
       })
       .sort((a, b) => +new Date(b.capturado_at) - +new Date(a.capturado_at));
-  }, [muestras, ordenes, fEstado, fPlanta, fMaquina, fProducto, fTurno, fOrden, fDesde, fHasta, fBusqueda]);
+  }, [muestras, ordenes, fEstado, fPlanta, fMaquina, fProducto, fTurno, fDesde, fHasta, fBusqueda]);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selected = filtradas.find((m) => m.id === selectedId) ?? filtradas[0] ?? null;
@@ -164,7 +175,7 @@ function RevisionPage() {
     () => (selected ? (selected.mediciones_calidad ?? []) : []),
     [selected],
   );
-  const selectedOrden = selected ? ordenes.find((o) => o.orden_id === selected.orden_id) : null;
+  const selectedOrden = selected ? ordenes.find((o) => o.orden_id === selected.id) : null;
 
   const totalFueraSpec = selectedMediciones.filter(
     (m) => m.estado === "no_conforme" || m.estado === "fuera_rango_critico",
@@ -236,7 +247,7 @@ function RevisionPage() {
       ajusteMut.mutate({
         data: {
           muestra_id: selected.id,
-          orden_id: selected.orden_id,
+          orden_id: null,
           maquina_id: selected.maquina_id,
           planta_id: selected.planta_id,
           tipo_ajuste: tipoAjuste,
@@ -280,7 +291,7 @@ function RevisionPage() {
       "valor", "min", "objetivo", "max", "estado_medicion",
     ].join(","));
     filtradas.forEach((m) => {
-      const ord = ordenes.find((o) => o.orden_id === m.orden_id);
+      const ord = ordenes.find((o) => o.orden_id === m.id);
       const meds = m.mediciones_calidad ?? [];
       const base = [
         ord?.folio ?? "", m.id, m.hora_muestreo, ord?.planta_nombre ?? "",
@@ -353,8 +364,6 @@ function RevisionPage() {
               options={productos.map(([id, n]) => ({ value: id, label: n }))} />
             <FilterSelect label="Turno" value={fTurno} onChange={setFTurno}
               options={[{ value: "A", label: "A" }, { value: "B", label: "B" }, { value: "C", label: "C" }]} />
-            <FilterSelect label="Orden" value={fOrden} onChange={setFOrden}
-              options={ordenes.map((o) => ({ value: o.orden_id, label: o.folio }))} />
             <FilterSelect label="Estado" value={fEstado} onChange={setFEstado}
               options={ESTADO_FILTROS.map((e) => ({ value: e.value, label: e.label }))} includeAll={false} />
             <div className="space-y-1">
@@ -390,7 +399,7 @@ function RevisionPage() {
               ) : (
                 <ul className="divide-y max-h-[600px] overflow-y-auto">
                   {filtradas.map((m) => {
-                    const ord = ordenes.find((o) => o.orden_id === m.orden_id);
+                    const ord = ordenes.find((o) => o.orden_id === m.id);
                     const meds = m.mediciones_calidad ?? [];
                     const fuera = meds.filter((x) => x.estado !== "conforme").length;
                     const isSel = (selected?.id ?? "") === m.id;

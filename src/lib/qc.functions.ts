@@ -251,7 +251,10 @@ export const listMuestras = createServerFn({ method: "GET" })
     let q = sb
       .from("muestras_calidad")
       .select(
-        `*, mediciones_calidad(*)`,
+        `*,
+         productos(id, codigo, nombre),
+         maquinas(id, codigo, nombre, plantas(id, codigo, nombre)),
+         mediciones_calidad(*)`,
       )
       .order("capturado_at", { ascending: false })
       .limit(500);
@@ -570,7 +573,7 @@ export const crearAjuste = createServerFn({ method: "POST" })
     z
       .object({
         muestra_id: z.string().uuid().nullable().optional(),
-        orden_id: z.string().uuid(),
+        orden_id: z.string().uuid().nullable().optional(),
         maquina_id: z.string().uuid(),
         planta_id: z.string().uuid(),
         tipo_ajuste: z.enum([
@@ -595,7 +598,7 @@ export const crearAjuste = createServerFn({ method: "POST" })
       .from("ajustes_calidad")
       .insert({
         muestra_id: data.muestra_id ?? null,
-        orden_id: data.orden_id,
+        orden_id: data.orden_id ?? null,
         maquina_id: data.maquina_id,
         planta_id: data.planta_id,
         tipo_ajuste: data.tipo_ajuste,

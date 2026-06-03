@@ -31,7 +31,7 @@ export type Database = {
           muestra_id: string | null
           muestra_verificacion_id: string | null
           observacion_ajuste: string | null
-          orden_id: string
+          orden_id: string | null
           planta_id: string
           resultado: Database["public"]["Enums"]["qc_resultado_ajuste"]
           sla_objetivo_horas: number
@@ -56,7 +56,7 @@ export type Database = {
           muestra_id?: string | null
           muestra_verificacion_id?: string | null
           observacion_ajuste?: string | null
-          orden_id: string
+          orden_id?: string | null
           planta_id: string
           resultado?: Database["public"]["Enums"]["qc_resultado_ajuste"]
           sla_objetivo_horas?: number
@@ -81,7 +81,7 @@ export type Database = {
           muestra_id?: string | null
           muestra_verificacion_id?: string | null
           observacion_ajuste?: string | null
-          orden_id?: string
+          orden_id?: string | null
           planta_id?: string
           resultado?: Database["public"]["Enums"]["qc_resultado_ajuste"]
           sla_objetivo_horas?: number

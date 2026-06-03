@@ -1,11 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
-import { useSuspenseQuery, useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Factory, Gauge, Clock, Pause, Play, AlertTriangle, AlertOctagon, X, Check, CircleDashed } from "lucide-react";
-import { toast } from "sonner";
+import { Factory, Gauge, Clock, Pause, Play, AlertTriangle, AlertOctagon, CircleDashed } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { listMaquinasConEstado, listTiposParo, pausarOrden, reanudarOrden } from "@/lib/produccion.functions";
+import { listMaquinasConEstado } from "@/lib/produccion.functions";
 import { useLabFilter } from "@/lib/lab";
 
 export const Route = createFileRoute("/produccion")({
@@ -30,7 +28,6 @@ function ProduccionPage() {
     refetchInterval: 30_000,
   });
   const maquinas = all.filter((m) => labFilter.isMachineIdAllowed(m.id));
-  const [modal, setModal] = useState<MaquinaRow | null>(null);
 
   const activos = maquinas.filter((m) => m.estado === "operando").length;
   const oeeProm = maquinas.length
@@ -54,13 +51,11 @@ function ProduccionPage() {
         ) : (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
             {maquinas.map((m) => (
-              <MaquinaCard key={m.id} m={m} onAbrirParo={() => setModal(m)} />
+              <MaquinaCard key={m.id} m={m} />
             ))}
           </div>
         )}
       </div>
-
-      {modal && <CausaModal maquina={modal} onClose={() => setModal(null)} />}
     </AppLayout>
   );
 }
@@ -75,18 +70,7 @@ function EmptyState() {
   );
 }
 
-function MaquinaCard({ m, onAbrirParo }: { m: MaquinaRow; onAbrirParo: () => void }) {
-  const queryClient = useQueryClient();
-  const reanudarFn = useServerFn(reanudarOrden);
-  const reanudarMut = useMutation({
-    mutationFn: reanudarFn,
-    onSuccess: () => {
-      toast.success("Orden reanudada");
-      queryClient.invalidateQueries({ queryKey: ["produccion"] });
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
-
+function MaquinaCard({ m }: { m: MaquinaRow }) {
   return (
     <div className="rounded-xl border border-border bg-card p-5 shadow-sm transition hover:shadow-md hover:border-primary/40">
       <Link to="/historial/$maquina" params={{ maquina: m.codigo }} className="block">
@@ -95,15 +79,9 @@ function MaquinaCard({ m, onAbrirParo }: { m: MaquinaRow; onAbrirParo: () => voi
             <div className="text-xs uppercase tracking-wider text-muted-foreground">{m.planta}</div>
             <div className="flex items-baseline gap-2">
               <h3 className="text-lg font-bold text-foreground">{m.codigo}</h3>
-              {m.orden && <span className="text-xs text-muted-foreground">· {m.orden.folio}</span>}
             </div>
           </div>
           <EstadoChip estado={m.estado} />
-        </div>
-
-        <div className="mt-3 text-sm text-foreground">{m.orden?.producto ?? "Sin orden activa"}</div>
-        <div className="text-xs text-muted-foreground">
-          {m.orden ? `Turno ${m.orden.turno}` : "Máquina libre"}
         </div>
 
         <div className="mt-4 grid grid-cols-3 gap-2 border-t border-border pt-3 text-center">
@@ -125,120 +103,12 @@ function MaquinaCard({ m, onAbrirParo }: { m: MaquinaRow; onAbrirParo: () => voi
               </div>
             </div>
           </div>
-          {m.orden && (
-            <button
-              onClick={() => reanudarMut.mutate({ data: { orden_id: m.orden!.id } })}
-              disabled={reanudarMut.isPending}
-              className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-md bg-success px-3 py-2 text-xs font-semibold text-success-foreground shadow-sm hover:opacity-90 disabled:opacity-50"
-            >
-              <Play className="h-3.5 w-3.5" /> Reanudar producción
-            </button>
-          )}
         </div>
-      )}
-
-      {!m.paroActivo && m.orden && m.estado === "operando" && (
-        <button
-          onClick={onAbrirParo}
-          className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-xs font-semibold hover:bg-accent"
-        >
-          <Pause className="h-3.5 w-3.5" /> Registrar paro
-        </button>
       )}
     </div>
   );
 }
 
-function CausaModal({ maquina, onClose }: { maquina: MaquinaRow; onClose: () => void }) {
-  const queryClient = useQueryClient();
-  const listTiposFn = useServerFn(listTiposParo);
-  const pausarFn = useServerFn(pausarOrden);
-  const { data: tipos } = useQuery({
-    queryKey: ["produccion", "tiposParo"],
-    queryFn: () => listTiposFn({ data: undefined as never }),
-  });
-  const [tipoId, setTipoId] = useState<string>("");
-  const [obs, setObs] = useState("");
-
-  const pausarMut = useMutation({
-    mutationFn: pausarFn,
-    onSuccess: () => {
-      toast.success("Paro registrado");
-      queryClient.invalidateQueries({ queryKey: ["produccion"] });
-      onClose();
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
-
-  const submit = () => {
-    if (!maquina.orden) return;
-    if (!tipoId) {
-      toast.error("Selecciona la causa del paro");
-      return;
-    }
-    pausarMut.mutate({ data: { orden_id: maquina.orden.id, tipo_paro_id: tipoId, descripcion: obs || undefined } });
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
-      <div className="w-full max-w-md rounded-xl border border-border bg-card shadow-xl" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-start justify-between border-b border-border p-5">
-          <div>
-            <div className="flex items-center gap-2 text-destructive">
-              <AlertOctagon className="h-4 w-4" />
-              <span className="text-xs font-semibold uppercase tracking-wider">Paro de máquina</span>
-            </div>
-            <h3 className="mt-1 text-base font-bold text-foreground">{maquina.codigo} · {maquina.planta}</h3>
-            <p className="text-xs text-muted-foreground">Orden {maquina.orden?.folio ?? "—"}</p>
-          </div>
-          <button onClick={onClose} className="rounded-md p-1 text-muted-foreground hover:bg-muted">
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
-        <div className="space-y-4 p-5">
-          <div>
-            <label className="text-xs font-medium text-muted-foreground">Causa del paro *</label>
-            <select
-              value={tipoId}
-              onChange={(e) => setTipoId(e.target.value)}
-              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-            >
-              <option value="">— Selecciona —</option>
-              {tipos?.map((t) => (
-                <option key={t.id} value={t.id}>{t.nombre}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="text-xs font-medium text-muted-foreground">Observaciones</label>
-            <textarea
-              value={obs}
-              onChange={(e) => setObs(e.target.value)}
-              rows={3}
-              placeholder="Describe la causa, código de alarma, acciones tomadas…"
-              className="mt-1 w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-            />
-          </div>
-        </div>
-
-        <div className="flex items-center justify-end gap-2 border-t border-border p-4">
-          <button onClick={onClose} className="rounded-md border border-border bg-background px-3 py-2 text-xs font-semibold hover:bg-muted">
-            Cancelar
-          </button>
-          <button
-            onClick={submit}
-            disabled={pausarMut.isPending}
-            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
-          >
-            <Check className="h-3.5 w-3.5" /> {pausarMut.isPending ? "Registrando…" : "Registrar paro"}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function EstadoChip({ estado }: { estado: MaquinaRow["estado"] }) {
   const map = {

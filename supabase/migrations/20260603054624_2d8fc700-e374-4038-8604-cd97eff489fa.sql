@@ -1,0 +1,1 @@
+ALTER TABLE public.ajustes_calidad ALTER COLUMN orden_id DROP NOT NULL;

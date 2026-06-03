@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/dialog";
 import { useAuth } from "@/lib/auth";
 import {
-  listOrdenesContexto, listMuestras, listAjustes, actualizarAjuste,
+  listMuestras, listAjustes, actualizarAjuste,
 } from "@/lib/qc.functions";
 import { useLabFilter } from "@/lib/lab";
 import { cn } from "@/lib/utils";
@@ -88,10 +88,6 @@ function calcularSla(
   return { estado, transcurridoHoras, restantesHoras };
 }
 
-const ordenesQO = queryOptions({
-  queryKey: ["qc", "ordenes-contexto"],
-  queryFn: () => listOrdenesContexto(),
-});
 const muestrasQO = queryOptions({
   queryKey: ["qc", "muestras", "all"],
   queryFn: () => listMuestras({ data: {} }),
@@ -103,7 +99,6 @@ const ajustesQO = queryOptions({
 
 export const Route = createFileRoute("/calidad/ajustes")({
   loader: ({ context }) => {
-    context.queryClient.ensureQueryData(ordenesQO);
     context.queryClient.ensureQueryData(muestrasQO);
     context.queryClient.ensureQueryData(ajustesQO);
   },
@@ -124,27 +119,46 @@ function AjustesPage() {
   const labFilter = useLabFilter();
   const qc = useQueryClient();
 
-  const { data: ordenesRaw } = useSuspenseQuery(ordenesQO);
   const { data: muestrasRaw } = useSuspenseQuery(muestrasQO);
   const { data: ajustesRaw } = useSuspenseQuery(ajustesQO);
 
-  const ordenes = useMemo(
+  type MuestraRow = (typeof muestrasRaw)[number];
+  type OrdenCtx = {
+    orden_id: string;
+    folio: string;
+    planta_id: string;
+    planta_nombre: string;
+    maquina_id: string;
+    maquina_codigo: string;
+    maquina_nombre: string;
+    producto_id: string;
+    producto_codigo: string;
+    producto_nombre: string;
+  };
+
+  // Contexto derivado por muestra (sin órdenes de fabricación)
+  const ordenes = useMemo<OrdenCtx[]>(
     () =>
-      (ordenesRaw ?? [])
-        .map((o) => ({
-          orden_id: o.id,
-          folio: o.folio,
-          planta_id: o.planta_id,
-          planta_nombre: o.plantas?.nombre ?? "",
-          maquina_id: o.maquina_id,
-          maquina_codigo: o.maquinas?.codigo ?? "",
-          maquina_nombre: o.maquinas?.nombre ?? "",
-          producto_id: o.producto_id,
-          producto_codigo: o.productos?.codigo ?? "",
-          producto_nombre: o.productos?.nombre ?? "",
-        }))
-        .filter((o) => labFilter.isMachineAllowed(o.maquina_codigo)),
-    [ordenesRaw, labFilter],
+      (muestrasRaw ?? [])
+        .map((m: MuestraRow) => {
+          const maq = (m as unknown as { maquinas?: { id: string; codigo: string; nombre: string; plantas?: { id: string; codigo: string; nombre: string } | null } | null }).maquinas;
+          const prod = (m as unknown as { productos?: { id: string; codigo: string; nombre: string } | null }).productos;
+          const pl = maq?.plantas ?? null;
+          return {
+            orden_id: m.id,
+            folio: m.numero_rollo ?? "—",
+            planta_id: m.planta_id,
+            planta_nombre: pl?.nombre ?? "",
+            maquina_id: m.maquina_id,
+            maquina_codigo: maq?.codigo ?? "",
+            maquina_nombre: maq?.nombre ?? "",
+            producto_id: m.producto_id,
+            producto_codigo: prod?.codigo ?? "",
+            producto_nombre: prod?.nombre ?? "",
+          };
+        })
+        .filter((o) => !o.maquina_codigo || labFilter.isMachineAllowed(o.maquina_codigo)),
+    [muestrasRaw, labFilter],
   );
 
   const allowedMaquinaIds = useMemo(
@@ -175,20 +189,20 @@ function AjustesPage() {
   const [fHasta, setFHasta] = useState("");
   const [fBusqueda, setFBusqueda] = useState("");
 
-  const plantas = useMemo(
-    () => Array.from(new Map(ordenes.map((o) => [o.planta_id, o.planta_nombre])).entries()),
+  const plantas = useMemo<[string, string][]>(
+    () => Array.from(new Map(ordenes.map((o) => [o.planta_id, o.planta_nombre] as [string, string])).entries()),
     [ordenes],
   );
-  const maquinas = useMemo(
-    () => Array.from(new Map(ordenes.map((o) => [o.maquina_id, o.maquina_nombre])).entries()),
+  const maquinas = useMemo<[string, string][]>(
+    () => Array.from(new Map(ordenes.map((o) => [o.maquina_id, o.maquina_nombre] as [string, string])).entries()),
     [ordenes],
   );
 
   const enriched = useMemo(
     () =>
       ajustes.map((a) => {
-        const ord = ordenes.find((o) => o.orden_id === a.orden_id);
         const muestra = muestras.find((m) => m.id === a.muestra_id);
+        const ord = ordenes.find((o) => o.orden_id === a.muestra_id) ?? ordenes.find((o) => o.maquina_id === a.maquina_id);
         const sla = calcularSla({
           solicitado_at: a.solicitado_at,
           ajustado_at: a.ajustado_at ?? null,
@@ -388,7 +402,7 @@ function AjustesPage() {
     return muestras
       .filter(
         (m) =>
-          m.orden_id === detail.a.orden_id &&
+          m.maquina_id === detail.a.maquina_id &&
           m.id !== detail.a.muestra_id &&
           new Date(m.capturado_at) >= new Date(detail.a.solicitado_at),
       )
