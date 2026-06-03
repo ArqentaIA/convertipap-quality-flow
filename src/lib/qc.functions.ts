@@ -598,7 +598,7 @@ export const crearAjuste = createServerFn({ method: "POST" })
       .from("ajustes_calidad")
       .insert({
         muestra_id: data.muestra_id ?? null,
-        orden_id: data.orden_id,
+        orden_id: data.orden_id ?? null,
         maquina_id: data.maquina_id,
         planta_id: data.planta_id,
         tipo_ajuste: data.tipo_ajuste,
