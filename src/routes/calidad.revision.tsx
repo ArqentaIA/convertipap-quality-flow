@@ -247,7 +247,7 @@ function RevisionPage() {
       ajusteMut.mutate({
         data: {
           muestra_id: selected.id,
-          orden_id: selected.orden_id,
+          orden_id: null,
           maquina_id: selected.maquina_id,
           planta_id: selected.planta_id,
           tipo_ajuste: tipoAjuste,
