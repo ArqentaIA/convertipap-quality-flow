@@ -10,7 +10,7 @@ import {
 } from "recharts";
 import {
   ArrowRight, Factory, AlertTriangle, Gauge,
-  Activity, Target,
+  Activity, Target, DollarSign, PackageX, TrendingDown,
 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { RangoSelector, MESES, rangoLabel, type Rango } from "@/components/qc/RangoSelector";
