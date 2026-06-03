@@ -375,13 +375,14 @@ function OperatorVisionPage() {
 
   return (
     <div
-      className="min-h-screen w-full overflow-hidden bg-slate-50 text-slate-900"
+      className="flex h-screen w-full flex-col overflow-hidden bg-slate-50 text-slate-900"
       style={{
         backgroundImage:
           "linear-gradient(rgba(15,23,42,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(15,23,42,0.05) 1px, transparent 1px)",
         backgroundSize: "48px 48px",
       }}
     >
+
       {/* Alerta NC consecutivos */}
       {ncAlerta && (
         <div className="pointer-events-none fixed inset-0 z-[60] animate-[ncFlash_2s_ease-in-out_infinite]">
