@@ -496,10 +496,28 @@ export const cancelarOrden = createServerFn({ method: "POST" })
  * Lista todas las máquinas con su estado actual, orden activa, paro abierto
  * y métricas del turno actual (rollos, OEE estimado).
  */
+const rangoEnum = z.enum(["dia", "semana", "mes", "año", "todo"]).default("dia");
+
+function rangoToDesde(r: "dia" | "semana" | "mes" | "año" | "todo"): string | null {
+  const now = Date.now();
+  const H = 3600_000;
+  switch (r) {
+    case "dia": return new Date(now - 24 * H).toISOString();
+    case "semana": return new Date(now - 7 * 24 * H).toISOString();
+    case "mes": return new Date(now - 30 * 24 * H).toISOString();
+    case "año": return new Date(now - 365 * 24 * H).toISOString();
+    default: return null;
+  }
+}
+
+const maquinasInputSchema = z.object({ rango: rangoEnum.optional() }).optional();
+
 export const listMaquinasConEstado = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .inputValidator((input) => maquinasInputSchema.parse(input ?? undefined))
+  .handler(async ({ data, context }) => {
     const sb = context.supabase as SB;
+    const rango = data?.rango ?? "dia";
 
     const { data: maquinas, error: errMaq } = await sb
       .from("maquinas")
@@ -511,7 +529,7 @@ export const listMaquinasConEstado = createServerFn({ method: "GET" })
     const ids = (maquinas ?? []).map((m) => m.id);
     if (ids.length === 0) return [];
 
-    const desde24h = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+    const desde24h = rangoToDesde(rango) ?? new Date(Date.now() - 24 * 3600_000).toISOString();
     const [
       { data: estados },
       { data: ordenes },
