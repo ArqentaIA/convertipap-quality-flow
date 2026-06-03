@@ -394,9 +394,14 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
       dictamenPrevioAt = prev?.autorizado_at ?? prev?.dictamen_at ?? null;
     }
 
-    const estadoMuestra: Database["public"]["Enums"]["qc_muestra_estado"] = data.enviar_a_revision
-      ? "pendiente_revision"
-      : "borrador";
+    // NC capturado se envía automáticamente a Bandeja de Revisión de Calidad,
+    // ya que solo el Gerente de Calidad puede liberarlo. Esto evita que rollos
+    // No Conformes queden "ocultos" en estado borrador sin posibilidad de
+    // dictamen autorizado.
+    const estadoMuestra: Database["public"]["Enums"]["qc_muestra_estado"] =
+      data.enviar_a_revision || data.estatus_liberacion === "NC"
+        ? "pendiente_revision"
+        : "borrador";
 
     const muestraPayload = {
       orden_id: data.orden_id ?? null,
