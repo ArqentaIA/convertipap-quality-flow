@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Toaster } from "@/components/ui/sonner";
 
 import appCss from "../styles.css?url";
+import irmLogo from "@/assets/logo-irm.jpeg.asset.json";
 
 function NotFoundComponent() {
   return (
