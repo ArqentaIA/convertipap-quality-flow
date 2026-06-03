@@ -745,7 +745,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
                           [vs.variable_id]: { ...prev[vs.variable_id], valor: val },
                         }))}
                       >
-                        <SelectTrigger className="h-12 text-lg font-semibold w-full">
+                        <SelectTrigger className="h-12 text-lg font-bold text-capture w-full">
                           <SelectValue placeholder="Capturar valor" />
                         </SelectTrigger>
                         <SelectContent>
@@ -758,7 +758,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
                       <Input
                         type="text" readOnly tabIndex={-1}
                         value={input.valor === "" ? "—" : input.valor}
-                        className="h-12 text-lg font-semibold w-full bg-muted/40 cursor-not-allowed"
+                        className="h-12 text-lg font-bold text-capture w-full bg-muted/40 cursor-not-allowed"
                         title="Calculado automáticamente: Tensión seca MD ÷ Tensión seca CD"
                       />
                     ) : (
@@ -770,7 +770,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
                           ...prev,
                           [vs.variable_id]: { ...prev[vs.variable_id], valor: e.target.value },
                         }))}
-                        className="h-12 text-lg font-semibold w-full"
+                        className="h-12 text-lg font-bold text-capture w-full"
                         placeholder="Capturar valor"
                       />
                     )}
