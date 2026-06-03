@@ -52,7 +52,7 @@ export const getOperatorVisionData = createServerFn({ method: "GET" })
          especificacion_id`,
       )
       .eq("maquina_id", maquina.id)
-      .in("estado", ["en_proceso", "iniciada"])
+      .in("estado", ["en_proceso", "pausada"])
       .order("fecha_inicio", { ascending: false, nullsFirst: false })
       .limit(1)
       .maybeSingle();
