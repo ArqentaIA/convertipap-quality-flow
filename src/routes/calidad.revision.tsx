@@ -23,15 +23,11 @@ import {
 } from "@/components/ui/dialog";
 import { useAuth } from "@/lib/auth";
 import {
-  listOrdenesContexto, listMuestras, dictaminarMuestra, autorizarMuestra, crearAjuste,
+  listMuestras, dictaminarMuestra, autorizarMuestra, crearAjuste,
 } from "@/lib/qc.functions";
 import { useLabFilter } from "@/lib/lab";
 import { cn } from "@/lib/utils";
 
-const ordenesQO = queryOptions({
-  queryKey: ["qc", "ordenes-contexto"],
-  queryFn: () => listOrdenesContexto(),
-});
 const muestrasQO = queryOptions({
   queryKey: ["qc", "muestras", "all"],
   queryFn: () => listMuestras({ data: {} }),
@@ -39,7 +35,6 @@ const muestrasQO = queryOptions({
 
 export const Route = createFileRoute("/calidad/revision")({
   loader: ({ context }) => {
-    context.queryClient.ensureQueryData(ordenesQO);
     context.queryClient.ensureQueryData(muestrasQO);
   },
   component: RevisionPage,
