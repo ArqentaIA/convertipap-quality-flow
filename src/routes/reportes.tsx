@@ -374,23 +374,26 @@ function ReportesPage() {
             <FileBarChart2 className="h-4 w-4 text-muted-foreground" />
           </div>
           <ul className="divide-y divide-border">
-            {REPORTES.map((nombre) => {
+            {REPORTES.map((rep) => {
+              const nombre = rep.nombre;
               const titulo = `${nombre} · ${periodo}`;
               const hojas = datasetsFiltrados[nombre] ?? [{ sheet: "Datos", rows: [] }];
               return (
                 <li key={nombre} className="flex items-center justify-between gap-3 px-5 py-3">
                   <div>
                     <div className="text-sm font-medium text-foreground">{nombre}</div>
-                    <div className="text-[11px] text-muted-foreground">PDF ejecutivo + XLSX para BD</div>
+                    <div className="text-[11px] text-muted-foreground">{rep.descripcion}</div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => descargarPDF(titulo, `${freq} · ${periodo}`, hojas)}
-                      className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium hover:bg-accent"
-                      title="Descargar reporte ejecutivo en PDF"
-                    >
-                      <Download className="h-3.5 w-3.5" /> PDF
-                    </button>
+                    {!rep.xlsxOnly && (
+                      <button
+                        onClick={() => descargarPDF(titulo, `${freq} · ${periodo}`, hojas)}
+                        className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium hover:bg-accent"
+                        title="Descargar reporte ejecutivo en PDF"
+                      >
+                        <Download className="h-3.5 w-3.5" /> PDF
+                      </button>
+                    )}
                     <button
                       onClick={() => descargarXLSX(nombre, hojas)}
                       className="inline-flex items-center gap-2 rounded-md border border-success/40 bg-success/10 px-3 py-1.5 text-xs font-medium text-success hover:bg-success/20"
