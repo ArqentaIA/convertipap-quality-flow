@@ -138,6 +138,12 @@ function RootComponent() {
       <AuthProvider>
         <Outlet />
         <Toaster richColors position="top-right" />
+        <div
+          aria-hidden="false"
+          className="pointer-events-none fixed bottom-1 left-1/2 z-50 -translate-x-1/2 select-none text-[10px] font-light tracking-wide text-muted-foreground/50"
+        >
+          IRM Intelligence®
+        </div>
       </AuthProvider>
     </QueryClientProvider>
   );
