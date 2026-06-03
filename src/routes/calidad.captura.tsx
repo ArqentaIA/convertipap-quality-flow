@@ -297,11 +297,10 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
   const [muestraRecienId, setMuestraRecienId] = useState<string | null>(null);
   const mutation = useMutation({
     mutationFn: upsertFn,
-    onSuccess: async (res: { muestra_id: string }, variables) => {
-      const submitMode = variables.data.enviar_a_revision ? "envio" : "borrador";
+    onSuccess: async (res: { muestra_id: string }) => {
       await queryClient.invalidateQueries({ queryKey: ["qc"] });
       await queryClient.refetchQueries({ queryKey: ["qc", "mis-muestras-recientes"], type: "active" });
-      if (submitMode === "envio") {
+      {
         const folioToast = `${numeroRollo || "SN"} · ${maquina.codigo}`;
         toast.success(`Muestra guardada (${folioToast})`, {
           description: "Agregada al listado de producción capturada.",
