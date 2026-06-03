@@ -17,6 +17,7 @@ import {
   Timer,
 } from "lucide-react";
 import { getOperatorVisionData } from "@/lib/operator-vision.functions";
+import logoConvertipap from "@/assets/logo-convertipap.png";
 
 const MAQUINAS_VALIDAS = ["MP-04", "MP-05", "MP-06", "MP-07"] as const;
 type MaquinaValida = (typeof MAQUINAS_VALIDAS)[number];
@@ -126,21 +127,21 @@ function KpiCard({
     neutral: "text-slate-900",
   };
   return (
-    <div className={`rounded-xl border-2 ${palette[state]} px-4 py-3 flex flex-col shadow-sm`}>
+    <div className={`rounded-2xl border-[3px] ${palette[state]} px-6 py-5 flex flex-col shadow-md`}>
       <div className="flex items-center justify-between">
-        <span className="text-[11px] font-black uppercase tracking-[0.15em] text-slate-500">
+        <span className="text-[16px] font-black uppercase tracking-[0.15em] text-slate-500">
           {label}
         </span>
-        <Icon className="h-5 w-5 opacity-60" />
+        <Icon className="h-8 w-8 opacity-60" />
       </div>
-      <div className="mt-1 flex items-baseline gap-2">
-        <span className={`font-mono text-[56px] font-black leading-none tabular-nums ${valueColor[state]}`}>
+      <div className="mt-2 flex items-baseline gap-2">
+        <span className={`font-mono text-[88px] font-black leading-none tabular-nums ${valueColor[state]}`}>
           {value}
         </span>
-        {unit && <span className="text-sm font-bold text-slate-500">{unit}</span>}
+        {unit && <span className="text-2xl font-bold text-slate-500">{unit}</span>}
       </div>
       {subtitle && (
-        <div className={`mt-1 text-[11px] font-black uppercase tracking-wider`}>
+        <div className={`mt-2 text-[15px] font-black uppercase tracking-wider`}>
           {subtitle}
         </div>
       )}
@@ -189,23 +190,23 @@ function VarCard({
           : "text-slate-400";
 
   return (
-    <div className={`rounded-xl border-2 ${ring} p-3 flex flex-col`}>
+    <div className={`rounded-2xl border-[3px] ${ring} p-5 flex flex-col`}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Icon className="h-4 w-4 text-slate-500" />
-          <span className="text-[11px] font-black uppercase tracking-wider text-slate-600">
+          <Icon className="h-7 w-7 text-slate-500" />
+          <span className="text-[18px] font-black uppercase tracking-wider text-slate-600">
             {def.etiqueta}
           </span>
         </div>
-        <span className={`text-[10px] font-black uppercase ${stateColor}`}>{stateLabel}</span>
+        <span className={`text-[16px] font-black uppercase ${stateColor}`}>{stateLabel}</span>
       </div>
-      <div className="mt-1 flex items-baseline gap-1.5">
-        <span className="font-mono text-[44px] font-black leading-none tabular-nums text-slate-900">
+      <div className="mt-3 flex items-baseline gap-2">
+        <span className="font-mono text-[96px] font-black leading-none tabular-nums text-slate-900">
           {fmt(value, def.digits)}
         </span>
-        <span className="text-sm font-bold text-slate-500">{def.unidad}</span>
+        <span className="text-2xl font-bold text-slate-500">{def.unidad}</span>
       </div>
-      <div className="mt-1 text-[11px] font-semibold text-slate-500 tabular-nums">
+      <div className="mt-3 text-[16px] font-semibold text-slate-500 tabular-nums">
         {hasSpec ? `(${fmt(min, def.digits)} – ${fmt(max, def.digits)})` : "Sin especificación"}
       </div>
     </div>
@@ -215,10 +216,10 @@ function VarCard({
 function HeaderField({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex flex-col">
-      <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">
+      <span className="text-[13px] font-bold uppercase tracking-[0.18em] text-slate-400">
         {label}
       </span>
-      <span className="truncate text-sm font-bold text-slate-800">{value || "-"}</span>
+      <span className="truncate text-lg font-bold text-slate-800">{value || "-"}</span>
     </div>
   );
 }
@@ -334,17 +335,22 @@ function OperatorVisionPage() {
 
       {/* HEADER */}
       <header className="shrink-0 border-b-2 border-slate-200 bg-white">
-        <div className="flex items-center gap-4 px-6 py-3">
-          {/* Título + máquina */}
-          <div className="flex items-center gap-3">
+        <div className="flex items-center gap-5 px-6 py-4">
+          {/* Logo + título + máquina */}
+          <div className="flex items-center gap-4">
+            <img
+              src={logoConvertipap}
+              alt="Convertipap"
+              className="h-16 w-auto shrink-0 object-contain"
+            />
             <div>
-              <div className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-500">
+              <div className="text-[14px] font-black uppercase tracking-[0.2em] text-slate-500">
                 Máquina{" "}
-                <span className="ml-1 rounded bg-emerald-600 px-2 py-0.5 font-mono text-white">
+                <span className="ml-1 rounded bg-emerald-600 px-2.5 py-1 font-mono text-lg text-white">
                   {maquina}
                 </span>
               </div>
-              <div className="text-2xl font-black tracking-tight text-slate-900">
+              <div className="text-3xl font-black tracking-tight text-slate-900">
                 VISIÓN OPERADOR
               </div>
             </div>
@@ -393,10 +399,10 @@ function OperatorVisionPage() {
 
           {/* Reloj */}
           <div className="text-right">
-            <div className="font-mono text-2xl font-black tabular-nums text-slate-900">
+            <div className="font-mono text-4xl font-black tabular-nums text-slate-900">
               {horaStr}
             </div>
-            <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+            <div className="text-[12px] font-bold uppercase tracking-wider text-slate-500">
               {fechaStr}
             </div>
           </div>
@@ -640,16 +646,16 @@ function OperatorVisionPage() {
                 return (
                   <div
                     key={m.id}
-                    className={`flex flex-col rounded-xl border-2 ${styles} px-3 py-2 shadow-sm`}
+                    className={`flex flex-col rounded-xl border-[3px] ${styles} px-4 py-3 shadow-sm`}
                   >
-                    <div className="flex items-center justify-between text-[11px] font-black uppercase">
+                    <div className="flex items-center justify-between text-[14px] font-black uppercase">
                       <span>{hora}</span>
-                      <Icon className="h-4 w-4" />
+                      <Icon className="h-6 w-6" />
                     </div>
-                    <div className="mt-0.5 font-mono text-lg font-black tabular-nums">
+                    <div className="mt-1 font-mono text-2xl font-black tabular-nums">
                       ROLLO #{m.rollo}
                     </div>
-                    <div className="text-[11px] font-black uppercase tracking-wider">
+                    <div className="text-[13px] font-black uppercase tracking-wider">
                       {labelLiberacion(st)}
                     </div>
                   </div>
