@@ -314,50 +314,88 @@ export const getReportes = createServerFn({ method: "POST" })
       };
     });
 
-    // ====================================================
-    // Reporte ejecutivo
-    // ====================================================
-    const totalMuestras = (muestras ?? []).length;
-    const totalLiberadas = (muestras ?? []).filter((m) => m.dictamen === "liberada").length;
-    const totalRechazadas = (muestras ?? []).filter((m) => m.dictamen === "rechazada").length;
-    const cumplGlobal = totalMuestras ? (totalLiberadas / totalMuestras) * 100 : 0;
-    const oeeAvg = oeeRows.length
-      ? oeeRows.reduce((a, r) => a + r.oee, 0) / oeeRows.length
-      : 0;
+    // Marcar como usados (los datasets ya no se exponen pero se conservan los cálculos por compatibilidad)
+    void cumplRows; void oeeRows;
 
-    const periodoLabel = `${start.slice(0, 10)} → ${end.slice(0, 10)}`;
-    const ejecutivoKpis = [
-      { kpi: "Cumplimiento promedio", valor: Number(cumplGlobal.toFixed(1)), unidad: "%", periodo: periodoLabel },
-      { kpi: "OEE promedio", valor: Number((oeeAvg * 100).toFixed(1)), unidad: "%", periodo: periodoLabel },
-      { kpi: "Rollos producidos", valor: (rollos ?? []).length, unidad: "rollos", periodo: periodoLabel },
-      { kpi: "No conformidades", valor: totalRechazadas, unidad: "incidencias", periodo: periodoLabel },
-    ];
+    // ====================================================
+    // Reporte General: todos los rollos del periodo con sus variables (hasta 14)
+    // ====================================================
+    const { data: muestrasFull } = await sb
+      .from("muestras_calidad")
+      .select(
+        `id, numero_rollo, hora_muestreo, turno, operador, jefe_maquina, analista,
+         estatus_liberacion, dictamen, variables_snapshot_json,
+         maquina_id, planta_id, orden_id,
+         ordenes_fabricacion(folio, productos(nombre, codigo))`,
+      )
+      .gte("hora_muestreo", start)
+      .lte("hora_muestreo", end)
+      .order("hora_muestreo", { ascending: false });
+
+    const medsByMuestra = new Map<string, Array<{ variable_clave: string; valor: number | null }>>();
+    for (const med of mediciones ?? []) {
+      const arr = medsByMuestra.get(med.muestra_id) ?? [];
+      arr.push({ variable_clave: med.variable_clave, valor: med.valor === null ? null : Number(med.valor) });
+      medsByMuestra.set(med.muestra_id, arr);
+    }
+
+    const etiquetaPorClave = new Map<string, string>();
+    for (const m of muestrasFull ?? []) {
+      const snap = ((m as any).variables_snapshot_json ?? {}) as Record<string, { etiqueta?: string; unidad?: string }>;
+      for (const [clave, s] of Object.entries(snap)) {
+        if (!etiquetaPorClave.has(clave)) {
+          const u = s?.unidad ? ` (${s.unidad})` : "";
+          etiquetaPorClave.set(clave, `${s?.etiqueta ?? clave}${u}`);
+        }
+      }
+    }
+    for (const arr of medsByMuestra.values()) {
+      for (const med of arr) {
+        if (!etiquetaPorClave.has(med.variable_clave)) {
+          etiquetaPorClave.set(med.variable_clave, med.variable_clave);
+        }
+      }
+    }
+    const clavesOrden = Array.from(etiquetaPorClave.keys()).sort();
+
+    const generalRows: Record<string, string | number>[] = (muestrasFull ?? []).map((m: any) => {
+      const maq = maquinaById.get(m.maquina_id);
+      const planta = plantaById.get(m.planta_id);
+      const orden = m.ordenes_fabricacion;
+      const meds = medsByMuestra.get(m.id) ?? [];
+      const medsByClave = new Map(meds.map((x) => [x.variable_clave, x]));
+      const row: Record<string, string | number> = {
+        fecha: (m.hora_muestreo as string)?.slice(0, 10) ?? "",
+        hora: (m.hora_muestreo as string)?.slice(11, 16) ?? "",
+        planta: planta?.nombre ?? "—",
+        maquina: maq?.codigo ?? "—",
+        turno: m.turno ?? "—",
+        orden: orden?.folio ?? "—",
+        producto: orden?.productos?.nombre ?? "—",
+        codigo_producto: orden?.productos?.codigo ?? "—",
+        rollo: m.numero_rollo ?? "—",
+        operador: m.operador ?? "—",
+        jefe_maquina: m.jefe_maquina ?? "—",
+        analista: m.analista ?? "—",
+        estatus: m.estatus_liberacion ?? m.dictamen ?? "pendiente",
+      };
+      for (const clave of clavesOrden) {
+        const etiqueta = etiquetaPorClave.get(clave) ?? clave;
+        const med = medsByClave.get(clave);
+        row[etiqueta] = med && med.valor !== null ? med.valor : "";
+      }
+      return row;
+    });
 
     const datasets: ReportePayload["datasets"] = {
-      Cumplimiento: [{ sheet: "Cumplimiento", rows: cumplRows.length ? cumplRows : [{ aviso: "Sin datos" }] }],
       "Detalle de no conformidades": [
         { sheet: "No conformidades", rows: ncRows.length ? ncRows : [{ aviso: "Sin no conformidades en el periodo" }] },
       ],
       "Tendencia de variables críticas": [
         { sheet: "Tendencia", rows: tendRows.length ? tendRows : [{ aviso: "Sin datos" }] },
       ],
-      "OEE por máquina y turno": [
-        { sheet: "OEE", rows: oeeRows.length ? oeeRows : [{ aviso: "Sin datos" }] },
-      ],
-      "Reporte ejecutivo de calidad": [
-        { sheet: "KPIs", rows: ejecutivoKpis },
-        {
-          sheet: "Resumen por planta",
-          rows: desempenoPlanta.length
-            ? desempenoPlanta.map((p) => ({
-                planta: p.planta,
-                cumplimiento_pct: p.cumpl,
-                rollos: p.rollos,
-                no_conformes: p.nc,
-                delta_pct: p.delta,
-              }))
-            : [{ aviso: "Sin datos" }],
-        },
+      "Reporte General": [
+        { sheet: "Rollos producidos", rows: generalRows.length ? generalRows : [{ aviso: "Sin rollos en el periodo" }] },
       ],
     };
 
