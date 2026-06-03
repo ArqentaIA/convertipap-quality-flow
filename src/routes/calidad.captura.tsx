@@ -617,9 +617,9 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
               </div>
               <div className="space-y-1.5">
                 <Label className="text-base">Especificación vigente</Label>
-                <div className="flex items-center gap-2 h-9 px-3 rounded-md border border-border bg-muted text-sm">
+                <div className="flex items-center gap-2 h-11 px-3 rounded-md border border-border bg-muted text-base">
                   <Badge variant="secondary">v{spec.spec.version}</Badge>
-                  <span className="text-muted-foreground text-xs">{variables.length} variables</span>
+                  <span className="text-muted-foreground text-sm">{variables.length} variables</span>
                 </div>
               </div>
               <div className="md:col-span-3 space-y-1.5">
