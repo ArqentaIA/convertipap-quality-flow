@@ -2,12 +2,14 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useMemo } from "react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Search, Download, Filter, Eye, Calendar, ArrowLeft, QrCode, Lock, CircleDashed } from "lucide-react";
+import { Search, Download, Filter, Eye, Calendar, ArrowLeft, QrCode, Lock, CircleDashed, ClipboardCheck } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { printRollReport } from "@/lib/roll-report";
 import { useLabFilter, LAB_LABEL } from "@/lib/lab";
 import { resolveRolloStatus } from "@/lib/roll-status";
 import { listMaquinasConEstado, listHistorialMaquina } from "@/lib/produccion.functions";
+import { DetalleCalidadModal } from "@/components/qc/DetalleCalidadModal";
+
 
 export const Route = createFileRoute("/historial/$maquina")({
   component: HistorialPage,
@@ -23,7 +25,9 @@ export const Route = createFileRoute("/historial/$maquina")({
 function HistorialPage() {
   const { maquina: maquinaCodigo } = Route.useParams();
   const [q, setQ] = useState("");
+  const [detalle, setDetalle] = useState<{ ordenId: string; folio: string } | null>(null);
   const labFilter = useLabFilter();
+
 
   const listMaquinasFn = useServerFn(listMaquinasConEstado);
   const { data: maquinas } = useSuspenseQuery({
@@ -206,9 +210,17 @@ function HistorialPage() {
                           >
                             <QrCode className="h-3.5 w-3.5" /> Imprimir
                           </button>
+                          <button
+                            onClick={() => setDetalle({ ordenId: r.ordenId, folio: r.folio })}
+                            className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-1 text-xs font-semibold text-primary hover:bg-primary/20"
+                            title="Ver detalle completo de calidad"
+                          >
+                            <ClipboardCheck className="h-3.5 w-3.5" /> Detalle de calidad
+                          </button>
                           <button className="inline-flex items-center gap-1 text-xs text-primary hover:underline">
                             <Eye className="h-3.5 w-3.5" /> Ver
                           </button>
+
                         </div>
                       </td>
                     </tr>
@@ -223,9 +235,17 @@ function HistorialPage() {
           </div>
         </div>
       </div>
+
+      <DetalleCalidadModal
+        ordenId={detalle?.ordenId ?? null}
+        folio={detalle?.folio ?? null}
+        open={!!detalle}
+        onOpenChange={(v) => !v && setDetalle(null)}
+      />
     </AppLayout>
   );
 }
+
 
 function StatCard({
   label, value, hint, tone = "default",

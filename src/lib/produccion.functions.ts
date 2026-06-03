@@ -701,3 +701,112 @@ export const listTiposParo = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
     return data ?? [];
   });
+
+// =====================================================================
+// 8) DETALLE DE CALIDAD POR ORDEN (todas las muestras + mediciones)
+// =====================================================================
+const detalleSchema = z.object({
+  orden_id: z.string().uuid(),
+  rango: z.enum(["dia", "semana", "mes", "año", "todo"]).default("todo"),
+});
+
+export const getDetalleCalidadOrden = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => detalleSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const sb = context.supabase as SB;
+
+    const now = Date.now();
+    const HOUR = 3600_000;
+    const desde =
+      data.rango === "dia" ? new Date(now - 24 * HOUR).toISOString()
+      : data.rango === "semana" ? new Date(now - 7 * 24 * HOUR).toISOString()
+      : data.rango === "mes" ? new Date(now - 30 * 24 * HOUR).toISOString()
+      : data.rango === "año" ? new Date(now - 365 * 24 * HOUR).toISOString()
+      : null;
+
+    const { data: orden, error: errOrden } = await sb
+      .from("ordenes_fabricacion")
+      .select(`id, folio, turno, fecha_inicio, fecha_fin, producido_kg, producido_rollos,
+               productos(nombre, codigo), maquinas(codigo, nombre), plantas(nombre)`)
+      .eq("id", data.orden_id)
+      .single();
+    if (errOrden) throw new Error(errOrden.message);
+
+    let q = sb
+      .from("muestras_calidad")
+      .select(
+        `id, numero_rollo, hora_muestreo, turno, operador, jefe_maquina, analista,
+         dictamen, estatus_liberacion, defectos, observaciones_generales,
+         mediciones_calidad(variable_clave, valor, min_snapshot, objetivo_snapshot, max_snapshot, estado, observacion)`,
+      )
+      .eq("orden_id", data.orden_id)
+      .order("hora_muestreo", { ascending: false });
+    if (desde) q = q.gte("hora_muestreo", desde);
+
+    const { data: muestras, error: errM } = await q;
+    if (errM) throw new Error(errM.message);
+
+    const filas = (muestras ?? []).map((m: any) => {
+      const meds = (m.mediciones_calidad ?? []) as any[];
+      const peso = meds.find((x) => x.variable_clave === "peso")?.valor;
+      const ncCount = meds.filter((x) => x.estado === "no_conforme" || x.estado === "fuera_rango_critico").length;
+      const total = meds.length;
+      const cumplimiento = total > 0 ? Math.round(((total - ncCount) / total) * 1000) / 10 : null;
+      const estatus = m.estatus_liberacion ?? m.dictamen ?? "pendiente";
+      return {
+        muestraId: m.id as string,
+        rollo: m.numero_rollo as string,
+        capturadoAt: m.hora_muestreo as string,
+        turno: (m.turno as string) ?? "—",
+        operador: (m.operador as string) ?? "—",
+        jefeMaquina: (m.jefe_maquina as string) ?? "—",
+        analista: (m.analista as string) ?? "—",
+        estatus,
+        defectos: ((m.defectos ?? []) as string[]).filter(Boolean),
+        observaciones: (m.observaciones_generales as string) ?? "",
+        pesoKg: peso === null || peso === undefined ? null : Number(peso),
+        ncCount,
+        totalMediciones: total,
+        cumplimiento,
+        mediciones: meds.map((x) => ({
+          clave: x.variable_clave as string,
+          valor: x.valor === null ? null : Number(x.valor),
+          min: x.min_snapshot === null ? null : Number(x.min_snapshot),
+          objetivo: x.objetivo_snapshot === null ? null : Number(x.objetivo_snapshot),
+          max: x.max_snapshot === null ? null : Number(x.max_snapshot),
+          estado: x.estado as string,
+          observacion: (x.observacion as string) ?? "",
+        })),
+      };
+    });
+
+    // Resumen
+    const totalRollos = filas.length;
+    const ncRollos = filas.filter((f) => f.estatus === "rechazada" || f.estatus === "NC" || f.ncCount > 0).length;
+    const okRollos = totalRollos - ncRollos;
+    const cumplimientoProm = filas.length
+      ? Math.round(
+          (filas.reduce((s, f) => s + (f.cumplimiento ?? 100), 0) / filas.length) * 10,
+        ) / 10
+      : null;
+    const kgTotal = filas.reduce((s, f) => s + (f.pesoKg ?? 0), 0);
+
+    return {
+      orden: {
+        folio: orden.folio as string,
+        turno: (orden.turno as string) ?? "—",
+        producto: (orden as any).productos?.nombre ?? "—",
+        productoCodigo: (orden as any).productos?.codigo ?? "—",
+        maquina: (orden as any).maquinas?.codigo ?? "—",
+        planta: (orden as any).plantas?.nombre ?? "—",
+        fechaInicio: orden.fecha_inicio as string | null,
+        fechaFin: orden.fecha_fin as string | null,
+      },
+      resumen: { totalRollos, okRollos, ncRollos, cumplimientoProm, kgTotal: Math.round(kgTotal * 10) / 10 },
+      filas,
+    };
+  });
+
+export type DetalleCalidadOrden = Awaited<ReturnType<typeof getDetalleCalidadOrden>>;
+
