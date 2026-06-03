@@ -1,0 +1,2 @@
+ALTER TABLE public.app_settings
+ADD COLUMN IF NOT EXISTS costo_no_calidad_kg NUMERIC NOT NULL DEFAULT 18.00;

@@ -133,6 +133,7 @@ export type Database = {
           ceo_report_destinatarios: string
           ceo_report_enabled: boolean
           ceo_report_hora: string
+          costo_no_calidad_kg: number
           created_at: string
           frecuencia_muestreo_min: number
           id: string
@@ -155,6 +156,7 @@ export type Database = {
           ceo_report_destinatarios?: string
           ceo_report_enabled?: boolean
           ceo_report_hora?: string
+          costo_no_calidad_kg?: number
           created_at?: string
           frecuencia_muestreo_min?: number
           id?: string
@@ -177,6 +179,7 @@ export type Database = {
           ceo_report_destinatarios?: string
           ceo_report_enabled?: boolean
           ceo_report_hora?: string
+          costo_no_calidad_kg?: number
           created_at?: string
           frecuencia_muestreo_min?: number
           id?: string
