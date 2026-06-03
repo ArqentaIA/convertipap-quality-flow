@@ -231,12 +231,10 @@ async function descargarPDF(
   doc.save(`${buildFileName(nombre)}.pdf`);
 }
 
-const REPORTES = [
-  "Cumplimiento",
-  "Detalle de no conformidades",
-  "Tendencia de variables críticas",
-  "OEE por máquina y turno",
-  "Reporte ejecutivo de calidad",
+const REPORTES: { nombre: string; xlsxOnly?: boolean; descripcion: string }[] = [
+  { nombre: "Detalle de no conformidades", descripcion: "PDF ejecutivo + XLSX para BD" },
+  { nombre: "Tendencia de variables críticas", descripcion: "PDF ejecutivo + XLSX para BD" },
+  { nombre: "Reporte General", xlsxOnly: true, descripcion: "Todos los rollos producidos del periodo con sus 14 variables (solo XLSX)" },
 ];
 
 function ReportesPage() {
