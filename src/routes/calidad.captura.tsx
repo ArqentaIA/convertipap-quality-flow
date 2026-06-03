@@ -357,13 +357,17 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
           Object.keys(prev).forEach((k) => { r[k] = { valor: "" }; });
           return r;
         });
+      setJefeMaquina("");
+      setOperador("");
+      setPrensero("");
+      setAnalista("");
         setObservaciones("");
         setNumeroRollo("");
         setEstatusLiberacion("");
         setDefectos([]);
       setHoraMuestreo(toLocalDateTimeInputValue(new Date()));
     },
-    onError: (err: Error) => toast.error(err.message),
+    onError: (err: Error) => toast.error("No se pudo guardar la captura", { description: err.message, duration: 7000 }),
   });
 
   async function handlePrintEtiqueta() {
