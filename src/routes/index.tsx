@@ -241,6 +241,7 @@ function Dashboard() {
             </div>
           </Card>
 
+          {false && (
           <Card title="Costo de No Calidad" subtitle={`MXN · ${rangoLabel(rango, mesesSel)}`}>
             <div className="flex h-72 flex-col justify-between gap-3">
               <div className="rounded-xl border border-destructive/30 bg-gradient-to-br from-destructive/15 via-destructive/5 to-transparent p-4">
@@ -279,6 +280,8 @@ function Dashboard() {
               </p>
             </div>
           </Card>
+          )}
+
         </div>
 
         {promedios.length > 0 && (
