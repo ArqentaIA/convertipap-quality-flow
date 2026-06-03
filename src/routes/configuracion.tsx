@@ -313,51 +313,50 @@ function Toggle({ label, on, hint, onChange }: { label: string; on?: boolean; hi
 
 function CEOReportPreview({ onClose }: { onClose: () => void }) {
   const { session } = useAuth();
-  const maquinasQuery = useQuery({
-    queryKey: ["produccion", "maquinas-estado"],
-    queryFn: () => listMaquinasConEstado(),
+  const reportQuery = useQuery({
+    queryKey: ["ceo-report"],
+    queryFn: () => getCEOReport(),
     enabled: !!session?.access_token,
     retry: false,
   });
-  const maquinas = maquinasQuery.data ?? [];
 
   const now = new Date();
-  const fecha = now.toLocaleDateString("es-MX", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
-  const hora = now.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", hour12: true });
-  const planta = "Planta Tlaxcala";
-
-  const rows = maquinas.map((m) => {
-    const estadoLabel =
-      m.estado === "operando" ? "Operando" :
-      m.estado === "paro" ? "En paro" :
-      m.estado === "mantenimiento" ? "Mantenimiento" :
-      "Libre";
-    return {
-      id: m.codigo,
-      estado: estadoLabel,
-      eficiencia: Number((m.oee ?? 0).toFixed(1)),
-    };
+  const fecha = now.toLocaleDateString("es-MX", {
+    weekday: "long", year: "numeric", month: "long", day: "numeric",
   });
+  const hora = now.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", hour12: true });
 
-  const efGeneral = rows.length
-    ? Number((rows.reduce((a, r) => a + r.eficiencia, 0) / rows.length).toFixed(1))
-    : 0;
-
-  if (maquinasQuery.error) {
+  if (reportQuery.error) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
         <div className="w-full max-w-md rounded-xl bg-card p-5 text-sm text-destructive shadow-2xl" onClick={(e) => e.stopPropagation()}>
-          No se pudo cargar la previsualización: {maquinasQuery.error.message}
+          No se pudo cargar la previsualización: {reportQuery.error.message}
         </div>
       </div>
     );
   }
 
+  const data = reportQuery.data;
+  const estadoLabel = (e: string) =>
+    e === "operando" ? "Operando" : e === "paro" ? "En paro" : e === "mantenimiento" ? "Mantenimiento" : "Libre";
+  const estadoCls = (e: string) =>
+    e === "operando" ? "bg-emerald-100 text-emerald-700"
+      : e === "paro" ? "bg-red-100 text-red-700"
+      : e === "mantenimiento" ? "bg-amber-100 text-amber-700"
+      : "bg-gray-100 text-gray-600";
+  const estatusCls = (s: string) =>
+    s === "Liberado" ? "bg-emerald-100 text-emerald-700"
+      : s === "Rechazado" ? "bg-red-100 text-red-700"
+      : s === "Retenido" ? "bg-amber-100 text-amber-700"
+      : "bg-gray-100 text-gray-600";
+  const fmtFecha = (iso: string) =>
+    new Date(iso).toLocaleString("es-MX", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false });
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
       <div
         onClick={(e) => e.stopPropagation()}
-        className="relative max-h-[90vh] w-full max-w-3xl overflow-hidden rounded-xl bg-white shadow-2xl"
+        className="relative max-h-[92vh] w-full max-w-4xl overflow-hidden rounded-xl bg-white shadow-2xl"
       >
         <div className="flex items-center justify-between border-b border-border bg-muted/30 px-5 py-3">
           <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
@@ -368,8 +367,8 @@ function CEOReportPreview({ onClose }: { onClose: () => void }) {
           </button>
         </div>
 
-        <div className="max-h-[calc(90vh-52px)] overflow-y-auto bg-[#f5f6f8] p-6">
-          <div className="mx-auto max-w-2xl rounded-lg bg-white shadow-sm">
+        <div className="max-h-[calc(92vh-52px)] overflow-y-auto bg-[#f5f6f8] p-6">
+          <div className="mx-auto max-w-3xl rounded-lg bg-white shadow-sm">
             <div className="rounded-t-lg bg-gradient-to-r from-primary to-primary/80 px-6 py-5 text-primary-foreground">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-center gap-3">
@@ -378,65 +377,148 @@ function CEOReportPreview({ onClose }: { onClose: () => void }) {
                   </div>
                   <div>
                     <div className="text-[11px] uppercase tracking-wider opacity-90">Convertipap · Reporte Ejecutivo Diario</div>
-                    <div className="mt-0.5 text-xl font-bold leading-tight">Resumen de producción</div>
+                    <div className="mt-0.5 text-xl font-bold leading-tight">Resumen de producción · Últimas 24h</div>
                   </div>
                 </div>
                 <div className="text-right text-[11px] leading-relaxed opacity-95">
-                  <div className="font-semibold">{planta}</div>
                   <div className="capitalize">{fecha}</div>
                   <div>Generado a las {hora}</div>
                 </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-3 border-b border-gray-200 p-5">
-              <KPI label="Máquinas activas" value={String(rows.filter(r => r.estado === "Operando").length)} />
-              <KPI label="Eficiencia general" value={`${efGeneral}%`} />
-              <KPI label="Máquinas totales" value={String(rows.length)} />
-            </div>
+            {!data ? (
+              <div className="p-6 text-sm text-gray-500">Cargando datos…</div>
+            ) : (
+              <>
+                {/* KPIs producción */}
+                <div className="grid grid-cols-2 gap-3 border-b border-gray-200 p-5 sm:grid-cols-4">
+                  <KPI label="Rollos producidos" value={String(data.totales.rollos)} />
+                  <KPI label="Kg producidos" value={data.totales.kg.toLocaleString("es-MX")} />
+                  <KPI label="OEE promedio" value={`${data.totales.oeePromedio}%`} />
+                  <KPI label="Máquinas activas" value={`${data.totales.maquinasActivas}/${data.totales.maquinasTotales}`} />
+                </div>
 
-            <div className="border-b border-gray-200 p-5">
-              <div className="mb-3 text-[11px] font-bold uppercase tracking-wider text-gray-500">Estado de las máquinas</div>
-              {rows.length === 0 ? (
-                <p className="text-xs text-gray-500">Sin máquinas registradas.</p>
-              ) : (
-                <table className="w-full text-xs">
-                  <thead>
-                    <tr className="border-b border-gray-200 text-left text-[10px] uppercase tracking-wider text-gray-500">
-                      <th className="py-2">Máquina</th>
-                      <th className="py-2">Estado</th>
-                      <th className="py-2 text-right">Eficiencia 24h</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {rows.map((m) => (
-                      <tr key={m.id} className="border-b border-gray-100 last:border-0">
-                        <td className="py-2 font-semibold text-gray-900">{m.id}</td>
-                        <td className="py-2">
-                          <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-medium ${
-                            m.estado === "Operando" ? "bg-emerald-100 text-emerald-700" :
-                            m.estado === "En paro" ? "bg-red-100 text-red-700" :
-                            "bg-amber-100 text-amber-700"
-                          }`}>{m.estado}</span>
-                        </td>
-                        <td className="py-2 text-right tabular-nums text-gray-700">{m.eficiencia}%</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
+                {/* KPIs calidad */}
+                <div className="grid grid-cols-2 gap-3 border-b border-gray-200 px-5 pb-5 sm:grid-cols-4">
+                  <KPI label="Cumplimiento" value={`${data.calidad.cumplimientoPct}%`} />
+                  <KPI label="Muestras" value={String(data.calidad.muestrasTotales)} />
+                  <KPI label="Rollos no liberados" value={String(data.calidad.rollosNoLiberados)} />
+                  <KPI label="Kg no liberados" value={data.calidad.kgNoLiberados.toLocaleString("es-MX")} />
+                </div>
 
-            <div className="p-5">
-              <div className="mb-2 text-[11px] font-bold uppercase tracking-wider text-gray-500">Resumen ejecutivo</div>
-              <p className="text-xs leading-relaxed text-gray-700">
-                La planta operó al <b>{efGeneral}%</b> de eficiencia promedio en las últimas 24 horas.
-                Los datos se calculan en tiempo real a partir del sistema de producción y calidad.
-              </p>
-            </div>
+                {/* Desglose por máquina */}
+                <div className="border-b border-gray-200 p-5">
+                  <div className="mb-3 text-[11px] font-bold uppercase tracking-wider text-gray-500">Desglose por máquina</div>
+                  {data.maquinas.length === 0 ? (
+                    <p className="text-xs text-gray-500">Sin máquinas registradas.</p>
+                  ) : (
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="border-b border-gray-200 text-left text-[10px] uppercase tracking-wider text-gray-500">
+                          <th className="py-2">Máquina</th>
+                          <th className="py-2">Estado</th>
+                          <th className="py-2 text-right">Rollos</th>
+                          <th className="py-2 text-right">Kg</th>
+                          <th className="py-2 text-right">OEE</th>
+                          <th className="py-2 text-right">Paro (min)</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {data.maquinas.map((m) => (
+                          <tr key={m.codigo} className="border-b border-gray-100 last:border-0">
+                            <td className="py-2 font-semibold text-gray-900">{m.codigo}</td>
+                            <td className="py-2">
+                              <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-medium ${estadoCls(m.estado)}`}>
+                                {estadoLabel(m.estado)}
+                              </span>
+                            </td>
+                            <td className="py-2 text-right tabular-nums text-gray-700">{m.rollos}</td>
+                            <td className="py-2 text-right tabular-nums text-gray-700">{m.kg.toLocaleString("es-MX")}</td>
+                            <td className="py-2 text-right tabular-nums text-gray-700">{m.oee}%</td>
+                            <td className="py-2 text-right tabular-nums text-gray-700">{m.paroMin}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+
+                {/* Listado de rollos */}
+                <div className="border-b border-gray-200 p-5">
+                  <div className="mb-3 flex items-center justify-between">
+                    <div className="text-[11px] font-bold uppercase tracking-wider text-gray-500">
+                      Listado de rollos · {data.rollos.length}
+                    </div>
+                  </div>
+                  {data.rollos.length === 0 ? (
+                    <p className="text-xs text-gray-500">Sin rollos capturados en las últimas 24h.</p>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-[11px]">
+                        <thead>
+                          <tr className="border-b border-gray-200 text-left text-[10px] uppercase tracking-wider text-gray-500">
+                            <th className="py-2 pr-2">Folio</th>
+                            <th className="py-2 pr-2">Fecha</th>
+                            <th className="py-2 pr-2">Planta</th>
+                            <th className="py-2 pr-2">Máq.</th>
+                            <th className="py-2 pr-2">Turno</th>
+                            <th className="py-2 pr-2 text-right">Peso (kg)</th>
+                            <th className="py-2 pr-2">Operador</th>
+                            <th className="py-2 pr-2">Jefe máq.</th>
+                            <th className="py-2 pr-2">Analista</th>
+                            <th className="py-2 pr-2">Estatus</th>
+                            <th className="py-2">Defectos</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {data.rollos.map((r, i) => (
+                            <tr key={`${r.folio}-${i}`} className="border-b border-gray-100 last:border-0 align-top">
+                              <td className="py-2 pr-2 font-semibold text-gray-900">{r.folio}</td>
+                              <td className="py-2 pr-2 text-gray-700">{fmtFecha(r.fecha)}</td>
+                              <td className="py-2 pr-2 text-gray-700">{r.planta}</td>
+                              <td className="py-2 pr-2 text-gray-700">{r.maquina}</td>
+                              <td className="py-2 pr-2 text-gray-700">{r.turno}</td>
+                              <td className="py-2 pr-2 text-right tabular-nums text-gray-700">
+                                {r.pesoKg != null ? r.pesoKg.toLocaleString("es-MX") : "—"}
+                              </td>
+                              <td className="py-2 pr-2 text-gray-700">{r.operador}</td>
+                              <td className="py-2 pr-2 text-gray-700">{r.jefeMaquina}</td>
+                              <td className="py-2 pr-2 text-gray-700">{r.analista}</td>
+                              <td className="py-2 pr-2">
+                                <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-medium ${estatusCls(r.estatus)}`}>
+                                  {r.estatus}
+                                </span>
+                              </td>
+                              <td className="py-2 text-gray-700">
+                                {r.defectos.length ? r.defectos.join(", ") : "—"}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+
+                <div className="p-5">
+                  <div className="mb-2 text-[11px] font-bold uppercase tracking-wider text-gray-500">Resumen ejecutivo</div>
+                  <p className="text-xs leading-relaxed text-gray-700">
+                    En las últimas 24 horas se produjeron <b>{data.totales.rollos}</b> rollos
+                    (<b>{data.totales.kg.toLocaleString("es-MX")} kg</b>) con un OEE promedio del{" "}
+                    <b>{data.totales.oeePromedio}%</b> y cumplimiento de calidad del{" "}
+                    <b>{data.calidad.cumplimientoPct}%</b>. {data.calidad.rollosNoLiberados > 0 ? (
+                      <>Se detectaron <b>{data.calidad.rollosNoLiberados}</b> rollos no liberados ({data.calidad.kgNoLiberados.toLocaleString("es-MX")} kg).</>
+                    ) : (
+                      <>No se reportan rollos retenidos o rechazados.</>
+                    )}
+                  </p>
+                </div>
+              </>
+            )}
 
             <div className="rounded-b-lg border-t border-gray-200 bg-gray-50 px-5 py-3 text-center text-[10px] text-gray-500">
-              Generado automáticamente por la plataforma Convertipap · Calidad &amp; Producción
+              Generado automáticamente por la plataforma Convertipap · Calidad &amp; Producción · Envío diario 07:00 am
             </div>
           </div>
         </div>
@@ -445,14 +527,6 @@ function CEOReportPreview({ onClose }: { onClose: () => void }) {
   );
 }
 
-function KPI({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-md border border-gray-200 bg-gray-50 p-3">
-      <div className="text-[10px] font-medium uppercase tracking-wider text-gray-500">{label}</div>
-      <div className="mt-1 text-lg font-bold tabular-nums text-gray-900">{value}</div>
-    </div>
-  );
-}
 
 // ───────────────────────────────────────────────────────────────
 // Operator Vision · URLs por máquina (TV/kiosko en tiempo real)
