@@ -30,9 +30,13 @@ type SB = SupabaseClient<Database>;
 // ------------------------- Roles -------------------------
 
 const ROLES_CAPTURA = ["capturista", "calidad", "gerente_general", "administrador"] as const;
-const ROLES_DICTAMEN = ["calidad", "gerente_general", "administrador"] as const;
-const ROLES_AUTORIZA = ["calidad", "gerente_general", "administrador"] as const;
+// Solo Calidad y Administrador pueden dictaminar / autorizar / cambiar estatus.
+const ROLES_DICTAMEN = ["calidad", "administrador"] as const;
+const ROLES_AUTORIZA = ["calidad", "administrador"] as const;
 const ROLES_ADMIN = ["gerente_general", "administrador"] as const;
+
+const ACCESO_DENEGADO_ROLLO =
+  "Acceso denegado. Solo el responsable de Calidad está autorizado para modificar el estatus de un rollo.";
 
 async function getUserRoles(sb: SB, userId: string): Promise<string[]> {
   const { data, error } = await sb.from("user_roles").select("role").eq("user_id", userId);
