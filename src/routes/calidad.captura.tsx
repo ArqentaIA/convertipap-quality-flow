@@ -653,23 +653,23 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
             <CardContent className="p-0">
               {/* Desktop / tablet landscape: tabla clásica */}
               <div className="hidden md:block overflow-x-auto">
-                <table className="w-full text-sm min-w-[680px]">
-                  <thead className="text-[11px] uppercase tracking-wide text-muted-foreground bg-muted/40">
+                <table className="w-full text-base min-w-[680px]">
+                  <thead className="text-sm uppercase tracking-wide text-muted-foreground bg-muted/40">
                     <tr className="border-b">
-                      <th className="py-2.5 px-3 text-left font-semibold w-[30%]">Variable</th>
-                      <th className="py-2.5 px-2 text-right font-semibold w-16">Min</th>
-                      <th className="py-2.5 px-2 text-right font-semibold w-20">Objetivo</th>
-                      <th className="py-2.5 px-2 text-right font-semibold w-16">Max</th>
-                      <th className="py-2.5 px-3 text-left font-semibold w-[26%]">Valor</th>
-                      <th className="py-2.5 px-3 text-left font-semibold w-[140px]">Estado</th>
+                      <th className="py-3 px-3 text-left font-semibold w-[30%]">Variable</th>
+                      <th className="py-3 px-2 text-right font-semibold w-16">Min</th>
+                      <th className="py-3 px-2 text-right font-semibold w-20">Objetivo</th>
+                      <th className="py-3 px-2 text-right font-semibold w-16">Max</th>
+                      <th className="py-3 px-3 text-left font-semibold w-[26%]">Valor</th>
+                      <th className="py-3 px-3 text-left font-semibold w-[140px]">Estado</th>
                     </tr>
                   </thead>
                   <tbody>
                     {evalMediciones.map(({ spec: vs, input, estado }, idx) => (
-                      <tr key={vs.variable_id} className={`border-b last:border-0 transition-colors hover:bg-primary/10 ${idx % 2 === 0 ? "bg-primary/5" : "bg-background"}`}>
-                        <td className="py-3 px-3 align-middle">
-                          <div className="font-medium text-sm leading-tight">{vs.etiqueta}</div>
-                          <div className="text-[11px] text-muted-foreground">{vs.unidad}</div>
+                      <tr key={vs.variable_id} className={`border-b last:border-0 transition-colors hover:bg-primary/10 ${idx % 2 === 0 ? "bg-primary/15" : "bg-background"}`}>
+                        <td className="py-4 px-3 align-middle">
+                          <div className="font-medium text-base leading-snug">{vs.etiqueta}</div>
+                          <div className="text-sm text-muted-foreground">{vs.unidad}</div>
                         </td>
                         <td className="py-3 px-2 text-right tabular-nums text-muted-foreground align-middle">{vs.min_valor}</td>
                         <td className="py-3 px-2 text-right tabular-nums font-semibold text-foreground align-middle">{vs.objetivo}</td>
