@@ -97,6 +97,29 @@ export const Route = createFileRoute("/calidad/captura")({
 type MedicionInputState = Record<string, { valor: string }>;
 type MedicionEstadoUI = "pendiente" | "conforme" | "no_conforme" | "fuera_rango_critico";
 
+function scrollFieldIntoView(el: HTMLElement) {
+  window.requestAnimationFrame(() => {
+    try {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+    } catch {
+      el.scrollIntoView();
+    }
+  });
+}
+
+function focusNextCaptureField(current: HTMLElement) {
+  const fields = Array.from(
+    document.querySelectorAll<HTMLElement>("[data-capture-field]"),
+  ).filter((el) => !el.hasAttribute("disabled"));
+  const idx = fields.indexOf(current);
+  if (idx === -1) return;
+  const next = fields[idx + 1];
+  if (next) {
+    next.focus();
+    scrollFieldIntoView(next);
+  }
+}
+
 function evaluarMedicion(v: number, min: number, max: number): MedicionEstadoUI {
   if (!Number.isFinite(v)) return "pendiente";
   const rango = max - min;
@@ -949,7 +972,11 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
                                 }))
                               }
                             >
-                              <SelectTrigger className="h-12 text-lg font-bold text-capture w-full">
+                              <SelectTrigger
+                                data-capture-field
+                                onFocus={(e) => scrollFieldIntoView(e.currentTarget)}
+                                className="h-12 text-lg font-bold text-capture w-full"
+                              >
                                 <SelectValue placeholder="—" />
                               </SelectTrigger>
                               <SelectContent>
@@ -976,6 +1003,14 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
                               inputMode="decimal"
                               disabled={isBlocked}
                               value={input.valor}
+                              data-capture-field
+                              onFocus={(e) => scrollFieldIntoView(e.currentTarget)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  e.preventDefault();
+                                  focusNextCaptureField(e.currentTarget);
+                                }
+                              }}
                               onChange={(e) =>
                                 setMediciones((prev) => ({
                                   ...prev,
@@ -1050,7 +1085,11 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
                           }))
                         }
                       >
-                        <SelectTrigger className="h-12 text-lg font-bold text-capture w-full">
+                        <SelectTrigger
+                          data-capture-field
+                          onFocus={(e) => scrollFieldIntoView(e.currentTarget)}
+                          className="h-12 text-lg font-bold text-capture w-full"
+                        >
                           <SelectValue placeholder="Capturar valor" />
                         </SelectTrigger>
                         <SelectContent>
@@ -1077,6 +1116,14 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
                         inputMode="decimal"
                         disabled={isBlocked}
                         value={input.valor}
+                        data-capture-field
+                        onFocus={(e) => scrollFieldIntoView(e.currentTarget)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            focusNextCaptureField(e.currentTarget);
+                          }
+                        }}
                         onChange={(e) =>
                           setMediciones((prev) => ({
                             ...prev,
