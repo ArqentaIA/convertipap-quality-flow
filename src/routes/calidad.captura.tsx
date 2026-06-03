@@ -925,7 +925,13 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
                         day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit",
                       });
                       return (
-                        <tr key={m.id} className="border-b last:border-0 hover:bg-muted/20">
+                        <tr
+                          key={m.id}
+                          className={cn(
+                            "border-b last:border-0 hover:bg-muted/20 transition-colors",
+                            muestraRecienId === m.id && "bg-emerald-500/15 animate-pulse",
+                          )}
+                        >
                           <td className="py-2.5 px-3 align-middle whitespace-nowrap text-xs tabular-nums">{fecha}</td>
                           <td className="py-2.5 px-3 align-middle">
                             <span className="font-mono text-xs">{m.maquinas?.codigo ?? "—"}</span>
