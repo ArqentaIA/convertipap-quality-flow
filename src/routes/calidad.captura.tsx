@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { printEtiquetaLiberacion, type EtiquetaData } from "@/lib/etiqueta-liberacion";
 import { auditAction } from "@/lib/audit";
+import { getEffectiveStatus, toEtiquetaEstatus } from "@/lib/qc-effective-status";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
