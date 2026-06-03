@@ -140,10 +140,9 @@ function RootComponent() {
         <Outlet />
         <Toaster richColors position="top-right" />
         <div
-          className="pointer-events-none fixed bottom-2 left-1/2 z-50 flex -translate-x-1/2 select-none items-center gap-1.5 rounded-full bg-background/70 px-2.5 py-1 text-[11px] font-medium tracking-wide text-foreground/70 shadow-sm backdrop-blur-sm ring-1 ring-border/40"
+          className="pointer-events-none fixed bottom-2 left-1/2 z-50 flex -translate-x-1/2 select-none items-center rounded-full bg-background/70 px-2.5 py-1 shadow-sm backdrop-blur-sm ring-1 ring-border/40"
         >
-          <img src={irmLogo.url} alt="IRM" className="h-4 w-auto object-contain" />
-          <span>IRM Intelligence<sup className="text-[8px]">®</sup></span>
+          <img src={irmLogo.url} alt="IRM Intelligence" className="h-5 w-auto object-contain" />
         </div>
       </AuthProvider>
     </QueryClientProvider>
