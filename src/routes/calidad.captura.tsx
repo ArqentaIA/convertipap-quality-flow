@@ -272,6 +272,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
   const upsertFn = useServerFn(upsertMuestraConMediciones);
   const [lastSubmitMode, setLastSubmitMode] = useState<"borrador" | "envio">("borrador");
   const [ultimaEtiqueta, setUltimaEtiqueta] = useState<EtiquetaData | null>(null);
+  const [mostrarProduccion, setMostrarProduccion] = useState<boolean>(false);
   const mutation = useMutation({
     mutationFn: upsertFn,
     onSuccess: (res: { muestra_id: string }) => {
