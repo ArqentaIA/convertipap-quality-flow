@@ -496,10 +496,28 @@ export const cancelarOrden = createServerFn({ method: "POST" })
  * Lista todas las máquinas con su estado actual, orden activa, paro abierto
  * y métricas del turno actual (rollos, OEE estimado).
  */
+const rangoEnum = z.enum(["dia", "semana", "mes", "año", "todo"]).default("dia");
+
+function rangoToDesde(r: "dia" | "semana" | "mes" | "año" | "todo"): string | null {
+  const now = Date.now();
+  const H = 3600_000;
+  switch (r) {
+    case "dia": return new Date(now - 24 * H).toISOString();
+    case "semana": return new Date(now - 7 * 24 * H).toISOString();
+    case "mes": return new Date(now - 30 * 24 * H).toISOString();
+    case "año": return new Date(now - 365 * 24 * H).toISOString();
+    default: return null;
+  }
+}
+
+const maquinasInputSchema = z.object({ rango: rangoEnum.optional() }).optional();
+
 export const listMaquinasConEstado = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .inputValidator((input) => maquinasInputSchema.parse(input ?? undefined))
+  .handler(async ({ data, context }) => {
     const sb = context.supabase as SB;
+    const rango = data?.rango ?? "dia";
 
     const { data: maquinas, error: errMaq } = await sb
       .from("maquinas")
@@ -511,7 +529,7 @@ export const listMaquinasConEstado = createServerFn({ method: "GET" })
     const ids = (maquinas ?? []).map((m) => m.id);
     if (ids.length === 0) return [];
 
-    const desde24h = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+    const desde24h = rangoToDesde(rango) ?? new Date(Date.now() - 24 * 3600_000).toISOString();
     const [
       { data: estados },
       { data: ordenes },
@@ -810,3 +828,64 @@ export const getDetalleCalidadOrden = createServerFn({ method: "GET" })
 
 export type DetalleCalidadOrden = Awaited<ReturnType<typeof getDetalleCalidadOrden>>;
 
+
+// =====================================================================
+// 9) LISTAR ROLLOS INDIVIDUALES POR MÁQUINA + RANGO
+// =====================================================================
+const rollosSchema = z.object({
+  maquina_id: z.string().uuid(),
+  rango: rangoEnum.optional(),
+});
+
+export const listRollosMaquina = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => rollosSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const sb = context.supabase as SB;
+    const desde = rangoToDesde(data.rango ?? "dia");
+
+    let q = sb
+      .from("muestras_calidad")
+      .select(
+        `id, numero_rollo, hora_muestreo, turno, operador, jefe_maquina, analista,
+         dictamen, estatus_liberacion, defectos, orden_id,
+         ordenes_fabricacion:orden_id(folio, productos(nombre, codigo)),
+         mediciones_calidad(variable_clave, valor, estado)`,
+      )
+      .eq("maquina_id", data.maquina_id)
+      .order("hora_muestreo", { ascending: false })
+      .limit(500);
+    if (desde) q = q.gte("hora_muestreo", desde);
+
+    const { data: rows, error } = await q;
+    if (error) throw new Error(error.message);
+
+    return (rows ?? []).map((r: any) => {
+      const meds = (r.mediciones_calidad ?? []) as any[];
+      const peso = meds.find((x) => x.variable_clave === "peso")?.valor;
+      const total = meds.length;
+      const nc = meds.filter((x) => x.estado === "no_conforme" || x.estado === "fuera_rango_critico").length;
+      const cumplimiento = total > 0 ? Math.round(((total - nc) / total) * 1000) / 10 : null;
+      const estatus: "L" | "NC" | "C" =
+        r.estatus_liberacion === "rechazada" || r.dictamen === "rechazada" || nc > 0
+          ? "NC"
+          : r.estatus_liberacion === "liberada" || r.dictamen === "liberada"
+          ? "L"
+          : "C";
+      return {
+        muestraId: r.id as string,
+        ordenId: r.orden_id as string,
+        folioOrden: r.ordenes_fabricacion?.folio ?? "—",
+        rollo: r.numero_rollo as string,
+        capturadoAt: r.hora_muestreo as string,
+        turno: (r.turno as string) ?? "—",
+        operador: (r.operador as string) ?? "—",
+        producto: r.ordenes_fabricacion?.productos?.nombre ?? "—",
+        pesoKg: peso === null || peso === undefined ? null : Number(peso),
+        cumplimiento,
+        ncCount: nc,
+        totalMediciones: total,
+        estatus,
+      };
+    });
+  });

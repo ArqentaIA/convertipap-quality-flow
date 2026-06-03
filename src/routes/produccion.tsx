@@ -1,10 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
+import { useState } from "react";
 import { Factory, Gauge, Clock, Pause, Play, AlertTriangle, AlertOctagon, CircleDashed } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { listMaquinasConEstado } from "@/lib/produccion.functions";
 import { useLabFilter } from "@/lib/lab";
+
+type Rango = "dia" | "semana" | "mes" | "año";
+const RANGO_LABEL: Record<Rango, string> = { dia: "Día", semana: "Semana", mes: "Mes", año: "Año" };
 
 export const Route = createFileRoute("/produccion")({
   component: ProduccionPage,
@@ -21,11 +25,12 @@ type MaquinaRow = Awaited<ReturnType<typeof listMaquinasConEstado>>[number];
 
 function ProduccionPage() {
   const labFilter = useLabFilter();
+  const [rango, setRango] = useState<Rango>("dia");
   const listFn = useServerFn(listMaquinasConEstado);
-  const { data: all } = useSuspenseQuery({
-    queryKey: ["produccion", "maquinas"],
-    queryFn: () => listFn({ data: undefined as never }),
-    refetchInterval: 30_000,
+  const { data: all = [], isFetching } = useQuery({
+    queryKey: ["produccion", "maquinas", rango],
+    queryFn: () => listFn({ data: { rango } }),
+    refetchInterval: 60_000,
   });
   const maquinas = all.filter((m) => labFilter.isMachineIdAllowed(m.id));
 
@@ -39,10 +44,17 @@ function ProduccionPage() {
   return (
     <AppLayout title="Producción · Estado de máquinas">
       <div className="space-y-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <RangoTabs rango={rango} setRango={setRango} />
+          <div className="text-xs text-muted-foreground">
+            Datos en tiempo real · refresco 60s {isFetching && <span className="ml-1 animate-pulse">●</span>}
+          </div>
+        </div>
+
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           <KPI icon={Factory} label="Máquinas activas" value={`${activos} / ${maquinas.length}`} tone="primary" />
-          <KPI icon={Gauge} label="OEE promedio (24h)" value={`${oeeProm}${oeeProm === "—" ? "" : "%"}`} tone="success" />
-          <KPI icon={Clock} label="Rollos últimas 24h" value={String(rollos)} />
+          <KPI icon={Gauge} label={`OEE promedio (${RANGO_LABEL[rango]})`} value={`${oeeProm}${oeeProm === "—" ? "" : "%"}`} tone="success" />
+          <KPI icon={Clock} label={`Rollos (${RANGO_LABEL[rango]})`} value={String(rollos)} />
           <KPI icon={AlertTriangle} label="En paro" value={String(enParo)} tone={enParo > 0 ? "warning" : "default"} />
         </div>
 
@@ -51,12 +63,31 @@ function ProduccionPage() {
         ) : (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
             {maquinas.map((m) => (
-              <MaquinaCard key={m.id} m={m} />
+              <MaquinaCard key={m.id} m={m} rangoLabel={RANGO_LABEL[rango]} />
             ))}
           </div>
         )}
       </div>
     </AppLayout>
+  );
+}
+
+function RangoTabs({ rango, setRango }: { rango: Rango; setRango: (r: Rango) => void }) {
+  const opts: Rango[] = ["dia", "semana", "mes", "año"];
+  return (
+    <div className="inline-flex rounded-lg border border-border bg-background p-1 shadow-sm">
+      {opts.map((r) => (
+        <button
+          key={r}
+          onClick={() => setRango(r)}
+          className={`rounded-md px-3 py-1.5 text-xs font-semibold transition ${
+            rango === r ? "bg-primary text-primary-foreground shadow" : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          {RANGO_LABEL[r]}
+        </button>
+      ))}
+    </div>
   );
 }
 
@@ -70,7 +101,7 @@ function EmptyState() {
   );
 }
 
-function MaquinaCard({ m }: { m: MaquinaRow }) {
+function MaquinaCard({ m, rangoLabel }: { m: MaquinaRow; rangoLabel: string }) {
   return (
     <div className="rounded-xl border border-border bg-card p-5 shadow-sm transition hover:shadow-md hover:border-primary/40">
       <Link to="/historial/$maquina" params={{ maquina: m.codigo }} className="block">
@@ -85,7 +116,7 @@ function MaquinaCard({ m }: { m: MaquinaRow }) {
         </div>
 
         <div className="mt-4 grid grid-cols-3 gap-2 border-t border-border pt-3 text-center">
-          <Mini label="OEE 24h" value={`${m.oee.toFixed(1)}%`} />
+          <Mini label={`OEE ${rangoLabel}`} value={`${m.oee.toFixed(1)}%`} />
           <Mini label="Rollos" value={String(m.rollosTurno)} />
           <Mini label="kg" value={m.kgTurno.toFixed(0)} />
         </div>
@@ -124,10 +155,6 @@ function EstadoChip({ estado }: { estado: MaquinaRow["estado"] }) {
     </span>
   );
 }
-
-
-
-
 
 function KPI({ icon: Icon, label, value, tone = "default" }: { icon: React.ComponentType<{ className?: string }>; label: string; value: string; tone?: "default" | "primary" | "success" | "warning" }) {
   const tones: Record<string, string> = {

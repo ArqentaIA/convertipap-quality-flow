@@ -1,15 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useMemo } from "react";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useSuspenseQuery, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Search, Download, Filter, Eye, Calendar, ArrowLeft, QrCode, Lock, CircleDashed, ClipboardCheck } from "lucide-react";
+import { Search, Download, ArrowLeft, Lock, CircleDashed, ClipboardCheck } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { printRollReport } from "@/lib/roll-report";
 import { useLabFilter, LAB_LABEL } from "@/lib/lab";
-import { resolveRolloStatus } from "@/lib/roll-status";
-import { listMaquinasConEstado, listHistorialMaquina } from "@/lib/produccion.functions";
+import { listMaquinasConEstado, listRollosMaquina } from "@/lib/produccion.functions";
 import { DetalleCalidadModal } from "@/components/qc/DetalleCalidadModal";
 
+type Rango = "dia" | "semana" | "mes" | "año";
+const RANGO_LABEL: Record<Rango, string> = { dia: "Día", semana: "Semana", mes: "Mes", año: "Año" };
 
 export const Route = createFileRoute("/historial/$maquina")({
   component: HistorialPage,
@@ -25,9 +25,9 @@ export const Route = createFileRoute("/historial/$maquina")({
 function HistorialPage() {
   const { maquina: maquinaCodigo } = Route.useParams();
   const [q, setQ] = useState("");
+  const [rango, setRango] = useState<Rango>("dia");
   const [detalle, setDetalle] = useState<{ ordenId: string; folio: string } | null>(null);
   const labFilter = useLabFilter();
-
 
   const listMaquinasFn = useServerFn(listMaquinasConEstado);
   const { data: maquinas } = useSuspenseQuery({
@@ -36,11 +36,13 @@ function HistorialPage() {
   });
   const maquina = maquinas.find((m) => m.codigo.toUpperCase() === maquinaCodigo.toUpperCase());
 
-  const listHistFn = useServerFn(listHistorialMaquina);
-  const { data: historial } = useSuspenseQuery({
-    queryKey: ["produccion", "historial", maquina?.id ?? "none"],
+  const listRollosFn = useServerFn(listRollosMaquina);
+  const { data: rollos = [], isFetching } = useQuery({
+    queryKey: ["produccion", "rollos", maquina?.id ?? "none", rango],
     queryFn: () =>
-      maquina ? listHistFn({ data: { maquina_id: maquina.id } }) : Promise.resolve([]),
+      maquina ? listRollosFn({ data: { maquina_id: maquina.id, rango } }) : Promise.resolve([]),
+    enabled: !!maquina,
+    refetchInterval: 60_000,
   });
 
   if (!labFilter.isMachineAllowed(maquinaCodigo)) {
@@ -71,38 +73,75 @@ function HistorialPage() {
 
   const filtered = useMemo(
     () =>
-      historial.filter((r) =>
-        [r.folio, r.planta, r.maquina, r.producto].join(" ").toLowerCase().includes(q.toLowerCase()),
+      rollos.filter((r) =>
+        [r.rollo, r.folioOrden, r.producto, r.operador, r.turno]
+          .join(" ")
+          .toLowerCase()
+          .includes(q.toLowerCase()),
       ),
-    [historial, q],
+    [rollos, q],
   );
 
   const total = filtered.length;
-  const liberados = filtered.filter((r) => r.estatus === "L").length;
-  const noConf = filtered.filter((r) => r.estatus === "NC").length;
-  const avg = filtered.length
+  const ok = filtered.filter((r) => r.estatus === "L").length;
+  const nc = filtered.filter((r) => r.estatus === "NC").length;
+  const kgTotal = filtered.reduce((s, r) => s + (r.pesoKg ?? 0), 0);
+  const cumpProm = filtered.length
     ? (
         filtered.reduce((s, r) => s + (r.cumplimiento ?? 0), 0) /
         Math.max(filtered.filter((r) => r.cumplimiento != null).length, 1)
       ).toFixed(1)
     : "—";
 
+  const exportCsv = () => {
+    const headers = ["Rollo", "Orden", "Fecha/Hora", "Turno", "Producto", "Operador", "Peso kg", "Cumpl %", "Estatus"];
+    const lines = [headers.join(",")];
+    filtered.forEach((r) => {
+      lines.push([
+        r.rollo,
+        r.folioOrden,
+        new Date(r.capturadoAt).toLocaleString("es-MX"),
+        r.turno,
+        `"${r.producto.replace(/"/g, '""')}"`,
+        `"${r.operador.replace(/"/g, '""')}"`,
+        r.pesoKg ?? "",
+        r.cumplimiento ?? "",
+        r.estatus,
+      ].join(","));
+    });
+    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `rollos_${maquina.codigo}_${rango}_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <AppLayout title={`Historial · ${maquina.codigo}`}>
       <div className="space-y-6">
-        <Link
-          to="/produccion"
-          className="group inline-flex items-center gap-2 rounded-full border border-primary/30 bg-gradient-to-r from-primary/15 via-primary/10 to-transparent px-4 py-2 text-sm font-semibold text-primary shadow-sm transition-all hover:border-primary/60"
-        >
-          <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
-          Volver a Producción
-        </Link>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <Link
+            to="/produccion"
+            className="group inline-flex items-center gap-2 rounded-full border border-primary/30 bg-gradient-to-r from-primary/15 via-primary/10 to-transparent px-4 py-2 text-sm font-semibold text-primary shadow-sm transition-all hover:border-primary/60"
+          >
+            <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
+            Volver a Producción
+          </Link>
+          <div className="flex items-center gap-3">
+            <RangoTabs rango={rango} setRango={setRango} />
+            <span className="text-xs text-muted-foreground">
+              60s {isFetching && <span className="animate-pulse">●</span>}
+            </span>
+          </div>
+        </div>
 
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-          <StatCard label="Órdenes" value={String(total)} hint="históricas" />
-          <StatCard label="Liberadas" value={String(liberados)} hint="al menos 1 muestra L" tone="success" />
-          <StatCard label="No conformes" value={String(noConf)} hint="con rechazos" tone="danger" />
-          <StatCard label="Cumplimiento prom." value={`${avg}${avg === "—" ? "" : "%"}`} hint="muestras liberadas" tone="primary" />
+          <StatCard label={`Rollos (${RANGO_LABEL[rango]})`} value={String(total)} hint="capturados" />
+          <StatCard label="OK" value={String(ok)} hint="liberados" tone="success" />
+          <StatCard label="No conformes" value={String(nc)} hint="rechazados / fuera" tone="danger" />
+          <StatCard label="Cumpl. prom." value={`${cumpProm}${cumpProm === "—" ? "" : "%"}`} hint={`${kgTotal.toFixed(0)} kg total`} tone="primary" />
         </div>
 
         <div className="rounded-xl border border-border bg-card shadow-sm">
@@ -112,18 +151,16 @@ function HistorialPage() {
               <input
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
-                placeholder="Buscar folio, producto…"
+                placeholder="Buscar rollo, orden, producto, operador…"
                 className="w-full rounded-md border border-input bg-background py-2 pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
-            <button className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm hover:bg-accent">
-              <Calendar className="h-4 w-4" /> Rango
-            </button>
-            <button className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm hover:bg-accent">
-              <Filter className="h-4 w-4" /> Filtros
-            </button>
-            <button className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90">
-              <Download className="h-4 w-4" /> Exportar
+            <button
+              onClick={exportCsv}
+              disabled={filtered.length === 0}
+              className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
+            >
+              <Download className="h-4 w-4" /> Exportar CSV
             </button>
           </div>
 
@@ -131,14 +168,13 @@ function HistorialPage() {
             <table className="w-full text-sm">
               <thead className="bg-muted/40 text-left text-[11px] uppercase tracking-wider text-muted-foreground">
                 <tr>
-                  <th className="px-4 py-3">Folio</th>
-                  <th className="px-4 py-3">Fecha</th>
-                  <th className="px-4 py-3">Planta</th>
+                  <th className="px-4 py-3">Rollo</th>
+                  <th className="px-4 py-3">Orden</th>
+                  <th className="px-4 py-3">Fecha / Hora</th>
                   <th className="px-4 py-3">Turno</th>
                   <th className="px-4 py-3">Producto</th>
-                  <th className="px-4 py-3 text-right">Rollos</th>
-                  <th className="px-4 py-3 text-right">kg</th>
-                  <th className="px-4 py-3 text-right">Muestras</th>
+                  <th className="px-4 py-3">Operador</th>
+                  <th className="px-4 py-3 text-right">Peso (kg)</th>
                   <th className="px-4 py-3 text-right">Cumpl.</th>
                   <th className="px-4 py-3">Estatus</th>
                   <th className="px-4 py-3"></th>
@@ -147,81 +183,47 @@ function HistorialPage() {
               <tbody>
                 {filtered.length === 0 && (
                   <tr>
-                    <td colSpan={11} className="px-4 py-10 text-center text-sm text-muted-foreground">
-                      Sin órdenes registradas para {maquina.codigo}.
+                    <td colSpan={10} className="px-4 py-10 text-center text-sm text-muted-foreground">
+                      Sin rollos capturados para {maquina.codigo} en el rango "{RANGO_LABEL[rango]}".
                     </td>
                   </tr>
                 )}
                 {filtered.map((r) => {
-                  const e = resolveRolloStatus({ folio: r.folio, legacyEstatus: r.estatus });
+                  const tone =
+                    r.estatus === "NC"
+                      ? "bg-destructive/15 text-destructive border-destructive/40"
+                      : r.estatus === "L"
+                      ? "bg-success/15 text-success border-success/40"
+                      : "bg-muted text-muted-foreground border-border";
                   return (
-                    <tr key={r.ordenId} className="border-t border-border hover:bg-muted/30">
-                      <td className="px-4 py-3 font-medium text-primary">{r.folio}</td>
-                      <td className="px-4 py-3 tabular-nums">{r.fecha || "—"}</td>
-                      <td className="px-4 py-3">{r.planta}</td>
+                    <tr key={r.muestraId} className="border-t border-border hover:bg-muted/30">
+                      <td className="px-4 py-3 font-semibold text-primary">{r.rollo}</td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground">{r.folioOrden}</td>
+                      <td className="px-4 py-3 tabular-nums text-xs">
+                        {new Date(r.capturadoAt).toLocaleString("es-MX")}
+                      </td>
                       <td className="px-4 py-3">{r.turno}</td>
                       <td className="px-4 py-3">{r.producto}</td>
-                      <td className="px-4 py-3 text-right tabular-nums">{r.rollos}</td>
-                      <td className="px-4 py-3 text-right tabular-nums">{r.kg.toFixed(1)}</td>
-                      <td className="px-4 py-3 text-right tabular-nums">{r.muestrasTotal}</td>
+                      <td className="px-4 py-3">{r.operador}</td>
+                      <td className="px-4 py-3 text-right tabular-nums">
+                        {r.pesoKg == null ? "—" : r.pesoKg.toFixed(1)}
+                      </td>
                       <td className="px-4 py-3 text-right tabular-nums font-semibold">
                         {r.cumplimiento == null ? "—" : `${r.cumplimiento.toFixed(1)}%`}
                       </td>
                       <td className="px-4 py-3">
-                        <span
-                          className="inline-flex items-center rounded-md border px-2 py-0.5 text-[11px] font-semibold"
-                          style={{ background: e.bg, color: e.color, borderColor: e.color }}
-                        >
-                          {e.label}
+                        <span className={`inline-flex items-center rounded-md border px-2 py-0.5 text-[11px] font-semibold ${tone}`}>
+                          {r.estatus === "L" ? "Liberado" : r.estatus === "NC" ? "No conforme" : "Pendiente"}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <div className="inline-flex items-center gap-3">
-                          <button
-                            onClick={() =>
-                              printRollReport({
-                                folio: r.folio,
-                                maquina: r.maquina,
-                                planta: r.planta,
-                                turno: r.turno,
-                                operador: "—",
-                                jefeMaquina: "—",
-                                fecha: r.fecha,
-                                producto: r.producto,
-                                estatus: r.estatus,
-                                metricas: [
-                                  { label: "Rollos producidos", value: r.rollos },
-                                  { label: "Kg producidos", value: r.kg.toFixed(1), unit: "kg" },
-                                  {
-                                    label: "Cumplimiento",
-                                    value: r.cumplimiento == null ? "—" : r.cumplimiento.toFixed(1),
-                                    unit: "%",
-                                    status: r.estatus,
-                                  },
-                                  { label: "Planta", value: r.planta },
-                                  { label: "Máquina", value: r.maquina },
-                                  { label: "Turno", value: r.turno },
-                                ],
-                                notas: `Orden ${r.folio} · estado ${r.estado}`,
-                              })
-                            }
-                            className="inline-flex items-center gap-1 text-xs text-foreground hover:text-primary"
-                            title="Imprimir reporte con QR"
-                          >
-                            <QrCode className="h-3.5 w-3.5" /> Imprimir
-                          </button>
-                          <button
-                            onClick={() => setDetalle({ ordenId: r.ordenId, folio: r.folio })}
-                            className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-1 text-xs font-semibold text-primary hover:bg-primary/20"
-                            title="Ver detalle completo de calidad"
-                          >
-                            <ClipboardCheck className="h-3.5 w-3.5" /> Detalle de calidad
-                          </button>
-                          <button className="inline-flex items-center gap-1 text-xs text-primary hover:underline">
-                            <Eye className="h-3.5 w-3.5" /> Ver
-                          </button>
-
-                        </div>
+                        <button
+                          onClick={() => setDetalle({ ordenId: r.ordenId, folio: `${r.folioOrden} · Rollo ${r.rollo}` })}
+                          className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-1 text-xs font-semibold text-primary hover:bg-primary/20"
+                          title="Ver detalle completo de calidad"
+                        >
+                          <ClipboardCheck className="h-3.5 w-3.5" /> Detalle calidad
+                        </button>
                       </td>
                     </tr>
                   );
@@ -231,7 +233,7 @@ function HistorialPage() {
           </div>
 
           <div className="flex items-center justify-between border-t border-border px-4 py-3 text-xs text-muted-foreground">
-            <div>Mostrando {filtered.length} de {historial.length} órdenes</div>
+            <div>Mostrando {filtered.length} de {rollos.length} rollos · rango {RANGO_LABEL[rango]}</div>
           </div>
         </div>
       </div>
@@ -246,6 +248,24 @@ function HistorialPage() {
   );
 }
 
+function RangoTabs({ rango, setRango }: { rango: Rango; setRango: (r: Rango) => void }) {
+  const opts: Rango[] = ["dia", "semana", "mes", "año"];
+  return (
+    <div className="inline-flex rounded-lg border border-border bg-background p-1 shadow-sm">
+      {opts.map((r) => (
+        <button
+          key={r}
+          onClick={() => setRango(r)}
+          className={`rounded-md px-3 py-1.5 text-xs font-semibold transition ${
+            rango === r ? "bg-primary text-primary-foreground shadow" : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          {RANGO_LABEL[r]}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 function StatCard({
   label, value, hint, tone = "default",
