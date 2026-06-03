@@ -25,7 +25,9 @@ export const Route = createFileRoute("/historial/$maquina")({
 function HistorialPage() {
   const { maquina: maquinaCodigo } = Route.useParams();
   const [q, setQ] = useState("");
+  const [detalle, setDetalle] = useState<{ ordenId: string; folio: string } | null>(null);
   const labFilter = useLabFilter();
+
 
   const listMaquinasFn = useServerFn(listMaquinasConEstado);
   const { data: maquinas } = useSuspenseQuery({
