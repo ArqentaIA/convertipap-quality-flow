@@ -296,11 +296,10 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
           prensero,
           analista,
           mediciones: evalMediciones
-            .filter((m) => m.input.valor !== "" && Number.isFinite(m.num))
             .map((m) => ({
               clave: m.spec.clave,
               etiqueta: m.spec.etiqueta,
-              valor: m.num,
+              valor: m.input.valor !== "" && Number.isFinite(m.num) ? m.num : null,
               unidad: m.spec.unidad,
               min: m.spec.min_valor,
               max: m.spec.max_valor,
