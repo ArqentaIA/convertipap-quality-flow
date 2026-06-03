@@ -124,6 +124,7 @@
   --warning: oklch(0.82 0.16 85);
   --warning-foreground: oklch(0.18 0.04 250);
   --navy: oklch(0.18 0.04 250);
+  --capture: oklch(0.78 0.16 155); /* lighter green for dark mode */
   --cyan-soft: oklch(0.32 0.07 200);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
