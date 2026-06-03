@@ -599,13 +599,9 @@ export const autorizarMuestra = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const sb = context.supabase as SB;
     const roles = await getUserRoles(sb, context.userId);
-    requireAnyRole(roles, ROLES_AUTORIZA);
+    requireRollStatusRole(roles);
 
-    const rolAutorizador = roles.includes("calidad")
-      ? "calidad"
-      : roles.includes("gerente_general")
-        ? "gerente_general"
-        : "administrador";
+    const rolAutorizador = roles.includes("calidad") ? "calidad" : "administrador";
 
     // Validar que tenga dictamen técnico
     const { data: prev, error: ePrev } = await sb
