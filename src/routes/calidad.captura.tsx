@@ -1493,5 +1493,18 @@ function buildEtiquetaFromMuestra(m: MuestraReciente): EtiquetaData {
     estatusLiberacion: est as "L" | "NC" | "C" | null,
     defectos,
     estatus,
+    autorizacion: (m as { autorizado_por?: string | null }).autorizado_por
+      ? {
+          dictamen: (m as { dictamen?: string }).dictamen ?? "",
+          observaciones:
+            (m as { dictamen_observaciones?: string | null }).dictamen_observaciones ?? "",
+          motivo: (m as { dictamen_motivo?: string | null }).dictamen_motivo ?? null,
+          autorizadoAt: (m as { autorizado_at?: string | null }).autorizado_at ?? null,
+          rolAutorizador:
+            (m as { rol_autorizador?: string | null }).rol_autorizador ?? null,
+          autorizadoPor: (m as { autorizado_por?: string | null }).autorizado_por ?? null,
+        }
+      : null,
   };
 }
+
