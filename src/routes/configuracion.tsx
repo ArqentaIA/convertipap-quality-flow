@@ -131,6 +131,13 @@ function ConfigContent({ settings }: { settings: AppSettings }) {
               onChange={(v) => set("frecuencia_muestreo_min", Number(v) || 0)}
               type="number"
             />
+            <Field
+              label="Costo de no calidad"
+              value={String(form.costo_no_calidad_kg ?? 18)}
+              suffix="MXN/kg"
+              onChange={(v) => set("costo_no_calidad_kg", Number(v) || 0)}
+              type="number"
+            />
           </Card>
 
           <OperatorVisionUrls />
