@@ -372,14 +372,16 @@ export const getReportes = createServerFn({ method: "POST" })
         }
       }
     }
-    const clavesOrden = Array.from(etiquetaPorClave.keys()).sort();
+    const EXCLUDED_VAR_CLAVES = new Set(["tensionRH"]);
+    const clavesOrden = Array.from(etiquetaPorClave.keys())
+      .filter((c) => !EXCLUDED_VAR_CLAVES.has(c))
+      .sort();
 
     const generalRows: Record<string, string | number>[] = (muestrasFull ?? []).map((m: any) => {
       const maq = maquinaById.get(m.maquina_id);
       const planta = plantaById.get(m.planta_id);
       const producto = m.productos;
       const tipo = producto?.tipos_producto;
-      const familia = tipo?.familias_producto;
       const meds = medsByMuestra.get(m.id) ?? [];
       const medsByClave = new Map(meds.map((x) => [x.variable_clave, x]));
       const row: Record<string, string | number> = {
@@ -388,12 +390,8 @@ export const getReportes = createServerFn({ method: "POST" })
         planta: txt(planta?.nombre),
         maquina: txt(maq?.codigo),
         turno: txt(m.turno),
-        orden: txt(m.ordenes_fabricacion?.folio),
-        familia_producto: txt(familia?.nombre),
-        familia_codigo: txt(familia?.codigo),
         tipo_producto: txt(tipo?.nombre),
         tipo_codigo: txt(tipo?.codigo),
-        producto: txt(producto?.nombre),
         codigo_producto: txt(producto?.codigo),
         capas: num(producto?.capas),
         gramaje: num(producto?.gramaje),
@@ -412,6 +410,7 @@ export const getReportes = createServerFn({ method: "POST" })
       }
       return row;
     });
+
 
 
     // ====================================================
