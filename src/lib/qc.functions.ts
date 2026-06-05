@@ -380,6 +380,7 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
         velocidad_maquina: z.number().min(0).max(99999).nullable().optional(),
         velocidad_enrollador: z.number().min(0).max(99999).nullable().optional(),
         crepado_pct: z.number().min(0).max(100).nullable().optional(),
+        cumplimiento_pct: z.number().min(0).max(100).nullable().optional(),
         estatus_liberacion: z.enum(["L", "NC", "C"]),
         defectos: z.array(z.string().max(60)).max(20).default([]),
         tipo_muestreo: z.enum(["por_rollo", "por_tiempo"]),
