@@ -187,7 +187,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return false;
       },
       canChangeRollStatus:
-        roles.includes("calidad") || roles.includes("administrador"),
+        roles.includes("calidad") ||
+        roles.includes("administrador") ||
+        roles.includes("capturista"),
       signOut: async () => {
         await supabase.auth.signOut();
       },
