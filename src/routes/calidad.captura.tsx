@@ -829,6 +829,23 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
                 onChange={(e) => setCrepadoPct(e.target.value)}
               />
             </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="cumplimiento" className="text-base">
+                Cumplimiento{" "}
+                <span className="text-muted-foreground font-normal">(% · opcional)</span>
+              </Label>
+              <Input
+                id="cumplimiento"
+                type="number"
+                inputMode="decimal"
+                step="0.01"
+                min={0}
+                max={100}
+                placeholder="0 - 100"
+                value={cumplimientoPct}
+                onChange={(e) => setCumplimientoPct(e.target.value)}
+              />
+            </div>
           </CardContent>
         </Card>
 
