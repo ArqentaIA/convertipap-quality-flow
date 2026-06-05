@@ -457,7 +457,11 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
   const [muestraRecienId, setMuestraRecienId] = useState<string | null>(null);
 
   // --- Diálogo de liberación / cambio de estatus (Gerente de Calidad) ---
-  const puedeLiberar = auth.hasRole("calidad") || auth.hasRole("administrador");
+  // Autorizado por Administrador: Capturistas también pueden liberar rollos.
+  const puedeLiberar =
+    auth.hasRole("calidad") ||
+    auth.hasRole("administrador") ||
+    auth.hasRole("capturista");
   const [liberarMuestra, setLiberarMuestra] = useState<MuestraReciente | null>(null);
   const [liberarDictamen, setLiberarDictamen] = useState<"liberada" | "concesion" | "rechazada">(
     "liberada",
