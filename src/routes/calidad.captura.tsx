@@ -333,6 +333,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
   const [velocidadMaquina, setVelocidadMaquina] = useState<string>("");
   const [velocidadEnrollador, setVelocidadEnrollador] = useState<string>("");
   const [crepadoPct, setCrepadoPct] = useState<string>("");
+  const [cumplimientoPct, setCumplimientoPct] = useState<string>("");
 
   // Sección F — Cierre: estatus manual y defectos
   const DEFECTOS_OPCIONES = ["Arruga", "Picado", "Porosidad", "Hoyos por gomas", "Otro"] as const;
