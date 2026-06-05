@@ -1,0 +1,1 @@
+ALTER TABLE public.muestras_calidad ADD COLUMN IF NOT EXISTS cumplimiento_pct numeric(5,2) NULL CHECK (cumplimiento_pct IS NULL OR (cumplimiento_pct >= 0 AND cumplimiento_pct <= 100));

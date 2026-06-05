@@ -333,6 +333,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
   const [velocidadMaquina, setVelocidadMaquina] = useState<string>("");
   const [velocidadEnrollador, setVelocidadEnrollador] = useState<string>("");
   const [crepadoPct, setCrepadoPct] = useState<string>("");
+  const [cumplimientoPct, setCumplimientoPct] = useState<string>("");
 
   // Sección F — Cierre: estatus manual y defectos
   const DEFECTOS_OPCIONES = ["Arruga", "Picado", "Porosidad", "Hoyos por gomas", "Otro"] as const;
@@ -661,6 +662,8 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
         velocidad_enrollador:
           velocidadEnrollador.trim() === "" ? null : Number(velocidadEnrollador),
         crepado_pct: crepadoPct.trim() === "" ? null : Number(crepadoPct),
+        cumplimiento_pct:
+          cumplimientoPct.trim() === "" ? null : Number(cumplimientoPct),
         estatus_liberacion: estatusLiberacion as "L" | "NC" | "C",
         defectos,
         tipo_muestreo: "por_rollo" as const,
@@ -824,6 +827,23 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
                 placeholder="—"
                 value={crepadoPct}
                 onChange={(e) => setCrepadoPct(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="cumplimiento" className="text-base">
+                Cumplimiento{" "}
+                <span className="text-muted-foreground font-normal">(% · opcional)</span>
+              </Label>
+              <Input
+                id="cumplimiento"
+                type="number"
+                inputMode="decimal"
+                step="0.01"
+                min={0}
+                max={100}
+                placeholder="0 - 100"
+                value={cumplimientoPct}
+                onChange={(e) => setCumplimientoPct(e.target.value)}
               />
             </div>
           </CardContent>

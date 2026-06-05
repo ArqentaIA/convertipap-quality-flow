@@ -482,6 +482,7 @@ export type Database = {
           capturado_por: string
           created_at: string
           crepado_pct: number | null
+          cumplimiento_pct: number | null
           defectos: string[]
           dictamen: Database["public"]["Enums"]["qc_dictamen"] | null
           dictamen_at: string | null
@@ -525,6 +526,7 @@ export type Database = {
           capturado_por: string
           created_at?: string
           crepado_pct?: number | null
+          cumplimiento_pct?: number | null
           defectos?: string[]
           dictamen?: Database["public"]["Enums"]["qc_dictamen"] | null
           dictamen_at?: string | null
@@ -568,6 +570,7 @@ export type Database = {
           capturado_por?: string
           created_at?: string
           crepado_pct?: number | null
+          cumplimiento_pct?: number | null
           defectos?: string[]
           dictamen?: Database["public"]["Enums"]["qc_dictamen"] | null
           dictamen_at?: string | null
