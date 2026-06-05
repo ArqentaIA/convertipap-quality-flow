@@ -334,6 +334,8 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
   const [velocidadEnrollador, setVelocidadEnrollador] = useState<string>("");
   const [crepadoPct, setCrepadoPct] = useState<string>("");
   const [cumplimientoPct, setCumplimientoPct] = useState<string>("");
+  const [porcentajeRupturasPct, setPorcentajeRupturasPct] = useState<string>("");
+  const [destino, setDestino] = useState<string>("");
 
   // Sección F — Cierre: estatus manual y defectos
   const DEFECTOS_OPCIONES = ["Arruga", "Picado", "Porosidad", "Hoyos por gomas", "Otro"] as const;
@@ -668,6 +670,9 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
         crepado_pct: crepadoPct.trim() === "" ? null : Number(crepadoPct),
         cumplimiento_pct:
           cumplimientoPct.trim() === "" ? null : Number(cumplimientoPct),
+        porcentaje_rupturas_pct:
+          porcentajeRupturasPct.trim() === "" ? null : Number(porcentajeRupturasPct),
+        destino: destino.trim() === "" ? null : destino.trim(),
         estatus_liberacion: estatusLiberacion as "L" | "NC" | "C",
         defectos,
         tipo_muestreo: "por_rollo" as const,
@@ -1117,6 +1122,49 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
                         </td>
                       </tr>
                     ))}
+                    <tr className="border-b last:border-0 bg-background">
+                      <td className="py-4 px-3 align-middle">
+                        <div className="font-semibold text-lg leading-snug">Porcentaje de rupturas</div>
+                        <div className="text-sm text-muted-foreground">%</div>
+                      </td>
+                      <td className="py-4 px-2 text-lg text-right tabular-nums text-muted-foreground align-middle">0</td>
+                      <td className="py-4 px-2 text-lg text-right tabular-nums font-semibold text-foreground align-middle">—</td>
+                      <td className="py-4 px-2 text-lg text-right tabular-nums text-muted-foreground align-middle">100</td>
+                      <td className="py-4 px-3 align-middle" colSpan={2}>
+                        <Input
+                          type="number"
+                          inputMode="decimal"
+                          step="0.01"
+                          min={0}
+                          max={100}
+                          disabled={isBlocked}
+                          value={porcentajeRupturasPct}
+                          onChange={(e) => setPorcentajeRupturasPct(e.target.value)}
+                          className="h-12 text-lg font-bold text-capture w-full"
+                          placeholder="0 - 100"
+                        />
+                      </td>
+                    </tr>
+                    <tr className="border-b last:border-0 bg-primary/15">
+                      <td className="py-4 px-3 align-middle">
+                        <div className="font-semibold text-lg leading-snug">Destino</div>
+                        <div className="text-sm text-muted-foreground">texto</div>
+                      </td>
+                      <td className="py-4 px-2 text-lg text-right tabular-nums text-muted-foreground align-middle">—</td>
+                      <td className="py-4 px-2 text-lg text-right tabular-nums font-semibold text-foreground align-middle">—</td>
+                      <td className="py-4 px-2 text-lg text-right tabular-nums text-muted-foreground align-middle">—</td>
+                      <td className="py-4 px-3 align-middle" colSpan={2}>
+                        <Input
+                          type="text"
+                          maxLength={200}
+                          disabled={isBlocked}
+                          value={destino}
+                          onChange={(e) => setDestino(e.target.value)}
+                          className="h-12 text-lg font-bold text-capture w-full"
+                          placeholder="Captura usuario"
+                        />
+                      </td>
+                    </tr>
                   </tbody>
                 </table>
               </div>
@@ -1223,6 +1271,39 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
                     )}
                   </div>
                 ))}
+                <div className="rounded-xl border border-border p-5 shadow-sm bg-card">
+                  <div className="mb-3">
+                    <div className="font-semibold text-base">Porcentaje de rupturas</div>
+                    <div className="text-sm text-muted-foreground">%</div>
+                  </div>
+                  <Input
+                    type="number"
+                    inputMode="decimal"
+                    step="0.01"
+                    min={0}
+                    max={100}
+                    disabled={isBlocked}
+                    value={porcentajeRupturasPct}
+                    onChange={(e) => setPorcentajeRupturasPct(e.target.value)}
+                    className="h-12 text-lg font-bold text-capture w-full"
+                    placeholder="0 - 100"
+                  />
+                </div>
+                <div className="rounded-xl border border-border p-5 shadow-sm bg-primary/15">
+                  <div className="mb-3">
+                    <div className="font-semibold text-base">Destino</div>
+                    <div className="text-sm text-muted-foreground">texto</div>
+                  </div>
+                  <Input
+                    type="text"
+                    maxLength={200}
+                    disabled={isBlocked}
+                    value={destino}
+                    onChange={(e) => setDestino(e.target.value)}
+                    className="h-12 text-lg font-bold text-capture w-full"
+                    placeholder="Captura usuario"
+                  />
+                </div>
               </div>
             </CardContent>
           </Card>

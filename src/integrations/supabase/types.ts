@@ -484,6 +484,7 @@ export type Database = {
           crepado_pct: number | null
           cumplimiento_pct: number | null
           defectos: string[]
+          destino: string | null
           dictamen: Database["public"]["Enums"]["qc_dictamen"] | null
           dictamen_at: string | null
           dictamen_motivo: string | null
@@ -506,6 +507,7 @@ export type Database = {
           operario_id: string | null
           orden_id: string | null
           planta_id: string
+          porcentaje_rupturas_pct: number | null
           prensero: string | null
           producto_id: string
           revisado_at: string | null
@@ -528,6 +530,7 @@ export type Database = {
           crepado_pct?: number | null
           cumplimiento_pct?: number | null
           defectos?: string[]
+          destino?: string | null
           dictamen?: Database["public"]["Enums"]["qc_dictamen"] | null
           dictamen_at?: string | null
           dictamen_motivo?: string | null
@@ -550,6 +553,7 @@ export type Database = {
           operario_id?: string | null
           orden_id?: string | null
           planta_id: string
+          porcentaje_rupturas_pct?: number | null
           prensero?: string | null
           producto_id: string
           revisado_at?: string | null
@@ -572,6 +576,7 @@ export type Database = {
           crepado_pct?: number | null
           cumplimiento_pct?: number | null
           defectos?: string[]
+          destino?: string | null
           dictamen?: Database["public"]["Enums"]["qc_dictamen"] | null
           dictamen_at?: string | null
           dictamen_motivo?: string | null
@@ -594,6 +599,7 @@ export type Database = {
           operario_id?: string | null
           orden_id?: string | null
           planta_id?: string
+          porcentaje_rupturas_pct?: number | null
           prensero?: string | null
           producto_id?: string
           revisado_at?: string | null
