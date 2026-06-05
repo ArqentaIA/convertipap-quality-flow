@@ -656,6 +656,11 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
         operador: operador.trim(),
         prensero: prensero.trim(),
         analista: analista.trim(),
+        velocidad_maquina:
+          velocidadMaquina.trim() === "" ? null : Number(velocidadMaquina),
+        velocidad_enrollador:
+          velocidadEnrollador.trim() === "" ? null : Number(velocidadEnrollador),
+        crepado_pct: crepadoPct.trim() === "" ? null : Number(crepadoPct),
         estatus_liberacion: estatusLiberacion as "L" | "NC" | "C",
         defectos,
         tipo_muestreo: "por_rollo" as const,
