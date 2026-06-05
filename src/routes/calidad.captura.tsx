@@ -670,6 +670,9 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
         crepado_pct: crepadoPct.trim() === "" ? null : Number(crepadoPct),
         cumplimiento_pct:
           cumplimientoPct.trim() === "" ? null : Number(cumplimientoPct),
+        porcentaje_rupturas_pct:
+          porcentajeRupturasPct.trim() === "" ? null : Number(porcentajeRupturasPct),
+        destino: destino.trim() === "" ? null : destino.trim(),
         estatus_liberacion: estatusLiberacion as "L" | "NC" | "C",
         defectos,
         tipo_muestreo: "por_rollo" as const,
