@@ -481,6 +481,7 @@ export type Database = {
           capturado_at: string
           capturado_por: string
           created_at: string
+          crepado_pct: number | null
           defectos: string[]
           dictamen: Database["public"]["Enums"]["qc_dictamen"] | null
           dictamen_at: string | null
@@ -513,6 +514,8 @@ export type Database = {
           turno: string
           updated_at: string
           variables_snapshot_json: Json
+          velocidad_enrollador: number | null
+          velocidad_maquina: number | null
         }
         Insert: {
           analista?: string | null
@@ -521,6 +524,7 @@ export type Database = {
           capturado_at?: string
           capturado_por: string
           created_at?: string
+          crepado_pct?: number | null
           defectos?: string[]
           dictamen?: Database["public"]["Enums"]["qc_dictamen"] | null
           dictamen_at?: string | null
@@ -553,6 +557,8 @@ export type Database = {
           turno: string
           updated_at?: string
           variables_snapshot_json?: Json
+          velocidad_enrollador?: number | null
+          velocidad_maquina?: number | null
         }
         Update: {
           analista?: string | null
@@ -561,6 +567,7 @@ export type Database = {
           capturado_at?: string
           capturado_por?: string
           created_at?: string
+          crepado_pct?: number | null
           defectos?: string[]
           dictamen?: Database["public"]["Enums"]["qc_dictamen"] | null
           dictamen_at?: string | null
@@ -593,6 +600,8 @@ export type Database = {
           turno?: string
           updated_at?: string
           variables_snapshot_json?: Json
+          velocidad_enrollador?: number | null
+          velocidad_maquina?: number | null
         }
         Relationships: [
           {
