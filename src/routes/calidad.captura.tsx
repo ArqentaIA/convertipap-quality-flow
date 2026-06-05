@@ -777,6 +777,55 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="vel-maq" className="text-base">
+                Vel. Máquina{" "}
+                <span className="text-muted-foreground font-normal">(m/min · opcional)</span>
+              </Label>
+              <Input
+                id="vel-maq"
+                type="number"
+                inputMode="decimal"
+                step="0.01"
+                min={0}
+                placeholder="—"
+                value={velocidadMaquina}
+                onChange={(e) => setVelocidadMaquina(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="vel-enr" className="text-base">
+                Vel. Enrollador{" "}
+                <span className="text-muted-foreground font-normal">(m/min · opcional)</span>
+              </Label>
+              <Input
+                id="vel-enr"
+                type="number"
+                inputMode="decimal"
+                step="0.01"
+                min={0}
+                placeholder="—"
+                value={velocidadEnrollador}
+                onChange={(e) => setVelocidadEnrollador(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="crepado" className="text-base">
+                % Crepado{" "}
+                <span className="text-muted-foreground font-normal">(% · opcional)</span>
+              </Label>
+              <Input
+                id="crepado"
+                type="number"
+                inputMode="decimal"
+                step="0.01"
+                min={0}
+                max={100}
+                placeholder="—"
+                value={crepadoPct}
+                onChange={(e) => setCrepadoPct(e.target.value)}
+              />
+            </div>
           </CardContent>
         </Card>
 
