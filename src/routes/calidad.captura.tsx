@@ -329,6 +329,11 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
   const [prensero, setPrensero] = useState<string>("");
   const [analista, setAnalista] = useState<string>("");
 
+  // Parámetros operativos (opcionales)
+  const [velocidadMaquina, setVelocidadMaquina] = useState<string>("");
+  const [velocidadEnrollador, setVelocidadEnrollador] = useState<string>("");
+  const [crepadoPct, setCrepadoPct] = useState<string>("");
+
   // Sección F — Cierre: estatus manual y defectos
   const DEFECTOS_OPCIONES = ["Arruga", "Picado", "Porosidad", "Hoyos por gomas", "Otro"] as const;
   const [estatusLiberacion, setEstatusLiberacion] = useState<"" | "L" | "NC" | "C">("");
@@ -651,6 +656,11 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
         operador: operador.trim(),
         prensero: prensero.trim(),
         analista: analista.trim(),
+        velocidad_maquina:
+          velocidadMaquina.trim() === "" ? null : Number(velocidadMaquina),
+        velocidad_enrollador:
+          velocidadEnrollador.trim() === "" ? null : Number(velocidadEnrollador),
+        crepado_pct: crepadoPct.trim() === "" ? null : Number(crepadoPct),
         estatus_liberacion: estatusLiberacion as "L" | "NC" | "C",
         defectos,
         tipo_muestreo: "por_rollo" as const,
@@ -766,6 +776,55 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="vel-maq" className="text-base">
+                Vel. Máquina{" "}
+                <span className="text-muted-foreground font-normal">(m/min · opcional)</span>
+              </Label>
+              <Input
+                id="vel-maq"
+                type="number"
+                inputMode="decimal"
+                step="0.01"
+                min={0}
+                placeholder="—"
+                value={velocidadMaquina}
+                onChange={(e) => setVelocidadMaquina(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="vel-enr" className="text-base">
+                Vel. Enrollador{" "}
+                <span className="text-muted-foreground font-normal">(m/min · opcional)</span>
+              </Label>
+              <Input
+                id="vel-enr"
+                type="number"
+                inputMode="decimal"
+                step="0.01"
+                min={0}
+                placeholder="—"
+                value={velocidadEnrollador}
+                onChange={(e) => setVelocidadEnrollador(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="crepado" className="text-base">
+                % Crepado{" "}
+                <span className="text-muted-foreground font-normal">(% · opcional)</span>
+              </Label>
+              <Input
+                id="crepado"
+                type="number"
+                inputMode="decimal"
+                step="0.01"
+                min={0}
+                max={100}
+                placeholder="—"
+                value={crepadoPct}
+                onChange={(e) => setCrepadoPct(e.target.value)}
+              />
             </div>
           </CardContent>
         </Card>
