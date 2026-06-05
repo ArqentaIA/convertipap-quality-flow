@@ -438,6 +438,8 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
       velocidad_enrollador: data.velocidad_enrollador ?? null,
       crepado_pct: data.crepado_pct ?? null,
       cumplimiento_pct: data.cumplimiento_pct ?? null,
+      porcentaje_rupturas_pct: data.porcentaje_rupturas_pct ?? null,
+      destino: data.destino?.trim() ? data.destino.trim() : null,
       estatus_liberacion: data.estatus_liberacion,
       defectos: data.defectos ?? [],
       tipo_muestreo: data.tipo_muestreo,
