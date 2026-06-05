@@ -1271,6 +1271,39 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
                     )}
                   </div>
                 ))}
+                <div className="rounded-xl border border-border p-5 shadow-sm bg-card">
+                  <div className="mb-3">
+                    <div className="font-semibold text-base">Porcentaje de rupturas</div>
+                    <div className="text-sm text-muted-foreground">%</div>
+                  </div>
+                  <Input
+                    type="number"
+                    inputMode="decimal"
+                    step="0.01"
+                    min={0}
+                    max={100}
+                    disabled={isBlocked}
+                    value={porcentajeRupturasPct}
+                    onChange={(e) => setPorcentajeRupturasPct(e.target.value)}
+                    className="h-12 text-lg font-bold text-capture w-full"
+                    placeholder="0 - 100"
+                  />
+                </div>
+                <div className="rounded-xl border border-border p-5 shadow-sm bg-primary/15">
+                  <div className="mb-3">
+                    <div className="font-semibold text-base">Destino</div>
+                    <div className="text-sm text-muted-foreground">texto</div>
+                  </div>
+                  <Input
+                    type="text"
+                    maxLength={200}
+                    disabled={isBlocked}
+                    value={destino}
+                    onChange={(e) => setDestino(e.target.value)}
+                    className="h-12 text-lg font-bold text-capture w-full"
+                    placeholder="Captura usuario"
+                  />
+                </div>
               </div>
             </CardContent>
           </Card>
