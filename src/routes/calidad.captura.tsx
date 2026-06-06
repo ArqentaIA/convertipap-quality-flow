@@ -631,9 +631,13 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
   }
 
   function handleSubmit(modo: "borrador" | "envio") {
-    const err = validar(modo);
-    if (err) {
-      toast.error(err);
+    const { error, faltantes } = validar(modo);
+    if (error) {
+      toast.error(error);
+      return;
+    }
+    if (modo === "envio" && faltantes > 0) {
+      toast(`Te faltaron de capturar ${faltantes} campos obligatorios.`, { duration: 2000 });
       return;
     }
     if (!spec) return;
@@ -660,10 +664,10 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
         turno,
         operario_id: auth.user!.id,
         numero_rollo: numeroRollo.trim(),
-        jefe_maquina: jefeMaquina.trim(),
-        operador: operador.trim(),
-        prensero: prensero.trim(),
-        analista: analista.trim(),
+        jefe_maquina: jefeMaquina.trim() || undefined,
+        operador: operador.trim() || undefined,
+        prensero: prensero.trim() || undefined,
+        analista: analista.trim() || undefined,
         velocidad_maquina:
           velocidadMaquina.trim() === "" ? null : Number(velocidadMaquina),
         velocidad_enrollador:
@@ -674,10 +678,10 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
         porcentaje_rupturas_pct:
           porcentajeRupturasPct.trim() === "" ? null : Number(porcentajeRupturasPct),
         destino: destino.trim() === "" ? null : destino.trim(),
-        estatus_liberacion: estatusLiberacion as "L" | "NC" | "C",
+        estatus_liberacion: estatusLiberacion || undefined,
         defectos,
         tipo_muestreo: "por_rollo" as const,
-        hora_muestreo: new Date(horaMuestreo).toISOString(),
+        hora_muestreo: horaMuestreo ? new Date(horaMuestreo).toISOString() : undefined,
         observaciones_generales: observaciones,
         variables_snapshot_json: variablesSnapshot,
         mediciones: evalMediciones
