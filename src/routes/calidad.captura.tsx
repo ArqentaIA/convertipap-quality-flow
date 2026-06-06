@@ -616,13 +616,13 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
     if (!spec) return { error: "Selecciona un producto con especificación vigente", faltantes: 0 };
     if (!canCapture) return { error: "Sin permiso de captura", faltantes: 0 };
     if (!auth.user?.id) return { error: "Sesión inválida — vuelve a iniciar sesión", faltantes: 0 };
-    if (!numeroRollo.trim()) return { error: "Captura el número de rollo", faltantes: 0 };
-    if (!ROLLO_REGEX.test(numeroRollo.trim()))
+    if (numeroRollo.trim() && !ROLLO_REGEX.test(numeroRollo.trim()))
       return { error: "El número de rollo solo puede usar letras, números y guion", faltantes: 0 };
 
     let faltantes = 0;
     if (modo === "envio") {
-      faltantes = evalMediciones.filter(
+      if (!numeroRollo.trim()) faltantes += 1;
+      faltantes += evalMediciones.filter(
         (m) => CAMPOS_OBLIGATORIOS_CLAVES.includes(m.spec.clave) && m.input.valor === "",
       ).length;
     }
