@@ -115,78 +115,78 @@ function buildHtml(data: EtiquetaData, qrDataUrl: string, logoDataUrl: string): 
 <title>Etiqueta de Liberación · ${esc(data.folio)}</title>
 <style>
   *{box-sizing:border-box;font-family:-apple-system,Segoe UI,Inter,Roboto,Arial,sans-serif;color:#0f172a}
-  body{margin:0;padding:14px;background:#f1f5f9}
-  .toolbar{max-width:560px;margin:0 auto 10px;display:flex;justify-content:flex-end;gap:8px}
+  body{margin:0;padding:10px;background:#f1f5f9}
+  .toolbar{max-width:140mm;margin:0 auto 8px;display:flex;justify-content:flex-end;gap:8px}
   .toolbar button{padding:8px 16px;border:1px solid #0f172a;background:#0f172a;color:#fff;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer}
   .toolbar button.secondary{background:#fff;color:#0f172a}
 
-  /* Hoja Media Carta Vertical (5.5" x 8.5") */
-  .sheet{width:216mm;min-height:140mm;margin:0 auto;background:#fff;border:2px solid #0f172a;display:flex;flex-direction:column}
+  /* Hoja Media Carta Vertical (5.5" x 8.5") — usa 100% del área */
+  .sheet{width:140mm;min-height:216mm;margin:0 auto;background:#fff;border:2px solid #0f172a;display:flex;flex-direction:column}
 
-  /* Encabezado compacto */
-  .head{display:grid;grid-template-columns:50px 1fr;border-bottom:2px solid #0f172a}
-  .head .brand{display:flex;align-items:center;justify-content:center;padding:4px;border-right:1px solid #0f172a}
-  .head .brand img{max-width:46px;max-height:46px;object-fit:contain;display:block}
-  .head .title{padding:6px 10px;display:flex;flex-direction:column;justify-content:center;text-align:center}
-  .head .title b{font-size:10px;color:#475569;letter-spacing:.04em}
-  .head .title .sub{font-size:14px;font-weight:900;letter-spacing:.14em;margin-top:2px}
-  .head .meta-bar{grid-column:1/-1;display:flex;justify-content:space-between;font-size:8.5px;color:#475569;padding:3px 8px;border-top:1px solid #cbd5e1;background:#f8fafc;letter-spacing:.02em}
+  /* Encabezado — logo más grande */
+  .head{display:grid;grid-template-columns:78px 1fr;border-bottom:2px solid #0f172a}
+  .head .brand{display:flex;align-items:center;justify-content:center;padding:6px;border-right:1px solid #0f172a}
+  .head .brand img{max-width:72px;max-height:72px;object-fit:contain;display:block}
+  .head .title{padding:8px 10px;display:flex;flex-direction:column;justify-content:center;text-align:center}
+  .head .title b{font-size:12px;color:#475569;letter-spacing:.04em}
+  .head .title .sub{font-size:18px;font-weight:900;letter-spacing:.14em;margin-top:3px}
+  .head .meta-bar{grid-column:1/-1;display:flex;justify-content:space-between;font-size:10px;color:#475569;padding:4px 10px;border-top:1px solid #cbd5e1;background:#f8fafc;letter-spacing:.02em}
 
-  /* Bloque hero: No. Rollo + Producto + Estatus mini */
+  /* Bloque hero: No. Rollo + Producto */
   .hero{display:grid;grid-template-columns:1fr 1fr;border-bottom:2px solid #0f172a}
-  .hero .rollo{padding:10px 12px;background:#0f172a;color:#fff;display:flex;flex-direction:column;justify-content:center}
-  .hero .rollo .tag{font-size:9px;letter-spacing:.18em;color:#94a3b8;text-transform:uppercase;font-weight:700}
-  .hero .rollo .num{font-size:42px;font-weight:900;line-height:1;letter-spacing:-.02em;margin-top:4px;font-variant-numeric:tabular-nums}
-  .hero .producto{padding:10px 12px;display:flex;flex-direction:column;justify-content:center;background:#fff}
-  .hero .producto .tag{font-size:9px;letter-spacing:.18em;color:#64748b;text-transform:uppercase;font-weight:700}
-  .hero .producto .nombre{font-size:16px;font-weight:900;line-height:1.1;margin-top:4px;color:#0f172a;letter-spacing:-.01em}
-  .hero .producto .codigo{font-size:10px;color:#475569;margin-top:4px;font-family:ui-monospace,Menlo,monospace;letter-spacing:.04em}
+  .hero .rollo{padding:12px 14px;background:#0f172a;color:#fff;display:flex;flex-direction:column;justify-content:center}
+  .hero .rollo .tag{font-size:11px;letter-spacing:.18em;color:#94a3b8;text-transform:uppercase;font-weight:700}
+  .hero .rollo .num{font-size:54px;font-weight:900;line-height:1;letter-spacing:-.02em;margin-top:6px;font-variant-numeric:tabular-nums}
+  .hero .producto{padding:12px 14px;display:flex;flex-direction:column;justify-content:center;background:#fff}
+  .hero .producto .tag{font-size:11px;letter-spacing:.18em;color:#64748b;text-transform:uppercase;font-weight:700}
+  .hero .producto .nombre{font-size:20px;font-weight:900;line-height:1.1;margin-top:5px;color:#0f172a;letter-spacing:-.01em}
+  .hero .producto .codigo{font-size:12px;color:#475569;margin-top:5px;font-family:ui-monospace,Menlo,monospace;letter-spacing:.04em}
 
-  /* Banda meta: Fecha · Turno · Máquina · Folio */
+  /* Banda meta */
   .meta-band{display:grid;grid-template-columns:1fr 1fr 1fr 1.4fr;border-bottom:2px solid #0f172a}
-  .meta-band > div{padding:6px 8px;border-right:1px solid #0f172a}
+  .meta-band > div{padding:8px 10px;border-right:1px solid #0f172a}
   .meta-band > div:last-child{border-right:0}
-  .meta-band .k{font-size:8.5px;color:#64748b;text-transform:uppercase;letter-spacing:.1em;font-weight:700}
-  .meta-band .v{font-size:13px;font-weight:800;color:#0f172a;margin-top:2px;font-variant-numeric:tabular-nums;line-height:1.1}
-  .meta-band .v.mono{font-family:ui-monospace,Menlo,monospace;font-size:10.5px;letter-spacing:.02em}
+  .meta-band .k{font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.1em;font-weight:700}
+  .meta-band .v{font-size:16px;font-weight:800;color:#0f172a;margin-top:3px;font-variant-numeric:tabular-nums;line-height:1.1}
+  .meta-band .v.mono{font-family:ui-monospace,Menlo,monospace;font-size:13px;letter-spacing:.02em}
 
-  /* Personal compacto */
+  /* Personal */
   .personal{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:2px solid #0f172a;background:#f8fafc}
-  .personal > div{padding:5px 8px;border-right:1px solid #cbd5e1}
+  .personal > div{padding:7px 10px;border-right:1px solid #cbd5e1}
   .personal > div:last-child{border-right:0}
-  .personal .k{font-size:8px;color:#64748b;text-transform:uppercase;letter-spacing:.08em;font-weight:700}
-  .personal .v{font-size:11px;font-weight:700;color:#0f172a;margin-top:1px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .personal .k{font-size:9.5px;color:#64748b;text-transform:uppercase;letter-spacing:.08em;font-weight:700}
+  .personal .v{font-size:13px;font-weight:700;color:#0f172a;margin-top:2px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-  /* Mediciones — tipografía grande */
-  .mediciones-title{padding:5px 10px;background:#0f172a;color:#fff;font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}
+  /* Mediciones */
+  .mediciones-title{padding:6px 12px;background:#0f172a;color:#fff;font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}
   .mediciones{display:grid;grid-template-columns:1fr 1fr;border-bottom:2px solid #0f172a}
   .mediciones > div{padding:0}
   .mediciones > div + div{border-left:1px solid #0f172a}
   .mediciones table{border-collapse:collapse;width:100%}
-  .mediciones table td{border-bottom:1px solid #e2e8f0;padding:5px 8px;font-size:11.5px}
+  .mediciones table td{border-bottom:1px solid #e2e8f0;padding:6px 10px;font-size:14px}
   td.lbl{background:#f1f5f9;font-weight:700;text-align:right;width:50%;color:#334155}
-  td.val{font-weight:800;text-align:left;font-variant-numeric:tabular-nums;color:#0f172a;font-size:12.5px}
-  td.val .u{font-weight:500;color:#64748b;margin-left:3px;font-size:10px}
+  td.val{font-weight:800;text-align:left;font-variant-numeric:tabular-nums;color:#0f172a;font-size:15px}
+  td.val .u{font-weight:500;color:#64748b;margin-left:3px;font-size:12px}
 
   /* Observaciones + QR */
-  .obs-block{display:grid;grid-template-columns:1fr 1fr 110px;border-bottom:2px solid #0f172a}
-  .obs-block > div{padding:8px 10px;border-right:1px solid #0f172a}
+  .obs-block{display:grid;grid-template-columns:1fr 1fr 140px;border-bottom:2px solid #0f172a}
+  .obs-block > div{padding:10px 12px;border-right:1px solid #0f172a}
   .obs-block > div:last-child{border-right:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#f8fafc}
-  .obs-title{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#475569;margin-bottom:5px}
-  .ck{display:flex;align-items:center;gap:6px;font-size:10.5px;padding:1px 0;color:#1e293b;font-weight:600}
-  .ck input{width:12px;height:12px}
-  .comentarios{min-height:50px;font-size:10.5px;line-height:1.35;color:#1e293b;white-space:pre-wrap}
-  .qr-box img{width:96px;height:96px;display:block}
-  .qr-box .cap{font-size:8px;color:#475569;margin-top:3px;text-align:center;letter-spacing:.08em;text-transform:uppercase;font-weight:700}
+  .obs-title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#475569;margin-bottom:6px}
+  .ck{display:flex;align-items:center;gap:7px;font-size:13px;padding:2px 0;color:#1e293b;font-weight:600}
+  .ck input{width:14px;height:14px}
+  .comentarios{min-height:60px;font-size:13px;line-height:1.4;color:#1e293b;white-space:pre-wrap}
+  .qr-box img{width:128px;height:128px;display:block}
+  .qr-box .cap{font-size:10px;color:#475569;margin-top:4px;text-align:center;letter-spacing:.08em;text-transform:uppercase;font-weight:700}
 
-  /* Estatus — máxima prioridad visual */
-  .estatus{display:grid;grid-template-columns:90px 1fr;align-items:stretch;border-bottom:1px solid #0f172a}
-  .estatus .lbl-e{background:#0f172a;color:#fff;font-weight:900;font-size:13px;text-align:center;padding:14px 8px;letter-spacing:.16em;display:flex;align-items:center;justify-content:center}
-  .estatus .val-e{padding:14px 8px;text-align:center;font-weight:900;font-size:28px;letter-spacing:.18em;color:${estatusColor};background:${estatusBg};display:flex;align-items:center;justify-content:center}
+  /* Estatus */
+  .estatus{display:grid;grid-template-columns:110px 1fr;align-items:stretch;border-bottom:1px solid #0f172a}
+  .estatus .lbl-e{background:#0f172a;color:#fff;font-weight:900;font-size:16px;text-align:center;padding:18px 8px;letter-spacing:.16em;display:flex;align-items:center;justify-content:center}
+  .estatus .val-e{padding:18px 8px;text-align:center;font-weight:900;font-size:36px;letter-spacing:.18em;color:${estatusColor};background:${estatusBg};display:flex;align-items:center;justify-content:center}
 
-  .foot{padding:4px 10px;font-size:8px;color:#64748b;text-align:right;margin-top:auto}
+  .foot{padding:5px 12px;font-size:9.5px;color:#64748b;text-align:right;margin-top:auto}
 
-  @page{size:8.5in 5.5in;margin:6mm}
+  @page{size:5.5in 8.5in;margin:4mm}
   @media print{
     body{background:#fff;padding:0}
     .toolbar{display:none}
