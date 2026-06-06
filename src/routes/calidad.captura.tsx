@@ -603,30 +603,31 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
     }
   }
 
-  function validar(modo: "borrador" | "envio"): string | null {
-    if (!spec) return "Selecciona un producto con especificación vigente";
-    if (!canCapture) return "Sin permiso de captura";
-    if (!auth.user?.id) return "Sesión inválida — vuelve a iniciar sesión";
-    if (!horaMuestreo) return "Indica la hora de muestreo";
-    if (new Date(horaMuestreo).getTime() > Date.now() + 60_000)
-      return "La hora de muestreo no puede ser futura";
-    if (!numeroRollo.trim()) return "Captura el número de rollo";
+  const CAMPOS_OBLIGATORIOS_CLAVES = [
+    "blancuraR457",
+    "blancuraA",
+    "blancuraB",
+    "pesoBase",
+    "diametro",
+    "peso",
+  ];
+
+  function validar(modo: "borrador" | "envio"): { error: string | null; faltantes: number } {
+    if (!spec) return { error: "Selecciona un producto con especificación vigente", faltantes: 0 };
+    if (!canCapture) return { error: "Sin permiso de captura", faltantes: 0 };
+    if (!auth.user?.id) return { error: "Sesión inválida — vuelve a iniciar sesión", faltantes: 0 };
+    if (!numeroRollo.trim()) return { error: "Captura el número de rollo", faltantes: 0 };
     if (!ROLLO_REGEX.test(numeroRollo.trim()))
-      return "El número de rollo solo puede usar letras, números y guion";
-    if (!jefeMaquina.trim()) return "Captura el Jefe de Máquina";
-    if (!operador.trim()) return "Captura el Operador";
-    if (!prensero.trim()) return "Captura el Prensero";
-    if (!analista.trim()) return "Captura el Analista";
-    if (!estatusLiberacion) return "Selecciona el Estatus de Liberación (L / NC / C)";
+      return { error: "El número de rollo solo puede usar letras, números y guion", faltantes: 0 };
+
+    let faltantes = 0;
     if (modo === "envio") {
-      const faltantes = evalMediciones
-        .filter((m) => m.input.valor === "")
-        .map((m) => m.spec.etiqueta);
-      if (faltantes.length) return `Falta capturar: ${faltantes.join(", ")}`;
-      const inverosimil = evalMediciones.find(esValorInverosimil);
-      if (inverosimil) return `Valor inverosímil en ${inverosimil.spec.etiqueta}`;
+      faltantes = evalMediciones.filter(
+        (m) => CAMPOS_OBLIGATORIOS_CLAVES.includes(m.spec.clave) && m.input.valor === "",
+      ).length;
     }
-    return null;
+
+    return { error: null, faltantes };
   }
 
   function handleSubmit(modo: "borrador" | "envio") {
