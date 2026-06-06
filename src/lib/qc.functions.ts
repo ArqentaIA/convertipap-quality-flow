@@ -279,7 +279,7 @@ export const listMisMuestrasRecientes = createServerFn({ method: "GET" })
     let q = sb
       .from("muestras_calidad")
       .select(
-        `id, hora_muestreo, capturado_at, numero_rollo, estado, observaciones_generales,
+        `id, hora_muestreo, capturado_at, secuencia_captura, numero_rollo, estado, observaciones_generales,
          producto_id, maquina_id, capturado_por, turno,
          jefe_maquina, operador, prensero, analista,
          estatus_liberacion, defectos,
@@ -289,7 +289,7 @@ export const listMisMuestrasRecientes = createServerFn({ method: "GET" })
          maquinas(id, codigo, nombre, planta_id, plantas(codigo, nombre)),
          mediciones_calidad(variable_id, variable_clave, valor, min_snapshot, objetivo_snapshot, max_snapshot, estado, variables_calidad(clave, etiqueta, unidad))`,
       )
-      .order("capturado_at", { ascending: false })
+      .order("secuencia_captura", { ascending: false })
       .limit(seesAll ? 50 : 20);
     if (!seesAll) q = q.eq("capturado_por", userId);
     const { data, error } = await q;
