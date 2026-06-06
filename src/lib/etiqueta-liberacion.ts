@@ -121,7 +121,7 @@ function buildHtml(data: EtiquetaData, qrDataUrl: string, logoDataUrl: string): 
   .toolbar button.secondary{background:#fff;color:#0f172a}
 
   /* Hoja Media Carta Vertical (5.5" x 8.5") */
-  .sheet{width:140mm;min-height:216mm;margin:0 auto;background:#fff;border:2px solid #0f172a;display:flex;flex-direction:column}
+  .sheet{width:216mm;min-height:140mm;margin:0 auto;background:#fff;border:2px solid #0f172a;display:flex;flex-direction:column}
 
   /* Encabezado compacto */
   .head{display:grid;grid-template-columns:50px 1fr;border-bottom:2px solid #0f172a}
@@ -186,7 +186,7 @@ function buildHtml(data: EtiquetaData, qrDataUrl: string, logoDataUrl: string): 
 
   .foot{padding:4px 10px;font-size:8px;color:#64748b;text-align:right;margin-top:auto}
 
-  @page{size:5.5in 8.5in;margin:6mm}
+  @page{size:8.5in 5.5in;margin:6mm}
   @media print{
     body{background:#fff;padding:0}
     .toolbar{display:none}
