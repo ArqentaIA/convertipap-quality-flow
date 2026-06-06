@@ -458,13 +458,36 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
         : {}),
     };
 
+    // Mensaje único y normalizado para violación de unicidad de número de rollo.
+    const ROLLO_DUPLICADO_MSG =
+      "El número de rollo ya se encuentra registrado en el sistema. Verifique la información antes de continuar.";
+
+    // Pre-validación: el número de rollo debe ser único en toda la plataforma.
+    // Se excluye la propia muestra cuando se trata de una edición.
+    {
+      let q = sb
+        .from("muestras_calidad")
+        .select("id")
+        .eq("numero_rollo", data.numero_rollo)
+        .limit(1);
+      if (data.muestra_id) q = q.neq("id", data.muestra_id);
+      const { data: dup, error: eDup } = await q.maybeSingle();
+      if (eDup) throw new Error(eDup.message);
+      if (dup) throw new Error(ROLLO_DUPLICADO_MSG);
+    }
+
     let muestraId = data.muestra_id;
     if (muestraId) {
       const { error } = await sb
         .from("muestras_calidad")
         .update(muestraPayload)
         .eq("id", muestraId);
-      if (error) throw new Error(error.message);
+      if (error) {
+        if (error.code === "23505" || /duplicate key|unique/i.test(error.message)) {
+          throw new Error(ROLLO_DUPLICADO_MSG);
+        }
+        throw new Error(error.message);
+      }
       // borrar mediciones previas y reinsertar
       const { error: eDel } = await sb
         .from("mediciones_calidad")
@@ -477,7 +500,12 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
         .insert(muestraPayload)
         .select("id")
         .single();
-      if (error) throw new Error(error.message);
+      if (error) {
+        if (error.code === "23505" || /duplicate key|unique/i.test(error.message)) {
+          throw new Error(ROLLO_DUPLICADO_MSG);
+        }
+        throw new Error(error.message);
+      }
       muestraId = nueva.id;
     }
 
