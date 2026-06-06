@@ -95,8 +95,7 @@ function buildHtml(data: EtiquetaData, qrDataUrl: string, logoDataUrl: string): 
     ? "#fef3c7"
     : "#fee2e2";
 
-
-  // Distribuir mediciones en dos columnas
+  // Mediciones en dos columnas
   const left: string[] = [];
   const right: string[] = [];
   data.mediciones.forEach((m, i) => {
@@ -116,59 +115,82 @@ function buildHtml(data: EtiquetaData, qrDataUrl: string, logoDataUrl: string): 
 <title>Etiqueta de Liberación · ${esc(data.folio)}</title>
 <style>
   *{box-sizing:border-box;font-family:-apple-system,Segoe UI,Inter,Roboto,Arial,sans-serif;color:#0f172a}
-  body{margin:0;padding:18px;background:#f1f5f9}
-  .toolbar{max-width:900px;margin:0 auto 12px;display:flex;justify-content:flex-end;gap:8px}
+  body{margin:0;padding:14px;background:#f1f5f9}
+  .toolbar{max-width:560px;margin:0 auto 10px;display:flex;justify-content:flex-end;gap:8px}
   .toolbar button{padding:8px 16px;border:1px solid #0f172a;background:#0f172a;color:#fff;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer}
   .toolbar button.secondary{background:#fff;color:#0f172a}
-  .sheet{max-width:900px;margin:0 auto;background:#fff;border:2px solid #0f172a}
-  .head{display:grid;grid-template-columns:1fr 1.6fr 1fr;border-bottom:2px solid #0f172a}
-  .head > div{padding:10px 14px;border-right:1px solid #0f172a}
-  .head > div:last-child{border-right:0}
-  .brand{display:flex;align-items:center;justify-content:center;padding:8px}
-  .brand img{max-width:100%;max-height:64px;width:auto;height:auto;object-fit:contain;display:block}
-  .title{display:flex;flex-direction:column;justify-content:center;text-align:center}
-  .title b{font-size:12px}
-  .title .sub{margin-top:4px;font-size:14px;font-weight:800;letter-spacing:.08em}
-  .meta{font-size:9.5px;line-height:1.55;color:#1e293b}
-  table.kv{width:100%;border-collapse:collapse}
-  table.kv td{border:1px solid #0f172a;padding:5px 10px;font-size:12px;vertical-align:middle}
-  td.lbl{background:#f1f5f9;font-weight:700;text-align:right;width:42%}
-  td.val{font-weight:700;text-align:left;font-variant-numeric:tabular-nums}
-  td.val .u{font-weight:500;color:#64748b;margin-left:4px;font-size:10.5px}
-  .ident{display:grid;grid-template-columns:1fr 1fr;gap:0;border-bottom:1px solid #0f172a}
-  .ident > div{padding:12px 14px}
-  .ident .producto{background:linear-gradient(135deg,#0f172a 0%,#1e293b 60%,#334155 100%);color:#fff;padding:18px 18px;display:flex;flex-direction:column;justify-content:space-between;gap:14px;position:relative;overflow:hidden}
-  .ident .producto::after{content:"";position:absolute;right:-40px;bottom:-40px;width:160px;height:160px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.06) 0%,transparent 70%)}
-  .ident .producto .tag{font-size:9.5px;letter-spacing:.18em;color:#94a3b8;text-transform:uppercase;font-weight:600;display:inline-flex;align-items:center;gap:8px}
-  .ident .producto .tag::before{content:"";display:inline-block;width:18px;height:1px;background:#64748b}
-  .ident .producto .codigo{font-size:11px;letter-spacing:.1em;color:#cbd5e1;margin-top:6px;font-family:ui-monospace,Menlo,monospace}
-  .ident .producto .nombre{font-weight:800;font-size:22px;line-height:1.15;margin-top:4px;letter-spacing:-.01em}
-  .ident .producto .meta-prod{display:flex;gap:14px;font-size:10px;color:#cbd5e1;text-transform:uppercase;letter-spacing:.08em;border-top:1px solid rgba(255,255,255,.12);padding-top:10px;position:relative;z-index:1}
-  .ident .producto .meta-prod b{color:#fff;display:block;font-size:12px;letter-spacing:.02em;text-transform:none;margin-top:2px;font-weight:700}
-  .ident .meta-rollo table td{border-color:#94a3b8}
 
-  .mediciones{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid #0f172a}
+  /* Hoja Media Carta Vertical (5.5" x 8.5") */
+  .sheet{width:140mm;min-height:216mm;margin:0 auto;background:#fff;border:2px solid #0f172a;display:flex;flex-direction:column}
+
+  /* Encabezado compacto */
+  .head{display:grid;grid-template-columns:50px 1fr;border-bottom:2px solid #0f172a}
+  .head .brand{display:flex;align-items:center;justify-content:center;padding:4px;border-right:1px solid #0f172a}
+  .head .brand img{max-width:46px;max-height:46px;object-fit:contain;display:block}
+  .head .title{padding:6px 10px;display:flex;flex-direction:column;justify-content:center;text-align:center}
+  .head .title b{font-size:10px;color:#475569;letter-spacing:.04em}
+  .head .title .sub{font-size:14px;font-weight:900;letter-spacing:.14em;margin-top:2px}
+  .head .meta-bar{grid-column:1/-1;display:flex;justify-content:space-between;font-size:8.5px;color:#475569;padding:3px 8px;border-top:1px solid #cbd5e1;background:#f8fafc;letter-spacing:.02em}
+
+  /* Bloque hero: No. Rollo + Producto + Estatus mini */
+  .hero{display:grid;grid-template-columns:1fr 1fr;border-bottom:2px solid #0f172a}
+  .hero .rollo{padding:10px 12px;background:#0f172a;color:#fff;display:flex;flex-direction:column;justify-content:center}
+  .hero .rollo .tag{font-size:9px;letter-spacing:.18em;color:#94a3b8;text-transform:uppercase;font-weight:700}
+  .hero .rollo .num{font-size:42px;font-weight:900;line-height:1;letter-spacing:-.02em;margin-top:4px;font-variant-numeric:tabular-nums}
+  .hero .producto{padding:10px 12px;display:flex;flex-direction:column;justify-content:center;background:#fff}
+  .hero .producto .tag{font-size:9px;letter-spacing:.18em;color:#64748b;text-transform:uppercase;font-weight:700}
+  .hero .producto .nombre{font-size:16px;font-weight:900;line-height:1.1;margin-top:4px;color:#0f172a;letter-spacing:-.01em}
+  .hero .producto .codigo{font-size:10px;color:#475569;margin-top:4px;font-family:ui-monospace,Menlo,monospace;letter-spacing:.04em}
+
+  /* Banda meta: Fecha · Turno · Máquina · Folio */
+  .meta-band{display:grid;grid-template-columns:1fr 1fr 1fr 1.4fr;border-bottom:2px solid #0f172a}
+  .meta-band > div{padding:6px 8px;border-right:1px solid #0f172a}
+  .meta-band > div:last-child{border-right:0}
+  .meta-band .k{font-size:8.5px;color:#64748b;text-transform:uppercase;letter-spacing:.1em;font-weight:700}
+  .meta-band .v{font-size:13px;font-weight:800;color:#0f172a;margin-top:2px;font-variant-numeric:tabular-nums;line-height:1.1}
+  .meta-band .v.mono{font-family:ui-monospace,Menlo,monospace;font-size:10.5px;letter-spacing:.02em}
+
+  /* Personal compacto */
+  .personal{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:2px solid #0f172a;background:#f8fafc}
+  .personal > div{padding:5px 8px;border-right:1px solid #cbd5e1}
+  .personal > div:last-child{border-right:0}
+  .personal .k{font-size:8px;color:#64748b;text-transform:uppercase;letter-spacing:.08em;font-weight:700}
+  .personal .v{font-size:11px;font-weight:700;color:#0f172a;margin-top:1px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+  /* Mediciones — tipografía grande */
+  .mediciones-title{padding:5px 10px;background:#0f172a;color:#fff;font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}
+  .mediciones{display:grid;grid-template-columns:1fr 1fr;border-bottom:2px solid #0f172a}
   .mediciones > div{padding:0}
+  .mediciones > div + div{border-left:1px solid #0f172a}
   .mediciones table{border-collapse:collapse;width:100%}
-  .mediciones table td{border:1px solid #cbd5e1;padding:6px 10px;font-size:12px}
-  .obs-block{display:grid;grid-template-columns:.9fr 1.4fr .9fr;border-bottom:1px solid #0f172a}
-  .obs-block > div{padding:12px 14px;border-right:1px solid #0f172a}
-  .obs-block > div:last-child{border-right:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
-  .obs-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#475569;margin-bottom:8px}
-  .ck{display:flex;align-items:center;gap:8px;font-size:12px;padding:3px 0}
-  .ck input{width:14px;height:14px}
-  .comentarios{min-height:80px;font-size:12px;line-height:1.4;color:#1e293b;white-space:pre-wrap}
-  .qr-box img{width:120px;height:120px;display:block}
-  .qr-box .cap{font-size:9px;color:#64748b;margin-top:4px;text-align:center;letter-spacing:.06em;text-transform:uppercase}
-  .estatus{display:grid;grid-template-columns:200px 1fr;align-items:center}
-  .estatus .lbl{background:#f1f5f9;font-weight:800;font-size:14px;text-align:center;padding:16px;letter-spacing:.1em;border-right:1px solid #0f172a}
-  .estatus .val{padding:16px;text-align:center;font-weight:800;font-size:22px;letter-spacing:.15em;color:${estatusColor};background:${estatusBg}}
-  .foot{padding:6px 14px;font-size:9px;color:#64748b;text-align:right}
-  @page{size:letter;margin:10mm}
+  .mediciones table td{border-bottom:1px solid #e2e8f0;padding:5px 8px;font-size:11.5px}
+  td.lbl{background:#f1f5f9;font-weight:700;text-align:right;width:50%;color:#334155}
+  td.val{font-weight:800;text-align:left;font-variant-numeric:tabular-nums;color:#0f172a;font-size:12.5px}
+  td.val .u{font-weight:500;color:#64748b;margin-left:3px;font-size:10px}
+
+  /* Observaciones + QR */
+  .obs-block{display:grid;grid-template-columns:1fr 1fr 110px;border-bottom:2px solid #0f172a}
+  .obs-block > div{padding:8px 10px;border-right:1px solid #0f172a}
+  .obs-block > div:last-child{border-right:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#f8fafc}
+  .obs-title{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#475569;margin-bottom:5px}
+  .ck{display:flex;align-items:center;gap:6px;font-size:10.5px;padding:1px 0;color:#1e293b;font-weight:600}
+  .ck input{width:12px;height:12px}
+  .comentarios{min-height:50px;font-size:10.5px;line-height:1.35;color:#1e293b;white-space:pre-wrap}
+  .qr-box img{width:96px;height:96px;display:block}
+  .qr-box .cap{font-size:8px;color:#475569;margin-top:3px;text-align:center;letter-spacing:.08em;text-transform:uppercase;font-weight:700}
+
+  /* Estatus — máxima prioridad visual */
+  .estatus{display:grid;grid-template-columns:90px 1fr;align-items:stretch;border-bottom:1px solid #0f172a}
+  .estatus .lbl-e{background:#0f172a;color:#fff;font-weight:900;font-size:13px;text-align:center;padding:14px 8px;letter-spacing:.16em;display:flex;align-items:center;justify-content:center}
+  .estatus .val-e{padding:14px 8px;text-align:center;font-weight:900;font-size:28px;letter-spacing:.18em;color:${estatusColor};background:${estatusBg};display:flex;align-items:center;justify-content:center}
+
+  .foot{padding:4px 10px;font-size:8px;color:#64748b;text-align:right;margin-top:auto}
+
+  @page{size:5.5in 8.5in;margin:6mm}
   @media print{
     body{background:#fff;padding:0}
     .toolbar{display:none}
-    .sheet{border:2px solid #0f172a;max-width:none}
+    .sheet{border:2px solid #0f172a;width:auto;min-height:auto;box-shadow:none}
   }
 </style>
 </head>
@@ -179,74 +201,45 @@ function buildHtml(data: EtiquetaData, qrDataUrl: string, logoDataUrl: string): 
   </div>
   <div class="sheet">
     <div class="head">
-      <div class="brand">
-        <img src="${logoDataUrl}" alt="Convertipap" />
-      </div>
+      <div class="brand"><img src="${logoDataUrl}" alt="Convertipap" /></div>
       <div class="title">
         <b>CONVERTIDOR DE PAPEL S.A. DE C.V</b>
         <span class="sub">ETIQUETA DE LIBERACIÓN</span>
       </div>
-      <div class="meta">
-        CÓDIGO: FOR-CAL-04<br/>
-        REVISIÓN: 0<br/>
-        FECHA DE EMISIÓN: 05-03-2026<br/>
-        FECHA DE ACTUALIZACIÓN: 05-03-2026<br/>
-        IMPRESIÓN: ${esc(fechaImpresion)}
+      <div class="meta-bar">
+        <span>FOR-CAL-04 · Rev. 0</span>
+        <span>Emisión 05-03-2026</span>
+        <span>Impresión: ${esc(fechaImpresion)}</span>
       </div>
     </div>
 
-    <div class="ident">
+    <div class="hero">
+      <div class="rollo">
+        <div class="tag">No. de Rollo</div>
+        <div class="num">${esc(data.numeroRollo || "—")}</div>
+      </div>
       <div class="producto">
-        <div>
-          <div class="tag">Producto Terminado</div>
-          <div class="codigo">${esc(data.productoCodigo)} · Fabricación ${esc(data.maquinaCodigo)}</div>
-          <div class="nombre">${esc((data.productoNombre || data.productoCodigo).toUpperCase())}</div>
-        </div>
-        <div class="meta-prod">
-          <div>Rollo<b>${esc(data.numeroRollo || "—")}</b></div>
-          <div>Turno<b>${data.turno ? esc(String(data.turno)) : "—"}</b></div>
-          <div>Fecha<b>${esc(data.fecha)}</b></div>
-        </div>
-      </div>
-
-      <div class="meta-rollo">
-        <table class="kv">
-          <tr>
-            <td class="lbl">No. Rollo</td>
-            <td class="val" style="font-size:16px">${esc(data.numeroRollo || "—")}</td>
-          </tr>
-          <tr>
-            <td class="lbl">Fecha</td>
-            <td class="val">${esc(data.fecha)}${data.turno ? ` · Turno ${esc(data.turno)}` : ""}</td>
-          </tr>
-          <tr>
-            <td class="lbl">Máquina</td>
-            <td class="val">${esc(data.maquinaCodigo)} · ${esc(data.maquinaNombre)}</td>
-          </tr>
-          <tr>
-            <td class="lbl">Jefe de Máquina</td>
-            <td class="val">${esc(data.jefeMaquina || "—")}</td>
-          </tr>
-          <tr>
-            <td class="lbl">Operador</td>
-            <td class="val">${esc(data.operador || "—")}</td>
-          </tr>
-          <tr>
-            <td class="lbl">Prensero</td>
-            <td class="val">${esc(data.prensero || "—")}</td>
-          </tr>
-          <tr>
-            <td class="lbl">Analista</td>
-            <td class="val">${esc(data.analista || "—")}</td>
-          </tr>
-          <tr>
-            <td class="lbl">Folio</td>
-            <td class="val" style="font-family:ui-monospace,Menlo,monospace;font-size:11px">${esc(data.folio)}</td>
-          </tr>
-        </table>
+        <div class="tag">Producto</div>
+        <div class="nombre">${esc((data.productoNombre || data.productoCodigo).toUpperCase())}</div>
+        <div class="codigo">${esc(data.productoCodigo)} · ${esc(data.maquinaCodigo)}</div>
       </div>
     </div>
 
+    <div class="meta-band">
+      <div><div class="k">Fecha</div><div class="v">${esc(data.fecha)}</div></div>
+      <div><div class="k">Turno</div><div class="v">${data.turno ? esc(String(data.turno)) : "—"}</div></div>
+      <div><div class="k">Máquina</div><div class="v">${esc(data.maquinaCodigo)}</div></div>
+      <div><div class="k">Folio</div><div class="v mono">${esc(data.folio)}</div></div>
+    </div>
+
+    <div class="personal">
+      <div><div class="k">Jefe de Máquina</div><div class="v">${esc(data.jefeMaquina || "—")}</div></div>
+      <div><div class="k">Operador</div><div class="v">${esc(data.operador || "—")}</div></div>
+      <div><div class="k">Prensero</div><div class="v">${esc(data.prensero || "—")}</div></div>
+      <div><div class="k">Analista</div><div class="v">${esc(data.analista || "—")}</div></div>
+    </div>
+
+    <div class="mediciones-title">Resultados de Calidad</div>
     <div class="mediciones">
       <div><table>${left.join("")}</table></div>
       <div><table>${right.join("")}</table></div>
@@ -262,9 +255,9 @@ function buildHtml(data: EtiquetaData, qrDataUrl: string, logoDataUrl: string): 
         <div class="comentarios">${esc(data.observacionesGenerales || "—")}</div>
         ${
           data.autorizacion
-            ? `<div style="margin-top:10px;padding:8px 10px;border-left:3px solid #b45309;background:#fffbeb;border-radius:4px;font-size:11px;line-height:1.4">
-                 <div style="font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#92400e;font-size:9.5px;margin-bottom:4px">Justificación · cambio de estatus por Gerente de Calidad</div>
-                 <div style="color:#1e293b;white-space:pre-wrap"><b>Dictamen:</b> ${esc(
+            ? `<div style="margin-top:8px;padding:6px 8px;border-left:3px solid #b45309;background:#fffbeb;border-radius:4px;font-size:9.5px;line-height:1.35">
+                 <div style="font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#92400e;font-size:8.5px;margin-bottom:3px">Justificación · Gerente de Calidad</div>
+                 <div style="color:#1e293b"><b>Dictamen:</b> ${esc(
                    data.autorizacion.dictamen === "liberada"
                      ? "Liberada"
                      : data.autorizacion.dictamen === "concesion"
@@ -272,33 +265,21 @@ function buildHtml(data: EtiquetaData, qrDataUrl: string, logoDataUrl: string): 
                      : data.autorizacion.dictamen === "rechazada"
                      ? "Rechazada"
                      : String(data.autorizacion.dictamen),
-                 )}${
-                   data.autorizacion.motivo
-                     ? ` · <b>Motivo:</b> ${esc(data.autorizacion.motivo)}`
-                     : ""
-                 }</div>
-                 <div style="color:#1e293b;white-space:pre-wrap;margin-top:4px">${esc(
-                   data.autorizacion.observaciones || "—",
-                 )}</div>
-                 <div style="color:#64748b;font-size:9.5px;margin-top:6px;letter-spacing:.04em">${
-                   data.autorizacion.autorizadoAt
-                     ? esc(new Date(data.autorizacion.autorizadoAt).toLocaleString("es-MX"))
-                     : ""
-                 }${data.autorizacion.rolAutorizador ? ` · ${esc(data.autorizacion.rolAutorizador)}` : ""}</div>
+                 )}${data.autorizacion.motivo ? ` · <b>Motivo:</b> ${esc(data.autorizacion.motivo)}` : ""}</div>
+                 <div style="color:#1e293b;white-space:pre-wrap;margin-top:3px">${esc(data.autorizacion.observaciones || "—")}</div>
                </div>`
             : ""
         }
       </div>
-
       <div class="qr-box">
         <img src="${qrDataUrl}" alt="QR muestra" />
-        <div class="cap">Verificar muestra</div>
+        <div class="cap">Verificar</div>
       </div>
     </div>
 
     <div class="estatus">
-      <div class="lbl">ESTATUS</div>
-      <div class="val">${esc(data.estatus)}</div>
+      <div class="lbl-e">ESTATUS</div>
+      <div class="val-e">${esc(data.estatus)}</div>
     </div>
 
     <div class="foot">FOR-CAL-04 · Generado automáticamente</div>
