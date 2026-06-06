@@ -110,9 +110,8 @@ export const getOperatorVisionData = createServerFn({ method: "GET" })
       rollo: m.numero_rollo as string,
       capturadoAt: m.capturado_at as string,
       turno: m.turno as string,
-      // PII enmascarada en endpoint público (TV/kiosko): no exponer nombres.
-      operador: "",
-      analista: "",
+      operador: (m.operador as string) ?? "",
+      analista: (m.analista as string) ?? "",
       estatus: (m.estatus_liberacion ?? m.dictamen ?? "pendiente") as string,
       mediciones: (m.mediciones_calidad ?? []).map((x: any) => ({
         clave: x.variable_clave as string,
@@ -123,6 +122,34 @@ export const getOperatorVisionData = createServerFn({ method: "GET" })
         estado: x.estado as string,
       })),
     }));
+
+    // Fallback: si no hay orden activa, derivar producto/OF de la última muestra capturada
+    let ordenFallback: {
+      folio: string;
+      turno: string;
+      producto: string;
+      productoCodigo: string;
+    } | null = null;
+    if (!ordenActiva) {
+      const ultima = muestrasRaw?.[0]; // muestrasRaw está desc, [0] = más reciente
+      if (ultima) {
+        const [{ data: prod }, { data: ord }] = await Promise.all([
+          ultima.producto_id
+            ? sb.from("productos").select("codigo, nombre").eq("id", ultima.producto_id).maybeSingle()
+            : Promise.resolve({ data: null }),
+          ultima.orden_id
+            ? sb.from("ordenes_fabricacion").select("folio, turno").eq("id", ultima.orden_id).maybeSingle()
+            : Promise.resolve({ data: null }),
+        ] as any);
+        ordenFallback = {
+          folio: (ord?.folio as string) ?? "",
+          turno: (ord?.turno as string) ?? (ultima.turno as string) ?? "",
+          producto: (prod?.nombre as string) ?? "",
+          productoCodigo: (prod?.codigo as string) ?? "",
+        };
+      }
+    }
+
 
     // 5) Estado actual de máquina
     const { data: estadoActual } = await sb
