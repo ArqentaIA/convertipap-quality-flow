@@ -393,14 +393,14 @@ export const getReportes = createServerFn({ method: "POST" })
         tipo_producto: txt(tipo?.nombre),
         tipo_codigo: txt(tipo?.codigo),
         codigo_producto: txt(producto?.codigo),
-        capas: num(producto?.capas),
+        
         gramaje: num(producto?.gramaje),
         rollo: txt(m.numero_rollo),
         operador: txt(m.operador),
         jefe_maquina: txt(m.jefe_maquina),
         prensero: txt(m.prensero),
         analista: txt(m.analista),
-        defectos: Array.isArray(m.defectos) && m.defectos.length ? m.defectos.join(", ") : SIN_INFO,
+        
         estatus: txt(m.estatus_liberacion ?? m.dictamen ?? "pendiente"),
       };
       for (const clave of clavesOrden) {
