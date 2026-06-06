@@ -186,7 +186,7 @@ function buildHtml(data: EtiquetaData, qrDataUrl: string, logoDataUrl: string): 
 
   .foot{padding:4px 10px;font-size:8px;color:#64748b;text-align:right;margin-top:auto}
 
-  @page{size:5.5in 8.5in;margin:6mm}
+  @page{size:8.5in 5.5in;margin:6mm}
   @media print{
     body{background:#fff;padding:0}
     .toolbar{display:none}
