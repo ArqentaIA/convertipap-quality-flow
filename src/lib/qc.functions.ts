@@ -252,7 +252,7 @@ export const listMuestras = createServerFn({ method: "GET" })
          maquinas(id, codigo, nombre, plantas(id, codigo, nombre)),
          mediciones_calidad(*)`,
       )
-      .order("capturado_at", { ascending: false })
+      .order("secuencia_captura", { ascending: false })
       .limit(500);
     if (data.ordenId) q = q.eq("orden_id", data.ordenId);
     if (data.desde) q = q.gte("capturado_at", data.desde);
