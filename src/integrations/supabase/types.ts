@@ -513,6 +513,7 @@ export type Database = {
           revisado_at: string | null
           revisado_por: string | null
           rol_autorizador: Database["public"]["Enums"]["app_role"] | null
+          secuencia_captura: number
           tipo_muestreo: Database["public"]["Enums"]["qc_tipo_muestreo"]
           turno: string
           updated_at: string
@@ -559,6 +560,7 @@ export type Database = {
           revisado_at?: string | null
           revisado_por?: string | null
           rol_autorizador?: Database["public"]["Enums"]["app_role"] | null
+          secuencia_captura?: number
           tipo_muestreo: Database["public"]["Enums"]["qc_tipo_muestreo"]
           turno: string
           updated_at?: string
@@ -605,6 +607,7 @@ export type Database = {
           revisado_at?: string | null
           revisado_por?: string | null
           rol_autorizador?: Database["public"]["Enums"]["app_role"] | null
+          secuencia_captura?: number
           tipo_muestreo?: Database["public"]["Enums"]["qc_tipo_muestreo"]
           turno?: string
           updated_at?: string
