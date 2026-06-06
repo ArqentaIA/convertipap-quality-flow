@@ -272,6 +272,16 @@ function OperatorVisionPage() {
     return m;
   }, [current]);
 
+  // Fallback de spec por variable tomado del snapshot de la medición del
+  // rollo actual (útil cuando no hay especificación activa en la orden).
+  const mapSpecActual = useMemo(() => {
+    const m = new Map<string, { min: number | null; obj: number | null; max: number | null }>();
+    current?.mediciones.forEach((x: any) => {
+      m.set(x.clave, { min: x.min ?? null, obj: x.obj ?? null, max: x.max ?? null });
+    });
+    return m;
+  }, [current]);
+
   function evalRollo(m: typeof muestrasAll[number] | undefined): VarStatus {
     if (!m) return "none";
     // Si hay dictamen explícito úsalo
