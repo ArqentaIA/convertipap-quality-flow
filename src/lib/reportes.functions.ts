@@ -400,7 +400,7 @@ export const getReportes = createServerFn({ method: "POST" })
         jefe_maquina: txt(m.jefe_maquina),
         prensero: txt(m.prensero),
         analista: txt(m.analista),
-        defectos: Array.isArray(m.defectos) && m.defectos.length ? m.defectos.join(", ") : SIN_INFO,
+        
         estatus: txt(m.estatus_liberacion ?? m.dictamen ?? "pendiente"),
       };
       for (const clave of clavesOrden) {
