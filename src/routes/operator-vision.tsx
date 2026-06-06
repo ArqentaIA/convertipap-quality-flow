@@ -230,11 +230,16 @@ function OperatorVisionPage() {
   const { maquina } = Route.useSearch();
   const now = useTicker(1000);
 
-  const { data, error } = useQuery({
+  const { data, error, dataUpdatedAt, isError } = useQuery({
     queryKey: ["operator-vision", maquina],
     queryFn: () => getOperatorVisionData({ data: { maquina } }),
-    refetchInterval: 30_000,
+    refetchInterval: 60_000,
     refetchIntervalInBackground: true,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    staleTime: 0,
+    gcTime: 0,
   });
 
   const muestrasAll = data?.muestras ?? [];
