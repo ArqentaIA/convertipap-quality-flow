@@ -200,17 +200,34 @@ function VarCard({
         </div>
         <span className={`text-[18px] font-black uppercase ${stateColor}`}>{stateLabel}</span>
       </div>
-      <div className="flex flex-1 items-center justify-center">
-        <div className="flex items-baseline gap-2">
-          <span className="font-mono text-[160px] font-black leading-none tabular-nums text-slate-900">
+      <div className="flex flex-1 items-center justify-center overflow-hidden">
+        <div className="flex w-full items-baseline justify-center gap-1 whitespace-nowrap">
+          <span className="font-mono text-[clamp(48px,8.5vw,120px)] font-black leading-none tabular-nums text-slate-900">
             {fmt(value, def.digits)}
           </span>
-          <span className="text-4xl font-bold text-slate-500">{def.unidad}</span>
+          <span className="text-2xl font-bold text-slate-500 shrink-0">{def.unidad}</span>
         </div>
       </div>
-      <div className="text-center text-[18px] font-semibold text-slate-500 tabular-nums">
-        {hasSpec ? `(${fmt(min, def.digits)} – ${fmt(max, def.digits)})` : "Sin especificación"}
-      </div>
+      {hasSpec ? (
+        <div className="mt-2 grid grid-cols-3 gap-1 text-center tabular-nums">
+          <div className="rounded-md bg-slate-100 px-1 py-1">
+            <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Min</div>
+            <div className="text-[15px] font-bold text-slate-800">{fmt(min, def.digits)}</div>
+          </div>
+          <div className="rounded-md bg-emerald-100 px-1 py-1">
+            <div className="text-[11px] font-bold uppercase tracking-wider text-emerald-700">Obj</div>
+            <div className="text-[15px] font-bold text-emerald-800">{fmt(obj, def.digits)}</div>
+          </div>
+          <div className="rounded-md bg-slate-100 px-1 py-1">
+            <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Max</div>
+            <div className="text-[15px] font-bold text-slate-800">{fmt(max, def.digits)}</div>
+          </div>
+        </div>
+      ) : (
+        <div className="mt-2 text-center text-[15px] font-semibold text-slate-400">
+          Sin especificación
+        </div>
+      )}
     </div>
   );
 }
