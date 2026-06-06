@@ -188,7 +188,19 @@ export const getOperatorVisionData = createServerFn({ method: "GET" })
                 : Number(ordenActiva.objetivo_rollos),
             unidad: (ordenActiva.unidad_objetivo as string) ?? "kg",
           }
-        : null,
+        : ordenFallback
+          ? {
+              folio: ordenFallback.folio,
+              turno: ordenFallback.turno,
+              producto: ordenFallback.producto,
+              productoCodigo: ordenFallback.productoCodigo,
+              producidoKg: 0,
+              producidoRollos: 0,
+              objetivoKg: null,
+              objetivoRollos: null,
+              unidad: "kg",
+            }
+          : null,
       variables,
       muestras,
       estadoMaquina: estadoActual
