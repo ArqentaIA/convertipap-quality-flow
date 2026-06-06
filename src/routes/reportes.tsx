@@ -71,7 +71,12 @@ const reportesQueryOptions = (start: string, end: string) =>
   queryOptions({
     queryKey: ["reportes", start, end],
     queryFn: () => getReportes({ data: { start, end } }),
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
   });
+
 
 async function descargarXLSX(
   nombre: string,
