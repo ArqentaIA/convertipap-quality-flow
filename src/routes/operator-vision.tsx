@@ -579,16 +579,26 @@ function OperatorVisionPage() {
           <div className="grid min-h-0 flex-1 grid-cols-5 gap-3">
             {CARD_KEYS.map((ck) => {
               const v = variables.find((x) => x.clave === ck);
+              const snap = mapSpecActual.get(ck);
+              const min = v?.min ?? (snap?.min !== null && snap?.min !== undefined ? snap.min : 0);
+              const max = v?.max ?? (snap?.max !== null && snap?.max !== undefined ? snap.max : 0);
+              const obj = v?.objetivo ?? (snap?.obj !== null && snap?.obj !== undefined ? snap.obj : 0);
+              const hasSpec =
+                !!v ||
+                (snap !== undefined &&
+                  snap.min !== null &&
+                  snap.max !== null &&
+                  snap.obj !== null);
               const value = mapMedActual.get(ck);
               return (
                 <VarCard
                   key={ck}
                   ck={ck}
                   value={value === undefined ? null : value}
-                  min={v?.min ?? 0}
-                  max={v?.max ?? 0}
-                  obj={v?.objetivo ?? 0}
-                  hasSpec={!!v}
+                  min={Number(min)}
+                  max={Number(max)}
+                  obj={Number(obj)}
+                  hasSpec={hasSpec}
                 />
               );
             })}
