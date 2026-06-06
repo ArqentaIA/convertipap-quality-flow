@@ -675,13 +675,37 @@ function OperatorVisionPage() {
 
       {/* FOOTER */}
       <footer className="shrink-0 border-t-2 border-slate-200 bg-white px-6 py-1.5">
-        <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-[0.2em] text-slate-500">
+        <div className="flex items-center justify-between gap-4 text-[11px] font-bold uppercase tracking-[0.2em] text-slate-500">
           <div className="flex items-center gap-2">
-            <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" />
+            <span
+              className={`h-2 w-2 rounded-full ${isError ? "bg-rose-500" : "animate-pulse bg-emerald-500"}`}
+            />
             A Tissue System · datos en tiempo real desde la base de datos
           </div>
-          <div>
-            Actualización cada 30 s · {data?.maquina?.area || "Conversión Tissue"}
+          {isError && (
+            <div className="flex items-center gap-2 rounded-md border-2 border-rose-400 bg-rose-50 px-3 py-1 text-rose-700">
+              <AlertTriangle className="h-4 w-4" />
+              Datos no actualizados - Verificar conexión
+            </div>
+          )}
+          <div className="flex items-center gap-4">
+            <span>
+              Última actualización:{" "}
+              <span className="font-mono normal-case tracking-normal text-slate-700">
+                {dataUpdatedAt
+                  ? new Date(dataUpdatedAt).toLocaleString("es-MX", {
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      second: "2-digit",
+                      hour12: false,
+                    })
+                  : "—"}
+              </span>
+            </span>
+            <span>Actualización cada 60 s · {data?.maquina?.area || "Conversión Tissue"}</span>
           </div>
         </div>
       </footer>
