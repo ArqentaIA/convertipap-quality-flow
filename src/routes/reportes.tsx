@@ -383,10 +383,23 @@ function ReportesPage() {
             {REPORTES.map((rep) => {
               const nombre = rep.nombre;
               const titulo = `${nombre} · ${periodo}`;
-              const hojasPdf = datasetsFiltrados[nombre] ?? [{ sheet: "Datos", rows: [] }];
-              const hojasXlsx = rep.xlsxDataset
-                ? (datasetsFiltrados[rep.xlsxDataset] ?? hojasPdf)
-                : hojasPdf;
+              const fetchFresh = async () => {
+                // Siempre consultar en tiempo real desde la BD al descargar,
+                // ignorando cualquier caché previo de React Query.
+                const fresh = await getReportes({ data: { start, end } });
+                const out: Record<string, { sheet: string; rows: Record<string, string | number>[] }[]> = {};
+                for (const [n, hojas] of Object.entries(fresh.datasets ?? {})) {
+                  out[n] = hojas.map((h) => ({
+                    ...h,
+                    rows: h.rows.filter((row) => {
+                      const maq = typeof row.maquina === "string" ? row.maquina : null;
+                      if (!maq) return true;
+                      return labFilter.isMachineAllowed(maq);
+                    }),
+                  }));
+                }
+                return out;
+              };
               return (
                 <li key={nombre} className="flex items-center justify-between gap-3 px-5 py-3">
                   <div>
@@ -396,17 +409,29 @@ function ReportesPage() {
                   <div className="flex items-center gap-2">
                     {!rep.xlsxOnly && (
                       <button
-                        onClick={() => descargarPDF(titulo, `${freq} · ${periodo}`, hojasPdf)}
+                        onClick={async () => {
+                          const fresh = await fetchFresh();
+                          const hojasPdf = fresh[nombre] ?? [{ sheet: "Datos", rows: [] }];
+                          await descargarPDF(titulo, `${freq} · ${periodo}`, hojasPdf);
+                          reportesQuery.refetch();
+                        }}
                         className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium hover:bg-accent"
-                        title="Descargar reporte ejecutivo en PDF"
+                        title="Descargar reporte ejecutivo en PDF (datos en tiempo real)"
                       >
                         <Download className="h-3.5 w-3.5" /> PDF
                       </button>
                     )}
                     <button
-                      onClick={() => descargarXLSX(nombre, hojasXlsx)}
+                      onClick={async () => {
+                        const fresh = await fetchFresh();
+                        const hojasXlsx = rep.xlsxDataset
+                          ? (fresh[rep.xlsxDataset] ?? fresh[nombre] ?? [{ sheet: "Datos", rows: [] }])
+                          : (fresh[nombre] ?? [{ sheet: "Datos", rows: [] }]);
+                        await descargarXLSX(nombre, hojasXlsx);
+                        reportesQuery.refetch();
+                      }}
                       className="inline-flex items-center gap-2 rounded-md border border-success/40 bg-success/10 px-3 py-1.5 text-xs font-medium text-success hover:bg-success/20"
-                      title="Descargar archivo XLSX para manejo de BD"
+                      title="Descargar archivo XLSX para manejo de BD (datos en tiempo real)"
                     >
                       <FileSpreadsheet className="h-3.5 w-3.5" /> XLSX (BD)
                     </button>
@@ -420,3 +445,4 @@ function ReportesPage() {
     </AppLayout>
   );
 }
+
