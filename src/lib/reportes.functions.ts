@@ -393,7 +393,7 @@ export const getReportes = createServerFn({ method: "POST" })
         tipo_producto: txt(tipo?.nombre),
         tipo_codigo: txt(tipo?.codigo),
         codigo_producto: txt(producto?.codigo),
-        capas: num(producto?.capas),
+        
         gramaje: num(producto?.gramaje),
         rollo: txt(m.numero_rollo),
         operador: txt(m.operador),
