@@ -498,8 +498,21 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
         type: "active",
       });
       const folioToast = `${numeroRollo || "SN"} · ${maquina.codigo}`;
+      const opcionalesTexto: string[] = [
+        jefeMaquina, operador, prensero, analista,
+        velocidadMaquina, velocidadEnrollador, crepadoPct, cumplimientoPct,
+        porcentajeRupturasPct, destino, observaciones, estatusLiberacion,
+      ];
+      let noObligatoriosFaltantes = opcionalesTexto.filter((v) => !String(v ?? "").trim()).length;
+      noObligatoriosFaltantes += evalMediciones.filter(
+        (m) => !CAMPOS_OBLIGATORIOS_CLAVES.includes(m.spec.clave) && m.input.valor === "",
+      ).length;
+      const descBase = "Agregada al listado de producción capturada.";
       toast.success(`Muestra guardada (${folioToast})`, {
-        description: "Agregada al listado de producción capturada.",
+        description:
+          noObligatoriosFaltantes > 0
+            ? `${descBase} Faltaron (${noObligatoriosFaltantes}) datos no obligatorios.`
+            : descBase,
         duration: 5000,
       });
       setMuestraRecienId(res.muestra_id);
