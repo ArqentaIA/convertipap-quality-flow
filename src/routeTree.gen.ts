@@ -20,6 +20,7 @@ import { Route as ConfiguracionRouteImport } from './routes/configuracion'
 import { Route as CatalogosRouteImport } from './routes/catalogos'
 import { Route as AuditoriaRouteImport } from './routes/auditoria'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ReportesIndexRouteImport } from './routes/reportes.index'
 import { Route as TFolioRouteImport } from './routes/t.$folio'
 import { Route as ReportesProduccionCentroRouteImport } from './routes/reportes.produccion-centro'
 import { Route as MuestraIdRouteImport } from './routes/muestra.$id'
@@ -84,6 +85,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ReportesIndexRoute = ReportesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ReportesRoute,
+} as any)
 const TFolioRoute = TFolioRouteImport.update({
   id: '/t/$folio',
   path: '/t/$folio',
@@ -146,6 +152,7 @@ export interface FileRoutesByFullPath {
   '/muestra/$id': typeof MuestraIdRoute
   '/reportes/produccion-centro': typeof ReportesProduccionCentroRoute
   '/t/$folio': typeof TFolioRoute
+  '/reportes/': typeof ReportesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -156,7 +163,6 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/operator-vision': typeof OperatorVisionRoute
   '/produccion': typeof ProduccionRoute
-  '/reportes': typeof ReportesRouteWithChildren
   '/usuarios': typeof UsuariosRoute
   '/variables-calidad': typeof VariablesCalidadRoute
   '/calidad/ajustes': typeof CalidadAjustesRoute
@@ -167,6 +173,7 @@ export interface FileRoutesByTo {
   '/muestra/$id': typeof MuestraIdRoute
   '/reportes/produccion-centro': typeof ReportesProduccionCentroRoute
   '/t/$folio': typeof TFolioRoute
+  '/reportes': typeof ReportesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -189,6 +196,7 @@ export interface FileRoutesById {
   '/muestra/$id': typeof MuestraIdRoute
   '/reportes/produccion-centro': typeof ReportesProduccionCentroRoute
   '/t/$folio': typeof TFolioRoute
+  '/reportes/': typeof ReportesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -212,6 +220,7 @@ export interface FileRouteTypes {
     | '/muestra/$id'
     | '/reportes/produccion-centro'
     | '/t/$folio'
+    | '/reportes/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -222,7 +231,6 @@ export interface FileRouteTypes {
     | '/login'
     | '/operator-vision'
     | '/produccion'
-    | '/reportes'
     | '/usuarios'
     | '/variables-calidad'
     | '/calidad/ajustes'
@@ -233,6 +241,7 @@ export interface FileRouteTypes {
     | '/muestra/$id'
     | '/reportes/produccion-centro'
     | '/t/$folio'
+    | '/reportes'
   id:
     | '__root__'
     | '/'
@@ -254,6 +263,7 @@ export interface FileRouteTypes {
     | '/muestra/$id'
     | '/reportes/produccion-centro'
     | '/t/$folio'
+    | '/reportes/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -356,6 +366,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/reportes/': {
+      id: '/reportes/'
+      path: '/'
+      fullPath: '/reportes/'
+      preLoaderRoute: typeof ReportesIndexRouteImport
+      parentRoute: typeof ReportesRoute
+    }
     '/t/$folio': {
       id: '/t/$folio'
       path: '/t/$folio'
@@ -417,10 +434,12 @@ declare module '@tanstack/react-router' {
 
 interface ReportesRouteChildren {
   ReportesProduccionCentroRoute: typeof ReportesProduccionCentroRoute
+  ReportesIndexRoute: typeof ReportesIndexRoute
 }
 
 const ReportesRouteChildren: ReportesRouteChildren = {
   ReportesProduccionCentroRoute: ReportesProduccionCentroRoute,
+  ReportesIndexRoute: ReportesIndexRoute,
 }
 
 const ReportesRouteWithChildren = ReportesRoute._addFileChildren(
