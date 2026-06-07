@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { listMaquinasConEstado } from "@/lib/produccion.functions";
-import { useLabFilter } from "@/lib/lab";
+
 import { BuscadorRollo } from "@/components/qc/BuscadorRollo";
 import trofeoAsset from "@/assets/trofeo.png.asset.json";
 
