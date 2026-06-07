@@ -57,11 +57,9 @@ function ProduccionPage() {
     refetchInterval: 60_000,
   });
 
-  // Capturistas solo ven las máquinas de su laboratorio asignado.
-  const maquinas = useMemo(
-    () => all.filter((m) => labFilter.isMachineAllowed(m.codigo)),
-    [all, labFilter],
-  );
+  // Todos los roles ven las estadísticas de todas las máquinas.
+  // El acceso al detalle de rollos se restringe por máquina en MaquinaCard.
+  const maquinas = all;
 
   // Ranking: orden descendente por kg, sin producción al final
   const ranking = useMemo(() => {
