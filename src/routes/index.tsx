@@ -321,11 +321,11 @@ function Dashboard() {
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <Kpi icon={Target} label="Cumplimiento prom." value={`${promCumpl}%`} tone="primary" />
           <Kpi icon={Activity} label="OEE promedio" value={`${promOEE}%`} tone="success" />
           <Kpi icon={Factory} label="Rollos producidos" value={String(totalRollos)} tone="primary" />
-          <Kpi icon={DollarSign} label="Costo no calidad" value={costoNoCalidad.costoTotal.toLocaleString("es-MX", { style: "currency", currency: "MXN", maximumFractionDigits: 0 })} tone="warning" />
+          {/* KPI "Costo no calidad" oculto momentáneamente */}
         </div>
       </div>
     </AppLayout>
