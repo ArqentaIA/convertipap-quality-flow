@@ -540,7 +540,18 @@ function ReporteProduccionItem(props: {
         <div className="flex items-start gap-3">
           <div className="rounded-lg bg-primary/15 p-3">
             <Activity className="h-5 w-5 text-primary" />
-          </div>
+      </div>
+
+      <div className="mt-4 flex flex-col gap-2 rounded-lg border border-border bg-background/50 p-3">
+        <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Agrupar reporte por</label>
+        <RangoSelector
+          rango={rango}
+          setRango={setRango}
+          mesesSel={mesesSel}
+          setMesesSel={setMesesSel}
+          includeTurno
+        />
+      </div>
           <div>
             <div className="text-sm font-bold text-foreground">Reporte de Producción</div>
             <p className="mt-1 text-[11px] text-muted-foreground">
