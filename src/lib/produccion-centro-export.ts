@@ -446,10 +446,12 @@ export async function exportProduccionPDF(
     doc.text("Sin alertas en el periodo.", M, y + 16); y += 30;
   }
 
-  // ─────────── Radar de Salud Operativa ───────────
-  if (y > pageH - 280) { doc.addPage(); y = M; }
+  // ─────────── Salud Operativa (Bullet chart horizontal) ───────────
+  if (y > pageH - 240) { doc.addPage(); y = M; }
   doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(20, 20, 30);
   doc.text("Radar de Salud Operativa", M, y);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(120);
+  doc.text("Escala 0–100% · Zonas: crítico < 60 · aceptable 60–80 · óptimo ≥ 80", M, y + 12);
   {
     const radarMetrics: { label: string; value: number | null }[] = [
       { label: "Producción", value: data.kpis.cumplimientoPct ?? data.foms.cumplimientoMetaPct ?? (data.kpis.rollosProducidos > 0 ? Math.min(100, Math.round(data.foms.kgLiberados.pct + data.foms.kgNoLiberados.pct)) : null) },
@@ -459,116 +461,145 @@ export async function exportProduccionPDF(
       { label: "Cumplimiento", value: data.foms.cumplimientoMetaPct ?? data.kpis.cumplimientoPct },
       { label: "Disponibilidad", value: data.kpis.disponibilidadPct },
     ];
-    const cx = M + 130;
-    const cy = y + 130;
-    const R = 95;
-    const n = radarMetrics.length;
-    // ejes y anillos
-    doc.setDrawColor(210);
-    doc.setLineWidth(0.4);
-    for (let r = 1; r <= 4; r++) {
-      const rr = (R * r) / 4;
-      const pts: [number, number][] = [];
-      for (let i = 0; i < n; i++) {
-        const ang = -Math.PI / 2 + (i * 2 * Math.PI) / n;
-        pts.push([cx + Math.cos(ang) * rr, cy + Math.sin(ang) * rr]);
+    const startX = M + 90;
+    const trackW = pageW - M - startX - 60;
+    const rowH = 16;
+    const top = y + 22;
+    radarMetrics.forEach((m, i) => {
+      const ry = top + i * rowH;
+      // etiqueta
+      doc.setFont("helvetica", "bold"); doc.setFontSize(8.5); doc.setTextColor(40);
+      doc.text(m.label, M, ry + 8);
+      // zonas (rojo / ámbar / verde claros)
+      doc.setFillColor(254, 226, 226); // rojo claro
+      doc.rect(startX, ry + 2, trackW * 0.60, 9, "F");
+      doc.setFillColor(254, 243, 199); // ámbar claro
+      doc.rect(startX + trackW * 0.60, ry + 2, trackW * 0.20, 9, "F");
+      doc.setFillColor(220, 252, 231); // verde claro
+      doc.rect(startX + trackW * 0.80, ry + 2, trackW * 0.20, 9, "F");
+      // contorno
+      doc.setDrawColor(220); doc.setLineWidth(0.4);
+      doc.rect(startX, ry + 2, trackW, 9);
+      // marca de referencia 80%
+      doc.setDrawColor(120); doc.setLineWidth(0.6);
+      doc.line(startX + trackW * 0.80, ry + 1, startX + trackW * 0.80, ry + 12);
+      // barra de valor
+      const v = m.value;
+      if (v != null) {
+        const pct = Math.max(0, Math.min(100, v));
+        const w = (trackW * pct) / 100;
+        const color: [number, number, number] = pct >= 80 ? [16, 122, 87] : pct >= 60 ? [202, 138, 4] : [185, 28, 28];
+        doc.setFillColor(color[0], color[1], color[2]);
+        doc.rect(startX, ry + 4.5, w, 4, "F");
+        // valor numérico
+        doc.setFont("helvetica", "bold"); doc.setFontSize(8.5); doc.setTextColor(color[0], color[1], color[2]);
+        doc.text(`${pct.toFixed(1)}%`, startX + trackW + 6, ry + 8);
+      } else {
+        doc.setFont("helvetica", "italic"); doc.setFontSize(8); doc.setTextColor(150);
+        doc.text(DASH, startX + trackW + 6, ry + 8);
       }
-      for (let i = 0; i < n; i++) {
-        const a = pts[i]; const b = pts[(i + 1) % n];
-        doc.line(a[0], a[1], b[0], b[1]);
-      }
-    }
-    for (let i = 0; i < n; i++) {
-      const ang = -Math.PI / 2 + (i * 2 * Math.PI) / n;
-      doc.line(cx, cy, cx + Math.cos(ang) * R, cy + Math.sin(ang) * R);
-    }
-    // polígono de valores
-    const vpts: [number, number][] = [];
-    for (let i = 0; i < n; i++) {
-      const ang = -Math.PI / 2 + (i * 2 * Math.PI) / n;
-      const v = radarMetrics[i].value;
-      const rr = v == null ? 0 : (R * Math.max(0, Math.min(100, v))) / 100;
-      vpts.push([cx + Math.cos(ang) * rr, cy + Math.sin(ang) * rr]);
-    }
-    doc.setDrawColor(37, 99, 235);
-    doc.setFillColor(37, 99, 235);
-    doc.setLineWidth(1.2);
-    // relleno suave usando triangulación al centro
-    for (let i = 0; i < n; i++) {
-      const a = vpts[i]; const b = vpts[(i + 1) % n];
-      doc.setFillColor(37, 99, 235);
-      doc.triangle(cx, cy, a[0], a[1], b[0], b[1], "F");
-      doc.line(a[0], a[1], b[0], b[1]);
-    }
-    // etiquetas y valores
-    doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(40);
-    for (let i = 0; i < n; i++) {
-      const ang = -Math.PI / 2 + (i * 2 * Math.PI) / n;
-      const lx = cx + Math.cos(ang) * (R + 16);
-      const ly = cy + Math.sin(ang) * (R + 16);
-      const align = Math.cos(ang) > 0.3 ? "left" : Math.cos(ang) < -0.3 ? "right" : "center";
-      doc.text(radarMetrics[i].label, lx, ly, { align: align as "left" | "right" | "center" });
-    }
-    // tabla lateral con %
-    autoTable(doc, {
-      startY: y + 10,
-      margin: { left: cx + R + 60 },
-      head: [["Variable", "Valor"]],
-      body: radarMetrics.map((m) => [m.label, m.value == null ? DASH : `${m.value.toFixed(1)}%`]),
-      headStyles: { fillColor: [37, 99, 235], textColor: 255 },
-      styles: { fontSize: 8.5, cellPadding: 3 },
-      tableWidth: pageW - (cx + R + 60) - M,
     });
-    y = Math.max(cy + R + 20, (doc as unknown as DocWithTable).lastAutoTable.finalY) + 14;
+    y = top + radarMetrics.length * rowH + 8;
   }
 
   // ─────────── Waterfall de Impacto Operativo ───────────
-  if (y > pageH - 220) { doc.addPage(); y = M; }
+  if (y > pageH - 180) { doc.addPage(); y = M; }
   doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(20, 20, 30);
   doc.text("Waterfall de Impacto Operativo", M, y);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(120);
+  doc.text("Flujo acumulado de kg con conectores escalonados", M, y + 12);
   {
     const kgTotal = data.kpis.kgProducidos;
     const kgNoLib = data.foms.kgNoLiberados.total;
     const kgLib = data.foms.kgLiberados.total;
     const meta = data.kpis.meta;
-    type Bar = { label: string; value: number; color: [number, number, number]; type: "abs" | "neg" | "pos" };
+    type Bar = { label: string; value: number; color: [number, number, number]; kind: "total" | "delta" };
     const bars: Bar[] = [
-      { label: "Producción Total", value: kgTotal, color: [37, 99, 235], type: "abs" },
-      { label: "Kg No Liberados", value: -kgNoLib, color: [185, 28, 28], type: "neg" },
-      { label: "Kg Liberados", value: kgLib, color: [16, 122, 87], type: "abs" },
+      { label: "Producción\nTotal", value: kgTotal, color: [37, 99, 235], kind: "total" },
+      { label: "Kg No\nLiberados", value: -kgNoLib, color: [185, 28, 28], kind: "delta" },
+      { label: "Kg\nLiberados", value: kgLib, color: [16, 122, 87], kind: "total" },
     ];
     if (meta != null) {
-      bars.push({ label: "Meta", value: meta, color: [100, 116, 139], type: "abs" });
-      bars.push({ label: "Producción Real", value: kgTotal, color: [37, 99, 235], type: "abs" });
-      bars.push({ label: "Diferencia", value: kgTotal - meta, color: kgTotal - meta >= 0 ? [16, 122, 87] : [185, 28, 28], type: kgTotal - meta >= 0 ? "pos" : "neg" });
+      bars.push({ label: "Meta", value: meta, color: [100, 116, 139], kind: "total" });
+      bars.push({ label: "Producción\nReal", value: kgTotal, color: [37, 99, 235], kind: "total" });
+      const diff = kgTotal - meta;
+      bars.push({ label: "Diferencia", value: diff, color: diff >= 0 ? [16, 122, 87] : [185, 28, 28], kind: "delta" });
     }
-    const chartX = M;
-    const chartY = y + 14;
-    const chartW = pageW - 2 * M;
-    const chartH = 150;
-    const maxV = Math.max(1, ...bars.map((b) => Math.abs(b.value)), kgTotal);
-    const barW = (chartW - 20) / bars.length - 12;
-    const baseY = chartY + chartH - 24;
-    // eje
-    doc.setDrawColor(210); doc.setLineWidth(0.5);
-    doc.line(chartX, baseY, chartX + chartW, baseY);
-    doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(60);
-    bars.forEach((b, i) => {
-      const x = chartX + 10 + i * (barW + 12);
-      const h = (Math.abs(b.value) / maxV) * (chartH - 40);
-      const yTop = b.value >= 0 ? baseY - h : baseY;
-      doc.setFillColor(b.color[0], b.color[1], b.color[2]);
-      doc.rect(x, yTop, barW, h, "F");
-      // etiqueta valor
-      doc.setTextColor(20);
-      const valTxt = `${b.value < 0 ? "-" : ""}${fmt.format(Math.abs(b.value))} kg`;
-      doc.text(valTxt, x + barW / 2, b.value >= 0 ? yTop - 4 : yTop + h + 10, { align: "center" });
-      // etiqueta categoría
-      doc.setTextColor(60);
-      doc.text(b.label, x + barW / 2, baseY + 14, { align: "center", maxWidth: barW + 10 });
+    // Cálculo de bases acumuladas (waterfall real)
+    let acc = 0;
+    const layout = bars.map((b) => {
+      if (b.kind === "total") { acc = b.value; return { base: 0, top: b.value, ...b }; }
+      const newAcc = acc + b.value;
+      const top = Math.max(acc, newAcc);
+      const base = Math.min(acc, newAcc);
+      acc = newAcc;
+      return { base, top, ...b };
     });
-    y = chartY + chartH + 14;
+    const chartX = M;
+    const chartY = y + 22;
+    const chartW = pageW - 2 * M;
+    const chartH = 130;
+    const maxV = Math.max(1, ...layout.map((l) => l.top), kgTotal);
+    const minV = Math.min(0, ...layout.map((l) => l.base));
+    const range = maxV - minV || 1;
+    const barW = (chartW - 20) / bars.length - 14;
+    const innerH = chartH - 40;
+    const baseY = chartY + chartH - 24;
+    const yFor = (v: number) => baseY - ((v - minV) / range) * innerH;
+    // ejes y gridlines
+    doc.setDrawColor(230); doc.setLineWidth(0.3);
+    for (let g = 0; g <= 4; g++) {
+      const gy = chartY + (innerH * g) / 4;
+      doc.line(chartX, gy, chartX + chartW, gy);
+    }
+    doc.setDrawColor(150); doc.setLineWidth(0.6);
+    doc.line(chartX, yFor(0), chartX + chartW, yFor(0));
+    doc.setFont("helvetica", "normal"); doc.setFontSize(7); doc.setTextColor(110);
+    for (let g = 0; g <= 4; g++) {
+      const val = maxV - ((maxV - minV) * g) / 4;
+      doc.text(`${fmt.format(Math.round(val))}`, chartX - 2, chartY + (innerH * g) / 4 + 2, { align: "right" });
+    }
+    // barras con conectores
+    layout.forEach((l, i) => {
+      const x = chartX + 16 + i * (barW + 14);
+      const yTop = yFor(l.top);
+      const h = Math.max(1, yFor(l.base) - yFor(l.top));
+      // barra
+      doc.setFillColor(l.color[0], l.color[1], l.color[2]);
+      doc.rect(x, yTop, barW, h, "F");
+
+      // barra
+      doc.setFillColor(l.color[0], l.color[1], l.color[2]);
+      doc.rect(x, yTop, barW, h, "F");
+      // borde superior brillante
+      doc.setDrawColor(255); doc.setLineWidth(0.6);
+      doc.line(x, yTop + 0.4, x + barW, yTop + 0.4);
+      // conector escalonado al siguiente
+      if (i < layout.length - 1) {
+        const next = layout[i + 1];
+        const yEnd = next.kind === "total" ? yFor(next.top) : yFor(acc - (i + 1 === layout.length - 1 && layout[i + 1].kind === "delta" ? 0 : 0));
+        const yLink = l.kind === "delta" ? yFor(l.base + l.value > 0 ? l.top : l.base) : yFor(l.value);
+        doc.setDrawColor(160); doc.setLineWidth(0.5);
+        // línea punteada
+        const xs = x + barW;
+        const xe = x + barW + 14;
+        const dy = yLink;
+        const step = 3;
+        for (let xx = xs; xx < xe; xx += step) doc.line(xx, dy, Math.min(xx + 1.5, xe), dy);
+        void yEnd;
+      }
+      // valor encima
+      doc.setFont("helvetica", "bold"); doc.setFontSize(8); doc.setTextColor(l.color[0], l.color[1], l.color[2]);
+      const valTxt = `${l.value < 0 ? "−" : ""}${fmt.format(Math.abs(l.value))} kg`;
+      doc.text(valTxt, x + barW / 2, yTop - 4, { align: "center" });
+      // etiqueta debajo
+      doc.setFont("helvetica", "normal"); doc.setFontSize(7.5); doc.setTextColor(60);
+      const lines = l.label.split("\n");
+      lines.forEach((ln, j) => doc.text(ln, x + barW / 2, baseY + 12 + j * 8, { align: "center" }));
+    });
+    y = chartY + chartH + 18;
   }
+
 
   if (y > pageH - 180) { doc.addPage(); y = M; }
   doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(20, 20, 30);
