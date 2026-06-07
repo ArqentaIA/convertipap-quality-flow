@@ -552,102 +552,149 @@ export async function exportProduccionPDF(
     y = top + radarMetrics.length * rowH + 8;
   }
 
-  // ─────────── Waterfall de Impacto Operativo ───────────
-  if (y > pageH - 180) { doc.addPage(); y = M; }
+  // ─────────── Distribución de Producción (Pie Chart Premium) ───────────
+  if (y > pageH - 200) { doc.addPage(); y = M; }
   doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(20, 20, 30);
-  doc.text(`Waterfall de Impacto Operativo${filtrosActivos ? " (filtrado)" : ""}`, M, y);
+  doc.text(`Distribución de Producción${filtrosActivos ? " (filtrado)" : ""}`, M, y);
   doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(120);
-  doc.text("Flujo acumulado de kg con conectores escalonados", M, y + 12);
+  doc.text("Gráfico circular premium · Kg Liberados vs Kg No Liberados", M, y + 12);
   {
     const kgTotal = filtrosActivos ? mFilt.kgTotal : data.kpis.kgProducidos;
     const kgNoLib = filtrosActivos ? mFilt.kgNoLib : data.foms.kgNoLiberados.total;
     const kgLib = filtrosActivos ? mFilt.kgLib : data.foms.kgLiberados.total;
     const meta = filtrosActivos ? null : data.kpis.meta;
-    type Bar = { label: string; value: number; color: [number, number, number]; kind: "total" | "delta" };
-    const bars: Bar[] = [
-      { label: "Producción\nTotal", value: kgTotal, color: [37, 99, 235], kind: "total" },
-      { label: "Kg No\nLiberados", value: -kgNoLib, color: [185, 28, 28], kind: "delta" },
-      { label: "Kg\nLiberados", value: kgLib, color: [16, 122, 87], kind: "total" },
-    ];
-    if (meta != null) {
-      bars.push({ label: "Meta", value: meta, color: [100, 116, 139], kind: "total" });
-      bars.push({ label: "Producción\nReal", value: kgTotal, color: [37, 99, 235], kind: "total" });
-      const diff = kgTotal - meta;
-      bars.push({ label: "Diferencia", value: diff, color: diff >= 0 ? [16, 122, 87] : [185, 28, 28], kind: "delta" });
-    }
-    // Cálculo de bases acumuladas (waterfall real)
-    let acc = 0;
-    const layout = bars.map((b) => {
-      if (b.kind === "total") { acc = b.value; return { base: 0, top: b.value, ...b }; }
-      const newAcc = acc + b.value;
-      const top = Math.max(acc, newAcc);
-      const base = Math.min(acc, newAcc);
-      acc = newAcc;
-      return { base, top, ...b };
-    });
-    const chartX = M;
-    const chartY = y + 22;
-    const chartW = pageW - 2 * M;
-    const chartH = 130;
-    const maxV = Math.max(1, ...layout.map((l) => l.top), kgTotal);
-    const minV = Math.min(0, ...layout.map((l) => l.base));
-    const range = maxV - minV || 1;
-    const barW = (chartW - 20) / bars.length - 14;
-    const innerH = chartH - 40;
-    const baseY = chartY + chartH - 24;
-    const yFor = (v: number) => baseY - ((v - minV) / range) * innerH;
-    // ejes y gridlines
-    doc.setDrawColor(230); doc.setLineWidth(0.3);
-    for (let g = 0; g <= 4; g++) {
-      const gy = chartY + (innerH * g) / 4;
-      doc.line(chartX, gy, chartX + chartW, gy);
-    }
-    doc.setDrawColor(150); doc.setLineWidth(0.6);
-    doc.line(chartX, yFor(0), chartX + chartW, yFor(0));
-    doc.setFont("helvetica", "normal"); doc.setFontSize(7); doc.setTextColor(110);
-    for (let g = 0; g <= 4; g++) {
-      const val = maxV - ((maxV - minV) * g) / 4;
-      doc.text(`${fmt.format(Math.round(val))}`, chartX - 2, chartY + (innerH * g) / 4 + 2, { align: "right" });
-    }
-    // barras con conectores
-    layout.forEach((l, i) => {
-      const x = chartX + 16 + i * (barW + 14);
-      const yTop = yFor(l.top);
-      const h = Math.max(1, yFor(l.base) - yFor(l.top));
-      // barra
-      doc.setFillColor(l.color[0], l.color[1], l.color[2]);
-      doc.rect(x, yTop, barW, h, "F");
 
-      // barra
-      doc.setFillColor(l.color[0], l.color[1], l.color[2]);
-      doc.rect(x, yTop, barW, h, "F");
-      // borde superior brillante
-      doc.setDrawColor(255); doc.setLineWidth(0.6);
-      doc.line(x, yTop + 0.4, x + barW, yTop + 0.4);
-      // conector escalonado al siguiente
-      if (i < layout.length - 1) {
-        const next = layout[i + 1];
-        const yEnd = next.kind === "total" ? yFor(next.top) : yFor(acc - (i + 1 === layout.length - 1 && layout[i + 1].kind === "delta" ? 0 : 0));
-        const yLink = l.kind === "delta" ? yFor(l.base + l.value > 0 ? l.top : l.base) : yFor(l.value);
-        doc.setDrawColor(160); doc.setLineWidth(0.5);
-        // línea punteada
-        const xs = x + barW;
-        const xe = x + barW + 14;
-        const dy = yLink;
-        const step = 3;
-        for (let xx = xs; xx < xe; xx += step) doc.line(xx, dy, Math.min(xx + 1.5, xe), dy);
-        void yEnd;
+    type Slice = { label: string; value: number; color: [number, number, number] };
+    const slices: Slice[] = [
+      { label: "Kg Liberados", value: Math.max(0, kgLib), color: [16, 122, 87] },
+      { label: "Kg No Liberados", value: Math.max(0, kgNoLib), color: [185, 28, 28] },
+    ];
+    const total = slices.reduce((s, x) => s + x.value, 0) || 1;
+
+    const chartTop = y + 22;
+    const chartH = 160;
+    const cx = M + 90;
+    const cy = chartTop + chartH / 2;
+    const rOuter = 62;
+    const rInner = 36;
+
+    // Sombra suave bajo el donut
+    doc.setFillColor(210, 215, 225);
+    doc.circle(cx + 1.5, cy + 2.5, rOuter + 0.5, "F");
+
+    // Helper: dibujar segmento (arco anular) aproximado por polígono
+    const TAU = Math.PI * 2;
+    const drawSlice = (a0: number, a1: number, color: [number, number, number]) => {
+      const steps = Math.max(24, Math.ceil((a1 - a0) / (TAU / 180)));
+      doc.setFillColor(color[0], color[1], color[2]);
+      // construimos polígono: arco externo (a0→a1) + arco interno (a1→a0)
+      const pts: Array<[number, number]> = [];
+      for (let i = 0; i <= steps; i++) {
+        const t = a0 + ((a1 - a0) * i) / steps;
+        pts.push([cx + Math.cos(t) * rOuter, cy + Math.sin(t) * rOuter]);
       }
-      // valor encima
-      doc.setFont("helvetica", "bold"); doc.setFontSize(8); doc.setTextColor(l.color[0], l.color[1], l.color[2]);
-      const valTxt = `${l.value < 0 ? "−" : ""}${fmt.format(Math.abs(l.value))} kg`;
-      doc.text(valTxt, x + barW / 2, yTop - 4, { align: "center" });
-      // etiqueta debajo
-      doc.setFont("helvetica", "normal"); doc.setFontSize(7.5); doc.setTextColor(60);
-      const lines = l.label.split("\n");
-      lines.forEach((ln, j) => doc.text(ln, x + barW / 2, baseY + 12 + j * 8, { align: "center" }));
+      for (let i = steps; i >= 0; i--) {
+        const t = a0 + ((a1 - a0) * i) / steps;
+        pts.push([cx + Math.cos(t) * rInner, cy + Math.sin(t) * rInner]);
+      }
+      // jsPDF triangles fan desde el primer punto
+      for (let i = 1; i < pts.length - 1; i++) {
+        doc.triangle(pts[0][0], pts[0][1], pts[i][0], pts[i][1], pts[i + 1][0], pts[i + 1][1], "F");
+      }
+    };
+
+    // Dibujar slices
+    let ang = -Math.PI / 2;
+    const arcs: Array<{ mid: number; pct: number; s: Slice }> = [];
+    slices.forEach((s) => {
+      const frac = s.value / total;
+      const a0 = ang;
+      const a1 = ang + TAU * frac;
+      drawSlice(a0, a1, s.color);
+      arcs.push({ mid: (a0 + a1) / 2, pct: frac * 100, s });
+      ang = a1;
     });
-    y = chartY + chartH + 18;
+
+    // Anillo blanco separador exterior
+    doc.setDrawColor(255); doc.setLineWidth(1.2);
+    doc.circle(cx, cy, rOuter, "S");
+    // Anillo interior elegante
+    doc.setDrawColor(235); doc.setLineWidth(0.6);
+    doc.circle(cx, cy, rInner, "S");
+
+    // Centro: total
+    doc.setFont("helvetica", "normal"); doc.setFontSize(7.5); doc.setTextColor(120);
+    doc.text("Producción Total", cx, cy - 6, { align: "center" });
+    doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(20, 20, 30);
+    doc.text(`${fmt.format(Math.round(kgTotal))}`, cx, cy + 4, { align: "center" });
+    doc.setFont("helvetica", "normal"); doc.setFontSize(7); doc.setTextColor(140);
+    doc.text("kg", cx, cy + 11, { align: "center" });
+
+    // Etiquetas de porcentaje sobre cada slice (líneas guía)
+    arcs.forEach((a) => {
+      if (a.pct < 3) return;
+      const r1 = rOuter + 4;
+      const r2 = rOuter + 14;
+      const x1 = cx + Math.cos(a.mid) * r1;
+      const y1 = cy + Math.sin(a.mid) * r1;
+      const x2 = cx + Math.cos(a.mid) * r2;
+      const y2 = cy + Math.sin(a.mid) * r2;
+      doc.setDrawColor(a.s.color[0], a.s.color[1], a.s.color[2]); doc.setLineWidth(0.5);
+      doc.line(x1, y1, x2, y2);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(8.5);
+      doc.setTextColor(a.s.color[0], a.s.color[1], a.s.color[2]);
+      const align = Math.cos(a.mid) >= 0 ? "left" : "right";
+      const tx = x2 + (Math.cos(a.mid) >= 0 ? 2 : -2);
+      doc.text(`${a.pct.toFixed(1)}%`, tx, y2 + 2.5, { align });
+    });
+
+    // ─── Leyenda premium a la derecha ───
+    const legX = cx + rOuter + 60;
+    let legY = chartTop + 10;
+    doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(40);
+    doc.text("Desglose", legX, legY);
+    legY += 10;
+    slices.forEach((s) => {
+      const pct = (s.value / total) * 100;
+      // chip de color
+      doc.setFillColor(s.color[0], s.color[1], s.color[2]);
+      doc.roundedRect(legX, legY - 5, 8, 8, 1.5, 1.5, "F");
+      doc.setFont("helvetica", "bold"); doc.setFontSize(8.5); doc.setTextColor(40);
+      doc.text(s.label, legX + 12, legY);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(90);
+      doc.text(`${fmt.format(Math.round(s.value))} kg`, legX + 12, legY + 8);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(9);
+      doc.setTextColor(s.color[0], s.color[1], s.color[2]);
+      doc.text(`${pct.toFixed(1)}%`, pageW - M - 4, legY + 4, { align: "right" });
+      // mini barra de proporción
+      const trackW = pageW - M - legX - 14;
+      doc.setFillColor(238, 240, 245);
+      doc.roundedRect(legX, legY + 12, trackW, 3, 1, 1, "F");
+      doc.setFillColor(s.color[0], s.color[1], s.color[2]);
+      doc.roundedRect(legX, legY + 12, (trackW * pct) / 100, 3, 1, 1, "F");
+      legY += 26;
+    });
+
+    // KPI Meta (si aplica)
+    if (meta != null) {
+      const diff = kgTotal - meta;
+      const okColor: [number, number, number] = diff >= 0 ? [16, 122, 87] : [185, 28, 28];
+      legY += 4;
+      doc.setDrawColor(225); doc.setLineWidth(0.4);
+      doc.line(legX, legY, pageW - M, legY);
+      legY += 10;
+      doc.setFont("helvetica", "normal"); doc.setFontSize(7.5); doc.setTextColor(120);
+      doc.text("Meta", legX, legY);
+      doc.text("Real", legX + 60, legY);
+      doc.text("Δ vs Meta", pageW - M - 4, legY, { align: "right" });
+      doc.setFont("helvetica", "bold"); doc.setFontSize(9.5); doc.setTextColor(40);
+      doc.text(`${fmt.format(Math.round(meta))} kg`, legX, legY + 10);
+      doc.text(`${fmt.format(Math.round(kgTotal))} kg`, legX + 60, legY + 10);
+      doc.setTextColor(okColor[0], okColor[1], okColor[2]);
+      doc.text(`${diff >= 0 ? "+" : "−"}${fmt.format(Math.abs(Math.round(diff)))} kg`, pageW - M - 4, legY + 10, { align: "right" });
+    }
+
+    y = chartTop + chartH + 14;
   }
 
 
