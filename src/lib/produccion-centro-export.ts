@@ -538,14 +538,14 @@ export async function exportProduccionPDF(
   // ─────────── Waterfall de Impacto Operativo ───────────
   if (y > pageH - 180) { doc.addPage(); y = M; }
   doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(20, 20, 30);
-  doc.text("Waterfall de Impacto Operativo", M, y);
+  doc.text(`Waterfall de Impacto Operativo${filtrosActivos ? " (filtrado)" : ""}`, M, y);
   doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(120);
   doc.text("Flujo acumulado de kg con conectores escalonados", M, y + 12);
   {
-    const kgTotal = data.kpis.kgProducidos;
-    const kgNoLib = data.foms.kgNoLiberados.total;
-    const kgLib = data.foms.kgLiberados.total;
-    const meta = data.kpis.meta;
+    const kgTotal = filtrosActivos ? mFilt.kgTotal : data.kpis.kgProducidos;
+    const kgNoLib = filtrosActivos ? mFilt.kgNoLib : data.foms.kgNoLiberados.total;
+    const kgLib = filtrosActivos ? mFilt.kgLib : data.foms.kgLiberados.total;
+    const meta = filtrosActivos ? null : data.kpis.meta;
     type Bar = { label: string; value: number; color: [number, number, number]; kind: "total" | "delta" };
     const bars: Bar[] = [
       { label: "Producción\nTotal", value: kgTotal, color: [37, 99, 235], kind: "total" },
