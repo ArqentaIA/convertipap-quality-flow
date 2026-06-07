@@ -546,7 +546,9 @@ export const listMaquinasConEstado = createServerFn({ method: "GET" })
     const ids = (maquinas ?? []).map((m) => m.id);
     if (ids.length === 0) return [];
 
-    const desde24h = rangoToDesde(rango) ?? new Date(Date.now() - 24 * 3600_000).toISOString();
+    const rangoNorm = rango === "turno" ? "turno" : rango;
+    const desde24h = rangoToDesde(rangoNorm) ?? new Date(Date.now() - 24 * 3600_000).toISOString();
+
     const [
       { data: estados },
       { data: ordenes },
