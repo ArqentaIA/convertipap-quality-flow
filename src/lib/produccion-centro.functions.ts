@@ -43,10 +43,12 @@ export type KpiRow = {
   cumplimientoPct: number | null;
   oeeGlobalPct: number;
   calidadLiberadaPct: number;
+  disponibilidadPct: number;
   tiempoMuertoMin: number;
   produccionPromedio: { valor: number; unidad: string };
   ultimaCapturaAt: string | null;
 };
+
 
 export type SerieTiempoBucket = {
   label: string;
@@ -378,10 +380,12 @@ export const getProduccionCentro = createServerFn({ method: "POST" })
       cumplimientoPct: null,
       oeeGlobalPct,
       calidadLiberadaPct,
+      disponibilidadPct: Math.round(disponibilidad * 1000) / 10,
       tiempoMuertoMin: Math.round(tiempoMuertoMin),
       produccionPromedio: { valor: Math.round(promedioValor * 100) / 100, unidad: promedioUnidad },
       ultimaCapturaAt,
     };
+
 
     // ── Serie de tiempo ──
     const buckets = bucketsForRango(data.rango, start, end);
