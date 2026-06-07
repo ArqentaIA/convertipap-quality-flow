@@ -221,46 +221,93 @@ function EstadoChip({ estado }: { estado: EstadoVisual }) {
   );
 }
 
+// Paleta estable por máquina: cada código mapea a un color fijo
+const MAQUINA_PALETTE = [
+  "#3b82f6", // azul
+  "#10b981", // verde esmeralda
+  "#f59e0b", // ámbar
+  "#ef4444", // rojo
+  "#8b5cf6", // violeta
+  "#ec4899", // rosa
+  "#06b6d4", // cian
+  "#84cc16", // lima
+  "#f97316", // naranja
+  "#14b8a6", // teal
+  "#a855f7", // púrpura
+  "#eab308", // amarillo
+];
+function maquinaColor(codigo: string): string {
+  let h = 0;
+  for (let i = 0; i < codigo.length; i++) h = (h * 31 + codigo.charCodeAt(i)) >>> 0;
+  return MAQUINA_PALETTE[h % MAQUINA_PALETTE.length];
+}
+
 function BarraRanking({ m, idx, maxKg }: { m: MaquinaRow; idx: number; maxKg: number }) {
   const ev = estadoVisual(m);
   const pct = maxKg > 0 ? Math.max(2, (m.kgTurno / maxKg) * 100) : 0;
-  const colorMap: Record<EstadoVisual, string> = {
-    produciendo: "bg-success",
-    espera: "bg-warning",
-    paro: "bg-destructive",
-    sin_produccion: "bg-muted-foreground/40",
-  };
   const isLeader = idx === 0 && m.kgTurno > 0;
+  const color = maquinaColor(m.codigo);
+  const hasProd = m.kgTurno > 0;
   return (
     <div
-      className={`flex items-center gap-3 ${
-        isLeader ? "rounded-lg bg-gradient-to-r from-warning/15 via-warning/5 to-transparent p-2 ring-1 ring-warning/40" : ""
-      }`}
+      className="flex items-center gap-3 rounded-lg p-2 transition"
+      style={
+        isLeader
+          ? {
+              background: `linear-gradient(90deg, ${color}26, ${color}0d 60%, transparent)`,
+              boxShadow: `inset 0 0 0 1px ${color}66`,
+            }
+          : undefined
+      }
     >
       <div className="flex w-10 shrink-0 items-center justify-center gap-1">
         {isLeader ? (
           <div className="relative">
-            <div className="absolute inset-0 animate-ping rounded-full bg-warning/30" />
-            <div className="relative flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-warning to-warning/70 shadow-lg shadow-warning/40 ring-2 ring-warning/60">
-              <Crown className="h-4 w-4 text-warning-foreground" fill="currentColor" />
+            <div
+              className="absolute inset-0 animate-ping rounded-full"
+              style={{ background: `${color}4d` }}
+            />
+            <div
+              className="relative flex h-8 w-8 items-center justify-center rounded-full text-white shadow-lg ring-2"
+              style={{
+                background: `linear-gradient(135deg, ${color}, ${color}b3)`,
+                boxShadow: `0 8px 16px -4px ${color}80`,
+                ['--tw-ring-color' as never]: `${color}99`,
+              }}
+            >
+              <Crown className="h-4 w-4" fill="currentColor" />
             </div>
           </div>
         ) : (
           <span className="text-[11px] font-bold tabular-nums text-muted-foreground">#{idx + 1}</span>
         )}
       </div>
-      <div className={`w-20 shrink-0 text-sm font-bold ${isLeader ? "text-warning" : "text-foreground"}`}>
+      <div
+        className="w-20 shrink-0 text-sm font-bold"
+        style={{ color: hasProd ? color : undefined }}
+      >
         {m.codigo}
       </div>
-      <div className={`relative h-6 flex-1 overflow-hidden rounded-md bg-muted/60 ${isLeader ? "ring-1 ring-warning/50" : ""}`}>
+      <div
+        className="relative h-6 flex-1 overflow-hidden rounded-md bg-muted/60"
+        style={isLeader ? { boxShadow: `inset 0 0 0 1px ${color}80` } : undefined}
+      >
         <div
-          className={`h-full rounded-md ${colorMap[ev]} transition-all`}
-          style={{ width: m.kgTurno > 0 ? `${pct}%` : "0%" }}
+          className="h-full rounded-md transition-all"
+          style={{
+            width: hasProd ? `${pct}%` : "0%",
+            background: hasProd
+              ? `linear-gradient(90deg, ${color}, ${color}cc)`
+              : "transparent",
+          }}
         />
         <span className="absolute inset-y-0 left-2 flex items-center gap-1 text-[11px] font-semibold text-foreground">
           {fmtNum(m.kgTurno)} kg · {m.rollosTurno} rollos
           {isLeader && (
-            <span className="ml-1 rounded-sm bg-warning px-1 py-0.5 text-[9px] font-extrabold uppercase tracking-wider text-warning-foreground">
+            <span
+              className="ml-1 rounded-sm px-1 py-0.5 text-[9px] font-extrabold uppercase tracking-wider text-white"
+              style={{ background: color }}
+            >
               Líder
             </span>
           )}
@@ -276,20 +323,29 @@ function BarraRanking({ m, idx, maxKg }: { m: MaquinaRow; idx: number; maxKg: nu
 function MaquinaCard({ m, rangoLabel, rank }: { m: MaquinaRow; rangoLabel: string; rank: number }) {
   const ev = estadoVisual(m);
   const isLeader = rank === 1 && m.kgTurno > 0;
+  const color = maquinaColor(m.codigo);
   return (
     <div
-      className={`relative overflow-hidden rounded-xl border bg-card p-5 shadow-sm transition hover:shadow-md ${
-        isLeader
-          ? "border-warning/60 shadow-warning/20 ring-2 ring-warning/40 hover:shadow-warning/30"
-          : "border-border hover:border-primary/40"
-      }`}
+      className="relative overflow-hidden rounded-xl border border-border bg-card p-5 shadow-sm transition hover:shadow-md"
+      style={{
+        borderLeft: `4px solid ${color}`,
+        ...(isLeader
+          ? { boxShadow: `0 10px 24px -8px ${color}66, 0 0 0 2px ${color}55` }
+          : {}),
+      }}
     >
       {isLeader && (
         <>
-          <div className="pointer-events-none absolute -right-12 top-4 z-10 rotate-45 bg-gradient-to-r from-warning to-warning/80 px-12 py-1 text-[10px] font-extrabold uppercase tracking-widest text-warning-foreground shadow-md">
+          <div
+            className="pointer-events-none absolute -right-12 top-4 z-10 rotate-45 px-12 py-1 text-[10px] font-extrabold uppercase tracking-widest text-white shadow-md"
+            style={{ background: `linear-gradient(90deg, ${color}, ${color}cc)` }}
+          >
             Líder
           </div>
-          <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-warning via-warning/70 to-warning" />
+          <div
+            className="pointer-events-none absolute inset-x-0 top-0 h-1"
+            style={{ background: `linear-gradient(90deg, ${color}, ${color}99, ${color})` }}
+          />
         </>
       )}
       <Link to="/historial/$maquina" params={{ maquina: m.codigo }} className="block">
@@ -297,15 +353,23 @@ function MaquinaCard({ m, rangoLabel, rank }: { m: MaquinaRow; rangoLabel: strin
           <div className="min-w-0">
             <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-muted-foreground">
               {isLeader ? (
-                <span className="inline-flex items-center gap-1 rounded-md bg-gradient-to-r from-warning to-warning/70 px-2 py-0.5 font-extrabold text-warning-foreground shadow-sm">
+                <span
+                  className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 font-extrabold text-white shadow-sm"
+                  style={{ background: `linear-gradient(90deg, ${color}, ${color}b3)` }}
+                >
                   <Crown className="h-3 w-3" fill="currentColor" /> #1
                 </span>
               ) : (
-                <span className="rounded bg-muted px-1.5 py-0.5 font-bold text-foreground">#{rank}</span>
+                <span
+                  className="rounded px-1.5 py-0.5 font-bold text-white"
+                  style={{ background: color }}
+                >
+                  #{rank}
+                </span>
               )}
               <span className="truncate">{m.planta}</span>
             </div>
-            <h3 className={`mt-1 text-lg font-bold ${isLeader ? "text-warning" : "text-foreground"}`}>{m.codigo}</h3>
+            <h3 className="mt-1 text-lg font-bold" style={{ color }}>{m.codigo}</h3>
           </div>
           <EstadoChip estado={ev} />
         </div>
