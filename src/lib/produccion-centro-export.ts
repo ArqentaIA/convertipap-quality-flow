@@ -320,8 +320,21 @@ export async function exportProduccionPDF(
   doc.setTextColor(60);
   doc.text(filtrosTxt, M + 100, M + 110);
 
+  // Resumen ejecutivo en lenguaje claro (lectura rápida en 1 línea)
+  {
+    const k = data.kpis;
+    const resumen =
+      `Resumen: durante ${ctx.periodoTexto.toLowerCase()} se produjeron ${fmt.format(k.rollosProducidos)} rollos ` +
+      `equivalentes a ${fmtKg(k.kgProducidos)} kg` +
+      (k.meta != null ? ` (meta ${fmtKg(k.meta)} kg · cumplimiento ${fmtPct(k.cumplimientoPct)})` : "") +
+      `. Calidad liberada ${fmtPct(k.calidadLiberadaPct)} · OEE global ${fmtPct(k.oeeGlobalPct)}.`;
+    doc.setFont("helvetica", "italic"); doc.setFontSize(8.5); doc.setTextColor(80);
+    const lines = doc.splitTextToSize(resumen, pageW - M * 2);
+    doc.text(lines, M, M + 126);
+  }
+
   // Último Rollo Capturado
-  let y = M + 130;
+  let y = M + 130 + 20;
   doc.setFont("helvetica", "bold");
   doc.setFontSize(11);
   doc.setTextColor(20, 20, 30);
