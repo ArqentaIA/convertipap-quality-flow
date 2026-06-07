@@ -12,7 +12,7 @@ import { useAuth } from "@/lib/auth";
 import { Link } from "@tanstack/react-router";
 
 
-export const Route = createFileRoute("/reportes")({
+export const Route = createFileRoute("/reportes/")({
   component: ReportesGate,
   ssr: false,
   errorComponent: ({ error }) => (
