@@ -356,10 +356,10 @@ function MaquinaCard({ m, rangoLabel, rank }: { m: MaquinaRow; rangoLabel: strin
             <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-muted-foreground">
               {isLeader ? (
                 <span
-                  className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 font-extrabold text-white shadow-sm"
-                  style={{ background: `linear-gradient(90deg, ${color}, ${color}b3)` }}
+                  className="inline-flex items-center gap-1 rounded-md bg-white px-2 py-0.5 font-extrabold shadow-sm ring-1"
+                  style={{ ['--tw-ring-color' as never]: `${color}80`, color }}
                 >
-                  <Crown className="h-3 w-3" fill="currentColor" /> #1
+                  <img src={TROFEO_URL} alt="" className="h-4 w-4 object-contain" /> #1
                 </span>
               ) : (
                 <span
