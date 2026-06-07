@@ -180,11 +180,37 @@ export const getProduccionCentro = createServerFn({ method: "POST" })
     const start = new Date(data.start);
     const end = new Date(data.end);
 
+    // Variables relevantes para el reporte (reduce volumen vs. traer todas)
+    const VARS_REPORTE = ["peso", "blancuraR457", "blancuraA", "blancuraB", "anchoUtil"];
+
+    // Paginado de mediciones: PostgREST limita a 1000 filas por defecto
+    async function fetchAllMediciones() {
+      const pageSize = 1000;
+      const out: Array<{ muestra_id: string; variable_clave: string; valor: number | null; estado: string; created_at: string }> = [];
+      let from = 0;
+      // Loop seguro hasta 50k filas
+      for (let i = 0; i < 50; i++) {
+        const { data, error } = await sb
+          .from("mediciones_calidad")
+          .select("muestra_id, variable_clave, valor, estado, created_at")
+          .gte("created_at", start.toISOString())
+          .lte("created_at", end.toISOString())
+          .in("variable_clave", VARS_REPORTE)
+          .range(from, from + pageSize - 1);
+        if (error) throw error;
+        const chunk = (data ?? []) as typeof out;
+        out.push(...chunk);
+        if (chunk.length < pageSize) break;
+        from += pageSize;
+      }
+      return out;
+    }
+
     const [
       { data: maquinas },
       { data: productos },
       { data: muestras },
-      { data: mediciones },
+      mediciones,
       { data: paros },
       { data: estados },
       settingsResp,
@@ -199,11 +225,7 @@ export const getProduccionCentro = createServerFn({ method: "POST" })
         .gte("capturado_at", start.toISOString())
         .lte("capturado_at", end.toISOString())
         .order("capturado_at", { ascending: false }),
-      sb
-        .from("mediciones_calidad")
-        .select("muestra_id, variable_clave, valor, estado, created_at")
-        .gte("created_at", start.toISOString())
-        .lte("created_at", end.toISOString()),
+      fetchAllMediciones(),
       sb
         .from("paros_maquina")
         .select("id, maquina_id, duracion_min, inicio, fin, descripcion")
@@ -212,6 +234,7 @@ export const getProduccionCentro = createServerFn({ method: "POST" })
       sb.from("maquina_estado_actual").select("maquina_id, estado, ultimo_cambio"),
       sb.from("app_settings").select("costo_no_calidad_kg").limit(1).maybeSingle(),
     ]);
+
 
     const maquinaById = new Map((maquinas ?? []).map((m) => [m.id, m]));
     const productoById = new Map((productos ?? []).map((p) => [p.id, p]));
