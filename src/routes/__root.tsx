@@ -11,6 +11,7 @@ import { useEffect } from "react";
 import { AuthProvider } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { Toaster } from "@/components/ui/sonner";
+import { BrandScrubber } from "@/components/BrandScrubber";
 
 import appCss from "../styles.css?url";
 import irmLogo from "@/assets/logo-irm.jpeg.asset.json";
@@ -139,6 +140,7 @@ function RootComponent() {
       <AuthProvider>
         <Outlet />
         <Toaster richColors position="top-right" />
+        <BrandScrubber />
         <div
           className="pointer-events-none fixed bottom-2 left-1/2 z-50 flex -translate-x-1/2 select-none items-center rounded-full bg-background/70 px-2.5 py-1 shadow-sm backdrop-blur-sm ring-1 ring-border/40"
         >
