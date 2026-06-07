@@ -374,26 +374,15 @@ function ReportesPage() {
           </table>
         </div>
 
-        <Link
-          to="/reportes/produccion-centro"
-          className="group flex items-center justify-between gap-4 rounded-xl border-2 border-primary/40 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-5 shadow-sm transition hover:border-primary hover:shadow-md"
-        >
-          <div className="flex items-center gap-4">
-            <div className="rounded-lg bg-primary/15 p-3">
-              <Activity className="h-6 w-6 text-primary" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-base font-bold text-foreground">Centro de Control de Producción</span>
-                <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary">Nuevo</span>
-              </div>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Reporte dinámico (Día / Semana / Mes / Año / Personalizado) con Último Rollo Capturado, KPIs ejecutivos, FOMs, alertas y exportación XLSX/PDF.
-              </p>
-            </div>
-          </div>
-          <ArrowRight className="h-5 w-5 text-primary transition group-hover:translate-x-1" />
-        </Link>
+        <ReporteProduccionItem
+          start={start}
+          end={end}
+          freq={freq}
+          periodo={periodo}
+          usuario={auth.profile?.nombre ?? auth.user?.email ?? "—"}
+          enabled={!!auth.session?.access_token}
+        />
+
 
         <div className="rounded-xl border border-border bg-card shadow-sm">
 
