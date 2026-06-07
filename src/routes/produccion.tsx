@@ -20,6 +20,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { listMaquinasConEstado } from "@/lib/produccion.functions";
 
 import { BuscadorRollo } from "@/components/qc/BuscadorRollo";
+import { useLabFilter } from "@/lib/lab";
 import trofeoAsset from "@/assets/trofeo.png.asset.json";
 
 const TROFEO_URL = trofeoAsset.url;
@@ -49,14 +50,18 @@ type MaquinaRow = Awaited<ReturnType<typeof listMaquinasConEstado>>[number];
 function ProduccionPage() {
   const [rango, setRango] = useState<Rango>("turno");
   const listFn = useServerFn(listMaquinasConEstado);
+  const labFilter = useLabFilter();
   const { data: all = [], isFetching, dataUpdatedAt } = useQuery({
     queryKey: ["produccion", "maquinas", rango],
     queryFn: () => listFn({ data: { rango } }),
     refetchInterval: 60_000,
   });
 
-  // En la pantalla de Producción todos los roles (incluido capturista) ven las 4 máquinas.
-  const maquinas = all;
+  // Capturistas solo ven las máquinas de su laboratorio asignado.
+  const maquinas = useMemo(
+    () => all.filter((m) => labFilter.isMachineAllowed(m.codigo)),
+    [all, labFilter],
+  );
 
   // Ranking: orden descendente por kg, sin producción al final
   const ranking = useMemo(() => {
