@@ -80,11 +80,7 @@ function ProduccionPage() {
   const plantaLabel =
     maquinas.find((m) => m.planta && m.planta !== "—")?.planta ?? "Todas las plantas";
 
-  const hora = new Date(dataUpdatedAt || Date.now()).toLocaleTimeString("es-MX", {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
+  // hora removida: solo se muestra el indicador de auto-refresh
   const fecha = new Date().toLocaleDateString("es-MX", {
     weekday: "long",
     day: "2-digit",
@@ -116,7 +112,7 @@ function ProduccionPage() {
           </div>
           <span className="inline-flex items-center gap-1.5 text-muted-foreground">
             <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? "animate-spin text-primary" : ""}`} />
-            Actualización automática cada 60s · última {hora}
+            Actualización automática cada 60s
           </span>
         </div>
 
