@@ -418,13 +418,13 @@ export async function exportProduccionPDF(
     doc.text("Sin alertas en el periodo.", M, y + 16); y += 30;
   }
 
-  // Tabla detallada (limitada)
+  // Tabla detallada (completa)
   if (y > pageH - 180) { doc.addPage(); y = M; }
   doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(20, 20, 30);
   doc.text(`Tabla Detallada (${tablaFiltrada.length} registros)`, M, y);
   if (tablaFiltrada.length) {
     const head = [["N° Captura", "N° Rollo", "Fecha", "Máquina", "Turno", "Producto", "Peso (kg)", "Estado"]];
-    const body = tablaFiltrada.slice(0, 100).map((r) => [
+    const body = tablaFiltrada.map((r) => [
       formatCaptura(r.secuencia_captura),
       r.numero_rollo,
       fmtDate(r.capturado_at),
@@ -439,11 +439,6 @@ export async function exportProduccionPDF(
       headStyles: { fillColor: [30, 41, 59], textColor: 255 },
       styles: { fontSize: 8, cellPadding: 3 },
     });
-    if (tablaFiltrada.length > 100) {
-      const y2 = (doc as unknown as DocWithTable).lastAutoTable.finalY + 8;
-      doc.setFont("helvetica", "italic"); doc.setFontSize(8); doc.setTextColor(130);
-      doc.text(`Se muestran 100 de ${tablaFiltrada.length} registros. Use el archivo XLSX para el detalle completo.`, M, y2);
-    }
   } else {
     doc.setFont("helvetica", "italic"); doc.setFontSize(9); doc.setTextColor(130);
     doc.text(SIN_DATOS, M, y + 16);
