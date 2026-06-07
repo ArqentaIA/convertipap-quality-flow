@@ -371,34 +371,39 @@ export async function exportProduccionPDF(
   // KPIs ejecutivos
   if (y > pageH - 200) { doc.addPage(); y = M; }
   doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(20, 20, 30);
-  doc.text("KPIs Ejecutivos", M, y);
+  doc.text("2. Indicadores Clave (KPIs)", M, y);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(120);
+  doc.text("Métricas principales del periodo. Todos los valores en kilogramos (kg) o porcentaje (%).", M, y + 12);
   autoTable(doc, {
-    startY: y + 6,
-    head: [["Indicador", "Valor"]],
+    startY: y + 18,
+    head: [["Indicador", "Valor", "Significado"]],
     body: [
-      ["Rollos producidos", String(data.kpis.rollosProducidos)],
-      ["Kg producidos", fmtKg(data.kpis.kgProducidos)],
-      ["Meta (kg)", data.kpis.meta != null ? fmtKg(data.kpis.meta) : DASH],
-      ["Cumplimiento", fmtPct(data.kpis.cumplimientoPct)],
-      ["OEE global", fmtPct(data.kpis.oeeGlobalPct)],
-      ["Calidad liberada", fmtPct(data.kpis.calidadLiberadaPct)],
-      ["Tiempo muerto (min)", String(data.kpis.tiempoMuertoMin)],
-      ["Producción promedio", `${data.kpis.produccionPromedio.valor} ${data.kpis.produccionPromedio.unidad}`],
-      ["Última captura", fmtDate(data.kpis.ultimaCapturaAt)],
+      ["Rollos producidos", String(data.kpis.rollosProducidos), "Total de rollos fabricados"],
+      ["Kg producidos", fmtKg(data.kpis.kgProducidos), "Peso total en kilogramos"],
+      ["Meta del periodo", data.kpis.meta != null ? `${fmtKg(data.kpis.meta)} kg` : DASH, "Objetivo planificado"],
+      ["Cumplimiento", fmtPct(data.kpis.cumplimientoPct), "Real ÷ Meta × 100"],
+      ["OEE global", fmtPct(data.kpis.oeeGlobalPct), "Eficiencia Global del Equipo"],
+      ["Calidad liberada", fmtPct(data.kpis.calidadLiberadaPct), "% de rollos aprobados"],
+      ["Tiempo muerto", `${data.kpis.tiempoMuertoMin} min`, "Minutos sin producción"],
+      ["Producción promedio", `${data.kpis.produccionPromedio.valor} ${data.kpis.produccionPromedio.unidad}`, "Promedio por unidad de tiempo"],
+      ["Última captura", fmtDate(data.kpis.ultimaCapturaAt), "Fecha del último registro"],
     ],
     headStyles: { fillColor: [30, 41, 59], textColor: 255 },
     styles: { fontSize: 9, cellPadding: 4 },
+    columnStyles: { 2: { textColor: [110, 110, 120], fontStyle: "italic" } },
   });
   y = (doc as unknown as DocWithTable).lastAutoTable.finalY + 14;
 
   // Producción en el tiempo
   if (y > pageH - 180) { doc.addPage(); y = M; }
   doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(20, 20, 30);
-  doc.text("Producción en el Tiempo", M, y);
+  doc.text("3. Producción en el Tiempo", M, y);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(120);
+  doc.text("Evolución del peso producido y rollos por periodo, comparado contra la meta.", M, y + 12);
   if (data.serieTiempo.length) {
     autoTable(doc, {
-      startY: y + 6,
-      head: [["Periodo", "Kg", "Rollos", "Meta", "Acumulado"]],
+      startY: y + 18,
+      head: [["Periodo", "Kg producidos", "Rollos", "Meta (kg)", "Acumulado (kg)"]],
       body: data.serieTiempo.map((b) => [b.label, fmtKg(b.kg), String(b.rollos), b.meta != null ? fmtKg(b.meta) : DASH, fmtKg(b.acumulado)]),
       headStyles: { fillColor: [30, 41, 59], textColor: 255 },
       styles: { fontSize: 9, cellPadding: 4 },
@@ -406,17 +411,19 @@ export async function exportProduccionPDF(
     y = (doc as unknown as DocWithTable).lastAutoTable.finalY + 14;
   } else {
     doc.setFont("helvetica", "italic"); doc.setFontSize(9); doc.setTextColor(130);
-    doc.text(SIN_DATOS, M, y + 16); y += 30;
+    doc.text(SIN_DATOS, M, y + 22); y += 36;
   }
 
   // Por Máquina
   if (y > pageH - 180) { doc.addPage(); y = M; }
   doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(20, 20, 30);
-  doc.text("Producción por Máquina", M, y);
+  doc.text("4. Producción por Máquina", M, y);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(120);
+  doc.text("Desempeño individual de cada máquina: producción, eficiencia (OEE) y calidad.", M, y + 12);
   if (data.maquinas.length) {
     autoTable(doc, {
-      startY: y + 6,
-      head: [["Código", "Estado", "Kg", "Rollos", "OEE %", "Calidad %"]],
+      startY: y + 18,
+      head: [["Código", "Estado", "Kg producidos", "Rollos", "OEE %", "Calidad %"]],
       body: data.maquinas.map((m) => [m.codigo, m.estado, fmtKg(m.kg), String(m.rollos), fmtPct(m.oeePct), fmtPct(m.calidadPct)]),
       headStyles: { fillColor: [30, 41, 59], textColor: 255 },
       styles: { fontSize: 9, cellPadding: 4 },
@@ -424,17 +431,19 @@ export async function exportProduccionPDF(
     y = (doc as unknown as DocWithTable).lastAutoTable.finalY + 14;
   } else {
     doc.setFont("helvetica", "italic"); doc.setFontSize(9); doc.setTextColor(130);
-    doc.text(SIN_DATOS, M, y + 16); y += 30;
+    doc.text(SIN_DATOS, M, y + 22); y += 36;
   }
 
   // Por Turno
   if (y > pageH - 180) { doc.addPage(); y = M; }
   doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(20, 20, 30);
-  doc.text("Producción por Turno", M, y);
+  doc.text("5. Producción por Turno", M, y);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(120);
+  doc.text("Comparativo entre turnos de trabajo (mañana, tarde, noche).", M, y + 12);
   if (data.turnos.length) {
     autoTable(doc, {
-      startY: y + 6,
-      head: [["Turno", "Rollos", "Kg", "Calidad %", "Eficiencia %"]],
+      startY: y + 18,
+      head: [["Turno", "Rollos", "Kg producidos", "Calidad %", "Eficiencia %"]],
       body: data.turnos.map((t) => [t.turno, String(t.rollos), fmtKg(t.kg), fmtPct(t.calidadPct), fmtPct(t.eficienciaPct)]),
       headStyles: { fillColor: [30, 41, 59], textColor: 255 },
       styles: { fontSize: 9, cellPadding: 4 },
@@ -442,17 +451,19 @@ export async function exportProduccionPDF(
     y = (doc as unknown as DocWithTable).lastAutoTable.finalY + 14;
   } else {
     doc.setFont("helvetica", "italic"); doc.setFontSize(9); doc.setTextColor(130);
-    doc.text(SIN_DATOS, M, y + 16); y += 30;
+    doc.text(SIN_DATOS, M, y + 22); y += 36;
   }
 
   // Por Producto
   if (y > pageH - 180) { doc.addPage(); y = M; }
   doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(20, 20, 30);
-  doc.text("Producción por Producto", M, y);
+  doc.text("6. Producción por Producto", M, y);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(120);
+  doc.text("Volumen por tipo de producto y su participación porcentual del total.", M, y + 12);
   if (data.productos.length) {
     autoTable(doc, {
-      startY: y + 6,
-      head: [["Producto", "Kg", "Rollos", "Participación %"]],
+      startY: y + 18,
+      head: [["Producto", "Kg producidos", "Rollos", "Participación %"]],
       body: data.productos.map((p) => [p.producto, fmtKg(p.kg), String(p.rollos), fmtPct(p.participacionPct)]),
       headStyles: { fillColor: [30, 41, 59], textColor: 255 },
       styles: { fontSize: 9, cellPadding: 4 },
@@ -460,34 +471,39 @@ export async function exportProduccionPDF(
     y = (doc as unknown as DocWithTable).lastAutoTable.finalY + 14;
   } else {
     doc.setFont("helvetica", "italic"); doc.setFontSize(9); doc.setTextColor(130);
-    doc.text(SIN_DATOS, M, y + 16); y += 30;
+    doc.text(SIN_DATOS, M, y + 22); y += 36;
   }
 
   // FOMs
   if (y > pageH - 180) { doc.addPage(); y = M; }
   doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(20, 20, 30);
-  doc.text("FOMs (Features of Merit)", M, y);
+  doc.text("7. Indicadores de Calidad (FOMs)", M, y);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(120);
+  doc.text("FOMs = Figures of Merit · Métricas que miden la salud productiva y de calidad.", M, y + 12);
   autoTable(doc, {
-    startY: y + 6,
-    head: [["FOM", "Valor"]],
+    startY: y + 18,
+    head: [["Métrica", "Valor", "Descripción"]],
     body: [
-      ["Kg Liberados", `${fmtKg(data.foms.kgLiberados.total)} (${fmtPct(data.foms.kgLiberados.pct)})`],
-      ["Kg No Liberados", `${fmtKg(data.foms.kgNoLiberados.total)} (${fmtPct(data.foms.kgNoLiberados.pct)})`],
-      ["OEE Global", fmtPct(data.foms.oeeGlobalPct)],
-      ["Cumplimiento Meta", data.foms.cumplimientoMetaPct != null ? fmtPct(data.foms.cumplimientoMetaPct) : DASH],
+      ["Kg Liberados", `${fmtKg(data.foms.kgLiberados.total)} (${fmtPct(data.foms.kgLiberados.pct)})`, "Producto aprobado por calidad"],
+      ["Kg No Liberados", `${fmtKg(data.foms.kgNoLiberados.total)} (${fmtPct(data.foms.kgNoLiberados.pct)})`, "Producto rechazado o retenido"],
+      ["OEE Global", fmtPct(data.foms.oeeGlobalPct), "Eficiencia general del equipo"],
+      ["Cumplimiento de Meta", data.foms.cumplimientoMetaPct != null ? fmtPct(data.foms.cumplimientoMetaPct) : DASH, "Logro frente a objetivo"],
     ],
     headStyles: { fillColor: [16, 122, 87], textColor: 255 },
     styles: { fontSize: 9, cellPadding: 4 },
+    columnStyles: { 2: { textColor: [110, 110, 120], fontStyle: "italic" } },
   });
   y = (doc as unknown as DocWithTable).lastAutoTable.finalY + 14;
 
   // Alertas
   if (y > pageH - 180) { doc.addPage(); y = M; }
   doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(20, 20, 30);
-  doc.text("Alertas Automáticas", M, y);
+  doc.text("8. Alertas Automáticas", M, y);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(120);
+  doc.text("Eventos detectados por el sistema que requieren atención del equipo operativo.", M, y + 12);
   if (data.alertas.length) {
     autoTable(doc, {
-      startY: y + 6,
+      startY: y + 18,
       head: [["Tipo", "Título", "Detalle", "Cuándo"]],
       body: data.alertas.map((a) => [a.tipo, a.titulo, a.detalle, fmtDate(a.cuando)]),
       headStyles: { fillColor: [185, 28, 28], textColor: 255 },
@@ -496,8 +512,9 @@ export async function exportProduccionPDF(
     y = (doc as unknown as DocWithTable).lastAutoTable.finalY + 14;
   } else {
     doc.setFont("helvetica", "italic"); doc.setFontSize(9); doc.setTextColor(130);
-    doc.text("Sin alertas en el periodo.", M, y + 16); y += 30;
+    doc.text("Sin alertas en el periodo.", M, y + 22); y += 36;
   }
+
 
   // ─────────── Salud Operativa (Bullet chart horizontal) ───────────
   if (y > pageH - 240) { doc.addPage(); y = M; }
