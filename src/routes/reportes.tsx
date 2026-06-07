@@ -463,15 +463,8 @@ function ReportesPage() {
 // ─────────────────────────────────────────────────────────────────
 // Reporte de Producción — generador de PDF/XLSX con filtros propios
 // ─────────────────────────────────────────────────────────────────
-function rangoToCentro(rango: Rango): "dia" | "semana" | "mes" | "año" | "custom" {
-  if (rango === "turno" || rango === "dia") return "dia";
-  if (rango === "semana") return "semana";
-  if (rango === "mes") return "mes";
-  if (rango === "año") return "año";
-  return "custom";
-}
-
 function ReporteProduccionItem(props: {
+
   start: string;
   end: string;
   freq: string;
