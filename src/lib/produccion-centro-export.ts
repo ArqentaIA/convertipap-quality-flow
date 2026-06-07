@@ -171,6 +171,34 @@ export async function exportProduccionXLSX(
       })) : empty,
     },
     {
+      name: "Radar Salud Operativa",
+      rows: [
+        { Variable: "Producción", "Valor %": data.kpis.cumplimientoPct ?? data.foms.cumplimientoMetaPct ?? DASH },
+        { Variable: "Calidad", "Valor %": data.kpis.calidadLiberadaPct },
+        { Variable: "OEE", "Valor %": data.kpis.oeeGlobalPct },
+        { Variable: "Liberación", "Valor %": data.foms.kgLiberados.pct },
+        { Variable: "Cumplimiento", "Valor %": data.foms.cumplimientoMetaPct ?? data.kpis.cumplimientoPct ?? DASH },
+        { Variable: "Disponibilidad", "Valor %": data.kpis.disponibilidadPct },
+      ],
+    },
+    {
+      name: "Waterfall Operativo",
+      rows: (() => {
+        const base: Record<string, unknown>[] = [
+          { Etapa: "Producción Total (kg)", Valor: data.kpis.kgProducidos },
+          { Etapa: "Kg No Liberados", Valor: -data.foms.kgNoLiberados.total },
+          { Etapa: "Kg Liberados", Valor: data.foms.kgLiberados.total },
+        ];
+        if (data.kpis.meta != null) {
+          base.push({ Etapa: "Meta (kg)", Valor: data.kpis.meta });
+          base.push({ Etapa: "Producción Real (kg)", Valor: data.kpis.kgProducidos });
+          base.push({ Etapa: "Diferencia (kg)", Valor: data.kpis.kgProducidos - data.kpis.meta });
+        }
+        return base;
+      })(),
+    },
+
+    {
       name: "Tabla Detallada",
       rows: tablaFiltrada.length ? tablaFiltrada.map((r) => ({
         "N° Captura": formatCaptura(r.secuencia_captura),
