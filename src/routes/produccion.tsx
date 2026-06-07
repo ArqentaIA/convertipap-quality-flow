@@ -15,7 +15,6 @@ import {
   MapPin,
   BarChart3,
   Trophy,
-  Crown,
 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { listMaquinasConEstado } from "@/lib/produccion.functions";
