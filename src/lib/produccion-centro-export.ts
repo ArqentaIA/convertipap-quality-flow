@@ -418,7 +418,130 @@ export async function exportProduccionPDF(
     doc.text("Sin alertas en el periodo.", M, y + 16); y += 30;
   }
 
-  // Tabla detallada (completa)
+  // ─────────── Radar de Salud Operativa ───────────
+  if (y > pageH - 280) { doc.addPage(); y = M; }
+  doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(20, 20, 30);
+  doc.text("Radar de Salud Operativa", M, y);
+  {
+    const radarMetrics: { label: string; value: number | null }[] = [
+      { label: "Producción", value: data.kpis.cumplimientoPct ?? data.foms.cumplimientoMetaPct ?? (data.kpis.rollosProducidos > 0 ? Math.min(100, Math.round(data.foms.kgLiberados.pct + data.foms.kgNoLiberados.pct)) : null) },
+      { label: "Calidad", value: data.kpis.calidadLiberadaPct },
+      { label: "OEE", value: data.kpis.oeeGlobalPct },
+      { label: "Liberación", value: data.foms.kgLiberados.pct },
+      { label: "Cumplimiento", value: data.foms.cumplimientoMetaPct ?? data.kpis.cumplimientoPct },
+      { label: "Disponibilidad", value: data.kpis.disponibilidadPct },
+    ];
+    const cx = M + 130;
+    const cy = y + 130;
+    const R = 95;
+    const n = radarMetrics.length;
+    // ejes y anillos
+    doc.setDrawColor(210);
+    doc.setLineWidth(0.4);
+    for (let r = 1; r <= 4; r++) {
+      const rr = (R * r) / 4;
+      const pts: [number, number][] = [];
+      for (let i = 0; i < n; i++) {
+        const ang = -Math.PI / 2 + (i * 2 * Math.PI) / n;
+        pts.push([cx + Math.cos(ang) * rr, cy + Math.sin(ang) * rr]);
+      }
+      for (let i = 0; i < n; i++) {
+        const a = pts[i]; const b = pts[(i + 1) % n];
+        doc.line(a[0], a[1], b[0], b[1]);
+      }
+    }
+    for (let i = 0; i < n; i++) {
+      const ang = -Math.PI / 2 + (i * 2 * Math.PI) / n;
+      doc.line(cx, cy, cx + Math.cos(ang) * R, cy + Math.sin(ang) * R);
+    }
+    // polígono de valores
+    const vpts: [number, number][] = [];
+    for (let i = 0; i < n; i++) {
+      const ang = -Math.PI / 2 + (i * 2 * Math.PI) / n;
+      const v = radarMetrics[i].value;
+      const rr = v == null ? 0 : (R * Math.max(0, Math.min(100, v))) / 100;
+      vpts.push([cx + Math.cos(ang) * rr, cy + Math.sin(ang) * rr]);
+    }
+    doc.setDrawColor(37, 99, 235);
+    doc.setFillColor(37, 99, 235);
+    doc.setLineWidth(1.2);
+    // relleno suave usando triangulación al centro
+    for (let i = 0; i < n; i++) {
+      const a = vpts[i]; const b = vpts[(i + 1) % n];
+      doc.setFillColor(37, 99, 235);
+      doc.triangle(cx, cy, a[0], a[1], b[0], b[1], "F");
+      doc.line(a[0], a[1], b[0], b[1]);
+    }
+    // etiquetas y valores
+    doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(40);
+    for (let i = 0; i < n; i++) {
+      const ang = -Math.PI / 2 + (i * 2 * Math.PI) / n;
+      const lx = cx + Math.cos(ang) * (R + 16);
+      const ly = cy + Math.sin(ang) * (R + 16);
+      const align = Math.cos(ang) > 0.3 ? "left" : Math.cos(ang) < -0.3 ? "right" : "center";
+      doc.text(radarMetrics[i].label, lx, ly, { align: align as "left" | "right" | "center" });
+    }
+    // tabla lateral con %
+    autoTable(doc, {
+      startY: y + 10,
+      margin: { left: cx + R + 60 },
+      head: [["Variable", "Valor"]],
+      body: radarMetrics.map((m) => [m.label, m.value == null ? DASH : `${m.value.toFixed(1)}%`]),
+      headStyles: { fillColor: [37, 99, 235], textColor: 255 },
+      styles: { fontSize: 8.5, cellPadding: 3 },
+      tableWidth: pageW - (cx + R + 60) - M,
+    });
+    y = Math.max(cy + R + 20, (doc as unknown as DocWithTable).lastAutoTable.finalY) + 14;
+  }
+
+  // ─────────── Waterfall de Impacto Operativo ───────────
+  if (y > pageH - 220) { doc.addPage(); y = M; }
+  doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(20, 20, 30);
+  doc.text("Waterfall de Impacto Operativo", M, y);
+  {
+    const kgTotal = data.kpis.kgProducidos;
+    const kgNoLib = data.foms.kgNoLiberados.total;
+    const kgLib = data.foms.kgLiberados.total;
+    const meta = data.kpis.meta;
+    type Bar = { label: string; value: number; color: [number, number, number]; type: "abs" | "neg" | "pos" };
+    const bars: Bar[] = [
+      { label: "Producción Total", value: kgTotal, color: [37, 99, 235], type: "abs" },
+      { label: "Kg No Liberados", value: -kgNoLib, color: [185, 28, 28], type: "neg" },
+      { label: "Kg Liberados", value: kgLib, color: [16, 122, 87], type: "abs" },
+    ];
+    if (meta != null) {
+      bars.push({ label: "Meta", value: meta, color: [100, 116, 139], type: "abs" });
+      bars.push({ label: "Producción Real", value: kgTotal, color: [37, 99, 235], type: "abs" });
+      bars.push({ label: "Diferencia", value: kgTotal - meta, color: kgTotal - meta >= 0 ? [16, 122, 87] : [185, 28, 28], type: kgTotal - meta >= 0 ? "pos" : "neg" });
+    }
+    const chartX = M;
+    const chartY = y + 14;
+    const chartW = pageW - 2 * M;
+    const chartH = 150;
+    const maxV = Math.max(1, ...bars.map((b) => Math.abs(b.value)), kgTotal);
+    const barW = (chartW - 20) / bars.length - 12;
+    const baseY = chartY + chartH - 24;
+    // eje
+    doc.setDrawColor(210); doc.setLineWidth(0.5);
+    doc.line(chartX, baseY, chartX + chartW, baseY);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(60);
+    bars.forEach((b, i) => {
+      const x = chartX + 10 + i * (barW + 12);
+      const h = (Math.abs(b.value) / maxV) * (chartH - 40);
+      const yTop = b.value >= 0 ? baseY - h : baseY;
+      doc.setFillColor(b.color[0], b.color[1], b.color[2]);
+      doc.rect(x, yTop, barW, h, "F");
+      // etiqueta valor
+      doc.setTextColor(20);
+      const valTxt = `${b.value < 0 ? "-" : ""}${fmt.format(Math.abs(b.value))} kg`;
+      doc.text(valTxt, x + barW / 2, b.value >= 0 ? yTop - 4 : yTop + h + 10, { align: "center" });
+      // etiqueta categoría
+      doc.setTextColor(60);
+      doc.text(b.label, x + barW / 2, baseY + 14, { align: "center", maxWidth: barW + 10 });
+    });
+    y = chartY + chartH + 14;
+  }
+
   if (y > pageH - 180) { doc.addPage(); y = M; }
   doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(20, 20, 30);
   doc.text(`Tabla Detallada (${tablaFiltrada.length} registros)`, M, y);
