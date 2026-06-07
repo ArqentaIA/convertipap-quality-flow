@@ -591,9 +591,10 @@ export async function exportProduccionPDF(
   // ─────────── Distribución de Producción (Pie Chart Premium) ───────────
   if (y > pageH - 200) { doc.addPage(); y = M; }
   doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(20, 20, 30);
-  doc.text(`Distribución de Producción${filtrosActivos ? " (filtrado)" : ""}`, M, y);
+  doc.text(`10. Distribución de Producción${filtrosActivos ? " (filtrado)" : ""}`, M, y);
   doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(120);
-  doc.text("Gráfico circular premium · Kg Liberados vs Kg No Liberados", M, y + 12);
+  doc.text("Proporción de Kg Liberados (calidad aprobada) vs Kg No Liberados (rechazados/retenidos).", M, y + 12);
+
   {
     const kgTotal = filtrosActivos ? mFilt.kgTotal : data.kpis.kgProducidos;
     const kgNoLib = filtrosActivos ? mFilt.kgNoLib : data.foms.kgNoLiberados.total;
