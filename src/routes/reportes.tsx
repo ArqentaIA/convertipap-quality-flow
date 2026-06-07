@@ -3,13 +3,14 @@ import { useMemo, useState } from "react";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { SessionGate } from "@/components/SessionGate";
-import { FileBarChart2, Download, FileSpreadsheet, TrendingUp, TrendingDown, CalendarRange, Activity, ArrowRight } from "lucide-react";
+import { FileBarChart2, Download, FileSpreadsheet, TrendingUp, TrendingDown, CalendarRange, Activity } from "lucide-react";
 import logoUrl from "@/assets/logo-convertipap.png";
 import { RangoSelector, MESES, rangoLabel, rangoToFreq, type Rango } from "@/components/qc/RangoSelector";
 import { useLabFilter, LAB_LABEL } from "@/lib/lab";
 import { getReportes } from "@/lib/reportes.functions";
 import { useAuth } from "@/lib/auth";
-import { Link } from "@tanstack/react-router";
+import { getProduccionCentro } from "@/lib/produccion-centro.functions";
+import { exportProduccionPDF, exportProduccionXLSX } from "@/lib/produccion-centro-export";
 
 
 export const Route = createFileRoute("/reportes")({
