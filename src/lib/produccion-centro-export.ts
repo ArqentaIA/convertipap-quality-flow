@@ -388,8 +388,6 @@ export async function exportProduccionPDF(
     startY: y + 6,
     head: [["FOM", "Valor"]],
     body: [
-      ["Costo No Calidad", fmtMoney(data.foms.costoNoCalidad.total)],
-      ["Costo MXN / kg", fmtMoney(data.foms.costoNoCalidad.costoKg)],
       ["Kg Liberados", `${fmtKg(data.foms.kgLiberados.total)} (${fmtPct(data.foms.kgLiberados.pct)})`],
       ["Kg No Liberados", `${fmtKg(data.foms.kgNoLiberados.total)} (${fmtPct(data.foms.kgNoLiberados.pct)})`],
       ["OEE Global", fmtPct(data.foms.oeeGlobalPct)],
