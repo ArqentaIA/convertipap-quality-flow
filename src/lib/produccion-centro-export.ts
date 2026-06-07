@@ -471,14 +471,27 @@ export async function exportProduccionPDF(
   doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(20, 20, 30);
   doc.text("Radar de Salud Operativa", M, y);
   doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(120);
-  doc.text("Escala 0–100% · Zonas: crítico < 60 · aceptable 60–80 · óptimo ≥ 80", M, y + 12);
+  const filtrosActivos = hayFiltros(ctx.filtros);
+  const mFilt = metricsFromRows(tablaFiltrada);
+  const mTotal = metricsFromRows(data.tabla);
+  doc.text(
+    `Escala 0–100% · Zonas: crítico < 60 · aceptable 60–80 · óptimo ≥ 80${filtrosActivos ? "  ·  Métricas ajustadas a filtros" : ""}`,
+    M,
+    y + 12,
+  );
   {
+    const produccionFilt = filtrosActivos
+      ? (mTotal.kgTotal > 0 ? (mFilt.kgTotal / mTotal.kgTotal) * 100 : null)
+      : (data.kpis.cumplimientoPct ?? data.foms.cumplimientoMetaPct ?? (data.kpis.rollosProducidos > 0 ? Math.min(100, Math.round(data.foms.kgLiberados.pct + data.foms.kgNoLiberados.pct)) : null));
+    const calidadFilt = filtrosActivos ? mFilt.calidadPct : data.kpis.calidadLiberadaPct;
+    const liberacionFilt = filtrosActivos ? mFilt.liberacionPct : data.foms.kgLiberados.pct;
+    const cumplimientoFilt = filtrosActivos ? null : (data.foms.cumplimientoMetaPct ?? data.kpis.cumplimientoPct);
     const radarMetrics: { label: string; value: number | null }[] = [
-      { label: "Producción", value: data.kpis.cumplimientoPct ?? data.foms.cumplimientoMetaPct ?? (data.kpis.rollosProducidos > 0 ? Math.min(100, Math.round(data.foms.kgLiberados.pct + data.foms.kgNoLiberados.pct)) : null) },
-      { label: "Calidad", value: data.kpis.calidadLiberadaPct },
+      { label: filtrosActivos ? "Participación" : "Producción", value: produccionFilt },
+      { label: "Calidad", value: calidadFilt },
       { label: "OEE", value: data.kpis.oeeGlobalPct },
-      { label: "Liberación", value: data.foms.kgLiberados.pct },
-      { label: "Cumplimiento", value: data.foms.cumplimientoMetaPct ?? data.kpis.cumplimientoPct },
+      { label: "Liberación", value: liberacionFilt },
+      { label: "Cumplimiento", value: cumplimientoFilt },
       { label: "Disponibilidad", value: data.kpis.disponibilidadPct },
     ];
     const startX = M + 90;
