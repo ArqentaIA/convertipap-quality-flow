@@ -271,14 +271,13 @@ function BarraRanking({ m, idx, maxKg }: { m: MaquinaRow; idx: number; maxKg: nu
               style={{ background: `${color}4d` }}
             />
             <div
-              className="relative flex h-8 w-8 items-center justify-center rounded-full text-white shadow-lg ring-2"
+              className="relative flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-lg ring-2"
               style={{
-                background: `linear-gradient(135deg, ${color}, ${color}b3)`,
                 boxShadow: `0 8px 16px -4px ${color}80`,
                 ['--tw-ring-color' as never]: `${color}99`,
               }}
             >
-              <Crown className="h-4 w-4" fill="currentColor" />
+              <img src={TROFEO_URL} alt="Trofeo #1" className="h-7 w-7 object-contain" />
             </div>
           </div>
         ) : (
