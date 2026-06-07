@@ -15,6 +15,7 @@ import {
   MapPin,
   BarChart3,
   Trophy,
+  Crown,
 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { listMaquinasConEstado } from "@/lib/produccion.functions";
@@ -229,23 +230,40 @@ function BarraRanking({ m, idx, maxKg }: { m: MaquinaRow; idx: number; maxKg: nu
     paro: "bg-destructive",
     sin_produccion: "bg-muted-foreground/40",
   };
+  const isLeader = idx === 0 && m.kgTurno > 0;
   return (
-    <div className="flex items-center gap-3">
-      <div className="flex w-10 shrink-0 items-center gap-1">
-        {idx === 0 ? (
-          <Trophy className="h-4 w-4 text-warning" />
+    <div
+      className={`flex items-center gap-3 ${
+        isLeader ? "rounded-lg bg-gradient-to-r from-warning/15 via-warning/5 to-transparent p-2 ring-1 ring-warning/40" : ""
+      }`}
+    >
+      <div className="flex w-10 shrink-0 items-center justify-center gap-1">
+        {isLeader ? (
+          <div className="relative">
+            <div className="absolute inset-0 animate-ping rounded-full bg-warning/30" />
+            <div className="relative flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-warning to-warning/70 shadow-lg shadow-warning/40 ring-2 ring-warning/60">
+              <Crown className="h-4 w-4 text-warning-foreground" fill="currentColor" />
+            </div>
+          </div>
         ) : (
           <span className="text-[11px] font-bold tabular-nums text-muted-foreground">#{idx + 1}</span>
         )}
       </div>
-      <div className="w-20 shrink-0 text-sm font-bold text-foreground">{m.codigo}</div>
-      <div className="relative h-6 flex-1 overflow-hidden rounded-md bg-muted/60">
+      <div className={`w-20 shrink-0 text-sm font-bold ${isLeader ? "text-warning" : "text-foreground"}`}>
+        {m.codigo}
+      </div>
+      <div className={`relative h-6 flex-1 overflow-hidden rounded-md bg-muted/60 ${isLeader ? "ring-1 ring-warning/50" : ""}`}>
         <div
           className={`h-full rounded-md ${colorMap[ev]} transition-all`}
           style={{ width: m.kgTurno > 0 ? `${pct}%` : "0%" }}
         />
-        <span className="absolute inset-y-0 left-2 flex items-center text-[11px] font-semibold text-foreground">
+        <span className="absolute inset-y-0 left-2 flex items-center gap-1 text-[11px] font-semibold text-foreground">
           {fmtNum(m.kgTurno)} kg · {m.rollosTurno} rollos
+          {isLeader && (
+            <span className="ml-1 rounded-sm bg-warning px-1 py-0.5 text-[9px] font-extrabold uppercase tracking-wider text-warning-foreground">
+              Líder
+            </span>
+          )}
         </span>
       </div>
       <div className="w-28 shrink-0 text-right">
@@ -257,22 +275,37 @@ function BarraRanking({ m, idx, maxKg }: { m: MaquinaRow; idx: number; maxKg: nu
 
 function MaquinaCard({ m, rangoLabel, rank }: { m: MaquinaRow; rangoLabel: string; rank: number }) {
   const ev = estadoVisual(m);
+  const isLeader = rank === 1 && m.kgTurno > 0;
   return (
-    <div className="rounded-xl border border-border bg-card p-5 shadow-sm transition hover:shadow-md hover:border-primary/40">
+    <div
+      className={`relative overflow-hidden rounded-xl border bg-card p-5 shadow-sm transition hover:shadow-md ${
+        isLeader
+          ? "border-warning/60 shadow-warning/20 ring-2 ring-warning/40 hover:shadow-warning/30"
+          : "border-border hover:border-primary/40"
+      }`}
+    >
+      {isLeader && (
+        <>
+          <div className="pointer-events-none absolute -right-12 top-4 z-10 rotate-45 bg-gradient-to-r from-warning to-warning/80 px-12 py-1 text-[10px] font-extrabold uppercase tracking-widest text-warning-foreground shadow-md">
+            Líder
+          </div>
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-warning via-warning/70 to-warning" />
+        </>
+      )}
       <Link to="/historial/$maquina" params={{ maquina: m.codigo }} className="block">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
             <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-muted-foreground">
-              {rank === 1 ? (
-                <span className="inline-flex items-center gap-1 rounded bg-warning/15 px-1.5 py-0.5 font-bold text-warning">
-                  <Trophy className="h-3 w-3" /> #1
+              {isLeader ? (
+                <span className="inline-flex items-center gap-1 rounded-md bg-gradient-to-r from-warning to-warning/70 px-2 py-0.5 font-extrabold text-warning-foreground shadow-sm">
+                  <Crown className="h-3 w-3" fill="currentColor" /> #1
                 </span>
               ) : (
                 <span className="rounded bg-muted px-1.5 py-0.5 font-bold text-foreground">#{rank}</span>
               )}
               <span className="truncate">{m.planta}</span>
             </div>
-            <h3 className="mt-1 text-lg font-bold text-foreground">{m.codigo}</h3>
+            <h3 className={`mt-1 text-lg font-bold ${isLeader ? "text-warning" : "text-foreground"}`}>{m.codigo}</h3>
           </div>
           <EstadoChip estado={ev} />
         </div>
