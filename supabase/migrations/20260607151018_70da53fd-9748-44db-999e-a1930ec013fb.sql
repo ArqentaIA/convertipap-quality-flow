@@ -1,0 +1,1 @@
+INSERT INTO public.module_permissions (role, module) VALUES ('capturista', 'produccion') ON CONFLICT DO NOTHING;
