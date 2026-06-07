@@ -223,18 +223,18 @@ function EstadoChip({ estado }: { estado: EstadoVisual }) {
 
 // Paleta estable por máquina: cada código mapea a un color fijo
 const MAQUINA_PALETTE = [
-  "#3b82f6", // azul
-  "#10b981", // verde esmeralda
-  "#f59e0b", // ámbar
-  "#ef4444", // rojo
-  "#8b5cf6", // violeta
-  "#ec4899", // rosa
-  "#06b6d4", // cian
-  "#84cc16", // lima
-  "#f97316", // naranja
-  "#14b8a6", // teal
-  "#a855f7", // púrpura
   "#eab308", // amarillo
+  "#a855f7", // púrpura
+  "#14b8a6", // teal
+  "#f97316", // naranja
+  "#84cc16", // lima
+  "#06b6d4", // cian
+  "#ec4899", // rosa
+  "#8b5cf6", // violeta
+  "#ef4444", // rojo
+  "#f59e0b", // ámbar
+  "#10b981", // verde esmeralda
+  "#3b82f6", // azul
 ];
 function maquinaColor(codigo: string): string {
   let h = 0;
