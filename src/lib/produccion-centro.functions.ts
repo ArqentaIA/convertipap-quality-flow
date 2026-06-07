@@ -180,22 +180,18 @@ export const getProduccionCentro = createServerFn({ method: "POST" })
     const start = new Date(data.start);
     const end = new Date(data.end);
 
-    // Variables relevantes para el reporte (reduce volumen vs. traer todas)
-    const VARS_REPORTE = ["peso", "blancuraR457", "blancuraA", "blancuraB", "anchoUtil"];
-
-    // Paginado de mediciones: PostgREST limita a 1000 filas por defecto
+    // Paginado de mediciones: PostgREST limita a 1000 filas por defecto.
+    // Con varias variables × muestras se superan los 1000 fácilmente.
     async function fetchAllMediciones() {
       const pageSize = 1000;
       const out: Array<{ muestra_id: string; variable_clave: string; valor: number | null; estado: string; created_at: string }> = [];
       let from = 0;
-      // Loop seguro hasta 50k filas
       for (let i = 0; i < 50; i++) {
         const { data, error } = await sb
           .from("mediciones_calidad")
           .select("muestra_id, variable_clave, valor, estado, created_at")
           .gte("created_at", start.toISOString())
           .lte("created_at", end.toISOString())
-          .in("variable_clave", VARS_REPORTE)
           .range(from, from + pageSize - 1);
         if (error) throw error;
         const chunk = (data ?? []) as typeof out;
@@ -205,6 +201,8 @@ export const getProduccionCentro = createServerFn({ method: "POST" })
       }
       return out;
     }
+
+
 
     const [
       { data: maquinas },
