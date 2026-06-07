@@ -80,11 +80,7 @@ function ProduccionPage() {
   const plantaLabel =
     maquinas.find((m) => m.planta && m.planta !== "—")?.planta ?? "Todas las plantas";
 
-  const hora = new Date(dataUpdatedAt || Date.now()).toLocaleTimeString("es-MX", {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
+  // hora removida: solo se muestra el indicador de auto-refresh
   const fecha = new Date().toLocaleDateString("es-MX", {
     weekday: "long",
     day: "2-digit",
