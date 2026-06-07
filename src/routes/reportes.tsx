@@ -475,8 +475,12 @@ function ReporteProduccionItem(props: {
   periodo: string;
   usuario: string;
   enabled: boolean;
+  rango: Rango;
+  setRango: (r: Rango) => void;
+  mesesSel: number[];
+  setMesesSel: (m: number[]) => void;
 }) {
-  const { start, end, freq, periodo, usuario, enabled } = props;
+  const { start, end, freq, periodo, usuario, enabled, rango, setRango, mesesSel, setMesesSel } = props;
   const [turno, setTurno] = useState("");
   const [maquina, setMaquina] = useState("");
   const [producto, setProducto] = useState("");
