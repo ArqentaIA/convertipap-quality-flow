@@ -107,6 +107,10 @@ export type TablaRow = {
   turno: string;
   producto: string | null;
   peso_kg: number | null;
+  blancura_r457: number | null;
+  blancura_a: number | null;
+  blancura_b: number | null;
+  ancho_util: number | null;
   estado: string;
   estatus_liberacion: string | null;
   dictamen: string | null;
