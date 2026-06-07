@@ -51,6 +51,26 @@ export function filtrarTabla(rows: TablaRow[], f: ReporteProdFiltros): TablaRow[
   });
 }
 
+export function hayFiltros(f: ReporteProdFiltros): boolean {
+  return !!(f.turno || f.maquina || f.producto || f.estado);
+}
+
+export function metricsFromRows(rows: TablaRow[]) {
+  let rollos = 0, kgTotal = 0, kgLib = 0, kgNoLib = 0, lib = 0, rech = 0;
+  for (const r of rows) {
+    rollos++;
+    const peso = r.peso_kg ?? 0;
+    kgTotal += peso;
+    const isLib = r.dictamen === "liberada" || r.estatus_liberacion === "L";
+    const isRech = r.dictamen === "rechazada" || r.estatus_liberacion === "NC";
+    if (isLib) { kgLib += peso; lib++; }
+    else if (isRech) { kgNoLib += peso; rech++; }
+  }
+  const calidadPct = rollos > 0 ? (lib / rollos) * 100 : null;
+  const liberacionPct = kgTotal > 0 ? (kgLib / kgTotal) * 100 : null;
+  return { rollos, kgTotal, kgLib, kgNoLib, lib, rech, calidadPct, liberacionPct };
+}
+
 function stamp() {
   return new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
 }
@@ -172,24 +192,40 @@ export async function exportProduccionXLSX(
     },
     {
       name: "Radar Salud Operativa",
-      rows: [
-        { Variable: "Producción", "Valor %": data.kpis.cumplimientoPct ?? data.foms.cumplimientoMetaPct ?? DASH },
-        { Variable: "Calidad", "Valor %": data.kpis.calidadLiberadaPct },
-        { Variable: "OEE", "Valor %": data.kpis.oeeGlobalPct },
-        { Variable: "Liberación", "Valor %": data.foms.kgLiberados.pct },
-        { Variable: "Cumplimiento", "Valor %": data.foms.cumplimientoMetaPct ?? data.kpis.cumplimientoPct ?? DASH },
-        { Variable: "Disponibilidad", "Valor %": data.kpis.disponibilidadPct },
-      ],
+      rows: (() => {
+        const filtrosActivos = hayFiltros(ctx.filtros);
+        const mFilt = metricsFromRows(tablaFiltrada);
+        const mTotal = metricsFromRows(data.tabla);
+        const produccion = filtrosActivos
+          ? (mTotal.kgTotal > 0 ? (mFilt.kgTotal / mTotal.kgTotal) * 100 : DASH)
+          : (data.kpis.cumplimientoPct ?? data.foms.cumplimientoMetaPct ?? DASH);
+        const calidad = filtrosActivos ? (mFilt.calidadPct ?? DASH) : data.kpis.calidadLiberadaPct;
+        const liberacion = filtrosActivos ? (mFilt.liberacionPct ?? DASH) : data.foms.kgLiberados.pct;
+        const cumplimiento = filtrosActivos ? DASH : (data.foms.cumplimientoMetaPct ?? data.kpis.cumplimientoPct ?? DASH);
+        return [
+          { Variable: filtrosActivos ? "Participación" : "Producción", "Valor %": produccion },
+          { Variable: "Calidad", "Valor %": calidad },
+          { Variable: "OEE", "Valor %": data.kpis.oeeGlobalPct },
+          { Variable: "Liberación", "Valor %": liberacion },
+          { Variable: "Cumplimiento", "Valor %": cumplimiento },
+          { Variable: "Disponibilidad", "Valor %": data.kpis.disponibilidadPct },
+        ];
+      })(),
     },
     {
       name: "Waterfall Operativo",
       rows: (() => {
+        const filtrosActivos = hayFiltros(ctx.filtros);
+        const mFilt = metricsFromRows(tablaFiltrada);
+        const kgTotal = filtrosActivos ? mFilt.kgTotal : data.kpis.kgProducidos;
+        const kgNoLib = filtrosActivos ? mFilt.kgNoLib : data.foms.kgNoLiberados.total;
+        const kgLib = filtrosActivos ? mFilt.kgLib : data.foms.kgLiberados.total;
         const base: Record<string, unknown>[] = [
-          { Etapa: "Producción Total (kg)", Valor: data.kpis.kgProducidos },
-          { Etapa: "Kg No Liberados", Valor: -data.foms.kgNoLiberados.total },
-          { Etapa: "Kg Liberados", Valor: data.foms.kgLiberados.total },
+          { Etapa: "Producción Total (kg)", Valor: kgTotal },
+          { Etapa: "Kg No Liberados", Valor: -kgNoLib },
+          { Etapa: "Kg Liberados", Valor: kgLib },
         ];
-        if (data.kpis.meta != null) {
+        if (!filtrosActivos && data.kpis.meta != null) {
           base.push({ Etapa: "Meta (kg)", Valor: data.kpis.meta });
           base.push({ Etapa: "Producción Real (kg)", Valor: data.kpis.kgProducidos });
           base.push({ Etapa: "Diferencia (kg)", Valor: data.kpis.kgProducidos - data.kpis.meta });
@@ -451,14 +487,27 @@ export async function exportProduccionPDF(
   doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(20, 20, 30);
   doc.text("Radar de Salud Operativa", M, y);
   doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(120);
-  doc.text("Escala 0–100% · Zonas: crítico < 60 · aceptable 60–80 · óptimo ≥ 80", M, y + 12);
+  const filtrosActivos = hayFiltros(ctx.filtros);
+  const mFilt = metricsFromRows(tablaFiltrada);
+  const mTotal = metricsFromRows(data.tabla);
+  doc.text(
+    `Escala 0–100% · Zonas: crítico < 60 · aceptable 60–80 · óptimo ≥ 80${filtrosActivos ? "  ·  Métricas ajustadas a filtros" : ""}`,
+    M,
+    y + 12,
+  );
   {
+    const produccionFilt = filtrosActivos
+      ? (mTotal.kgTotal > 0 ? (mFilt.kgTotal / mTotal.kgTotal) * 100 : null)
+      : (data.kpis.cumplimientoPct ?? data.foms.cumplimientoMetaPct ?? (data.kpis.rollosProducidos > 0 ? Math.min(100, Math.round(data.foms.kgLiberados.pct + data.foms.kgNoLiberados.pct)) : null));
+    const calidadFilt = filtrosActivos ? mFilt.calidadPct : data.kpis.calidadLiberadaPct;
+    const liberacionFilt = filtrosActivos ? mFilt.liberacionPct : data.foms.kgLiberados.pct;
+    const cumplimientoFilt = filtrosActivos ? null : (data.foms.cumplimientoMetaPct ?? data.kpis.cumplimientoPct);
     const radarMetrics: { label: string; value: number | null }[] = [
-      { label: "Producción", value: data.kpis.cumplimientoPct ?? data.foms.cumplimientoMetaPct ?? (data.kpis.rollosProducidos > 0 ? Math.min(100, Math.round(data.foms.kgLiberados.pct + data.foms.kgNoLiberados.pct)) : null) },
-      { label: "Calidad", value: data.kpis.calidadLiberadaPct },
+      { label: filtrosActivos ? "Participación" : "Producción", value: produccionFilt },
+      { label: "Calidad", value: calidadFilt },
       { label: "OEE", value: data.kpis.oeeGlobalPct },
-      { label: "Liberación", value: data.foms.kgLiberados.pct },
-      { label: "Cumplimiento", value: data.foms.cumplimientoMetaPct ?? data.kpis.cumplimientoPct },
+      { label: "Liberación", value: liberacionFilt },
+      { label: "Cumplimiento", value: cumplimientoFilt },
       { label: "Disponibilidad", value: data.kpis.disponibilidadPct },
     ];
     const startX = M + 90;
@@ -505,14 +554,14 @@ export async function exportProduccionPDF(
   // ─────────── Waterfall de Impacto Operativo ───────────
   if (y > pageH - 180) { doc.addPage(); y = M; }
   doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(20, 20, 30);
-  doc.text("Waterfall de Impacto Operativo", M, y);
+  doc.text(`Waterfall de Impacto Operativo${filtrosActivos ? " (filtrado)" : ""}`, M, y);
   doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(120);
   doc.text("Flujo acumulado de kg con conectores escalonados", M, y + 12);
   {
-    const kgTotal = data.kpis.kgProducidos;
-    const kgNoLib = data.foms.kgNoLiberados.total;
-    const kgLib = data.foms.kgLiberados.total;
-    const meta = data.kpis.meta;
+    const kgTotal = filtrosActivos ? mFilt.kgTotal : data.kpis.kgProducidos;
+    const kgNoLib = filtrosActivos ? mFilt.kgNoLib : data.foms.kgNoLiberados.total;
+    const kgLib = filtrosActivos ? mFilt.kgLib : data.foms.kgLiberados.total;
+    const meta = filtrosActivos ? null : data.kpis.meta;
     type Bar = { label: string; value: number; color: [number, number, number]; kind: "total" | "delta" };
     const bars: Bar[] = [
       { label: "Producción\nTotal", value: kgTotal, color: [37, 99, 235], kind: "total" },
