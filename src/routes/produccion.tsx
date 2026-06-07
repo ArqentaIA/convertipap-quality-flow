@@ -263,7 +263,13 @@ function MaquinaCard({ m, rangoLabel, rank }: { m: MaquinaRow; rangoLabel: strin
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
             <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-muted-foreground">
-              <span className="rounded bg-muted px-1.5 py-0.5 font-bold text-foreground">#{rank}</span>
+              {rank === 1 ? (
+                <span className="inline-flex items-center gap-1 rounded bg-warning/15 px-1.5 py-0.5 font-bold text-warning">
+                  <Trophy className="h-3 w-3" /> #1
+                </span>
+              ) : (
+                <span className="rounded bg-muted px-1.5 py-0.5 font-bold text-foreground">#{rank}</span>
+              )}
               <span className="truncate">{m.planta}</span>
             </div>
             <h3 className="mt-1 text-lg font-bold text-foreground">{m.codigo}</h3>
