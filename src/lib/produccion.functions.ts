@@ -990,7 +990,7 @@ export const listRollosMaquina = createServerFn({ method: "GET" })
     let q = sb
       .from("muestras_calidad")
       .select(
-        `id, numero_rollo, hora_muestreo, turno, operador, jefe_maquina, analista,
+        `id, numero_rollo, secuencia_captura, hora_muestreo, turno, operador, jefe_maquina, analista,
          dictamen, estatus_liberacion, defectos, orden_id,
          ordenes_fabricacion:orden_id(folio, productos(nombre, codigo)),
          mediciones_calidad(variable_clave, valor, estado)`,
@@ -1020,6 +1020,7 @@ export const listRollosMaquina = createServerFn({ method: "GET" })
         ordenId: r.orden_id as string,
         folioOrden: r.ordenes_fabricacion?.folio ?? "—",
         rollo: r.numero_rollo as string,
+        secuenciaCaptura: (r.secuencia_captura as number) ?? null,
         capturadoAt: r.hora_muestreo as string,
         turno: (r.turno as string) ?? "—",
         operador: (r.operador as string) ?? "—",
