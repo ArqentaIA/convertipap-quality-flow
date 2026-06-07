@@ -11,7 +11,6 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as VariablesCalidadRouteImport } from './routes/variables-calidad'
 import { Route as UsuariosRouteImport } from './routes/usuarios'
-import { Route as ReportesRouteImport } from './routes/reportes'
 import { Route as ProduccionRouteImport } from './routes/produccion'
 import { Route as OperatorVisionRouteImport } from './routes/operator-vision'
 import { Route as LoginRouteImport } from './routes/login'
@@ -20,6 +19,7 @@ import { Route as ConfiguracionRouteImport } from './routes/configuracion'
 import { Route as CatalogosRouteImport } from './routes/catalogos'
 import { Route as AuditoriaRouteImport } from './routes/auditoria'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ReportesIndexRouteImport } from './routes/reportes.index'
 import { Route as TFolioRouteImport } from './routes/t.$folio'
 import { Route as ReportesProduccionCentroRouteImport } from './routes/reportes.produccion-centro'
 import { Route as MuestraIdRouteImport } from './routes/muestra.$id'
@@ -37,11 +37,6 @@ const VariablesCalidadRoute = VariablesCalidadRouteImport.update({
 const UsuariosRoute = UsuariosRouteImport.update({
   id: '/usuarios',
   path: '/usuarios',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ReportesRoute = ReportesRouteImport.update({
-  id: '/reportes',
-  path: '/reportes',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProduccionRoute = ProduccionRouteImport.update({
@@ -82,6 +77,11 @@ const AuditoriaRoute = AuditoriaRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReportesIndexRoute = ReportesIndexRouteImport.update({
+  id: '/reportes/',
+  path: '/reportes/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TFolioRoute = TFolioRouteImport.update({
@@ -135,7 +135,6 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/operator-vision': typeof OperatorVisionRoute
   '/produccion': typeof ProduccionRoute
-  '/reportes': typeof ReportesRouteWithChildren
   '/usuarios': typeof UsuariosRoute
   '/variables-calidad': typeof VariablesCalidadRoute
   '/calidad/ajustes': typeof CalidadAjustesRoute
@@ -146,6 +145,7 @@ export interface FileRoutesByFullPath {
   '/muestra/$id': typeof MuestraIdRoute
   '/reportes/produccion-centro': typeof ReportesProduccionCentroRoute
   '/t/$folio': typeof TFolioRoute
+  '/reportes/': typeof ReportesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -156,7 +156,6 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/operator-vision': typeof OperatorVisionRoute
   '/produccion': typeof ProduccionRoute
-  '/reportes': typeof ReportesRouteWithChildren
   '/usuarios': typeof UsuariosRoute
   '/variables-calidad': typeof VariablesCalidadRoute
   '/calidad/ajustes': typeof CalidadAjustesRoute
@@ -167,6 +166,7 @@ export interface FileRoutesByTo {
   '/muestra/$id': typeof MuestraIdRoute
   '/reportes/produccion-centro': typeof ReportesProduccionCentroRoute
   '/t/$folio': typeof TFolioRoute
+  '/reportes': typeof ReportesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -178,7 +178,6 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/operator-vision': typeof OperatorVisionRoute
   '/produccion': typeof ProduccionRoute
-  '/reportes': typeof ReportesRouteWithChildren
   '/usuarios': typeof UsuariosRoute
   '/variables-calidad': typeof VariablesCalidadRoute
   '/calidad/ajustes': typeof CalidadAjustesRoute
@@ -189,6 +188,7 @@ export interface FileRoutesById {
   '/muestra/$id': typeof MuestraIdRoute
   '/reportes/produccion-centro': typeof ReportesProduccionCentroRoute
   '/t/$folio': typeof TFolioRoute
+  '/reportes/': typeof ReportesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -201,7 +201,6 @@ export interface FileRouteTypes {
     | '/login'
     | '/operator-vision'
     | '/produccion'
-    | '/reportes'
     | '/usuarios'
     | '/variables-calidad'
     | '/calidad/ajustes'
@@ -212,6 +211,7 @@ export interface FileRouteTypes {
     | '/muestra/$id'
     | '/reportes/produccion-centro'
     | '/t/$folio'
+    | '/reportes/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -222,7 +222,6 @@ export interface FileRouteTypes {
     | '/login'
     | '/operator-vision'
     | '/produccion'
-    | '/reportes'
     | '/usuarios'
     | '/variables-calidad'
     | '/calidad/ajustes'
@@ -233,6 +232,7 @@ export interface FileRouteTypes {
     | '/muestra/$id'
     | '/reportes/produccion-centro'
     | '/t/$folio'
+    | '/reportes'
   id:
     | '__root__'
     | '/'
@@ -243,7 +243,6 @@ export interface FileRouteTypes {
     | '/login'
     | '/operator-vision'
     | '/produccion'
-    | '/reportes'
     | '/usuarios'
     | '/variables-calidad'
     | '/calidad/ajustes'
@@ -254,6 +253,7 @@ export interface FileRouteTypes {
     | '/muestra/$id'
     | '/reportes/produccion-centro'
     | '/t/$folio'
+    | '/reportes/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -265,7 +265,6 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   OperatorVisionRoute: typeof OperatorVisionRoute
   ProduccionRoute: typeof ProduccionRoute
-  ReportesRoute: typeof ReportesRouteWithChildren
   UsuariosRoute: typeof UsuariosRoute
   VariablesCalidadRoute: typeof VariablesCalidadRoute
   CalidadAjustesRoute: typeof CalidadAjustesRoute
@@ -275,6 +274,7 @@ export interface RootRouteChildren {
   HistorialMaquinaRoute: typeof HistorialMaquinaRoute
   MuestraIdRoute: typeof MuestraIdRoute
   TFolioRoute: typeof TFolioRoute
+  ReportesIndexRoute: typeof ReportesIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -291,13 +291,6 @@ declare module '@tanstack/react-router' {
       path: '/usuarios'
       fullPath: '/usuarios'
       preLoaderRoute: typeof UsuariosRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/reportes': {
-      id: '/reportes'
-      path: '/reportes'
-      fullPath: '/reportes'
-      preLoaderRoute: typeof ReportesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/produccion': {
@@ -354,6 +347,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reportes/': {
+      id: '/reportes/'
+      path: '/reportes'
+      fullPath: '/reportes/'
+      preLoaderRoute: typeof ReportesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/t/$folio': {
@@ -415,18 +415,6 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface ReportesRouteChildren {
-  ReportesProduccionCentroRoute: typeof ReportesProduccionCentroRoute
-}
-
-const ReportesRouteChildren: ReportesRouteChildren = {
-  ReportesProduccionCentroRoute: ReportesProduccionCentroRoute,
-}
-
-const ReportesRouteWithChildren = ReportesRoute._addFileChildren(
-  ReportesRouteChildren,
-)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuditoriaRoute: AuditoriaRoute,
@@ -436,7 +424,6 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   OperatorVisionRoute: OperatorVisionRoute,
   ProduccionRoute: ProduccionRoute,
-  ReportesRoute: ReportesRouteWithChildren,
   UsuariosRoute: UsuariosRoute,
   VariablesCalidadRoute: VariablesCalidadRoute,
   CalidadAjustesRoute: CalidadAjustesRoute,
@@ -446,7 +433,18 @@ const rootRouteChildren: RootRouteChildren = {
   HistorialMaquinaRoute: HistorialMaquinaRoute,
   MuestraIdRoute: MuestraIdRoute,
   TFolioRoute: TFolioRoute,
+  ReportesIndexRoute: ReportesIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
