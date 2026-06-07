@@ -381,6 +381,10 @@ function ReportesPage() {
           periodo={periodo}
           usuario={auth.profile?.nombre ?? auth.user?.email ?? "—"}
           enabled={!!auth.session?.access_token}
+          rango={rango}
+          setRango={setRango}
+          mesesSel={mesesSel}
+          setMesesSel={setMesesSel}
         />
 
 
