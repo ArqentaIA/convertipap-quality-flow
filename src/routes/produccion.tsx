@@ -15,12 +15,14 @@ import {
   MapPin,
   BarChart3,
   Trophy,
-  Crown,
 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { listMaquinasConEstado } from "@/lib/produccion.functions";
 import { useLabFilter } from "@/lib/lab";
 import { BuscadorRollo } from "@/components/qc/BuscadorRollo";
+import trofeoAsset from "@/assets/trofeo.png.asset.json";
+
+const TROFEO_URL = trofeoAsset.url;
 
 type Rango = "turno" | "dia" | "semana" | "mes" | "año";
 const RANGO_LABEL: Record<Rango, string> = {
@@ -268,14 +270,13 @@ function BarraRanking({ m, idx, maxKg }: { m: MaquinaRow; idx: number; maxKg: nu
               style={{ background: `${color}4d` }}
             />
             <div
-              className="relative flex h-8 w-8 items-center justify-center rounded-full text-white shadow-lg ring-2"
+              className="relative flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-lg ring-2"
               style={{
-                background: `linear-gradient(135deg, ${color}, ${color}b3)`,
                 boxShadow: `0 8px 16px -4px ${color}80`,
                 ['--tw-ring-color' as never]: `${color}99`,
               }}
             >
-              <Crown className="h-4 w-4" fill="currentColor" />
+              <img src={TROFEO_URL} alt="Trofeo #1" className="h-7 w-7 object-contain" />
             </div>
           </div>
         ) : (
@@ -354,10 +355,10 @@ function MaquinaCard({ m, rangoLabel, rank }: { m: MaquinaRow; rangoLabel: strin
             <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-muted-foreground">
               {isLeader ? (
                 <span
-                  className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 font-extrabold text-white shadow-sm"
-                  style={{ background: `linear-gradient(90deg, ${color}, ${color}b3)` }}
+                  className="inline-flex items-center gap-1 rounded-md bg-white px-2 py-0.5 font-extrabold shadow-sm ring-1"
+                  style={{ ['--tw-ring-color' as never]: `${color}80`, color }}
                 >
-                  <Crown className="h-3 w-3" fill="currentColor" /> #1
+                  <img src={TROFEO_URL} alt="" className="h-4 w-4 object-contain" /> #1
                 </span>
               ) : (
                 <span
