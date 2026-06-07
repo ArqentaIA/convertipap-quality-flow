@@ -6,6 +6,7 @@ import { Search, Download, ArrowLeft, Lock, CircleDashed, ClipboardCheck } from 
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useLabFilter, LAB_LABEL } from "@/lib/lab";
 import { listMaquinasConEstado, listRollosMaquina } from "@/lib/produccion.functions";
+import { formatCaptura } from "@/lib/format";
 import { DetalleCalidadModal } from "@/components/qc/DetalleCalidadModal";
 import { BuscadorRollo } from "@/components/qc/BuscadorRollo";
 
@@ -95,10 +96,11 @@ function HistorialPage() {
     : "—";
 
   const exportCsv = () => {
-    const headers = ["Rollo", "Orden", "Fecha/Hora", "Turno", "Producto", "Operador", "Peso kg", "Cumpl %", "Estatus"];
+    const headers = ["N° Captura", "Rollo", "Orden", "Fecha/Hora", "Turno", "Producto", "Operador", "Peso kg", "Cumpl %", "Estatus"];
     const lines = [headers.join(",")];
     filtered.forEach((r) => {
       lines.push([
+        formatCaptura(r.secuenciaCaptura),
         r.rollo,
         r.folioOrden,
         new Date(r.capturadoAt).toLocaleString("es-MX"),
@@ -170,6 +172,7 @@ function HistorialPage() {
             <table className="w-full text-sm">
               <thead className="bg-muted/40 text-left text-[11px] uppercase tracking-wider text-muted-foreground">
                 <tr>
+                  <th className="px-4 py-3">N° Captura</th>
                   <th className="px-4 py-3">Rollo</th>
                   <th className="px-4 py-3">Orden</th>
                   <th className="px-4 py-3">Fecha / Hora</th>
@@ -185,7 +188,7 @@ function HistorialPage() {
               <tbody>
                 {filtered.length === 0 && (
                   <tr>
-                    <td colSpan={10} className="px-4 py-10 text-center text-sm text-muted-foreground">
+                    <td colSpan={11} className="px-4 py-10 text-center text-sm text-muted-foreground">
                       Sin rollos capturados para {maquina.codigo} en el rango "{RANGO_LABEL[rango]}".
                     </td>
                   </tr>
@@ -199,6 +202,7 @@ function HistorialPage() {
                       : "bg-muted text-muted-foreground border-border";
                   return (
                     <tr key={r.muestraId} className="border-t border-border hover:bg-muted/30">
+                      <td className="px-4 py-3 tabular-nums font-mono text-xs text-muted-foreground">{formatCaptura(r.secuenciaCaptura)}</td>
                       <td className="px-4 py-3 font-semibold text-primary">{r.rollo}</td>
                       <td className="px-4 py-3 text-xs text-muted-foreground">{r.folioOrden}</td>
                       <td className="px-4 py-3 tabular-nums text-xs">
