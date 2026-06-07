@@ -160,8 +160,6 @@ export async function exportProduccionXLSX(
         "Tendencia Liberados %": data.foms.kgLiberados.tendenciaPct,
         "Kg No Liberados": data.foms.kgNoLiberados.total,
         "Kg No Liberados %": data.foms.kgNoLiberados.pct,
-        "Costo No Calidad (MXN)": data.foms.costoNoCalidad.total,
-        "Costo (MXN/kg)": data.foms.costoNoCalidad.costoKg,
         "OEE Global %": data.foms.oeeGlobalPct,
         "Cumplimiento Meta %": data.foms.cumplimientoMetaPct ?? DASH,
       }],
@@ -388,8 +386,6 @@ export async function exportProduccionPDF(
     startY: y + 6,
     head: [["FOM", "Valor"]],
     body: [
-      ["Costo No Calidad", fmtMoney(data.foms.costoNoCalidad.total)],
-      ["Costo MXN / kg", fmtMoney(data.foms.costoNoCalidad.costoKg)],
       ["Kg Liberados", `${fmtKg(data.foms.kgLiberados.total)} (${fmtPct(data.foms.kgLiberados.pct)})`],
       ["Kg No Liberados", `${fmtKg(data.foms.kgNoLiberados.total)} (${fmtPct(data.foms.kgNoLiberados.pct)})`],
       ["OEE Global", fmtPct(data.foms.oeeGlobalPct)],
