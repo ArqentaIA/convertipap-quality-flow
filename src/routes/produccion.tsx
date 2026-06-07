@@ -14,6 +14,7 @@ import {
   Calendar,
   MapPin,
   BarChart3,
+  Trophy,
 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { listMaquinasConEstado } from "@/lib/produccion.functions";
@@ -230,8 +231,12 @@ function BarraRanking({ m, idx, maxKg }: { m: MaquinaRow; idx: number; maxKg: nu
   };
   return (
     <div className="flex items-center gap-3">
-      <div className="flex w-10 shrink-0 items-center gap-1.5">
-        <span className="text-[11px] font-bold tabular-nums text-muted-foreground">#{idx + 1}</span>
+      <div className="flex w-10 shrink-0 items-center gap-1">
+        {idx === 0 ? (
+          <Trophy className="h-4 w-4 text-warning" />
+        ) : (
+          <span className="text-[11px] font-bold tabular-nums text-muted-foreground">#{idx + 1}</span>
+        )}
       </div>
       <div className="w-20 shrink-0 text-sm font-bold text-foreground">{m.codigo}</div>
       <div className="relative h-6 flex-1 overflow-hidden rounded-md bg-muted/60">
@@ -258,7 +263,13 @@ function MaquinaCard({ m, rangoLabel, rank }: { m: MaquinaRow; rangoLabel: strin
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
             <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-muted-foreground">
-              <span className="rounded bg-muted px-1.5 py-0.5 font-bold text-foreground">#{rank}</span>
+              {rank === 1 ? (
+                <span className="inline-flex items-center gap-1 rounded bg-warning/15 px-1.5 py-0.5 font-bold text-warning">
+                  <Trophy className="h-3 w-3" /> #1
+                </span>
+              ) : (
+                <span className="rounded bg-muted px-1.5 py-0.5 font-bold text-foreground">#{rank}</span>
+              )}
               <span className="truncate">{m.planta}</span>
             </div>
             <h3 className="mt-1 text-lg font-bold text-foreground">{m.codigo}</h3>
