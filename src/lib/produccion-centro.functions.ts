@@ -107,6 +107,10 @@ export type TablaRow = {
   turno: string;
   producto: string | null;
   peso_kg: number | null;
+  blancura_r457: number | null;
+  blancura_a: number | null;
+  blancura_b: number | null;
+  ancho_util: number | null;
   estado: string;
   estatus_liberacion: string | null;
   dictamen: string | null;
@@ -216,13 +220,24 @@ export const getProduccionCentro = createServerFn({ method: "POST" })
     // Peso real por muestra
     const pesoPorMuestra = new Map<string, number>();
     const ncPorMuestra = new Map<string, number>();
+    const blancuraR457PorMuestra = new Map<string, number>();
+    const blancuraAPorMuestra = new Map<string, number>();
+    const blancuraBPorMuestra = new Map<string, number>();
+    const anchoUtilPorMuestra = new Map<string, number>();
     for (const med of mediciones ?? []) {
-      if (med.variable_clave === "peso" && med.valor != null) {
+      if (med.valor != null) {
         const v = Number(med.valor);
-        if (!Number.isNaN(v)) pesoPorMuestra.set(med.muestra_id, v);
+        if (!Number.isNaN(v)) {
+          if (med.variable_clave === "peso") pesoPorMuestra.set(med.muestra_id, v);
+          else if (med.variable_clave === "blancuraR457") blancuraR457PorMuestra.set(med.muestra_id, v);
+          else if (med.variable_clave === "blancuraA") blancuraAPorMuestra.set(med.muestra_id, v);
+          else if (med.variable_clave === "blancuraB") blancuraBPorMuestra.set(med.muestra_id, v);
+          else if (med.variable_clave === "anchoUtil") anchoUtilPorMuestra.set(med.muestra_id, v);
+        }
       }
       if (med.estado === "no_conforme" || med.estado === "fuera_rango_critico") {
         ncPorMuestra.set(med.muestra_id, (ncPorMuestra.get(med.muestra_id) ?? 0) + 1);
+
       }
     }
 
@@ -547,6 +562,10 @@ export const getProduccionCentro = createServerFn({ method: "POST" })
         turno: m.turno,
         producto: productoById.get(m.producto_id)?.nombre ?? null,
         peso_kg: pesoPorMuestra.get(m.id) ?? null,
+        blancura_r457: blancuraR457PorMuestra.get(m.id) ?? null,
+        blancura_a: blancuraAPorMuestra.get(m.id) ?? null,
+        blancura_b: blancuraBPorMuestra.get(m.id) ?? null,
+        ancho_util: anchoUtilPorMuestra.get(m.id) ?? null,
         estado: m.estado,
         estatus_liberacion: m.estatus_liberacion,
         dictamen: m.dictamen,

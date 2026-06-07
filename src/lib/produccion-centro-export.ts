@@ -180,6 +180,10 @@ export async function exportProduccionXLSX(
         Turno: r.turno,
         Producto: r.producto ?? DASH,
         "Peso (kg)": r.peso_kg ?? DASH,
+        "Blancura R457 (%)": r.blancura_r457 ?? DASH,
+        "a*": r.blancura_a ?? DASH,
+        "b*": r.blancura_b ?? DASH,
+        "Ancho útil (cm)": r.ancho_util ?? DASH,
         Estado: r.estado,
         Dictamen: r.dictamen ?? DASH,
         Analista: r.analista ?? DASH,
@@ -419,7 +423,7 @@ export async function exportProduccionPDF(
   doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(20, 20, 30);
   doc.text(`Tabla Detallada (${tablaFiltrada.length} registros)`, M, y);
   if (tablaFiltrada.length) {
-    const head = [["N° Captura", "N° Rollo", "Fecha", "Máquina", "Turno", "Producto", "Peso (kg)", "Estado"]];
+    const head = [["N° Captura", "N° Rollo", "Fecha", "Máquina", "Turno", "Producto", "Peso (kg)", "R457 (%)", "a*", "b*", "Ancho (cm)", "Estado"]];
     const body = tablaFiltrada.map((r) => [
       formatCaptura(r.secuencia_captura),
       r.numero_rollo,
@@ -428,12 +432,16 @@ export async function exportProduccionPDF(
       r.turno,
       r.producto ?? DASH,
       r.peso_kg != null ? fmt2.format(r.peso_kg) : DASH,
+      r.blancura_r457 != null ? fmt2.format(r.blancura_r457) : DASH,
+      r.blancura_a != null ? fmt2.format(r.blancura_a) : DASH,
+      r.blancura_b != null ? fmt2.format(r.blancura_b) : DASH,
+      r.ancho_util != null ? fmt2.format(r.ancho_util) : DASH,
       r.dictamen ?? r.estado,
     ]);
     autoTable(doc, {
       startY: y + 6, head, body,
       headStyles: { fillColor: [30, 41, 59], textColor: 255 },
-      styles: { fontSize: 8, cellPadding: 3 },
+      styles: { fontSize: 7, cellPadding: 2 },
     });
   } else {
     doc.setFont("helvetica", "italic"); doc.setFontSize(9); doc.setTextColor(130);
