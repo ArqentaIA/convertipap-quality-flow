@@ -154,7 +154,13 @@ function ProduccionPage() {
             {/* Tarjetas de máquina */}
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
               {ranking.map((m, idx) => (
-                <MaquinaCard key={m.id} m={m} rangoLabel={RANGO_LABEL[rango]} rank={idx + 1} />
+                <MaquinaCard
+                  key={m.id}
+                  m={m}
+                  rangoLabel={RANGO_LABEL[rango]}
+                  rank={idx + 1}
+                  canAccess={labFilter.isMachineAllowed(m.codigo)}
+                />
               ))}
             </div>
           </>
