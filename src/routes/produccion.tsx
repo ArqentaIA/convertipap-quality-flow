@@ -57,11 +57,9 @@ function ProduccionPage() {
     refetchInterval: 60_000,
   });
 
-  // Capturistas solo ven las máquinas de su laboratorio asignado.
-  const maquinas = useMemo(
-    () => all.filter((m) => labFilter.isMachineAllowed(m.codigo)),
-    [all, labFilter],
-  );
+  // Todos los roles ven las estadísticas de todas las máquinas.
+  // El acceso al detalle de rollos se restringe por máquina en MaquinaCard.
+  const maquinas = all;
 
   // Ranking: orden descendente por kg, sin producción al final
   const ranking = useMemo(() => {
@@ -156,7 +154,13 @@ function ProduccionPage() {
             {/* Tarjetas de máquina */}
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
               {ranking.map((m, idx) => (
-                <MaquinaCard key={m.id} m={m} rangoLabel={RANGO_LABEL[rango]} rank={idx + 1} />
+                <MaquinaCard
+                  key={m.id}
+                  m={m}
+                  rangoLabel={RANGO_LABEL[rango]}
+                  rank={idx + 1}
+                  canAccess={labFilter.isMachineAllowed(m.codigo)}
+                />
               ))}
             </div>
           </>
@@ -323,10 +327,54 @@ function BarraRanking({ m, idx, maxKg }: { m: MaquinaRow; idx: number; maxKg: nu
   );
 }
 
-function MaquinaCard({ m, rangoLabel, rank }: { m: MaquinaRow; rangoLabel: string; rank: number }) {
+function MaquinaCard({
+  m,
+  rangoLabel,
+  rank,
+  canAccess,
+}: {
+  m: MaquinaRow;
+  rangoLabel: string;
+  rank: number;
+  canAccess: boolean;
+}) {
   const ev = estadoVisual(m);
   const isLeader = rank === 1 && m.kgTurno > 0;
   const color = maquinaColor(m.codigo);
+  const inner = (
+    <>
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-muted-foreground">
+            {isLeader ? (
+              <span
+                className="inline-flex items-center gap-1 rounded-md bg-white px-2 py-0.5 font-extrabold shadow-sm ring-1"
+                style={{ ['--tw-ring-color' as never]: `${color}80`, color }}
+              >
+                <img src={TROFEO_URL} alt="" className="h-4 w-4 object-contain" /> #1
+              </span>
+            ) : (
+              <span
+                className="rounded px-1.5 py-0.5 font-bold text-white"
+                style={{ background: color }}
+              >
+                #{rank}
+              </span>
+            )}
+            <span className="truncate">{m.planta}</span>
+          </div>
+          <h3 className="mt-1 text-lg font-bold" style={{ color }}>{m.codigo}</h3>
+        </div>
+        <EstadoChip estado={ev} />
+      </div>
+
+      <div className="mt-4 grid grid-cols-3 gap-2 border-t border-border pt-3 text-center">
+        <Mini label="kg" value={fmtNum(m.kgTurno)} accent />
+        <Mini label="Rollos" value={String(m.rollosTurno)} />
+        <Mini label={`OEE ${rangoLabel}`} value={`${m.oee.toFixed(1)}%`} />
+      </div>
+    </>
+  );
   return (
     <div
       className="relative overflow-hidden rounded-xl border border-border bg-card p-5 shadow-sm transition hover:shadow-md"
@@ -351,38 +399,22 @@ function MaquinaCard({ m, rangoLabel, rank }: { m: MaquinaRow; rangoLabel: strin
           />
         </>
       )}
-      <Link to="/historial/$maquina" params={{ maquina: m.codigo }} className="block">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-muted-foreground">
-              {isLeader ? (
-                <span
-                  className="inline-flex items-center gap-1 rounded-md bg-white px-2 py-0.5 font-extrabold shadow-sm ring-1"
-                  style={{ ['--tw-ring-color' as never]: `${color}80`, color }}
-                >
-                  <img src={TROFEO_URL} alt="" className="h-4 w-4 object-contain" /> #1
-                </span>
-              ) : (
-                <span
-                  className="rounded px-1.5 py-0.5 font-bold text-white"
-                  style={{ background: color }}
-                >
-                  #{rank}
-                </span>
-              )}
-              <span className="truncate">{m.planta}</span>
-            </div>
-            <h3 className="mt-1 text-lg font-bold" style={{ color }}>{m.codigo}</h3>
+      {canAccess ? (
+        <Link to="/historial/$maquina" params={{ maquina: m.codigo }} className="block">
+          {inner}
+        </Link>
+      ) : (
+        <div
+          className="block cursor-not-allowed opacity-95"
+          title="Solo el laboratorio asignado puede ver el detalle de rollos"
+          aria-disabled="true"
+        >
+          {inner}
+          <div className="mt-3 rounded-md border border-dashed border-border bg-muted/40 px-2 py-1 text-center text-[10px] uppercase tracking-wider text-muted-foreground">
+            Detalle restringido a su laboratorio
           </div>
-          <EstadoChip estado={ev} />
         </div>
-
-        <div className="mt-4 grid grid-cols-3 gap-2 border-t border-border pt-3 text-center">
-          <Mini label="kg" value={fmtNum(m.kgTurno)} accent />
-          <Mini label="Rollos" value={String(m.rollosTurno)} />
-          <Mini label={`OEE ${rangoLabel}`} value={`${m.oee.toFixed(1)}%`} />
-        </div>
-      </Link>
+      )}
 
       {m.paroActivo && (
         <div className="mt-4 rounded-lg border border-destructive/40 bg-destructive/5 p-3">
