@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { SessionGate } from "@/components/SessionGate";
-import { FileBarChart2, Download, FileSpreadsheet, TrendingUp, TrendingDown, CalendarRange, Activity } from "lucide-react";
+import { FileBarChart2, Download, FileSpreadsheet, TrendingUp, TrendingDown, CalendarRange } from "lucide-react";
 import logoUrl from "@/assets/logo-convertipap.png";
 import { RangoSelector, MESES, rangoLabel, rangoToFreq, type Rango } from "@/components/qc/RangoSelector";
 import { useLabFilter, LAB_LABEL } from "@/lib/lab";
@@ -538,9 +538,6 @@ function ReporteProduccionItem(props: {
     <div className="rounded-xl border-2 border-primary/30 bg-gradient-to-r from-primary/5 to-transparent p-5 shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex items-start gap-3">
-          <div className="rounded-lg bg-primary/15 p-3">
-            <Activity className="h-5 w-5 text-primary" />
-      </div>
 
       <div className="mt-4 flex flex-col gap-2 rounded-lg border border-border bg-background/50 p-3">
         <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Agrupar reporte por</label>
