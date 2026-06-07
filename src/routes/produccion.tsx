@@ -231,8 +231,12 @@ function BarraRanking({ m, idx, maxKg }: { m: MaquinaRow; idx: number; maxKg: nu
   };
   return (
     <div className="flex items-center gap-3">
-      <div className="flex w-10 shrink-0 items-center gap-1.5">
-        <span className="text-[11px] font-bold tabular-nums text-muted-foreground">#{idx + 1}</span>
+      <div className="flex w-10 shrink-0 items-center gap-1">
+        {idx === 0 ? (
+          <Trophy className="h-4 w-4 text-warning" />
+        ) : (
+          <span className="text-[11px] font-bold tabular-nums text-muted-foreground">#{idx + 1}</span>
+        )}
       </div>
       <div className="w-20 shrink-0 text-sm font-bold text-foreground">{m.codigo}</div>
       <div className="relative h-6 flex-1 overflow-hidden rounded-md bg-muted/60">
