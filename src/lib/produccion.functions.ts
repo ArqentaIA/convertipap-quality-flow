@@ -496,19 +496,36 @@ export const cancelarOrden = createServerFn({ method: "POST" })
  * Lista todas las máquinas con su estado actual, orden activa, paro abierto
  * y métricas del turno actual (rollos, OEE estimado).
  */
-const rangoEnum = z.enum(["dia", "semana", "mes", "año", "todo"]).default("dia");
+const rangoEnum = z.enum(["turno", "dia", "semana", "mes", "año", "todo"]).default("turno");
 
-function rangoToDesde(r: "dia" | "semana" | "mes" | "año" | "todo"): string | null {
-  const now = Date.now();
+function rangoToDesde(r: "turno" | "dia" | "semana" | "mes" | "año" | "todo"): string | null {
+  const now = new Date();
   const H = 3600_000;
   switch (r) {
-    case "dia": return new Date(now - 24 * H).toISOString();
-    case "semana": return new Date(now - 7 * 24 * H).toISOString();
-    case "mes": return new Date(now - 30 * 24 * H).toISOString();
-    case "año": return new Date(now - 365 * 24 * H).toISOString();
+    case "turno": {
+      // Turnos estándar: 06-14, 14-22, 22-06
+      const h = now.getHours();
+      const start = new Date(now);
+      start.setMinutes(0, 0, 0);
+      if (h >= 6 && h < 14) start.setHours(6);
+      else if (h >= 14 && h < 22) start.setHours(14);
+      else {
+        // 22-06: si es 0-5, el turno comenzó ayer a las 22
+        if (h < 6) {
+          start.setDate(start.getDate() - 1);
+        }
+        start.setHours(22);
+      }
+      return start.toISOString();
+    }
+    case "dia": return new Date(now.getTime() - 24 * H).toISOString();
+    case "semana": return new Date(now.getTime() - 7 * 24 * H).toISOString();
+    case "mes": return new Date(now.getTime() - 30 * 24 * H).toISOString();
+    case "año": return new Date(now.getTime() - 365 * 24 * H).toISOString();
     default: return null;
   }
 }
+
 
 const maquinasInputSchema = z.object({ rango: rangoEnum.optional() }).optional();
 
@@ -529,7 +546,9 @@ export const listMaquinasConEstado = createServerFn({ method: "GET" })
     const ids = (maquinas ?? []).map((m) => m.id);
     if (ids.length === 0) return [];
 
-    const desde24h = rangoToDesde(rango) ?? new Date(Date.now() - 24 * 3600_000).toISOString();
+    const rangoNorm = rango === "turno" ? "turno" : rango;
+    const desde24h = rangoToDesde(rangoNorm) ?? new Date(Date.now() - 24 * 3600_000).toISOString();
+
     const [
       { data: estados },
       { data: ordenes },

@@ -1,15 +1,33 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
-import { Factory, Gauge, Clock, Pause, Play, AlertTriangle, AlertOctagon, CircleDashed } from "lucide-react";
+import { useMemo, useState } from "react";
+import {
+  Factory,
+  Gauge,
+  Package,
+  AlertTriangle,
+  AlertOctagon,
+  CircleDashed,
+  Activity,
+  RefreshCw,
+  Calendar,
+  MapPin,
+  BarChart3,
+} from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { listMaquinasConEstado } from "@/lib/produccion.functions";
 import { useLabFilter } from "@/lib/lab";
 import { BuscadorRollo } from "@/components/qc/BuscadorRollo";
 
-type Rango = "dia" | "semana" | "mes" | "año";
-const RANGO_LABEL: Record<Rango, string> = { dia: "Día", semana: "Semana", mes: "Mes", año: "Año" };
+type Rango = "turno" | "dia" | "semana" | "mes" | "año";
+const RANGO_LABEL: Record<Rango, string> = {
+  turno: "Turno",
+  dia: "Día",
+  semana: "Semana",
+  mes: "Mes",
+  año: "Año",
+};
 
 export const Route = createFileRoute("/produccion")({
   component: ProduccionPage,
@@ -26,65 +44,139 @@ type MaquinaRow = Awaited<ReturnType<typeof listMaquinasConEstado>>[number];
 
 function ProduccionPage() {
   const labFilter = useLabFilter();
-  const [rango, setRango] = useState<Rango>("dia");
+  const [rango, setRango] = useState<Rango>("turno");
   const listFn = useServerFn(listMaquinasConEstado);
-  const { data: all = [], isFetching } = useQuery({
+  const { data: all = [], isFetching, dataUpdatedAt } = useQuery({
     queryKey: ["produccion", "maquinas", rango],
     queryFn: () => listFn({ data: { rango } }),
     refetchInterval: 60_000,
   });
-  const maquinas = all.filter((m) => labFilter.isMachineIdAllowed(m.id));
 
+  const maquinas = useMemo(
+    () => all.filter((m) => labFilter.isMachineIdAllowed(m.id)),
+    [all, labFilter],
+  );
+
+  // Ranking: orden descendente por kg, sin producción al final
+  const ranking = useMemo(() => {
+    const copy = [...maquinas];
+    copy.sort((a, b) => {
+      if (a.kgTurno === 0 && b.kgTurno > 0) return 1;
+      if (b.kgTurno === 0 && a.kgTurno > 0) return -1;
+      return b.kgTurno - a.kgTurno;
+    });
+    return copy;
+  }, [maquinas]);
+
+  const kgTotal = maquinas.reduce((s, m) => s + m.kgTurno, 0);
+  const rollosTotal = maquinas.reduce((s, m) => s + m.rollosTurno, 0);
   const activos = maquinas.filter((m) => m.estado === "operando").length;
+  const enParo = maquinas.filter((m) => m.estado === "paro").length;
   const oeeProm = maquinas.length
     ? (maquinas.reduce((s, m) => s + m.oee, 0) / maquinas.length).toFixed(1)
     : "—";
-  const rollos = maquinas.reduce((s, m) => s + m.rollosTurno, 0);
-  const enParo = maquinas.filter((m) => m.estado === "paro").length;
+  const maxKg = ranking[0]?.kgTurno ?? 0;
+
+  const plantaLabel =
+    maquinas.find((m) => m.planta && m.planta !== "—")?.planta ?? "Todas las plantas";
+
+  const hora = new Date(dataUpdatedAt || Date.now()).toLocaleTimeString("es-MX", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+  const fecha = new Date().toLocaleDateString("es-MX", {
+    weekday: "long",
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
 
   return (
     <AppLayout title="Producción · Estado de máquinas">
-      <div className="space-y-6">
+      <div className="space-y-5">
+        {/* Filtros + búsqueda */}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <RangoTabs rango={rango} setRango={setRango} />
-          <div className="flex items-center gap-3">
-            <BuscadorRollo />
-            <div className="text-xs text-muted-foreground">
-              Datos en tiempo real · refresco 60s {isFetching && <span className="ml-1 animate-pulse">●</span>}
-            </div>
-          </div>
+          <BuscadorRollo />
         </div>
 
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        {/* Banda informativa de contexto */}
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-2.5 text-xs">
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5">
+            <span className="inline-flex items-center gap-1.5 font-semibold uppercase tracking-wider text-primary">
+              <MapPin className="h-3.5 w-3.5" /> {plantaLabel}
+            </span>
+            <span className="inline-flex items-center gap-1.5 font-semibold uppercase tracking-wider text-foreground">
+              <Activity className="h-3.5 w-3.5" /> Visualizando: {RANGO_LABEL[rango]}
+            </span>
+            <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+              <Calendar className="h-3.5 w-3.5" /> {fecha}
+            </span>
+          </div>
+          <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+            <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? "animate-spin text-primary" : ""}`} />
+            Actualización automática cada 60s · última {hora}
+          </span>
+        </div>
+
+        {/* KPIs ejecutivos */}
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+          <KPI icon={Package} label="Producción total (kg)" value={fmtNum(kgTotal)} tone="primary" />
+          <KPI icon={BarChart3} label="Rollos producidos" value={fmtNum(rollosTotal)} />
+          <KPI icon={Gauge} label="OEE global" value={`${oeeProm}${oeeProm === "—" ? "" : "%"}`} tone="success" />
           <KPI icon={Factory} label="Máquinas activas" value={`${activos} / ${maquinas.length}`} tone="primary" />
-          <KPI icon={Gauge} label={`OEE promedio (${RANGO_LABEL[rango]})`} value={`${oeeProm}${oeeProm === "—" ? "" : "%"}`} tone="success" />
-          <KPI icon={Clock} label={`Rollos (${RANGO_LABEL[rango]})`} value={String(rollos)} />
-          <KPI icon={AlertTriangle} label="En paro" value={String(enParo)} tone={enParo > 0 ? "warning" : "default"} />
+          <KPI icon={AlertTriangle} label="Máquinas en paro" value={String(enParo)} tone={enParo > 0 ? "warning" : "default"} />
         </div>
 
         {maquinas.length === 0 ? (
           <EmptyState />
         ) : (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {maquinas.map((m) => (
-              <MaquinaCard key={m.id} m={m} rangoLabel={RANGO_LABEL[rango]} />
-            ))}
-          </div>
+          <>
+            {/* Comparativo de producción */}
+            <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+              <div className="mb-4 flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-bold uppercase tracking-wider text-foreground">
+                    Comparativo de producción · {RANGO_LABEL[rango]}
+                  </h3>
+                  <p className="text-xs text-muted-foreground">Kg producidos por máquina · ranking de desempeño</p>
+                </div>
+                <BarChart3 className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <div className="space-y-2.5">
+                {ranking.map((m, idx) => (
+                  <BarraRanking key={m.id} m={m} idx={idx} maxKg={maxKg} />
+                ))}
+              </div>
+            </div>
+
+            {/* Tarjetas de máquina */}
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+              {ranking.map((m, idx) => (
+                <MaquinaCard key={m.id} m={m} rangoLabel={RANGO_LABEL[rango]} rank={idx + 1} />
+              ))}
+            </div>
+          </>
         )}
       </div>
     </AppLayout>
   );
 }
 
+function fmtNum(n: number): string {
+  return new Intl.NumberFormat("es-MX", { maximumFractionDigits: 0 }).format(n);
+}
+
 function RangoTabs({ rango, setRango }: { rango: Rango; setRango: (r: Rango) => void }) {
-  const opts: Rango[] = ["dia", "semana", "mes", "año"];
+  const opts: Rango[] = ["turno", "dia", "semana", "mes", "año"];
   return (
     <div className="inline-flex rounded-lg border border-border bg-background p-1 shadow-sm">
       {opts.map((r) => (
         <button
           key={r}
           onClick={() => setRango(r)}
-          className={`rounded-md px-3 py-1.5 text-xs font-semibold transition ${
+          className={`rounded-md px-3 py-1.5 text-xs font-semibold uppercase tracking-wide transition ${
             rango === r ? "bg-primary text-primary-foreground shadow" : "text-muted-foreground hover:text-foreground"
           }`}
         >
@@ -105,24 +197,83 @@ function EmptyState() {
   );
 }
 
-function MaquinaCard({ m, rangoLabel }: { m: MaquinaRow; rangoLabel: string }) {
+type EstadoVisual = "produciendo" | "espera" | "paro" | "sin_produccion";
+
+function estadoVisual(m: MaquinaRow): EstadoVisual {
+  if (m.estado === "paro") return "paro";
+  if (m.estado === "operando") return "produciendo";
+  if (m.kgTurno === 0 && m.rollosTurno === 0) return "sin_produccion";
+  return "espera";
+}
+
+const ESTADO_MAP: Record<EstadoVisual, { dot: string; cls: string; txt: string }> = {
+  produciendo: { dot: "bg-success", cls: "bg-success/10 text-success border-success/30", txt: "Produciendo" },
+  espera:      { dot: "bg-warning", cls: "bg-warning/15 text-foreground border-warning/40", txt: "Espera" },
+  paro:        { dot: "bg-destructive", cls: "bg-destructive/10 text-destructive border-destructive/30", txt: "Paro" },
+  sin_produccion: { dot: "bg-muted-foreground/50", cls: "bg-muted text-muted-foreground border-border", txt: "Sin producción" },
+};
+
+function EstadoChip({ estado }: { estado: EstadoVisual }) {
+  const { cls, dot, txt } = ESTADO_MAP[estado];
+  return (
+    <span className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${cls}`}>
+      <span className={`h-2 w-2 rounded-full ${dot}`} />
+      {txt}
+    </span>
+  );
+}
+
+function BarraRanking({ m, idx, maxKg }: { m: MaquinaRow; idx: number; maxKg: number }) {
+  const ev = estadoVisual(m);
+  const pct = maxKg > 0 ? Math.max(2, (m.kgTurno / maxKg) * 100) : 0;
+  const colorMap: Record<EstadoVisual, string> = {
+    produciendo: "bg-success",
+    espera: "bg-warning",
+    paro: "bg-destructive",
+    sin_produccion: "bg-muted-foreground/40",
+  };
+  return (
+    <div className="flex items-center gap-3">
+      <div className="flex w-10 shrink-0 items-center gap-1.5">
+        <span className="text-[11px] font-bold tabular-nums text-muted-foreground">#{idx + 1}</span>
+      </div>
+      <div className="w-20 shrink-0 text-sm font-bold text-foreground">{m.codigo}</div>
+      <div className="relative h-6 flex-1 overflow-hidden rounded-md bg-muted/60">
+        <div
+          className={`h-full rounded-md ${colorMap[ev]} transition-all`}
+          style={{ width: m.kgTurno > 0 ? `${pct}%` : "0%" }}
+        />
+        <span className="absolute inset-y-0 left-2 flex items-center text-[11px] font-semibold text-foreground">
+          {fmtNum(m.kgTurno)} kg · {m.rollosTurno} rollos
+        </span>
+      </div>
+      <div className="w-28 shrink-0 text-right">
+        <EstadoChip estado={ev} />
+      </div>
+    </div>
+  );
+}
+
+function MaquinaCard({ m, rangoLabel, rank }: { m: MaquinaRow; rangoLabel: string; rank: number }) {
+  const ev = estadoVisual(m);
   return (
     <div className="rounded-xl border border-border bg-card p-5 shadow-sm transition hover:shadow-md hover:border-primary/40">
       <Link to="/historial/$maquina" params={{ maquina: m.codigo }} className="block">
-        <div className="flex items-start justify-between">
-          <div>
-            <div className="text-xs uppercase tracking-wider text-muted-foreground">{m.planta}</div>
-            <div className="flex items-baseline gap-2">
-              <h3 className="text-lg font-bold text-foreground">{m.codigo}</h3>
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-muted-foreground">
+              <span className="rounded bg-muted px-1.5 py-0.5 font-bold text-foreground">#{rank}</span>
+              <span className="truncate">{m.planta}</span>
             </div>
+            <h3 className="mt-1 text-lg font-bold text-foreground">{m.codigo}</h3>
           </div>
-          <EstadoChip estado={m.estado} />
+          <EstadoChip estado={ev} />
         </div>
 
         <div className="mt-4 grid grid-cols-3 gap-2 border-t border-border pt-3 text-center">
-          <Mini label={`OEE ${rangoLabel}`} value={`${m.oee.toFixed(1)}%`} />
+          <Mini label="kg" value={fmtNum(m.kgTurno)} accent />
           <Mini label="Rollos" value={String(m.rollosTurno)} />
-          <Mini label="kg" value={m.kgTurno.toFixed(0)} />
+          <Mini label={`OEE ${rangoLabel}`} value={`${m.oee.toFixed(1)}%`} />
         </div>
       </Link>
 
@@ -144,23 +295,17 @@ function MaquinaCard({ m, rangoLabel }: { m: MaquinaRow; rangoLabel: string }) {
   );
 }
 
-
-function EstadoChip({ estado }: { estado: MaquinaRow["estado"] }) {
-  const map = {
-    operando: { cls: "bg-success/15 text-success border-success/30", icon: Play, txt: "Operando" },
-    mantenimiento: { cls: "bg-warning/20 text-foreground border-warning/40", icon: Clock, txt: "Mantenimiento" },
-    paro: { cls: "bg-destructive/15 text-destructive border-destructive/30", icon: Pause, txt: "Paro" },
-    libre: { cls: "bg-muted text-muted-foreground border-border", icon: CircleDashed, txt: "Libre" },
-  } as const;
-  const { cls, icon: Icon, txt } = map[estado];
-  return (
-    <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${cls}`}>
-      <Icon className="h-3 w-3" /> {txt}
-    </span>
-  );
-}
-
-function KPI({ icon: Icon, label, value, tone = "default" }: { icon: React.ComponentType<{ className?: string }>; label: string; value: string; tone?: "default" | "primary" | "success" | "warning" }) {
+function KPI({
+  icon: Icon,
+  label,
+  value,
+  tone = "default",
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: string;
+  tone?: "default" | "primary" | "success" | "warning";
+}) {
   const tones: Record<string, string> = {
     default: "bg-muted text-foreground",
     primary: "bg-primary/10 text-primary",
@@ -168,23 +313,23 @@ function KPI({ icon: Icon, label, value, tone = "default" }: { icon: React.Compo
     warning: "bg-warning/20 text-foreground",
   };
   return (
-    <div className="flex items-center gap-4 rounded-xl border border-border bg-card p-4 shadow-sm">
-      <div className={`flex h-12 w-12 items-center justify-center rounded-lg ${tones[tone]}`}>
+    <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-4 shadow-sm">
+      <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg ${tones[tone]}`}>
         <Icon className="h-5 w-5" />
       </div>
-      <div>
-        <div className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}</div>
+      <div className="min-w-0">
+        <div className="truncate text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
         <div className="text-xl font-bold text-foreground tabular-nums">{value}</div>
       </div>
     </div>
   );
 }
 
-function Mini({ label, value }: { label: string; value: string }) {
+function Mini({ label, value, accent = false }: { label: string; value: string; accent?: boolean }) {
   return (
     <div>
       <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
-      <div className="text-sm font-semibold text-foreground tabular-nums">{value}</div>
+      <div className={`text-sm font-semibold tabular-nums ${accent ? "text-primary" : "text-foreground"}`}>{value}</div>
     </div>
   );
 }
