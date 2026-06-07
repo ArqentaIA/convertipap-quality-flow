@@ -51,6 +51,26 @@ export function filtrarTabla(rows: TablaRow[], f: ReporteProdFiltros): TablaRow[
   });
 }
 
+export function hayFiltros(f: ReporteProdFiltros): boolean {
+  return !!(f.turno || f.maquina || f.producto || f.estado);
+}
+
+export function metricsFromRows(rows: TablaRow[]) {
+  let rollos = 0, kgTotal = 0, kgLib = 0, kgNoLib = 0, lib = 0, rech = 0;
+  for (const r of rows) {
+    rollos++;
+    const peso = r.peso_kg ?? 0;
+    kgTotal += peso;
+    const isLib = r.dictamen === "liberada" || r.estatus_liberacion === "L";
+    const isRech = r.dictamen === "rechazada" || r.estatus_liberacion === "NC";
+    if (isLib) { kgLib += peso; lib++; }
+    else if (isRech) { kgNoLib += peso; rech++; }
+  }
+  const calidadPct = rollos > 0 ? (lib / rollos) * 100 : null;
+  const liberacionPct = kgTotal > 0 ? (kgLib / kgTotal) * 100 : null;
+  return { rollos, kgTotal, kgLib, kgNoLib, lib, rech, calidadPct, liberacionPct };
+}
+
 function stamp() {
   return new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
 }
