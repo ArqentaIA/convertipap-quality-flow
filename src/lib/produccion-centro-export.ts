@@ -117,6 +117,7 @@ export async function exportProduccionXLSX(
         "Filtros": filtrosTxt,
         "Impresión": new Date().toLocaleString("es-MX"),
         "Rollos Producidos": data.kpis.rollosProducidos,
+        "Total de Rollos": (data.maquinas?.reduce((s, m) => s + (m.rollos || 0), 0)) || data.kpis.rollosProducidos,
         "Kg Producidos": data.kpis.kgProducidos,
         "Meta (kg)": data.kpis.meta ?? DASH,
         "Cumplimiento %": data.kpis.cumplimientoPct ?? DASH,
