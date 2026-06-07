@@ -737,7 +737,9 @@ export async function exportProduccionPDF(
 
   if (y > pageH - 180) { doc.addPage(); y = M; }
   doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(20, 20, 30);
-  doc.text(`Tabla Detallada (${tablaFiltrada.length} registros)`, M, y);
+  doc.text(`11. Tabla Detallada de Rollos (${tablaFiltrada.length} registros)`, M, y);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(120);
+  doc.text("Listado completo de todos los rollos capturados en el periodo seleccionado.", M, y + 12);
   if (tablaFiltrada.length) {
     const head = [["N° Captura", "N° Rollo", "Fecha", "Máquina", "Turno", "Producto", "Peso (kg)", "R457 (%)", "a*", "b*", "Ancho (cm)", "Estado"]];
     const body = tablaFiltrada.map((r) => [
@@ -755,14 +757,44 @@ export async function exportProduccionPDF(
       r.dictamen ?? r.estado,
     ]);
     autoTable(doc, {
-      startY: y + 6, head, body,
+      startY: y + 18, head, body,
       headStyles: { fillColor: [30, 41, 59], textColor: 255 },
       styles: { fontSize: 7, cellPadding: 2 },
     });
+    y = (doc as unknown as DocWithTable).lastAutoTable.finalY + 14;
   } else {
     doc.setFont("helvetica", "italic"); doc.setFontSize(9); doc.setTextColor(130);
-    doc.text(SIN_DATOS, M, y + 16);
+    doc.text(SIN_DATOS, M, y + 22);
+    y += 36;
   }
+
+  // ─────────── Glosario de términos ───────────
+  if (y > pageH - 220) { doc.addPage(); y = M; }
+  doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(20, 20, 30);
+  doc.text("12. Glosario de Términos", M, y);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(120);
+  doc.text("Definiciones de las siglas y términos técnicos utilizados en este reporte.", M, y + 12);
+  autoTable(doc, {
+    startY: y + 18,
+    head: [["Término", "Definición"]],
+    body: [
+      ["KPI", "Key Performance Indicator — Indicador clave de desempeño."],
+      ["OEE", "Overall Equipment Effectiveness — Eficiencia general del equipo (Disponibilidad × Rendimiento × Calidad)."],
+      ["FOM", "Figure of Merit — Métrica representativa de la salud productiva."],
+      ["Kg Liberados", "Producto aprobado por Calidad y disponible para uso o venta."],
+      ["Kg No Liberados", "Producto rechazado, retenido o pendiente por incumplir especificación."],
+      ["Cumplimiento", "Porcentaje del objetivo alcanzado = (Real ÷ Meta) × 100."],
+      ["Disponibilidad", "Porcentaje del tiempo en que el equipo estuvo operativo."],
+      ["R457", "Índice de blancura ISO medido a 457 nm."],
+      ["a*, b*", "Coordenadas de color CIELAB (a* rojo/verde, b* amarillo/azul)."],
+      ["Dictamen", "Resolución de calidad: liberada, rechazada o pendiente."],
+      ["—", "Dato no disponible o no aplica en este periodo."],
+    ],
+    headStyles: { fillColor: [60, 80, 140], textColor: 255 },
+    styles: { fontSize: 8.5, cellPadding: 3 },
+    columnStyles: { 0: { fontStyle: "bold", cellWidth: 80 } },
+  });
+
 
   // Pie con paginación
   const total = doc.getNumberOfPages();
