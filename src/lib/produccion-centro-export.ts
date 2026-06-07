@@ -338,7 +338,10 @@ export async function exportProduccionPDF(
   doc.setFont("helvetica", "bold");
   doc.setFontSize(11);
   doc.setTextColor(20, 20, 30);
-  doc.text("Último Rollo Capturado", M, y);
+  doc.text("1. Último Rollo Capturado", M, y);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(120);
+  doc.text("Detalle del rollo más reciente registrado en el sistema.", M, y + 12);
+  y += 14;
   if (data.ultimoRollo) {
     const u = data.ultimoRollo;
     autoTable(doc, {
