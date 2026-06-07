@@ -192,24 +192,40 @@ export async function exportProduccionXLSX(
     },
     {
       name: "Radar Salud Operativa",
-      rows: [
-        { Variable: "Producción", "Valor %": data.kpis.cumplimientoPct ?? data.foms.cumplimientoMetaPct ?? DASH },
-        { Variable: "Calidad", "Valor %": data.kpis.calidadLiberadaPct },
-        { Variable: "OEE", "Valor %": data.kpis.oeeGlobalPct },
-        { Variable: "Liberación", "Valor %": data.foms.kgLiberados.pct },
-        { Variable: "Cumplimiento", "Valor %": data.foms.cumplimientoMetaPct ?? data.kpis.cumplimientoPct ?? DASH },
-        { Variable: "Disponibilidad", "Valor %": data.kpis.disponibilidadPct },
-      ],
+      rows: (() => {
+        const filtrosActivos = hayFiltros(ctx.filtros);
+        const mFilt = metricsFromRows(tablaFiltrada);
+        const mTotal = metricsFromRows(data.tabla);
+        const produccion = filtrosActivos
+          ? (mTotal.kgTotal > 0 ? (mFilt.kgTotal / mTotal.kgTotal) * 100 : DASH)
+          : (data.kpis.cumplimientoPct ?? data.foms.cumplimientoMetaPct ?? DASH);
+        const calidad = filtrosActivos ? (mFilt.calidadPct ?? DASH) : data.kpis.calidadLiberadaPct;
+        const liberacion = filtrosActivos ? (mFilt.liberacionPct ?? DASH) : data.foms.kgLiberados.pct;
+        const cumplimiento = filtrosActivos ? DASH : (data.foms.cumplimientoMetaPct ?? data.kpis.cumplimientoPct ?? DASH);
+        return [
+          { Variable: filtrosActivos ? "Participación" : "Producción", "Valor %": produccion },
+          { Variable: "Calidad", "Valor %": calidad },
+          { Variable: "OEE", "Valor %": data.kpis.oeeGlobalPct },
+          { Variable: "Liberación", "Valor %": liberacion },
+          { Variable: "Cumplimiento", "Valor %": cumplimiento },
+          { Variable: "Disponibilidad", "Valor %": data.kpis.disponibilidadPct },
+        ];
+      })(),
     },
     {
       name: "Waterfall Operativo",
       rows: (() => {
+        const filtrosActivos = hayFiltros(ctx.filtros);
+        const mFilt = metricsFromRows(tablaFiltrada);
+        const kgTotal = filtrosActivos ? mFilt.kgTotal : data.kpis.kgProducidos;
+        const kgNoLib = filtrosActivos ? mFilt.kgNoLib : data.foms.kgNoLiberados.total;
+        const kgLib = filtrosActivos ? mFilt.kgLib : data.foms.kgLiberados.total;
         const base: Record<string, unknown>[] = [
-          { Etapa: "Producción Total (kg)", Valor: data.kpis.kgProducidos },
-          { Etapa: "Kg No Liberados", Valor: -data.foms.kgNoLiberados.total },
-          { Etapa: "Kg Liberados", Valor: data.foms.kgLiberados.total },
+          { Etapa: "Producción Total (kg)", Valor: kgTotal },
+          { Etapa: "Kg No Liberados", Valor: -kgNoLib },
+          { Etapa: "Kg Liberados", Valor: kgLib },
         ];
-        if (data.kpis.meta != null) {
+        if (!filtrosActivos && data.kpis.meta != null) {
           base.push({ Etapa: "Meta (kg)", Valor: data.kpis.meta });
           base.push({ Etapa: "Producción Real (kg)", Valor: data.kpis.kgProducidos });
           base.push({ Etapa: "Diferencia (kg)", Valor: data.kpis.kgProducidos - data.kpis.meta });
