@@ -20,9 +20,7 @@ import { Route as ConfiguracionRouteImport } from './routes/configuracion'
 import { Route as CatalogosRouteImport } from './routes/catalogos'
 import { Route as AuditoriaRouteImport } from './routes/auditoria'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as ReportesIndexRouteImport } from './routes/reportes.index'
 import { Route as TFolioRouteImport } from './routes/t.$folio'
-import { Route as ReportesProduccionCentroRouteImport } from './routes/reportes.produccion-centro'
 import { Route as MuestraIdRouteImport } from './routes/muestra.$id'
 import { Route as HistorialMaquinaRouteImport } from './routes/historial.$maquina'
 import { Route as CalidadRevisionRouteImport } from './routes/calidad.revision'
@@ -85,22 +83,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ReportesIndexRoute = ReportesIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => ReportesRoute,
-} as any)
 const TFolioRoute = TFolioRouteImport.update({
   id: '/t/$folio',
   path: '/t/$folio',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ReportesProduccionCentroRoute =
-  ReportesProduccionCentroRouteImport.update({
-    id: '/produccion-centro',
-    path: '/produccion-centro',
-    getParentRoute: () => ReportesRoute,
-  } as any)
 const MuestraIdRoute = MuestraIdRouteImport.update({
   id: '/muestra/$id',
   path: '/muestra/$id',
@@ -141,7 +128,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/operator-vision': typeof OperatorVisionRoute
   '/produccion': typeof ProduccionRoute
-  '/reportes': typeof ReportesRouteWithChildren
+  '/reportes': typeof ReportesRoute
   '/usuarios': typeof UsuariosRoute
   '/variables-calidad': typeof VariablesCalidadRoute
   '/calidad/ajustes': typeof CalidadAjustesRoute
@@ -150,9 +137,7 @@ export interface FileRoutesByFullPath {
   '/calidad/revision': typeof CalidadRevisionRoute
   '/historial/$maquina': typeof HistorialMaquinaRoute
   '/muestra/$id': typeof MuestraIdRoute
-  '/reportes/produccion-centro': typeof ReportesProduccionCentroRoute
   '/t/$folio': typeof TFolioRoute
-  '/reportes/': typeof ReportesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -163,6 +148,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/operator-vision': typeof OperatorVisionRoute
   '/produccion': typeof ProduccionRoute
+  '/reportes': typeof ReportesRoute
   '/usuarios': typeof UsuariosRoute
   '/variables-calidad': typeof VariablesCalidadRoute
   '/calidad/ajustes': typeof CalidadAjustesRoute
@@ -171,9 +157,7 @@ export interface FileRoutesByTo {
   '/calidad/revision': typeof CalidadRevisionRoute
   '/historial/$maquina': typeof HistorialMaquinaRoute
   '/muestra/$id': typeof MuestraIdRoute
-  '/reportes/produccion-centro': typeof ReportesProduccionCentroRoute
   '/t/$folio': typeof TFolioRoute
-  '/reportes': typeof ReportesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -185,7 +169,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/operator-vision': typeof OperatorVisionRoute
   '/produccion': typeof ProduccionRoute
-  '/reportes': typeof ReportesRouteWithChildren
+  '/reportes': typeof ReportesRoute
   '/usuarios': typeof UsuariosRoute
   '/variables-calidad': typeof VariablesCalidadRoute
   '/calidad/ajustes': typeof CalidadAjustesRoute
@@ -194,9 +178,7 @@ export interface FileRoutesById {
   '/calidad/revision': typeof CalidadRevisionRoute
   '/historial/$maquina': typeof HistorialMaquinaRoute
   '/muestra/$id': typeof MuestraIdRoute
-  '/reportes/produccion-centro': typeof ReportesProduccionCentroRoute
   '/t/$folio': typeof TFolioRoute
-  '/reportes/': typeof ReportesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -218,9 +200,7 @@ export interface FileRouteTypes {
     | '/calidad/revision'
     | '/historial/$maquina'
     | '/muestra/$id'
-    | '/reportes/produccion-centro'
     | '/t/$folio'
-    | '/reportes/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -231,6 +211,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/operator-vision'
     | '/produccion'
+    | '/reportes'
     | '/usuarios'
     | '/variables-calidad'
     | '/calidad/ajustes'
@@ -239,9 +220,7 @@ export interface FileRouteTypes {
     | '/calidad/revision'
     | '/historial/$maquina'
     | '/muestra/$id'
-    | '/reportes/produccion-centro'
     | '/t/$folio'
-    | '/reportes'
   id:
     | '__root__'
     | '/'
@@ -261,9 +240,7 @@ export interface FileRouteTypes {
     | '/calidad/revision'
     | '/historial/$maquina'
     | '/muestra/$id'
-    | '/reportes/produccion-centro'
     | '/t/$folio'
-    | '/reportes/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -275,7 +252,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   OperatorVisionRoute: typeof OperatorVisionRoute
   ProduccionRoute: typeof ProduccionRoute
-  ReportesRoute: typeof ReportesRouteWithChildren
+  ReportesRoute: typeof ReportesRoute
   UsuariosRoute: typeof UsuariosRoute
   VariablesCalidadRoute: typeof VariablesCalidadRoute
   CalidadAjustesRoute: typeof CalidadAjustesRoute
@@ -366,26 +343,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/reportes/': {
-      id: '/reportes/'
-      path: '/'
-      fullPath: '/reportes/'
-      preLoaderRoute: typeof ReportesIndexRouteImport
-      parentRoute: typeof ReportesRoute
-    }
     '/t/$folio': {
       id: '/t/$folio'
       path: '/t/$folio'
       fullPath: '/t/$folio'
       preLoaderRoute: typeof TFolioRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    '/reportes/produccion-centro': {
-      id: '/reportes/produccion-centro'
-      path: '/produccion-centro'
-      fullPath: '/reportes/produccion-centro'
-      preLoaderRoute: typeof ReportesProduccionCentroRouteImport
-      parentRoute: typeof ReportesRoute
     }
     '/muestra/$id': {
       id: '/muestra/$id'
@@ -432,20 +395,6 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface ReportesRouteChildren {
-  ReportesProduccionCentroRoute: typeof ReportesProduccionCentroRoute
-  ReportesIndexRoute: typeof ReportesIndexRoute
-}
-
-const ReportesRouteChildren: ReportesRouteChildren = {
-  ReportesProduccionCentroRoute: ReportesProduccionCentroRoute,
-  ReportesIndexRoute: ReportesIndexRoute,
-}
-
-const ReportesRouteWithChildren = ReportesRoute._addFileChildren(
-  ReportesRouteChildren,
-)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuditoriaRoute: AuditoriaRoute,
@@ -455,7 +404,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   OperatorVisionRoute: OperatorVisionRoute,
   ProduccionRoute: ProduccionRoute,
-  ReportesRoute: ReportesRouteWithChildren,
+  ReportesRoute: ReportesRoute,
   UsuariosRoute: UsuariosRoute,
   VariablesCalidadRoute: VariablesCalidadRoute,
   CalidadAjustesRoute: CalidadAjustesRoute,
