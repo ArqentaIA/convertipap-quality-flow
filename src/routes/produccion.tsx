@@ -47,7 +47,6 @@ export const Route = createFileRoute("/produccion")({
 type MaquinaRow = Awaited<ReturnType<typeof listMaquinasConEstado>>[number];
 
 function ProduccionPage() {
-  const labFilter = useLabFilter();
   const [rango, setRango] = useState<Rango>("turno");
   const listFn = useServerFn(listMaquinasConEstado);
   const { data: all = [], isFetching, dataUpdatedAt } = useQuery({
@@ -56,10 +55,8 @@ function ProduccionPage() {
     refetchInterval: 60_000,
   });
 
-  const maquinas = useMemo(
-    () => all.filter((m) => labFilter.isMachineAllowed(m.codigo)),
-    [all, labFilter],
-  );
+  // En la pantalla de Producción todos los roles (incluido capturista) ven las 4 máquinas.
+  const maquinas = all;
 
   // Ranking: orden descendente por kg, sin producción al final
   const ranking = useMemo(() => {
