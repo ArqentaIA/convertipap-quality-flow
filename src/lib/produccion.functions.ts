@@ -503,20 +503,50 @@ function rangoToDesde(r: "turno" | "dia" | "semana" | "mes" | "año" | "todo"): 
   const H = 3600_000;
   switch (r) {
     case "turno": {
-      // Turnos estándar: 06-14, 14-22, 22-06
-      const h = now.getHours();
-      const start = new Date(now);
-      start.setMinutes(0, 0, 0);
-      if (h >= 6 && h < 14) start.setHours(6);
-      else if (h >= 14 && h < 22) start.setHours(14);
+      // Turnos estándar (hora local México): 06-14, 14-22, 22-06.
+      // El servidor corre en UTC; convertimos primero a hora local MX para
+      // determinar a qué turno pertenece "ahora" y luego regresamos a UTC.
+      const TZ = "America/Mexico_City";
+      const parts = new Intl.DateTimeFormat("en-CA", {
+        timeZone: TZ,
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        hourCycle: "h23",
+      }).formatToParts(now);
+      const get = (t: string) => Number(parts.find((p) => p.type === t)?.value ?? "0");
+      const y = get("year");
+      const m = get("month");
+      let d = get("day");
+      const hLocal = get("hour");
+      let hStart: number;
+      if (hLocal >= 6 && hLocal < 14) hStart = 6;
+      else if (hLocal >= 14 && hLocal < 22) hStart = 14;
       else {
-        // 22-06: si es 0-5, el turno comenzó ayer a las 22
-        if (h < 6) {
-          start.setDate(start.getDate() - 1);
+        hStart = 22;
+        if (hLocal < 6) {
+          // El turno noche comenzó ayer 22:00 local
+          const yesterday = new Date(Date.UTC(y, m - 1, d) - 24 * H);
+          d = yesterday.getUTCDate();
         }
-        start.setHours(22);
       }
-      return start.toISOString();
+      // Buscar el offset de MX en ese instante (DST = false en MX desde 2022, pero seguro)
+      // Construir la fecha local objetivo y convertir restando offset.
+      const offsetMin = (() => {
+        const local = new Date(Date.UTC(y, m - 1, d, hStart, 0, 0));
+        const asMX = new Intl.DateTimeFormat("en-US", {
+          timeZone: TZ,
+          hour: "2-digit",
+          hourCycle: "h23",
+        }).format(local);
+        // Diferencia entre la hora local mostrada y hStart nos da el offset acumulado.
+        const shown = Number(asMX);
+        return (shown - hStart) * 60;
+      })();
+      const startUTC = new Date(Date.UTC(y, m - 1, d, hStart, 0, 0) - offsetMin * 60_000);
+      return startUTC.toISOString();
     }
     case "dia": return new Date(now.getTime() - 24 * H).toISOString();
     case "semana": return new Date(now.getTime() - 7 * 24 * H).toISOString();
@@ -525,6 +555,7 @@ function rangoToDesde(r: "turno" | "dia" | "semana" | "mes" | "año" | "todo"): 
     default: return null;
   }
 }
+
 
 
 const maquinasInputSchema = z.object({ rango: rangoEnum.optional() }).optional();
