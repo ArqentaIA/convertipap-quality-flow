@@ -160,8 +160,6 @@ export async function exportProduccionXLSX(
         "Tendencia Liberados %": data.foms.kgLiberados.tendenciaPct,
         "Kg No Liberados": data.foms.kgNoLiberados.total,
         "Kg No Liberados %": data.foms.kgNoLiberados.pct,
-        "Costo No Calidad (MXN)": data.foms.costoNoCalidad.total,
-        "Costo (MXN/kg)": data.foms.costoNoCalidad.costoKg,
         "OEE Global %": data.foms.oeeGlobalPct,
         "Cumplimiento Meta %": data.foms.cumplimientoMetaPct ?? DASH,
       }],
