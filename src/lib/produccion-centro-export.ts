@@ -564,10 +564,10 @@ export async function exportProduccionPDF(
       const x = chartX + 16 + i * (barW + 14);
       const yTop = yFor(l.top);
       const h = Math.max(1, yFor(l.base) - yFor(l.top));
-      // sombra
-      doc.setFillColor(0, 0, 0); doc.setGState(new (doc as unknown as { GState: new (o: { opacity: number }) => unknown }).GState({ opacity: 0.08 }));
-      doc.rect(x + 1.5, yTop + 1.5, barW, h, "F");
-      doc.setGState(new (doc as unknown as { GState: new (o: { opacity: number }) => unknown }).GState({ opacity: 1 }));
+      // barra
+      doc.setFillColor(l.color[0], l.color[1], l.color[2]);
+      doc.rect(x, yTop, barW, h, "F");
+
       // barra
       doc.setFillColor(l.color[0], l.color[1], l.color[2]);
       doc.rect(x, yTop, barW, h, "F");
