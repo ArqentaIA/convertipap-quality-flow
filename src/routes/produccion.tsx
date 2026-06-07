@@ -57,7 +57,7 @@ function ProduccionPage() {
   });
 
   const maquinas = useMemo(
-    () => all.filter((m) => labFilter.isMachineIdAllowed(m.id)),
+    () => all.filter((m) => labFilter.isMachineAllowed(m.codigo)),
     [all, labFilter],
   );
 
