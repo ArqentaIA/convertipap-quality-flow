@@ -381,6 +381,10 @@ function ReportesPage() {
           periodo={periodo}
           usuario={auth.profile?.nombre ?? auth.user?.email ?? "—"}
           enabled={!!auth.session?.access_token}
+          rango={rango}
+          setRango={setRango}
+          mesesSel={mesesSel}
+          setMesesSel={setMesesSel}
         />
 
 
@@ -471,8 +475,12 @@ function ReporteProduccionItem(props: {
   periodo: string;
   usuario: string;
   enabled: boolean;
+  rango: Rango;
+  setRango: (r: Rango) => void;
+  mesesSel: number[];
+  setMesesSel: (m: number[]) => void;
 }) {
-  const { start, end, freq, periodo, usuario, enabled } = props;
+  const { start, end, freq, periodo, usuario, enabled, rango, setRango, mesesSel, setMesesSel } = props;
   const [turno, setTurno] = useState("");
   const [maquina, setMaquina] = useState("");
   const [producto, setProducto] = useState("");
@@ -532,7 +540,18 @@ function ReporteProduccionItem(props: {
         <div className="flex items-start gap-3">
           <div className="rounded-lg bg-primary/15 p-3">
             <Activity className="h-5 w-5 text-primary" />
-          </div>
+      </div>
+
+      <div className="mt-4 flex flex-col gap-2 rounded-lg border border-border bg-background/50 p-3">
+        <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Agrupar reporte por</label>
+        <RangoSelector
+          rango={rango}
+          setRango={setRango}
+          mesesSel={mesesSel}
+          setMesesSel={setMesesSel}
+          includeTurno
+        />
+      </div>
           <div>
             <div className="text-sm font-bold text-foreground">Reporte de Producción</div>
             <p className="mt-1 text-[11px] text-muted-foreground">
