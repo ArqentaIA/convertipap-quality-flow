@@ -519,16 +519,19 @@ export async function exportProduccionPDF(
   // ─────────── Salud Operativa (Bullet chart horizontal) ───────────
   if (y > pageH - 240) { doc.addPage(); y = M; }
   doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(20, 20, 30);
-  doc.text("Radar de Salud Operativa", M, y);
+  doc.text("9. Radar de Salud Operativa", M, y);
   doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(120);
   const filtrosActivos = hayFiltros(ctx.filtros);
   const mFilt = metricsFromRows(tablaFiltrada);
   const mTotal = metricsFromRows(data.tabla);
+  doc.text("Visión rápida del estado operativo. Cada barra representa una métrica en escala 0–100%.", M, y + 12);
   doc.text(
-    `Escala 0–100% · Zonas: crítico < 60 · aceptable 60–80 · óptimo ≥ 80${filtrosActivos ? "  ·  Métricas ajustadas a filtros" : ""}`,
+    `Lectura: rojo = crítico (< 60%) · ámbar = aceptable (60–80%) · verde = óptimo (≥ 80%)${filtrosActivos ? "  ·  ajustado a filtros" : ""}`,
     M,
-    y + 12,
+    y + 22,
   );
+  y += 10;
+
   {
     const produccionFilt = filtrosActivos
       ? (mTotal.kgTotal > 0 ? (mFilt.kgTotal / mTotal.kgTotal) * 100 : null)
