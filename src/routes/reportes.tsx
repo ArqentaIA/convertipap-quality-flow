@@ -460,3 +460,163 @@ function ReportesPage() {
   );
 }
 
+// ─────────────────────────────────────────────────────────────────
+// Reporte de Producción — generador de PDF/XLSX con filtros propios
+// ─────────────────────────────────────────────────────────────────
+function rangoToCentro(rango: Rango): "dia" | "semana" | "mes" | "año" | "custom" {
+  if (rango === "turno" || rango === "dia") return "dia";
+  if (rango === "semana") return "semana";
+  if (rango === "mes") return "mes";
+  if (rango === "año") return "año";
+  return "custom";
+}
+
+function ReporteProduccionItem(props: {
+  start: string;
+  end: string;
+  freq: string;
+  periodo: string;
+  usuario: string;
+  enabled: boolean;
+}) {
+  const { start, end, freq, periodo, usuario, enabled } = props;
+  const [turno, setTurno] = useState("");
+  const [maquina, setMaquina] = useState("");
+  const [producto, setProducto] = useState("");
+  const [estado, setEstado] = useState("");
+  const [busy, setBusy] = useState<"pdf" | "xlsx" | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  // Carga datos para poblar filtros (máquinas, productos, turnos) y exportar.
+  // Determinar rango a partir de freq textual del periodo seleccionado arriba.
+  const rangoCentro = useMemo<"dia" | "semana" | "mes" | "año" | "custom">(() => {
+    const f = freq.toLowerCase();
+    if (f.includes("diari")) return "dia";
+    if (f.includes("seman")) return "semana";
+    if (f.includes("mensu")) return "mes";
+    if (f.includes("anual")) return "año";
+    return "custom";
+  }, [freq]);
+
+  const dataQuery = useQuery({
+    queryKey: ["reporte-produccion", start, end, rangoCentro],
+    queryFn: () => getProduccionCentro({ data: { rango: rangoCentro, start, end } }),
+    enabled,
+    staleTime: 30_000,
+  });
+
+  const data = dataQuery.data;
+  const turnos = useMemo(() => Array.from(new Set((data?.tabla ?? []).map((r) => r.turno))).filter(Boolean), [data]);
+  const maquinas = useMemo(() => Array.from(new Set((data?.tabla ?? []).map((r) => r.maquina).filter((v): v is string => !!v))), [data]);
+  const productos = useMemo(() => Array.from(new Set((data?.tabla ?? []).map((r) => r.producto).filter((v): v is string => !!v))), [data]);
+
+  const ctx = useMemo(
+    () => ({
+      tipoReporte: freq,
+      periodoTexto: periodo,
+      usuario,
+      filtros: { turno: turno || undefined, maquina: maquina || undefined, producto: producto || undefined, estado: estado || undefined },
+    }),
+    [freq, periodo, usuario, turno, maquina, producto, estado],
+  );
+
+  const handle = async (kind: "pdf" | "xlsx") => {
+    if (!data) return;
+    setBusy(kind); setError(null);
+    try {
+      if (kind === "pdf") await exportProduccionPDF(data, ctx);
+      else await exportProduccionXLSX(data, ctx);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  return (
+    <div className="rounded-xl border-2 border-primary/30 bg-gradient-to-r from-primary/5 to-transparent p-5 shadow-sm">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex items-start gap-3">
+          <div className="rounded-lg bg-primary/15 p-3">
+            <Activity className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <div className="text-sm font-bold text-foreground">Reporte de Producción</div>
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Genera reporte ejecutivo (PDF) o detallado (XLSX) del periodo seleccionado, con filtros por turno, máquina, producto y estado de calidad.
+            </p>
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Periodo: <span className="font-medium">{periodo}</span> · {freq}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-4 grid grid-cols-2 gap-2 md:grid-cols-4">
+        <FilterSelect label="Turno" value={turno} onChange={setTurno} options={turnos} />
+        <FilterSelect label="Máquina" value={maquina} onChange={setMaquina} options={maquinas} />
+        <FilterSelect label="Producto" value={producto} onChange={setProducto} options={productos} />
+        <div className="flex flex-col gap-1">
+          <label className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Estado calidad</label>
+          <select
+            value={estado}
+            onChange={(e) => setEstado(e.target.value)}
+            className="rounded-md border border-input bg-background px-2 py-1.5 text-xs"
+          >
+            <option value="">Todos</option>
+            <option value="liberado">Liberado</option>
+            <option value="pendiente">Pendiente</option>
+            <option value="rechazado">Rechazado</option>
+          </select>
+        </div>
+      </div>
+
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
+        <div className="text-[11px] text-muted-foreground">
+          {dataQuery.isLoading
+            ? "Cargando datos…"
+            : data
+              ? `${data.tabla.length} registros disponibles · Última actualización: ${new Date(data.ultimaActualizacion).toLocaleString("es-MX")}`
+              : "Sin datos disponibles"}
+          {error && <span className="ml-2 text-destructive">· {error}</span>}
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => handle("pdf")}
+            disabled={!data || busy !== null}
+            className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium hover:bg-accent disabled:opacity-50"
+            title="Descargar reporte ejecutivo PDF"
+          >
+            <Download className="h-3.5 w-3.5" /> {busy === "pdf" ? "Generando…" : "PDF"}
+          </button>
+          <button
+            onClick={() => handle("xlsx")}
+            disabled={!data || busy !== null}
+            className="inline-flex items-center gap-2 rounded-md border border-success/40 bg-success/10 px-3 py-1.5 text-xs font-medium text-success hover:bg-success/20 disabled:opacity-50"
+            title="Descargar XLSX detallado"
+          >
+            <FileSpreadsheet className="h-3.5 w-3.5" /> {busy === "xlsx" ? "Generando…" : "XLSX (BD)"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FilterSelect(p: { label: string; value: string; onChange: (v: string) => void; options: string[] }) {
+  return (
+    <div className="flex flex-col gap-1">
+      <label className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">{p.label}</label>
+      <select
+        value={p.value}
+        onChange={(e) => p.onChange(e.target.value)}
+        className="rounded-md border border-input bg-background px-2 py-1.5 text-xs"
+      >
+        <option value="">Todos</option>
+        {p.options.map((o) => <option key={o} value={o}>{o}</option>)}
+      </select>
+    </div>
+  );
+}
+
+
