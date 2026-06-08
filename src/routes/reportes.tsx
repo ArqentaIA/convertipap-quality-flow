@@ -417,53 +417,8 @@ function ReportesPage() {
           enabled={!!auth.session?.access_token}
         />
 
-        <div className={CARD_CLS}>
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <div className="text-sm font-bold text-foreground">Reporte General</div>
-              <p className="mt-1 text-[11px] text-muted-foreground">
-                Todos los rollos producidos del periodo con sus 14 variables (solo XLSX).
-              </p>
-              <p className="mt-1 text-[11px] text-muted-foreground">
-                Periodo: <span className="font-medium">{periodo}</span> · {freq}
-              </p>
-            </div>
-          </div>
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
-            <div className="text-[11px] text-muted-foreground">
-              {reportesQuery.isLoading
-                ? "Cargando datos…"
-                : payload
-                  ? `Listo para descargar`
-                  : "Sin datos disponibles"}
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={async () => {
-                  const fresh = await getReportes({ data: { start, end } });
-                  const out: { sheet: string; rows: Record<string, string | number>[] }[] = [];
-                  const hojas = fresh.datasets?.["Reporte General"] ?? [{ sheet: "Datos", rows: [] }];
-                  for (const h of hojas) {
-                    out.push({
-                      ...h,
-                      rows: h.rows.filter((row) => {
-                        const maq = typeof row.maquina === "string" ? row.maquina : null;
-                        if (!maq) return true;
-                        return labFilter.isMachineAllowed(maq);
-                      }),
-                    });
-                  }
-                  await descargarXLSX("Reporte General", out);
-                  reportesQuery.refetch();
-                }}
-                className={XLSX_BTN_CLS}
-                title="Descargar XLSX con todos los rollos del periodo (datos en tiempo real)"
-              >
-                <FileSpreadsheet className="h-3.5 w-3.5" /> XLSX (BD)
-              </button>
-            </div>
-          </div>
-        </div>
+        <ReporteGeneralItem enabled={!!auth.session?.access_token} />
+
 
       </div>
 
@@ -887,3 +842,85 @@ function ReporteTurnoItem({ usuario, enabled }: { usuario: string; enabled: bool
     </div>
   );
 }
+
+// ─────────────────────────────────────────────────────────────────
+// Reporte General — XLSX con filtros propios (Turno/Día/Semana/Mes/Año)
+// ─────────────────────────────────────────────────────────────────
+function ReporteGeneralItem({ enabled }: { enabled: boolean }) {
+  const [rango, setRango] = useState<Rango>("semana");
+  const [mesesSel, setMesesSel] = useState<number[]>(MESES.map((_, i) => i));
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const labFilter = useLabFilter();
+  const periodo = rangoLabel(rango, mesesSel);
+  const freq = rangoToFreq(rango);
+  const { start, end } = useMemo(() => computeWindow(rango, mesesSel), [rango, mesesSel]);
+
+  const handle = async () => {
+    if (!enabled) return;
+    setBusy(true); setError(null);
+    try {
+      const fresh = await getReportes({ data: { start, end } });
+      const hojas = fresh.datasets?.["Reporte General"] ?? [{ sheet: "Datos", rows: [] }];
+      const out = hojas.map((h) => ({
+        ...h,
+        rows: h.rows.filter((row) => {
+          const maq = typeof row.maquina === "string" ? row.maquina : null;
+          if (!maq) return true;
+          return labFilter.isMachineAllowed(maq);
+        }),
+      }));
+      await descargarXLSX("Reporte General", out);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className={CARD_CLS}>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex items-start gap-3">
+          <div className={FILTER_PANEL_CLS}>
+            <label className={FILTER_LABEL_CLS}>Agrupar reporte por</label>
+            <RangoSelector
+              rango={rango}
+              setRango={setRango}
+              mesesSel={mesesSel}
+              setMesesSel={setMesesSel}
+              includeTurno
+            />
+          </div>
+          <div>
+            <div className="text-sm font-bold text-foreground">Reporte General</div>
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Todos los rollos producidos del periodo con sus 14 variables (solo XLSX).
+            </p>
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Periodo: <span className="font-medium">{periodo}</span> · {freq}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
+        <div className="text-[11px] text-muted-foreground">
+          {busy ? "Generando…" : "Listo para descargar"}
+          {error && <span className="ml-2 text-destructive">· {error}</span>}
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handle}
+            disabled={!enabled || busy}
+            className={XLSX_BTN_CLS}
+            title="Descargar XLSX con todos los rollos del periodo (datos en tiempo real)"
+          >
+            <FileSpreadsheet className="h-3.5 w-3.5" /> {busy ? "Generando…" : "XLSX (BD)"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
