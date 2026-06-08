@@ -17,16 +17,17 @@ export type CEOReportMaquina = {
 export type CEOReportRollo = {
   folio: string;
   fecha: string; // ISO
-  planta: string;
   maquina: string;
   turno: string;
   pesoKg: number | null;
-  operador: string;
-  jefeMaquina: string;
-  analista: string;
+  codigoProducto: string;
+  anchoUtil: number | null;
+  blancuraR457: number | null;
+  diametro: number | null;
   estatus: "Liberado" | "Retenido" | "Rechazado" | "Pendiente";
   defectos: string[];
 };
+
 
 export type CEOReportPayload = {
   windowStart: string;
@@ -72,7 +73,7 @@ export const getCEOReport = createServerFn({ method: "GET" })
       sb
         .from("muestras_calidad")
         .select(
-          "id, maquina_id, planta_id, hora_muestreo, numero_rollo, turno, operador, jefe_maquina, analista, dictamen, estatus_liberacion, defectos, plantas(nombre), maquinas(codigo)",
+          "id, maquina_id, planta_id, hora_muestreo, numero_rollo, turno, dictamen, estatus_liberacion, defectos, productos(codigo), maquinas(codigo)",
         )
         .gte("hora_muestreo", startIso)
         .lte("hora_muestreo", endIso)
@@ -82,6 +83,7 @@ export const getCEOReport = createServerFn({ method: "GET" })
         .select("muestra_id, variable_clave, valor, estado")
         .gte("created_at", startIso)
         .lte("created_at", endIso),
+
       sb
         .from("rollos_producidos")
         .select("id, orden_id, peso_kg, registrado_at")
@@ -105,15 +107,22 @@ export const getCEOReport = createServerFn({ method: "GET" })
     // Mediciones por muestra
     const ncPorMuestra = new Map<string, number>();
     const pesoPorMuestra = new Map<string, number>();
+    const anchoPorMuestra = new Map<string, number>();
+    const blancuraPorMuestra = new Map<string, number>();
+    const diametroPorMuestra = new Map<string, number>();
     for (const med of mediciones ?? []) {
       if (med.estado === "no_conforme" || med.estado === "fuera_rango_critico") {
         ncPorMuestra.set(med.muestra_id, (ncPorMuestra.get(med.muestra_id) ?? 0) + 1);
       }
-      if (med.variable_clave === "peso" && med.valor != null) {
-        const v = Number(med.valor);
-        if (!Number.isNaN(v)) pesoPorMuestra.set(med.muestra_id, v);
-      }
+      if (med.valor == null) continue;
+      const v = Number(med.valor);
+      if (Number.isNaN(v)) continue;
+      if (med.variable_clave === "peso") pesoPorMuestra.set(med.muestra_id, v);
+      else if (med.variable_clave === "anchoUtil") anchoPorMuestra.set(med.muestra_id, v);
+      else if (med.variable_clave === "blancuraR457") blancuraPorMuestra.set(med.muestra_id, v);
+      else if (med.variable_clave === "diametro") diametroPorMuestra.set(med.muestra_id, v);
     }
+
 
     const estatusDe = (m: any): CEOReportRollo["estatus"] => {
       if (m.dictamen === "liberada" || m.estatus_liberacion === "L") return "Liberado";
@@ -201,16 +210,17 @@ export const getCEOReport = createServerFn({ method: "GET" })
     const rollosList: CEOReportRollo[] = (muestras ?? []).map((m: any) => ({
       folio: m.numero_rollo ?? "—",
       fecha: m.hora_muestreo,
-      planta: m?.plantas?.nombre ?? plantaById.get(m.maquina_id) ?? "—",
       maquina: m?.maquinas?.codigo ?? codigoById.get(m.maquina_id) ?? "—",
       turno: m.turno ?? "—",
       pesoKg: pesoPorMuestra.get(m.id) ?? null,
-      operador: m.operador ?? "—",
-      jefeMaquina: m.jefe_maquina ?? "—",
-      analista: m.analista ?? "—",
+      codigoProducto: m?.productos?.codigo ?? "—",
+      anchoUtil: anchoPorMuestra.get(m.id) ?? null,
+      blancuraR457: blancuraPorMuestra.get(m.id) ?? null,
+      diametro: diametroPorMuestra.get(m.id) ?? null,
       estatus: estatusDe(m),
       defectos: ((m.defectos ?? []) as string[]).filter(Boolean),
     }));
+
 
     return {
       windowStart: startIso,

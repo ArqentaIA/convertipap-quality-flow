@@ -460,13 +460,13 @@ function CEOReportPreview({ onClose }: { onClose: () => void }) {
                           <tr className="border-b border-gray-200 text-left text-[10px] uppercase tracking-wider text-gray-500">
                             <th className="py-2 pr-2">Folio</th>
                             <th className="py-2 pr-2">Fecha</th>
-                            <th className="py-2 pr-2">Planta</th>
                             <th className="py-2 pr-2">Máq.</th>
                             <th className="py-2 pr-2">Turno</th>
+                            <th className="py-2 pr-2">Cód. Producto</th>
                             <th className="py-2 pr-2 text-right">Peso (kg)</th>
-                            <th className="py-2 pr-2">Operador</th>
-                            <th className="py-2 pr-2">Jefe máq.</th>
-                            <th className="py-2 pr-2">Analista</th>
+                            <th className="py-2 pr-2 text-right">Ancho útil</th>
+                            <th className="py-2 pr-2 text-right">Blancura R457 (%)</th>
+                            <th className="py-2 pr-2 text-right">Diámetro (cm)</th>
                             <th className="py-2 pr-2">Estatus</th>
                             <th className="py-2">Defectos</th>
                           </tr>
@@ -476,15 +476,21 @@ function CEOReportPreview({ onClose }: { onClose: () => void }) {
                             <tr key={`${r.folio}-${i}`} className="border-b border-gray-100 last:border-0 align-top">
                               <td className="py-2 pr-2 font-semibold text-gray-900">{r.folio}</td>
                               <td className="py-2 pr-2 text-gray-700">{fmtFecha(r.fecha)}</td>
-                              <td className="py-2 pr-2 text-gray-700">{r.planta}</td>
                               <td className="py-2 pr-2 text-gray-700">{r.maquina}</td>
                               <td className="py-2 pr-2 text-gray-700">{r.turno}</td>
+                              <td className="py-2 pr-2 text-gray-700">{r.codigoProducto}</td>
                               <td className="py-2 pr-2 text-right tabular-nums text-gray-700">
                                 {r.pesoKg != null ? r.pesoKg.toLocaleString("es-MX") : "—"}
                               </td>
-                              <td className="py-2 pr-2 text-gray-700">{r.operador}</td>
-                              <td className="py-2 pr-2 text-gray-700">{r.jefeMaquina}</td>
-                              <td className="py-2 pr-2 text-gray-700">{r.analista}</td>
+                              <td className="py-2 pr-2 text-right tabular-nums text-gray-700">
+                                {r.anchoUtil != null ? r.anchoUtil.toLocaleString("es-MX") : "—"}
+                              </td>
+                              <td className="py-2 pr-2 text-right tabular-nums text-gray-700">
+                                {r.blancuraR457 != null ? r.blancuraR457.toLocaleString("es-MX") : "—"}
+                              </td>
+                              <td className="py-2 pr-2 text-right tabular-nums text-gray-700">
+                                {r.diametro != null ? r.diametro.toLocaleString("es-MX") : "—"}
+                              </td>
                               <td className="py-2 pr-2">
                                 <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-medium ${estatusCls(r.estatus)}`}>
                                   {r.estatus}
@@ -495,6 +501,7 @@ function CEOReportPreview({ onClose }: { onClose: () => void }) {
                               </td>
                             </tr>
                           ))}
+
                         </tbody>
                       </table>
                     </div>
