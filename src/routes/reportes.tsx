@@ -654,7 +654,7 @@ function ReporteMensualItem({ usuario, enabled }: { usuario: string; enabled: bo
   const [error, setError] = useState<string | null>(null);
 
   const modo: "anual" | "mensual" = month === "" ? "anual" : "mensual";
-  const titulo = modo === "anual" ? "Reporte Anual" : "Reporte Mensual";
+  const titulo = "Reporte Mensual";
   const periodoTexto = modo === "anual" ? `Año ${year}` : `${MESES_RM[(month as number) - 1]} ${year}`;
 
   const query = useQuery({
