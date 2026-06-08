@@ -282,6 +282,19 @@ export async function exportReporteMensualPDF(
   const barW = pageW - M - barX - 60;
   const rowH = 16;
   const barH = 9;
+  // Escala de ticks 0/20/40/60/80/100 encima de las barras
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(6.5);
+  doc.setTextColor(140);
+  [0, 20, 40, 60, 80, 100].forEach((tick) => {
+    const tx = barX + (barW * tick) / 100;
+    doc.setDrawColor(200, 205, 215);
+    doc.setLineWidth(0.3);
+    doc.line(tx, y - 2, tx, y);
+    doc.text(`${tick}`, tx, y - 4, { align: "center" });
+  });
+  y += 2;
+
   metricas.forEach((m) => {
     const cy = y + rowH / 2;
     // label
@@ -296,10 +309,17 @@ export async function exportReporteMensualPDF(
     doc.setFillColor(252, 224, 224); doc.rect(barX, y + (rowH - barH) / 2, seg1, barH, "F");
     doc.setFillColor(253, 243, 208); doc.rect(barX + seg1, y + (rowH - barH) / 2, seg2, barH, "F");
     doc.setFillColor(220, 240, 222); doc.rect(barX + seg1 + seg2, y + (rowH - barH) / 2, seg3, barH, "F");
-    // marca 80%
-    doc.setDrawColor(120, 120, 130);
-    doc.setLineWidth(0.5);
-    doc.line(barX + barW * 0.8, y + 2, barX + barW * 0.8, y + rowH - 2);
+    // gridlines verticales suaves cada 20%
+    doc.setDrawColor(225, 228, 235);
+    doc.setLineWidth(0.2);
+    [20, 40, 60, 80].forEach((t) => {
+      const tx = barX + (barW * t) / 100;
+      doc.line(tx, y + (rowH - barH) / 2, tx, y + (rowH + barH) / 2);
+    });
+    // marca 80% (línea de meta)
+    doc.setDrawColor(90, 90, 100);
+    doc.setLineWidth(0.6);
+    doc.line(barX + barW * 0.8, y + 1, barX + barW * 0.8, y + rowH - 1);
     // barra de valor
     if (m.value != null) {
       const v = Math.max(0, Math.min(100, m.value));
@@ -307,6 +327,13 @@ export async function exportReporteMensualPDF(
       const color: [number, number, number] = v < 60 ? [200, 32, 40] : v < 80 ? [210, 150, 30] : [22, 130, 70];
       doc.setFillColor(color[0], color[1], color[2]);
       doc.rect(barX, y + (rowH - barH) / 2, fillW, barH, "F");
+      // marcador circular en el extremo del valor
+      const mx = barX + fillW;
+      const my = y + rowH / 2;
+      doc.setFillColor(255, 255, 255);
+      doc.circle(mx, my, 2.6, "F");
+      doc.setFillColor(color[0], color[1], color[2]);
+      doc.circle(mx, my, 1.6, "F");
       // valor
       doc.setFont("helvetica", "bold");
       doc.setFontSize(9);
@@ -320,7 +347,13 @@ export async function exportReporteMensualPDF(
     }
     y += rowH;
   });
-  y += 8;
+  // anotación de meta 80%
+  doc.setFont("helvetica", "italic");
+  doc.setFontSize(7);
+  doc.setTextColor(90, 90, 100);
+  doc.text("▲ Línea vertical = Meta operativa 80%", barX + barW * 0.8, y + 6, { align: "center" });
+  y += 14;
+
 
   // ── 10. Distribución de Producción (Donut + Desglose) ────────────────
   if (y > pageH - 220) { doc.addPage(); y = M; }
@@ -365,15 +398,33 @@ export async function exportReporteMensualPDF(
   const startAngle = -Math.PI / 2;
   const angLib = startAngle + (2 * Math.PI * pctLib) / 100;
   const angNC = angLib + (2 * Math.PI * pctNC) / 100;
+  // sombra suave del donut
+  doc.setFillColor(230, 232, 240);
+  doc.circle(donutCX + 1.5, donutCY + 2, rOut + 1, "F");
+  // anillo exterior decorativo
+  doc.setFillColor(245, 247, 252);
+  doc.circle(donutCX, donutCY, rOut + 3, "F");
   if (totalKg > 0) {
     drawArc(startAngle, angLib, [22, 130, 70]);
     drawArc(angLib, angNC, [200, 32, 40]);
   } else {
     drawArc(startAngle, startAngle + 2 * Math.PI, [220, 220, 226]);
   }
+  // separadores blancos entre segmentos
+  if (totalKg > 0 && pctNC > 0 && pctLib > 0) {
+    doc.setDrawColor(255, 255, 255);
+    doc.setLineWidth(1.6);
+    [startAngle, angLib].forEach((a) => {
+      doc.line(donutCX, donutCY, donutCX + (rOut + 1) * Math.cos(a), donutCY + (rOut + 1) * Math.sin(a));
+    });
+  }
   // Centro (donut hole)
   doc.setFillColor(255, 255, 255);
   doc.circle(donutCX, donutCY, rIn, "F");
+  // anillo interior fino
+  doc.setDrawColor(220, 225, 235);
+  doc.setLineWidth(0.4);
+  doc.circle(donutCX, donutCY, rIn, "S");
   // Texto centro
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7.5);
@@ -388,13 +439,32 @@ export async function exportReporteMensualPDF(
   doc.setTextColor(130);
   doc.text("kg", donutCX, donutCY + 16, { align: "center" });
 
-  // % afuera del donut
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(10);
-  doc.setTextColor(200, 32, 40);
-  doc.text(`${pctNC.toFixed(1)}%`, donutCX, donutCY - rOut - 4, { align: "center" });
-  doc.setTextColor(22, 130, 70);
-  doc.text(`${pctLib.toFixed(1)}%`, donutCX, donutCY + rOut + 12, { align: "center" });
+  // Etiquetas % con líneas guía (callouts)
+  if (totalKg > 0) {
+    const drawCallout = (pct: number, midAngle: number, color: [number, number, number]) => {
+      const x1 = donutCX + (rOut - 6) * Math.cos(midAngle);
+      const y1 = donutCY + (rOut - 6) * Math.sin(midAngle);
+      const x2 = donutCX + (rOut + 8) * Math.cos(midAngle);
+      const y2 = donutCY + (rOut + 8) * Math.sin(midAngle);
+      const side = x2 >= donutCX ? 1 : -1;
+      const x3 = x2 + side * 8;
+      doc.setDrawColor(color[0], color[1], color[2]);
+      doc.setLineWidth(0.5);
+      doc.line(x1, y1, x2, y2);
+      doc.line(x2, y2, x3, y2);
+      doc.setFillColor(color[0], color[1], color[2]);
+      doc.circle(x1, y1, 1.2, "F");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      doc.setTextColor(color[0], color[1], color[2]);
+      doc.text(`${pct.toFixed(1)}%`, x3 + side * 1.5, y2 + 3, { align: side > 0 ? "left" : "right" });
+    };
+    const midLib = startAngle + (angLib - startAngle) / 2;
+    const midNC = angLib + (angNC - angLib) / 2;
+    if (pctLib > 0) drawCallout(pctLib, midLib, [22, 130, 70]);
+    if (pctNC > 0) drawCallout(pctNC, midNC, [200, 32, 40]);
+  }
+
 
   // Desglose a la derecha (barras horizontales)
   const dx = M + 160;
@@ -421,15 +491,34 @@ export async function exportReporteMensualPDF(
     doc.setTextColor(110);
     doc.text(`${fmt(Math.round(value))} kg`, dx, dy);
     dy += 6;
-    // barra fondo
+    // barra fondo con ticks de escala
     doc.setFillColor(238, 240, 245);
     doc.rect(dx, dy, dw, 6, "F");
+    doc.setDrawColor(220, 224, 232);
+    doc.setLineWidth(0.2);
+    [25, 50, 75].forEach((t) => {
+      const tx = dx + (dw * t) / 100;
+      doc.line(tx, dy, tx, dy + 6);
+    });
     doc.setFillColor(color[0], color[1], color[2]);
     doc.rect(dx, dy, (dw * Math.max(0, Math.min(100, pct))) / 100, 6, "F");
+    // meta 95% (línea de referencia)
+    const metaX = dx + dw * 0.95;
+    doc.setDrawColor(60, 70, 90);
+    doc.setLineWidth(0.7);
+    doc.line(metaX, dy - 2, metaX, dy + 8);
     dy += 18;
   };
   drawBreakdown("Kg Liberados", kgLib, pctLib, [22, 130, 70]);
   drawBreakdown("Kg No Liberados", kgNC, pctNC, [200, 32, 40]);
+  // leyenda
+  doc.setFont("helvetica", "italic");
+  doc.setFontSize(7);
+  doc.setTextColor(90, 90, 100);
+  doc.text("▲ Marca vertical = Meta liberación ≥ 95%", dx, dy);
+  dy += 8;
+
+
 
   y = Math.max(donutCY + rOut + 24, dy) + 6;
 
