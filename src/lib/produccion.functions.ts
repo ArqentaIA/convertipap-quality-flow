@@ -14,6 +14,41 @@ type SB = SupabaseClient<Database>;
 
 // ------------------------- Helpers -------------------------
 
+/**
+ * Variables sin tope superior crítico (ej. Blancura R457: a mayor mejor).
+ * Mantener sincronizado con src/lib/qc.functions.ts → esVariableSinTopeSuperior.
+ */
+function esVariableSinTopeSuperior(clave?: string | null): boolean {
+  if (!clave) return false;
+  const k = clave.toLowerCase().replace(/[\s_-]/g, "");
+  return k.includes("blancura") || k.includes("r457");
+}
+
+/**
+ * Recalcula el estado de una medición en lectura, aplicando la regla vigente
+ * (incluye excepción de variables sin tope superior). Si no hay min/max/valor
+ * suficientes, conserva el estado almacenado.
+ */
+function recomputarEstadoMedicion(
+  clave: string | null | undefined,
+  valor: number | null | undefined,
+  min: number | null | undefined,
+  max: number | null | undefined,
+  estadoAlmacenado: string | null | undefined,
+): string {
+  if (valor == null || !Number.isFinite(valor)) return estadoAlmacenado ?? "pendiente";
+  if (min == null || max == null) return estadoAlmacenado ?? "pendiente";
+  const sinTope = esVariableSinTopeSuperior(clave);
+  const rango = max - min;
+  const tol = Math.abs(rango) * 0.2;
+  if (valor < min - tol) return "fuera_rango_critico";
+  if (!sinTope && valor > max + tol) return "fuera_rango_critico";
+  if (valor < min) return "no_conforme";
+  if (!sinTope && valor > max) return "no_conforme";
+  return "conforme";
+}
+
+
 const ROLES_OPERATIVOS = ["capturista", "calidad", "gerente_general", "administrador"] as const;
 const ROLES_ADMIN = ["gerente_general", "administrador"] as const;
 
