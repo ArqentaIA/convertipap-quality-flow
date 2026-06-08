@@ -398,15 +398,33 @@ export async function exportReporteMensualPDF(
   const startAngle = -Math.PI / 2;
   const angLib = startAngle + (2 * Math.PI * pctLib) / 100;
   const angNC = angLib + (2 * Math.PI * pctNC) / 100;
+  // sombra suave del donut
+  doc.setFillColor(230, 232, 240);
+  doc.circle(donutCX + 1.5, donutCY + 2, rOut + 1, "F");
+  // anillo exterior decorativo
+  doc.setFillColor(245, 247, 252);
+  doc.circle(donutCX, donutCY, rOut + 3, "F");
   if (totalKg > 0) {
     drawArc(startAngle, angLib, [22, 130, 70]);
     drawArc(angLib, angNC, [200, 32, 40]);
   } else {
     drawArc(startAngle, startAngle + 2 * Math.PI, [220, 220, 226]);
   }
+  // separadores blancos entre segmentos
+  if (totalKg > 0 && pctNC > 0 && pctLib > 0) {
+    doc.setDrawColor(255, 255, 255);
+    doc.setLineWidth(1.6);
+    [startAngle, angLib].forEach((a) => {
+      doc.line(donutCX, donutCY, donutCX + (rOut + 1) * Math.cos(a), donutCY + (rOut + 1) * Math.sin(a));
+    });
+  }
   // Centro (donut hole)
   doc.setFillColor(255, 255, 255);
   doc.circle(donutCX, donutCY, rIn, "F");
+  // anillo interior fino
+  doc.setDrawColor(220, 225, 235);
+  doc.setLineWidth(0.4);
+  doc.circle(donutCX, donutCY, rIn, "S");
   // Texto centro
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7.5);
@@ -421,13 +439,32 @@ export async function exportReporteMensualPDF(
   doc.setTextColor(130);
   doc.text("kg", donutCX, donutCY + 16, { align: "center" });
 
-  // % afuera del donut
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(10);
-  doc.setTextColor(200, 32, 40);
-  doc.text(`${pctNC.toFixed(1)}%`, donutCX, donutCY - rOut - 4, { align: "center" });
-  doc.setTextColor(22, 130, 70);
-  doc.text(`${pctLib.toFixed(1)}%`, donutCX, donutCY + rOut + 12, { align: "center" });
+  // Etiquetas % con líneas guía (callouts)
+  if (totalKg > 0) {
+    const drawCallout = (pct: number, midAngle: number, color: [number, number, number]) => {
+      const x1 = donutCX + (rOut - 6) * Math.cos(midAngle);
+      const y1 = donutCY + (rOut - 6) * Math.sin(midAngle);
+      const x2 = donutCX + (rOut + 8) * Math.cos(midAngle);
+      const y2 = donutCY + (rOut + 8) * Math.sin(midAngle);
+      const side = x2 >= donutCX ? 1 : -1;
+      const x3 = x2 + side * 8;
+      doc.setDrawColor(color[0], color[1], color[2]);
+      doc.setLineWidth(0.5);
+      doc.line(x1, y1, x2, y2);
+      doc.line(x2, y2, x3, y2);
+      doc.setFillColor(color[0], color[1], color[2]);
+      doc.circle(x1, y1, 1.2, "F");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      doc.setTextColor(color[0], color[1], color[2]);
+      doc.text(`${pct.toFixed(1)}%`, x3 + side * 1.5, y2 + 3, { align: side > 0 ? "left" : "right" });
+    };
+    const midLib = startAngle + (angLib - startAngle) / 2;
+    const midNC = angLib + (angNC - angLib) / 2;
+    if (pctLib > 0) drawCallout(pctLib, midLib, [22, 130, 70]);
+    if (pctNC > 0) drawCallout(pctNC, midNC, [200, 32, 40]);
+  }
+
 
   // Desglose a la derecha (barras horizontales)
   const dx = M + 160;
