@@ -101,8 +101,8 @@ function AuditoriaPage() {
       if (emailFilter.trim()) q = q.ilike("usuario_email", `%${emailFilter.trim()}%`);
       if (modulo.trim()) q = q.ilike("modulo", `%${modulo.trim()}%`);
       if (operacion) q = q.eq("operacion", operacion);
-      // Ocultar accesos de administradores
-      q = q.not("and", "(rol.eq.administrador,modulo.eq.auth)");
+      // Ocultar accesos de administradores (rol=administrador AND modulo=auth)
+      q = q.or("rol.neq.administrador,modulo.neq.auth");
 
       const from = page * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
