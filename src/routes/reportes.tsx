@@ -901,7 +901,7 @@ function ReporteTurnoItem({ usuario, enabled }: { usuario: string; enabled: bool
           <button
             onClick={() => handle("xlsx")}
             disabled={!filtered || busy !== null}
-            className="inline-flex items-center gap-2 rounded-md border border-[#16A34A]/40 bg-[#16A34A]/10 px-3 py-1.5 text-xs font-medium text-[#16A34A] hover:bg-[#16A34A]/20 disabled:opacity-50"
+            className={XLSX_BTN_CLS}
             title="Exportar Excel"
           >
             <FileSpreadsheet className="h-3.5 w-3.5" /> {busy === "xlsx" ? "Generando…" : "XLSX"}
