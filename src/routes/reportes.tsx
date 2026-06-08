@@ -40,13 +40,13 @@ function ReportesGate() {
   );
 }
 
-// ── Premium unified styling tokens ──────────────────────────────────
+// ── Premium unified styling tokens — tonos azules + fondo "libreta" ──
 const CARD_CLS =
-  "relative overflow-hidden rounded-2xl border border-primary/15 bg-gradient-to-br from-card via-card to-primary/[0.04] p-6 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_10px_30px_-15px_rgba(15,23,42,0.15)] ring-1 ring-black/[0.02] transition-shadow hover:shadow-[0_1px_2px_rgba(0,0,0,0.05),0_18px_40px_-18px_rgba(15,23,42,0.22)] before:absolute before:inset-y-0 before:left-0 before:w-[3px] before:bg-gradient-to-b before:from-primary before:via-primary/70 before:to-primary/20";
+  "relative overflow-hidden rounded-2xl border border-sky-200/70 p-6 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_10px_30px_-15px_rgba(30,64,175,0.20)] ring-1 ring-sky-100 transition-shadow hover:shadow-[0_1px_2px_rgba(15,23,42,0.05),0_20px_44px_-18px_rgba(30,64,175,0.28)] before:absolute before:inset-y-0 before:left-0 before:w-[3px] before:bg-gradient-to-b before:from-sky-500 before:via-blue-500 before:to-indigo-500 bg-gradient-to-br from-sky-50 via-white to-blue-50 [background-image:linear-gradient(135deg,rgba(224,242,254,0.85),rgba(255,255,255,0.95)_45%,rgba(219,234,254,0.85)),repeating-linear-gradient(to_bottom,transparent_0,transparent_31px,rgba(59,130,246,0.10)_31px,rgba(59,130,246,0.10)_32px)] [background-size:100%_100%,100%_32px] [background-attachment:local]";
 const FILTER_PANEL_CLS =
-  "mt-4 flex flex-col gap-2 rounded-xl border border-border/60 bg-background/70 p-3.5 shadow-sm backdrop-blur-sm";
+  "mt-4 flex flex-col gap-2 rounded-xl border border-sky-200/70 bg-white/75 p-3.5 shadow-sm backdrop-blur-sm ring-1 ring-white/60";
 const FILTER_LABEL_CLS =
-  "text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground";
+  "text-[10px] font-semibold uppercase tracking-[0.12em] text-blue-700/80";
 const PDF_BTN_CLS =
   "inline-flex items-center gap-2 rounded-lg border border-[#DC2626]/30 bg-gradient-to-b from-[#DC2626]/10 to-[#DC2626]/5 px-3.5 py-1.5 text-xs font-semibold text-[#DC2626] shadow-sm transition-all hover:from-[#DC2626]/20 hover:to-[#DC2626]/10 hover:shadow-md active:scale-[0.98] disabled:opacity-50";
 const XLSX_BTN_CLS =
