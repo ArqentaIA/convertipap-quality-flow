@@ -107,15 +107,22 @@ export const getCEOReport = createServerFn({ method: "GET" })
     // Mediciones por muestra
     const ncPorMuestra = new Map<string, number>();
     const pesoPorMuestra = new Map<string, number>();
+    const anchoPorMuestra = new Map<string, number>();
+    const blancuraPorMuestra = new Map<string, number>();
+    const diametroPorMuestra = new Map<string, number>();
     for (const med of mediciones ?? []) {
       if (med.estado === "no_conforme" || med.estado === "fuera_rango_critico") {
         ncPorMuestra.set(med.muestra_id, (ncPorMuestra.get(med.muestra_id) ?? 0) + 1);
       }
-      if (med.variable_clave === "peso" && med.valor != null) {
-        const v = Number(med.valor);
-        if (!Number.isNaN(v)) pesoPorMuestra.set(med.muestra_id, v);
-      }
+      if (med.valor == null) continue;
+      const v = Number(med.valor);
+      if (Number.isNaN(v)) continue;
+      if (med.variable_clave === "peso") pesoPorMuestra.set(med.muestra_id, v);
+      else if (med.variable_clave === "anchoUtil") anchoPorMuestra.set(med.muestra_id, v);
+      else if (med.variable_clave === "blancuraR457") blancuraPorMuestra.set(med.muestra_id, v);
+      else if (med.variable_clave === "diametro") diametroPorMuestra.set(med.muestra_id, v);
     }
+
 
     const estatusDe = (m: any): CEOReportRollo["estatus"] => {
       if (m.dictamen === "liberada" || m.estatus_liberacion === "L") return "Liberado";
