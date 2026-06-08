@@ -565,12 +565,12 @@ export async function exportReporteTurnoXLSX(
     { Categoría: "Kg Liberados", Kg: Math.round(r.kgLib * 100) / 100, "% del total": r.kgTotal > 0 ? Math.round((r.kgLib / r.kgTotal) * 1000) / 10 : 0 },
     { Categoría: "Kg No Liberados", Kg: Math.round(r.kgNoLib * 100) / 100, "% del total": r.kgTotal > 0 ? Math.round((r.kgNoLib / r.kgTotal) * 1000) / 10 : 0 },
   ];
-  const graficosWS = XLSX.utils.json_to_sheet(indicadoresRows, { origin: "A1" });
-  XLSX.utils.sheet_add_aoa(graficosWS, [["Indicadores clave del turno"]], { origin: "A1" });
+  const graficosWS = XLSX.utils.aoa_to_sheet([["Indicadores clave del turno"]]);
   XLSX.utils.sheet_add_json(graficosWS, indicadoresRows, { origin: "A2" });
-  XLSX.utils.sheet_add_aoa(graficosWS, [[""], ["Distribución de producción (kg)"]], { origin: `A${indicadoresRows.length + 4}` });
-  XLSX.utils.sheet_add_json(graficosWS, distribRows, { origin: `A${indicadoresRows.length + 6}` });
+  XLSX.utils.sheet_add_aoa(graficosWS, [["Distribución de producción (kg)"]], { origin: `A${indicadoresRows.length + 4}` });
+  XLSX.utils.sheet_add_json(graficosWS, distribRows, { origin: `A${indicadoresRows.length + 5}` });
   XLSX.utils.book_append_sheet(wb, graficosWS, "Gráficos");
+
 
 
 
