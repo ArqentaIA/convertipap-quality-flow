@@ -637,3 +637,117 @@ function FilterSelect(p: { label: string; value: string; onChange: (v: string) =
 }
 
 
+
+// ─────────────────────────────────────────────────────────────────
+// Reporte Mensual / Anual — generador de PDF/XLSX (filtros propios)
+// ─────────────────────────────────────────────────────────────────
+const MESES_RM = [
+  "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+  "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
+];
+
+function ReporteMensualItem({ usuario, enabled }: { usuario: string; enabled: boolean }) {
+  const now = new Date();
+  const [year, setYear] = useState<number>(now.getFullYear());
+  const [month, setMonth] = useState<number | "">("");
+  const [busy, setBusy] = useState<"pdf" | "xlsx" | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const modo: "anual" | "mensual" = month === "" ? "anual" : "mensual";
+  const titulo = modo === "anual" ? "Reporte Anual" : "Reporte Mensual";
+  const periodoTexto = modo === "anual" ? `Año ${year}` : `${MESES_RM[(month as number) - 1]} ${year}`;
+
+  const query = useQuery({
+    queryKey: ["reporte-mensual", year, month],
+    queryFn: () => getReporteMensual({ data: { year, month: month === "" ? null : (month as number) } }),
+    enabled,
+    staleTime: 30_000,
+  });
+  const data = query.data;
+
+  const yearOptions = useMemo(() => {
+    const arr: number[] = [];
+    for (let y = now.getFullYear() + 1; y >= 2020; y--) arr.push(y);
+    return arr;
+  }, [now]);
+
+  const handle = async (kind: "pdf" | "xlsx") => {
+    if (!data) return;
+    setBusy(kind); setError(null);
+    try {
+      if (kind === "pdf") await exportReporteMensualPDF(data, { usuario });
+      else await exportReporteMensualXLSX(data, { usuario });
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  return (
+    <div className="rounded-xl border-2 border-primary/30 bg-gradient-to-r from-primary/5 to-transparent p-5 shadow-sm">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex items-start gap-3">
+          <div className="mt-4 flex flex-col gap-2 rounded-lg border border-border bg-background/50 p-3">
+            <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Año / Mes</label>
+            <div className="flex items-center gap-2">
+              <select
+                value={year}
+                onChange={(e) => setYear(Number(e.target.value))}
+                className="rounded-md border border-input bg-background px-2 py-1.5 text-xs"
+              >
+                {yearOptions.map((y) => <option key={y} value={y}>{y}</option>)}
+              </select>
+              <select
+                value={month}
+                onChange={(e) => setMonth(e.target.value === "" ? "" : Number(e.target.value))}
+                className="rounded-md border border-input bg-background px-2 py-1.5 text-xs"
+              >
+                <option value="">— Todos (Anual)</option>
+                {MESES_RM.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}
+              </select>
+            </div>
+          </div>
+          <div>
+            <div className="text-sm font-bold text-foreground">{titulo}</div>
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Consolidado de producción y conformidad por {modo === "anual" ? "mes" : "día y máquina"}, con ranking de no conformes y trazabilidad por rollo.
+            </p>
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Periodo: <span className="font-medium">{periodoTexto}</span> · Regla: último día del mes solo Primer Turno.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
+        <div className="text-[11px] text-muted-foreground">
+          {query.isLoading
+            ? "Cargando datos…"
+            : data
+              ? `${data.resumen.rollosTotal.toLocaleString("es-MX")} rollos · ${data.trazabilidad.length} registros trazables`
+              : "Sin datos disponibles"}
+          {error && <span className="ml-2 text-destructive">· {error}</span>}
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => handle("pdf")}
+            disabled={!data || busy !== null}
+            className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium hover:bg-accent disabled:opacity-50"
+            title="Descargar reporte ejecutivo PDF"
+          >
+            <Download className="h-3.5 w-3.5" /> {busy === "pdf" ? "Generando…" : "PDF"}
+          </button>
+          <button
+            onClick={() => handle("xlsx")}
+            disabled={!data || busy !== null}
+            className="inline-flex items-center gap-2 rounded-md border border-success/40 bg-success/10 px-3 py-1.5 text-xs font-medium text-success hover:bg-success/20 disabled:opacity-50"
+            title="Descargar XLSX detallado con trazabilidad"
+          >
+            <FileSpreadsheet className="h-3.5 w-3.5" /> {busy === "xlsx" ? "Generando…" : "XLSX (BD)"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
