@@ -832,11 +832,11 @@ function ReporteTurnoItem({ usuario, enabled }: { usuario: string; enabled: bool
   };
 
   return (
-    <div className="rounded-xl border-2 border-primary/30 bg-gradient-to-r from-primary/5 to-transparent p-5 shadow-sm">
+    <div className={CARD_CLS}>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex items-start gap-3">
-          <div className="mt-4 flex flex-col gap-2 rounded-lg border border-border bg-background/50 p-3">
-            <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Fecha y turno</label>
+          <div className={FILTER_PANEL_CLS}>
+            <label className={FILTER_LABEL_CLS}>Fecha y turno</label>
             <div className="flex flex-wrap items-center gap-2">
               <input
                 type="date"
