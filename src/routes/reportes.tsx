@@ -783,7 +783,7 @@ function ReporteTurnoItem({ usuario, enabled }: { usuario: string; enabled: bool
   const [consultaKey, setConsultaKey] = useState<{ fecha: string; turno: string } | null>(null);
   const [busy, setBusy] = useState<"pdf" | "xlsx" | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [showTraza, setShowTraza] = useState(false);
+  
 
   const startISO = consultaKey ? new Date(`${consultaKey.fecha}T00:00:00`).toISOString() : "";
   const endISO = consultaKey
