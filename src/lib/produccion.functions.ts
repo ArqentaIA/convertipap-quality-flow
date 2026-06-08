@@ -851,8 +851,22 @@ export const getDetalleCalidadOrden = createServerFn({ method: "GET" })
     if (errM) throw new Error(errM.message);
 
     const filas = (muestras ?? []).map((m: any) => {
-      const meds = (m.mediciones_calidad ?? []) as any[];
-      const peso = meds.find((x) => x.variable_clave === "peso")?.valor;
+      const medsRaw = (m.mediciones_calidad ?? []) as any[];
+      const meds = medsRaw.map((x) => {
+        const valor = x.valor === null ? null : Number(x.valor);
+        const min = x.min_snapshot === null ? null : Number(x.min_snapshot);
+        const max = x.max_snapshot === null ? null : Number(x.max_snapshot);
+        return {
+          clave: x.variable_clave as string,
+          valor,
+          min,
+          objetivo: x.objetivo_snapshot === null ? null : Number(x.objetivo_snapshot),
+          max,
+          estado: recomputarEstadoMedicion(x.variable_clave, valor, min, max, x.estado),
+          observacion: (x.observacion as string) ?? "",
+        };
+      });
+      const peso = meds.find((x) => x.clave === "peso")?.valor;
       const ncCount = meds.filter((x) => x.estado === "no_conforme" || x.estado === "fuera_rango_critico").length;
       const total = meds.length;
       const cumplimiento = total > 0 ? Math.round(((total - ncCount) / total) * 1000) / 10 : null;
@@ -872,17 +886,10 @@ export const getDetalleCalidadOrden = createServerFn({ method: "GET" })
         ncCount,
         totalMediciones: total,
         cumplimiento,
-        mediciones: meds.map((x) => ({
-          clave: x.variable_clave as string,
-          valor: x.valor === null ? null : Number(x.valor),
-          min: x.min_snapshot === null ? null : Number(x.min_snapshot),
-          objetivo: x.objetivo_snapshot === null ? null : Number(x.objetivo_snapshot),
-          max: x.max_snapshot === null ? null : Number(x.max_snapshot),
-          estado: x.estado as string,
-          observacion: (x.observacion as string) ?? "",
-        })),
+        mediciones: meds,
       };
     });
+
 
     // Resumen
     const totalRollos = filas.length;
