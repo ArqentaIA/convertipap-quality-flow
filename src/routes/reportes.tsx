@@ -441,7 +441,7 @@ function ReportesPage() {
                           await descargarPDF(titulo, `${freq} · ${periodo}`, hojasPdf);
                           reportesQuery.refetch();
                         }}
-                        className="inline-flex items-center gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-1.5 text-xs font-medium text-destructive hover:bg-destructive/20"
+                        className="inline-flex items-center gap-2 rounded-md border border-[#DC2626]/40 bg-[#DC2626]/10 px-3 py-1.5 text-xs font-medium text-[#DC2626] hover:bg-[#DC2626]/20"
                         title="Descargar reporte ejecutivo en PDF (datos en tiempo real)"
                       >
                         <Download className="h-3.5 w-3.5" /> PDF
@@ -456,7 +456,7 @@ function ReportesPage() {
                         await descargarXLSX(nombre, hojasXlsx);
                         reportesQuery.refetch();
                       }}
-                      className="inline-flex items-center gap-2 rounded-md border border-success/40 bg-success/10 px-3 py-1.5 text-xs font-medium text-success hover:bg-success/20"
+                      className="inline-flex items-center gap-2 rounded-md border border-[#16A34A]/40 bg-[#16A34A]/10 px-3 py-1.5 text-xs font-medium text-[#16A34A] hover:bg-[#16A34A]/20"
                       title="Descargar archivo XLSX para manejo de BD (datos en tiempo real)"
                     >
                       <FileSpreadsheet className="h-3.5 w-3.5" /> XLSX (BD)
@@ -601,7 +601,7 @@ function ReporteProduccionItem(props: {
           <button
             onClick={() => handle("pdf")}
             disabled={!data || busy !== null}
-            className="inline-flex items-center gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-1.5 text-xs font-medium text-destructive hover:bg-destructive/20 disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-md border border-[#DC2626]/40 bg-[#DC2626]/10 px-3 py-1.5 text-xs font-medium text-[#DC2626] hover:bg-[#DC2626]/20 disabled:opacity-50"
             title="Descargar reporte ejecutivo PDF"
           >
             <Download className="h-3.5 w-3.5" /> {busy === "pdf" ? "Generando…" : "PDF"}
@@ -609,7 +609,7 @@ function ReporteProduccionItem(props: {
           <button
             onClick={() => handle("xlsx")}
             disabled={!data || busy !== null}
-            className="inline-flex items-center gap-2 rounded-md border border-success/40 bg-success/10 px-3 py-1.5 text-xs font-medium text-success hover:bg-success/20 disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-md border border-[#16A34A]/40 bg-[#16A34A]/10 px-3 py-1.5 text-xs font-medium text-[#16A34A] hover:bg-[#16A34A]/20 disabled:opacity-50"
             title="Descargar XLSX detallado"
           >
             <FileSpreadsheet className="h-3.5 w-3.5" /> {busy === "xlsx" ? "Generando…" : "XLSX (BD)"}
