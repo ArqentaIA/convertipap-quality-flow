@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { SessionGate } from "@/components/SessionGate";
-import { FileBarChart2, Download, FileSpreadsheet, TrendingUp, TrendingDown, CalendarRange } from "lucide-react";
+import { Download, FileSpreadsheet, TrendingUp, TrendingDown, CalendarRange } from "lucide-react";
 import logoUrl from "@/assets/logo-convertipap.png";
 import { RangoSelector, MESES, rangoLabel, rangoToFreq, type Rango } from "@/components/qc/RangoSelector";
 import { useLabFilter, LAB_LABEL } from "@/lib/lab";
