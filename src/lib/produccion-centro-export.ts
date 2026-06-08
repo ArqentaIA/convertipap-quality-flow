@@ -260,8 +260,69 @@ export async function exportProduccionXLSX(
     const ws = XLSX.utils.json_to_sheet(s.rows);
     XLSX.utils.book_append_sheet(wb, ws, s.name.slice(0, 31));
   }
+
+  // ── Análisis Visual (barras de bloques unicode) ──────────────────
+  const bar = (pct: number, width = 25) => {
+    const v = Math.max(0, Math.min(100, pct));
+    const filled = Math.round((v / 100) * width);
+    return "█".repeat(filled) + "░".repeat(width - filled);
+  };
+  const semaforo = (pct: number) => (pct < 60 ? "🔴 Crítico" : pct < 80 ? "🟡 Aceptable" : "🟢 Óptimo");
+  const numOrZero = (v: number | typeof DASH): number => (typeof v === "number" ? v : 0);
+
+  const radarVars = [
+    { label: "Producción", v: numOrZero(data.kpis.cumplimientoPct ?? data.foms.cumplimientoMetaPct ?? DASH) },
+    { label: "Calidad", v: numOrZero(data.kpis.calidadLiberadaPct) },
+    { label: "OEE", v: numOrZero(data.kpis.oeeGlobalPct) },
+    { label: "Liberación", v: numOrZero(data.foms.kgLiberados.pct) },
+    { label: "Cumplimiento", v: numOrZero(data.foms.cumplimientoMetaPct ?? data.kpis.cumplimientoPct ?? DASH) },
+    { label: "Disponibilidad", v: numOrZero(data.kpis.disponibilidadPct) },
+  ];
+  const kgLib = data.foms.kgLiberados.total;
+  const kgNoLib = data.foms.kgNoLiberados.total;
+  const kgTot = kgLib + kgNoLib;
+  const pctLib = kgTot > 0 ? (kgLib / kgTot) * 100 : 0;
+  const pctNoLib = kgTot > 0 ? (kgNoLib / kgTot) * 100 : 0;
+
+  const maxMaqKg = Math.max(1, ...data.maquinas.map((m) => m.kg || 0));
+  const maxProdKg = Math.max(1, ...data.productos.map((p) => p.kg || 0));
+
+  const visual: Record<string, string | number>[] = [
+    { Sección: "RADAR DE SALUD OPERATIVA", Métrica: "", Valor: "", Gráfico: "0% ─────────── 50% ─────────── 100%", Estado: "" },
+    ...radarVars.map((m) => ({
+      Sección: "", Métrica: m.label, Valor: `${m.v.toFixed(1)}%`, Gráfico: bar(m.v), Estado: semaforo(m.v),
+    })),
+    { Sección: "", Métrica: "", Valor: "", Gráfico: "Lectura: <60% crítico · 60-80% aceptable · ≥80% óptimo", Estado: "" },
+    { Sección: "", Métrica: "", Valor: "", Gráfico: "", Estado: "" },
+    { Sección: "DISTRIBUCIÓN DE PRODUCCIÓN", Métrica: "", Valor: `Total: ${Math.round(kgTot).toLocaleString("es-MX")} kg`, Gráfico: "", Estado: "" },
+    { Sección: "", Métrica: "Kg Liberados",    Valor: `${pctLib.toFixed(1)}%`,   Gráfico: bar(pctLib),   Estado: `${Math.round(kgLib).toLocaleString("es-MX")} kg` },
+    { Sección: "", Métrica: "Kg No Liberados", Valor: `${pctNoLib.toFixed(1)}%`, Gráfico: bar(pctNoLib), Estado: `${Math.round(kgNoLib).toLocaleString("es-MX")} kg` },
+    { Sección: "", Métrica: "", Valor: "", Gráfico: "", Estado: "" },
+    { Sección: "PRODUCCIÓN POR MÁQUINA (kg)", Métrica: "", Valor: "", Gráfico: "", Estado: "" },
+    ...data.maquinas.slice(0, 15).map((m) => ({
+      Sección: "",
+      Métrica: `${m.codigo} ${m.nombre}`,
+      Valor: `${Math.round(m.kg).toLocaleString("es-MX")} kg`,
+      Gráfico: bar((m.kg / maxMaqKg) * 100),
+      Estado: `${m.rollos} rollos · OEE ${m.oeePct.toFixed(0)}%`,
+    })),
+    { Sección: "", Métrica: "", Valor: "", Gráfico: "", Estado: "" },
+    { Sección: "PARTICIPACIÓN POR PRODUCTO", Métrica: "", Valor: "", Gráfico: "", Estado: "" },
+    ...data.productos.slice(0, 15).map((p) => ({
+      Sección: "",
+      Métrica: p.producto,
+      Valor: `${p.participacionPct.toFixed(1)}%`,
+      Gráfico: bar((p.kg / maxProdKg) * 100),
+      Estado: `${Math.round(p.kg).toLocaleString("es-MX")} kg · ${p.rollos} rollos`,
+    })),
+  ];
+  const wsVisual = XLSX.utils.json_to_sheet(visual);
+  wsVisual["!cols"] = [{ wch: 32 }, { wch: 30 }, { wch: 16 }, { wch: 40 }, { wch: 28 }];
+  XLSX.utils.book_append_sheet(wb, wsVisual, "Análisis Visual");
+
   XLSX.writeFile(wb, `reporte_produccion_${stamp()}.xlsx`);
 }
+
 
 // ────────────────────────────── PDF ──────────────────────────────
 type DocWithTable = { lastAutoTable: { finalY: number } };
