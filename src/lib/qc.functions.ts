@@ -57,17 +57,32 @@ function requireRollStatusRole(roles: string[]) {
 
 // ------------------------- Estado de medición -------------------------
 
+/**
+ * Variables cuyo valor por ENCIMA del máximo NO es no-conforme.
+ * Caso Blancura R457: a mayor blancura, mejor calidad — el "máx" es solo
+ * referencia objetivo, no un tope crítico.
+ */
+function esVariableSinTopeSuperior(clave?: string | null): boolean {
+  if (!clave) return false;
+  const k = clave.toLowerCase().replace(/[\s_-]/g, "");
+  return k.includes("blancura") || k.includes("r457");
+}
+
 function calcularEstadoMedicion(
   valor: number,
   min: number,
   max: number,
+  clave?: string | null,
 ): Database["public"]["Enums"]["qc_medicion_estado"] {
   if (!Number.isFinite(valor)) return "pendiente";
+  const sinTope = esVariableSinTopeSuperior(clave);
   // fuera_rango_critico: >20% fuera de tolerancia
   const rango = max - min;
   const tol = Math.abs(rango) * 0.2;
-  if (valor < min - tol || valor > max + tol) return "fuera_rango_critico";
-  if (valor < min || valor > max) return "no_conforme";
+  if (valor < min - tol) return "fuera_rango_critico";
+  if (!sinTope && valor > max + tol) return "fuera_rango_critico";
+  if (valor < min) return "no_conforme";
+  if (!sinTope && valor > max) return "no_conforme";
   return "conforme";
 }
 
@@ -518,7 +533,7 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
       objetivo_snapshot: m.objetivo_snapshot,
       max_snapshot: m.max_snapshot,
       observacion: m.observacion,
-      estado: calcularEstadoMedicion(m.valor, m.min_snapshot, m.max_snapshot),
+      estado: calcularEstadoMedicion(m.valor, m.min_snapshot, m.max_snapshot, m.variable_clave),
       capturado_por: userId,
     }));
     if (medsPayload.length > 0) {

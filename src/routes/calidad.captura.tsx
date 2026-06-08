@@ -120,12 +120,26 @@ function focusNextCaptureField(current: HTMLElement) {
   }
 }
 
-function evaluarMedicion(v: number, min: number, max: number): MedicionEstadoUI {
+function esVariableSinTopeSuperior(clave?: string | null): boolean {
+  if (!clave) return false;
+  const k = clave.toLowerCase().replace(/[\s_-]/g, "");
+  return k.includes("blancura") || k.includes("r457");
+}
+
+function evaluarMedicion(
+  v: number,
+  min: number,
+  max: number,
+  clave?: string | null,
+): MedicionEstadoUI {
   if (!Number.isFinite(v)) return "pendiente";
+  const sinTope = esVariableSinTopeSuperior(clave);
   const rango = max - min;
   const tol = Math.abs(rango) * 0.2;
-  if (v < min - tol || v > max + tol) return "fuera_rango_critico";
-  if (v < min || v > max) return "no_conforme";
+  if (v < min - tol) return "fuera_rango_critico";
+  if (!sinTope && v > max + tol) return "fuera_rango_critico";
+  if (v < min) return "no_conforme";
+  if (!sinTope && v > max) return "no_conforme";
   return "conforme";
 }
 
@@ -443,7 +457,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
     return variables.map((v) => {
       const input = mediciones[v.variable_id] ?? { valor: "" };
       const num = input.valor === "" ? NaN : Number(input.valor);
-      const estado = evaluarMedicion(num, v.min_valor, v.max_valor);
+      const estado = evaluarMedicion(num, v.min_valor, v.max_valor, v.clave);
       return { spec: v, input, estado, num };
     });
   }, [variables, mediciones]);
