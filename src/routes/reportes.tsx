@@ -871,179 +871,38 @@ function ReporteTurnoItem({ usuario, enabled }: { usuario: string; enabled: bool
         </div>
       </div>
 
-      {consultaKey && (
-        <div className="mt-4 space-y-4">
-          {dataQuery.isLoading && (
-            <div className="rounded-md border border-border bg-card p-4 text-xs text-muted-foreground">Cargando datos…</div>
-          )}
-          {dataQuery.error && (
-            <div role="alert" className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-xs text-destructive">
-              {(dataQuery.error as Error).message}
-            </div>
-          )}
-
-          {resumen && filtered && (
-            <>
-              {/* Resumen ejecutivo (tarjetas) */}
-              <div className="grid grid-cols-2 gap-2 md:grid-cols-4 lg:grid-cols-7">
-                {[
-                  { label: "Rollos producidos", value: resumen.totalRollos.toLocaleString("es-MX") },
-                  { label: "Kg producidos", value: resumen.kgTotal > 0 ? resumen.kgTotal.toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "—" },
-                  { label: "Conformes", value: resumen.conformes.toLocaleString("es-MX") },
-                  { label: "No conformes", value: resumen.noConformes.toLocaleString("es-MX") },
-                  { label: "Conformidad", value: resumen.conformidadPct == null ? "—" : `${resumen.conformidadPct.toFixed(1)}%` },
-                  { label: "Máquinas", value: resumen.maquinasConProduccion.toLocaleString("es-MX") },
-                  { label: "Registros", value: resumen.registrosCapturados.toLocaleString("es-MX") },
-                ].map((k) => (
-                  <div key={k.label} className="rounded-lg border border-border bg-background/60 p-3">
-                    <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{k.label}</div>
-                    <div className="mt-1 text-base font-bold tabular-nums text-foreground">{k.value}</div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Producción por máquina */}
-              <div className="rounded-lg border border-border bg-card">
-                <div className="border-b border-border bg-muted/40 px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  Producción por máquina
-                </div>
-                <table className="w-full text-xs">
-                  <thead className="bg-muted/30 text-left text-[10px] uppercase tracking-wider text-muted-foreground">
-                    <tr>
-                      <th className="px-3 py-2">Máquina</th>
-                      <th className="px-3 py-2 text-right">Rollos</th>
-                      <th className="px-3 py-2 text-right">Kg producidos</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {porMaq.length === 0 ? (
-                      <tr><td colSpan={3} className="px-3 py-4 text-center text-muted-foreground">—</td></tr>
-                    ) : porMaq.map((m) => (
-                      <tr key={m.maquina} className="border-t border-border">
-                        <td className="px-3 py-2 font-medium">{m.maquina}</td>
-                        <td className="px-3 py-2 text-right tabular-nums">{m.rollos.toLocaleString("es-MX")}</td>
-                        <td className="px-3 py-2 text-right tabular-nums">
-                          {m.kg > 0 ? m.kg.toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "—"}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Ranking NC */}
-              <div className="rounded-lg border border-destructive/40 bg-card">
-                <div className="border-b border-destructive/30 bg-destructive/10 px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-destructive">
-                  Rollos no conformes por máquina
-                </div>
-                <table className="w-full text-xs">
-                  <thead className="bg-muted/30 text-left text-[10px] uppercase tracking-wider text-muted-foreground">
-                    <tr>
-                      <th className="px-3 py-2">#</th>
-                      <th className="px-3 py-2">Máquina</th>
-                      <th className="px-3 py-2 text-right">Rollos</th>
-                      <th className="px-3 py-2 text-right">No conformes</th>
-                      <th className="px-3 py-2 text-right">% No conf.</th>
-                      <th className="px-3 py-2 text-right">Kg afectados</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {ranking.length === 0 || ranking.every((m) => m.noConformes === 0) ? (
-                      <tr><td colSpan={6} className="px-3 py-4 text-center text-muted-foreground">—</td></tr>
-                    ) : ranking.map((m, i) => (
-                      <tr key={m.maquina} className="border-t border-border">
-                        <td className="px-3 py-2 tabular-nums">{i + 1}</td>
-                        <td className="px-3 py-2 font-medium">{m.maquina}</td>
-                        <td className="px-3 py-2 text-right tabular-nums">{m.rollos.toLocaleString("es-MX")}</td>
-                        <td className="px-3 py-2 text-right tabular-nums">{m.noConformes.toLocaleString("es-MX")}</td>
-                        <td className="px-3 py-2 text-right tabular-nums">{m.noConformidadPct.toFixed(1)}%</td>
-                        <td className="px-3 py-2 text-right tabular-nums">
-                          {m.kgAfectados > 0 ? m.kgAfectados.toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "—"}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Tabla consolidada del turno */}
-              <div className="rounded-lg border border-border bg-card">
-                <div className="flex items-center justify-between border-b border-border bg-muted/40 px-4 py-2">
-                  <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Tabla consolidada del turno</div>
-                  <button
-                    onClick={() => setShowTraza((v) => !v)}
-                    className="inline-flex items-center gap-1 rounded-md border border-input bg-background px-2 py-1 text-[11px] text-foreground hover:bg-accent"
-                    title="Ver detalle origen de los datos"
-                  >
-                    <Eye className="h-3 w-3" /> {showTraza ? "Ocultar trazabilidad" : "Ver trazabilidad"}
-                  </button>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-xs">
-                    <thead className="bg-muted/30 text-left text-[10px] uppercase tracking-wider text-muted-foreground">
-                      <tr>
-                        <th className="px-3 py-2 text-right">N° Captura</th>
-                        <th className="px-3 py-2">Fecha y hora</th>
-                        <th className="px-3 py-2">N° Rollo</th>
-                        <th className="px-3 py-2">Máquina</th>
-                        <th className="px-3 py-2">Producto</th>
-                        <th className="px-3 py-2 text-right">Peso (kg)</th>
-                        <th className="px-3 py-2">Estado / Dictamen</th>
-                        <th className="px-3 py-2">Capturista</th>
-                        {showTraza && <th className="px-3 py-2">ID interno</th>}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filtered.rows.length === 0 ? (
-                        <tr><td colSpan={showTraza ? 9 : 8} className="px-3 py-4 text-center text-muted-foreground">—</td></tr>
-                      ) : filtered.rows.map((row) => (
-                        <tr key={row.id} className="border-t border-border">
-                          <td className="px-3 py-2 text-right tabular-nums">{row.secuencia_captura ?? "—"}</td>
-                          <td className="px-3 py-2 tabular-nums">{new Date(row.capturado_at).toLocaleString("es-MX")}</td>
-                          <td className="px-3 py-2">{row.numero_rollo ?? "—"}</td>
-                          <td className="px-3 py-2">{row.maquina ?? "—"}</td>
-                          <td className="px-3 py-2">{row.producto ?? "—"}</td>
-                          <td className="px-3 py-2 text-right tabular-nums">{row.peso_kg != null ? row.peso_kg.toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "—"}</td>
-                          <td className="px-3 py-2">{row.dictamen ?? row.estatus_liberacion ?? row.estado ?? "—"}</td>
-                          <td className="px-3 py-2">{row.analista ?? "—"}</td>
-                          {showTraza && <td className="px-3 py-2 font-mono text-[10px] text-muted-foreground">{row.id}</td>}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </>
-          )}
-
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="text-[11px] text-muted-foreground">
-              {filtered
-                ? `${filtered.rows.length} registros · Última actualización: ${new Date(filtered.ultimaActualizacion).toLocaleString("es-MX")}`
-                : "Pulsa Consultar para cargar la información."}
-              {error && <span className="ml-2 text-destructive">· {error}</span>}
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => handle("pdf")}
-                disabled={!filtered || busy !== null}
-                className="inline-flex items-center gap-2 rounded-md border border-[#DC2626]/40 bg-[#DC2626]/10 px-3 py-1.5 text-xs font-medium text-[#DC2626] hover:bg-[#DC2626]/20 disabled:opacity-50"
-                title="Exportar PDF"
-              >
-                <Download className="h-3.5 w-3.5" /> {busy === "pdf" ? "Generando…" : "PDF"}
-              </button>
-              <button
-                onClick={() => handle("xlsx")}
-                disabled={!filtered || busy !== null}
-                className="inline-flex items-center gap-2 rounded-md border border-[#16A34A]/40 bg-[#16A34A]/10 px-3 py-1.5 text-xs font-medium text-[#16A34A] hover:bg-[#16A34A]/20 disabled:opacity-50"
-                title="Exportar Excel"
-              >
-                <FileSpreadsheet className="h-3.5 w-3.5" /> {busy === "xlsx" ? "Generando…" : "XLSX"}
-              </button>
-            </div>
-          </div>
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
+        <div className="text-[11px] text-muted-foreground">
+          {!consultaKey
+            ? "Selecciona fecha y turno, luego pulsa Consultar."
+            : dataQuery.isLoading
+              ? "Cargando datos…"
+              : dataQuery.error
+                ? <span className="text-destructive">{(dataQuery.error as Error).message}</span>
+                : filtered
+                  ? `${filtered.rows.length} registros · Última actualización: ${new Date(filtered.ultimaActualizacion).toLocaleString("es-MX")}`
+                  : "Sin datos disponibles"}
+          {error && <span className="ml-2 text-destructive">· {error}</span>}
         </div>
-      )}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => handle("pdf")}
+            disabled={!filtered || busy !== null}
+            className="inline-flex items-center gap-2 rounded-md border border-[#DC2626]/40 bg-[#DC2626]/10 px-3 py-1.5 text-xs font-medium text-[#DC2626] hover:bg-[#DC2626]/20 disabled:opacity-50"
+            title="Exportar PDF"
+          >
+            <Download className="h-3.5 w-3.5" /> {busy === "pdf" ? "Generando…" : "PDF"}
+          </button>
+          <button
+            onClick={() => handle("xlsx")}
+            disabled={!filtered || busy !== null}
+            className="inline-flex items-center gap-2 rounded-md border border-[#16A34A]/40 bg-[#16A34A]/10 px-3 py-1.5 text-xs font-medium text-[#16A34A] hover:bg-[#16A34A]/20 disabled:opacity-50"
+            title="Exportar Excel"
+          >
+            <FileSpreadsheet className="h-3.5 w-3.5" /> {busy === "xlsx" ? "Generando…" : "XLSX"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
