@@ -734,7 +734,7 @@ function ReporteMensualItem({ usuario, enabled }: { usuario: string; enabled: bo
           <button
             onClick={() => handle("pdf")}
             disabled={!data || busy !== null}
-            className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium hover:bg-accent disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-md border border-[#DC2626]/40 bg-[#DC2626]/10 px-3 py-1.5 text-xs font-medium text-[#DC2626] hover:bg-[#DC2626]/20 disabled:opacity-50"
             title="Descargar reporte ejecutivo PDF"
           >
             <Download className="h-3.5 w-3.5" /> {busy === "pdf" ? "Generando…" : "PDF"}
