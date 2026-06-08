@@ -950,18 +950,22 @@ export const getDetalleRollo = createServerFn({ method: "GET" })
     >;
     const meds = ((m.mediciones_calidad ?? []) as any[]).map((x) => {
       const s = snap[x.variable_clave] ?? null;
+      const valor = x.valor === null ? null : Number(x.valor);
+      const min = x.min_snapshot === null ? null : Number(x.min_snapshot);
+      const max = x.max_snapshot === null ? null : Number(x.max_snapshot);
       return {
         clave: x.variable_clave as string,
         etiqueta: s?.etiqueta ?? (x.variable_clave as string),
         unidad: s?.unidad ?? "",
-        valor: x.valor === null ? null : Number(x.valor),
-        min: x.min_snapshot === null ? null : Number(x.min_snapshot),
+        valor,
+        min,
         objetivo: x.objetivo_snapshot === null ? null : Number(x.objetivo_snapshot),
-        max: x.max_snapshot === null ? null : Number(x.max_snapshot),
-        estado: x.estado as string,
+        max,
+        estado: recomputarEstadoMedicion(x.variable_clave, valor, min, max, x.estado),
         observacion: (x.observacion as string) ?? "",
       };
     });
+
 
     // Completar con variables del snapshot que aún no tengan medición
     const presentes = new Set(meds.map((x) => x.clave));
