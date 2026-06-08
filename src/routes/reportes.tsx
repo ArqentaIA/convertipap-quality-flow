@@ -40,6 +40,19 @@ function ReportesGate() {
   );
 }
 
+// ── Premium unified styling tokens ──────────────────────────────────
+const CARD_CLS =
+  "relative overflow-hidden rounded-2xl border border-primary/15 bg-gradient-to-br from-card via-card to-primary/[0.04] p-6 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_10px_30px_-15px_rgba(15,23,42,0.15)] ring-1 ring-black/[0.02] transition-shadow hover:shadow-[0_1px_2px_rgba(0,0,0,0.05),0_18px_40px_-18px_rgba(15,23,42,0.22)] before:absolute before:inset-y-0 before:left-0 before:w-[3px] before:bg-gradient-to-b before:from-primary before:via-primary/70 before:to-primary/20";
+const FILTER_PANEL_CLS =
+  "mt-4 flex flex-col gap-2 rounded-xl border border-border/60 bg-background/70 p-3.5 shadow-sm backdrop-blur-sm";
+const FILTER_LABEL_CLS =
+  "text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground";
+const PDF_BTN_CLS =
+  "inline-flex items-center gap-2 rounded-lg border border-[#DC2626]/30 bg-gradient-to-b from-[#DC2626]/10 to-[#DC2626]/5 px-3.5 py-1.5 text-xs font-semibold text-[#DC2626] shadow-sm transition-all hover:from-[#DC2626]/20 hover:to-[#DC2626]/10 hover:shadow-md active:scale-[0.98] disabled:opacity-50";
+const XLSX_BTN_CLS =
+  "inline-flex items-center gap-2 rounded-lg border border-[#16A34A]/30 bg-gradient-to-b from-[#16A34A]/10 to-[#16A34A]/5 px-3.5 py-1.5 text-xs font-semibold text-[#16A34A] shadow-sm transition-all hover:from-[#16A34A]/20 hover:to-[#16A34A]/10 hover:shadow-md active:scale-[0.98] disabled:opacity-50";
+
+
 const META_EMPRESA = {
   empresa: "ConvertiPap S.A. de C.V.",
   planta: "Planta Tlaxcala",
