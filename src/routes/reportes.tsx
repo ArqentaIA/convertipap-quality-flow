@@ -721,6 +721,90 @@ function ReporteMensualItem({ usuario, enabled }: { usuario: string; enabled: bo
         </div>
       </div>
 
+      {data && data.buckets.length > 0 && (
+        <div className="mt-5 grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <div className="lg:col-span-2 rounded-lg border border-border bg-card p-4">
+            <div className="mb-2 flex items-center justify-between">
+              <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Producción {modo === "anual" ? "por mes" : "por día"}
+              </h4>
+              <span className="text-[10px] text-muted-foreground">Rollos / Kg</span>
+            </div>
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={data.buckets.map((b) => ({
+                label: modo === "anual" ? b.label.slice(0, 3) : b.label,
+                Rollos: b.rollos,
+                Conformes: b.conformes,
+                NoConformes: b.noConformes,
+              }))}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="label" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
+                <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
+                <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
+                <Legend wrapperStyle={{ fontSize: 11 }} />
+                <Bar dataKey="Conformes" stackId="a" fill="hsl(var(--success))" radius={[0, 0, 0, 0]} />
+                <Bar dataKey="NoConformes" stackId="a" fill="hsl(var(--destructive))" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="rounded-lg border border-border bg-card p-4">
+            <div className="mb-2 flex items-center justify-between">
+              <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Conformidad global</h4>
+              <span className="text-[10px] text-muted-foreground">{periodoTexto}</span>
+            </div>
+            <ResponsiveContainer width="100%" height={220}>
+              <PieChart>
+                <Pie
+                  data={[
+                    { name: "Conformes", value: data.resumen.conformes },
+                    { name: "No conformes", value: data.resumen.noConformes },
+                  ]}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={45}
+                  outerRadius={75}
+                  paddingAngle={2}
+                  label={(e: { percent?: number }) => e.percent != null ? `${(e.percent * 100).toFixed(0)}%` : ""}
+                  labelLine={false}
+                >
+                  <Cell fill="hsl(var(--success))" />
+                  <Cell fill="hsl(var(--destructive))" />
+                </Pie>
+                <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
+                <Legend wrapperStyle={{ fontSize: 11 }} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+
+          {data.ncPorMaquina.length > 0 && (
+            <div className="lg:col-span-3 rounded-lg border border-border bg-card p-4">
+              <div className="mb-2 flex items-center justify-between">
+                <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">No conformes por máquina</h4>
+                <span className="text-[10px] text-muted-foreground">Ranking</span>
+              </div>
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={data.ncPorMaquina.map((r) => ({
+                  maquina: r.maquina,
+                  NoConformes: r.noConformes,
+                  Conformes: Math.max(0, r.rollos - r.noConformes),
+                }))}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="maquina" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
+                  <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
+                  <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
+                  <Legend wrapperStyle={{ fontSize: 11 }} />
+                  <Bar dataKey="Conformes" fill="hsl(var(--success))" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="NoConformes" fill="hsl(var(--destructive))" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
         <div className="text-[11px] text-muted-foreground">
           {query.isLoading
