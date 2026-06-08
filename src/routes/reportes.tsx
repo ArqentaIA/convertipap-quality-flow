@@ -464,7 +464,7 @@ function ReportesPage() {
                           await descargarPDF(titulo, `${freq} · ${periodo}`, hojasPdf);
                           reportesQuery.refetch();
                         }}
-                        className="inline-flex items-center gap-2 rounded-md border border-[#DC2626]/40 bg-[#DC2626]/10 px-3 py-1.5 text-xs font-medium text-[#DC2626] hover:bg-[#DC2626]/20"
+                        className={PDF_BTN_CLS}
                         title="Descargar reporte ejecutivo en PDF (datos en tiempo real)"
                       >
                         <Download className="h-3.5 w-3.5" /> PDF
