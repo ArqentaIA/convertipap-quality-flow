@@ -434,7 +434,7 @@ function ReportesPage() {
               {reportesQuery.isLoading
                 ? "Cargando datos…"
                 : payload
-                  ? `Listo · Última actualización: ${new Date(payload.ultimaActualizacion ?? Date.now()).toLocaleString("es-MX")}`
+                  ? `Listo para descargar`
                   : "Sin datos disponibles"}
             </div>
             <div className="flex items-center gap-2">
