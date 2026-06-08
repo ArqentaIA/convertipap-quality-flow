@@ -441,7 +441,7 @@ function ReportesPage() {
                           await descargarPDF(titulo, `${freq} · ${periodo}`, hojasPdf);
                           reportesQuery.refetch();
                         }}
-                        className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium hover:bg-accent"
+                        className="inline-flex items-center gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-1.5 text-xs font-medium text-destructive hover:bg-destructive/20"
                         title="Descargar reporte ejecutivo en PDF (datos en tiempo real)"
                       >
                         <Download className="h-3.5 w-3.5" /> PDF
@@ -601,7 +601,7 @@ function ReporteProduccionItem(props: {
           <button
             onClick={() => handle("pdf")}
             disabled={!data || busy !== null}
-            className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium hover:bg-accent disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-1.5 text-xs font-medium text-destructive hover:bg-destructive/20 disabled:opacity-50"
             title="Descargar reporte ejecutivo PDF"
           >
             <Download className="h-3.5 w-3.5" /> {busy === "pdf" ? "Generando…" : "PDF"}
