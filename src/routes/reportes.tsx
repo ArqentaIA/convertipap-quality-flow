@@ -802,12 +802,6 @@ function ReporteTurnoItem({ usuario, enabled }: { usuario: string; enabled: bool
     return filterCentroByTurnoFecha(dataQuery.data, consultaKey.fecha, consultaKey.turno);
   }, [dataQuery.data, consultaKey]);
 
-  const resumen = useMemo(() => (filtered ? buildResumenTurno(filtered.rows) : null), [filtered]);
-  const porMaq = useMemo(() => (filtered ? buildPorMaquinaTurno(filtered.rows) : []), [filtered]);
-  const ranking = useMemo(
-    () => [...porMaq].sort((a, b) => b.noConformes - a.noConformes || b.noConformidadPct - a.noConformidadPct),
-    [porMaq],
-  );
 
   const ctx = consultaKey ? { fecha: consultaKey.fecha, turno: consultaKey.turno, usuario } : null;
 
