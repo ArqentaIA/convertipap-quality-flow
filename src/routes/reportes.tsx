@@ -401,6 +401,11 @@ function ReportesPage() {
           enabled={!!auth.session?.access_token}
         />
 
+        <ReporteTurnoItem
+          usuario={auth.profile?.nombre ?? auth.user?.email ?? "—"}
+          enabled={!!auth.session?.access_token}
+        />
+
 
 
         <div className="rounded-xl border border-border bg-card shadow-sm">
