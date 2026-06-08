@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { SessionGate } from "@/components/SessionGate";
-import { FileBarChart2, Download, FileSpreadsheet, TrendingUp, TrendingDown, CalendarRange } from "lucide-react";
+import { FileBarChart2, Download, FileSpreadsheet, TrendingUp, TrendingDown, CalendarRange, Eye } from "lucide-react";
 import logoUrl from "@/assets/logo-convertipap.png";
 import { RangoSelector, MESES, rangoLabel, rangoToFreq, type Rango } from "@/components/qc/RangoSelector";
 import { useLabFilter, LAB_LABEL } from "@/lib/lab";
@@ -13,6 +13,13 @@ import { getProduccionCentro } from "@/lib/produccion-centro.functions";
 import { exportProduccionPDF, exportProduccionXLSX } from "@/lib/produccion-centro-export";
 import { getReporteMensual } from "@/lib/reporte-mensual.functions";
 import { exportReporteMensualPDF, exportReporteMensualXLSX } from "@/lib/reporte-mensual-export";
+import {
+  exportReporteTurnoPDF,
+  exportReporteTurnoXLSX,
+  filterCentroByTurnoFecha,
+  buildResumen as buildResumenTurno,
+  buildPorMaquina as buildPorMaquinaTurno,
+} from "@/lib/reporte-turno-export";
 
 
 export const Route = createFileRoute("/reportes")({
@@ -394,6 +401,11 @@ function ReportesPage() {
           enabled={!!auth.session?.access_token}
         />
 
+        <ReporteTurnoItem
+          usuario={auth.profile?.nombre ?? auth.user?.email ?? "—"}
+          enabled={!!auth.session?.access_token}
+        />
+
 
 
         <div className="rounded-xl border border-border bg-card shadow-sm">
@@ -749,6 +761,289 @@ function ReporteMensualItem({ usuario, enabled }: { usuario: string; enabled: bo
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Reporte de Turno — filtros: Fecha + Turno
+// ─────────────────────────────────────────────────────────────────
+const TURNO_LABEL_RT: Record<string, string> = {
+  "1": "1er Turno",
+  "2": "2do Turno",
+  "3": "3er Turno",
+};
+
+function ReporteTurnoItem({ usuario, enabled }: { usuario: string; enabled: boolean }) {
+  const todayISO = useMemo(() => {
+    const d = new Date();
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  }, []);
+  const [fecha, setFecha] = useState<string>(todayISO);
+  const [turno, setTurno] = useState<string>("1");
+  const [consultaKey, setConsultaKey] = useState<{ fecha: string; turno: string } | null>(null);
+  const [busy, setBusy] = useState<"pdf" | "xlsx" | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [showTraza, setShowTraza] = useState(false);
+
+  const startISO = consultaKey ? new Date(`${consultaKey.fecha}T00:00:00`).toISOString() : "";
+  const endISO = consultaKey
+    ? new Date(new Date(`${consultaKey.fecha}T00:00:00`).getTime() + 24 * 3600_000).toISOString()
+    : "";
+
+  const dataQuery = useQuery({
+    queryKey: ["reporte-turno", consultaKey?.fecha, consultaKey?.turno],
+    queryFn: () => getProduccionCentro({ data: { rango: "dia" as const, start: startISO, end: endISO } }),
+    enabled: enabled && !!consultaKey,
+    staleTime: 0,
+  });
+
+  const filtered = useMemo(() => {
+    if (!dataQuery.data || !consultaKey) return null;
+    return filterCentroByTurnoFecha(dataQuery.data, consultaKey.fecha, consultaKey.turno);
+  }, [dataQuery.data, consultaKey]);
+
+  const resumen = useMemo(() => (filtered ? buildResumenTurno(filtered.rows) : null), [filtered]);
+  const porMaq = useMemo(() => (filtered ? buildPorMaquinaTurno(filtered.rows) : []), [filtered]);
+  const ranking = useMemo(
+    () => [...porMaq].sort((a, b) => b.noConformes - a.noConformes || b.noConformidadPct - a.noConformidadPct),
+    [porMaq],
+  );
+
+  const ctx = consultaKey ? { fecha: consultaKey.fecha, turno: consultaKey.turno, usuario } : null;
+
+  const handle = async (kind: "pdf" | "xlsx") => {
+    if (!filtered || !ctx) return;
+    setBusy(kind); setError(null);
+    try {
+      if (kind === "pdf") await exportReporteTurnoPDF(filtered, ctx);
+      else await exportReporteTurnoXLSX(filtered, ctx);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  return (
+    <div className="rounded-xl border-2 border-primary/30 bg-gradient-to-r from-primary/5 to-transparent p-5 shadow-sm">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex items-start gap-3">
+          <div className="mt-4 flex flex-col gap-2 rounded-lg border border-border bg-background/50 p-3">
+            <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Fecha y turno</label>
+            <div className="flex flex-wrap items-center gap-2">
+              <input
+                type="date"
+                value={fecha}
+                onChange={(e) => setFecha(e.target.value)}
+                className="rounded-md border border-input bg-background px-2 py-1.5 text-xs"
+              />
+              <select
+                value={turno}
+                onChange={(e) => setTurno(e.target.value)}
+                className="rounded-md border border-input bg-background px-2 py-1.5 text-xs"
+              >
+                <option value="1">1er Turno</option>
+                <option value="2">2do Turno</option>
+                <option value="3">3er Turno</option>
+              </select>
+              <button
+                onClick={() => setConsultaKey({ fecha, turno })}
+                disabled={!enabled || !fecha}
+                className="inline-flex items-center gap-1 rounded-md border border-primary/40 bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/20 disabled:opacity-50"
+              >
+                Consultar
+              </button>
+            </div>
+          </div>
+          <div>
+            <div className="text-sm font-bold text-foreground">Reporte de Turno</div>
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Desempeño operativo consolidado por fecha y turno. Todos los indicadores provienen directamente de la base de datos productiva.
+            </p>
+            {consultaKey && (
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                Consultando: <span className="font-medium">{consultaKey.fecha}</span> · {TURNO_LABEL_RT[consultaKey.turno]}
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {consultaKey && (
+        <div className="mt-4 space-y-4">
+          {dataQuery.isLoading && (
+            <div className="rounded-md border border-border bg-card p-4 text-xs text-muted-foreground">Cargando datos…</div>
+          )}
+          {dataQuery.error && (
+            <div role="alert" className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-xs text-destructive">
+              {(dataQuery.error as Error).message}
+            </div>
+          )}
+
+          {resumen && filtered && (
+            <>
+              {/* Resumen ejecutivo (tarjetas) */}
+              <div className="grid grid-cols-2 gap-2 md:grid-cols-4 lg:grid-cols-7">
+                {[
+                  { label: "Rollos producidos", value: resumen.totalRollos.toLocaleString("es-MX") },
+                  { label: "Kg producidos", value: resumen.kgTotal > 0 ? resumen.kgTotal.toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "—" },
+                  { label: "Conformes", value: resumen.conformes.toLocaleString("es-MX") },
+                  { label: "No conformes", value: resumen.noConformes.toLocaleString("es-MX") },
+                  { label: "Conformidad", value: resumen.conformidadPct == null ? "—" : `${resumen.conformidadPct.toFixed(1)}%` },
+                  { label: "Máquinas", value: resumen.maquinasConProduccion.toLocaleString("es-MX") },
+                  { label: "Registros", value: resumen.registrosCapturados.toLocaleString("es-MX") },
+                ].map((k) => (
+                  <div key={k.label} className="rounded-lg border border-border bg-background/60 p-3">
+                    <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{k.label}</div>
+                    <div className="mt-1 text-base font-bold tabular-nums text-foreground">{k.value}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Producción por máquina */}
+              <div className="rounded-lg border border-border bg-card">
+                <div className="border-b border-border bg-muted/40 px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Producción por máquina
+                </div>
+                <table className="w-full text-xs">
+                  <thead className="bg-muted/30 text-left text-[10px] uppercase tracking-wider text-muted-foreground">
+                    <tr>
+                      <th className="px-3 py-2">Máquina</th>
+                      <th className="px-3 py-2 text-right">Rollos</th>
+                      <th className="px-3 py-2 text-right">Kg producidos</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {porMaq.length === 0 ? (
+                      <tr><td colSpan={3} className="px-3 py-4 text-center text-muted-foreground">—</td></tr>
+                    ) : porMaq.map((m) => (
+                      <tr key={m.maquina} className="border-t border-border">
+                        <td className="px-3 py-2 font-medium">{m.maquina}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{m.rollos.toLocaleString("es-MX")}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">
+                          {m.kg > 0 ? m.kg.toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Ranking NC */}
+              <div className="rounded-lg border border-destructive/40 bg-card">
+                <div className="border-b border-destructive/30 bg-destructive/10 px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-destructive">
+                  Rollos no conformes por máquina
+                </div>
+                <table className="w-full text-xs">
+                  <thead className="bg-muted/30 text-left text-[10px] uppercase tracking-wider text-muted-foreground">
+                    <tr>
+                      <th className="px-3 py-2">#</th>
+                      <th className="px-3 py-2">Máquina</th>
+                      <th className="px-3 py-2 text-right">Rollos</th>
+                      <th className="px-3 py-2 text-right">No conformes</th>
+                      <th className="px-3 py-2 text-right">% No conf.</th>
+                      <th className="px-3 py-2 text-right">Kg afectados</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {ranking.length === 0 || ranking.every((m) => m.noConformes === 0) ? (
+                      <tr><td colSpan={6} className="px-3 py-4 text-center text-muted-foreground">—</td></tr>
+                    ) : ranking.map((m, i) => (
+                      <tr key={m.maquina} className="border-t border-border">
+                        <td className="px-3 py-2 tabular-nums">{i + 1}</td>
+                        <td className="px-3 py-2 font-medium">{m.maquina}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{m.rollos.toLocaleString("es-MX")}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{m.noConformes.toLocaleString("es-MX")}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{m.noConformidadPct.toFixed(1)}%</td>
+                        <td className="px-3 py-2 text-right tabular-nums">
+                          {m.kgAfectados > 0 ? m.kgAfectados.toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Tabla consolidada del turno */}
+              <div className="rounded-lg border border-border bg-card">
+                <div className="flex items-center justify-between border-b border-border bg-muted/40 px-4 py-2">
+                  <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Tabla consolidada del turno</div>
+                  <button
+                    onClick={() => setShowTraza((v) => !v)}
+                    className="inline-flex items-center gap-1 rounded-md border border-input bg-background px-2 py-1 text-[11px] text-foreground hover:bg-accent"
+                    title="Ver detalle origen de los datos"
+                  >
+                    <Eye className="h-3 w-3" /> {showTraza ? "Ocultar trazabilidad" : "Ver trazabilidad"}
+                  </button>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead className="bg-muted/30 text-left text-[10px] uppercase tracking-wider text-muted-foreground">
+                      <tr>
+                        <th className="px-3 py-2 text-right">N° Captura</th>
+                        <th className="px-3 py-2">Fecha y hora</th>
+                        <th className="px-3 py-2">N° Rollo</th>
+                        <th className="px-3 py-2">Máquina</th>
+                        <th className="px-3 py-2">Producto</th>
+                        <th className="px-3 py-2 text-right">Peso (kg)</th>
+                        <th className="px-3 py-2">Estado / Dictamen</th>
+                        <th className="px-3 py-2">Capturista</th>
+                        {showTraza && <th className="px-3 py-2">ID interno</th>}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filtered.rows.length === 0 ? (
+                        <tr><td colSpan={showTraza ? 9 : 8} className="px-3 py-4 text-center text-muted-foreground">—</td></tr>
+                      ) : filtered.rows.map((row) => (
+                        <tr key={row.id} className="border-t border-border">
+                          <td className="px-3 py-2 text-right tabular-nums">{row.secuencia_captura ?? "—"}</td>
+                          <td className="px-3 py-2 tabular-nums">{new Date(row.capturado_at).toLocaleString("es-MX")}</td>
+                          <td className="px-3 py-2">{row.numero_rollo ?? "—"}</td>
+                          <td className="px-3 py-2">{row.maquina ?? "—"}</td>
+                          <td className="px-3 py-2">{row.producto ?? "—"}</td>
+                          <td className="px-3 py-2 text-right tabular-nums">{row.peso_kg != null ? row.peso_kg.toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "—"}</td>
+                          <td className="px-3 py-2">{row.dictamen ?? row.estatus_liberacion ?? row.estado ?? "—"}</td>
+                          <td className="px-3 py-2">{row.analista ?? "—"}</td>
+                          {showTraza && <td className="px-3 py-2 font-mono text-[10px] text-muted-foreground">{row.id}</td>}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </>
+          )}
+
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="text-[11px] text-muted-foreground">
+              {filtered
+                ? `${filtered.rows.length} registros · Última actualización: ${new Date(filtered.ultimaActualizacion).toLocaleString("es-MX")}`
+                : "Pulsa Consultar para cargar la información."}
+              {error && <span className="ml-2 text-destructive">· {error}</span>}
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => handle("pdf")}
+                disabled={!filtered || busy !== null}
+                className="inline-flex items-center gap-2 rounded-md border border-[#DC2626]/40 bg-[#DC2626]/10 px-3 py-1.5 text-xs font-medium text-[#DC2626] hover:bg-[#DC2626]/20 disabled:opacity-50"
+                title="Exportar PDF"
+              >
+                <Download className="h-3.5 w-3.5" /> {busy === "pdf" ? "Generando…" : "PDF"}
+              </button>
+              <button
+                onClick={() => handle("xlsx")}
+                disabled={!filtered || busy !== null}
+                className="inline-flex items-center gap-2 rounded-md border border-[#16A34A]/40 bg-[#16A34A]/10 px-3 py-1.5 text-xs font-medium text-[#16A34A] hover:bg-[#16A34A]/20 disabled:opacity-50"
+                title="Exportar Excel"
+              >
+                <FileSpreadsheet className="h-3.5 w-3.5" /> {busy === "xlsx" ? "Generando…" : "XLSX"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
