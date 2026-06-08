@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as VariablesCalidadRouteImport } from './routes/variables-calidad'
 import { Route as UsuariosRouteImport } from './routes/usuarios'
 import { Route as ReportesRouteImport } from './routes/reportes'
+import { Route as ReporteMensualRouteImport } from './routes/reporte-mensual'
 import { Route as ProduccionRouteImport } from './routes/produccion'
 import { Route as OperatorVisionRouteImport } from './routes/operator-vision'
 import { Route as LoginRouteImport } from './routes/login'
@@ -41,6 +42,11 @@ const UsuariosRoute = UsuariosRouteImport.update({
 const ReportesRoute = ReportesRouteImport.update({
   id: '/reportes',
   path: '/reportes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReporteMensualRoute = ReporteMensualRouteImport.update({
+  id: '/reporte-mensual',
+  path: '/reporte-mensual',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProduccionRoute = ProduccionRouteImport.update({
@@ -128,6 +134,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/operator-vision': typeof OperatorVisionRoute
   '/produccion': typeof ProduccionRoute
+  '/reporte-mensual': typeof ReporteMensualRoute
   '/reportes': typeof ReportesRoute
   '/usuarios': typeof UsuariosRoute
   '/variables-calidad': typeof VariablesCalidadRoute
@@ -148,6 +155,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/operator-vision': typeof OperatorVisionRoute
   '/produccion': typeof ProduccionRoute
+  '/reporte-mensual': typeof ReporteMensualRoute
   '/reportes': typeof ReportesRoute
   '/usuarios': typeof UsuariosRoute
   '/variables-calidad': typeof VariablesCalidadRoute
@@ -169,6 +177,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/operator-vision': typeof OperatorVisionRoute
   '/produccion': typeof ProduccionRoute
+  '/reporte-mensual': typeof ReporteMensualRoute
   '/reportes': typeof ReportesRoute
   '/usuarios': typeof UsuariosRoute
   '/variables-calidad': typeof VariablesCalidadRoute
@@ -191,6 +200,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/operator-vision'
     | '/produccion'
+    | '/reporte-mensual'
     | '/reportes'
     | '/usuarios'
     | '/variables-calidad'
@@ -211,6 +221,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/operator-vision'
     | '/produccion'
+    | '/reporte-mensual'
     | '/reportes'
     | '/usuarios'
     | '/variables-calidad'
@@ -231,6 +242,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/operator-vision'
     | '/produccion'
+    | '/reporte-mensual'
     | '/reportes'
     | '/usuarios'
     | '/variables-calidad'
@@ -252,6 +264,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   OperatorVisionRoute: typeof OperatorVisionRoute
   ProduccionRoute: typeof ProduccionRoute
+  ReporteMensualRoute: typeof ReporteMensualRoute
   ReportesRoute: typeof ReportesRoute
   UsuariosRoute: typeof UsuariosRoute
   VariablesCalidadRoute: typeof VariablesCalidadRoute
@@ -285,6 +298,13 @@ declare module '@tanstack/react-router' {
       path: '/reportes'
       fullPath: '/reportes'
       preLoaderRoute: typeof ReportesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reporte-mensual': {
+      id: '/reporte-mensual'
+      path: '/reporte-mensual'
+      fullPath: '/reporte-mensual'
+      preLoaderRoute: typeof ReporteMensualRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/produccion': {
@@ -404,6 +424,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   OperatorVisionRoute: OperatorVisionRoute,
   ProduccionRoute: ProduccionRoute,
+  ReporteMensualRoute: ReporteMensualRoute,
   ReportesRoute: ReportesRoute,
   UsuariosRoute: UsuariosRoute,
   VariablesCalidadRoute: VariablesCalidadRoute,
@@ -418,3 +439,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
