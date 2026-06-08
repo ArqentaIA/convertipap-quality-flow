@@ -533,7 +533,7 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
       objetivo_snapshot: m.objetivo_snapshot,
       max_snapshot: m.max_snapshot,
       observacion: m.observacion,
-      estado: calcularEstadoMedicion(m.valor, m.min_snapshot, m.max_snapshot),
+      estado: calcularEstadoMedicion(m.valor, m.min_snapshot, m.max_snapshot, m.variable_clave),
       capturado_por: userId,
     }));
     if (medsPayload.length > 0) {
