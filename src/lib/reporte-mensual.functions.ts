@@ -306,7 +306,14 @@ export const getReporteMensual = createServerFn({ method: "POST" })
     // 9) Trazabilidad (registros base que componen los totales)
     const trazabilidad: ReporteMensualTrace[] = muestras
       .slice()
-      .sort((a, b) => new Date(b.capturado_at).getTime() - new Date(a.capturado_at).getTime())
+      .sort((a, b) => {
+        const dtA = new Date(a.capturado_at).getTime();
+        const dtB = new Date(b.capturado_at).getTime();
+        if (dtA !== dtB) return dtA - dtB;
+        const maqA = maqById.get(a.maquina_id)?.codigo ?? "";
+        const maqB = maqById.get(b.maquina_id)?.codigo ?? "";
+        return maqA.localeCompare(maqB);
+      })
       .map((m) => {
         const u = m.capturado_por ? userById.get(m.capturado_por) : null;
         return {
