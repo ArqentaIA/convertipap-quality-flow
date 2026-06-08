@@ -765,7 +765,7 @@ function ReporteMensualItem({ usuario, enabled }: { usuario: string; enabled: bo
           <button
             onClick={() => handle("xlsx")}
             disabled={!data || busy !== null}
-            className="inline-flex items-center gap-2 rounded-md border border-success/40 bg-success/10 px-3 py-1.5 text-xs font-medium text-success hover:bg-success/20 disabled:opacity-50"
+            className={XLSX_BTN_CLS}
             title="Descargar XLSX detallado con trazabilidad"
           >
             <FileSpreadsheet className="h-3.5 w-3.5" /> {busy === "xlsx" ? "Generando…" : "XLSX (BD)"}
