@@ -13,7 +13,6 @@ import { getProduccionCentro } from "@/lib/produccion-centro.functions";
 import { exportProduccionPDF, exportProduccionXLSX } from "@/lib/produccion-centro-export";
 import { getReporteMensual } from "@/lib/reporte-mensual.functions";
 import { exportReporteMensualPDF, exportReporteMensualXLSX } from "@/lib/reporte-mensual-export";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, CartesianGrid } from "recharts";
 
 
 export const Route = createFileRoute("/reportes")({
