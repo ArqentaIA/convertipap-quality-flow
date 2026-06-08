@@ -419,7 +419,7 @@ function ReportesPage() {
 
 
 
-        <div className="rounded-xl border border-border bg-card shadow-sm">
+        <div className={CARD_CLS}>
 
           <div className="flex items-center justify-between border-b border-border p-5">
             <div>
