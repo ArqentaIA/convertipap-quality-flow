@@ -479,7 +479,7 @@ function ReportesPage() {
                         await descargarXLSX(nombre, hojasXlsx);
                         reportesQuery.refetch();
                       }}
-                      className="inline-flex items-center gap-2 rounded-md border border-[#16A34A]/40 bg-[#16A34A]/10 px-3 py-1.5 text-xs font-medium text-[#16A34A] hover:bg-[#16A34A]/20"
+                      className={XLSX_BTN_CLS}
                       title="Descargar archivo XLSX para manejo de BD (datos en tiempo real)"
                     >
                       <FileSpreadsheet className="h-3.5 w-3.5" /> XLSX (BD)
