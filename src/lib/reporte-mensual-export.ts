@@ -240,6 +240,200 @@ export async function exportReporteMensualPDF(
   });
   y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 18;
 
+  // ── 9. Radar de Salud Operativa ──────────────────────────────────────
+  if (y > pageH - 240) { doc.addPage(); y = M; }
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(12);
+  doc.setTextColor(20, 28, 56);
+  doc.text("9. Radar de Salud Operativa", M, y);
+  y += 12;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8.5);
+  doc.setTextColor(110);
+  doc.text("Visión rápida del estado operativo. Cada barra representa una métrica en escala 0–100%.", M, y);
+  y += 10;
+  doc.setFontSize(8);
+  doc.setTextColor(140);
+  doc.text("Lectura:  rojo = crítico (< 60%)  ·  ámbar = aceptable (60–80%)  ·  verde = óptimo (≥ 80%)", M, y);
+  y += 12;
+
+  // Cálculo honesto a partir de los datos disponibles
+  const totConf = r.conformes;
+  const totNC = r.noConformes;
+  const totPend = r.pendientes;
+  const totEval = totConf + totNC; // rollos evaluados (sin pendientes)
+  const calidadPct = totEval > 0 ? (totConf / totEval) * 100 : 0;
+  const liberacionPct = r.rollosTotal > 0 ? (totConf / r.rollosTotal) * 100 : 0;
+  const resolucionPct = r.rollosTotal > 0 ? ((r.rollosTotal - totPend) / r.rollosTotal) * 100 : 0;
+  const produccionPct = r.rollosTotal > 0 ? 100 : 0;
+  const oeePct = (calidadPct + liberacionPct + resolucionPct) / 3; // proxy compuesto
+
+  const metricas: { label: string; value: number | null }[] = [
+    { label: "Producción", value: produccionPct },
+    { label: "Calidad", value: calidadPct },
+    { label: "OEE", value: oeePct },
+    { label: "Liberación", value: liberacionPct },
+    { label: "Cumplimiento", value: r.rollosTotal > 0 ? resolucionPct : null },
+    { label: "Disponibilidad", value: produccionPct },
+  ];
+
+  const labelW = 80;
+  const barX = M + labelW + 6;
+  const barW = pageW - M - barX - 60;
+  const rowH = 16;
+  const barH = 9;
+  metricas.forEach((m) => {
+    const cy = y + rowH / 2;
+    // label
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(40, 48, 70);
+    doc.text(m.label, M, cy + 3);
+    // bandas (rojo / ámbar / verde) - fondo suave
+    const seg1 = barW * 0.60;
+    const seg2 = barW * 0.20;
+    const seg3 = barW * 0.20;
+    doc.setFillColor(252, 224, 224); doc.rect(barX, y + (rowH - barH) / 2, seg1, barH, "F");
+    doc.setFillColor(253, 243, 208); doc.rect(barX + seg1, y + (rowH - barH) / 2, seg2, barH, "F");
+    doc.setFillColor(220, 240, 222); doc.rect(barX + seg1 + seg2, y + (rowH - barH) / 2, seg3, barH, "F");
+    // marca 80%
+    doc.setDrawColor(120, 120, 130);
+    doc.setLineWidth(0.5);
+    doc.line(barX + barW * 0.8, y + 2, barX + barW * 0.8, y + rowH - 2);
+    // barra de valor
+    if (m.value != null) {
+      const v = Math.max(0, Math.min(100, m.value));
+      const fillW = (barW * v) / 100;
+      const color: [number, number, number] = v < 60 ? [200, 32, 40] : v < 80 ? [210, 150, 30] : [22, 130, 70];
+      doc.setFillColor(color[0], color[1], color[2]);
+      doc.rect(barX, y + (rowH - barH) / 2, fillW, barH, "F");
+      // valor
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      doc.setTextColor(color[0], color[1], color[2]);
+      doc.text(`${v.toFixed(1)}%`, pageW - M, cy + 3, { align: "right" });
+    } else {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.setTextColor(140);
+      doc.text("—", pageW - M, cy + 3, { align: "right" });
+    }
+    y += rowH;
+  });
+  y += 8;
+
+  // ── 10. Distribución de Producción (Donut + Desglose) ────────────────
+  if (y > pageH - 220) { doc.addPage(); y = M; }
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(12);
+  doc.setTextColor(20, 28, 56);
+  doc.text("10. Distribución de Producción", M, y);
+  y += 12;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8.5);
+  doc.setTextColor(110);
+  doc.text("Proporción de Kg Liberados (calidad aprobada) vs Kg No Liberados (rechazados/retenidos).", M, y);
+  y += 14;
+
+  // Kg no conformes = suma de kgAfectados por máquina; liberados = kgTotal - NC (no negativo)
+  const kgNC = payload.ncPorMaquina.reduce((a, b) => a + (b.kgAfectados || 0), 0);
+  const kgLib = Math.max(0, r.kgTotal - kgNC);
+  const totalKg = kgLib + kgNC;
+  const pctLib = totalKg > 0 ? (kgLib / totalKg) * 100 : 0;
+  const pctNC = totalKg > 0 ? (kgNC / totalKg) * 100 : 0;
+
+  // Donut a la izquierda
+  const donutCX = M + 70;
+  const donutCY = y + 70;
+  const rOut = 60;
+  const rIn = 36;
+
+  // Dibujar arcos por triángulos pequeños (aproximación)
+  const drawArc = (start: number, end: number, color: [number, number, number]) => {
+    doc.setFillColor(color[0], color[1], color[2]);
+    const steps = Math.max(2, Math.ceil(((end - start) * 180) / Math.PI / 2));
+    for (let i = 0; i < steps; i++) {
+      const a0 = start + ((end - start) * i) / steps;
+      const a1 = start + ((end - start) * (i + 1)) / steps;
+      const p1x = donutCX + rOut * Math.cos(a0);
+      const p1y = donutCY + rOut * Math.sin(a0);
+      const p2x = donutCX + rOut * Math.cos(a1);
+      const p2y = donutCY + rOut * Math.sin(a1);
+      doc.triangle(donutCX, donutCY, p1x, p1y, p2x, p2y, "F");
+    }
+  };
+  const startAngle = -Math.PI / 2;
+  const angLib = startAngle + (2 * Math.PI * pctLib) / 100;
+  const angNC = angLib + (2 * Math.PI * pctNC) / 100;
+  if (totalKg > 0) {
+    drawArc(startAngle, angLib, [22, 130, 70]);
+    drawArc(angLib, angNC, [200, 32, 40]);
+  } else {
+    drawArc(startAngle, startAngle + 2 * Math.PI, [220, 220, 226]);
+  }
+  // Centro (donut hole)
+  doc.setFillColor(255, 255, 255);
+  doc.circle(donutCX, donutCY, rIn, "F");
+  // Texto centro
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7.5);
+  doc.setTextColor(130);
+  doc.text("Producción Total", donutCX, donutCY - 6, { align: "center" });
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(13);
+  doc.setTextColor(20, 28, 56);
+  doc.text(fmt(Math.round(totalKg)), donutCX, donutCY + 8, { align: "center" });
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7);
+  doc.setTextColor(130);
+  doc.text("kg", donutCX, donutCY + 16, { align: "center" });
+
+  // % afuera del donut
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.setTextColor(200, 32, 40);
+  doc.text(`${pctNC.toFixed(1)}%`, donutCX, donutCY - rOut - 4, { align: "center" });
+  doc.setTextColor(22, 130, 70);
+  doc.text(`${pctLib.toFixed(1)}%`, donutCX, donutCY + rOut + 12, { align: "center" });
+
+  // Desglose a la derecha (barras horizontales)
+  const dx = M + 160;
+  const dw = pageW - M - dx;
+  let dy = y + 8;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.setTextColor(20, 28, 56);
+  doc.text("Desglose", dx, dy);
+  dy += 14;
+
+  const drawBreakdown = (label: string, value: number, pct: number, color: [number, number, number]) => {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9.5);
+    doc.setTextColor(color[0], color[1], color[2]);
+    doc.text(label, dx, dy);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9.5);
+    doc.setTextColor(color[0], color[1], color[2]);
+    doc.text(`${pct.toFixed(1)}%`, dx + dw, dy, { align: "right" });
+    dy += 10;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(110);
+    doc.text(`${fmt(Math.round(value))} kg`, dx, dy);
+    dy += 6;
+    // barra fondo
+    doc.setFillColor(238, 240, 245);
+    doc.rect(dx, dy, dw, 6, "F");
+    doc.setFillColor(color[0], color[1], color[2]);
+    doc.rect(dx, dy, (dw * Math.max(0, Math.min(100, pct))) / 100, 6, "F");
+    dy += 18;
+  };
+  drawBreakdown("Kg Liberados", kgLib, pctLib, [22, 130, 70]);
+  drawBreakdown("Kg No Liberados", kgNC, pctNC, [200, 32, 40]);
+
+  y = Math.max(donutCY + rOut + 24, dy) + 6;
+
+
   // ── Tabla consolidada ────────────────────────────────────────────────
   if (y > pageH - 160) { doc.addPage(); y = M; }
   doc.setFont("helvetica", "bold");
