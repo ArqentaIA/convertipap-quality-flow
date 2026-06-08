@@ -14,6 +14,41 @@ type SB = SupabaseClient<Database>;
 
 // ------------------------- Helpers -------------------------
 
+/**
+ * Variables sin tope superior crítico (ej. Blancura R457: a mayor mejor).
+ * Mantener sincronizado con src/lib/qc.functions.ts → esVariableSinTopeSuperior.
+ */
+function esVariableSinTopeSuperior(clave?: string | null): boolean {
+  if (!clave) return false;
+  const k = clave.toLowerCase().replace(/[\s_-]/g, "");
+  return k.includes("blancura") || k.includes("r457");
+}
+
+/**
+ * Recalcula el estado de una medición en lectura, aplicando la regla vigente
+ * (incluye excepción de variables sin tope superior). Si no hay min/max/valor
+ * suficientes, conserva el estado almacenado.
+ */
+function recomputarEstadoMedicion(
+  clave: string | null | undefined,
+  valor: number | null | undefined,
+  min: number | null | undefined,
+  max: number | null | undefined,
+  estadoAlmacenado: string | null | undefined,
+): string {
+  if (valor == null || !Number.isFinite(valor)) return estadoAlmacenado ?? "pendiente";
+  if (min == null || max == null) return estadoAlmacenado ?? "pendiente";
+  const sinTope = esVariableSinTopeSuperior(clave);
+  const rango = max - min;
+  const tol = Math.abs(rango) * 0.2;
+  if (valor < min - tol) return "fuera_rango_critico";
+  if (!sinTope && valor > max + tol) return "fuera_rango_critico";
+  if (valor < min) return "no_conforme";
+  if (!sinTope && valor > max) return "no_conforme";
+  return "conforme";
+}
+
+
 const ROLES_OPERATIVOS = ["capturista", "calidad", "gerente_general", "administrador"] as const;
 const ROLES_ADMIN = ["gerente_general", "administrador"] as const;
 
@@ -816,8 +851,22 @@ export const getDetalleCalidadOrden = createServerFn({ method: "GET" })
     if (errM) throw new Error(errM.message);
 
     const filas = (muestras ?? []).map((m: any) => {
-      const meds = (m.mediciones_calidad ?? []) as any[];
-      const peso = meds.find((x) => x.variable_clave === "peso")?.valor;
+      const medsRaw = (m.mediciones_calidad ?? []) as any[];
+      const meds = medsRaw.map((x) => {
+        const valor = x.valor === null ? null : Number(x.valor);
+        const min = x.min_snapshot === null ? null : Number(x.min_snapshot);
+        const max = x.max_snapshot === null ? null : Number(x.max_snapshot);
+        return {
+          clave: x.variable_clave as string,
+          valor,
+          min,
+          objetivo: x.objetivo_snapshot === null ? null : Number(x.objetivo_snapshot),
+          max,
+          estado: recomputarEstadoMedicion(x.variable_clave, valor, min, max, x.estado),
+          observacion: (x.observacion as string) ?? "",
+        };
+      });
+      const peso = meds.find((x) => x.clave === "peso")?.valor;
       const ncCount = meds.filter((x) => x.estado === "no_conforme" || x.estado === "fuera_rango_critico").length;
       const total = meds.length;
       const cumplimiento = total > 0 ? Math.round(((total - ncCount) / total) * 1000) / 10 : null;
@@ -837,17 +886,10 @@ export const getDetalleCalidadOrden = createServerFn({ method: "GET" })
         ncCount,
         totalMediciones: total,
         cumplimiento,
-        mediciones: meds.map((x) => ({
-          clave: x.variable_clave as string,
-          valor: x.valor === null ? null : Number(x.valor),
-          min: x.min_snapshot === null ? null : Number(x.min_snapshot),
-          objetivo: x.objetivo_snapshot === null ? null : Number(x.objetivo_snapshot),
-          max: x.max_snapshot === null ? null : Number(x.max_snapshot),
-          estado: x.estado as string,
-          observacion: (x.observacion as string) ?? "",
-        })),
+        mediciones: meds,
       };
     });
+
 
     // Resumen
     const totalRollos = filas.length;
@@ -908,18 +950,22 @@ export const getDetalleRollo = createServerFn({ method: "GET" })
     >;
     const meds = ((m.mediciones_calidad ?? []) as any[]).map((x) => {
       const s = snap[x.variable_clave] ?? null;
+      const valor = x.valor === null ? null : Number(x.valor);
+      const min = x.min_snapshot === null ? null : Number(x.min_snapshot);
+      const max = x.max_snapshot === null ? null : Number(x.max_snapshot);
       return {
         clave: x.variable_clave as string,
         etiqueta: s?.etiqueta ?? (x.variable_clave as string),
         unidad: s?.unidad ?? "",
-        valor: x.valor === null ? null : Number(x.valor),
-        min: x.min_snapshot === null ? null : Number(x.min_snapshot),
+        valor,
+        min,
         objetivo: x.objetivo_snapshot === null ? null : Number(x.objetivo_snapshot),
-        max: x.max_snapshot === null ? null : Number(x.max_snapshot),
-        estado: x.estado as string,
+        max,
+        estado: recomputarEstadoMedicion(x.variable_clave, valor, min, max, x.estado),
         observacion: (x.observacion as string) ?? "",
       };
     });
+
 
     // Completar con variables del snapshot que aún no tengan medición
     const presentes = new Set(meds.map((x) => x.clave));
