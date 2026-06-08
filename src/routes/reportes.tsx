@@ -868,6 +868,9 @@ function ReporteGeneralItem({ enabled }: { enabled: boolean }) {
           const maq = typeof row.maquina === "string" ? row.maquina : null;
           if (!maq) return true;
           return labFilter.isMachineAllowed(maq);
+        }).map((row) => {
+          const { tipo_codigo: _, ...rest } = row;
+          return rest;
         }),
       }));
       await descargarXLSX("Reporte General", out);
