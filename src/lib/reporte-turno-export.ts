@@ -49,14 +49,24 @@ export function buildResumen(rows: TablaRow[]) {
   const kgTotal = rows.reduce((a, r) => a + (r.peso_kg ?? 0), 0);
   const conformes = rows.filter(isLiberada).length;
   const noConformes = rows.filter(isRechazada).length;
+  const kgLib = rows.filter(isLiberada).reduce((a, r) => a + (r.peso_kg ?? 0), 0);
+  const kgNoLib = rows.filter(isRechazada).reduce((a, r) => a + (r.peso_kg ?? 0), 0);
   const maquinas = new Set(rows.map((r) => r.maquina).filter((v): v is string => !!v));
   const conformidadPct = totalRollos > 0 ? (conformes / totalRollos) * 100 : null;
+  const noConformidadPct = totalRollos > 0 ? (noConformes / totalRollos) * 100 : null;
+  const liberacionKgPct = kgTotal > 0 ? (kgLib / kgTotal) * 100 : null;
+  const noLiberacionKgPct = kgTotal > 0 ? (kgNoLib / kgTotal) * 100 : null;
   return {
     totalRollos,
     kgTotal,
+    kgLib,
+    kgNoLib,
     conformes,
     noConformes,
     conformidadPct,
+    noConformidadPct,
+    liberacionKgPct,
+    noLiberacionKgPct,
     maquinasConProduccion: maquinas.size,
     registrosCapturados: totalRollos,
   };
