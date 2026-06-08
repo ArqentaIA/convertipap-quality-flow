@@ -49,14 +49,24 @@ export function buildResumen(rows: TablaRow[]) {
   const kgTotal = rows.reduce((a, r) => a + (r.peso_kg ?? 0), 0);
   const conformes = rows.filter(isLiberada).length;
   const noConformes = rows.filter(isRechazada).length;
+  const kgLib = rows.filter(isLiberada).reduce((a, r) => a + (r.peso_kg ?? 0), 0);
+  const kgNoLib = rows.filter(isRechazada).reduce((a, r) => a + (r.peso_kg ?? 0), 0);
   const maquinas = new Set(rows.map((r) => r.maquina).filter((v): v is string => !!v));
   const conformidadPct = totalRollos > 0 ? (conformes / totalRollos) * 100 : null;
+  const noConformidadPct = totalRollos > 0 ? (noConformes / totalRollos) * 100 : null;
+  const liberacionKgPct = kgTotal > 0 ? (kgLib / kgTotal) * 100 : null;
+  const noLiberacionKgPct = kgTotal > 0 ? (kgNoLib / kgTotal) * 100 : null;
   return {
     totalRollos,
     kgTotal,
+    kgLib,
+    kgNoLib,
     conformes,
     noConformes,
     conformidadPct,
+    noConformidadPct,
+    liberacionKgPct,
+    noLiberacionKgPct,
     maquinasConProduccion: maquinas.size,
     registrosCapturados: totalRollos,
   };
@@ -285,6 +295,152 @@ export async function exportReporteTurnoPDF(
   });
   y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 18;
 
+  // ─────────── Indicadores clave del turno (Bullet chart horizontal) ───────────
+  if (y > pageH - 220) { doc.addPage(); y = M; }
+  doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(20, 28, 56);
+  doc.text("Indicadores clave del turno", M, y);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(120);
+  doc.text("Cada barra muestra una métrica del turno en escala 0–100%.", M, y + 12);
+  doc.text("Lectura: rojo = crítico (< 60%) · ámbar = aceptable (60–80%) · verde = óptimo (≥ 80%)", M, y + 22);
+  y += 10;
+  {
+    const radarMetrics: { label: string; value: number | null }[] = [
+      { label: "Conformidad", value: r.conformidadPct },
+      { label: "Liberación (kg)", value: r.liberacionKgPct },
+      { label: "No conformidad", value: r.noConformidadPct == null ? null : 100 - r.noConformidadPct },
+      { label: "Máquinas activas", value: r.maquinasConProduccion > 0 ? Math.min(100, (r.maquinasConProduccion / Math.max(r.maquinasConProduccion, porMaq.length || 1)) * 100) : null },
+    ];
+    const startX = M + 100;
+    const trackW = pageW - M - startX - 60;
+    const rowH = 18;
+    const top = y + 22;
+    radarMetrics.forEach((m, i) => {
+      const ry = top + i * rowH;
+      doc.setFont("helvetica", "bold"); doc.setFontSize(8.5); doc.setTextColor(40);
+      doc.text(m.label, M, ry + 8);
+      doc.setFillColor(254, 226, 226); doc.rect(startX, ry + 2, trackW * 0.60, 9, "F");
+      doc.setFillColor(254, 243, 199); doc.rect(startX + trackW * 0.60, ry + 2, trackW * 0.20, 9, "F");
+      doc.setFillColor(220, 252, 231); doc.rect(startX + trackW * 0.80, ry + 2, trackW * 0.20, 9, "F");
+      doc.setDrawColor(220); doc.setLineWidth(0.4);
+      doc.rect(startX, ry + 2, trackW, 9);
+      doc.setDrawColor(120); doc.setLineWidth(0.6);
+      doc.line(startX + trackW * 0.80, ry + 1, startX + trackW * 0.80, ry + 12);
+      const v = m.value;
+      if (v != null) {
+        const pct = Math.max(0, Math.min(100, v));
+        const w = (trackW * pct) / 100;
+        const color: [number, number, number] = pct >= 80 ? [16, 122, 87] : pct >= 60 ? [202, 138, 4] : [185, 28, 28];
+        doc.setFillColor(color[0], color[1], color[2]);
+        doc.rect(startX, ry + 4.5, w, 4, "F");
+        doc.setFont("helvetica", "bold"); doc.setFontSize(8.5); doc.setTextColor(color[0], color[1], color[2]);
+        doc.text(`${pct.toFixed(1)}%`, startX + trackW + 6, ry + 8);
+      } else {
+        doc.setFont("helvetica", "italic"); doc.setFontSize(8); doc.setTextColor(150);
+        doc.text("—", startX + trackW + 6, ry + 8);
+      }
+    });
+    y = top + radarMetrics.length * rowH + 12;
+  }
+
+  // ─────────── Distribución de producción del turno (Donut) ───────────
+  if (y > pageH - 220) { doc.addPage(); y = M; }
+  doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(20, 28, 56);
+  doc.text("Distribución de producción del turno", M, y);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(120);
+  doc.text("Proporción de Kg Liberados (calidad aprobada) vs Kg No Liberados (rechazados/retenidos) durante el turno.", M, y + 12);
+  {
+    type Slice = { label: string; value: number; color: [number, number, number] };
+    const slices: Slice[] = [
+      { label: "Kg Liberados", value: Math.max(0, r.kgLib), color: [16, 122, 87] },
+      { label: "Kg No Liberados", value: Math.max(0, r.kgNoLib), color: [185, 28, 28] },
+    ];
+    const total = slices.reduce((s, x) => s + x.value, 0) || 1;
+    const chartTop = y + 22;
+    const chartH = 160;
+    const cx = M + 90;
+    const cy = chartTop + chartH / 2;
+    const rOuter = 62;
+    const rInner = 36;
+    doc.setFillColor(210, 215, 225);
+    doc.circle(cx + 1.5, cy + 2.5, rOuter + 0.5, "F");
+    const TAU = Math.PI * 2;
+    const drawSlice = (a0: number, a1: number, color: [number, number, number]) => {
+      const steps = Math.max(24, Math.ceil((a1 - a0) / (TAU / 180)));
+      doc.setFillColor(color[0], color[1], color[2]);
+      const pts: Array<[number, number]> = [];
+      for (let i = 0; i <= steps; i++) {
+        const t = a0 + ((a1 - a0) * i) / steps;
+        pts.push([cx + Math.cos(t) * rOuter, cy + Math.sin(t) * rOuter]);
+      }
+      for (let i = steps; i >= 0; i--) {
+        const t = a0 + ((a1 - a0) * i) / steps;
+        pts.push([cx + Math.cos(t) * rInner, cy + Math.sin(t) * rInner]);
+      }
+      for (let i = 1; i < pts.length - 1; i++) {
+        doc.triangle(pts[0][0], pts[0][1], pts[i][0], pts[i][1], pts[i + 1][0], pts[i + 1][1], "F");
+      }
+    };
+    let ang = -Math.PI / 2;
+    const arcs: Array<{ mid: number; pct: number; s: Slice }> = [];
+    slices.forEach((s) => {
+      const frac = s.value / total;
+      const a0 = ang;
+      const a1 = ang + TAU * frac;
+      drawSlice(a0, a1, s.color);
+      arcs.push({ mid: (a0 + a1) / 2, pct: frac * 100, s });
+      ang = a1;
+    });
+    doc.setDrawColor(255); doc.setLineWidth(1.2); doc.circle(cx, cy, rOuter, "S");
+    doc.setDrawColor(235); doc.setLineWidth(0.6); doc.circle(cx, cy, rInner, "S");
+    doc.setFont("helvetica", "normal"); doc.setFontSize(7.5); doc.setTextColor(120);
+    doc.text("Producción Turno", cx, cy - 6, { align: "center" });
+    doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(20, 28, 56);
+    doc.text(fmt(Math.round(r.kgTotal)), cx, cy + 4, { align: "center" });
+    doc.setFont("helvetica", "normal"); doc.setFontSize(7); doc.setTextColor(140);
+    doc.text("kg", cx, cy + 11, { align: "center" });
+    arcs.forEach((a) => {
+      if (a.pct < 3) return;
+      const r1 = rOuter + 4;
+      const r2 = rOuter + 14;
+      const x1 = cx + Math.cos(a.mid) * r1;
+      const y1 = cy + Math.sin(a.mid) * r1;
+      const x2 = cx + Math.cos(a.mid) * r2;
+      const y2 = cy + Math.sin(a.mid) * r2;
+      doc.setDrawColor(a.s.color[0], a.s.color[1], a.s.color[2]); doc.setLineWidth(0.5);
+      doc.line(x1, y1, x2, y2);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(8.5);
+      doc.setTextColor(a.s.color[0], a.s.color[1], a.s.color[2]);
+      const align = Math.cos(a.mid) >= 0 ? "left" : "right";
+      const tx = x2 + (Math.cos(a.mid) >= 0 ? 2 : -2);
+      doc.text(`${a.pct.toFixed(1)}%`, tx, y2 + 2.5, { align });
+    });
+    const legX = cx + rOuter + 60;
+    let legY = chartTop + 10;
+    doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(40);
+    doc.text("Desglose", legX, legY);
+    legY += 10;
+    slices.forEach((s) => {
+      const pct = (s.value / total) * 100;
+      doc.setFillColor(s.color[0], s.color[1], s.color[2]);
+      doc.roundedRect(legX, legY - 5, 8, 8, 1.5, 1.5, "F");
+      doc.setFont("helvetica", "bold"); doc.setFontSize(8.5); doc.setTextColor(40);
+      doc.text(s.label, legX + 12, legY);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(90);
+      doc.text(`${fmt(Math.round(s.value))} kg`, legX + 12, legY + 8);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(9);
+      doc.setTextColor(s.color[0], s.color[1], s.color[2]);
+      doc.text(`${pct.toFixed(1)}%`, pageW - M - 4, legY + 4, { align: "right" });
+      const trackW = pageW - M - legX - 14;
+      doc.setFillColor(238, 240, 245);
+      doc.roundedRect(legX, legY + 12, trackW, 3, 1, 1, "F");
+      doc.setFillColor(s.color[0], s.color[1], s.color[2]);
+      doc.roundedRect(legX, legY + 12, (trackW * pct) / 100, 3, 1, 1, "F");
+      legY += 26;
+    });
+    y = chartTop + chartH + 14;
+  }
+
+
   // Tabla consolidada del turno
   if (y > pageH - 160) { doc.addPage(); y = M; }
   doc.setFont("helvetica", "bold");
@@ -396,6 +552,27 @@ export async function exportReporteTurnoXLSX(
         Capturista: row.analista ?? "—",
       }));
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(tablaRows), "Tabla del Turno");
+
+  // Gráficos (datos listos para gráficar en Excel)
+  const pct = (v: number | null) => v == null ? "—" : Math.round(v * 10) / 10;
+  const indicadoresRows = [
+    { Indicador: "Conformidad", "Valor %": pct(r.conformidadPct), Umbral: 80 },
+    { Indicador: "Liberación (kg)", "Valor %": pct(r.liberacionKgPct), Umbral: 80 },
+    { Indicador: "No conformidad", "Valor %": pct(r.noConformidadPct == null ? null : 100 - r.noConformidadPct), Umbral: 80 },
+    { Indicador: "Máquinas activas", "Valor %": r.maquinasConProduccion, Umbral: "—" },
+  ];
+  const distribRows = [
+    { Categoría: "Kg Liberados", Kg: Math.round(r.kgLib * 100) / 100, "% del total": r.kgTotal > 0 ? Math.round((r.kgLib / r.kgTotal) * 1000) / 10 : 0 },
+    { Categoría: "Kg No Liberados", Kg: Math.round(r.kgNoLib * 100) / 100, "% del total": r.kgTotal > 0 ? Math.round((r.kgNoLib / r.kgTotal) * 1000) / 10 : 0 },
+  ];
+  const graficosWS = XLSX.utils.aoa_to_sheet([["Indicadores clave del turno"]]);
+  XLSX.utils.sheet_add_json(graficosWS, indicadoresRows, { origin: "A2" });
+  XLSX.utils.sheet_add_aoa(graficosWS, [["Distribución de producción (kg)"]], { origin: `A${indicadoresRows.length + 4}` });
+  XLSX.utils.sheet_add_json(graficosWS, distribRows, { origin: `A${indicadoresRows.length + 5}` });
+  XLSX.utils.book_append_sheet(wb, graficosWS, "Gráficos");
+
+
+
 
   // Trazabilidad
   const trazaRows = data.rows.length === 0
