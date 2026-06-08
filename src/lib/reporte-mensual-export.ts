@@ -282,6 +282,19 @@ export async function exportReporteMensualPDF(
   const barW = pageW - M - barX - 60;
   const rowH = 16;
   const barH = 9;
+  // Escala de ticks 0/20/40/60/80/100 encima de las barras
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(6.5);
+  doc.setTextColor(140);
+  [0, 20, 40, 60, 80, 100].forEach((tick) => {
+    const tx = barX + (barW * tick) / 100;
+    doc.setDrawColor(200, 205, 215);
+    doc.setLineWidth(0.3);
+    doc.line(tx, y - 2, tx, y);
+    doc.text(`${tick}`, tx, y - 4, { align: "center" });
+  });
+  y += 2;
+
   metricas.forEach((m) => {
     const cy = y + rowH / 2;
     // label
@@ -296,10 +309,17 @@ export async function exportReporteMensualPDF(
     doc.setFillColor(252, 224, 224); doc.rect(barX, y + (rowH - barH) / 2, seg1, barH, "F");
     doc.setFillColor(253, 243, 208); doc.rect(barX + seg1, y + (rowH - barH) / 2, seg2, barH, "F");
     doc.setFillColor(220, 240, 222); doc.rect(barX + seg1 + seg2, y + (rowH - barH) / 2, seg3, barH, "F");
-    // marca 80%
-    doc.setDrawColor(120, 120, 130);
-    doc.setLineWidth(0.5);
-    doc.line(barX + barW * 0.8, y + 2, barX + barW * 0.8, y + rowH - 2);
+    // gridlines verticales suaves cada 20%
+    doc.setDrawColor(225, 228, 235);
+    doc.setLineWidth(0.2);
+    [20, 40, 60, 80].forEach((t) => {
+      const tx = barX + (barW * t) / 100;
+      doc.line(tx, y + (rowH - barH) / 2, tx, y + (rowH + barH) / 2);
+    });
+    // marca 80% (línea de meta)
+    doc.setDrawColor(90, 90, 100);
+    doc.setLineWidth(0.6);
+    doc.line(barX + barW * 0.8, y + 1, barX + barW * 0.8, y + rowH - 1);
     // barra de valor
     if (m.value != null) {
       const v = Math.max(0, Math.min(100, m.value));
@@ -307,6 +327,13 @@ export async function exportReporteMensualPDF(
       const color: [number, number, number] = v < 60 ? [200, 32, 40] : v < 80 ? [210, 150, 30] : [22, 130, 70];
       doc.setFillColor(color[0], color[1], color[2]);
       doc.rect(barX, y + (rowH - barH) / 2, fillW, barH, "F");
+      // marcador circular en el extremo del valor
+      const mx = barX + fillW;
+      const my = y + rowH / 2;
+      doc.setFillColor(255, 255, 255);
+      doc.circle(mx, my, 2.6, "F");
+      doc.setFillColor(color[0], color[1], color[2]);
+      doc.circle(mx, my, 1.6, "F");
       // valor
       doc.setFont("helvetica", "bold");
       doc.setFontSize(9);
@@ -320,7 +347,13 @@ export async function exportReporteMensualPDF(
     }
     y += rowH;
   });
-  y += 8;
+  // anotación de meta 80%
+  doc.setFont("helvetica", "italic");
+  doc.setFontSize(7);
+  doc.setTextColor(90, 90, 100);
+  doc.text("▲ Línea vertical = Meta operativa 80%", barX + barW * 0.8, y + 6, { align: "center" });
+  y += 14;
+
 
   // ── 10. Distribución de Producción (Donut + Desglose) ────────────────
   if (y > pageH - 220) { doc.addPage(); y = M; }
