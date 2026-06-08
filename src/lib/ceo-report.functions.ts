@@ -17,16 +17,17 @@ export type CEOReportMaquina = {
 export type CEOReportRollo = {
   folio: string;
   fecha: string; // ISO
-  planta: string;
   maquina: string;
   turno: string;
   pesoKg: number | null;
-  operador: string;
-  jefeMaquina: string;
-  analista: string;
+  codigoProducto: string;
+  anchoUtil: number | null;
+  blancuraR457: number | null;
+  diametro: number | null;
   estatus: "Liberado" | "Retenido" | "Rechazado" | "Pendiente";
   defectos: string[];
 };
+
 
 export type CEOReportPayload = {
   windowStart: string;
