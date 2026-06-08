@@ -210,16 +210,17 @@ export const getCEOReport = createServerFn({ method: "GET" })
     const rollosList: CEOReportRollo[] = (muestras ?? []).map((m: any) => ({
       folio: m.numero_rollo ?? "—",
       fecha: m.hora_muestreo,
-      planta: m?.plantas?.nombre ?? plantaById.get(m.maquina_id) ?? "—",
       maquina: m?.maquinas?.codigo ?? codigoById.get(m.maquina_id) ?? "—",
       turno: m.turno ?? "—",
       pesoKg: pesoPorMuestra.get(m.id) ?? null,
-      operador: m.operador ?? "—",
-      jefeMaquina: m.jefe_maquina ?? "—",
-      analista: m.analista ?? "—",
+      codigoProducto: m?.productos?.codigo ?? "—",
+      anchoUtil: anchoPorMuestra.get(m.id) ?? null,
+      blancuraR457: blancuraPorMuestra.get(m.id) ?? null,
+      diametro: diametroPorMuestra.get(m.id) ?? null,
       estatus: estatusDe(m),
       defectos: ((m.defectos ?? []) as string[]).filter(Boolean),
     }));
+
 
     return {
       windowStart: startIso,
