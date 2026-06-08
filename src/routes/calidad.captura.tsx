@@ -457,7 +457,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
     return variables.map((v) => {
       const input = mediciones[v.variable_id] ?? { valor: "" };
       const num = input.valor === "" ? NaN : Number(input.valor);
-      const estado = evaluarMedicion(num, v.min_valor, v.max_valor);
+      const estado = evaluarMedicion(num, v.min_valor, v.max_valor, v.clave);
       return { spec: v, input, estado, num };
     });
   }, [variables, mediciones]);
