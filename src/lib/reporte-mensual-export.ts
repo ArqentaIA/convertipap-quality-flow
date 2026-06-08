@@ -491,15 +491,34 @@ export async function exportReporteMensualPDF(
     doc.setTextColor(110);
     doc.text(`${fmt(Math.round(value))} kg`, dx, dy);
     dy += 6;
-    // barra fondo
+    // barra fondo con ticks de escala
     doc.setFillColor(238, 240, 245);
     doc.rect(dx, dy, dw, 6, "F");
+    doc.setDrawColor(220, 224, 232);
+    doc.setLineWidth(0.2);
+    [25, 50, 75].forEach((t) => {
+      const tx = dx + (dw * t) / 100;
+      doc.line(tx, dy, tx, dy + 6);
+    });
     doc.setFillColor(color[0], color[1], color[2]);
     doc.rect(dx, dy, (dw * Math.max(0, Math.min(100, pct))) / 100, 6, "F");
+    // meta 95% (línea de referencia)
+    const metaX = dx + dw * 0.95;
+    doc.setDrawColor(60, 70, 90);
+    doc.setLineWidth(0.7);
+    doc.line(metaX, dy - 2, metaX, dy + 8);
     dy += 18;
   };
   drawBreakdown("Kg Liberados", kgLib, pctLib, [22, 130, 70]);
   drawBreakdown("Kg No Liberados", kgNC, pctNC, [200, 32, 40]);
+  // leyenda
+  doc.setFont("helvetica", "italic");
+  doc.setFontSize(7);
+  doc.setTextColor(90, 90, 100);
+  doc.text("▲ Marca vertical = Meta liberación ≥ 95%", dx, dy);
+  dy += 8;
+
+
 
   y = Math.max(donutCY + rOut + 24, dy) + 6;
 
