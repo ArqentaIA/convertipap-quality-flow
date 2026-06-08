@@ -720,6 +720,8 @@ function ReporteMensualItem({ usuario, enabled }: { usuario: string; enabled: bo
         </div>
       </div>
 
+      {data && <ReporteMensualVisuales data={data} />}
+
 
       <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
         <div className="text-[11px] text-muted-foreground">
@@ -747,6 +749,146 @@ function ReporteMensualItem({ usuario, enabled }: { usuario: string; enabled: bo
           >
             <FileSpreadsheet className="h-3.5 w-3.5" /> {busy === "xlsx" ? "Generando…" : "XLSX (BD)"}
           </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Visuales premium del Reporte Mensual (Radar + Donut)
+// ─────────────────────────────────────────────────────────────────
+function ReporteMensualVisuales({ data }: { data: Awaited<ReturnType<typeof getReporteMensual>> }) {
+  const r = data.resumen;
+  const totEval = r.conformes + r.noConformes;
+  const calidadPct = totEval > 0 ? (r.conformes / totEval) * 100 : 0;
+  const liberacionPct = r.rollosTotal > 0 ? (r.conformes / r.rollosTotal) * 100 : 0;
+  const resolucionPct = r.rollosTotal > 0 ? ((r.rollosTotal - r.pendientes) / r.rollosTotal) * 100 : 0;
+  const produccionPct = r.rollosTotal > 0 ? 100 : 0;
+  const oeePct = (calidadPct + liberacionPct + resolucionPct) / 3;
+
+  const metricas: { label: string; value: number | null }[] = [
+    { label: "Producción", value: produccionPct },
+    { label: "Calidad", value: calidadPct },
+    { label: "OEE", value: oeePct },
+    { label: "Liberación", value: liberacionPct },
+    { label: "Cumplimiento", value: r.rollosTotal > 0 ? resolucionPct : null },
+    { label: "Disponibilidad", value: produccionPct },
+  ];
+
+  const colorFor = (v: number) =>
+    v < 60 ? { bar: "#dc2626", text: "text-red-600", soft: "#fee2e2" }
+    : v < 80 ? { bar: "#d97706", text: "text-amber-600", soft: "#fef3c7" }
+    : { bar: "#16a34a", text: "text-green-600", soft: "#dcfce7" };
+
+  const kgNoLib = data.ncPorMaquina.reduce((a, m) => a + (m.kgAfectados || 0), 0);
+  const kgLib = Math.max(0, r.kgTotal - kgNoLib);
+  const pctLib = r.kgTotal > 0 ? (kgLib / r.kgTotal) * 100 : 0;
+  const pctNoLib = r.kgTotal > 0 ? (kgNoLib / r.kgTotal) * 100 : 0;
+
+  // Donut SVG
+  const size = 180, stroke = 28, R = (size - stroke) / 2;
+  const C = 2 * Math.PI * R;
+  const libLen = (pctLib / 100) * C;
+  const noLibLen = (pctNoLib / 100) * C;
+
+  return (
+    <div className="mt-5 grid gap-4 lg:grid-cols-2">
+      {/* Radar de Salud Operativa */}
+      <div className="rounded-xl border border-border bg-background/70 p-4 shadow-sm">
+        <div className="flex items-baseline justify-between">
+          <h4 className="text-sm font-bold text-foreground">Radar de Salud Operativa</h4>
+          <span className="text-[10px] text-muted-foreground">Escala 0–100%</span>
+        </div>
+        <p className="mt-1 text-[11px] text-muted-foreground">
+          Visión rápida del estado operativo. Cada barra representa una métrica.
+        </p>
+        <p className="mt-1 text-[10px] text-muted-foreground">
+          <span className="text-red-600 font-medium">rojo &lt; 60%</span> ·{" "}
+          <span className="text-amber-600 font-medium">ámbar 60–80%</span> ·{" "}
+          <span className="text-green-600 font-medium">verde ≥ 80%</span>
+        </p>
+        <div className="mt-3 space-y-2">
+          {metricas.map((m) => {
+            const v = m.value ?? 0;
+            const c = colorFor(v);
+            return (
+              <div key={m.label} className="grid grid-cols-[100px_1fr_56px] items-center gap-2">
+                <span className="text-xs font-semibold text-foreground">{m.label}</span>
+                <div className="relative h-2.5 w-full overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="h-full rounded-full transition-all"
+                    style={{ width: `${Math.min(100, v)}%`, backgroundColor: c.bar }}
+                  />
+                  <div className="absolute inset-y-0 left-[80%] w-px bg-foreground/20" />
+                </div>
+                <span className={`text-right text-xs font-bold tabular-nums ${c.text}`}>
+                  {m.value == null ? "—" : `${v.toFixed(1)}%`}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Distribución de Producción */}
+      <div className="rounded-xl border border-border bg-background/70 p-4 shadow-sm">
+        <div className="flex items-baseline justify-between">
+          <h4 className="text-sm font-bold text-foreground">Distribución de Producción</h4>
+          <span className="text-[10px] text-muted-foreground">Kg Liberados vs No Liberados</span>
+        </div>
+        <p className="mt-1 text-[11px] text-muted-foreground">
+          Proporción de Kg con calidad aprobada vs rechazados/retenidos.
+        </p>
+        <div className="mt-3 grid grid-cols-[180px_1fr] items-center gap-4">
+          <div className="relative flex items-center justify-center">
+            <svg width={size} height={size} className="-rotate-90">
+              <circle cx={size / 2} cy={size / 2} r={R} fill="none" stroke="#e5e7eb" strokeWidth={stroke} />
+              <circle
+                cx={size / 2} cy={size / 2} r={R} fill="none"
+                stroke="#16a34a" strokeWidth={stroke}
+                strokeDasharray={`${libLen} ${C - libLen}`} strokeDashoffset={0}
+              />
+              <circle
+                cx={size / 2} cy={size / 2} r={R} fill="none"
+                stroke="#dc2626" strokeWidth={stroke}
+                strokeDasharray={`${noLibLen} ${C - noLibLen}`} strokeDashoffset={-libLen}
+              />
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Producción Total</span>
+              <span className="text-xl font-bold text-foreground tabular-nums">
+                {r.kgTotal.toLocaleString("es-MX", { maximumFractionDigits: 0 })}
+              </span>
+              <span className="text-[10px] text-muted-foreground">kg</span>
+            </div>
+          </div>
+          <div className="space-y-3">
+            <div>
+              <div className="flex items-baseline justify-between">
+                <span className="text-xs font-bold text-green-600">Kg Liberados</span>
+                <span className="text-xs font-bold text-green-600 tabular-nums">{pctLib.toFixed(1)}%</span>
+              </div>
+              <div className="text-[10px] text-muted-foreground tabular-nums">
+                {kgLib.toLocaleString("es-MX", { maximumFractionDigits: 0 })} kg
+              </div>
+              <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-muted">
+                <div className="h-full rounded-full bg-green-600" style={{ width: `${pctLib}%` }} />
+              </div>
+            </div>
+            <div>
+              <div className="flex items-baseline justify-between">
+                <span className="text-xs font-bold text-red-600">Kg No Liberados</span>
+                <span className="text-xs font-bold text-red-600 tabular-nums">{pctNoLib.toFixed(1)}%</span>
+              </div>
+              <div className="text-[10px] text-muted-foreground tabular-nums">
+                {kgNoLib.toLocaleString("es-MX", { maximumFractionDigits: 0 })} kg
+              </div>
+              <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-muted">
+                <div className="h-full rounded-full bg-red-600" style={{ width: `${pctNoLib}%` }} />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
