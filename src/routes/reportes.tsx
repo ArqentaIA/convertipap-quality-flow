@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { SessionGate } from "@/components/SessionGate";
-import { FileBarChart2, Download, FileSpreadsheet, TrendingUp, TrendingDown, CalendarRange } from "lucide-react";
+import { FileBarChart2, Download, FileSpreadsheet, TrendingUp, TrendingDown, CalendarRange, Eye } from "lucide-react";
 import logoUrl from "@/assets/logo-convertipap.png";
 import { RangoSelector, MESES, rangoLabel, rangoToFreq, type Rango } from "@/components/qc/RangoSelector";
 import { useLabFilter, LAB_LABEL } from "@/lib/lab";
@@ -13,6 +13,13 @@ import { getProduccionCentro } from "@/lib/produccion-centro.functions";
 import { exportProduccionPDF, exportProduccionXLSX } from "@/lib/produccion-centro-export";
 import { getReporteMensual } from "@/lib/reporte-mensual.functions";
 import { exportReporteMensualPDF, exportReporteMensualXLSX } from "@/lib/reporte-mensual-export";
+import {
+  exportReporteTurnoPDF,
+  exportReporteTurnoXLSX,
+  filterCentroByTurnoFecha,
+  buildResumen as buildResumenTurno,
+  buildPorMaquina as buildPorMaquinaTurno,
+} from "@/lib/reporte-turno-export";
 
 
 export const Route = createFileRoute("/reportes")({
