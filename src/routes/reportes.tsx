@@ -331,68 +331,6 @@ function ReportesPage() {
           </div>
         )}
 
-        <div className="rounded-2xl border border-border bg-gradient-to-r from-primary/20 via-primary/10 to-primary/5 p-5 shadow-sm">
-          <div className="flex flex-wrap items-end justify-between gap-4">
-            <div>
-              <div className="text-xs font-semibold uppercase tracking-wider text-primary">Periodo de análisis</div>
-              <p className="mt-1 flex items-center gap-2 text-sm text-foreground">
-                <CalendarRange className="h-4 w-4 text-primary" />
-                <span className="font-semibold">{periodo}</span>
-                <span className="text-muted-foreground">· {freq}</span>
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Todos los reportes se generarán para el periodo seleccionado.
-              </p>
-            </div>
-            <RangoSelector
-              rango={rango}
-              setRango={setRango}
-              mesesSel={mesesSel}
-              setMesesSel={setMesesSel}
-              includeTurno
-            />
-          </div>
-        </div>
-
-        <div className="rounded-xl border border-border bg-card shadow-sm">
-          <div className="flex items-center gap-2 border-b border-border bg-primary/5 p-5">
-            <span className="h-5 w-1 rounded-full bg-primary" />
-            <h3 className="text-sm font-semibold text-primary">Desempeño por planta · {periodo}</h3>
-          </div>
-          <table className="w-full text-sm">
-            <thead className="bg-muted/40 text-left text-[11px] uppercase tracking-wider text-muted-foreground">
-              <tr>
-                <th className="px-4 py-3">Planta</th>
-                <th className="px-4 py-3 text-right">Cumplimiento</th>
-                <th className="px-4 py-3 text-right">Rollos producidos</th>
-                <th className="px-4 py-3 text-right">No conformes</th>
-                <th className="px-4 py-3 text-right">Δ vs periodo anterior</th>
-              </tr>
-            </thead>
-            <tbody>
-              {plantasPerf.length === 0 ? (
-                <tr>
-                  <td className="px-4 py-6 text-center text-xs text-muted-foreground" colSpan={5}>
-                    Sin datos en el periodo seleccionado.
-                  </td>
-                </tr>
-              ) : plantasPerf.map((p) => (
-                <tr key={p.planta} className="border-t border-border">
-                  <td className="px-4 py-3 font-medium">{p.planta}</td>
-                  <td className="px-4 py-3 text-right tabular-nums font-semibold">{p.cumpl}%</td>
-                  <td className="px-4 py-3 text-right tabular-nums">{p.rollos}</td>
-                  <td className="px-4 py-3 text-right tabular-nums">{p.nc}</td>
-                  <td className={`px-4 py-3 text-right tabular-nums font-semibold ${p.delta >= 0 ? "text-success" : "text-destructive"}`}>
-                    <span className="inline-flex items-center gap-1">
-                      {p.delta >= 0 ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />}
-                      {p.delta > 0 ? "+" : ""}{p.delta}%
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
 
         <ReporteProduccionItem
           start={start}
