@@ -126,6 +126,7 @@ function AuditoriaPage() {
     if (emailFilter.trim()) q = q.ilike("usuario_email", `%${emailFilter.trim()}%`);
     if (modulo.trim()) q = q.ilike("modulo", `%${modulo.trim()}%`);
     if (operacion) q = q.eq("operacion", operacion);
+    q = q.or("rol.neq.administrador,modulo.neq.auth");
     const { data, error } = await q;
     if (error) { alert(error.message); return; }
     const rows = (data ?? []) as unknown as AuditRow[];
