@@ -720,6 +720,8 @@ function ReporteMensualItem({ usuario, enabled }: { usuario: string; enabled: bo
         </div>
       </div>
 
+      {data && <ReporteMensualVisuales data={data} />}
+
 
       <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
         <div className="text-[11px] text-muted-foreground">
