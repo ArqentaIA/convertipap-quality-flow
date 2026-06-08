@@ -11,6 +11,8 @@ import { getReportes } from "@/lib/reportes.functions";
 import { useAuth } from "@/lib/auth";
 import { getProduccionCentro } from "@/lib/produccion-centro.functions";
 import { exportProduccionPDF, exportProduccionXLSX } from "@/lib/produccion-centro-export";
+import { getReporteMensual } from "@/lib/reporte-mensual.functions";
+import { exportReporteMensualPDF, exportReporteMensualXLSX } from "@/lib/reporte-mensual-export";
 
 
 export const Route = createFileRoute("/reportes")({
