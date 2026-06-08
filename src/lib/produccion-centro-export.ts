@@ -213,27 +213,6 @@ export async function exportProduccionXLSX(
         ];
       })(),
     },
-    {
-      name: "Waterfall Operativo",
-      rows: (() => {
-        const filtrosActivos = hayFiltros(ctx.filtros);
-        const mFilt = metricsFromRows(tablaFiltrada);
-        const kgTotal = filtrosActivos ? mFilt.kgTotal : data.kpis.kgProducidos;
-        const kgNoLib = filtrosActivos ? mFilt.kgNoLib : data.foms.kgNoLiberados.total;
-        const kgLib = filtrosActivos ? mFilt.kgLib : data.foms.kgLiberados.total;
-        const base: Record<string, unknown>[] = [
-          { Etapa: "Producción Total (kg)", Valor: kgTotal },
-          { Etapa: "Kg No Liberados", Valor: -kgNoLib },
-          { Etapa: "Kg Liberados", Valor: kgLib },
-        ];
-        if (!filtrosActivos && data.kpis.meta != null) {
-          base.push({ Etapa: "Meta (kg)", Valor: data.kpis.meta });
-          base.push({ Etapa: "Producción Real (kg)", Valor: data.kpis.kgProducidos });
-          base.push({ Etapa: "Diferencia (kg)", Valor: data.kpis.kgProducidos - data.kpis.meta });
-        }
-        return base;
-      })(),
-    },
 
     {
       name: "Tabla Detallada",
