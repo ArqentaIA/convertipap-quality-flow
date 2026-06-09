@@ -639,12 +639,27 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
     "peso",
   ];
 
+  function clampNumberString(value: string, min: number, max: number): string {
+    const trimmed = value.trim();
+    if (trimmed === "" || trimmed === "-" || /\.$/.test(trimmed)) return value;
+    const num = Number(trimmed);
+    if (!Number.isFinite(num)) return value;
+    return String(Math.max(min, Math.min(max, num)));
+  }
+
   function validar(modo: "borrador" | "envio"): { error: string | null; faltantes: number } {
     if (!spec) return { error: "Selecciona un producto con especificación vigente", faltantes: 0 };
     if (!canCapture) return { error: "Sin permiso de captura", faltantes: 0 };
     if (!auth.user?.id) return { error: "Sesión inválida — vuelve a iniciar sesión", faltantes: 0 };
     if (numeroRollo.trim() && !ROLLO_REGEX.test(numeroRollo.trim()))
       return { error: "El número de rollo solo puede usar letras, números y guion", faltantes: 0 };
+
+    if (crepadoPct.trim() !== "" && (Number(crepadoPct) < 0 || Number(crepadoPct) > 100))
+      return { error: "El campo % Crepado debe estar entre 0 y 100", faltantes: 0 };
+    if (cumplimientoPct.trim() !== "" && (Number(cumplimientoPct) < 0 || Number(cumplimientoPct) > 100))
+      return { error: "El campo Cumplimiento debe estar entre 0 y 100", faltantes: 0 };
+    if (porcentajeRupturasPct.trim() !== "" && (Number(porcentajeRupturasPct) < 0 || Number(porcentajeRupturasPct) > 100))
+      return { error: "El campo Porcentaje de rupturas debe estar entre 0 y 100", faltantes: 0 };
 
     let faltantes = 0;
     if (modo === "envio") {
@@ -867,7 +882,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
                 max={100}
                 placeholder="—"
                 value={crepadoPct}
-                onChange={(e) => setCrepadoPct(e.target.value)}
+                onChange={(e) => setCrepadoPct(clampNumberString(e.target.value, 0, 100))}
               />
             </div>
             <div className="space-y-1.5">
@@ -884,7 +899,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
                 max={100}
                 placeholder="0 - 100"
                 value={cumplimientoPct}
-                onChange={(e) => setCumplimientoPct(e.target.value)}
+                onChange={(e) => setCumplimientoPct(clampNumberString(e.target.value, 0, 100))}
               />
             </div>
           </CardContent>
@@ -1171,7 +1186,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
                           max={100}
                           disabled={isBlocked}
                           value={porcentajeRupturasPct}
-                          onChange={(e) => setPorcentajeRupturasPct(e.target.value)}
+                          onChange={(e) => setPorcentajeRupturasPct(clampNumberString(e.target.value, 0, 100))}
                           className="h-12 text-lg font-bold text-capture w-full"
                           placeholder="0 - 100"
                         />
@@ -1316,7 +1331,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
                     max={100}
                     disabled={isBlocked}
                     value={porcentajeRupturasPct}
-                    onChange={(e) => setPorcentajeRupturasPct(e.target.value)}
+                    onChange={(e) => setPorcentajeRupturasPct(clampNumberString(e.target.value, 0, 100))}
                     className="h-12 text-lg font-bold text-capture w-full"
                     placeholder="0 - 100"
                   />
