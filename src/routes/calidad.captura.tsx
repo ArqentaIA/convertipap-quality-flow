@@ -882,7 +882,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
                 max={100}
                 placeholder="—"
                 value={crepadoPct}
-                onChange={(e) => setCrepadoPct(e.target.value)}
+                onChange={(e) => setCrepadoPct(clampNumberString(e.target.value, 0, 100))}
               />
             </div>
             <div className="space-y-1.5">
@@ -899,7 +899,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
                 max={100}
                 placeholder="0 - 100"
                 value={cumplimientoPct}
-                onChange={(e) => setCumplimientoPct(e.target.value)}
+                onChange={(e) => setCumplimientoPct(clampNumberString(e.target.value, 0, 100))}
               />
             </div>
           </CardContent>
@@ -1186,7 +1186,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
                           max={100}
                           disabled={isBlocked}
                           value={porcentajeRupturasPct}
-                          onChange={(e) => setPorcentajeRupturasPct(e.target.value)}
+                          onChange={(e) => setPorcentajeRupturasPct(clampNumberString(e.target.value, 0, 100))}
                           className="h-12 text-lg font-bold text-capture w-full"
                           placeholder="0 - 100"
                         />
@@ -1331,7 +1331,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
                     max={100}
                     disabled={isBlocked}
                     value={porcentajeRupturasPct}
-                    onChange={(e) => setPorcentajeRupturasPct(e.target.value)}
+                    onChange={(e) => setPorcentajeRupturasPct(clampNumberString(e.target.value, 0, 100))}
                     className="h-12 text-lg font-bold text-capture w-full"
                     placeholder="0 - 100"
                   />
