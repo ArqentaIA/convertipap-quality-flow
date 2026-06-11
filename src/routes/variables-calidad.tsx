@@ -645,18 +645,30 @@ function VariablesCalidad() {
                     </td>
                   </tr>
                 )}
-                {log.map((r) => (
-                  <tr key={r.id} className="border-t border-border">
-                    <td className="px-4 py-2 text-xs">{new Date(r.modificado_at).toLocaleString("es-MX")}</td>
-                    <td className="px-4 py-2 text-xs">{r.modificado_por_nombre ?? "—"}</td>
-                    <td className="px-4 py-2 text-xs uppercase">{r.modificado_por_rol ?? "—"}</td>
-                    <td className="px-4 py-2 text-xs">{r.variable_etiqueta}</td>
-                    <td className="px-4 py-2 text-xs">{r.campo}</td>
-                    <td className="px-4 py-2 text-xs tabular-nums">{r.valor_anterior ?? "—"}</td>
-                    <td className="px-4 py-2 text-xs tabular-nums font-semibold">{r.valor_nuevo ?? "—"}</td>
-                    <td className="px-4 py-2 text-xs">{r.motivo}</td>
-                  </tr>
-                ))}
+                {log.map((r) => {
+                  const rExt = r as AuditRow & {
+                    valor_anterior_texto?: string | null;
+                    valor_nuevo_texto?: string | null;
+                  };
+                  const ant = rExt.valor_anterior_texto != null
+                    ? (rExt.valor_anterior_texto || "(vacío)")
+                    : (r.valor_anterior ?? "—");
+                  const nue = rExt.valor_nuevo_texto != null
+                    ? (rExt.valor_nuevo_texto || "(vacío)")
+                    : (r.valor_nuevo ?? "—");
+                  return (
+                    <tr key={r.id} className="border-t border-border">
+                      <td className="px-4 py-2 text-xs">{new Date(r.modificado_at).toLocaleString("es-MX")}</td>
+                      <td className="px-4 py-2 text-xs">{r.modificado_por_nombre ?? "—"}</td>
+                      <td className="px-4 py-2 text-xs uppercase">{r.modificado_por_rol ?? "—"}</td>
+                      <td className="px-4 py-2 text-xs">{r.variable_etiqueta}</td>
+                      <td className="px-4 py-2 text-xs">{r.campo}</td>
+                      <td className="px-4 py-2 text-xs max-w-[280px] whitespace-pre-wrap break-words">{ant}</td>
+                      <td className="px-4 py-2 text-xs font-semibold max-w-[280px] whitespace-pre-wrap break-words">{nue}</td>
+                      <td className="px-4 py-2 text-xs">{r.motivo}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
