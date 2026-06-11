@@ -8,11 +8,8 @@ import {
   Bell,
   Camera,
   CheckCircle2,
-  CircleDot,
   Gauge,
   Maximize2,
-  PlayCircle,
-  Radio,
   Timer,
 } from "lucide-react";
 import { getOperatorVisionData } from "@/lib/operator-vision.functions";
