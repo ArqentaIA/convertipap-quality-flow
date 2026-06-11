@@ -516,7 +516,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
       const folioToast = `${numeroRollo || "SN"} · ${maquina.codigo}`;
       const opcionalesTexto: string[] = [
         jefeMaquina, operador, prensero, analista,
-        velocidadMaquina, velocidadEnrollador, crepadoPct, cumplimientoPct,
+        velocidadMaquina, velocidadEnrollador, crepadoPct,
         porcentajeRupturasPct, destino, observaciones, estatusLiberacion,
       ];
       let noObligatoriosFaltantes = opcionalesTexto.filter((v) => !String(v ?? "").trim()).length;
