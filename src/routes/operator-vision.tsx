@@ -164,8 +164,9 @@ function KpiCard({
   };
   return (
     <div
-      className={`flex h-[148px] flex-col rounded-2xl border-[3px] ${palette[state]} px-5 py-3 shadow-sm`}
+      className={`flex h-[140px] flex-col rounded-2xl border-[3px] ${palette[state]} px-4 py-2.5 shadow-sm`}
     >
+
       <div className="flex items-center justify-between">
         <span className="truncate text-[13px] font-black uppercase tracking-[0.15em] text-slate-500">
           {label}
@@ -234,7 +235,7 @@ function RolloActualCard({
   const c = stateCfg[status];
   return (
     <div
-      className={`flex h-[148px] flex-col justify-between rounded-2xl border-[3px] ${c.border} ${c.bg} px-6 py-3 shadow-lg ${c.text}`}
+      className={`flex h-[140px] flex-col justify-between rounded-2xl border-[3px] ${c.border} ${c.bg} px-5 py-2.5 shadow-lg ${c.text}`}
     >
       <div className="flex items-center justify-between">
         <span className="text-[13px] font-black uppercase tracking-[0.2em] opacity-90">
@@ -318,7 +319,7 @@ function VarCard({
     st === "bad" ? "bg-rose-600" : st === "warn" ? "bg-amber-500" : "bg-emerald-600";
 
   return (
-    <div className={`flex h-full min-h-[140px] flex-col rounded-xl border-[3px] ${ring} p-3`}>
+    <div className={`flex h-full min-h-[150px] flex-col rounded-xl border-[3px] ${ring} p-2.5`}>
       <div className="flex items-start justify-between gap-2">
         <span className="text-[14px] font-black uppercase leading-tight tracking-wider text-slate-700 break-words">
           {etiqueta}
@@ -572,18 +573,25 @@ function OperatorVisionPage() {
     return [...muestrasAll]
       .slice(-10)
       .reverse()
-      .map((m) => ({
-        id: m.id,
-        rollo: m.rollo,
-        hora: new Date(m.capturadoAt).toLocaleTimeString("es-MX", {
-          hour12: false,
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-        status: evalRollo(m),
-      }));
+      .map((m) => {
+        const r457 = m.mediciones.find(
+          (x: { clave: string; valor: number | null }) => x.clave === "blancuraR457",
+        )?.valor;
+        return {
+          id: m.id,
+          rollo: m.rollo,
+          hora: new Date(m.capturadoAt).toLocaleTimeString("es-MX", {
+            hour12: false,
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+          r457: r457 ?? null,
+          status: evalRollo(m),
+        };
+      });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [muestrasAll, variables]);
+
 
   // Hora del rollo actual
   const horaRolloActual = current
@@ -693,13 +701,16 @@ function OperatorVisionPage() {
       {/* CUERPO: sidebar historial + main */}
       <div className="flex min-h-0 flex-1 overflow-hidden">
         {/* SIDEBAR HISTORIAL DEL TURNO */}
-        <aside className="flex w-[260px] shrink-0 flex-col border-r-2 border-slate-200 bg-white">
+        <aside className="flex w-[300px] shrink-0 flex-col border-r-2 border-slate-200 bg-white">
           <div className="shrink-0 border-b border-slate-200 px-3 py-2">
             <h2 className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-500">
               Historial del Turno
             </h2>
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-              {historial.length} registros · más reciente primero
+            <div className="mt-1 flex items-center justify-between font-mono text-[10px] font-bold uppercase tracking-wider text-slate-400">
+              <span>HORA</span>
+              <span>ROLLO</span>
+              <span>R457</span>
+              <span>·</span>
             </div>
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto">
@@ -727,11 +738,14 @@ function OperatorVisionPage() {
                   return (
                     <li
                       key={h.id}
-                      className="flex items-center gap-2 px-3 py-2 font-mono text-[13px] tabular-nums"
+                      className="grid grid-cols-[42px_1fr_42px_12px] items-center gap-2 px-3 py-1.5 font-mono text-[12px] tabular-nums"
                     >
-                      <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${dot}`} />
                       <span className="text-slate-500">{h.hora}</span>
-                      <span className={`ml-auto font-bold ${txt}`}>{h.rollo}</span>
+                      <span className={`truncate font-bold ${txt}`}>{h.rollo}</span>
+                      <span className="text-right text-slate-700">
+                        {h.r457 === null || h.r457 === undefined ? "—" : h.r457.toFixed(1)}
+                      </span>
+                      <span className={`h-2.5 w-2.5 shrink-0 justify-self-end rounded-full ${dot}`} />
                     </li>
                   );
                 })}
@@ -740,10 +754,11 @@ function OperatorVisionPage() {
           </div>
         </aside>
 
+
         {/* MAIN */}
         <main className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden px-4 py-3">
           {/* KPIs */}
-          <section className="shrink-0 grid grid-cols-5 gap-3">
+          <section className="shrink-0 grid grid-cols-5 gap-2.5">
             <KpiCard
               label="Rollos Producidos"
               value={rollosOK.toString()}
@@ -798,12 +813,14 @@ function OperatorVisionPage() {
               </div>
             ) : (
               <div
-                className="grid h-full gap-2"
+                className="grid h-full"
                 style={{
-                  gridTemplateColumns: `repeat(auto-fit, minmax(200px, 1fr))`,
+                  gridTemplateColumns: `repeat(auto-fit, minmax(220px, 1fr))`,
                   gridAutoRows: "minmax(0, 1fr)",
+                  gap: "10px",
                 }}
               >
+
                 {variablesParaMostrar.map((v) => (
                   <VarCard
                     key={v.clave}
