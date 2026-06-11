@@ -1012,6 +1012,14 @@ export const listEspecsActivasConVariables = createServerFn({ method: "GET" })
       pvRows = (data ?? []) as unknown as PVRow[];
     }
 
+    const specCaracMap = new Map<string, string | null>();
+    for (const s of specsRows ?? []) {
+      if (!specCaracMap.has(s.producto_id)) {
+        const row = s as unknown as { caracteristicas_atributos?: string | null };
+        specCaracMap.set(s.producto_id, row.caracteristicas_atributos ?? null);
+      }
+    }
+
     return productos.map((p) => {
       const spec = specByProd.get(p.id);
       const tipo = (
@@ -1035,9 +1043,94 @@ export const listEspecsActivasConVariables = createServerFn({ method: "GET" })
         family: familyName,
         specVersion: spec?.version ?? null,
         hasSpec: !!spec,
+        caracteristicas: specCaracMap.get(p.id) ?? "",
         variables,
       };
     });
+  });
+
+// =============================================================================
+// CARACTERÍSTICAS DE LOS ATRIBUTOS — update por código de producto
+// =============================================================================
+
+export const updateCaracteristicasByCode = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        producto_codigo: z.string().min(1),
+        caracteristicas: z.string().max(700),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const sb = context.supabase as SB;
+    const roles = await getUserRoles(sb, context.userId);
+    requireAnyRole(roles, ["calidad", ...ROLES_ADMIN, "direccion"]);
+
+    const { data: prod } = await sb
+      .from("productos")
+      .select("id")
+      .eq("codigo", data.producto_codigo)
+      .maybeSingle();
+    if (!prod) throw new Error(`Producto ${data.producto_codigo} no encontrado`);
+
+    const { data: spec } = await sb
+      .from("producto_especificaciones")
+      .select("id, caracteristicas_atributos")
+      .eq("producto_id", prod.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (!spec) throw new Error(`Sin especificación registrada para ${data.producto_codigo}`);
+
+    const anterior = ((spec as unknown as { caracteristicas_atributos?: string | null })
+      .caracteristicas_atributos ?? "") as string;
+    const nuevo = data.caracteristicas;
+
+    if (anterior === nuevo) return { ok: true, changed: false };
+
+    const { error: upErr } = await sb
+      .from("producto_especificaciones")
+      .update({ caracteristicas_atributos: nuevo } as never)
+      .eq("id", spec.id);
+    if (upErr) throw new Error(upErr.message);
+
+    const { data: profile } = await sb
+      .from("profiles")
+      .select("nombre")
+      .eq("id", context.userId)
+      .maybeSingle();
+
+    const rolAuditor = roles.includes("calidad")
+      ? "calidad"
+      : roles.includes("gerente_general")
+        ? "gerente_general"
+        : roles.includes("administrador")
+          ? "administrador"
+          : "direccion";
+
+    const auditPayload = {
+      especificacion_id: spec.id,
+      producto_id: prod.id,
+      variable_id: null,
+      variable_clave: "caracteristicas",
+      variable_etiqueta: "Características de los atributos",
+      campo: "caracteristicas",
+      valor_anterior: null,
+      valor_nuevo: null,
+      valor_anterior_texto: anterior || null,
+      valor_nuevo_texto: nuevo || null,
+      motivo: anterior ? "Modificación de características" : "Alta de características",
+      modificado_por: context.userId,
+      modificado_por_nombre: profile?.nombre ?? null,
+      modificado_por_rol: rolAuditor as never,
+    };
+    const { error } = await sb
+      .from("spec_audit_log")
+      .insert(auditPayload as never);
+    if (error) throw new Error(error.message);
+    return { ok: true, changed: true };
   });
 
 // =============================================================================
