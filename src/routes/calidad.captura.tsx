@@ -41,6 +41,7 @@ import {
   listMisMuestrasRecientes,
   dictaminarMuestra,
 } from "@/lib/qc.functions";
+import { getCumplimientoIndicador } from "@/lib/cumplimiento.functions";
 import {
   Dialog,
   DialogContent,
@@ -347,7 +348,8 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
   const [velocidadMaquina, setVelocidadMaquina] = useState<string>("");
   const [velocidadEnrollador, setVelocidadEnrollador] = useState<string>("");
   const [crepadoPct, setCrepadoPct] = useState<string>("");
-  const [cumplimientoPct, setCumplimientoPct] = useState<string>("");
+  // Cumplimiento: calculado automáticamente desde la base de datos.
+  // No se permite captura ni edición manual.
   const [porcentajeRupturasPct, setPorcentajeRupturasPct] = useState<string>("");
   const [destino, setDestino] = useState<string>("");
 
@@ -503,6 +505,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
     onSuccess: async (res: { muestra_id: string }) => {
       await queryClient.invalidateQueries({ queryKey: ["qc"] });
       await queryClient.invalidateQueries({ queryKey: ["produccion"] });
+      await queryClient.invalidateQueries({ queryKey: ["qc", "cumplimiento"] });
       await queryClient.refetchQueries({
         queryKey: ["qc", "mis-muestras-recientes"],
         type: "active",
@@ -514,7 +517,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
       const folioToast = `${numeroRollo || "SN"} · ${maquina.codigo}`;
       const opcionalesTexto: string[] = [
         jefeMaquina, operador, prensero, analista,
-        velocidadMaquina, velocidadEnrollador, crepadoPct, cumplimientoPct,
+        velocidadMaquina, velocidadEnrollador, crepadoPct,
         porcentajeRupturasPct, destino, observaciones, estatusLiberacion,
       ];
       let noObligatoriosFaltantes = opcionalesTexto.filter((v) => !String(v ?? "").trim()).length;
@@ -616,6 +619,31 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
   // ---- Listado de muestras recientes del capturista ----
   const misMuestrasQuery = useQuery({ ...misMuestrasQO, enabled: hasAuthToken, retry: false });
 
+  // ---- Cumplimiento del turno+máquina actual (calculado en servidor) ----
+  const cumplimientoRange = useMemo(() => {
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    const end = new Date();
+    end.setHours(23, 59, 59, 999);
+    return { from: start.toISOString(), to: end.toISOString() };
+  }, []);
+  const cumplimientoQuery = useQuery({
+    queryKey: ["qc", "cumplimiento", maquina.id, turno, cumplimientoRange.from],
+    queryFn: () =>
+      getCumplimientoIndicador({
+        data: {
+          maquina_id: maquina.id,
+          turno,
+          from: cumplimientoRange.from,
+          to: cumplimientoRange.to,
+        },
+      }),
+    enabled: hasAuthToken && !!maquina.id,
+    refetchInterval: 30_000,
+    refetchOnWindowFocus: true,
+    staleTime: 0,
+  });
+
   async function imprimirEtiquetaMuestra(muestra: MuestraReciente) {
     try {
       const data = buildEtiquetaFromMuestra(muestra);
@@ -656,8 +684,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
 
     if (crepadoPct.trim() !== "" && (Number(crepadoPct) < 0 || Number(crepadoPct) > 100))
       return { error: "El campo % Crepado debe estar entre 0 y 100", faltantes: 0 };
-    if (cumplimientoPct.trim() !== "" && (Number(cumplimientoPct) < 0 || Number(cumplimientoPct) > 100))
-      return { error: "El campo Cumplimiento debe estar entre 0 y 100", faltantes: 0 };
+    // Cumplimiento se calcula automáticamente desde la base de datos.
     if (porcentajeRupturasPct.trim() !== "" && (Number(porcentajeRupturasPct) < 0 || Number(porcentajeRupturasPct) > 100))
       return { error: "El campo Porcentaje de rupturas debe estar entre 0 y 100", faltantes: 0 };
 
@@ -715,8 +742,8 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
         velocidad_enrollador:
           velocidadEnrollador.trim() === "" ? null : Number(velocidadEnrollador),
         crepado_pct: crepadoPct.trim() === "" ? null : Number(crepadoPct),
-        cumplimiento_pct:
-          cumplimientoPct.trim() === "" ? null : Number(cumplimientoPct),
+        // Cumplimiento se calcula desde la BD; nunca capturado a mano.
+        cumplimiento_pct: null,
         porcentaje_rupturas_pct:
           porcentajeRupturasPct.trim() === "" ? null : Number(porcentajeRupturasPct),
         destino: destino.trim() === "" ? null : destino.trim(),
@@ -888,19 +915,23 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
             <div className="space-y-1.5">
               <Label htmlFor="cumplimiento" className="text-base">
                 Cumplimiento{" "}
-                <span className="text-muted-foreground font-normal">(% · opcional)</span>
+                <span className="text-muted-foreground font-normal">
+                  (calculado automáticamente)
+                </span>
               </Label>
-              <Input
+              <div
                 id="cumplimiento"
-                type="number"
-                inputMode="decimal"
-                step="0.01"
-                min={0}
-                max={100}
-                placeholder="0 - 100"
-                value={cumplimientoPct}
-                onChange={(e) => setCumplimientoPct(clampNumberString(e.target.value, 0, 100))}
-              />
+                aria-readonly="true"
+                className="flex h-10 items-center rounded-md border border-input bg-muted/40 px-3 text-sm font-semibold tabular-nums"
+                title={`Turno ${turno} · ${maquina.codigo}`}
+              >
+                {cumplimientoQuery.isLoading
+                  ? "Calculando…"
+                  : (cumplimientoQuery.data?.texto ?? "0 liberados de 0 capturados (0%)")}
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                Turno {turno} · {maquina.codigo} · datos reales de hoy. No editable.
+              </p>
             </div>
           </CardContent>
         </Card>
