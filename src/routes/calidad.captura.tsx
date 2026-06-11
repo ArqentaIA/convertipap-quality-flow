@@ -476,7 +476,8 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
   // Autorizado por Administrador: Capturistas también pueden liberar rollos.
   const puedeLiberar =
     auth.hasRole("calidad") ||
-    auth.hasRole("administrador");
+    auth.hasRole("administrador") ||
+    auth.hasRole("capturista");
   const [liberarMuestra, setLiberarMuestra] = useState<MuestraReciente | null>(null);
   const [liberarDictamen, setLiberarDictamen] = useState<"liberada" | "concesion" | "rechazada">(
     "liberada",
