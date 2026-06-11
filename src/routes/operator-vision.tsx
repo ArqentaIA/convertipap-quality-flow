@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import html2canvas from "html2canvas-pro";
+import { cn } from "@/lib/utils";
 import {
   AlertTriangle,
   Bell,
@@ -365,13 +366,23 @@ function VarCard({
   );
 }
 
-function HeaderField({ label, value }: { label: string; value: string }) {
+function HeaderField({
+  label,
+  value,
+  className,
+}: {
+  label: string;
+  value: string;
+  className?: string;
+}) {
   return (
     <div className="flex min-w-0 flex-col">
       <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">
         {label}
       </span>
-      <span className="truncate text-[14px] font-bold text-slate-800">{value || "—"}</span>
+      <span className={cn("truncate text-[14px] font-bold", className ?? "text-slate-800")}>
+        {value || "—"}
+      </span>
     </div>
   );
 }
@@ -656,6 +667,13 @@ function OperatorVisionPage() {
             <HeaderField
               label="Cumplimiento"
               value={data?.cumplimientoTurno?.texto ?? ""}
+              className={
+                (data?.cumplimientoTurno?.pct ?? 0) >= 90
+                  ? "text-green-600"
+                  : (data?.cumplimientoTurno?.pct ?? 0) >= 70
+                    ? "text-yellow-600"
+                    : "text-red-600"
+              }
             />
           </div>
 

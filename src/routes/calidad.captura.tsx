@@ -619,6 +619,14 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
   // ---- Listado de muestras recientes del capturista ----
   const misMuestrasQuery = useQuery({ ...misMuestrasQO, enabled: hasAuthToken, retry: false });
 
+  // ---- Color según cumplimiento ----
+  const cumplimientoColorClass = (pct: number | undefined) => {
+    if (pct == null) return "bg-muted/40 text-foreground border-input";
+    if (pct >= 90) return "bg-green-50 text-green-700 border-green-300";
+    if (pct >= 70) return "bg-yellow-50 text-yellow-700 border-yellow-300";
+    return "bg-red-50 text-red-700 border-red-300";
+  };
+
   // ---- Cumplimiento del turno+máquina actual (calculado en servidor) ----
   const cumplimientoRange = useMemo(() => {
     const start = new Date();
@@ -922,7 +930,10 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
               <div
                 id="cumplimiento"
                 aria-readonly="true"
-                className="flex h-10 items-center rounded-md border border-input bg-muted/40 px-3 text-sm font-semibold tabular-nums"
+                className={cn(
+                  "flex h-10 items-center rounded-md border px-3 text-sm font-semibold tabular-nums transition-colors",
+                  cumplimientoColorClass(cumplimientoQuery.data?.pct)
+                )}
                 title={`Turno ${turno} · ${maquina.codigo}`}
               >
                 {cumplimientoQuery.isLoading
