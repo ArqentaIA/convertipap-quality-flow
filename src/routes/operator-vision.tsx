@@ -13,6 +13,7 @@ import {
   Timer,
 } from "lucide-react";
 import { getOperatorVisionData } from "@/lib/operator-vision.functions";
+import { useOperatorVisionRealtime } from "@/hooks/use-operator-vision-realtime";
 import logoConvertipap from "@/assets/logo-convertipap.png";
 
 const MAQUINAS_VALIDAS = ["MP-04", "MP-05", "MP-06", "MP-07"] as const;
