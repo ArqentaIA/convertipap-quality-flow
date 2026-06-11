@@ -133,7 +133,10 @@ export const getOperatorVisionData = createServerFn({ method: "GET" })
     const { data: muestrasRaw } = await muestrasQ;
 
     // Mantener orden descendente (más reciente primero) en el payload.
-    const muestras = (muestrasRaw ?? []).map((m: any) => ({
+    // El frontend espera el arreglo en orden ascendente (oldest→newest):
+    // usa el último elemento como "rollo actual". Mantenemos esa convención
+    // y la UI invierte para mostrar el historial del más reciente al más antiguo.
+    const muestras = [...(muestrasRaw ?? [])].reverse().map((m: any) => ({
       id: m.id as string,
       rollo: m.numero_rollo as string,
       capturadoAt: m.capturado_at as string,
