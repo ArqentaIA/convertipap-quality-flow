@@ -14,6 +14,7 @@ import {
   listSpecAuditByProductCode,
   registrarSpecAuditByCode,
   listEspecsActivasConVariables,
+  updateCaracteristicasByCode,
 } from "@/lib/qc.functions";
 import { useAuth } from "@/lib/auth";
 import jsPDF from "jspdf";
