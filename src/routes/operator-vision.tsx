@@ -594,15 +594,27 @@ function OperatorVisionPage() {
   }
 
 
-  // historial compacto: últimos 10, más reciente primero
+  // Historial SCADA: TODOS los rollos del turno, más reciente primero,
+  // con todas las variables técnicas evaluadas contra spec.
   const historial = useMemo(() => {
     return [...muestrasAll]
-      .slice(-10)
       .reverse()
       .map((m) => {
-        const r457 = m.mediciones.find(
-          (x: { clave: string; valor: number | null }) => x.clave === "blancuraR457",
-        )?.valor;
+        const vars = variablesParaMostrar.map((v) => {
+          const med = m.mediciones.find(
+            (x: { clave: string; valor: number | null }) => x.clave === v.clave,
+          );
+          const valor = med?.valor ?? null;
+          const status: VarStatus =
+            valor === null || !v.hasSpec ? "none" : evaluate(Number(valor), v.min, v.max);
+          return {
+            clave: v.clave,
+            etiqueta: v.etiqueta,
+            unidad: v.unidad,
+            valor,
+            status,
+          };
+        });
         return {
           id: m.id,
           rollo: m.rollo,
@@ -611,12 +623,21 @@ function OperatorVisionPage() {
             hour: "2-digit",
             minute: "2-digit",
           }),
-          r457: r457 ?? null,
           status: evalRollo(m),
+          vars,
         };
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [muestrasAll, variables]);
+  }, [muestrasAll, variables, variablesParaMostrar]);
+
+  // Densidad tipográfica según cantidad de rollos visibles
+  const densidad = useMemo(() => {
+    const n = historial.length;
+    if (n <= 8) return { row: 14, label: 10, value: 13, pad: "py-2", gap: "gap-1.5" };
+    if (n <= 14) return { row: 13, label: 10, value: 12, pad: "py-1.5", gap: "gap-1" };
+    if (n <= 22) return { row: 12, label: 9, value: 11, pad: "py-1", gap: "gap-1" };
+    return { row: 11, label: 9, value: 11, pad: "py-0.5", gap: "gap-0.5" };
+  }, [historial.length]);
 
 
   // Hora del rollo actual
