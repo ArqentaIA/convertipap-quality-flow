@@ -758,7 +758,7 @@ function OperatorVisionPage() {
         {/* MAIN */}
         <main className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden px-4 py-3">
           {/* KPIs */}
-          <section className="shrink-0 grid grid-cols-5 gap-3">
+          <section className="shrink-0 grid grid-cols-5 gap-2.5">
             <KpiCard
               label="Rollos Producidos"
               value={rollosOK.toString()}
