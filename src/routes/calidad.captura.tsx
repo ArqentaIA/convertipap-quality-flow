@@ -505,6 +505,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
     onSuccess: async (res: { muestra_id: string }) => {
       await queryClient.invalidateQueries({ queryKey: ["qc"] });
       await queryClient.invalidateQueries({ queryKey: ["produccion"] });
+      await queryClient.invalidateQueries({ queryKey: ["qc", "cumplimiento"] });
       await queryClient.refetchQueries({
         queryKey: ["qc", "mis-muestras-recientes"],
         type: "active",
