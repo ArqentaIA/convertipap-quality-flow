@@ -854,11 +854,45 @@ function OperatorVisionPage() {
       {/* FOOTER */}
       <footer className="shrink-0 border-t-2 border-slate-200 bg-white px-5 py-1.5">
         <div className="flex items-center justify-between gap-4 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <span
+                className={`h-2 w-2 rounded-full ${isError ? "bg-rose-500" : "animate-pulse bg-emerald-500"}`}
+              />
+              A Tissue System · monitoreo en tiempo real
+            </div>
+            {/* Indicador Realtime */}
             <span
-              className={`h-2 w-2 rounded-full ${isError ? "bg-rose-500" : "animate-pulse bg-emerald-500"}`}
-            />
-            A Tissue System · monitoreo en tiempo real
+              className={`flex items-center gap-1.5 rounded-full border px-2 py-0.5 normal-case tracking-normal ${
+                realtimeStatus === "live"
+                  ? "border-emerald-300 bg-emerald-50 text-emerald-700"
+                  : realtimeStatus === "offline"
+                    ? "border-amber-300 bg-amber-50 text-amber-700"
+                    : "border-slate-300 bg-slate-50 text-slate-600"
+              }`}
+              title={
+                realtimeStatus === "live"
+                  ? "Recibiendo eventos en tiempo real"
+                  : realtimeStatus === "offline"
+                    ? "Sin canal Realtime · usando refresco cada 60 s"
+                    : "Conectando al canal Realtime"
+              }
+            >
+              <span
+                className={`h-1.5 w-1.5 rounded-full ${
+                  realtimeStatus === "live"
+                    ? "animate-pulse bg-emerald-500"
+                    : realtimeStatus === "offline"
+                      ? "bg-amber-500"
+                      : "bg-slate-400"
+                }`}
+              />
+              {realtimeStatus === "live"
+                ? "LIVE"
+                : realtimeStatus === "offline"
+                  ? "POLLING"
+                  : "CONECTANDO"}
+            </span>
           </div>
           {isError && (
             <div className="flex items-center gap-2 rounded-md border-2 border-rose-400 bg-rose-50 px-3 py-1 text-rose-700">
@@ -883,7 +917,10 @@ function OperatorVisionPage() {
                   : "—"}
               </span>
             </span>
-            <span>Actualización cada 60 s · {data?.maquina?.area || "Conversión Tissue"}</span>
+            <span>
+              {realtimeStatus === "live" ? "Realtime activo" : "Refresco 60 s"} ·{" "}
+              {data?.maquina?.area || "Conversión Tissue"}
+            </span>
           </div>
         </div>
       </footer>
