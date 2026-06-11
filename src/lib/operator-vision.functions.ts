@@ -130,9 +130,11 @@ export const getOperatorVisionData = createServerFn({ method: "GET" })
       producto: string;
       productoCodigo: string;
     } | null = null;
+    let productoFallbackId: string | null = null;
     if (!ordenActiva) {
       const ultima = muestrasRaw?.[0]; // muestrasRaw está desc, [0] = más reciente
       if (ultima) {
+        productoFallbackId = (ultima.producto_id as string) ?? null;
         const [{ data: prod }, { data: ord }] = await Promise.all([
           ultima.producto_id
             ? sb.from("productos").select("codigo, nombre").eq("id", ultima.producto_id).maybeSingle()
@@ -149,6 +151,47 @@ export const getOperatorVisionData = createServerFn({ method: "GET" })
         };
       }
     }
+
+    // Fallback de variables: si no hay orden activa pero conocemos el producto,
+    // tomar la especificación vigente del producto para mostrar el universo completo
+    // de variables con sus rangos min/obj/max, aunque aún no se hayan medido.
+    if (variables.length === 0 && productoFallbackId) {
+      const { data: specVig } = await sb
+        .from("producto_especificaciones")
+        .select("id")
+        .eq("producto_id", productoFallbackId)
+        .eq("estado", "vigente")
+        .order("vigente_desde", { ascending: false, nullsFirst: false })
+        .limit(1)
+        .maybeSingle();
+      if (specVig?.id) {
+        const { data: vars } = await sb
+          .from("producto_variables")
+          .select(
+            `min_valor, objetivo, max_valor,
+             variables_calidad(clave, etiqueta, unidad)`,
+          )
+          .eq("especificacion_id", specVig.id);
+        variables =
+          (vars ?? [])
+            .map((v: any) => {
+              const vc = Array.isArray(v.variables_calidad)
+                ? v.variables_calidad[0]
+                : v.variables_calidad;
+              if (!vc?.clave) return null;
+              return {
+                clave: vc.clave,
+                etiqueta: vc.etiqueta ?? vc.clave,
+                unidad: vc.unidad ?? "",
+                min: Number(v.min_valor),
+                objetivo: Number(v.objetivo),
+                max: Number(v.max_valor),
+              };
+            })
+            .filter(Boolean) as typeof variables;
+      }
+    }
+
 
 
     // 5) Estado actual de máquina
