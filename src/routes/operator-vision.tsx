@@ -393,6 +393,11 @@ function OperatorVisionPage() {
     gcTime: 0,
   });
 
+  // Realtime: invalida la query en cuanto cambian muestras, mediciones,
+  // estado de máquina u órdenes para esta máquina.
+  const realtimeStatus = useOperatorVisionRealtime(maquina);
+
+
   const muestrasAll = data?.muestras ?? [];
   const current = muestrasAll[muestrasAll.length - 1];
   const orden = data?.orden;
