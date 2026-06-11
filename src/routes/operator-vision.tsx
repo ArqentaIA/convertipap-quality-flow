@@ -235,7 +235,7 @@ function RolloActualCard({
   const c = stateCfg[status];
   return (
     <div
-      className={`flex h-[148px] flex-col justify-between rounded-2xl border-[3px] ${c.border} ${c.bg} px-6 py-3 shadow-lg ${c.text}`}
+      className={`flex h-[140px] flex-col justify-between rounded-2xl border-[3px] ${c.border} ${c.bg} px-5 py-2.5 shadow-lg ${c.text}`}
     >
       <div className="flex items-center justify-between">
         <span className="text-[13px] font-black uppercase tracking-[0.2em] opacity-90">
