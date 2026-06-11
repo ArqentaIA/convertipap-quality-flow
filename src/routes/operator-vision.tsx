@@ -641,11 +641,6 @@ function OperatorVisionPage() {
       <header className="shrink-0 border-b-2 border-slate-200 bg-white">
         <div className="flex items-center gap-4 px-5 py-2">
           <div className="flex min-w-0 items-center gap-3">
-            <img
-              src={logoConvertipap}
-              alt="Convertipap"
-              className="h-10 w-auto shrink-0 object-contain"
-            />
             <div className="min-w-0">
               <div className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-500">
                 Visión Operador
@@ -661,6 +656,7 @@ function OperatorVisionPage() {
               </div>
             </div>
           </div>
+
 
           {/* Campos contextuales */}
           <div className="ml-2 grid min-w-0 flex-1 grid-cols-[repeat(4,minmax(0,1fr))_minmax(0,2.2fr)] gap-x-6">
