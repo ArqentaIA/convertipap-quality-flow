@@ -297,6 +297,7 @@ export const getOperatorVisionData = createServerFn({ method: "GET" })
             ultimoCambio: estadoActual.ultimo_cambio as string,
           }
         : null,
+      cumplimientoTurno,
     };
   });
 
