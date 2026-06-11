@@ -348,7 +348,8 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
   const [velocidadMaquina, setVelocidadMaquina] = useState<string>("");
   const [velocidadEnrollador, setVelocidadEnrollador] = useState<string>("");
   const [crepadoPct, setCrepadoPct] = useState<string>("");
-  const [cumplimientoPct, setCumplimientoPct] = useState<string>("");
+  // Cumplimiento: calculado automáticamente desde la base de datos.
+  // No se permite captura ni edición manual.
   const [porcentajeRupturasPct, setPorcentajeRupturasPct] = useState<string>("");
   const [destino, setDestino] = useState<string>("");
 
