@@ -541,6 +541,61 @@ function VariablesCalidad() {
           </div>
         </div>
 
+        {/* Características de los Atributos */}
+        <div className="rounded-xl border border-border bg-card shadow-sm">
+          <div className="flex items-center justify-between border-b border-border px-5 py-3">
+            <div>
+              <h3 className="text-sm font-semibold text-foreground">Características de los atributos</h3>
+              <p className="text-xs text-muted-foreground">
+                Información adicional asociada al producto/especificación seleccionado.
+              </p>
+            </div>
+            <span
+              className={`text-[11px] font-semibold tabular-nums ${
+                caracteristicas.length > 700 ? "text-destructive" : "text-muted-foreground"
+              }`}
+            >
+              {caracteristicas.length}/700
+            </span>
+          </div>
+          <div className="space-y-3 px-5 py-4">
+            <label htmlFor="caracteristicas-atributos" className="sr-only">
+              CARACTERÍSTICAS DE LOS ATRIBUTOS
+            </label>
+            <textarea
+              id="caracteristicas-atributos"
+              value={caracteristicas}
+              maxLength={700}
+              onChange={(e) => setCaracteristicas(e.target.value.slice(0, 700))}
+              placeholder="Captura características adicionales de los atributos…"
+              disabled={!puedeEditar || !activeSpec?.hasSpec}
+              rows={5}
+              className="w-full resize-y rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-60"
+            />
+            <div className="flex items-center justify-end gap-2">
+              <button
+                onClick={() => setCaracteristicas(carInitial)}
+                disabled={savingCar || caracteristicas === carInitial}
+                className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-2.5 py-1.5 text-[11px] font-semibold text-foreground hover:bg-accent disabled:opacity-50"
+              >
+                <X className="h-3.5 w-3.5" /> Revertir
+              </button>
+              <button
+                onClick={saveCaracteristicas}
+                disabled={
+                  !puedeEditar ||
+                  !activeSpec?.hasSpec ||
+                  savingCar ||
+                  caracteristicas === carInitial
+                }
+                className="inline-flex items-center gap-1.5 rounded-md bg-primary px-2.5 py-1.5 text-[11px] font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
+              >
+                <Save className="h-3.5 w-3.5" /> {savingCar ? "Guardando…" : "Guardar características"}
+              </button>
+            </div>
+          </div>
+        </div>
+
         {/* Bitácora */}
         <div className="rounded-xl border border-border bg-card shadow-sm">
           <div className="border-b border-border px-5 py-3">
