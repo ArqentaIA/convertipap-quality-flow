@@ -318,7 +318,7 @@ function VarCard({
     st === "bad" ? "bg-rose-600" : st === "warn" ? "bg-amber-500" : "bg-emerald-600";
 
   return (
-    <div className={`flex min-h-[170px] flex-col rounded-xl border-[3px] ${ring} p-4`}>
+    <div className={`flex h-full min-h-[140px] flex-col rounded-xl border-[3px] ${ring} p-3`}>
       <div className="flex items-start justify-between gap-2">
         <span className="text-[14px] font-black uppercase leading-tight tracking-wider text-slate-700 break-words">
           {etiqueta}
@@ -690,166 +690,147 @@ function OperatorVisionPage() {
         </div>
       )}
 
-      {/* MAIN */}
-      <main className="flex min-h-0 flex-1 flex-col gap-3 px-5 py-3">
-        {/* KPIs */}
-        <section className="shrink-0 grid grid-cols-5 gap-3">
-          <KpiCard
-            label="Rollos Producidos"
-            value={rollosOK.toString()}
-            state={rollosOK > 0 ? "ok" : "neutral"}
-            icon={CheckCircle2}
-            subtitle="EN ESPECIFICACIÓN"
-          />
-          <KpiCard
-            label="No Conformes"
-            value={rollosNC.toString()}
-            state={rollosNC === 0 ? "ok" : "bad"}
-            icon={AlertTriangle}
-            subtitle={rollosNC === 0 ? "SIN INCIDENCIAS" : "REVISAR PROCESO"}
-          />
-          <RolloActualCard
-            rollo={current?.rollo ? String(current.rollo) : "—"}
-            status={currentStatus}
-            producto={orden?.producto ?? ""}
-            hora={horaRolloActual}
-          />
-          <KpiCard
-            label="Tiempo Sin Captura"
-            value={lastCaptureMin === null ? "—" : String(lastCaptureMin)}
-            unit="min"
-            state={sinCapturaState}
-            icon={Timer}
-            subtitle={
-              lastCaptureMin === null
-                ? "SIN DATOS"
-                : sinCapturaState === "ok"
-                  ? "EN RANGO"
-                  : sinCapturaState === "warn"
-                    ? "ATENCIÓN"
-                    : "CRÍTICO"
-            }
-          />
-          <KpiCard
-            label="Velocidad Máquina"
-            value="—"
-            unit="m/min"
-            state="neutral"
-            icon={Gauge}
-            subtitle="SIN DATO"
-          />
-        </section>
-
-        {/* HISTORIAL DEL TURNO — strip compacto (10-15% pantalla max) */}
-        <section className="shrink-0 rounded-xl border-2 border-slate-200 bg-white px-4 py-2">
-          <div className="mb-1.5 flex items-center justify-between">
-            <h2 className="text-[11px] font-black uppercase tracking-[0.25em] text-slate-500">
+      {/* CUERPO: sidebar historial + main */}
+      <div className="flex min-h-0 flex-1 overflow-hidden">
+        {/* SIDEBAR HISTORIAL DEL TURNO */}
+        <aside className="flex w-[260px] shrink-0 flex-col border-r-2 border-slate-200 bg-white">
+          <div className="shrink-0 border-b border-slate-200 px-3 py-2">
+            <h2 className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-500">
               Historial del Turno
             </h2>
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-              últimos {historial.length} · más reciente primero
-            </span>
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+              {historial.length} registros · más reciente primero
+            </div>
           </div>
-          {historial.length === 0 ? (
-            <div className="py-2 text-center text-xs font-semibold text-slate-400">
-              Aún no hay capturas para este turno.
-            </div>
-          ) : (
-            <div className="flex items-center gap-2 overflow-x-auto pb-1">
-              {historial.map((h) => {
-                const dot =
-                  h.status === "ok"
-                    ? "bg-emerald-500"
-                    : h.status === "warn"
-                      ? "bg-amber-500"
-                      : h.status === "bad"
-                        ? "bg-rose-500"
-                        : "bg-slate-400";
-                const chip =
-                  h.status === "ok"
-                    ? "border-emerald-300 bg-emerald-50 text-emerald-800"
-                    : h.status === "warn"
-                      ? "border-amber-300 bg-amber-50 text-amber-800"
-                      : h.status === "bad"
-                        ? "border-rose-400 bg-rose-50 text-rose-800"
-                        : "border-slate-300 bg-white text-slate-700";
-                return (
-                  <div
-                    key={h.id}
-                    className={`flex shrink-0 items-center gap-2 rounded-lg border-2 ${chip} px-3 py-1.5`}
-                  >
-                    <span className={`h-2.5 w-2.5 rounded-full ${dot}`} />
-                    <span className="font-mono text-[12px] font-bold tabular-nums opacity-75">
-                      {h.hora}
-                    </span>
-                    <span className="font-mono text-sm font-black tabular-nums">
-                      {h.rollo}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </section>
-
-        {/* VARIABLES POR CATEGORÍA */}
-        <section className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pr-1">
-          {(Object.keys(variablesPorCategoria) as CategoriaKey[]).map((cat) => {
-            const items = variablesPorCategoria[cat];
-            if (items.length === 0) return null;
-            const meta = CATEGORIA_META[cat];
-            return (
-              <div key={cat} className="flex flex-col">
-                <div
-                  className={`mb-2 flex items-center justify-between rounded-t-lg border-2 ${meta.accent} px-3 py-1.5 text-white`}
-                >
-                  <h3 className="text-[12px] font-black uppercase tracking-[0.25em]">
-                    {meta.titulo}
-                  </h3>
-                  <span className="text-[11px] font-bold uppercase tracking-wider opacity-90">
-                    {items.length} {items.length === 1 ? "variable" : "variables"}
-                  </span>
-                </div>
-                <div
-                  className="grid gap-3"
-                  style={{
-                    gridTemplateColumns: `repeat(auto-fit, minmax(220px, 1fr))`,
-                  }}
-                >
-                  {items.map((v) => (
-                    <VarCard
-                      key={v.clave}
-                      etiqueta={v.etiqueta}
-                      unidad={v.unidad}
-                      value={
-                        mapMedActual.get(v.clave) === undefined
-                          ? null
-                          : (mapMedActual.get(v.clave) as number | null)
-                      }
-                      min={v.min}
-                      max={v.max}
-                      obj={v.obj}
-                      digits={DIGITS_DE_CLAVE[v.clave] ?? 2}
-                      hasSpec={
-                        v.hasSpec ||
-                        (mapSpecActual.get(v.clave)?.min !== null &&
-                          mapSpecActual.get(v.clave)?.max !== null &&
-                          mapSpecActual.get(v.clave)?.obj !== null)
-                      }
-                    />
-                  ))}
-                </div>
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            {historial.length === 0 ? (
+              <div className="px-3 py-4 text-center text-xs font-semibold text-slate-400">
+                Aún no hay capturas para este turno.
               </div>
-            );
-          })}
+            ) : (
+              <ul className="divide-y divide-slate-100">
+                {historial.map((h) => {
+                  const dot =
+                    h.status === "ok"
+                      ? "bg-emerald-500"
+                      : h.status === "warn"
+                        ? "bg-amber-500"
+                        : h.status === "bad"
+                          ? "bg-rose-500"
+                          : "bg-slate-400";
+                  const txt =
+                    h.status === "bad"
+                      ? "text-rose-700"
+                      : h.status === "warn"
+                        ? "text-amber-700"
+                        : "text-slate-800";
+                  return (
+                    <li
+                      key={h.id}
+                      className="flex items-center gap-2 px-3 py-2 font-mono text-[13px] tabular-nums"
+                    >
+                      <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${dot}`} />
+                      <span className="text-slate-500">{h.hora}</span>
+                      <span className={`ml-auto font-bold ${txt}`}>{h.rollo}</span>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+        </aside>
 
-          {variablesParaMostrar.length === 0 && (
-            <div className="flex flex-1 items-center justify-center rounded-xl border-2 border-dashed border-slate-300 bg-white text-sm font-semibold text-slate-400">
-              No hay variables activas para mostrar.
-            </div>
-          )}
-        </section>
-      </main>
+        {/* MAIN */}
+        <main className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden px-4 py-3">
+          {/* KPIs */}
+          <section className="shrink-0 grid grid-cols-5 gap-3">
+            <KpiCard
+              label="Rollos Producidos"
+              value={rollosOK.toString()}
+              state={rollosOK > 0 ? "ok" : "neutral"}
+              icon={CheckCircle2}
+              subtitle="EN ESPECIFICACIÓN"
+            />
+            <KpiCard
+              label="No Conformes"
+              value={rollosNC.toString()}
+              state={rollosNC === 0 ? "ok" : "bad"}
+              icon={AlertTriangle}
+              subtitle={rollosNC === 0 ? "SIN INCIDENCIAS" : "REVISAR PROCESO"}
+            />
+            <RolloActualCard
+              rollo={current?.rollo ? String(current.rollo) : "—"}
+              status={currentStatus}
+              producto={orden?.producto ?? ""}
+              hora={horaRolloActual}
+            />
+            <KpiCard
+              label="Tiempo Sin Captura"
+              value={lastCaptureMin === null ? "—" : String(lastCaptureMin)}
+              unit="min"
+              state={sinCapturaState}
+              icon={Timer}
+              subtitle={
+                lastCaptureMin === null
+                  ? "SIN DATOS"
+                  : sinCapturaState === "ok"
+                    ? "EN RANGO"
+                    : sinCapturaState === "warn"
+                      ? "ATENCIÓN"
+                      : "CRÍTICO"
+              }
+            />
+            <KpiCard
+              label="Velocidad Máquina"
+              value="—"
+              unit="m/min"
+              state="neutral"
+              icon={Gauge}
+              subtitle="SIN DATO"
+            />
+          </section>
+
+          {/* VARIABLES — grid único compacto, sin scroll */}
+          <section className="min-h-0 flex-1 overflow-hidden">
+            {variablesParaMostrar.length === 0 ? (
+              <div className="flex h-full items-center justify-center rounded-xl border-2 border-dashed border-slate-300 bg-white text-sm font-semibold text-slate-400">
+                No hay variables activas para mostrar.
+              </div>
+            ) : (
+              <div
+                className="grid h-full gap-2"
+                style={{
+                  gridTemplateColumns: `repeat(auto-fit, minmax(200px, 1fr))`,
+                  gridAutoRows: "minmax(0, 1fr)",
+                }}
+              >
+                {variablesParaMostrar.map((v) => (
+                  <VarCard
+                    key={v.clave}
+                    etiqueta={v.etiqueta}
+                    unidad={v.unidad}
+                    value={
+                      mapMedActual.get(v.clave) === undefined
+                        ? null
+                        : (mapMedActual.get(v.clave) as number | null)
+                    }
+                    min={v.min}
+                    max={v.max}
+                    obj={v.obj}
+                    digits={DIGITS_DE_CLAVE[v.clave] ?? 2}
+                    hasSpec={
+                      v.hasSpec ||
+                      (mapSpecActual.get(v.clave)?.min !== null &&
+                        mapSpecActual.get(v.clave)?.max !== null &&
+                        mapSpecActual.get(v.clave)?.obj !== null)
+                    }
+                  />
+                ))}
+              </div>
+            )}
+          </section>
+        </main>
+      </div>
 
       {/* FOOTER */}
       <footer className="shrink-0 border-t-2 border-slate-200 bg-white px-5 py-1.5">
