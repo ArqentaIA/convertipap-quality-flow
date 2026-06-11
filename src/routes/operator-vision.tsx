@@ -667,6 +667,13 @@ function OperatorVisionPage() {
             <HeaderField
               label="Cumplimiento"
               value={data?.cumplimientoTurno?.texto ?? ""}
+              className={
+                (data?.cumplimientoTurno?.pct ?? 0) >= 90
+                  ? "text-green-600"
+                  : (data?.cumplimientoTurno?.pct ?? 0) >= 70
+                    ? "text-yellow-600"
+                    : "text-red-600"
+              }
             />
           </div>
 
