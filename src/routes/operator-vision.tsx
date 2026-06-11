@@ -195,6 +195,59 @@ function KpiCard({
   );
 }
 
+// ---------- Mini KPI (compacto, para grid 2x2 lateral) ----------
+function MiniKpi({
+  label,
+  value,
+  unit,
+  state,
+  icon: Icon,
+}: {
+  label: string;
+  value: string;
+  unit?: string;
+  state: "ok" | "warn" | "bad" | "neutral";
+  icon: React.ComponentType<{ className?: string }>;
+}) {
+  const palette: Record<typeof state, string> = {
+    ok: "bg-white border-emerald-400",
+    warn: "bg-amber-50 border-amber-400",
+    bad: "bg-rose-50 border-rose-500 animate-pulse",
+    neutral: "bg-white border-slate-300",
+  };
+  const valueColor: Record<typeof state, string> = {
+    ok: "text-slate-900",
+    warn: "text-amber-700",
+    bad: "text-rose-700",
+    neutral: "text-slate-900",
+  };
+  return (
+    <div
+      className={`flex h-full min-h-0 flex-col justify-between rounded-xl border-2 ${palette[state]} px-2.5 py-1.5 shadow-sm`}
+    >
+      <div className="flex items-center justify-between gap-1">
+        <span className="truncate text-[10px] font-black uppercase tracking-[0.12em] text-slate-500">
+          {label}
+        </span>
+        <Icon className="h-3.5 w-3.5 shrink-0 opacity-60" />
+      </div>
+      <div className="flex items-end gap-1 overflow-hidden">
+        <span
+          className={`font-mono text-[28px] font-black leading-none tabular-nums ${valueColor[state]} truncate`}
+        >
+          {value}
+        </span>
+        {unit && (
+          <span className="pb-0.5 text-[11px] font-bold text-slate-500 shrink-0">
+            {unit}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
 // ---------- Rollo actual destacado ----------
 function RolloActualCard({
   rollo,
