@@ -791,7 +791,7 @@ function OperatorVisionPage() {
             <img
               src={logoConvertipap}
               alt="Convertipap"
-              className="mx-auto h-12 w-full object-contain"
+              className="mx-auto h-[68px] w-full object-contain"
             />
           </div>
         </aside>
