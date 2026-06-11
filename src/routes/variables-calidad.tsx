@@ -317,16 +317,28 @@ function VariablesCalidad() {
     autoTable(doc, {
       head: [["Fecha y Hora", "Nombre", "Rol", "Variable", "Campo", "Anterior", "Nuevo", "Motivo"]],
       body: records.length
-        ? records.map((r) => [
-            new Date(r.modificado_at).toLocaleString("es-MX"),
-            r.modificado_por_nombre ?? "—",
-            r.modificado_por_rol ?? "—",
-            r.variable_etiqueta,
-            r.campo,
-            r.valor_anterior == null ? "—" : String(r.valor_anterior),
-            r.valor_nuevo == null ? "—" : String(r.valor_nuevo),
-            r.motivo,
-          ])
+        ? records.map((r) => {
+            const rExt = r as AuditRow & {
+              valor_anterior_texto?: string | null;
+              valor_nuevo_texto?: string | null;
+            };
+            const ant = rExt.valor_anterior_texto != null
+              ? rExt.valor_anterior_texto || "(vacío)"
+              : r.valor_anterior == null ? "—" : String(r.valor_anterior);
+            const nue = rExt.valor_nuevo_texto != null
+              ? rExt.valor_nuevo_texto || "(vacío)"
+              : r.valor_nuevo == null ? "—" : String(r.valor_nuevo);
+            return [
+              new Date(r.modificado_at).toLocaleString("es-MX"),
+              r.modificado_por_nombre ?? "—",
+              r.modificado_por_rol ?? "—",
+              r.variable_etiqueta,
+              r.campo,
+              ant,
+              nue,
+              r.motivo,
+            ];
+          })
         : [["—", "—", "—", "Sin cambios registrados", "—", "—", "—", "—"]],
       styles: { fontSize: 8, cellPadding: 4 },
       headStyles: { fillColor: [37, 99, 235] },
