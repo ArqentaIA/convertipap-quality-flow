@@ -786,7 +786,16 @@ function OperatorVisionPage() {
             )}
           </div>
 
+          {/* Logo Convertipap al pie de la columna */}
+          <div className="shrink-0 border-t border-slate-200 bg-white px-3 py-3">
+            <img
+              src={logoConvertipap}
+              alt="Convertipap"
+              className="mx-auto h-12 w-full object-contain"
+            />
+          </div>
         </aside>
+
 
 
         {/* MAIN */}
