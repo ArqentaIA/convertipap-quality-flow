@@ -899,6 +899,7 @@ export type Database = {
         Row: {
           aprobado_at: string | null
           aprobado_por: string | null
+          caracteristicas_atributos: string | null
           created_at: string
           estado: Database["public"]["Enums"]["spec_status"]
           id: string
@@ -912,6 +913,7 @@ export type Database = {
         Insert: {
           aprobado_at?: string | null
           aprobado_por?: string | null
+          caracteristicas_atributos?: string | null
           created_at?: string
           estado?: Database["public"]["Enums"]["spec_status"]
           id?: string
@@ -925,6 +927,7 @@ export type Database = {
         Update: {
           aprobado_at?: string | null
           aprobado_por?: string | null
+          caracteristicas_atributos?: string | null
           created_at?: string
           estado?: Database["public"]["Enums"]["spec_status"]
           id?: string
@@ -1204,7 +1207,9 @@ export type Database = {
           planta_id: string | null
           producto_id: string
           valor_anterior: number | null
+          valor_anterior_texto: string | null
           valor_nuevo: number | null
+          valor_nuevo_texto: string | null
           variable_clave: string
           variable_etiqueta: string
           variable_id: string | null
@@ -1221,7 +1226,9 @@ export type Database = {
           planta_id?: string | null
           producto_id: string
           valor_anterior?: number | null
+          valor_anterior_texto?: string | null
           valor_nuevo?: number | null
+          valor_nuevo_texto?: string | null
           variable_clave: string
           variable_etiqueta: string
           variable_id?: string | null
@@ -1238,7 +1245,9 @@ export type Database = {
           planta_id?: string | null
           producto_id?: string
           valor_anterior?: number | null
+          valor_anterior_texto?: string | null
           valor_nuevo?: number | null
+          valor_nuevo_texto?: string | null
           variable_clave?: string
           variable_etiqueta?: string
           variable_id?: string | null
@@ -1530,7 +1539,7 @@ export type Database = {
         | "rechazada"
         | "concesion"
       qc_resultado_ajuste: "pendiente" | "exitoso" | "parcial" | "fallido"
-      qc_spec_audit_field: "min" | "objetivo" | "max"
+      qc_spec_audit_field: "min" | "objetivo" | "max" | "caracteristicas"
       qc_tipo_ajuste:
         | "ajuste_calidad"
         | "ajuste_maquina"
@@ -1732,7 +1741,7 @@ export const Constants = {
         "concesion",
       ],
       qc_resultado_ajuste: ["pendiente", "exitoso", "parcial", "fallido"],
-      qc_spec_audit_field: ["min", "objetivo", "max"],
+      qc_spec_audit_field: ["min", "objetivo", "max", "caracteristicas"],
       qc_tipo_ajuste: [
         "ajuste_calidad",
         "ajuste_maquina",

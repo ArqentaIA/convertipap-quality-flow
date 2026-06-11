@@ -14,6 +14,7 @@ import {
   listSpecAuditByProductCode,
   registrarSpecAuditByCode,
   listEspecsActivasConVariables,
+  updateCaracteristicasByCode,
 } from "@/lib/qc.functions";
 import { useAuth } from "@/lib/auth";
 import jsPDF from "jspdf";
@@ -64,6 +65,7 @@ function VariablesCalidad() {
   const queryClient = useQueryClient();
   const listAuditFn = useServerFn(listSpecAuditByProductCode);
   const registrarFn = useServerFn(registrarSpecAuditByCode);
+  const updateCaracFn = useServerFn(updateCaracteristicasByCode);
 
   const especsQuery = useQuery({
     ...especsQueryOptions,
@@ -103,10 +105,16 @@ function VariablesCalidad() {
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState<DraftMap>({});
   const [reason, setReason] = useState("");
+  const [caracteristicas, setCaracteristicas] = useState<string>("");
+  const [carInitial, setCarInitial] = useState<string>("");
+  const [savingCar, setSavingCar] = useState(false);
 
   useEffect(() => {
     setIsEditing(false); setDraft({}); setReason("");
-  }, [activeSpec?.code]);
+    const c = ((activeSpec as unknown as { caracteristicas?: string })?.caracteristicas) ?? "";
+    setCaracteristicas(c);
+    setCarInitial(c);
+  }, [activeSpec?.code, activeSpec]);
 
   const startEdit = () => {
     if (!puedeEditar) {
@@ -196,6 +204,37 @@ function VariablesCalidad() {
     }
   };
 
+  const saveCaracteristicas = async () => {
+    if (!activeSpec) return;
+    if (!puedeEditar) {
+      toast.error("Solo Calidad o Administrador pueden modificar.");
+      return;
+    }
+    if (caracteristicas.length > 700) {
+      toast.error("Máximo 700 caracteres.");
+      return;
+    }
+    setSavingCar(true);
+    try {
+      const res = await updateCaracFn({
+        data: { producto_codigo: activeSpec.code, caracteristicas },
+      });
+      if (res.changed) {
+        toast.success("Características guardadas.");
+        setCarInitial(caracteristicas);
+        await queryClient.invalidateQueries({ queryKey: ["variables-calidad", "especs"] });
+        void queryClient.invalidateQueries({ queryKey: ["spec-audit", activeSpec.code] });
+      } else {
+        toast.info("Sin cambios.");
+      }
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setSavingCar(false);
+    }
+  };
+
+
   const exportPDF = async () => {
     if (!activeSpec) return;
     const doc = new jsPDF({ unit: "pt", format: "a4" });
@@ -264,21 +303,42 @@ function VariablesCalidad() {
 
     titleY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 22;
     doc.setFontSize(11).setFont("helvetica", "bold");
+    doc.text("Características de los Atributos", 40, titleY);
+    autoTable(doc, {
+      body: [[caracteristicas?.trim() ? caracteristicas : "—"]],
+      styles: { fontSize: 9, cellPadding: 6 },
+      startY: titleY + 6,
+    });
+
+    titleY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 22;
+    doc.setFontSize(11).setFont("helvetica", "bold");
     doc.text("Bitácora de Cambios", 40, titleY);
 
     autoTable(doc, {
       head: [["Fecha y Hora", "Nombre", "Rol", "Variable", "Campo", "Anterior", "Nuevo", "Motivo"]],
       body: records.length
-        ? records.map((r) => [
-            new Date(r.modificado_at).toLocaleString("es-MX"),
-            r.modificado_por_nombre ?? "—",
-            r.modificado_por_rol ?? "—",
-            r.variable_etiqueta,
-            r.campo,
-            r.valor_anterior == null ? "—" : String(r.valor_anterior),
-            r.valor_nuevo == null ? "—" : String(r.valor_nuevo),
-            r.motivo,
-          ])
+        ? records.map((r) => {
+            const rExt = r as AuditRow & {
+              valor_anterior_texto?: string | null;
+              valor_nuevo_texto?: string | null;
+            };
+            const ant = rExt.valor_anterior_texto != null
+              ? rExt.valor_anterior_texto || "(vacío)"
+              : r.valor_anterior == null ? "—" : String(r.valor_anterior);
+            const nue = rExt.valor_nuevo_texto != null
+              ? rExt.valor_nuevo_texto || "(vacío)"
+              : r.valor_nuevo == null ? "—" : String(r.valor_nuevo);
+            return [
+              new Date(r.modificado_at).toLocaleString("es-MX"),
+              r.modificado_por_nombre ?? "—",
+              r.modificado_por_rol ?? "—",
+              r.variable_etiqueta,
+              r.campo,
+              ant,
+              nue,
+              r.motivo,
+            ];
+          })
         : [["—", "—", "—", "Sin cambios registrados", "—", "—", "—", "—"]],
       styles: { fontSize: 8, cellPadding: 4 },
       headStyles: { fillColor: [37, 99, 235] },
@@ -502,6 +562,61 @@ function VariablesCalidad() {
           </div>
         </div>
 
+        {/* Características de los Atributos */}
+        <div className="rounded-xl border border-border bg-card shadow-sm">
+          <div className="flex items-center justify-between border-b border-border px-5 py-3">
+            <div>
+              <h3 className="text-sm font-semibold text-foreground">Características de los atributos</h3>
+              <p className="text-xs text-muted-foreground">
+                Información adicional asociada al producto/especificación seleccionado.
+              </p>
+            </div>
+            <span
+              className={`text-[11px] font-semibold tabular-nums ${
+                caracteristicas.length > 700 ? "text-destructive" : "text-muted-foreground"
+              }`}
+            >
+              {caracteristicas.length}/700
+            </span>
+          </div>
+          <div className="space-y-3 px-5 py-4">
+            <label htmlFor="caracteristicas-atributos" className="sr-only">
+              CARACTERÍSTICAS DE LOS ATRIBUTOS
+            </label>
+            <textarea
+              id="caracteristicas-atributos"
+              value={caracteristicas}
+              maxLength={700}
+              onChange={(e) => setCaracteristicas(e.target.value.slice(0, 700))}
+              placeholder="Captura características adicionales de los atributos…"
+              disabled={!puedeEditar || !activeSpec?.hasSpec}
+              rows={5}
+              className="w-full resize-y rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-60"
+            />
+            <div className="flex items-center justify-end gap-2">
+              <button
+                onClick={() => setCaracteristicas(carInitial)}
+                disabled={savingCar || caracteristicas === carInitial}
+                className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-2.5 py-1.5 text-[11px] font-semibold text-foreground hover:bg-accent disabled:opacity-50"
+              >
+                <X className="h-3.5 w-3.5" /> Revertir
+              </button>
+              <button
+                onClick={saveCaracteristicas}
+                disabled={
+                  !puedeEditar ||
+                  !activeSpec?.hasSpec ||
+                  savingCar ||
+                  caracteristicas === carInitial
+                }
+                className="inline-flex items-center gap-1.5 rounded-md bg-primary px-2.5 py-1.5 text-[11px] font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
+              >
+                <Save className="h-3.5 w-3.5" /> {savingCar ? "Guardando…" : "Guardar características"}
+              </button>
+            </div>
+          </div>
+        </div>
+
         {/* Bitácora */}
         <div className="rounded-xl border border-border bg-card shadow-sm">
           <div className="border-b border-border px-5 py-3">
@@ -530,18 +645,30 @@ function VariablesCalidad() {
                     </td>
                   </tr>
                 )}
-                {log.map((r) => (
-                  <tr key={r.id} className="border-t border-border">
-                    <td className="px-4 py-2 text-xs">{new Date(r.modificado_at).toLocaleString("es-MX")}</td>
-                    <td className="px-4 py-2 text-xs">{r.modificado_por_nombre ?? "—"}</td>
-                    <td className="px-4 py-2 text-xs uppercase">{r.modificado_por_rol ?? "—"}</td>
-                    <td className="px-4 py-2 text-xs">{r.variable_etiqueta}</td>
-                    <td className="px-4 py-2 text-xs">{r.campo}</td>
-                    <td className="px-4 py-2 text-xs tabular-nums">{r.valor_anterior ?? "—"}</td>
-                    <td className="px-4 py-2 text-xs tabular-nums font-semibold">{r.valor_nuevo ?? "—"}</td>
-                    <td className="px-4 py-2 text-xs">{r.motivo}</td>
-                  </tr>
-                ))}
+                {log.map((r) => {
+                  const rExt = r as AuditRow & {
+                    valor_anterior_texto?: string | null;
+                    valor_nuevo_texto?: string | null;
+                  };
+                  const ant = rExt.valor_anterior_texto != null
+                    ? (rExt.valor_anterior_texto || "(vacío)")
+                    : (r.valor_anterior ?? "—");
+                  const nue = rExt.valor_nuevo_texto != null
+                    ? (rExt.valor_nuevo_texto || "(vacío)")
+                    : (r.valor_nuevo ?? "—");
+                  return (
+                    <tr key={r.id} className="border-t border-border">
+                      <td className="px-4 py-2 text-xs">{new Date(r.modificado_at).toLocaleString("es-MX")}</td>
+                      <td className="px-4 py-2 text-xs">{r.modificado_por_nombre ?? "—"}</td>
+                      <td className="px-4 py-2 text-xs uppercase">{r.modificado_por_rol ?? "—"}</td>
+                      <td className="px-4 py-2 text-xs">{r.variable_etiqueta}</td>
+                      <td className="px-4 py-2 text-xs">{r.campo}</td>
+                      <td className="px-4 py-2 text-xs max-w-[280px] whitespace-pre-wrap break-words">{ant}</td>
+                      <td className="px-4 py-2 text-xs font-semibold max-w-[280px] whitespace-pre-wrap break-words">{nue}</td>
+                      <td className="px-4 py-2 text-xs">{r.motivo}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
