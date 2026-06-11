@@ -1,19 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
+import html2canvas from "html2canvas";
 import {
   AlertTriangle,
   Bell,
+  Camera,
   CheckCircle2,
   CircleDot,
-  Droplets,
   Gauge,
   Maximize2,
-  Move3d,
   PlayCircle,
   Radio,
-  Ruler,
-  Scale,
   Timer,
 } from "lucide-react";
 import { getOperatorVisionData } from "@/lib/operator-vision.functions";
@@ -25,8 +24,8 @@ type MaquinaValida = (typeof MAQUINAS_VALIDAS)[number];
 export const Route = createFileRoute("/operator-vision")({
   head: () => ({
     meta: [
-      { title: "Operator Vision · Convertipap" },
-      { name: "description", content: "Pantalla operativa industrial en tiempo real" },
+      { title: "Visión Operador · Convertipap" },
+      { name: "description", content: "Pantalla industrial de monitoreo en tiempo real" },
     ],
   }),
   validateSearch: (search: Record<string, unknown>): { maquina: MaquinaValida } => {
@@ -53,7 +52,7 @@ function useTicker(ms = 1000) {
 }
 
 function fmt(n: number | null | undefined, digits = 2) {
-  if (n === null || n === undefined || isNaN(n)) return "-";
+  if (n === null || n === undefined || isNaN(n)) return "—";
   return n.toFixed(digits);
 }
 
@@ -83,20 +82,53 @@ function labelLiberacion(s: VarStatus): string {
   return "—";
 }
 
-// ---------- Variables del rollo actual ----------
-type CardKey = "pesoBase" | "calibre" | "humedad" | "anchoUtil" | "diametro";
-
-const CARD_DEF: Record<
-  CardKey,
-  { etiqueta: string; unidad: string; digits: number; icon: React.ComponentType<{ className?: string }> }
-> = {
-  pesoBase: { etiqueta: "Peso Base", unidad: "g/m²", digits: 2, icon: Scale },
-  calibre: { etiqueta: "Calibre", unidad: "mm", digits: 3, icon: Move3d },
-  humedad: { etiqueta: "Humedad", unidad: "%", digits: 2, icon: Droplets },
-  anchoUtil: { etiqueta: "Ancho Útil", unidad: "mm", digits: 0, icon: Ruler },
-  diametro: { etiqueta: "Diámetro", unidad: "mm", digits: 0, icon: CircleDot },
+// Categorías de variables — clasificación por clave conocida
+type CategoriaKey = "calidad" | "dimensiones" | "mecanicas" | "produccion" | "otras";
+const CATEGORIA_META: Record<CategoriaKey, { titulo: string; accent: string }> = {
+  calidad: { titulo: "Calidad", accent: "border-sky-400 bg-sky-500" },
+  dimensiones: { titulo: "Dimensiones", accent: "border-indigo-400 bg-indigo-500" },
+  mecanicas: { titulo: "Propiedades Mecánicas", accent: "border-violet-400 bg-violet-500" },
+  produccion: { titulo: "Producción", accent: "border-teal-400 bg-teal-500" },
+  otras: { titulo: "Otras Variables", accent: "border-slate-400 bg-slate-500" },
 };
-const CARD_KEYS: CardKey[] = ["pesoBase", "calibre", "humedad", "anchoUtil", "diametro"];
+
+const CATEGORIA_DE_CLAVE: Record<string, CategoriaKey> = {
+  pesoBase: "calidad",
+  calibre: "calidad",
+  humedad: "calidad",
+  blancuraR457: "calidad",
+  blancuraA: "calidad",
+  blancuraB: "calidad",
+  anchoUtil: "dimensiones",
+  diametro: "dimensiones",
+  tensionSecaMD: "mecanicas",
+  tensionSecaCD: "mecanicas",
+  relacionMDCD: "mecanicas",
+  elongacionMD: "mecanicas",
+  peso: "produccion",
+  uniones: "produccion",
+};
+
+const DIGITS_DE_CLAVE: Record<string, number> = {
+  pesoBase: 2,
+  calibre: 3,
+  humedad: 2,
+  blancuraR457: 2,
+  blancuraA: 2,
+  blancuraB: 2,
+  anchoUtil: 0,
+  diametro: 0,
+  tensionSecaMD: 2,
+  tensionSecaCD: 2,
+  relacionMDCD: 2,
+  elongacionMD: 2,
+  peso: 2,
+  uniones: 0,
+};
+
+function classifyVariable(clave: string): CategoriaKey {
+  return CATEGORIA_DE_CLAVE[clave] ?? "otras";
+}
 
 // ---------- KPI ----------
 function KpiCard({
@@ -115,10 +147,10 @@ function KpiCard({
   subtitle?: string;
 }) {
   const palette: Record<typeof state, string> = {
-    ok: "bg-white border-emerald-300 text-emerald-700",
-    warn: "bg-amber-50 border-amber-400 text-amber-700",
-    bad: "bg-rose-50 border-rose-500 text-rose-700 animate-pulse",
-    neutral: "bg-white border-slate-300 text-slate-600",
+    ok: "bg-white border-emerald-400",
+    warn: "bg-amber-50 border-amber-400",
+    bad: "bg-rose-50 border-rose-500 animate-pulse",
+    neutral: "bg-white border-slate-300",
   };
   const valueColor: Record<typeof state, string> = {
     ok: "text-slate-900",
@@ -126,22 +158,36 @@ function KpiCard({
     bad: "text-rose-700",
     neutral: "text-slate-900",
   };
+  const sub: Record<typeof state, string> = {
+    ok: "text-emerald-700",
+    warn: "text-amber-700",
+    bad: "text-rose-700",
+    neutral: "text-slate-500",
+  };
   return (
-    <div className={`rounded-2xl border-[3px] ${palette[state]} px-6 py-5 flex flex-col shadow-md`}>
+    <div
+      className={`flex h-[148px] flex-col rounded-2xl border-[3px] ${palette[state]} px-5 py-3 shadow-sm`}
+    >
       <div className="flex items-center justify-between">
-        <span className="text-[16px] font-black uppercase tracking-[0.15em] text-slate-500">
+        <span className="truncate text-[13px] font-black uppercase tracking-[0.15em] text-slate-500">
           {label}
         </span>
-        <Icon className="h-8 w-8 opacity-60" />
+        <Icon className="h-6 w-6 shrink-0 opacity-60" />
       </div>
-      <div className="mt-2 flex items-baseline gap-2">
-        <span className={`font-mono text-[88px] font-black leading-none tabular-nums ${valueColor[state]}`}>
+      <div className="flex flex-1 items-end gap-2 overflow-hidden">
+        <span
+          className={`font-mono text-[64px] font-black leading-none tabular-nums ${valueColor[state]} truncate`}
+        >
           {value}
         </span>
-        {unit && <span className="text-2xl font-bold text-slate-500">{unit}</span>}
+        {unit && (
+          <span className="pb-1 text-xl font-bold text-slate-500 shrink-0">{unit}</span>
+        )}
       </div>
       {subtitle && (
-        <div className={`mt-2 text-[15px] font-black uppercase tracking-wider`}>
+        <div
+          className={`mt-1 truncate text-[12px] font-black uppercase tracking-wider ${sub[state]}`}
+        >
           {subtitle}
         </div>
       )}
@@ -149,29 +195,95 @@ function KpiCard({
   );
 }
 
-// ---------- Variable card ----------
+// ---------- Rollo actual destacado ----------
+function RolloActualCard({
+  rollo,
+  status,
+  producto,
+  hora,
+}: {
+  rollo: string;
+  status: VarStatus;
+  producto: string;
+  hora: string;
+}) {
+  const stateCfg: Record<VarStatus, { bg: string; border: string; chip: string; text: string }> = {
+    ok: {
+      bg: "bg-gradient-to-br from-emerald-500 to-emerald-700",
+      border: "border-emerald-300",
+      chip: "bg-white/20 text-white",
+      text: "text-white",
+    },
+    warn: {
+      bg: "bg-gradient-to-br from-amber-400 to-amber-600",
+      border: "border-amber-300",
+      chip: "bg-white/20 text-white",
+      text: "text-white",
+    },
+    bad: {
+      bg: "bg-gradient-to-br from-rose-500 to-rose-700 animate-pulse",
+      border: "border-rose-300",
+      chip: "bg-white/20 text-white",
+      text: "text-white",
+    },
+    none: {
+      bg: "bg-gradient-to-br from-slate-500 to-slate-700",
+      border: "border-slate-300",
+      chip: "bg-white/20 text-white",
+      text: "text-white",
+    },
+  };
+  const c = stateCfg[status];
+  return (
+    <div
+      className={`flex h-[148px] flex-col justify-between rounded-2xl border-[3px] ${c.border} ${c.bg} px-6 py-3 shadow-lg ${c.text}`}
+    >
+      <div className="flex items-center justify-between">
+        <span className="text-[13px] font-black uppercase tracking-[0.2em] opacity-90">
+          Rollo Actual
+        </span>
+        <span
+          className={`rounded-md px-2 py-0.5 text-[11px] font-black uppercase tracking-wider ${c.chip}`}
+        >
+          {labelLiberacion(status)}
+        </span>
+      </div>
+      <div className="font-mono text-[64px] font-black leading-none tabular-nums truncate">
+        {rollo || "—"}
+      </div>
+      <div className="flex items-center justify-between gap-2 text-[12px] font-bold uppercase tracking-wider opacity-90">
+        <span className="truncate">{producto || "—"}</span>
+        <span className="shrink-0 font-mono tabular-nums">{hora}</span>
+      </div>
+    </div>
+  );
+}
+
+// ---------- Variable card con barra MIN-OBJ-MAX ----------
 function VarCard({
-  ck,
+  etiqueta,
+  unidad,
   value,
   min,
   max,
   obj,
+  digits,
   hasSpec,
 }: {
-  ck: CardKey;
+  etiqueta: string;
+  unidad: string;
   value: number | null;
   min: number;
   max: number;
   obj: number;
+  digits: number;
   hasSpec: boolean;
 }) {
-  const def = CARD_DEF[ck];
-  const Icon = def.icon;
   const st = hasSpec ? evaluate(value, min, max) : "none";
 
   const ring =
     st === "bad"
-      ? "border-rose-500 bg-rose-50 ring-2 ring-rose-400/60 animate-[varPulse_1.6s_ease-in-out_infinite]"
+      ? "border-rose-500 bg-rose-50 ring-2 ring-rose-400/60"
       : st === "warn"
         ? "border-amber-400 bg-amber-50"
         : st === "ok"
@@ -189,42 +301,64 @@ function VarCard({
           ? "text-emerald-700"
           : "text-slate-400";
 
+  // Posición del valor en la barra (0-100%)
+  let pos = 50;
+  if (hasSpec && value !== null && !isNaN(value)) {
+    const span = max - min;
+    if (span > 0) {
+      pos = Math.max(0, Math.min(100, ((value - min) / span) * 100));
+    }
+  }
+  const objPos = (() => {
+    if (!hasSpec) return 50;
+    const span = max - min;
+    if (span <= 0) return 50;
+    return Math.max(0, Math.min(100, ((obj - min) / span) * 100));
+  })();
+
+  const markerColor =
+    st === "bad" ? "bg-rose-600" : st === "warn" ? "bg-amber-500" : "bg-emerald-600";
+
   return (
-    <div className={`rounded-2xl border-[3px] ${ring} p-5 flex flex-col`}>
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Icon className="h-8 w-8 text-slate-500" />
-          <span className="text-[20px] font-black uppercase tracking-wider text-slate-600">
-            {def.etiqueta}
-          </span>
-        </div>
-        <span className={`text-[18px] font-black uppercase ${stateColor}`}>{stateLabel}</span>
+    <div className={`flex min-h-[170px] flex-col rounded-xl border-[3px] ${ring} p-4`}>
+      <div className="flex items-start justify-between gap-2">
+        <span className="text-[14px] font-black uppercase leading-tight tracking-wider text-slate-700 break-words">
+          {etiqueta}
+        </span>
+        <span className={`shrink-0 text-[12px] font-black uppercase ${stateColor}`}>
+          {stateLabel}
+        </span>
       </div>
-      <div className="flex flex-1 items-center justify-center overflow-hidden">
-        <div className="flex w-full items-baseline justify-center gap-1 whitespace-nowrap">
-          <span className="font-mono text-[clamp(48px,8.5vw,120px)] font-black leading-none tabular-nums text-slate-900">
-            {fmt(value, def.digits)}
-          </span>
-          <span className="text-2xl font-bold text-slate-500 shrink-0">{def.unidad}</span>
-        </div>
+
+      <div className="flex flex-1 items-baseline justify-center gap-1 overflow-hidden py-1">
+        <span className="font-mono text-[48px] font-black leading-none tabular-nums text-slate-900">
+          {fmt(value, digits)}
+        </span>
+        <span className="text-base font-bold text-slate-500 shrink-0">{unidad}</span>
       </div>
+
       {hasSpec ? (
-        <div className="mt-2 grid grid-cols-3 gap-1 text-center tabular-nums">
-          <div className="rounded-md bg-slate-100 px-1 py-1">
-            <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Min</div>
-            <div className="text-[15px] font-bold text-slate-800">{fmt(min, def.digits)}</div>
+        <>
+          <div className="relative mt-1 h-2 rounded-full bg-slate-200">
+            <div
+              className="absolute top-1/2 h-3 w-0.5 -translate-y-1/2 bg-slate-500"
+              style={{ left: `${objPos}%` }}
+            />
+            {value !== null && !isNaN(value) && (
+              <div
+                className={`absolute top-1/2 h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow ${markerColor}`}
+                style={{ left: `${pos}%` }}
+              />
+            )}
           </div>
-          <div className="rounded-md bg-emerald-100 px-1 py-1">
-            <div className="text-[11px] font-bold uppercase tracking-wider text-emerald-700">Obj</div>
-            <div className="text-[15px] font-bold text-emerald-800">{fmt(obj, def.digits)}</div>
+          <div className="mt-1 flex justify-between text-[11px] font-bold tabular-nums text-slate-500">
+            <span>MIN {fmt(min, digits)}</span>
+            <span className="text-emerald-700">OBJ {fmt(obj, digits)}</span>
+            <span>MAX {fmt(max, digits)}</span>
           </div>
-          <div className="rounded-md bg-slate-100 px-1 py-1">
-            <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Max</div>
-            <div className="text-[15px] font-bold text-slate-800">{fmt(max, def.digits)}</div>
-          </div>
-        </div>
+        </>
       ) : (
-        <div className="mt-2 text-center text-[15px] font-semibold text-slate-400">
+        <div className="mt-2 text-center text-[12px] font-semibold text-slate-400">
           Sin especificación
         </div>
       )}
@@ -234,11 +368,11 @@ function VarCard({
 
 function HeaderField({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex flex-col">
-      <span className="text-[13px] font-bold uppercase tracking-[0.18em] text-slate-400">
+    <div className="flex min-w-0 flex-col">
+      <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">
         {label}
       </span>
-      <span className="truncate text-lg font-bold text-slate-800">{value || "-"}</span>
+      <span className="truncate text-[14px] font-bold text-slate-800">{value || "—"}</span>
     </div>
   );
 }
@@ -246,6 +380,8 @@ function HeaderField({ label, value }: { label: string; value: string }) {
 function OperatorVisionPage() {
   const { maquina } = Route.useSearch();
   const now = useTicker(1000);
+  const screenRef = useRef<HTMLDivElement>(null);
+  const [capturing, setCapturing] = useState(false);
 
   const { data, error, dataUpdatedAt, isError } = useQuery({
     queryKey: ["operator-vision", maquina],
@@ -260,20 +396,18 @@ function OperatorVisionPage() {
   });
 
   const muestrasAll = data?.muestras ?? [];
-  const muestras = muestrasAll.slice(-5);
   const current = muestrasAll[muestrasAll.length - 1];
   const orden = data?.orden;
   const variables = data?.variables ?? [];
 
-  // Estatus efectivo del rollo actual evaluando sus variables vs spec
   const mapMedActual = useMemo(() => {
     const m = new Map<string, number | null>();
-    current?.mediciones.forEach((x: { clave: string; valor: number | null }) => m.set(x.clave, x.valor));
+    current?.mediciones.forEach((x: { clave: string; valor: number | null }) =>
+      m.set(x.clave, x.valor),
+    );
     return m;
   }, [current]);
 
-  // Fallback de spec por variable tomado del snapshot de la medición del
-  // rollo actual (útil cuando no hay especificación activa en la orden).
   const mapSpecActual = useMemo(() => {
     const m = new Map<string, { min: number | null; obj: number | null; max: number | null }>();
     current?.mediciones.forEach((x: any) => {
@@ -282,15 +416,57 @@ function OperatorVisionPage() {
     return m;
   }, [current]);
 
+  // Universo de variables a mostrar: union de spec activa + claves presentes en rollo actual
+  const variablesParaMostrar = useMemo(() => {
+    const map = new Map<
+      string,
+      { clave: string; etiqueta: string; unidad: string; min: number; obj: number; max: number; hasSpec: boolean }
+    >();
+    for (const v of variables) {
+      map.set(v.clave, {
+        clave: v.clave,
+        etiqueta: v.etiqueta || v.clave,
+        unidad: v.unidad || "",
+        min: Number(v.min),
+        obj: Number(v.objetivo),
+        max: Number(v.max),
+        hasSpec: true,
+      });
+    }
+    current?.mediciones.forEach((m: any) => {
+      if (map.has(m.clave)) return;
+      const hasSpec = m.min !== null && m.max !== null && m.obj !== null;
+      map.set(m.clave, {
+        clave: m.clave,
+        etiqueta: m.clave,
+        unidad: "",
+        min: Number(m.min ?? 0),
+        obj: Number(m.obj ?? 0),
+        max: Number(m.max ?? 0),
+        hasSpec,
+      });
+    });
+    return Array.from(map.values());
+  }, [variables, current]);
+
+  const variablesPorCategoria = useMemo(() => {
+    const groups: Record<CategoriaKey, typeof variablesParaMostrar> = {
+      calidad: [],
+      dimensiones: [],
+      mecanicas: [],
+      produccion: [],
+      otras: [],
+    };
+    for (const v of variablesParaMostrar) {
+      groups[classifyVariable(v.clave)].push(v);
+    }
+    return groups;
+  }, [variablesParaMostrar]);
+
   function evalRollo(m: typeof muestrasAll[number] | undefined): VarStatus {
     if (!m) return "none";
-    // Si hay dictamen explícito úsalo
     const fromDict = statusFromLiberacion(m.estatus);
-    if (fromDict !== "warn" || m.estatus) {
-      // si está liberado o no conforme, respeta
-      if (fromDict === "ok" || fromDict === "bad") return fromDict;
-    }
-    // Evalúa variables vs spec si hay
+    if (fromDict === "ok" || fromDict === "bad") return fromDict;
     let worst: VarStatus = "ok";
     for (const v of variables) {
       const med = m.mediciones.find((x: { clave: string; valor: number | null }) => x.clave === v.clave);
@@ -304,50 +480,42 @@ function OperatorVisionPage() {
 
   const currentStatus = evalRollo(current);
 
-  // Contadores sobre todas las muestras conocidas
   const rollosOK = muestrasAll.filter((m) => evalRollo(m) === "ok").length;
   const rollosNC = muestrasAll.filter((m) => evalRollo(m) === "bad").length;
 
-  // NC consecutivos al final
-  const ncConsecutivos = useMemo(() => {
-    let count = 0;
-    for (let i = muestrasAll.length - 1; i >= 0; i--) {
-      if (evalRollo(muestrasAll[i]) === "bad") count++;
-      else break;
-    }
-    return count;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [muestrasAll, variables]);
-
-  const alertaCritica = ncConsecutivos >= 2;
-  const advertencia = ncConsecutivos === 1;
-
-  // Total de alertas activas (warn + bad recientes)
-  const alertasCount = muestrasAll.slice(-10).filter((m) => {
-    const s = evalRollo(m);
-    return s === "warn" || s === "bad";
-  }).length;
-
-  // Minutos sin captura
   const lastCaptureMin = useMemo(() => {
     if (!current) return null;
     const diff = now.getTime() - new Date(current.capturadoAt).getTime();
     return Math.max(0, Math.floor(diff / 60_000));
   }, [now, current]);
 
+  // Umbrales según spec: <5 verde, 5-15 amarillo, >15 rojo
   const sinCapturaState: "ok" | "warn" | "bad" | "neutral" =
     lastCaptureMin === null
       ? "neutral"
-      : lastCaptureMin < 30
+      : lastCaptureMin < 5
         ? "ok"
-        : lastCaptureMin < 60
+        : lastCaptureMin <= 15
           ? "warn"
           : "bad";
 
-  // Estado de máquina
+  const alertasCount = muestrasAll.slice(-10).filter((m) => {
+    const s = evalRollo(m);
+    return s === "warn" || s === "bad";
+  }).length;
+
   const estadoMaquinaRaw = data?.estadoMaquina?.estado ?? null;
   const produciendo = estadoMaquinaRaw === "produciendo";
   const enParo = estadoMaquinaRaw === "paro";
+  const enPreparacion = estadoMaquinaRaw === "preparacion" || estadoMaquinaRaw === "setup";
+
+  const estadoCfg = enParo
+    ? { dot: "bg-rose-500", label: "PARADA", chip: "bg-rose-50 border-rose-400 text-rose-700" }
+    : produciendo
+      ? { dot: "bg-emerald-500", label: "PRODUCIENDO", chip: "bg-emerald-50 border-emerald-400 text-emerald-700" }
+      : enPreparacion
+        ? { dot: "bg-orange-500", label: "PREPARACIÓN", chip: "bg-orange-50 border-orange-400 text-orange-700" }
+        : { dot: "bg-amber-500", label: "ESPERANDO DATOS", chip: "bg-amber-50 border-amber-400 text-amber-800" };
 
   const fechaStr = now
     .toLocaleDateString("es-MX", { weekday: "long", day: "2-digit", month: "long" })
@@ -360,125 +528,105 @@ function OperatorVisionPage() {
     else document.exitFullscreen?.();
   }
 
+  async function capturarPantalla() {
+    if (!screenRef.current || capturing) return;
+    setCapturing(true);
+    try {
+      const canvas = await html2canvas(screenRef.current, {
+        backgroundColor: "#f1f5f9",
+        scale: window.devicePixelRatio || 1,
+        logging: false,
+        useCORS: true,
+      });
+      const turno = orden?.turno || current?.turno || "T";
+      const turnoStr = String(turno).startsWith("T") ? String(turno) : `T${turno}`;
+      const d = new Date();
+      const pad = (n: number) => String(n).padStart(2, "0");
+      const ts = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}_${pad(d.getHours())}-${pad(d.getMinutes())}-${pad(d.getSeconds())}`;
+      const maquinaClean = maquina.replace(/-/g, "");
+      const fileName = `CONVERTIPAP_${maquinaClean}_${turnoStr}_${ts}.png`;
+      canvas.toBlob((blob) => {
+        if (!blob) return;
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, "image/png");
+      toast.success("Captura guardada correctamente", { duration: 3000 });
+    } catch (e) {
+      toast.error("No se pudo capturar la pantalla", { duration: 3000 });
+    } finally {
+      setCapturing(false);
+    }
+  }
+
+  // historial compacto: últimos 10, más reciente primero
+  const historial = useMemo(() => {
+    return [...muestrasAll]
+      .slice(-10)
+      .reverse()
+      .map((m) => ({
+        id: m.id,
+        rollo: m.rollo,
+        hora: new Date(m.capturadoAt).toLocaleTimeString("es-MX", {
+          hour12: false,
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+        status: evalRollo(m),
+      }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [muestrasAll, variables]);
+
+  // Hora del rollo actual
+  const horaRolloActual = current
+    ? new Date(current.capturadoAt).toLocaleTimeString("es-MX", {
+        hour12: false,
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : "—";
+
   return (
-    <div className="flex h-screen w-full flex-col overflow-hidden bg-slate-100 text-slate-900">
+    <div
+      ref={screenRef}
+      className="flex h-screen w-full flex-col overflow-hidden bg-slate-100 text-slate-900"
+    >
       <style>{`
         @keyframes varPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(244,63,94,0.5);} 50% { box-shadow: 0 0 0 8px rgba(244,63,94,0);} }
-        @keyframes critFlash { 0%,100% { background-color: rgb(225,29,72); } 50% { background-color: rgb(159,18,57); } }
       `}</style>
 
-      {/* HEADER */}
+      {/* HEADER (compacto, ~20% más bajo) */}
       <header className="shrink-0 border-b-2 border-slate-200 bg-white">
-        <div className="flex items-center gap-5 px-6 py-4">
-          {/* Logo + título + máquina */}
-          <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 px-5 py-2">
+          <div className="flex min-w-0 items-center gap-3">
             <img
               src={logoConvertipap}
               alt="Convertipap"
-              className="h-16 w-auto shrink-0 object-contain"
+              className="h-10 w-auto shrink-0 object-contain"
             />
-            <div>
-              <div className="text-[14px] font-black uppercase tracking-[0.2em] text-slate-500">
-                Máquina{" "}
-                <span className="ml-1 rounded bg-emerald-600 px-2.5 py-1 font-mono text-lg text-white">
+            <div className="min-w-0">
+              <div className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-500">
+                Visión Operador
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="rounded bg-emerald-600 px-2 py-0.5 font-mono text-base font-black text-white">
                   {maquina}
                 </span>
-              </div>
-              <div className="text-3xl font-black tracking-tight text-slate-900">
-                VISIÓN OPERADOR
+                <span className={`flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-black uppercase tracking-wider ${estadoCfg.chip}`}>
+                  <span className={`h-2 w-2 animate-pulse rounded-full ${estadoCfg.dot}`} />
+                  {estadoCfg.label}
+                </span>
               </div>
             </div>
           </div>
 
-          {/* Estado producción central */}
-          <div className="mx-auto">
-            {enParo ? (
-              <div className="flex items-center gap-3 rounded-xl border-2 border-rose-400 bg-rose-50 px-5 py-2">
-                <AlertTriangle className="h-6 w-6 text-rose-600" />
-                <div>
-                  <div className="text-sm font-black uppercase tracking-wider text-rose-700">
-                    Máquina en paro
-                  </div>
-                  <div className="text-[11px] font-semibold text-rose-600">
-                    Sin producción activa
-                  </div>
-                </div>
-              </div>
-            ) : produciendo ? (
-              <div className="flex items-center gap-3 rounded-xl border-2 border-emerald-400 bg-emerald-50 px-5 py-2">
-                <PlayCircle className="h-6 w-6 text-emerald-600" />
-                <div>
-                  <div className="text-sm font-black uppercase tracking-wider text-emerald-700">
-                    Producción Activa
-                  </div>
-                  <div className="text-[11px] font-semibold text-emerald-600">
-                    Sistema funcionando correctamente
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="flex items-center gap-3 rounded-xl border-2 border-slate-300 bg-slate-50 px-5 py-2">
-                <Radio className="h-6 w-6 text-slate-500" />
-                <div>
-                  <div className="text-sm font-black uppercase tracking-wider text-slate-700">
-                    {(estadoMaquinaRaw ?? "Sin estado").toUpperCase()}
-                  </div>
-                  <div className="text-[11px] font-semibold text-slate-500">
-                    Esperando datos en tiempo real
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Reloj */}
-          <div className="text-right">
-            <div className="font-mono text-4xl font-black tabular-nums text-slate-900">
-              {horaStr}
-            </div>
-            <div className="text-[12px] font-bold uppercase tracking-wider text-slate-500">
-              {fechaStr}
-            </div>
-          </div>
-
-          {/* Alertas */}
-          <div className="relative flex flex-col items-center">
-            <Bell className={`h-7 w-7 ${alertasCount > 0 ? "text-rose-600" : "text-slate-400"}`} />
-            {alertasCount > 0 && (
-              <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-600 px-1 text-[11px] font-black text-white">
-                {alertasCount}
-              </span>
-            )}
-            <span className="mt-0.5 text-[10px] font-black uppercase tracking-wider text-slate-500">
-              Alertas
-            </span>
-          </div>
-
-          {/* Estado de máquina pill */}
-          <div
-            className={`flex items-center gap-2 rounded-full border-2 px-4 py-2 text-sm font-black uppercase tracking-wider ${
-              produciendo
-                ? "border-emerald-500 bg-emerald-50 text-emerald-700"
-                : enParo
-                  ? "border-rose-500 bg-rose-50 text-rose-700"
-                  : "border-slate-300 bg-white text-slate-600"
-            }`}
-          >
-            <Radio className="h-4 w-4 animate-pulse" />
-            {(estadoMaquinaRaw ?? "LIBRE").toUpperCase()}
-          </div>
-
-          <button
-            onClick={goFullscreen}
-            className="rounded-lg border border-slate-300 bg-white p-2 text-slate-600 hover:bg-slate-100"
-            title="Pantalla completa"
-          >
-            <Maximize2 className="h-5 w-5" />
-          </button>
-        </div>
-        {/* Línea contextual */}
-        <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50 px-6 py-1.5">
-          <div className="grid grid-cols-5 gap-x-8 text-xs">
+          {/* Campos contextuales */}
+          <div className="ml-2 grid min-w-0 flex-1 grid-cols-5 gap-x-6">
             <HeaderField label="Producto" value={orden?.producto ?? ""} />
             <HeaderField label="OF" value={orden?.folio ?? ""} />
             <HeaderField
@@ -488,17 +636,59 @@ function OperatorVisionPage() {
             <HeaderField label="Operador" value={current?.operador ?? ""} />
             <HeaderField label="Analista" value={current?.analista ?? ""} />
           </div>
+
+          {/* Reloj */}
+          <div className="text-right">
+            <div className="font-mono text-2xl font-black leading-none tabular-nums text-slate-900">
+              {horaStr}
+            </div>
+            <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+              {fechaStr}
+            </div>
+          </div>
+
+          {/* Alertas */}
+          <div className="relative flex flex-col items-center">
+            <Bell
+              className={`h-6 w-6 ${alertasCount > 0 ? "text-rose-600" : "text-slate-400"}`}
+            />
+            {alertasCount > 0 && (
+              <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-600 px-1 text-[10px] font-black text-white">
+                {alertasCount}
+              </span>
+            )}
+          </div>
+
+          {/* Acciones */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={capturarPantalla}
+              disabled={capturing}
+              className="flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-bold text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-50"
+              title="Capturar pantalla"
+            >
+              <Camera className="h-4 w-4" />
+              {capturing ? "Capturando…" : "Capturar Pantalla"}
+            </button>
+            <button
+              onClick={goFullscreen}
+              className="rounded-lg border border-slate-300 bg-white p-1.5 text-slate-600 hover:bg-slate-100"
+              title="Pantalla completa"
+            >
+              <Maximize2 className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       </header>
 
       {error && (
-        <div className="mx-6 mt-2 rounded-lg border-2 border-rose-300 bg-rose-50 p-2 text-sm font-bold text-rose-700">
+        <div className="mx-5 mt-2 rounded-lg border-2 border-rose-300 bg-rose-50 p-2 text-sm font-bold text-rose-700">
           Error al consultar datos: {(error as Error).message}
         </div>
       )}
 
       {/* MAIN */}
-      <main className="flex min-h-0 flex-1 flex-col gap-3 px-6 py-3">
+      <main className="flex min-h-0 flex-1 flex-col gap-3 px-5 py-3">
         {/* KPIs */}
         <section className="shrink-0 grid grid-cols-5 gap-3">
           <KpiCard
@@ -506,39 +696,30 @@ function OperatorVisionPage() {
             value={rollosOK.toString()}
             state={rollosOK > 0 ? "ok" : "neutral"}
             icon={CheckCircle2}
-            subtitle="OK"
+            subtitle="EN ESPECIFICACIÓN"
           />
           <KpiCard
             label="No Conformes"
             value={rollosNC.toString()}
             state={rollosNC === 0 ? "ok" : "bad"}
             icon={AlertTriangle}
-            subtitle={rollosNC === 0 ? "OK" : "REVISAR"}
+            subtitle={rollosNC === 0 ? "SIN INCIDENCIAS" : "REVISAR PROCESO"}
           />
-          <KpiCard
-            label="Rollo Actual"
-            value={current?.rollo ? String(current.rollo) : "-"}
-            state={
-              currentStatus === "bad"
-                ? "bad"
-                : currentStatus === "warn"
-                  ? "warn"
-                  : currentStatus === "ok"
-                    ? "ok"
-                    : "neutral"
-            }
-            icon={CircleDot}
-            subtitle={labelLiberacion(currentStatus)}
+          <RolloActualCard
+            rollo={current?.rollo ? String(current.rollo) : "—"}
+            status={currentStatus}
+            producto={orden?.producto ?? ""}
+            hora={horaRolloActual}
           />
           <KpiCard
             label="Tiempo Sin Captura"
-            value={lastCaptureMin === null ? "-" : String(lastCaptureMin)}
+            value={lastCaptureMin === null ? "—" : String(lastCaptureMin)}
             unit="min"
             state={sinCapturaState}
             icon={Timer}
             subtitle={
               lastCaptureMin === null
-                ? "—"
+                ? "SIN DATOS"
                 : sinCapturaState === "ok"
                   ? "EN RANGO"
                   : sinCapturaState === "warn"
@@ -548,7 +729,7 @@ function OperatorVisionPage() {
           />
           <KpiCard
             label="Velocidad Máquina"
-            value="-"
+            value="—"
             unit="m/min"
             state="neutral"
             icon={Gauge}
@@ -556,173 +737,130 @@ function OperatorVisionPage() {
           />
         </section>
 
-        {/* ROLLO ACTUAL — variables críticas */}
-        <section className="flex min-h-0 flex-1 flex-col">
-          <div
-            className={`mb-2 flex items-center justify-between rounded-t-lg border-2 px-4 py-2 ${
-              currentStatus === "bad"
-                ? "border-rose-500 bg-rose-600 text-white"
-                : currentStatus === "warn"
-                  ? "border-amber-500 bg-amber-500 text-white"
-                  : "border-emerald-500 bg-emerald-600 text-white"
-            }`}
-          >
-            <h2 className="text-sm font-black uppercase tracking-[0.2em]">
-              Rollo Actual
-              {current?.rollo && <span className="ml-3 font-mono">#{current.rollo}</span>}
-            </h2>
-            <span className="text-sm font-black uppercase tracking-wider">
-              {labelLiberacion(currentStatus)}
-            </span>
-          </div>
-
-          <div className="grid min-h-0 flex-1 grid-cols-5 gap-3">
-            {CARD_KEYS.map((ck) => {
-              const v = variables.find((x) => x.clave === ck);
-              const snap = mapSpecActual.get(ck);
-              const min = v?.min ?? (snap?.min !== null && snap?.min !== undefined ? snap.min : 0);
-              const max = v?.max ?? (snap?.max !== null && snap?.max !== undefined ? snap.max : 0);
-              const obj = v?.objetivo ?? (snap?.obj !== null && snap?.obj !== undefined ? snap.obj : 0);
-              const hasSpec =
-                !!v ||
-                (snap !== undefined &&
-                  snap.min !== null &&
-                  snap.max !== null &&
-                  snap.obj !== null);
-              const value = mapMedActual.get(ck);
-              return (
-                <VarCard
-                  key={ck}
-                  ck={ck}
-                  value={value === undefined ? null : value}
-                  min={Number(min)}
-                  max={Number(max)}
-                  obj={Number(obj)}
-                  hasSpec={hasSpec}
-                />
-              );
-            })}
-          </div>
-        </section>
-
-        {/* ALERTA CRÍTICA */}
-        {alertaCritica && (
-          <section className="shrink-0">
-            <div
-              className="flex items-center gap-4 rounded-xl border-2 border-rose-700 px-5 py-3 text-white shadow-lg"
-              style={{ animation: "critFlash 1s ease-in-out infinite" }}
-            >
-              <AlertTriangle className="h-10 w-10" />
-              <div className="flex-1">
-                <div className="text-lg font-black uppercase tracking-widest">
-                  Alerta Crítica
-                </div>
-                <div className="text-sm font-bold">
-                  {ncConsecutivos} rollos consecutivos fuera de especificación · revisar ajustes
-                  de máquina
-                </div>
-              </div>
-              <div className="rounded-lg bg-white/20 px-3 py-2 text-2xl">🚨</div>
-            </div>
-          </section>
-        )}
-        {!alertaCritica && advertencia && (
-          <section className="shrink-0">
-            <div className="flex items-center gap-3 rounded-xl border-2 border-amber-500 bg-amber-50 px-5 py-2 text-amber-800">
-              <AlertTriangle className="h-6 w-6" />
-              <div className="text-sm font-black uppercase tracking-wider">
-                Advertencia · 1 rollo fuera de especificación
-              </div>
-            </div>
-          </section>
-        )}
-
-        {/* HISTORIAL ÚLTIMOS 5 */}
-        <section className="shrink-0">
+        {/* HISTORIAL DEL TURNO — strip compacto (10-15% pantalla max) */}
+        <section className="shrink-0 rounded-xl border-2 border-slate-200 bg-white px-4 py-2">
           <div className="mb-1.5 flex items-center justify-between">
-            <h2 className="text-xs font-black uppercase tracking-[0.25em] text-slate-500">
-              Últimos rollos producidos
+            <h2 className="text-[11px] font-black uppercase tracking-[0.25em] text-slate-500">
+              Historial del Turno
             </h2>
-            <span className="text-[11px] font-semibold text-slate-400">
-              últimos 5 · más recientes a la derecha
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+              últimos {historial.length} · más reciente primero
             </span>
           </div>
-          {muestras.length === 0 ? (
-            <div className="rounded-xl border-2 border-dashed border-slate-300 bg-white py-4 text-center text-xs font-semibold text-slate-400">
-              Aún no hay capturas para esta máquina.
+          {historial.length === 0 ? (
+            <div className="py-2 text-center text-xs font-semibold text-slate-400">
+              Aún no hay capturas para este turno.
             </div>
           ) : (
-            <div className="grid grid-cols-5 gap-3">
-              {Array.from({ length: 5 }).map((_, idx) => {
-                const m = muestras[idx];
-                if (!m) {
-                  return (
-                    <div
-                      key={`empty-${idx}`}
-                      className="rounded-xl border-2 border-dashed border-slate-200 bg-white/50 px-3 py-2 text-center text-xs font-semibold text-slate-300"
-                    >
-                      —
-                    </div>
-                  );
-                }
-                const st = evalRollo(m);
-                const hora = new Date(m.capturadoAt).toLocaleTimeString("es-MX", {
-                  hour12: false,
-                  hour: "2-digit",
-                  minute: "2-digit",
-                });
-                const styles =
-                  st === "ok"
-                    ? "border-emerald-400 bg-emerald-50 text-emerald-800"
-                    : st === "warn"
-                      ? "border-amber-400 bg-amber-50 text-amber-800"
-                      : st === "bad"
-                        ? "border-rose-500 bg-rose-50 text-rose-800"
+            <div className="flex items-center gap-2 overflow-x-auto pb-1">
+              {historial.map((h) => {
+                const dot =
+                  h.status === "ok"
+                    ? "bg-emerald-500"
+                    : h.status === "warn"
+                      ? "bg-amber-500"
+                      : h.status === "bad"
+                        ? "bg-rose-500"
+                        : "bg-slate-400";
+                const chip =
+                  h.status === "ok"
+                    ? "border-emerald-300 bg-emerald-50 text-emerald-800"
+                    : h.status === "warn"
+                      ? "border-amber-300 bg-amber-50 text-amber-800"
+                      : h.status === "bad"
+                        ? "border-rose-400 bg-rose-50 text-rose-800"
                         : "border-slate-300 bg-white text-slate-700";
-                const Icon =
-                  st === "ok"
-                    ? CheckCircle2
-                    : st === "warn"
-                      ? AlertTriangle
-                      : st === "bad"
-                        ? AlertTriangle
-                        : CircleDot;
                 return (
                   <div
-                    key={m.id}
-                    className={`flex flex-col rounded-xl border-[3px] ${styles} px-4 py-3 shadow-sm`}
+                    key={h.id}
+                    className={`flex shrink-0 items-center gap-2 rounded-lg border-2 ${chip} px-3 py-1.5`}
                   >
-                    <div className="flex items-center justify-between text-[14px] font-black uppercase">
-                      <span>{hora}</span>
-                      <Icon className="h-6 w-6" />
-                    </div>
-                    <div className="mt-1 font-mono text-2xl font-black tabular-nums">
-                      ROLLO #{m.rollo}
-                    </div>
-                    <div className="text-[13px] font-black uppercase tracking-wider">
-                      {labelLiberacion(st)}
-                    </div>
+                    <span className={`h-2.5 w-2.5 rounded-full ${dot}`} />
+                    <span className="font-mono text-[12px] font-bold tabular-nums opacity-75">
+                      {h.hora}
+                    </span>
+                    <span className="font-mono text-sm font-black tabular-nums">
+                      {h.rollo}
+                    </span>
                   </div>
                 );
               })}
             </div>
           )}
         </section>
+
+        {/* VARIABLES POR CATEGORÍA */}
+        <section className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pr-1">
+          {(Object.keys(variablesPorCategoria) as CategoriaKey[]).map((cat) => {
+            const items = variablesPorCategoria[cat];
+            if (items.length === 0) return null;
+            const meta = CATEGORIA_META[cat];
+            return (
+              <div key={cat} className="flex flex-col">
+                <div
+                  className={`mb-2 flex items-center justify-between rounded-t-lg border-2 ${meta.accent} px-3 py-1.5 text-white`}
+                >
+                  <h3 className="text-[12px] font-black uppercase tracking-[0.25em]">
+                    {meta.titulo}
+                  </h3>
+                  <span className="text-[11px] font-bold uppercase tracking-wider opacity-90">
+                    {items.length} {items.length === 1 ? "variable" : "variables"}
+                  </span>
+                </div>
+                <div
+                  className="grid gap-3"
+                  style={{
+                    gridTemplateColumns: `repeat(auto-fit, minmax(220px, 1fr))`,
+                  }}
+                >
+                  {items.map((v) => (
+                    <VarCard
+                      key={v.clave}
+                      etiqueta={v.etiqueta}
+                      unidad={v.unidad}
+                      value={
+                        mapMedActual.get(v.clave) === undefined
+                          ? null
+                          : (mapMedActual.get(v.clave) as number | null)
+                      }
+                      min={v.min}
+                      max={v.max}
+                      obj={v.obj}
+                      digits={DIGITS_DE_CLAVE[v.clave] ?? 2}
+                      hasSpec={
+                        v.hasSpec ||
+                        (mapSpecActual.get(v.clave)?.min !== null &&
+                          mapSpecActual.get(v.clave)?.max !== null &&
+                          mapSpecActual.get(v.clave)?.obj !== null)
+                      }
+                    />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+
+          {variablesParaMostrar.length === 0 && (
+            <div className="flex flex-1 items-center justify-center rounded-xl border-2 border-dashed border-slate-300 bg-white text-sm font-semibold text-slate-400">
+              No hay variables activas para mostrar.
+            </div>
+          )}
+        </section>
       </main>
 
       {/* FOOTER */}
-      <footer className="shrink-0 border-t-2 border-slate-200 bg-white px-6 py-1.5">
-        <div className="flex items-center justify-between gap-4 text-[11px] font-bold uppercase tracking-[0.2em] text-slate-500">
+      <footer className="shrink-0 border-t-2 border-slate-200 bg-white px-5 py-1.5">
+        <div className="flex items-center justify-between gap-4 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">
           <div className="flex items-center gap-2">
             <span
               className={`h-2 w-2 rounded-full ${isError ? "bg-rose-500" : "animate-pulse bg-emerald-500"}`}
             />
-            A Tissue System · datos en tiempo real desde la base de datos
+            A Tissue System · monitoreo en tiempo real
           </div>
           {isError && (
             <div className="flex items-center gap-2 rounded-md border-2 border-rose-400 bg-rose-50 px-3 py-1 text-rose-700">
               <AlertTriangle className="h-4 w-4" />
-              Datos no actualizados - Verificar conexión
+              Datos no actualizados · verificar conexión
             </div>
           )}
           <div className="flex items-center gap-4">
