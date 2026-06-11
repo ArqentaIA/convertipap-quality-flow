@@ -201,6 +201,51 @@ export const getOperatorVisionData = createServerFn({ method: "GET" })
       .eq("maquina_id", maquina.id)
       .maybeSingle();
 
+    // 6) Cumplimiento del turno vigente (último estatus de cada rollo).
+    //    Ventana: hoy (00:00 → ahora) y filtrado por turno de la orden
+    //    activa o, en su defecto, el turno de la última muestra capturada.
+    const turnoRef =
+      (ordenActiva?.turno as string | undefined) ??
+      (muestrasRaw?.[0]?.turno as string | undefined) ??
+      null;
+    const startToday = new Date();
+    startToday.setHours(0, 0, 0, 0);
+    const endNow = new Date();
+
+    let cumplimientoTurno: {
+      liberados: number;
+      capturados: number;
+      pct: number;
+      texto: string;
+      turno: string | null;
+    } = {
+      liberados: 0,
+      capturados: 0,
+      pct: 0,
+      texto: "0 liberados de 0 capturados (0%)",
+      turno: turnoRef,
+    };
+    {
+      let cq = sb
+        .from("muestras_calidad")
+        .select("id, estado")
+        .eq("maquina_id", maquina.id)
+        .gte("hora_muestreo", startToday.toISOString())
+        .lte("hora_muestreo", endNow.toISOString());
+      if (turnoRef) cq = cq.eq("turno", turnoRef);
+      const { data: rows } = await cq;
+      const capturados = rows?.length ?? 0;
+      const liberados = (rows ?? []).filter((r) => r.estado === "liberada").length;
+      const pct = capturados > 0 ? Number(((liberados / capturados) * 100).toFixed(1)) : 0;
+      cumplimientoTurno = {
+        liberados,
+        capturados,
+        pct,
+        texto: `${liberados} liberados de ${capturados} capturados (${pct}%)`,
+        turno: turnoRef,
+      };
+    }
+
     return {
       maquina: {
         codigo: maquina.codigo as string,
