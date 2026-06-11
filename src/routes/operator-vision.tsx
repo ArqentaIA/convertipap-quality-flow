@@ -752,191 +752,39 @@ function OperatorVisionPage() {
         </div>
       )}
 
-      {/* CUERPO: sidebar historial + main */}
-      <div className="flex min-h-0 flex-1 overflow-hidden">
-        {/* SIDEBAR HISTORIAL DEL TURNO */}
-        <aside className="flex w-[360px] shrink-0 flex-col border-r-2 border-slate-200 bg-white">
-          <div className="shrink-0 border-b border-slate-200 px-3 py-2">
-            <div className="flex items-center justify-between">
-              <h2 className="text-[12px] font-black uppercase tracking-[0.22em] text-slate-600">
-                Historial del Turno
-              </h2>
-              <span className="font-mono text-[11px] font-bold text-slate-400">
-                {historial.length} rollos
-              </span>
-            </div>
-          </div>
-          <div className="min-h-0 flex-1 overflow-hidden">
-            {historial.length === 0 ? (
-              <div className="px-3 py-4 text-center text-sm font-semibold text-slate-400">
-                Aún no hay capturas para este turno.
-              </div>
-            ) : (
-              <ul className="flex h-full flex-col divide-y divide-slate-100">
-                {historial.map((h) => {
-                  const dot =
-                    h.status === "ok"
-                      ? "bg-emerald-500"
-                      : h.status === "warn"
-                        ? "bg-amber-500"
-                        : h.status === "bad"
-                          ? "bg-rose-500"
-                          : "bg-slate-400";
-                  const txt =
-                    h.status === "bad"
-                      ? "text-rose-700"
-                      : h.status === "warn"
-                        ? "text-amber-700"
-                        : "text-slate-900";
-                  return (
-                    <li
-                      key={h.id}
-                      className={`flex min-h-0 flex-1 flex-col justify-center overflow-hidden px-2.5 ${densidad.pad}`}
-                    >
-                      {/* Línea principal: hora · rollo · estado */}
-                      <div className="flex items-center gap-2 font-mono tabular-nums leading-tight">
-                        <span
-                          className="shrink-0 font-semibold text-slate-500"
-                          style={{ fontSize: `${densidad.row - 1}px` }}
-                        >
-                          {h.hora}
-                        </span>
-                        <span
-                          className={`min-w-0 flex-1 truncate font-extrabold ${txt}`}
-                          style={{ fontSize: `${densidad.row + 1}px` }}
-                        >
-                          {h.rollo}
-                        </span>
-                        <span
-                          className={`h-2.5 w-2.5 shrink-0 rounded-full ring-2 ring-white ${dot}`}
-                        />
-                      </div>
-                      {/* Variables técnicas (wrap dinámico) */}
-                      {h.vars.length > 0 && (
-                        <div
-                          className={`mt-0.5 flex flex-wrap items-center ${densidad.gap} font-mono leading-tight`}
-                        >
-                          {h.vars.map((v) => {
-                            const vColor =
-                              v.status === "bad"
-                                ? "text-rose-700"
-                                : v.status === "warn"
-                                  ? "text-amber-700"
-                                  : v.status === "ok"
-                                    ? "text-slate-900"
-                                    : "text-slate-400";
-                            return (
-                              <span
-                                key={v.clave}
-                                className="inline-flex items-baseline gap-0.5 whitespace-nowrap"
-                              >
-                                <span
-                                  className="font-semibold uppercase tracking-wide text-slate-400"
-                                  style={{ fontSize: `${densidad.label}px` }}
-                                >
-                                  {v.etiqueta}
-                                </span>
-                                <span
-                                  className={`font-bold tabular-nums ${vColor}`}
-                                  style={{ fontSize: `${densidad.value}px` }}
-                                >
-                                  {v.valor === null ? "—" : Number(v.valor).toFixed(1)}
-                                  {v.unidad ? (
-                                    <span className="ml-0.5 font-medium text-slate-400">
-                                      {v.unidad}
-                                    </span>
-                                  ) : null}
-                                </span>
-                              </span>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </div>
+      {/* CUERPO SCADA — Zona superior (hero + vars + KPIs) y zona inferior (historial tabla) */}
+      <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden px-3 py-2">
+        {/* ZONA SUPERIOR — 36% del alto */}
+        <section
+          className="grid shrink-0 gap-2"
+          style={{
+            height: "36%",
+            gridTemplateColumns: "minmax(0,1.1fr) minmax(0,2.4fr) minmax(0,1fr)",
+          }}
+        >
+          {/* HERO: Rollo Actual destacado */}
+          <RolloActualCard
+            rollo={current?.rollo ? String(current.rollo) : "—"}
+            status={currentStatus}
+            producto={orden?.producto ?? ""}
+            hora={horaRolloActual}
+          />
 
-          {/* Logo Convertipap al pie de la columna */}
-          <div className="shrink-0 border-t border-slate-200 bg-white px-3 py-3">
-            <img
-              src={logoConvertipap}
-              alt="Convertipap"
-              className="mx-auto h-[68px] w-full object-contain"
-            />
-          </div>
-        </aside>
-
-
-
-        {/* MAIN */}
-        <main className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden px-4 py-3">
-          {/* KPIs */}
-          <section className="shrink-0 grid grid-cols-5 gap-2.5">
-            <KpiCard
-              label="Rollos Producidos"
-              value={rollosOK.toString()}
-              state={rollosOK > 0 ? "ok" : "neutral"}
-              icon={CheckCircle2}
-              subtitle="EN ESPECIFICACIÓN"
-            />
-            <KpiCard
-              label="No Conformes"
-              value={rollosNC.toString()}
-              state={rollosNC === 0 ? "ok" : "bad"}
-              icon={AlertTriangle}
-              subtitle={rollosNC === 0 ? "SIN INCIDENCIAS" : "REVISAR PROCESO"}
-            />
-            <RolloActualCard
-              rollo={current?.rollo ? String(current.rollo) : "—"}
-              status={currentStatus}
-              producto={orden?.producto ?? ""}
-              hora={horaRolloActual}
-            />
-            <KpiCard
-              label="Tiempo Sin Captura"
-              value={lastCaptureMin === null ? "—" : String(lastCaptureMin)}
-              unit="min"
-              state={sinCapturaState}
-              icon={Timer}
-              subtitle={
-                lastCaptureMin === null
-                  ? "SIN DATOS"
-                  : sinCapturaState === "ok"
-                    ? "EN RANGO"
-                    : sinCapturaState === "warn"
-                      ? "ATENCIÓN"
-                      : "CRÍTICO"
-              }
-            />
-            <KpiCard
-              label="Velocidad Máquina"
-              value="—"
-              unit="m/min"
-              state="neutral"
-              icon={Gauge}
-              subtitle="SIN DATO"
-            />
-          </section>
-
-          {/* VARIABLES — grid único compacto, sin scroll */}
-          <section className="min-h-0 flex-1 overflow-hidden">
+          {/* Variables críticas en tiempo real del rollo actual */}
+          <div className="min-h-0 overflow-hidden">
             {variablesParaMostrar.length === 0 ? (
               <div className="flex h-full items-center justify-center rounded-xl border-2 border-dashed border-slate-300 bg-white text-sm font-semibold text-slate-400">
-                No hay variables activas para mostrar.
+                Sin variables activas.
               </div>
             ) : (
               <div
                 className="grid h-full"
                 style={{
-                  gridTemplateColumns: `repeat(auto-fit, minmax(220px, 1fr))`,
+                  gridTemplateColumns: `repeat(auto-fit, minmax(170px, 1fr))`,
                   gridAutoRows: "minmax(0, 1fr)",
-                  gap: "10px",
+                  gap: "6px",
                 }}
               >
-
                 {variablesParaMostrar.map((v) => (
                   <VarCard
                     key={v.clave}
@@ -961,9 +809,171 @@ function OperatorVisionPage() {
                 ))}
               </div>
             )}
-          </section>
-        </main>
+          </div>
+
+          {/* KPIs secundarios en mini grid 2x2 */}
+          <div className="grid h-full grid-cols-2 grid-rows-2 gap-2">
+            <MiniKpi
+              label="Rollos OK"
+              value={rollosOK.toString()}
+              state={rollosOK > 0 ? "ok" : "neutral"}
+              icon={CheckCircle2}
+            />
+            <MiniKpi
+              label="No Conformes"
+              value={rollosNC.toString()}
+              state={rollosNC === 0 ? "ok" : "bad"}
+              icon={AlertTriangle}
+            />
+            <MiniKpi
+              label="Sin Captura"
+              value={lastCaptureMin === null ? "—" : String(lastCaptureMin)}
+              unit="min"
+              state={sinCapturaState}
+              icon={Timer}
+            />
+            <MiniKpi
+              label="Velocidad"
+              value="—"
+              unit="m/min"
+              state="neutral"
+              icon={Gauge}
+            />
+          </div>
+        </section>
+
+        {/* ZONA INFERIOR — HISTORIAL TABLA SCADA (ancho completo, alto restante) */}
+        <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border-2 border-slate-200 bg-white shadow-sm">
+          <div className="flex shrink-0 items-center justify-between border-b border-slate-200 bg-slate-50 px-3 py-1.5">
+            <h2 className="text-[12px] font-black uppercase tracking-[0.22em] text-slate-600">
+              Historial del Turno — Rollos × Variables
+            </h2>
+            <span className="font-mono text-[11px] font-bold text-slate-400">
+              {historial.length} rollos · {variablesParaMostrar.length} variables
+            </span>
+          </div>
+
+          {historial.length === 0 ? (
+            <div className="flex flex-1 items-center justify-center text-sm font-semibold text-slate-400">
+              Aún no hay capturas para este turno.
+            </div>
+          ) : (
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+              {/* Header de columnas */}
+              <div
+                className="grid shrink-0 border-b-2 border-slate-200 bg-slate-100 font-black uppercase tracking-wider text-slate-500"
+                style={{
+                  gridTemplateColumns: `64px 56px 14px minmax(0,1.3fr) repeat(${variablesParaMostrar.length}, minmax(0,1fr)) 90px`,
+                  fontSize: `${densidad.label}px`,
+                }}
+              >
+                <div className="px-2 py-1.5">Hora</div>
+                <div className="px-1 py-1.5 text-center">#</div>
+                <div className="py-1.5" />
+                <div className="px-2 py-1.5">Rollo</div>
+                {variablesParaMostrar.map((v) => (
+                  <div
+                    key={v.clave}
+                    className="truncate px-1 py-1.5 text-center"
+                    title={`${v.etiqueta}${v.unidad ? ` (${v.unidad})` : ""}`}
+                  >
+                    {v.etiqueta}
+                  </div>
+                ))}
+                <div className="px-2 py-1.5 text-center">Estado</div>
+              </div>
+
+              {/* Filas */}
+              <div className="flex min-h-0 flex-1 flex-col divide-y divide-slate-100">
+                {historial.map((h, idx) => {
+                  const dot =
+                    h.status === "ok"
+                      ? "bg-emerald-500"
+                      : h.status === "warn"
+                        ? "bg-amber-500"
+                        : h.status === "bad"
+                          ? "bg-rose-500"
+                          : "bg-slate-400";
+                  const rowAccent =
+                    idx === 0
+                      ? h.status === "bad"
+                        ? "bg-rose-50 ring-2 ring-inset ring-rose-300"
+                        : h.status === "warn"
+                          ? "bg-amber-50 ring-2 ring-inset ring-amber-300"
+                          : "bg-emerald-50 ring-2 ring-inset ring-emerald-300"
+                      : idx % 2 === 0
+                        ? "bg-white"
+                        : "bg-slate-50/60";
+                  const estadoTxt =
+                    h.status === "bad"
+                      ? "NC"
+                      : h.status === "warn"
+                        ? "COND"
+                        : h.status === "ok"
+                          ? "OK"
+                          : "—";
+                  const estadoColor =
+                    h.status === "bad"
+                      ? "text-rose-700"
+                      : h.status === "warn"
+                        ? "text-amber-700"
+                        : h.status === "ok"
+                          ? "text-emerald-700"
+                          : "text-slate-400";
+                  return (
+                    <div
+                      key={h.id}
+                      className={`grid min-h-0 flex-1 items-center font-mono tabular-nums ${rowAccent} ${densidad.pad}`}
+                      style={{
+                        gridTemplateColumns: `64px 56px 14px minmax(0,1.3fr) repeat(${variablesParaMostrar.length}, minmax(0,1fr)) 90px`,
+                        fontSize: `${densidad.value}px`,
+                      }}
+                    >
+                      <div className="px-2 font-semibold text-slate-500">{h.hora}</div>
+                      <div className="px-1 text-center font-bold text-slate-400">
+                        {historial.length - idx}
+                      </div>
+                      <div className="flex justify-center">
+                        <span className={`h-2.5 w-2.5 rounded-full ring-2 ring-white ${dot}`} />
+                      </div>
+                      <div
+                        className={`truncate px-2 font-extrabold ${
+                          idx === 0 ? "text-slate-900" : "text-slate-800"
+                        }`}
+                        style={{ fontSize: `${densidad.value + (idx === 0 ? 2 : 0)}px` }}
+                      >
+                        {h.rollo}
+                      </div>
+                      {h.vars.map((v) => {
+                        const vColor =
+                          v.status === "bad"
+                            ? "bg-rose-100 text-rose-800"
+                            : v.status === "warn"
+                              ? "bg-amber-100 text-amber-800"
+                              : v.status === "ok"
+                                ? "text-slate-900"
+                                : "text-slate-400";
+                        return (
+                          <div
+                            key={v.clave}
+                            className={`mx-0.5 truncate rounded px-1 text-center font-bold ${vColor}`}
+                          >
+                            {v.valor === null ? "—" : Number(v.valor).toFixed(1)}
+                          </div>
+                        );
+                      })}
+                      <div className={`px-2 text-center font-black ${estadoColor}`}>
+                        {estadoTxt}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </section>
       </div>
+
 
       {/* FOOTER */}
       <footer className="shrink-0 border-t-2 border-slate-200 bg-white px-5 py-1.5">
