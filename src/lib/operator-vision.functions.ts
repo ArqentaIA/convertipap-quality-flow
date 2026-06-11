@@ -93,8 +93,31 @@ export const getOperatorVisionData = createServerFn({ method: "GET" })
           .filter(Boolean) as typeof variables;
     }
 
-    // 4) Últimas 12 muestras de la máquina con sus mediciones
-    const { data: muestrasRaw } = await sb
+    // 4) Historial del turno vigente para esta máquina.
+     //    - Filtrado estricto por máquina actual.
+     //    - Filtrado estricto por turno vigente (orden activa, o turno de la
+     //      última muestra capturada en la máquina si no hay orden activa).
+     //    - Ventana: hoy (00:00 → ahora) para acotar al turno en curso.
+     //    - Ordenado del más reciente al más antiguo.
+    const startTodayHist = new Date();
+    startTodayHist.setHours(0, 0, 0, 0);
+    const endNowHist = new Date();
+
+    // Determinar turno vigente: orden activa o última muestra de la máquina.
+    let turnoVigente: string | null =
+      (ordenActiva?.turno as string | undefined) ?? null;
+    if (!turnoVigente) {
+      const { data: ultMuestra } = await sb
+        .from("muestras_calidad")
+        .select("turno")
+        .eq("maquina_id", maquina.id)
+        .order("capturado_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      turnoVigente = (ultMuestra?.turno as string | undefined) ?? null;
+    }
+
+    let muestrasQ = sb
       .from("muestras_calidad")
       .select(
         `id, numero_rollo, capturado_at, hora_muestreo, turno, estado,
@@ -102,10 +125,18 @@ export const getOperatorVisionData = createServerFn({ method: "GET" })
          mediciones_calidad(variable_clave, valor, min_snapshot, objetivo_snapshot, max_snapshot, estado)`,
       )
       .eq("maquina_id", maquina.id)
+      .gte("hora_muestreo", startTodayHist.toISOString())
+      .lte("hora_muestreo", endNowHist.toISOString())
       .order("capturado_at", { ascending: false })
-      .limit(12);
+      .limit(50);
+    if (turnoVigente) muestrasQ = muestrasQ.eq("turno", turnoVigente);
+    const { data: muestrasRaw } = await muestrasQ;
 
-    const muestras = (muestrasRaw ?? []).reverse().map((m: any) => ({
+    // Mantener orden descendente (más reciente primero) en el payload.
+    // El frontend espera el arreglo en orden ascendente (oldest→newest):
+    // usa el último elemento como "rollo actual". Mantenemos esa convención
+    // y la UI invierte para mostrar el historial del más reciente al más antiguo.
+    const muestras = [...(muestrasRaw ?? [])].reverse().map((m: any) => ({
       id: m.id as string,
       rollo: m.numero_rollo as string,
       capturadoAt: m.capturado_at as string,
