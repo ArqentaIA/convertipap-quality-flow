@@ -658,8 +658,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
 
     if (crepadoPct.trim() !== "" && (Number(crepadoPct) < 0 || Number(crepadoPct) > 100))
       return { error: "El campo % Crepado debe estar entre 0 y 100", faltantes: 0 };
-    if (cumplimientoPct.trim() !== "" && (Number(cumplimientoPct) < 0 || Number(cumplimientoPct) > 100))
-      return { error: "El campo Cumplimiento debe estar entre 0 y 100", faltantes: 0 };
+    // Cumplimiento se calcula automáticamente desde la base de datos.
     if (porcentajeRupturasPct.trim() !== "" && (Number(porcentajeRupturasPct) < 0 || Number(porcentajeRupturasPct) > 100))
       return { error: "El campo Porcentaje de rupturas debe estar entre 0 y 100", faltantes: 0 };
 
