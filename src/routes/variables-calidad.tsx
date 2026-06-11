@@ -65,6 +65,7 @@ function VariablesCalidad() {
   const queryClient = useQueryClient();
   const listAuditFn = useServerFn(listSpecAuditByProductCode);
   const registrarFn = useServerFn(registrarSpecAuditByCode);
+  const updateCaracFn = useServerFn(updateCaracteristicasByCode);
 
   const especsQuery = useQuery({
     ...especsQueryOptions,
