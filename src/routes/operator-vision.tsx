@@ -813,12 +813,14 @@ function OperatorVisionPage() {
               </div>
             ) : (
               <div
-                className="grid h-full gap-2"
+                className="grid h-full"
                 style={{
-                  gridTemplateColumns: `repeat(auto-fit, minmax(200px, 1fr))`,
+                  gridTemplateColumns: `repeat(auto-fit, minmax(220px, 1fr))`,
                   gridAutoRows: "minmax(0, 1fr)",
+                  gap: "10px",
                 }}
               >
+
                 {variablesParaMostrar.map((v) => (
                   <VarCard
                     key={v.clave}
