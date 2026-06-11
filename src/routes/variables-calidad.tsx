@@ -303,6 +303,15 @@ function VariablesCalidad() {
 
     titleY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 22;
     doc.setFontSize(11).setFont("helvetica", "bold");
+    doc.text("Características de los Atributos", 40, titleY);
+    autoTable(doc, {
+      body: [[caracteristicas?.trim() ? caracteristicas : "—"]],
+      styles: { fontSize: 9, cellPadding: 6 },
+      startY: titleY + 6,
+    });
+
+    titleY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 22;
+    doc.setFontSize(11).setFont("helvetica", "bold");
     doc.text("Bitácora de Cambios", 40, titleY);
 
     autoTable(doc, {
