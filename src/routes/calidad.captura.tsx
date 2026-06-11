@@ -716,8 +716,8 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
         velocidad_enrollador:
           velocidadEnrollador.trim() === "" ? null : Number(velocidadEnrollador),
         crepado_pct: crepadoPct.trim() === "" ? null : Number(crepadoPct),
-        cumplimiento_pct:
-          cumplimientoPct.trim() === "" ? null : Number(cumplimientoPct),
+        // Cumplimiento se calcula desde la BD; nunca capturado a mano.
+        cumplimiento_pct: null,
         porcentaje_rupturas_pct:
           porcentajeRupturasPct.trim() === "" ? null : Number(porcentajeRupturasPct),
         destino: destino.trim() === "" ? null : destino.trim(),
