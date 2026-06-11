@@ -755,25 +755,24 @@ function OperatorVisionPage() {
       {/* CUERPO: sidebar historial + main */}
       <div className="flex min-h-0 flex-1 overflow-hidden">
         {/* SIDEBAR HISTORIAL DEL TURNO */}
-        <aside className="flex w-[300px] shrink-0 flex-col border-r-2 border-slate-200 bg-white">
-          <div className="shrink-0 border-b border-slate-200 px-3 py-2.5">
-            <h2 className="text-[13px] font-black uppercase tracking-[0.22em] text-slate-600">
-              Historial del Turno
-            </h2>
-            <div className="mt-1.5 grid grid-cols-[56px_1fr_52px_14px] items-center gap-2 font-mono text-[11px] font-bold uppercase tracking-wider text-slate-400">
-              <span>HORA</span>
-              <span>ROLLO</span>
-              <span className="text-right">R457</span>
-              <span>·</span>
+        <aside className="flex w-[360px] shrink-0 flex-col border-r-2 border-slate-200 bg-white">
+          <div className="shrink-0 border-b border-slate-200 px-3 py-2">
+            <div className="flex items-center justify-between">
+              <h2 className="text-[12px] font-black uppercase tracking-[0.22em] text-slate-600">
+                Historial del Turno
+              </h2>
+              <span className="font-mono text-[11px] font-bold text-slate-400">
+                {historial.length} rollos
+              </span>
             </div>
           </div>
-          <div className="min-h-0 flex-1 overflow-y-auto">
+          <div className="min-h-0 flex-1 overflow-hidden">
             {historial.length === 0 ? (
               <div className="px-3 py-4 text-center text-sm font-semibold text-slate-400">
                 Aún no hay capturas para este turno.
               </div>
             ) : (
-              <ul className="divide-y divide-slate-100">
+              <ul className="flex h-full flex-col divide-y divide-slate-100">
                 {historial.map((h) => {
                   const dot =
                     h.status === "ok"
@@ -788,18 +787,71 @@ function OperatorVisionPage() {
                       ? "text-rose-700"
                       : h.status === "warn"
                         ? "text-amber-700"
-                        : "text-slate-800";
+                        : "text-slate-900";
                   return (
                     <li
                       key={h.id}
-                      className="grid grid-cols-[56px_1fr_52px_14px] items-center gap-2 px-3 py-2 font-mono text-[15px] tabular-nums leading-tight"
+                      className={`flex min-h-0 flex-1 flex-col justify-center overflow-hidden px-2.5 ${densidad.pad}`}
                     >
-                      <span className="font-semibold text-slate-500">{h.hora}</span>
-                      <span className={`truncate font-extrabold ${txt}`}>{h.rollo}</span>
-                      <span className="text-right font-bold text-slate-700">
-                        {h.r457 === null || h.r457 === undefined ? "—" : h.r457.toFixed(1)}
-                      </span>
-                      <span className={`h-3 w-3 shrink-0 justify-self-end rounded-full ${dot}`} />
+                      {/* Línea principal: hora · rollo · estado */}
+                      <div className="flex items-center gap-2 font-mono tabular-nums leading-tight">
+                        <span
+                          className="shrink-0 font-semibold text-slate-500"
+                          style={{ fontSize: `${densidad.row - 1}px` }}
+                        >
+                          {h.hora}
+                        </span>
+                        <span
+                          className={`min-w-0 flex-1 truncate font-extrabold ${txt}`}
+                          style={{ fontSize: `${densidad.row + 1}px` }}
+                        >
+                          {h.rollo}
+                        </span>
+                        <span
+                          className={`h-2.5 w-2.5 shrink-0 rounded-full ring-2 ring-white ${dot}`}
+                        />
+                      </div>
+                      {/* Variables técnicas (wrap dinámico) */}
+                      {h.vars.length > 0 && (
+                        <div
+                          className={`mt-0.5 flex flex-wrap items-center ${densidad.gap} font-mono leading-tight`}
+                        >
+                          {h.vars.map((v) => {
+                            const vColor =
+                              v.status === "bad"
+                                ? "text-rose-700"
+                                : v.status === "warn"
+                                  ? "text-amber-700"
+                                  : v.status === "ok"
+                                    ? "text-slate-900"
+                                    : "text-slate-400";
+                            return (
+                              <span
+                                key={v.clave}
+                                className="inline-flex items-baseline gap-0.5 whitespace-nowrap"
+                              >
+                                <span
+                                  className="font-semibold uppercase tracking-wide text-slate-400"
+                                  style={{ fontSize: `${densidad.label}px` }}
+                                >
+                                  {v.etiqueta}
+                                </span>
+                                <span
+                                  className={`font-bold tabular-nums ${vColor}`}
+                                  style={{ fontSize: `${densidad.value}px` }}
+                                >
+                                  {v.valor === null ? "—" : Number(v.valor).toFixed(1)}
+                                  {v.unidad ? (
+                                    <span className="ml-0.5 font-medium text-slate-400">
+                                      {v.unidad}
+                                    </span>
+                                  ) : null}
+                                </span>
+                              </span>
+                            );
+                          })}
+                        </div>
+                      )}
                     </li>
                   );
                 })}
