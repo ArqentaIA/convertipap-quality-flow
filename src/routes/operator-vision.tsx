@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import html2canvas from "html2canvas";
+import html2canvas from "html2canvas-pro";
 import {
   AlertTriangle,
   Bell,
@@ -533,40 +533,47 @@ function OperatorVisionPage() {
   }
 
   async function capturarPantalla() {
-    if (!screenRef.current || capturing) return;
+    if (capturing) return;
     setCapturing(true);
     try {
-      const canvas = await html2canvas(screenRef.current, {
-        backgroundColor: "#f1f5f9",
-        scale: window.devicePixelRatio || 1,
-        logging: false,
+      const target = screenRef.current ?? document.documentElement;
+      const canvas = await html2canvas(target, {
         useCORS: true,
+        allowTaint: true,
+        scale: 2,
+        backgroundColor: "#ffffff",
+        logging: false,
       });
       const turno = orden?.turno || current?.turno || "T";
       const turnoStr = String(turno).startsWith("T") ? String(turno) : `T${turno}`;
       const d = new Date();
       const pad = (n: number) => String(n).padStart(2, "0");
       const ts = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}_${pad(d.getHours())}-${pad(d.getMinutes())}-${pad(d.getSeconds())}`;
-      const maquinaClean = maquina.replace(/-/g, "");
-      const fileName = `CONVERTIPAP_${maquinaClean}_${turnoStr}_${ts}.png`;
-      canvas.toBlob((blob) => {
-        if (!blob) return;
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = fileName;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      }, "image/png");
+      const fileName = `CONVERTIPAP_${maquina}_${turnoStr}_${ts}.png`;
+      await new Promise<void>((resolve) => {
+        canvas.toBlob((blob) => {
+          if (!blob) return resolve();
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = fileName;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          resolve();
+        }, "image/png");
+      });
       toast.success("Captura guardada correctamente", { duration: 3000 });
-    } catch (e) {
-      toast.error("No se pudo capturar la pantalla", { duration: 3000 });
+    } catch (error) {
+      console.error("SCREENSHOT ERROR", error);
+      const msg = error instanceof Error ? error.message : String(error);
+      toast.error(`No se pudo capturar la pantalla: ${msg}`, { duration: 5000 });
     } finally {
       setCapturing(false);
     }
   }
+
 
   // historial compacto: últimos 10, más reciente primero
   const historial = useMemo(() => {
