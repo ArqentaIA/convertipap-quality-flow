@@ -572,18 +572,25 @@ function OperatorVisionPage() {
     return [...muestrasAll]
       .slice(-10)
       .reverse()
-      .map((m) => ({
-        id: m.id,
-        rollo: m.rollo,
-        hora: new Date(m.capturadoAt).toLocaleTimeString("es-MX", {
-          hour12: false,
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-        status: evalRollo(m),
-      }));
+      .map((m) => {
+        const r457 = m.mediciones.find(
+          (x: { clave: string; valor: number | null }) => x.clave === "blancuraR457",
+        )?.valor;
+        return {
+          id: m.id,
+          rollo: m.rollo,
+          hora: new Date(m.capturadoAt).toLocaleTimeString("es-MX", {
+            hour12: false,
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+          r457: r457 ?? null,
+          status: evalRollo(m),
+        };
+      });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [muestrasAll, variables]);
+
 
   // Hora del rollo actual
   const horaRolloActual = current
