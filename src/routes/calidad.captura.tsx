@@ -618,6 +618,31 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
   // ---- Listado de muestras recientes del capturista ----
   const misMuestrasQuery = useQuery({ ...misMuestrasQO, enabled: hasAuthToken, retry: false });
 
+  // ---- Cumplimiento del turno+máquina actual (calculado en servidor) ----
+  const cumplimientoRange = useMemo(() => {
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    const end = new Date();
+    end.setHours(23, 59, 59, 999);
+    return { from: start.toISOString(), to: end.toISOString() };
+  }, []);
+  const cumplimientoQuery = useQuery({
+    queryKey: ["qc", "cumplimiento", maquina.id, turno, cumplimientoRange.from],
+    queryFn: () =>
+      getCumplimientoIndicador({
+        data: {
+          maquina_id: maquina.id,
+          turno,
+          from: cumplimientoRange.from,
+          to: cumplimientoRange.to,
+        },
+      }),
+    enabled: hasAuthToken && !!maquina.id,
+    refetchInterval: 30_000,
+    refetchOnWindowFocus: true,
+    staleTime: 0,
+  });
+
   async function imprimirEtiquetaMuestra(muestra: MuestraReciente) {
     try {
       const data = buildEtiquetaFromMuestra(muestra);
