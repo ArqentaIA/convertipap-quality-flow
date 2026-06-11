@@ -370,17 +370,25 @@ function HeaderField({
   label,
   value,
   className,
+  noTruncate = false,
 }: {
   label: string;
   value: string;
   className?: string;
+  noTruncate?: boolean;
 }) {
   return (
     <div className="flex min-w-0 flex-col">
       <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">
         {label}
       </span>
-      <span className={cn("truncate text-[14px] font-bold", className ?? "text-slate-800")}>
+      <span
+        className={cn(
+          noTruncate ? "whitespace-nowrap" : "truncate",
+          "text-[14px] font-bold",
+          className ?? "text-slate-800",
+        )}
+      >
         {value || "—"}
       </span>
     </div>
@@ -655,9 +663,8 @@ function OperatorVisionPage() {
           </div>
 
           {/* Campos contextuales */}
-          <div className="ml-2 grid min-w-0 flex-1 grid-cols-6 gap-x-6">
+          <div className="ml-2 grid min-w-0 flex-1 grid-cols-[repeat(4,minmax(0,1fr))_minmax(0,2.2fr)] gap-x-6">
             <HeaderField label="Producto" value={orden?.producto ?? ""} />
-            <HeaderField label="OF" value={orden?.folio ?? ""} />
             <HeaderField
               label="Turno"
               value={orden?.turno ? `T${orden.turno}` : current?.turno ? `T${current.turno}` : ""}
@@ -667,6 +674,7 @@ function OperatorVisionPage() {
             <HeaderField
               label="Cumplimiento"
               value={data?.cumplimientoTurno?.texto ?? ""}
+              noTruncate
               className={
                 (data?.cumplimientoTurno?.pct ?? 0) >= 90
                   ? "text-green-600"
