@@ -204,6 +204,37 @@ function VariablesCalidad() {
     }
   };
 
+  const saveCaracteristicas = async () => {
+    if (!activeSpec) return;
+    if (!puedeEditar) {
+      toast.error("Solo Calidad o Administrador pueden modificar.");
+      return;
+    }
+    if (caracteristicas.length > 700) {
+      toast.error("Máximo 700 caracteres.");
+      return;
+    }
+    setSavingCar(true);
+    try {
+      const res = await updateCaracFn({
+        data: { producto_codigo: activeSpec.code, caracteristicas },
+      });
+      if (res.changed) {
+        toast.success("Características guardadas.");
+        setCarInitial(caracteristicas);
+        await queryClient.invalidateQueries({ queryKey: ["variables-calidad", "especs"] });
+        void queryClient.invalidateQueries({ queryKey: ["spec-audit", activeSpec.code] });
+      } else {
+        toast.info("Sin cambios.");
+      }
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setSavingCar(false);
+    }
+  };
+
+
   const exportPDF = async () => {
     if (!activeSpec) return;
     const doc = new jsPDF({ unit: "pt", format: "a4" });
