@@ -1031,7 +1031,9 @@ function OperatorVisionPage() {
       {/* FOOTER */}
       <footer className="shrink-0 border-t-2 border-slate-200 bg-white px-5 py-1.5">
         <div className="flex items-center justify-between gap-4 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">
+          <img src={logoConvertipap} alt="Convertipap" className="h-6 w-auto shrink-0 object-contain" />
           <div className="flex items-center gap-3">
+
             <div className="flex items-center gap-2">
               <span
                 className={`h-2 w-2 rounded-full ${isError ? "bg-rose-500" : "animate-pulse bg-emerald-500"}`}
