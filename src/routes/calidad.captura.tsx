@@ -41,6 +41,7 @@ import {
   listMisMuestrasRecientes,
   dictaminarMuestra,
 } from "@/lib/qc.functions";
+import { getCumplimientoIndicador } from "@/lib/cumplimiento.functions";
 import {
   Dialog,
   DialogContent,
