@@ -370,17 +370,25 @@ function HeaderField({
   label,
   value,
   className,
+  noTruncate = false,
 }: {
   label: string;
   value: string;
   className?: string;
+  noTruncate?: boolean;
 }) {
   return (
     <div className="flex min-w-0 flex-col">
       <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">
         {label}
       </span>
-      <span className={cn("truncate text-[14px] font-bold", className ?? "text-slate-800")}>
+      <span
+        className={cn(
+          noTruncate ? "whitespace-nowrap" : "truncate",
+          "text-[14px] font-bold",
+          className ?? "text-slate-800",
+        )}
+      >
         {value || "—"}
       </span>
     </div>
