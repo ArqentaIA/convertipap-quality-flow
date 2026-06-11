@@ -914,19 +914,23 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
             <div className="space-y-1.5">
               <Label htmlFor="cumplimiento" className="text-base">
                 Cumplimiento{" "}
-                <span className="text-muted-foreground font-normal">(% · opcional)</span>
+                <span className="text-muted-foreground font-normal">
+                  (calculado automáticamente)
+                </span>
               </Label>
-              <Input
+              <div
                 id="cumplimiento"
-                type="number"
-                inputMode="decimal"
-                step="0.01"
-                min={0}
-                max={100}
-                placeholder="0 - 100"
-                value={cumplimientoPct}
-                onChange={(e) => setCumplimientoPct(clampNumberString(e.target.value, 0, 100))}
-              />
+                aria-readonly="true"
+                className="flex h-10 items-center rounded-md border border-input bg-muted/40 px-3 text-sm font-semibold tabular-nums"
+                title={`Turno ${turno} · ${maquina.codigo}`}
+              >
+                {cumplimientoQuery.isLoading
+                  ? "Calculando…"
+                  : (cumplimientoQuery.data?.texto ?? "0 liberados de 0 capturados (0%)")}
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                Turno {turno} · {maquina.codigo} · datos reales de hoy. No editable.
+              </p>
             </div>
           </CardContent>
         </Card>
