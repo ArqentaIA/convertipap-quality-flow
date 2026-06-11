@@ -318,7 +318,7 @@ function VarCard({
     st === "bad" ? "bg-rose-600" : st === "warn" ? "bg-amber-500" : "bg-emerald-600";
 
   return (
-    <div className={`flex min-h-[170px] flex-col rounded-xl border-[3px] ${ring} p-4`}>
+    <div className={`flex h-full min-h-[140px] flex-col rounded-xl border-[3px] ${ring} p-3`}>
       <div className="flex items-start justify-between gap-2">
         <span className="text-[14px] font-black uppercase leading-tight tracking-wider text-slate-700 break-words">
           {etiqueta}
