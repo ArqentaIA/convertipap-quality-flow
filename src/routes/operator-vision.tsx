@@ -164,8 +164,9 @@ function KpiCard({
   };
   return (
     <div
-      className={`flex h-[148px] flex-col rounded-2xl border-[3px] ${palette[state]} px-5 py-3 shadow-sm`}
+      className={`flex h-[140px] flex-col rounded-2xl border-[3px] ${palette[state]} px-4 py-2.5 shadow-sm`}
     >
+
       <div className="flex items-center justify-between">
         <span className="truncate text-[13px] font-black uppercase tracking-[0.15em] text-slate-500">
           {label}
