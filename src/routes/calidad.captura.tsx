@@ -930,7 +930,10 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
               <div
                 id="cumplimiento"
                 aria-readonly="true"
-                className="flex h-10 items-center rounded-md border border-input bg-muted/40 px-3 text-sm font-semibold tabular-nums"
+                className={cn(
+                  "flex h-10 items-center rounded-md border px-3 text-sm font-semibold tabular-nums transition-colors",
+                  cumplimientoColorClass(cumplimientoQuery.data?.pct)
+                )}
                 title={`Turno ${turno} · ${maquina.codigo}`}
               >
                 {cumplimientoQuery.isLoading
