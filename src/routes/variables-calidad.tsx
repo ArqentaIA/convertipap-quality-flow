@@ -105,10 +105,16 @@ function VariablesCalidad() {
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState<DraftMap>({});
   const [reason, setReason] = useState("");
+  const [caracteristicas, setCaracteristicas] = useState<string>("");
+  const [carInitial, setCarInitial] = useState<string>("");
+  const [savingCar, setSavingCar] = useState(false);
 
   useEffect(() => {
     setIsEditing(false); setDraft({}); setReason("");
-  }, [activeSpec?.code]);
+    const c = ((activeSpec as unknown as { caracteristicas?: string })?.caracteristicas) ?? "";
+    setCaracteristicas(c);
+    setCarInitial(c);
+  }, [activeSpec?.code, activeSpec]);
 
   const startEdit = () => {
     if (!puedeEditar) {
