@@ -930,7 +930,7 @@ function OperatorVisionPage() {
               </div>
             ) : (
               <div
-                className="grid grid-cols-5"
+                className="grid grid-cols-4"
                 style={{
                   gridAutoRows: "160px",
                   gap: "8px",
