@@ -463,6 +463,15 @@ function OperatorVisionPage() {
   // estado de máquina u órdenes para esta máquina.
   const realtimeStatus = useOperatorVisionRealtime(maquina);
 
+  // Config de turnos (para derivar el turno real por hora del sistema).
+  const { data: appSettings } = useQuery({
+    queryKey: ["app-settings-turnos"],
+    queryFn: () => getAppSettings(),
+    staleTime: 5 * 60_000,
+    refetchOnWindowFocus: false,
+  });
+
+
 
   const muestrasAll = data?.muestras ?? [];
   const current = muestrasAll[muestrasAll.length - 1];
