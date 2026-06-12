@@ -99,9 +99,18 @@ export const getOperatorVisionData = createServerFn({ method: "GET" })
      //      última muestra capturada en la máquina si no hay orden activa).
      //    - Ventana: hoy (00:00 → ahora) para acotar al turno en curso.
      //    - Ordenado del más reciente al más antiguo.
-    const startTodayHist = new Date();
-    startTodayHist.setHours(0, 0, 0, 0);
-    const endNowHist = new Date();
+    // Inicio del día en zona horaria de la planta (México, UTC-6 sin DST).
+    // Calcular en UTC el instante equivalente a 00:00 hora local de México.
+    const PLANT_TZ_OFFSET_HOURS = -6;
+    const nowUtc = new Date();
+    const nowPlant = new Date(nowUtc.getTime() + PLANT_TZ_OFFSET_HOURS * 3600 * 1000);
+    const startTodayHist = new Date(Date.UTC(
+      nowPlant.getUTCFullYear(),
+      nowPlant.getUTCMonth(),
+      nowPlant.getUTCDate(),
+      -PLANT_TZ_OFFSET_HOURS, 0, 0, 0,
+    ));
+    const endNowHist = nowUtc;
 
     // Determinar turno vigente: orden activa o última muestra de la máquina.
     let turnoVigente: string | null =
