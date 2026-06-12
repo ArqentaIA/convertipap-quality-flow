@@ -56,7 +56,7 @@ function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-md rounded-xl border border-border bg-card p-8 shadow-lg">
         <div className="mb-6 flex flex-col items-center">
-          <div className="mb-3 flex h-16 w-full max-w-[180px] items-center justify-center rounded-md bg-white p-2">
+          <div className="mb-3 flex h-24 w-full max-w-[270px] items-center justify-center rounded-md bg-white p-2">
             <img src={logo} alt="ConvertiPap" className="h-full w-full object-contain" />
           </div>
           <h1 className="text-lg font-semibold text-foreground">Control de calidad</h1>
