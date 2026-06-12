@@ -14,8 +14,54 @@ import {
   Timer,
 } from "lucide-react";
 import { getOperatorVisionData } from "@/lib/operator-vision.functions";
+import { getAppSettings } from "@/lib/settings.functions";
 import { useOperatorVisionRealtime } from "@/hooks/use-operator-vision-realtime";
 import logoConvertipap from "@/assets/logo-convertipap.png";
+
+// Convierte "HH:MM" en minutos desde 00:00 (hora local).
+function hhmmToMin(s: string | undefined | null): number | null {
+  if (!s) return null;
+  const m = /^(\d{1,2}):(\d{2})$/.exec(s.trim());
+  if (!m) return null;
+  const h = Number(m[1]);
+  const min = Number(m[2]);
+  if (isNaN(h) || isNaN(min)) return null;
+  return h * 60 + min;
+}
+
+// Determina el turno actual ("1" | "2" | "3") según hora local y los rangos
+// configurados en app_settings. Acepta turnos que cruzan medianoche (fin < inicio).
+function computeTurnoActual(
+  now: Date,
+  s?: {
+    turno1_inicio: string; turno1_fin: string;
+    turno2_inicio: string; turno2_fin: string;
+    turno3_inicio: string; turno3_fin: string;
+  } | null,
+): string | null {
+  const ranges: Array<{ id: string; ini: string; fin: string }> = s
+    ? [
+        { id: "1", ini: s.turno1_inicio, fin: s.turno1_fin },
+        { id: "2", ini: s.turno2_inicio, fin: s.turno2_fin },
+        { id: "3", ini: s.turno3_inicio, fin: s.turno3_fin },
+      ]
+    : [
+        { id: "1", ini: "07:00", fin: "15:00" },
+        { id: "2", ini: "15:00", fin: "23:00" },
+        { id: "3", ini: "23:00", fin: "07:00" },
+      ];
+  const cur = now.getHours() * 60 + now.getMinutes();
+  for (const r of ranges) {
+    const ini = hhmmToMin(r.ini);
+    const fin = hhmmToMin(r.fin);
+    if (ini === null || fin === null) continue;
+    const inRange = ini <= fin
+      ? cur >= ini && cur < fin
+      : cur >= ini || cur < fin; // cruza medianoche
+    if (inRange) return r.id;
+  }
+  return null;
+}
 
 const MAQUINAS_VALIDAS = ["MP-04", "MP-05", "MP-06", "MP-07"] as const;
 type MaquinaValida = (typeof MAQUINAS_VALIDAS)[number];
@@ -417,10 +463,29 @@ function OperatorVisionPage() {
   // estado de máquina u órdenes para esta máquina.
   const realtimeStatus = useOperatorVisionRealtime(maquina);
 
+  // Config de turnos (para derivar el turno real por hora del sistema).
+  const { data: appSettings } = useQuery({
+    queryKey: ["app-settings-turnos"],
+    queryFn: () => getAppSettings(),
+    staleTime: 5 * 60_000,
+    refetchOnWindowFocus: false,
+  });
+
+
 
   const muestrasAll = data?.muestras ?? [];
   const current = muestrasAll[muestrasAll.length - 1];
   const orden = data?.orden;
+
+  // Turno actual derivado de la hora del sistema y los horarios configurados.
+  // Es la fuente de verdad de la UI; el turno de la orden puede quedar obsoleto
+  // si la orden se abrió en un turno anterior y sigue corriendo.
+  const turnoActual = useMemo(
+    () => computeTurnoActual(now, appSettings ?? null),
+    [now, appSettings],
+  );
+  const turnoDisplay = turnoActual ?? (orden?.turno ? String(orden.turno) : current?.turno ? String(current.turno) : "");
+  const turnoLabel = turnoDisplay ? (turnoDisplay.startsWith("T") ? turnoDisplay : `T${turnoDisplay}`) : "";
   const variables = data?.variables ?? [];
 
   const mapMedActual = useMemo(() => {
@@ -577,8 +642,7 @@ function OperatorVisionPage() {
         backgroundColor: "#ffffff",
         logging: false,
       });
-      const turno = orden?.turno || current?.turno || "T";
-      const turnoStr = String(turno).startsWith("T") ? String(turno) : `T${turno}`;
+      const turnoStr = turnoLabel || "T";
       const d = new Date();
       const pad = (n: number) => String(n).padStart(2, "0");
       const ts = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}_${pad(d.getHours())}-${pad(d.getMinutes())}-${pad(d.getSeconds())}`;
@@ -692,7 +756,7 @@ function OperatorVisionPage() {
             <HeaderField label="Producto" value={orden?.producto ?? ""} />
             <HeaderField
               label="Turno"
-              value={orden?.turno ? `T${orden.turno}` : current?.turno ? `T${current.turno}` : ""}
+              value={turnoLabel}
             />
             <HeaderField label="Operador" value={current?.operador ?? ""} />
             <HeaderField label="Analista" value={current?.analista ?? ""} />
@@ -905,12 +969,7 @@ function OperatorVisionPage() {
           <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border-2 border-slate-300 bg-white shadow-sm">
             <div className="flex shrink-0 items-center justify-between border-b-2 border-slate-700 bg-slate-700 px-3 py-1.5">
               <h2 className="text-[12px] font-black uppercase tracking-[0.22em] text-white">
-                Historial de Rollos del Turno
-                {orden?.turno
-                  ? ` (T${orden.turno})`
-                  : current?.turno
-                    ? ` (T${current.turno})`
-                    : ""}
+                Historial de Rollos del Turno{turnoLabel ? ` (${turnoLabel})` : ""}
               </h2>
               <span className="font-mono text-[11px] font-bold text-slate-300">
                 {historial.length} rollos
