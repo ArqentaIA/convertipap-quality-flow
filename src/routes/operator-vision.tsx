@@ -899,10 +899,10 @@ function OperatorVisionPage() {
             </div>
             {(() => {
               const COLS = [
-                { key: "tensionSecaMD", label: "T. Seca MD", unit: "g/in", digits: 2 },
-                { key: "tensionSecaCD", label: "T. Seca CD", unit: "g/in", digits: 2 },
-                { key: "relacionMDCD", label: "Rel MD/CD", unit: "", digits: 2 },
-                { key: "elongacionMD", label: "Elong MD", unit: "%", digits: 2 },
+                { key: "tensionMD", label: "T. Seca MD", unit: "g/in", digits: 2 },
+                { key: "tensionCD", label: "T. Seca CD", unit: "g/in", digits: 2 },
+                { key: "relMDCD", label: "Rel MD/CD", unit: "", digits: 2 },
+                { key: "elongMD", label: "Elong MD", unit: "%", digits: 2 },
                 { key: "peso", label: "Peso", unit: "kg", digits: 2 },
                 { key: "calibre", label: "Calibre", unit: "mm", digits: 3 },
                 { key: "blancuraR457", label: "Blanc. R457", unit: "%", digits: 2 },
