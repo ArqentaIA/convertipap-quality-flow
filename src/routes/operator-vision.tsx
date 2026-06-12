@@ -1141,22 +1141,7 @@ function OperatorVisionPage() {
                     )}
                   </div>
 
-                  <KpiCard
-                    label="Cumplimiento"
-                    value={`${cumplimiento.pct}`}
-                    unit="%"
-                    state={
-                      cumplimiento.capturados === 0
-                        ? "neutral"
-                        : cumplimiento.pct >= 90
-                          ? "ok"
-                          : cumplimiento.pct >= 70
-                            ? "warn"
-                            : "bad"
-                    }
-                    icon={Gauge}
-                    subtitle={`${cumplimiento.enSpec} EN SPEC DE ${cumplimiento.capturados}`}
-                  />
+
 
 
 
