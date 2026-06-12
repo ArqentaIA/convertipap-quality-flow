@@ -729,10 +729,10 @@ function OperatorVisionPage() {
           {/* Alertas */}
           <div className="relative flex flex-col items-center">
             <Bell
-              className={`h-6 w-6 ${alertasCount > 0 ? "text-rose-600" : "text-slate-400"}`}
+              className={`h-7 w-7 ${alertasCount > 0 ? "text-rose-600" : "text-slate-400"}`}
             />
             {alertasCount > 0 && (
-              <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-600 px-1 text-[10px] font-black text-white">
+              <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-600 px-1 text-[11px] font-black text-white">
                 {alertasCount}
               </span>
             )}
@@ -743,18 +743,18 @@ function OperatorVisionPage() {
             <button
               onClick={capturarPantalla}
               disabled={capturing}
-              className="flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-bold text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-50"
+              className="flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-base font-bold text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-50"
               title="Capturar pantalla"
             >
-              <Camera className="h-4 w-4" />
+              <Camera className="h-5 w-5" />
               {capturing ? "Capturando…" : "Capturar Pantalla"}
             </button>
             <button
               onClick={goFullscreen}
-              className="rounded-lg border border-slate-300 bg-white p-1.5 text-slate-600 hover:bg-slate-100"
+              className="rounded-lg border border-slate-300 bg-white p-2 text-slate-600 hover:bg-slate-100"
               title="Pantalla completa"
             >
-              <Maximize2 className="h-4 w-4" />
+              <Maximize2 className="h-5 w-5" />
             </button>
           </div>
         </div>
