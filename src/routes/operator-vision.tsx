@@ -773,10 +773,10 @@ function OperatorVisionPage() {
             </div>
             {(() => {
               const MAIN_ORDER = [
-                "tensionSecaMD",
-                "tensionSecaCD",
-                "relacionMDCD",
-                "elongacionMD",
+                "tensionMD",
+                "tensionCD",
+                "relMDCD",
+                "elongMD",
                 "peso",
                 "calibre",
                 "blancuraR457",
