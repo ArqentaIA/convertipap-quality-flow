@@ -3,11 +3,11 @@ import { useEffect, useMemo, useState } from "react";
 import {
   LayoutDashboard, Factory, ClipboardCheck, FileBarChart2,
   Settings, ChevronLeft, ChevronRight, Bell, ChevronDown, SlidersHorizontal,
-  LogOut, Lock, Loader2, BookOpen, Users,
+  LogOut, Lock, Loader2, BookOpen, Users, Monitor,
 } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { PLANTS } from "@/lib/qc-data";
-import { useAuth, type AppModule } from "@/lib/auth";
+import { useAuth, type AppModule, type AppRole } from "@/lib/auth";
 import { useLabFilter, LAB_LABEL } from "@/lib/lab";
 import { ShieldCheck } from "lucide-react";
 import { auditAction } from "@/lib/audit";
