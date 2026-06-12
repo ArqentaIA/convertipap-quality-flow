@@ -766,13 +766,13 @@ function OperatorVisionPage() {
               </span>
             </div>
           </div>
-          <div className="min-h-0 flex-1 overflow-hidden">
+          <div className="min-h-0 flex-1 overflow-y-auto">
             {historial.length === 0 ? (
               <div className="px-3 py-4 text-center text-sm font-semibold text-slate-400">
                 Aún no hay capturas para este turno.
               </div>
             ) : (
-              <ul className="flex h-full flex-col divide-y divide-slate-100">
+              <ul className="flex flex-col divide-y divide-slate-100">
                 {historial.map((h) => {
                   const dot =
                     h.status === "ok"
@@ -791,7 +791,7 @@ function OperatorVisionPage() {
                   return (
                     <li
                       key={h.id}
-                      className={`flex min-h-0 flex-1 flex-col justify-center overflow-hidden px-2.5 ${densidad.pad}`}
+                      className={`flex flex-col overflow-hidden px-2.5 ${densidad.pad}`}
                     >
                       {/* Línea principal: hora · rollo · estado */}
                       <div className="flex items-center gap-2 font-mono tabular-nums leading-tight">
