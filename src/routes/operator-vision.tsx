@@ -476,6 +476,16 @@ function OperatorVisionPage() {
   const muestrasAll = data?.muestras ?? [];
   const current = muestrasAll[muestrasAll.length - 1];
   const orden = data?.orden;
+
+  // Turno actual derivado de la hora del sistema y los horarios configurados.
+  // Es la fuente de verdad de la UI; el turno de la orden puede quedar obsoleto
+  // si la orden se abrió en un turno anterior y sigue corriendo.
+  const turnoActual = useMemo(
+    () => computeTurnoActual(now, appSettings ?? null),
+    [now, appSettings],
+  );
+  const turnoDisplay = turnoActual ?? (orden?.turno ? String(orden.turno) : current?.turno ? String(current.turno) : "");
+  const turnoLabel = turnoDisplay ? (turnoDisplay.startsWith("T") ? turnoDisplay : `T${turnoDisplay}`) : "";
   const variables = data?.variables ?? [];
 
   const mapMedActual = useMemo(() => {
