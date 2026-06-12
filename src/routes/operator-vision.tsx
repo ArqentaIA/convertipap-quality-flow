@@ -830,11 +830,6 @@ function OperatorVisionPage() {
         <main className="flex min-w-0 flex-1 flex-col gap-2 overflow-hidden px-3 py-2">
           {/* ÚLTIMO ROLLO CAPTURADO — tarjetas variables principales */}
           <section className="shrink-0">
-            <div className="mb-1.5 inline-flex items-center gap-2 rounded-t-md border-b-2 border-slate-700 bg-slate-50 px-3 py-1">
-              <span className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-700">
-                Último Rollo Capturado
-              </span>
-            </div>
             {(() => {
               const MAIN_ORDER = [
                 "tensionMD",
@@ -1129,6 +1124,11 @@ function OperatorVisionPage() {
 
         {/* SIDEBAR DERECHO: variables secundarias + logo Convertipap */}
         <aside className="flex w-[260px] shrink-0 flex-col border-l-2 border-slate-200 bg-white">
+          <div className="shrink-0 border-b-2 border-slate-700 bg-slate-50 px-3 py-1.5">
+            <span className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-700">
+              Último Rollo Capturado
+            </span>
+          </div>
           <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-2.5 py-2">
             {(() => {
               const SIDE_ORDER = ["pesoBase", "anchoUtil", "uniones", "diametro"];
