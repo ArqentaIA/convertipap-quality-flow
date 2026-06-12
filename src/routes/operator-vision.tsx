@@ -366,21 +366,21 @@ function VarCard({
     st === "bad" ? "bg-rose-600" : st === "warn" ? "bg-amber-500" : "bg-emerald-600";
 
   return (
-    <div className={`flex h-full min-h-[150px] flex-col rounded-xl border-[3px] ${ring} p-2.5`}>
-      <div className="flex items-start justify-between gap-2">
-        <span className="text-[14px] font-black uppercase leading-tight tracking-wider text-slate-700 break-words">
+    <div className={`flex h-full min-h-[110px] flex-col rounded-xl border-[3px] ${ring} p-1.5`}>
+      <div className="flex items-start justify-between gap-1">
+        <span className="text-[11px] font-black uppercase leading-tight tracking-wider text-slate-700 break-words">
           {etiqueta}
         </span>
-        <span className={`shrink-0 text-[12px] font-black uppercase ${stateColor}`}>
+        <span className={`shrink-0 text-[10px] font-black uppercase ${stateColor}`}>
           {stateLabel}
         </span>
       </div>
 
-      <div className="flex flex-1 items-baseline justify-center gap-1 overflow-hidden py-1">
-        <span className="font-mono text-[48px] font-black leading-none tabular-nums text-slate-900">
+      <div className="flex flex-1 items-baseline justify-center gap-1 overflow-hidden py-0.5">
+        <span className="font-mono text-[32px] font-black leading-none tabular-nums text-slate-900">
           {fmt(value, digits)}
         </span>
-        <span className="text-base font-bold text-slate-500 shrink-0">{unidad}</span>
+        <span className="text-[11px] font-bold text-slate-500 shrink-0">{unidad}</span>
       </div>
 
       {hasSpec ? (
