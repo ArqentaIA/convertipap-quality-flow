@@ -752,26 +752,11 @@ function OperatorVisionPage() {
 
 
           {/* Campos contextuales */}
-          <div className="ml-2 grid min-w-0 flex-1 grid-cols-[repeat(4,minmax(0,1fr))_minmax(0,2.2fr)] gap-x-6">
+          <div className="ml-2 grid min-w-0 flex-1 grid-cols-4 gap-x-6">
             <HeaderField label="Producto" value={orden?.producto ?? ""} />
-            <HeaderField
-              label="Turno"
-              value={turnoLabel}
-            />
+            <HeaderField label="Turno" value={turnoLabel} />
             <HeaderField label="Operador" value={current?.operador ?? ""} />
             <HeaderField label="Analista" value={current?.analista ?? ""} />
-            <HeaderField
-              label="Cumplimiento"
-              value={cumplimiento.texto}
-              noTruncate
-              className={
-                cumplimiento.pct >= 90
-                  ? "text-green-600"
-                  : cumplimiento.pct >= 70
-                    ? "text-yellow-600"
-                    : "text-red-600"
-              }
-            />
           </div>
 
           {/* Reloj */}
@@ -781,6 +766,24 @@ function OperatorVisionPage() {
             </div>
             <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
               {fechaStr}
+            </div>
+          </div>
+
+          {/* Cumplimiento (al final, lado derecho) */}
+          <div className="text-right">
+            <div className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">
+              Cumplimiento
+            </div>
+            <div
+              className={`text-[15px] font-black leading-tight ${
+                cumplimiento.pct >= 90
+                  ? "text-green-600"
+                  : cumplimiento.pct >= 70
+                    ? "text-yellow-600"
+                    : "text-red-600"
+              }`}
+            >
+              {cumplimiento.texto}
             </div>
           </div>
 
