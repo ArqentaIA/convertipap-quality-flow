@@ -756,7 +756,7 @@ function OperatorVisionPage() {
             <HeaderField label="Producto" value={orden?.producto ?? ""} />
             <HeaderField
               label="Turno"
-              value={orden?.turno ? `T${orden.turno}` : current?.turno ? `T${current.turno}` : ""}
+              value={turnoLabel}
             />
             <HeaderField label="Operador" value={current?.operador ?? ""} />
             <HeaderField label="Analista" value={current?.analista ?? ""} />
