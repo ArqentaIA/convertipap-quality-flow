@@ -769,6 +769,24 @@ function OperatorVisionPage() {
             </div>
           </div>
 
+          {/* Cumplimiento (al final, lado derecho) */}
+          <div className="text-right">
+            <div className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">
+              Cumplimiento
+            </div>
+            <div
+              className={`text-[15px] font-black leading-tight ${
+                cumplimiento.pct >= 90
+                  ? "text-green-600"
+                  : cumplimiento.pct >= 70
+                    ? "text-yellow-600"
+                    : "text-red-600"
+              }`}
+            >
+              {cumplimiento.texto}
+            </div>
+          </div>
+
           {/* Alertas */}
           <div className="relative flex flex-col items-center">
             <Bell
@@ -841,31 +859,8 @@ function OperatorVisionPage() {
                   </div>
                 );
               }
-              const cumplimientoState = cumplimiento.pct >= 90 ? "ok" : cumplimiento.pct >= 70 ? "warn" : "bad";
-              const cumplimientoBorder = cumplimientoState === "ok" ? "border-emerald-400 bg-emerald-50" : cumplimientoState === "warn" ? "border-amber-400 bg-amber-50" : "border-rose-500 bg-rose-50";
-              const cumplimientoText = cumplimientoState === "ok" ? "text-emerald-700" : cumplimientoState === "warn" ? "text-amber-700" : "text-rose-700";
               return (
                 <div className="grid grid-cols-7 gap-1.5">
-                  {/* Cumplimiento — tarjeta N°1 */}
-                  <div className={`flex h-full min-h-[110px] flex-col rounded-xl border-[3px] ${cumplimientoBorder} p-1.5`}>
-                    <div className="flex items-start justify-between gap-1">
-                      <span className="text-[11px] font-black uppercase leading-tight tracking-wider text-slate-700 break-words">
-                        Cumplimiento
-                      </span>
-                      <span className={`shrink-0 text-[10px] font-black uppercase ${cumplimientoText}`}>
-                        {cumplimientoState === "ok" ? "OK" : cumplimientoState === "warn" ? "CERCA" : "FUERA"}
-                      </span>
-                    </div>
-                    <div className="flex flex-1 items-baseline justify-center gap-1 overflow-hidden py-0.5">
-                      <span className="font-mono text-[32px] font-black leading-none tabular-nums text-slate-900">
-                        {cumplimiento.pct.toFixed(1)}
-                      </span>
-                      <span className="text-[11px] font-bold text-slate-500 shrink-0">%</span>
-                    </div>
-                    <div className={`mt-0.5 text-center text-[9px] font-bold uppercase tracking-wider ${cumplimientoText}`}>
-                      {cumplimiento.enSpec} en spec de {cumplimiento.capturados} capturados
-                    </div>
-                  </div>
                   {mainVars.map((v) => (
                     <VarCard
                       key={v.clave}
