@@ -825,7 +825,7 @@ function OperatorVisionPage() {
           </section>
 
           {/* KPI strip: Rollos producidos · Rollo actual (wide) · Cumplimiento · No conformes */}
-          <section className="shrink-0 grid grid-cols-5 gap-2">
+          <section className="shrink-0 grid grid-cols-6 gap-2">
             <KpiCard
               label="Rollos Producidos"
               value={muestrasAll.length.toString()}
@@ -882,7 +882,24 @@ function OperatorVisionPage() {
               icon={AlertTriangle}
               subtitle={rollosNC === 0 ? "SIN INCIDENCIAS" : "REVISAR PROCESO"}
             />
+            <KpiCard
+              label="Tiempo Sin Captura"
+              value={lastCaptureMin === null ? "—" : String(lastCaptureMin)}
+              unit="min"
+              state={sinCapturaState}
+              icon={Timer}
+              subtitle={
+                lastCaptureMin === null
+                  ? "SIN DATOS"
+                  : sinCapturaState === "ok"
+                    ? "EN RANGO"
+                    : sinCapturaState === "warn"
+                      ? "ATENCIÓN"
+                      : "CRÍTICO"
+              }
+            />
           </section>
+
 
           {/* HISTORIAL DE ROLLOS DEL TURNO — tabla SCADA */}
           <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border-2 border-slate-300 bg-white shadow-sm">
