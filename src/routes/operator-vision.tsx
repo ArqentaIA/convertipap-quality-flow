@@ -1126,6 +1126,23 @@ function OperatorVisionPage() {
               ).filter(Boolean) as typeof variablesParaMostrar;
               return (
                 <>
+                  {/* Cumplimiento */}
+                  <div className="rounded-2xl border-[3px] border-slate-300 bg-white px-3 py-2 shadow-sm">
+                    <div className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">
+                      Cumplimiento
+                    </div>
+                    <div
+                      className={`mt-1 text-[15px] font-black leading-tight ${
+                        cumplimiento.pct >= 90
+                          ? "text-green-600"
+                          : cumplimiento.pct >= 70
+                            ? "text-yellow-600"
+                            : "text-red-600"
+                      }`}
+                    >
+                      {cumplimiento.liberados} en spec de {cumplimiento.capturados} capturados ({cumplimiento.pct}%)
+                    </div>
+                  </div>
                   {/* Producto */}
                   <div className="rounded-2xl border-[3px] border-slate-300 bg-white px-3 py-2 shadow-sm">
                     <div className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">
@@ -1140,6 +1157,7 @@ function OperatorVisionPage() {
                       </div>
                     )}
                   </div>
+
                   <KpiCard
                     label="Velocidad Máquina"
                     value="—"
