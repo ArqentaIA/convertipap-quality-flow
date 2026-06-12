@@ -969,12 +969,7 @@ function OperatorVisionPage() {
           <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border-2 border-slate-300 bg-white shadow-sm">
             <div className="flex shrink-0 items-center justify-between border-b-2 border-slate-700 bg-slate-700 px-3 py-1.5">
               <h2 className="text-[12px] font-black uppercase tracking-[0.22em] text-white">
-                Historial de Rollos del Turno
-                {orden?.turno
-                  ? ` (T${orden.turno})`
-                  : current?.turno
-                    ? ` (T${current.turno})`
-                    : ""}
+                Historial de Rollos del Turno{turnoLabel ? ` (${turnoLabel})` : ""}
               </h2>
               <span className="font-mono text-[11px] font-bold text-slate-300">
                 {historial.length} rollos
