@@ -211,28 +211,28 @@ function KpiCard({
   };
   return (
     <div
-      className={`flex h-[140px] flex-col rounded-2xl border-[3px] ${palette[state]} px-4 py-2.5 shadow-sm`}
+      className={`flex h-[96px] flex-col rounded-2xl border-[3px] ${palette[state]} px-3 py-1.5 shadow-sm`}
     >
 
       <div className="flex items-center justify-between">
-        <span className="truncate text-[13px] font-black uppercase tracking-[0.15em] text-slate-500">
+        <span className="truncate text-[11px] font-black uppercase tracking-[0.15em] text-slate-500">
           {label}
         </span>
-        <Icon className="h-6 w-6 shrink-0 opacity-60" />
+        <Icon className="h-4 w-4 shrink-0 opacity-60" />
       </div>
-      <div className="flex flex-1 items-end gap-2 overflow-hidden">
+      <div className="flex flex-1 items-end gap-1.5 overflow-hidden">
         <span
-          className={`font-mono text-[64px] font-black leading-none tabular-nums ${valueColor[state]} truncate`}
+          className={`font-mono text-[40px] font-black leading-none tabular-nums ${valueColor[state]} truncate`}
         >
           {value}
         </span>
         {unit && (
-          <span className="pb-1 text-xl font-bold text-slate-500 shrink-0">{unit}</span>
+          <span className="pb-0.5 text-sm font-bold text-slate-500 shrink-0">{unit}</span>
         )}
       </div>
       {subtitle && (
         <div
-          className={`mt-1 truncate text-[12px] font-black uppercase tracking-wider ${sub[state]}`}
+          className={`mt-0.5 truncate text-[10px] font-black uppercase tracking-wider ${sub[state]}`}
         >
           {subtitle}
         </div>
