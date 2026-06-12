@@ -769,24 +769,6 @@ function OperatorVisionPage() {
             </div>
           </div>
 
-          {/* Cumplimiento (al final, lado derecho) */}
-          <div className="text-right">
-            <div className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">
-              Cumplimiento
-            </div>
-            <div
-              className={`text-[15px] font-black leading-tight ${
-                cumplimiento.pct >= 90
-                  ? "text-green-600"
-                  : cumplimiento.pct >= 70
-                    ? "text-yellow-600"
-                    : "text-red-600"
-              }`}
-            >
-              {cumplimiento.texto}
-            </div>
-          </div>
-
           {/* Alertas */}
           <div className="relative flex flex-col items-center">
             <Bell
