@@ -152,6 +152,7 @@ export const getOperatorVisionData = createServerFn({ method: "GET" })
       turno: m.turno as string,
       operador: (m.operador as string) ?? "",
       analista: (m.analista as string) ?? "",
+      crepadoPct: m.crepado_pct === null || m.crepado_pct === undefined ? null : Number(m.crepado_pct),
       estatus: (m.estatus_liberacion ?? m.dictamen ?? "pendiente") as string,
       mediciones: (m.mediciones_calidad ?? []).map((x: any) => ({
         clave: x.variable_clave as string,
