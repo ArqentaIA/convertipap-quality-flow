@@ -1131,7 +1131,7 @@ function OperatorVisionPage() {
           </div>
           <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-2.5 py-2">
             {(() => {
-              const SIDE_ORDER = ["pesoBase", "anchoUtil", "uniones", "diametro"];
+              const SIDE_ORDER = ["uniones"];
               const sideVars = SIDE_ORDER.map((k) =>
                 variablesParaMostrar.find((v) => v.clave === k),
               ).filter(Boolean) as typeof variablesParaMostrar;
