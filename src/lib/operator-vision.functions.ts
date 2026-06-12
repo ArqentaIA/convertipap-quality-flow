@@ -248,9 +248,8 @@ export const getOperatorVisionData = createServerFn({ method: "GET" })
       (ordenActiva?.turno as string | undefined) ??
       (muestrasRaw?.[0]?.turno as string | undefined) ??
       null;
-    const startToday = new Date();
-    startToday.setHours(0, 0, 0, 0);
-    const endNow = new Date();
+    const startToday = startTodayHist;
+    const endNow = endNowHist;
 
     let cumplimientoTurno: {
       liberados: number;
