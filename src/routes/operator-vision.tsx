@@ -779,6 +779,7 @@ function OperatorVisionPage() {
                 "elongMD",
                 "peso",
                 "calibre",
+                "humedad",
                 "blancuraR457",
                 "blancuraA",
                 "blancuraB",
@@ -820,6 +821,7 @@ function OperatorVisionPage() {
                 </div>
               );
             })()}
+
           </section>
 
           {/* KPI strip: Rollos producidos · Rollo actual (wide) · Cumplimiento · No conformes */}
