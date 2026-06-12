@@ -379,13 +379,13 @@ function HeaderField({
 }) {
   return (
     <div className="flex min-w-0 flex-col">
-      <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">
+      <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">
         {label}
       </span>
       <span
         className={cn(
           noTruncate ? "whitespace-nowrap" : "truncate",
-          "text-[14px] font-bold",
+          "text-[15px] font-bold",
           className ?? "text-slate-800",
         )}
       >
