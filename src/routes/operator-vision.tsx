@@ -1140,7 +1140,7 @@ function OperatorVisionPage() {
                             : "text-red-600"
                       }`}
                     >
-                      {cumplimiento.liberados} en spec de {cumplimiento.capturados} capturados ({cumplimiento.pct}%)
+                      {cumplimiento.texto}
                     </div>
                   </div>
                   {/* Producto */}
