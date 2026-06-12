@@ -1072,18 +1072,26 @@ function OperatorVisionPage() {
         <aside className="flex w-[260px] shrink-0 flex-col border-l-2 border-slate-200 bg-white">
           <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-2.5 py-2">
             {(() => {
-              const SIDE_ORDER = [
-                "humedad",
-                "pesoBase",
-                "anchoUtil",
-                "diametro",
-                "uniones",
-              ];
+              const SIDE_ORDER = ["pesoBase", "anchoUtil", "uniones", "diametro"];
               const sideVars = SIDE_ORDER.map((k) =>
                 variablesParaMostrar.find((v) => v.clave === k),
               ).filter(Boolean) as typeof variablesParaMostrar;
               return (
                 <>
+                  {/* Producto */}
+                  <div className="rounded-2xl border-[3px] border-slate-300 bg-white px-3 py-2 shadow-sm">
+                    <div className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">
+                      Producto
+                    </div>
+                    <div className="mt-1 truncate text-[15px] font-black leading-tight text-slate-900">
+                      {orden?.producto || "—"}
+                    </div>
+                    {orden?.productoCodigo && (
+                      <div className="mt-0.5 truncate font-mono text-[11px] font-bold text-slate-500">
+                        {orden.productoCodigo}
+                      </div>
+                    )}
+                  </div>
                   <KpiCard
                     label="Velocidad Máquina"
                     value="—"
@@ -1093,20 +1101,12 @@ function OperatorVisionPage() {
                     subtitle="SIN DATO"
                   />
                   <KpiCard
-                    label="Tiempo Sin Captura"
-                    value={lastCaptureMin === null ? "—" : String(lastCaptureMin)}
-                    unit="min"
-                    state={sinCapturaState}
-                    icon={Timer}
-                    subtitle={
-                      lastCaptureMin === null
-                        ? "SIN DATOS"
-                        : sinCapturaState === "ok"
-                          ? "EN RANGO"
-                          : sinCapturaState === "warn"
-                            ? "ATENCIÓN"
-                            : "CRÍTICO"
-                    }
+                    label="Velocidad Enrollador"
+                    value="—"
+                    unit="m/min"
+                    state="neutral"
+                    icon={Gauge}
+                    subtitle="SIN DATO"
                   />
                   {sideVars.map((v) => (
                     <VarCard
@@ -1134,6 +1134,7 @@ function OperatorVisionPage() {
               );
             })()}
           </div>
+
           <div className="shrink-0 border-t border-slate-200 bg-white px-3 py-2">
             <img
               src={logoConvertipap}
