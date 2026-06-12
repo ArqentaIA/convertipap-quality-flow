@@ -704,12 +704,12 @@ function OperatorVisionPage() {
             <HeaderField label="Analista" value={current?.analista ?? ""} />
             <HeaderField
               label="Cumplimiento"
-              value={data?.cumplimientoTurno?.texto ?? ""}
+              value={cumplimiento.texto}
               noTruncate
               className={
-                (data?.cumplimientoTurno?.pct ?? 0) >= 90
+                cumplimiento.pct >= 90
                   ? "text-green-600"
-                  : (data?.cumplimientoTurno?.pct ?? 0) >= 70
+                  : cumplimiento.pct >= 70
                     ? "text-yellow-600"
                     : "text-red-600"
               }
