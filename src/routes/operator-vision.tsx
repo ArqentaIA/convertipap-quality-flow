@@ -677,7 +677,7 @@ function OperatorVisionPage() {
         <div className="flex items-center gap-4 px-5 py-3.5">
           <div className="flex min-w-0 items-center gap-3">
             <div className="min-w-0">
-              <div className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-500">
+              <div className="text-[13px] font-black uppercase tracking-[0.2em] text-slate-500">
                 Visión Operador
               </div>
               <div className="flex items-center gap-2">
