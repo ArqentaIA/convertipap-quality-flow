@@ -755,7 +755,7 @@ function OperatorVisionPage() {
       {/* CUERPO: sidebar historial + main */}
       <div className="flex min-h-0 flex-1 overflow-hidden">
         {/* SIDEBAR HISTORIAL DEL TURNO */}
-        <aside className="flex w-[360px] shrink-0 flex-col border-r-2 border-slate-200 bg-white">
+        <aside className="flex w-[470px] shrink-0 flex-col border-r-2 border-slate-200 bg-white">
           <div className="shrink-0 border-b border-slate-200 px-3 py-2">
             <div className="flex items-center justify-between">
               <h2 className="text-[12px] font-black uppercase tracking-[0.22em] text-slate-600">
