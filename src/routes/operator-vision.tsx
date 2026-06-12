@@ -842,6 +842,9 @@ function OperatorVisionPage() {
                 "blancuraR457",
                 "blancuraA",
                 "blancuraB",
+                "pesoBase",
+                "anchoUtil",
+                "diametro",
               ];
               const mainVars = MAIN_ORDER.map((k) =>
                 variablesParaMostrar.find((v) => v.clave === k),
@@ -854,7 +857,7 @@ function OperatorVisionPage() {
                 );
               }
               return (
-                <div className="grid grid-cols-5 gap-2">
+                <div className="grid grid-cols-7 gap-1.5">
                   {mainVars.map((v) => (
                     <VarCard
                       key={v.clave}
