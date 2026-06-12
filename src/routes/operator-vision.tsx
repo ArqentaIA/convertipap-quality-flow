@@ -397,7 +397,7 @@ function VarCard({
               />
             )}
           </div>
-          <div className="mt-1 flex justify-between text-[11px] font-bold tabular-nums text-slate-500">
+          <div className="mt-0.5 flex justify-between text-[9px] font-bold tabular-nums text-slate-500">
             <span>MIN {fmt(min, digits)}</span>
             <span className="text-emerald-700">OBJ {fmt(obj, digits)}</span>
             <span>MAX {fmt(max, digits)}</span>
