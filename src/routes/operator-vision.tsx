@@ -1174,6 +1174,20 @@ function OperatorVisionPage() {
                     icon={Gauge}
                     subtitle="SIN DATO"
                   />
+                  {(() => {
+                    const cp = (current as any)?.crepadoPct;
+                    const hasCp = cp !== null && cp !== undefined && Number.isFinite(Number(cp));
+                    return (
+                      <KpiCard
+                        label="% Crepado"
+                        value={hasCp ? Number(cp).toFixed(2) : "—"}
+                        unit={hasCp ? "%" : undefined}
+                        state={hasCp ? "ok" : "neutral"}
+                        icon={Gauge}
+                        subtitle={hasCp ? undefined : "SIN DATO"}
+                      />
+                    );
+                  })()}
                   {sideVars.map((v) => (
                     <VarCard
                       key={v.clave}
