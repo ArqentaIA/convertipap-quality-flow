@@ -681,7 +681,7 @@ function OperatorVisionPage() {
                 Visión Operador
               </div>
               <div className="flex items-center gap-2">
-                <span className="rounded bg-emerald-600 px-2 py-0.5 font-mono text-base font-black text-white">
+                <span className="rounded bg-emerald-600 px-2 py-0.5 font-mono text-lg font-black text-white">
                   {maquina}
                 </span>
                 <span className={`flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-black uppercase tracking-wider ${estadoCfg.chip}`}>
