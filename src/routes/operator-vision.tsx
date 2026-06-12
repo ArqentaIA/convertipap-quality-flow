@@ -644,14 +644,8 @@ function OperatorVisionPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [muestrasAll, variables, variablesParaMostrar]);
 
-  // Densidad tipográfica según cantidad de rollos visibles
-  const densidad = useMemo(() => {
-    const n = historial.length;
-    if (n <= 8) return { row: 14, label: 10, value: 13, pad: "py-2", gap: "gap-1.5" };
-    if (n <= 14) return { row: 13, label: 10, value: 12, pad: "py-1.5", gap: "gap-1" };
-    if (n <= 22) return { row: 12, label: 9, value: 11, pad: "py-1", gap: "gap-1" };
-    return { row: 11, label: 9, value: 11, pad: "py-0.5", gap: "gap-0.5" };
-  }, [historial.length]);
+
+
 
 
   // Hora del rollo actual
