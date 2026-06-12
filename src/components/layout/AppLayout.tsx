@@ -86,21 +86,35 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
   // 2) Si está en una ruta sin permisos, mandarlo al primer módulo permitido.
   useEffect(() => {
     if (auth.loading || !auth.isAuthenticated) return;
-    const mod = moduleForPath(pathname);
-    if (auth.canAccess(mod)) return;
-    const firstAllowed = NAV.find((n) => auth.canAccess(n.module));
+    // Excepción: pantallas-operativas se controla por rol, no por módulo.
+    if (pathname.startsWith("/pantallas-operativas")) {
+      if (PANTALLAS_ROLES.some((r) => auth.hasRole(r))) return;
+    } else {
+      const mod = moduleForPath(pathname);
+      if (auth.canAccess(mod)) return;
+    }
+    const firstAllowed = NAV.find((n) =>
+      n.allowedRoles ? n.allowedRoles.some((r) => auth.hasRole(r)) : auth.canAccess(n.module),
+    );
     if (firstAllowed && firstAllowed.to !== pathname) {
       void navigate({ to: firstAllowed.to, replace: true });
     }
-  }, [auth.loading, auth.isAuthenticated, auth.modules, pathname, navigate]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [auth.loading, auth.isAuthenticated, auth.modules, auth.roles, pathname, navigate]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const visibleNav = useMemo(
-    () => NAV.filter((item) => auth.canAccess(item.module)),
-    [auth.modules], // eslint-disable-line react-hooks/exhaustive-deps
+    () =>
+      NAV.filter((item) =>
+        item.allowedRoles
+          ? item.allowedRoles.some((r) => auth.hasRole(r))
+          : auth.canAccess(item.module),
+      ),
+    [auth.modules, auth.roles], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   const currentModule = moduleForPath(pathname);
-  const allowedHere = auth.canAccess(currentModule);
+  const allowedHere = pathname.startsWith("/pantallas-operativas")
+    ? PANTALLAS_ROLES.some((r) => auth.hasRole(r))
+    : auth.canAccess(currentModule);
 
   if (auth.loading || !auth.isAuthenticated) {
     return (
