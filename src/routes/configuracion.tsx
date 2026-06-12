@@ -139,9 +139,9 @@ function ConfigContent({ settings }: { settings: AppSettings }) {
               type="number"
             />
           </Card>
-
-          <OperatorVisionUrls />
         </div>
+
+
 
 
         <div className="space-y-6">
