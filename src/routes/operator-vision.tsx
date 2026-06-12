@@ -506,6 +506,20 @@ function OperatorVisionPage() {
   const rollosOK = muestrasAll.filter((m) => evalRollo(m) === "ok").length;
   const rollosNC = muestrasAll.filter((m) => evalRollo(m) === "bad").length;
 
+  // Cumplimiento técnico del turno: rollos en especificación / capturados
+  // (misma lógica que los puntos del historial; no depende de la liberación formal de Calidad).
+  const cumplimiento = useMemo(() => {
+    const capturados = muestrasAll.length;
+    const enSpec = rollosOK;
+    const pct = capturados > 0 ? Number(((enSpec / capturados) * 100).toFixed(1)) : 0;
+    return {
+      enSpec,
+      capturados,
+      pct,
+      texto: `${enSpec} en spec de ${capturados} capturados (${pct}%)`,
+    };
+  }, [muestrasAll.length, rollosOK]);
+
   const lastCaptureMin = useMemo(() => {
     if (!current) return null;
     const diff = now.getTime() - new Date(current.capturadoAt).getTime();
@@ -690,12 +704,12 @@ function OperatorVisionPage() {
             <HeaderField label="Analista" value={current?.analista ?? ""} />
             <HeaderField
               label="Cumplimiento"
-              value={data?.cumplimientoTurno?.texto ?? ""}
+              value={cumplimiento.texto}
               noTruncate
               className={
-                (data?.cumplimientoTurno?.pct ?? 0) >= 90
+                cumplimiento.pct >= 90
                   ? "text-green-600"
-                  : (data?.cumplimientoTurno?.pct ?? 0) >= 70
+                  : cumplimiento.pct >= 70
                     ? "text-yellow-600"
                     : "text-red-600"
               }
