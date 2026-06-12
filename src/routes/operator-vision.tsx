@@ -100,10 +100,10 @@ const CATEGORIA_DE_CLAVE: Record<string, CategoriaKey> = {
   blancuraB: "calidad",
   anchoUtil: "dimensiones",
   diametro: "dimensiones",
-  tensionSecaMD: "mecanicas",
-  tensionSecaCD: "mecanicas",
-  relacionMDCD: "mecanicas",
-  elongacionMD: "mecanicas",
+  tensionMD: "mecanicas",
+  tensionCD: "mecanicas",
+  relMDCD: "mecanicas",
+  elongMD: "mecanicas",
   peso: "produccion",
   uniones: "produccion",
 };
@@ -117,10 +117,10 @@ const DIGITS_DE_CLAVE: Record<string, number> = {
   blancuraB: 2,
   anchoUtil: 0,
   diametro: 0,
-  tensionSecaMD: 2,
-  tensionSecaCD: 2,
-  relacionMDCD: 2,
-  elongacionMD: 2,
+  tensionMD: 2,
+  tensionCD: 2,
+  relMDCD: 2,
+  elongMD: 2,
   peso: 2,
   uniones: 0,
 };
@@ -773,10 +773,10 @@ function OperatorVisionPage() {
             </div>
             {(() => {
               const MAIN_ORDER = [
-                "tensionSecaMD",
-                "tensionSecaCD",
-                "relacionMDCD",
-                "elongacionMD",
+                "tensionMD",
+                "tensionCD",
+                "relMDCD",
+                "elongMD",
                 "peso",
                 "calibre",
                 "blancuraR457",
@@ -899,10 +899,10 @@ function OperatorVisionPage() {
             </div>
             {(() => {
               const COLS = [
-                { key: "tensionSecaMD", label: "T. Seca MD", unit: "g/in", digits: 2 },
-                { key: "tensionSecaCD", label: "T. Seca CD", unit: "g/in", digits: 2 },
-                { key: "relacionMDCD", label: "Rel MD/CD", unit: "", digits: 2 },
-                { key: "elongacionMD", label: "Elong MD", unit: "%", digits: 2 },
+                { key: "tensionMD", label: "T. Seca MD", unit: "g/in", digits: 2 },
+                { key: "tensionCD", label: "T. Seca CD", unit: "g/in", digits: 2 },
+                { key: "relMDCD", label: "Rel MD/CD", unit: "", digits: 2 },
+                { key: "elongMD", label: "Elong MD", unit: "%", digits: 2 },
                 { key: "peso", label: "Peso", unit: "kg", digits: 2 },
                 { key: "calibre", label: "Calibre", unit: "mm", digits: 3 },
                 { key: "blancuraR457", label: "Blanc. R457", unit: "%", digits: 2 },
