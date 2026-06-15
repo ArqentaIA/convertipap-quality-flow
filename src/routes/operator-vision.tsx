@@ -1009,6 +1009,15 @@ function OperatorVisionPage() {
                             </th>
                           ))}
                           <th
+                            className={`${cellPad} text-right font-black uppercase tracking-wider text-slate-600 whitespace-nowrap`}
+                            style={{ fontSize: `${hz}px` }}
+                          >
+                            Peso
+                            <span className="ml-0.5 font-semibold text-slate-400 normal-case">
+                              (kg)
+                            </span>
+                          </th>
+                          <th
                             className={`${cellPad} text-center font-black uppercase tracking-wider text-slate-600`}
                             style={{ fontSize: `${hz}px` }}
                           >
@@ -1070,6 +1079,20 @@ function OperatorVisionPage() {
                                   </td>
                                 );
                               })}
+                              {(() => {
+                                const v = varByKey.get("peso");
+                                const val = v?.valor;
+                                return (
+                                  <td
+                                    className={`${cellPad} text-right whitespace-nowrap ${stColor((v?.status ?? "none") as VarStatus)}`}
+                                    style={{ fontSize: `${fz}px` }}
+                                  >
+                                    {val === null || val === undefined
+                                      ? "—"
+                                      : Number(val).toFixed(2)}
+                                  </td>
+                                );
+                              })()}
                               <td className={`${cellPad} text-center`}>
                                 <span
                                   className={`inline-block h-2.5 w-2.5 rounded-full ring-2 ring-white ${dot}`}
