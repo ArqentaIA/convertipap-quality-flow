@@ -12,6 +12,7 @@ import {
   Gauge,
   Maximize2,
   Timer,
+  Weight,
 } from "lucide-react";
 import { getOperatorVisionData } from "@/lib/operator-vision.functions";
 import { getAppSettings } from "@/lib/settings.functions";
@@ -1147,6 +1148,20 @@ function OperatorVisionPage() {
                         state={hasCp ? "ok" : "neutral"}
                         icon={Gauge}
                         subtitle={hasCp ? undefined : "SIN DATO"}
+                      />
+                    );
+                  })()}
+                  {(() => {
+                    const peso = mapMedActual.get("peso");
+                    const hasPeso = peso !== null && peso !== undefined && Number.isFinite(Number(peso));
+                    return (
+                      <KpiCard
+                        label="Peso"
+                        value={hasPeso ? Number(peso).toFixed(2) : "—"}
+                        unit={hasPeso ? "kg" : undefined}
+                        state={hasPeso ? "ok" : "neutral"}
+                        icon={Weight}
+                        subtitle={hasPeso ? undefined : "SIN DATO"}
                       />
                     );
                   })()}
