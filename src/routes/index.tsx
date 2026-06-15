@@ -96,7 +96,7 @@ function DashboardGate() {
       void navigate({ to: "/login", replace: true });
       return;
     }
-    // Capturistas (sin rol superior) van directo a captura
+    // Todos los usuarios autenticados se redirigen fuera del dashboard
     const isOnlyCapturista =
       auth.hasRole("capturista") &&
       !auth.hasRole("administrador") &&
@@ -105,6 +105,8 @@ function DashboardGate() {
       !auth.hasRole("calidad");
     if (isOnlyCapturista) {
       void navigate({ to: "/calidad/captura", replace: true });
+    } else {
+      void navigate({ to: "/produccion", replace: true });
     }
   }, [auth, navigate]);
   if (auth.loading || !auth.isAuthenticated) {
@@ -114,7 +116,11 @@ function DashboardGate() {
       </div>
     );
   }
-  return <Dashboard />;
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-background">
+      <div className="text-sm text-muted-foreground">Redirigiendo…</div>
+    </div>
+  );
 }
 
 function Dashboard() {
