@@ -23,12 +23,12 @@ type NavItem = {
 const NAV: NavItem[] = [
   // Dashboard oculto del menú (sigue accesible vía ruta directa)
   // { to: "/", label: "Dashboard", icon: LayoutDashboard, module: "dashboard" },
+  { to: "/pantallas-operativas", label: "Pantallas Operativas", icon: Monitor, module: "dashboard" },
   { to: "/produccion", label: "Producción", icon: Factory, module: "produccion", pathPrefixes: ["/produccion", "/historial"] },
   { to: "/calidad/captura", label: "Control de Calidad", icon: ClipboardCheck, module: "control_calidad" },
   { to: "/variables-calidad", label: "Variables de Calidad", icon: SlidersHorizontal, module: "variables_calidad" },
   { to: "/catalogos", label: "Catálogos", icon: BookOpen, module: "configuracion" },
   { to: "/reportes", label: "Reportes", icon: FileBarChart2, module: "reportes" },
-  { to: "/pantallas-operativas", label: "Pantallas Operativas", icon: Monitor, module: "dashboard" },
   { to: "/auditoria", label: "Auditoría", icon: ShieldCheck, module: "auditoria" },
   { to: "/usuarios", label: "Usuarios y Permisos", icon: Users, module: "usuarios_permisos" },
   { to: "/configuracion", label: "Configuración", icon: Settings, module: "configuracion" },
