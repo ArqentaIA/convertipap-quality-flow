@@ -407,31 +407,67 @@ function VariablesCalidad() {
 
     // ===== Control y Autorización del Documento (firmantes) =====
     let signY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 18;
-    if (signY + 100 > H - 50) { doc.addPage(); signY = 92; }
+    if (signY + 110 > H - 50) { doc.addPage(); signY = 92; }
 
     doc.setFontSize(7.5).setFont("helvetica", "bold").setTextColor(...C_PRIMARY);
     doc.text("CONTROL Y AUTORIZACIÓN DEL DOCUMENTO", MARGIN_X, signY);
     doc.setDrawColor(...C_ACCENT).setLineWidth(1);
-    doc.line(MARGIN_X, signY + 3, MARGIN_X + 180, signY + 3);
+    doc.line(MARGIN_X, signY + 3, MARGIN_X + CONTENT_W, signY + 3);
 
-    autoTable(doc, {
-      startY: signY + 10,
-      margin: { left: MARGIN_X, right: MARGIN_X, top: 92, bottom: 44 },
-      head: [["Acción", "Cargo", "Nombre"]],
-      body: [
-        ["Elaboró", "Jefe de Calidad", "Karina Méndez"],
-        ["Revisó", "Gerente de Calidad", "Jonatan Peláez"],
-        ["Revisó", "Gerente de Producción", "Luis Alcalá"],
-        ["Autorizó", "Director de Planta", "Javier García"],
-        ["Autorizó", "Dirección Corporativa", "Lic. Luis Reséndiz"],
-      ],
-      theme: "grid",
-      styles: { fontSize: 6, cellPadding: 3, textColor: C_TEXT, lineColor: C_LINE, lineWidth: 0.3 },
-      headStyles: { fillColor: C_PRIMARY, textColor: [255, 255, 255], fontStyle: "bold", fontSize: 6, halign: "left" },
-      columnStyles: {
-        0: { fillColor: C_ZEBRA, textColor: C_PRIMARY },
-      },
-    });
+    const signers = [
+      { action: "Elaboró:", role: "Jefe de Calidad", name: "Karina Méndez" },
+      { action: "Revisó:", role: "Gerente de Calidad", name: "Jonatan Peláez" },
+      { action: "Revisó:", role: "Gerente de Producción", name: "Luis Alcalá" },
+      { action: "Autorizó:", role: "Director de Planta", name: "Javier García" },
+      { action: "Autorizó:", role: "Dirección corporativa", name: "Lic. Luis Reséndiz" },
+    ];
+
+    const colW = CONTENT_W / 5;
+    const rowH = 22;
+    const tableY = signY + 10;
+
+    // Dibujar tabla de firmantes horizontal (5 columnas x 4 filas)
+    for (let c = 0; c < 5; c++) {
+      const x = MARGIN_X + c * colW;
+      // Fila 1: Acción
+      doc.setFillColor(...C_PRIMARY);
+      doc.rect(x, tableY, colW, rowH, "F");
+      doc.setTextColor(255, 255, 255).setFont("helvetica", "bold").setFontSize(6);
+      doc.text(signers[c].action, x + colW / 2, tableY + rowH / 2 + 2, { align: "center" });
+
+      // Fila 2: Cargo
+      const bg2: [number, number, number] = c % 2 === 0 ? [252, 253, 255] : C_ZEBRA;
+      doc.setFillColor(...bg2);
+      doc.rect(x, tableY + rowH, colW, rowH, "F");
+      doc.setTextColor(...C_TEXT).setFont("helvetica", "normal").setFontSize(6);
+      doc.text(signers[c].role, x + colW / 2, tableY + rowH + rowH / 2 + 2, { align: "center" });
+
+      // Fila 3: Nombre
+      const bg3: [number, number, number] = c % 2 === 0 ? [252, 253, 255] : C_ZEBRA;
+      doc.setFillColor(...bg3);
+      doc.rect(x, tableY + rowH * 2, colW, rowH, "F");
+      doc.text(signers[c].name, x + colW / 2, tableY + rowH * 2 + rowH / 2 + 2, { align: "center" });
+
+      // Fila 4: Firma
+      const bg4: [number, number, number] = c % 2 === 0 ? [252, 253, 255] : C_ZEBRA;
+      doc.setFillColor(...bg4);
+      doc.rect(x, tableY + rowH * 3, colW, rowH * 1.8, "F");
+      doc.setTextColor(...C_MUTED).setFontSize(5.5);
+      doc.text("Firma", x + colW / 2, tableY + rowH * 3 + 8, { align: "center" });
+    }
+
+    // Bordes de la tabla
+    doc.setDrawColor(...C_LINE).setLineWidth(0.3);
+    // Líneas verticales
+    for (let c = 0; c <= 5; c++) {
+      const x = MARGIN_X + c * colW;
+      doc.line(x, tableY, x, tableY + rowH * 4.8);
+    }
+    // Líneas horizontales
+    for (let r = 0; r <= 4; r++) {
+      const y = tableY + (r === 4 ? rowH * 4.8 : r * rowH);
+      doc.line(MARGIN_X, y, MARGIN_X + CONTENT_W, y);
+    }
 
     // ===== Encabezado y pie en todas las páginas =====
     const pageCount = doc.getNumberOfPages();
