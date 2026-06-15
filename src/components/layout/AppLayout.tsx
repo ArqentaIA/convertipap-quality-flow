@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   LayoutDashboard, Factory, ClipboardCheck, FileBarChart2,
   Settings, ChevronLeft, ChevronRight, Bell, ChevronDown, SlidersHorizontal,
-  LogOut, Lock, Loader2, BookOpen, Users, Monitor,
+  LogOut, Lock, Loader2, BookOpen, Users, Monitor, Tv,
 } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { PLANTS } from "@/lib/qc-data";
@@ -73,6 +73,7 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
   const [collapsed, setCollapsed] = useState(false);
   const [plantId, setPlantId] = useState("tlx");
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const currentSearch = useRouterState({ select: (s) => s.location.search as { maquina?: string } });
   const plant = PLANTS.find((p) => p.id === plantId)!;
   const now = new Date();
   const dateStr = now.toLocaleDateString("es-MX", { weekday: "long", day: "2-digit", month: "long", year: "numeric" });
@@ -146,19 +147,45 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
               pathname === to ||
               (to !== "/" && pathname.startsWith(to)) ||
               (pathPrefixes ?? []).some((p) => pathname.startsWith(p));
+            const isPantallas = to === "/pantallas-operativas";
             return (
-              <Link
-                key={to}
-                to={to}
-                className="cabinet-panel mx-2 my-0.5 flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-sidebar-foreground/90 hover:text-white"
-                data-active={active}
-              >
-                <Icon className="h-[18px] w-[18px] shrink-0" />
-                {!collapsed && <span className="truncate">{label}</span>}
-              </Link>
+              <div key={to}>
+                <Link
+                  to={to}
+                  className="cabinet-panel mx-2 my-0.5 flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-sidebar-foreground/90 hover:text-white"
+                  data-active={active}
+                >
+                  <Icon className="h-[18px] w-[18px] shrink-0" />
+                  {!collapsed && <span className="truncate">{label}</span>}
+                </Link>
+                {isPantallas && !collapsed && (
+                  <div className="ml-6 mb-1 border-l border-sidebar-border/60 pl-2">
+                    {(["MP-04", "MP-05", "MP-06", "MP-07"] as const).map((maq) => {
+                      const subActive =
+                        pathname.startsWith("/operator-vision") &&
+                        currentSearch?.maquina === maq;
+                      return (
+                        <Link
+                          key={maq}
+                          to="/operator-vision"
+                          search={{ maquina: maq }}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="cabinet-panel mx-1 my-0.5 flex items-center gap-2 rounded-md px-2.5 py-1.5 text-xs font-medium text-sidebar-foreground/80 hover:text-white"
+                          data-active={subActive}
+                        >
+                          <Tv className="h-3.5 w-3.5 shrink-0" />
+                          <span className="truncate">Visor {maq}</span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             );
           })}
         </nav>
+
 
         <button
           onClick={() => setCollapsed((c) => !c)}
