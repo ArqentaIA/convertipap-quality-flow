@@ -12,6 +12,7 @@ import {
   Gauge,
   Maximize2,
   Timer,
+  Weight,
 } from "lucide-react";
 import { getOperatorVisionData } from "@/lib/operator-vision.functions";
 import { getAppSettings } from "@/lib/settings.functions";
