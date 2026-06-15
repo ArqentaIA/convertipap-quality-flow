@@ -436,18 +436,21 @@ function VariablesCalidad() {
       doc.text(signers[c].action, x + colW / 2, tableY + rowH / 2 + 2, { align: "center" });
 
       // Fila 2: Cargo
-      doc.setFillColor(...(c % 2 === 0 ? [252, 253, 255] : C_ZEBRA));
+      const bg2: [number, number, number] = c % 2 === 0 ? [252, 253, 255] : C_ZEBRA;
+      doc.setFillColor(...bg2);
       doc.rect(x, tableY + rowH, colW, rowH, "F");
       doc.setTextColor(...C_TEXT).setFont("helvetica", "normal").setFontSize(6);
       doc.text(signers[c].role, x + colW / 2, tableY + rowH + rowH / 2 + 2, { align: "center" });
 
       // Fila 3: Nombre
-      doc.setFillColor(...(c % 2 === 0 ? [252, 253, 255] : C_ZEBRA));
+      const bg3: [number, number, number] = c % 2 === 0 ? [252, 253, 255] : C_ZEBRA;
+      doc.setFillColor(...bg3);
       doc.rect(x, tableY + rowH * 2, colW, rowH, "F");
       doc.text(signers[c].name, x + colW / 2, tableY + rowH * 2 + rowH / 2 + 2, { align: "center" });
 
       // Fila 4: Firma
-      doc.setFillColor(...(c % 2 === 0 ? [252, 253, 255] : C_ZEBRA));
+      const bg4: [number, number, number] = c % 2 === 0 ? [252, 253, 255] : C_ZEBRA;
+      doc.setFillColor(...bg4);
       doc.rect(x, tableY + rowH * 3, colW, rowH * 1.8, "F");
       doc.setTextColor(...C_MUTED).setFontSize(5.5);
       doc.text("Firma", x + colW / 2, tableY + rowH * 3 + 8, { align: "center" });
