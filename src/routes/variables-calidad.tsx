@@ -321,6 +321,8 @@ function VariablesCalidad() {
       body: [
         ["Producto", activeSpec.name],
         ["Código de producto", activeSpec.code],
+        ["Código", "EPST-004"],
+        ["Revisión", "05"],
         ["Cláusula de referencia", "Cláusula 9.1.2 ISO 9001:2015"],
         ["Tipo de documento", "ESPECIFICACIÓN PST"],
         ["Área", "CALIDAD"],
