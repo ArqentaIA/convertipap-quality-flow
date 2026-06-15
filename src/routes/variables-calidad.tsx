@@ -297,14 +297,14 @@ function VariablesCalidad() {
       const fy = H - 28;
       doc.setDrawColor(...C_LINE).setLineWidth(0.5);
       doc.line(MARGIN_X, fy, W - MARGIN_X, fy);
-      doc.setFontSize(7).setTextColor(...C_MUTED).setFont("helvetica", "normal");
+      doc.setFontSize(7.5).setTextColor(...C_MUTED).setFont("helvetica", "normal");
       doc.text("Convertipap · Fábrica de Papel Tissue", MARGIN_X, fy + 10);
       doc.text(
         `Generado por: ${emisor} (${rolEmisor})  ·  ${issuedAt.toLocaleString("es-MX")}`,
         W / 2, fy + 10, { align: "center" },
       );
       doc.text(`Página ${pageNum} de ${pageTotal}`, W - MARGIN_X, fy + 10, { align: "right" });
-      doc.setFontSize(6.5).setTextColor(180, 180, 180);
+      doc.setFontSize(7.5).setTextColor(180, 180, 180);
       doc.text(
         "Documento controlado. Reproducción no autorizada prohibida.",
         W / 2, fy + 19, { align: "center" },
@@ -387,7 +387,7 @@ function VariablesCalidad() {
 
     // ===== Características de los Atributos =====
     cursorY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 18;
-    doc.setFontSize(10).setFont("helvetica", "bold").setTextColor(...C_PRIMARY);
+    doc.setFontSize(7.5).setFont("helvetica", "bold").setTextColor(...C_PRIMARY);
     doc.text("CARACTERÍSTICAS DE LOS ATRIBUTOS", MARGIN_X, cursorY);
     doc.setDrawColor(...C_ACCENT).setLineWidth(1);
     doc.line(MARGIN_X, cursorY + 3, MARGIN_X + 160, cursorY + 3);
@@ -398,7 +398,7 @@ function VariablesCalidad() {
       body: [[caracteristicas?.trim() ? caracteristicas : "Sin características registradas."]],
       theme: "grid",
       styles: {
-        fontSize: 9, cellPadding: 8, textColor: C_TEXT,
+        fontSize: 7.5, cellPadding: 8, textColor: C_TEXT,
         lineColor: C_LINE, lineWidth: 0.3, minCellHeight: 40,
         fillColor: [252, 253, 255],
       },
@@ -410,7 +410,7 @@ function VariablesCalidad() {
     const SIGN_H = 70;
     if (signY + SIGN_H > H - 50) { doc.addPage(); signY = 92; }
 
-    doc.setFontSize(10).setFont("helvetica", "bold").setTextColor(...C_PRIMARY);
+    doc.setFontSize(7.5).setFont("helvetica", "bold").setTextColor(...C_PRIMARY);
     doc.text("CONTROL Y AUTORIZACIÓN DEL DOCUMENTO", MARGIN_X, signY);
     doc.setDrawColor(...C_ACCENT).setLineWidth(1);
     doc.line(MARGIN_X, signY + 3, MARGIN_X + 180, signY + 3);
@@ -445,16 +445,16 @@ function VariablesCalidad() {
       doc.rect(x + 4, signY, colW - 8, SIGN_H);
       doc.setFillColor(...C_PRIMARY);
       doc.rect(x + 4, signY, colW - 8, 12, "F");
-      doc.setTextColor(255, 255, 255).setFont("helvetica", "bold").setFontSize(8);
+      doc.setTextColor(255, 255, 255).setFont("helvetica", "bold").setFontSize(7.5);
       doc.text(c.title, x + colW / 2, signY + 8, { align: "center" });
 
       // Línea de firma
       doc.setDrawColor(...C_MUTED).setLineWidth(0.4);
       doc.line(x + 14, signY + 40, x + colW - 18, signY + 40);
 
-      doc.setTextColor(...C_TEXT).setFont("helvetica", "bold").setFontSize(8.5);
+      doc.setTextColor(...C_TEXT).setFont("helvetica", "normal").setFontSize(7.5);
       doc.text(c.name, x + colW / 2, signY + 50, { align: "center" });
-      doc.setTextColor(...C_MUTED).setFont("helvetica", "normal").setFontSize(7);
+      doc.setTextColor(...C_MUTED).setFont("helvetica", "normal").setFontSize(7.5);
       doc.text(c.role, x + colW / 2, signY + 58, { align: "center" });
       doc.text(`Fecha: ${c.date}`, x + colW / 2, signY + 65, { align: "center" });
     });
