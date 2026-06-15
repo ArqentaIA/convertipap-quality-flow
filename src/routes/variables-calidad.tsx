@@ -441,7 +441,7 @@ function VariablesCalidad() {
                     disabled={!puedeEditar || !activeSpec?.hasSpec}
                     title={puedeEditar ? "" : "Sin permiso para editar"}
                   >
-                    <Pencilcil className="h-4 w-4" /> Editar
+                    <Pencil className="h-4 w-4" /> Editar
                   </Button>
                   <Button variant="outline" size="sm" onClick={exportPDF}>
                     <FileSpreadsheet className="h-4 w-4" /> Exportar
