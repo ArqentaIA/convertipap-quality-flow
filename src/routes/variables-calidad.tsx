@@ -443,8 +443,8 @@ function VariablesCalidad() {
                   >
                     <Pencil className="h-4 w-4" /> Editar
                   </Button>
-                  <Button variant="outline" size="sm" onClick={exportPDF}>
-                    <FileSpreadsheet className="h-4 w-4" /> Exportar
+                  <Button variant="destructive" size="lg" onClick={exportPDF}>
+                    <FileSpreadsheet className="h-5 w-5" /> Exportar
                   </Button>
                 </>
               ) : (
