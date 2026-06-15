@@ -287,25 +287,6 @@ function VariablesCalidad() {
       doc.setTextColor(...C_MUTED).setFont("helvetica", "normal").setFontSize(8);
       doc.text("Catálogo Maestro de Especificaciones de Calidad", W / 2, 38, { align: "center" });
 
-      // Bloque control documental (derecha) — estilo ISO
-      const boxX = W - MARGIN_X - 170;
-      const boxY = 16;
-      const boxW = 170;
-      const rowH = 11;
-      doc.setDrawColor(...C_LINE).setLineWidth(0.5);
-      doc.rect(boxX, boxY, boxW, rowH * 4);
-      doc.line(boxX + 55, boxY, boxX + 55, boxY + rowH * 4);
-      for (let i = 1; i < 4; i++) doc.line(boxX, boxY + rowH * i, boxX + boxW, boxY + rowH * i);
-
-      doc.setFontSize(7).setTextColor(...C_MUTED).setFont("helvetica", "bold");
-      ["FOLIO", "CÓDIGO", "VERSIÓN", "EMISIÓN"].forEach((k, i) =>
-        doc.text(k, boxX + 4, boxY + rowH * i + 7.5),
-      );
-      doc.setTextColor(...C_TEXT).setFont("helvetica", "normal").setFontSize(7.5);
-      doc.text(folio, boxX + 58, boxY + 7.5);
-      doc.text(activeSpec.code, boxX + 58, boxY + rowH + 7.5);
-      doc.text(version, boxX + 58, boxY + rowH * 2 + 7.5);
-      doc.text(issuedAt.toLocaleDateString("es-MX"), boxX + 58, boxY + rowH * 3 + 7.5);
 
       // Línea inferior del encabezado
       doc.setDrawColor(...C_LINE).setLineWidth(0.5);
