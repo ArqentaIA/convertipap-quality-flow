@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { PLANTS } from "@/lib/qc-data";
-import { useAuth, type AppModule, type AppRole } from "@/lib/auth";
+import { useAuth, type AppModule } from "@/lib/auth";
 import { useLabFilter, LAB_LABEL } from "@/lib/lab";
 import { ShieldCheck } from "lucide-react";
 import { auditAction } from "@/lib/audit";
@@ -18,11 +18,7 @@ type NavItem = {
   icon: typeof LayoutDashboard;
   module: AppModule;
   pathPrefixes?: string[];
-  /** Si se define, el acceso se concede a cualquiera de estos roles (en lugar del módulo). */
-  allowedRoles?: AppRole[];
 };
-
-const PANTALLAS_ROLES: AppRole[] = ["administrador", "direccion", "calidad"];
 
 const NAV: NavItem[] = [
   // Dashboard oculto del menú (sigue accesible vía ruta directa)
@@ -32,7 +28,7 @@ const NAV: NavItem[] = [
   { to: "/variables-calidad", label: "Variables de Calidad", icon: SlidersHorizontal, module: "variables_calidad" },
   { to: "/catalogos", label: "Catálogos", icon: BookOpen, module: "configuracion" },
   { to: "/reportes", label: "Reportes", icon: FileBarChart2, module: "reportes" },
-  { to: "/pantallas-operativas", label: "Pantallas Operativas", icon: Monitor, module: "configuracion", allowedRoles: PANTALLAS_ROLES },
+  { to: "/pantallas-operativas", label: "Pantallas Operativas", icon: Monitor, module: "dashboard" },
   { to: "/auditoria", label: "Auditoría", icon: ShieldCheck, module: "auditoria" },
   { to: "/usuarios", label: "Usuarios y Permisos", icon: Users, module: "usuarios_permisos" },
   { to: "/configuracion", label: "Configuración", icon: Settings, module: "configuracion" },
