@@ -211,7 +211,7 @@ function KpiCard({
   };
   return (
     <div
-      className={`flex h-[96px] flex-col rounded-2xl border-[3px] ${palette[state]} px-3 py-1.5 shadow-sm`}
+      className={`flex h-full min-h-[110px] flex-col rounded-2xl border-[3px] ${palette[state]} px-3 py-1.5 shadow-sm`}
     >
 
       <div className="flex items-center justify-between">
