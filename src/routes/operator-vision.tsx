@@ -1151,6 +1151,20 @@ function OperatorVisionPage() {
                       />
                     );
                   })()}
+                  {(() => {
+                    const peso = mapMedActual.get("peso");
+                    const hasPeso = peso !== null && peso !== undefined && Number.isFinite(Number(peso));
+                    return (
+                      <KpiCard
+                        label="Peso"
+                        value={hasPeso ? Number(peso).toFixed(2) : "—"}
+                        unit={hasPeso ? "kg" : undefined}
+                        state={hasPeso ? "ok" : "neutral"}
+                        icon={Weight}
+                        subtitle={hasPeso ? undefined : "SIN DATO"}
+                      />
+                    );
+                  })()}
                   {sideVars.map((v) => (
                     <VarCard
                       key={v.clave}
