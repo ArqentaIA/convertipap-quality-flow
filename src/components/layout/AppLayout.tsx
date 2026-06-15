@@ -25,7 +25,8 @@ type NavItem = {
 const PANTALLAS_ROLES: AppRole[] = ["administrador", "direccion", "calidad"];
 
 const NAV: NavItem[] = [
-  { to: "/", label: "Dashboard", icon: LayoutDashboard, module: "dashboard" },
+  // Dashboard oculto del menú (sigue accesible vía ruta directa)
+  // { to: "/", label: "Dashboard", icon: LayoutDashboard, module: "dashboard" },
   { to: "/produccion", label: "Producción", icon: Factory, module: "produccion", pathPrefixes: ["/produccion", "/historial"] },
   { to: "/calidad/captura", label: "Control de Calidad", icon: ClipboardCheck, module: "control_calidad" },
   { to: "/variables-calidad", label: "Variables de Calidad", icon: SlidersHorizontal, module: "variables_calidad" },
