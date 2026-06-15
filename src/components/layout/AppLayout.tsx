@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { PLANTS } from "@/lib/qc-data";
-import { useAuth, type AppModule, type AppRole } from "@/lib/auth";
+import { useAuth, type AppModule } from "@/lib/auth";
 import { useLabFilter, LAB_LABEL } from "@/lib/lab";
 import { ShieldCheck } from "lucide-react";
 import { auditAction } from "@/lib/audit";
@@ -18,11 +18,7 @@ type NavItem = {
   icon: typeof LayoutDashboard;
   module: AppModule;
   pathPrefixes?: string[];
-  /** Si se define, el acceso se concede a cualquiera de estos roles (en lugar del módulo). */
-  allowedRoles?: AppRole[];
 };
-
-const PANTALLAS_ROLES: AppRole[] = ["administrador", "direccion", "calidad"];
 
 const NAV: NavItem[] = [
   // Dashboard oculto del menú (sigue accesible vía ruta directa)
@@ -32,7 +28,7 @@ const NAV: NavItem[] = [
   { to: "/variables-calidad", label: "Variables de Calidad", icon: SlidersHorizontal, module: "variables_calidad" },
   { to: "/catalogos", label: "Catálogos", icon: BookOpen, module: "configuracion" },
   { to: "/reportes", label: "Reportes", icon: FileBarChart2, module: "reportes" },
-  { to: "/pantallas-operativas", label: "Pantallas Operativas", icon: Monitor, module: "configuracion", allowedRoles: PANTALLAS_ROLES },
+  { to: "/pantallas-operativas", label: "Pantallas Operativas", icon: Monitor, module: "dashboard" },
   { to: "/auditoria", label: "Auditoría", icon: ShieldCheck, module: "auditoria" },
   { to: "/usuarios", label: "Usuarios y Permisos", icon: Users, module: "usuarios_permisos" },
   { to: "/configuracion", label: "Configuración", icon: Settings, module: "configuracion" },
@@ -88,35 +84,21 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
   // 2) Si está en una ruta sin permisos, mandarlo al primer módulo permitido.
   useEffect(() => {
     if (auth.loading || !auth.isAuthenticated) return;
-    // Excepción: pantallas-operativas se controla por rol, no por módulo.
-    if (pathname.startsWith("/pantallas-operativas")) {
-      if (PANTALLAS_ROLES.some((r) => auth.hasRole(r))) return;
-    } else {
-      const mod = moduleForPath(pathname);
-      if (auth.canAccess(mod)) return;
-    }
-    const firstAllowed = NAV.find((n) =>
-      n.allowedRoles ? n.allowedRoles.some((r) => auth.hasRole(r)) : auth.canAccess(n.module),
-    );
+    const mod = moduleForPath(pathname);
+    if (auth.canAccess(mod)) return;
+    const firstAllowed = NAV.find((n) => auth.canAccess(n.module));
     if (firstAllowed && firstAllowed.to !== pathname) {
       void navigate({ to: firstAllowed.to, replace: true });
     }
   }, [auth.loading, auth.isAuthenticated, auth.modules, auth.roles, pathname, navigate]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const visibleNav = useMemo(
-    () =>
-      NAV.filter((item) =>
-        item.allowedRoles
-          ? item.allowedRoles.some((r) => auth.hasRole(r))
-          : auth.canAccess(item.module),
-      ),
+    () => NAV.filter((item) => auth.canAccess(item.module)),
     [auth.modules, auth.roles], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   const currentModule = moduleForPath(pathname);
-  const allowedHere = pathname.startsWith("/pantallas-operativas")
-    ? PANTALLAS_ROLES.some((r) => auth.hasRole(r))
-    : auth.canAccess(currentModule);
+  const allowedHere = auth.canAccess(currentModule);
 
   if (auth.loading || !auth.isAuthenticated) {
     return (
