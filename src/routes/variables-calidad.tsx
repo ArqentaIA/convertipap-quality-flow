@@ -423,8 +423,8 @@ function VariablesCalidad() {
     ];
 
     const colW = CONTENT_W / 5;
-    const rowH = 22;
-    const tableY = signY + 10;
+    const rowH = 14;
+    const tableY = signY + 8;
 
     // Dibujar tabla de firmantes horizontal (5 columnas x 4 filas)
     for (let c = 0; c < 5; c++) {
