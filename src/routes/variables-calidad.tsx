@@ -461,11 +461,11 @@ function VariablesCalidad() {
     // Líneas verticales
     for (let c = 0; c <= 5; c++) {
       const x = MARGIN_X + c * colW;
-      doc.line(x, tableY, x, tableY + rowH * 4.8);
+      doc.line(x, tableY, x, tableY + rowH * 4.6);
     }
     // Líneas horizontales
     for (let r = 0; r <= 4; r++) {
-      const y = tableY + (r === 4 ? rowH * 4.8 : r * rowH);
+      const y = tableY + (r === 4 ? rowH * 4.6 : r * rowH);
       doc.line(MARGIN_X, y, MARGIN_X + CONTENT_W, y);
     }
 
