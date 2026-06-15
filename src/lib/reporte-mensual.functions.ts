@@ -168,7 +168,8 @@ export const getReporteMensual = createServerFn({ method: "POST" })
     // 4) Peso por muestra (mediciones_calidad, variable_clave="peso") paginado
     const pesoPorMuestra = new Map<string, number>();
     if (muestraIds.length) {
-      const chunkSize = 500;
+      // chunk pequeño para evitar UND_ERR_HEADERS_OVERFLOW (URL > 16KB) con `.in()` de UUIDs
+      const chunkSize = 100;
       for (let i = 0; i < muestraIds.length; i += chunkSize) {
         const slice = muestraIds.slice(i, i + chunkSize);
         let from = 0;
