@@ -311,12 +311,12 @@ function VariablesCalidad() {
       );
     };
 
-    let cursorY = 92;
+    let cursorY = 84;
 
     // ===== Datos Generales =====
     autoTable(doc, {
       startY: cursorY,
-      margin: { left: MARGIN_X, right: MARGIN_X, top: 92, bottom: 44 },
+      margin: { left: MARGIN_X, right: MARGIN_X, top: 84, bottom: 38 },
       head: [["DATOS GENERALES", ""]],
       body: [
         ["Producto", activeSpec.name],
@@ -328,7 +328,7 @@ function VariablesCalidad() {
         ["Emitido por", `${emisor}  ·  ${rolEmisor}`],
       ],
       theme: "grid",
-      styles: { fontSize: 7.5, cellPadding: 5, textColor: C_TEXT, lineColor: C_LINE, lineWidth: 0.3 },
+      styles: { fontSize: 7.5, cellPadding: 2.2, textColor: C_TEXT, lineColor: C_LINE, lineWidth: 0.3 },
       headStyles: { fillColor: C_PRIMARY, textColor: [255, 255, 255], fontStyle: "bold", fontSize: 7.5, halign: "left" },
       columnStyles: {
         0: { cellWidth: 150, fillColor: C_ZEBRA, textColor: C_PRIMARY },
@@ -336,7 +336,7 @@ function VariablesCalidad() {
     });
 
     // ===== Política Ambiental =====
-    cursorY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 14;
+    cursorY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 8;
     doc.setFontSize(7.5).setFont("helvetica", "bold").setTextColor(...C_PRIMARY);
     doc.text("POLÍTICA AMBIENTAL", MARGIN_X, cursorY);
     doc.setDrawColor(...C_ACCENT).setLineWidth(0.8);
@@ -348,20 +348,20 @@ function VariablesCalidad() {
 
     doc.setFontSize(7.5).setFont("helvetica", "normal").setTextColor(...C_TEXT);
     const splitPolicy = doc.splitTextToSize(policyText, CONTENT_W);
-    doc.text(splitPolicy, MARGIN_X, cursorY + 14);
+    doc.text(splitPolicy, MARGIN_X, cursorY + 10);
 
-    const policyBlockHeight = splitPolicy.length * 7.5 * 1.2;
+    const policyBlockHeight = splitPolicy.length * 7.5 * 1.15;
 
     // ===== Especificaciones Vigentes =====
-    cursorY = cursorY + 14 + policyBlockHeight + 12;
+    cursorY = cursorY + 10 + policyBlockHeight + 6;
     doc.setFontSize(7.5).setFont("helvetica", "bold").setTextColor(...C_PRIMARY);
     doc.text("ESPECIFICACIONES VIGENTES", MARGIN_X, cursorY);
     doc.setDrawColor(...C_ACCENT).setLineWidth(1);
     doc.line(MARGIN_X, cursorY + 3, MARGIN_X + 130, cursorY + 3);
 
     autoTable(doc, {
-      startY: cursorY + 8,
-      margin: { left: MARGIN_X, right: MARGIN_X, top: 92, bottom: 44 },
+      startY: cursorY + 6,
+      margin: { left: MARGIN_X, right: MARGIN_X, top: 84, bottom: 38 },
       head: [["#", "Variable", "Unidad", "Mínimo", "Objetivo", "Máximo"]],
       body: activeSpec.variables.map((v, i) => [
         String(i + 1).padStart(2, "0"),
@@ -372,7 +372,7 @@ function VariablesCalidad() {
         v.max == null ? "—" : String(v.max),
       ]),
       theme: "grid",
-      styles: { fontSize: 7.5, cellPadding: 4.5, textColor: C_TEXT, lineColor: C_LINE, lineWidth: 0.3 },
+      styles: { fontSize: 7.5, cellPadding: 1.8, textColor: C_TEXT, lineColor: C_LINE, lineWidth: 0.3 },
       headStyles: { fillColor: C_PRIMARY, textColor: [255, 255, 255], fontStyle: "bold", fontSize: 7.5, halign: "center" },
       alternateRowStyles: { fillColor: C_ZEBRA },
       columnStyles: {
@@ -386,28 +386,28 @@ function VariablesCalidad() {
     });
 
     // ===== Características de los Atributos =====
-    cursorY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 18;
+    cursorY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 8;
     doc.setFontSize(7.5).setFont("helvetica", "bold").setTextColor(...C_PRIMARY);
     doc.text("CARACTERÍSTICAS DE LOS ATRIBUTOS", MARGIN_X, cursorY);
     doc.setDrawColor(...C_ACCENT).setLineWidth(1);
     doc.line(MARGIN_X, cursorY + 3, MARGIN_X + 160, cursorY + 3);
 
     autoTable(doc, {
-      startY: cursorY + 8,
-      margin: { left: MARGIN_X, right: MARGIN_X, top: 92, bottom: 44 },
+      startY: cursorY + 6,
+      margin: { left: MARGIN_X, right: MARGIN_X, top: 84, bottom: 38 },
       body: [[caracteristicas?.trim() ? caracteristicas : "Sin características registradas."]],
       theme: "grid",
       styles: {
-        fontSize: 7.5, cellPadding: 8, textColor: C_TEXT,
-        lineColor: C_LINE, lineWidth: 0.3, minCellHeight: 40,
+        fontSize: 7.5, cellPadding: 4, textColor: C_TEXT,
+        lineColor: C_LINE, lineWidth: 0.3, minCellHeight: 24,
         fillColor: [252, 253, 255],
       },
     });
 
 
     // ===== Control y Autorización del Documento (firmantes) =====
-    let signY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 18;
-    if (signY + 110 > H - 50) { doc.addPage(); signY = 92; }
+    const signY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 8;
+
 
     doc.setFontSize(7.5).setFont("helvetica", "bold").setTextColor(...C_PRIMARY);
     doc.text("CONTROL Y AUTORIZACIÓN DEL DOCUMENTO", MARGIN_X, signY);
