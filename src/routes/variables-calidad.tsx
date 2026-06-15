@@ -23,6 +23,7 @@ import logoUrl from "@/assets/logo-convertipap.png";
 import {
   Pencil, Power, Lock, FileSpreadsheet, Save, X, ShieldAlert,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const especsQueryOptions = queryOptions({
   queryKey: ["variables-calidad", "especs"],
