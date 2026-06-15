@@ -752,10 +752,11 @@ function OperatorVisionPage() {
 
 
           {/* Campos contextuales */}
-          <div className="ml-2 grid min-w-0 flex-1 grid-cols-3 gap-x-6">
+          <div className="ml-2 grid min-w-0 flex-1 grid-cols-4 gap-x-6">
             <HeaderField label="Turno" value={turnoLabel} />
             <HeaderField label="Operador" value={current?.operador ?? ""} />
             <HeaderField label="Analista" value={current?.analista ?? ""} />
+            <HeaderField label="Producto" value={orden?.producto ?? ""} noTruncate />
           </div>
 
           {/* Reloj */}
