@@ -282,9 +282,9 @@ function VariablesCalidad() {
       }
 
       // Título central
-      doc.setTextColor(...C_PRIMARY).setFont("helvetica", "bold").setFontSize(11);
+      doc.setTextColor(...C_PRIMARY).setFont("helvetica", "bold").setFontSize(7.5);
       doc.text("REPORTE DE TRAZABILIDAD", W / 2, 26, { align: "center" });
-      doc.setTextColor(...C_MUTED).setFont("helvetica", "normal").setFontSize(8);
+      doc.setTextColor(...C_MUTED).setFont("helvetica", "normal").setFontSize(7.5);
       doc.text("Catálogo Maestro de Especificaciones de Calidad", W / 2, 38, { align: "center" });
 
 
@@ -328,16 +328,16 @@ function VariablesCalidad() {
         ["Emitido por", `${emisor}  ·  ${rolEmisor}`],
       ],
       theme: "grid",
-      styles: { fontSize: 9, cellPadding: 5, textColor: C_TEXT, lineColor: C_LINE, lineWidth: 0.3 },
-      headStyles: { fillColor: C_PRIMARY, textColor: [255, 255, 255], fontStyle: "bold", fontSize: 8.5, halign: "left" },
+      styles: { fontSize: 7.5, cellPadding: 5, textColor: C_TEXT, lineColor: C_LINE, lineWidth: 0.3 },
+      headStyles: { fillColor: C_PRIMARY, textColor: [255, 255, 255], fontStyle: "bold", fontSize: 7.5, halign: "left" },
       columnStyles: {
-        0: { fontStyle: "bold", cellWidth: 150, fillColor: C_ZEBRA, textColor: C_PRIMARY },
+        0: { cellWidth: 150, fillColor: C_ZEBRA, textColor: C_PRIMARY },
       },
     });
 
     // ===== Política Ambiental =====
     cursorY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 14;
-    doc.setFontSize(9).setFont("helvetica", "bold").setTextColor(...C_PRIMARY);
+    doc.setFontSize(7.5).setFont("helvetica", "bold").setTextColor(...C_PRIMARY);
     doc.text("POLÍTICA AMBIENTAL", MARGIN_X, cursorY);
     doc.setDrawColor(...C_ACCENT).setLineWidth(0.8);
     doc.line(MARGIN_X, cursorY + 2, MARGIN_X + 130, cursorY + 2);
@@ -346,15 +346,15 @@ function VariablesCalidad() {
       "En CONVERTIDOR DE PAPEL S. A. DE C. V. fabricamos papel higiénico, papel servilleta, toallas y toallas para cocina a base de fibras recicladas y otros aditivos de origen orgánico, características que permiten que nuestros productos sean 100 % biodegradables.\n\n" +
       "Para CONVERTIDOR DE PAPEL S. A. DE C. V., la protección del medio ambiente es un compromiso permanente con nuestros clientes, nuestros colaboradores y el planeta.";
 
-    doc.setFontSize(9).setFont("helvetica", "normal").setTextColor(...C_TEXT);
+    doc.setFontSize(7.5).setFont("helvetica", "normal").setTextColor(...C_TEXT);
     const splitPolicy = doc.splitTextToSize(policyText, CONTENT_W);
     doc.text(splitPolicy, MARGIN_X, cursorY + 14);
 
-    const policyBlockHeight = splitPolicy.length * 9 * 1.2;
+    const policyBlockHeight = splitPolicy.length * 7.5 * 1.2;
 
     // ===== Especificaciones Vigentes =====
     cursorY = cursorY + 14 + policyBlockHeight + 12;
-    doc.setFontSize(10).setFont("helvetica", "bold").setTextColor(...C_PRIMARY);
+    doc.setFontSize(7.5).setFont("helvetica", "bold").setTextColor(...C_PRIMARY);
     doc.text("ESPECIFICACIONES VIGENTES", MARGIN_X, cursorY);
     doc.setDrawColor(...C_ACCENT).setLineWidth(1);
     doc.line(MARGIN_X, cursorY + 3, MARGIN_X + 130, cursorY + 3);
@@ -372,16 +372,16 @@ function VariablesCalidad() {
         v.max == null ? "—" : String(v.max),
       ]),
       theme: "grid",
-      styles: { fontSize: 9, cellPadding: 4.5, textColor: C_TEXT, lineColor: C_LINE, lineWidth: 0.3 },
-      headStyles: { fillColor: C_PRIMARY, textColor: [255, 255, 255], fontStyle: "bold", fontSize: 8.5, halign: "center" },
+      styles: { fontSize: 7.5, cellPadding: 4.5, textColor: C_TEXT, lineColor: C_LINE, lineWidth: 0.3 },
+      headStyles: { fillColor: C_PRIMARY, textColor: [255, 255, 255], fontStyle: "bold", fontSize: 7.5, halign: "center" },
       alternateRowStyles: { fillColor: C_ZEBRA },
       columnStyles: {
-        0: { halign: "center", cellWidth: 28, textColor: C_MUTED, fontSize: 8 },
-        1: { fontStyle: "bold", cellWidth: 170 },
+        0: { halign: "center", cellWidth: 28, textColor: C_MUTED, fontSize: 7.5 },
+        1: { cellWidth: 170 },
         2: { halign: "center", cellWidth: 55 },
-        3: { halign: "right", font: "courier", fontStyle: "bold" },
-        4: { halign: "right", font: "courier", fontStyle: "bold", textColor: C_ACCENT },
-        5: { halign: "right", font: "courier", fontStyle: "bold" },
+        3: { halign: "right", font: "courier" },
+        4: { halign: "right", font: "courier", textColor: C_ACCENT },
+        5: { halign: "right", font: "courier" },
       },
     });
 
