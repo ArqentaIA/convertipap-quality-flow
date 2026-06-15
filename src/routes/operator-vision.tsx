@@ -282,22 +282,22 @@ function RolloActualCard({
   const c = stateCfg[status];
   return (
     <div
-      className={`flex h-[140px] flex-col justify-between rounded-2xl border-[3px] ${c.border} ${c.bg} px-5 py-2.5 shadow-lg ${c.text}`}
+      className={`flex h-full min-h-[110px] flex-col justify-between rounded-2xl border-[3px] ${c.border} ${c.bg} px-3 py-1.5 shadow-lg ${c.text}`}
     >
       <div className="flex items-center justify-between">
-        <span className="text-[13px] font-black uppercase tracking-[0.2em] opacity-90">
+        <span className="text-[11px] font-black uppercase tracking-[0.15em] opacity-90">
           Rollo Actual
         </span>
         <span
-          className={`rounded-md px-2 py-0.5 text-[11px] font-black uppercase tracking-wider ${c.chip}`}
+          className={`rounded px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider ${c.chip}`}
         >
           {labelLiberacion(status)}
         </span>
       </div>
-      <div className="font-mono text-[64px] font-black leading-none tabular-nums truncate">
+      <div className="font-mono text-[34px] font-black leading-none tabular-nums truncate">
         {rollo || "—"}
       </div>
-      <div className="flex items-center justify-between gap-2 text-[12px] font-bold uppercase tracking-wider opacity-90">
+      <div className="flex items-center justify-between gap-2 text-[10px] font-bold uppercase tracking-wider opacity-90">
         <span className="truncate">{producto || "—"}</span>
         <span className="shrink-0 font-mono tabular-nums">{hora}</span>
       </div>
