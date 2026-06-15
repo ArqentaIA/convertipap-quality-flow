@@ -387,55 +387,6 @@ function VariablesCalidad() {
       },
     });
 
-    // ===== Bitácora de Cambios =====
-    cursorY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 18;
-    doc.setFontSize(10).setFont("helvetica", "bold").setTextColor(...C_PRIMARY);
-    doc.text("BITÁCORA DE CAMBIOS", MARGIN_X, cursorY);
-    doc.setDrawColor(...C_ACCENT).setLineWidth(1);
-    doc.line(MARGIN_X, cursorY + 3, MARGIN_X + 110, cursorY + 3);
-    doc.setFont("helvetica", "normal").setFontSize(8).setTextColor(...C_MUTED);
-    doc.text(`${records.length} registro(s)`, W - MARGIN_X, cursorY, { align: "right" });
-
-    autoTable(doc, {
-      startY: cursorY + 8,
-      margin: { left: MARGIN_X, right: MARGIN_X, top: 92, bottom: 44 },
-      head: [["Fecha y Hora", "Nombre", "Rol", "Variable", "Campo", "Anterior", "Nuevo", "Motivo"]],
-      body: records.length
-        ? records.map((r) => {
-            const rExt = r as AuditRow & {
-              valor_anterior_texto?: string | null;
-              valor_nuevo_texto?: string | null;
-            };
-            const ant = rExt.valor_anterior_texto != null
-              ? rExt.valor_anterior_texto || "(vacío)"
-              : r.valor_anterior == null ? "—" : String(r.valor_anterior);
-            const nue = rExt.valor_nuevo_texto != null
-              ? rExt.valor_nuevo_texto || "(vacío)"
-              : r.valor_nuevo == null ? "—" : String(r.valor_nuevo);
-            return [
-              new Date(r.modificado_at).toLocaleString("es-MX"),
-              r.modificado_por_nombre ?? "—",
-              r.modificado_por_rol ?? "—",
-              r.variable_etiqueta,
-              r.campo,
-              ant,
-              nue,
-              r.motivo,
-            ];
-          })
-        : [["—", "—", "—", "Sin cambios registrados", "—", "—", "—", "—"]],
-      theme: "grid",
-      styles: { fontSize: 7.5, cellPadding: 3.5, textColor: C_TEXT, lineColor: C_LINE, lineWidth: 0.3, overflow: "linebreak" },
-      headStyles: { fillColor: C_PRIMARY, textColor: [255, 255, 255], fontStyle: "bold", fontSize: 7.5, halign: "left" },
-      alternateRowStyles: { fillColor: C_ZEBRA },
-      columnStyles: {
-        0: { cellWidth: 70 },
-        1: { cellWidth: 70 },
-        2: { cellWidth: 50 },
-        5: { halign: "right", font: "courier" },
-        6: { halign: "right", font: "courier", fontStyle: "bold", textColor: C_ACCENT },
-      },
-    });
 
     // ===== Bloque de firmas (control documental) =====
     let signY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 24;
