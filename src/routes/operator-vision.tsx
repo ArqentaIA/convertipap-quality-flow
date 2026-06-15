@@ -752,10 +752,11 @@ function OperatorVisionPage() {
 
 
           {/* Campos contextuales */}
-          <div className="ml-2 grid min-w-0 flex-1 grid-cols-3 gap-x-6">
+          <div className="ml-2 grid min-w-0 flex-1 grid-cols-4 gap-x-6">
             <HeaderField label="Turno" value={turnoLabel} />
             <HeaderField label="Operador" value={current?.operador ?? ""} />
             <HeaderField label="Analista" value={current?.analista ?? ""} />
+            <HeaderField label="Producto" value={orden?.producto ?? ""} noTruncate />
           </div>
 
           {/* Reloj */}
@@ -1100,21 +1101,6 @@ function OperatorVisionPage() {
               ).filter(Boolean) as typeof variablesParaMostrar;
               return (
                 <>
-                  {/* Producto */}
-                  <div className="rounded-2xl border-[3px] border-slate-300 bg-white px-3 py-2 shadow-sm">
-                    <div className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">
-                      Producto
-                    </div>
-                    <div className="mt-1 truncate text-[15px] font-black leading-tight text-slate-900">
-                      {orden?.producto || "—"}
-                    </div>
-                    {orden?.productoCodigo && (
-                      <div className="mt-0.5 truncate font-mono text-[11px] font-bold text-slate-500">
-                        {orden.productoCodigo}
-                      </div>
-                    )}
-                  </div>
-
                   <KpiCard
                     label="Cumplimiento"
                     value={`${cumplimiento.pct}`}
