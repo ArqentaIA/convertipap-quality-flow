@@ -335,8 +335,25 @@ function VariablesCalidad() {
       },
     });
 
+    // ===== Política Ambiental =====
+    cursorY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 14;
+    doc.setFontSize(9).setFont("helvetica", "bold").setTextColor(...C_PRIMARY);
+    doc.text("POLÍTICA AMBIENTAL", MARGIN_X, cursorY);
+    doc.setDrawColor(...C_ACCENT).setLineWidth(0.8);
+    doc.line(MARGIN_X, cursorY + 2, MARGIN_X + 130, cursorY + 2);
+
+    const policyText =
+      "En CONVERTIDOR DE PAPEL S. A. DE C. V. fabricamos papel higiénico, papel servilleta, toallas y toallas para cocina a base de fibras recicladas y otros aditivos de origen orgánico, características que permiten que nuestros productos sean 100 % biodegradables.\n\n" +
+      "Para CONVERTIDOR DE PAPEL S. A. DE C. V., la protección del medio ambiente es un compromiso permanente con nuestros clientes, nuestros colaboradores y el planeta.";
+
+    doc.setFontSize(9).setFont("helvetica", "normal").setTextColor(...C_TEXT);
+    const splitPolicy = doc.splitTextToSize(policyText, CONTENT_W);
+    doc.text(splitPolicy, MARGIN_X, cursorY + 14);
+
+    const policyBlockHeight = splitPolicy.length * 9 * 1.2;
+
     // ===== Especificaciones Vigentes =====
-    cursorY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 18;
+    cursorY = cursorY + 14 + policyBlockHeight + 12;
     doc.setFontSize(10).setFont("helvetica", "bold").setTextColor(...C_PRIMARY);
     doc.text("ESPECIFICACIONES VIGENTES", MARGIN_X, cursorY);
     doc.setDrawColor(...C_ACCENT).setLineWidth(1);
