@@ -405,58 +405,32 @@ function VariablesCalidad() {
     });
 
 
-    // ===== Bloque de firmas (control documental) =====
-    let signY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 24;
-    const SIGN_H = 70;
-    if (signY + SIGN_H > H - 50) { doc.addPage(); signY = 92; }
+    // ===== Control y Autorización del Documento (firmantes) =====
+    let signY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 18;
+    if (signY + 100 > H - 50) { doc.addPage(); signY = 92; }
 
     doc.setFontSize(7.5).setFont("helvetica", "bold").setTextColor(...C_PRIMARY);
     doc.text("CONTROL Y AUTORIZACIÓN DEL DOCUMENTO", MARGIN_X, signY);
     doc.setDrawColor(...C_ACCENT).setLineWidth(1);
     doc.line(MARGIN_X, signY + 3, MARGIN_X + 180, signY + 3);
-    signY += 12;
 
-    const last = records[records.length - 1];
-    const colW = CONTENT_W / 3;
-    const cols = [
-      {
-        title: "ELABORÓ",
-        name: last ? (last.modificado_por_nombre ?? "—") : "Sistema QC",
-        role: last ? (last.modificado_por_rol ?? "—") : "Automático",
-        date: last ? new Date(last.modificado_at).toLocaleDateString("es-MX") : issuedAt.toLocaleDateString("es-MX"),
+    autoTable(doc, {
+      startY: signY + 10,
+      margin: { left: MARGIN_X, right: MARGIN_X, top: 92, bottom: 44 },
+      head: [["Acción", "Cargo", "Nombre"]],
+      body: [
+        ["Elaboró", "Jefe de Calidad", "Karina Méndez"],
+        ["Revisó", "Gerente de Calidad", "Jonatan Peláez"],
+        ["Revisó", "Gerente de Producción", "Luis Alcalá"],
+        ["Autorizó", "Director de Planta", "Javier García"],
+        ["Autorizó", "Dirección Corporativa", "Lic. Luis Reséndiz"],
+      ],
+      theme: "grid",
+      styles: { fontSize: 6, cellPadding: 3, textColor: C_TEXT, lineColor: C_LINE, lineWidth: 0.3 },
+      headStyles: { fillColor: C_PRIMARY, textColor: [255, 255, 255], fontStyle: "bold", fontSize: 6, halign: "left" },
+      columnStyles: {
+        0: { fillColor: C_ZEBRA, textColor: C_PRIMARY },
       },
-      {
-        title: "REVISÓ",
-        name: "____________________",
-        role: "Jefatura de Calidad",
-        date: "____ / ____ / ______",
-      },
-      {
-        title: "APROBÓ",
-        name: "____________________",
-        role: "Gerencia de Planta",
-        date: "____ / ____ / ______",
-      },
-    ];
-
-    cols.forEach((c, i) => {
-      const x = MARGIN_X + colW * i;
-      doc.setDrawColor(...C_LINE).setLineWidth(0.4);
-      doc.rect(x + 4, signY, colW - 8, SIGN_H);
-      doc.setFillColor(...C_PRIMARY);
-      doc.rect(x + 4, signY, colW - 8, 12, "F");
-      doc.setTextColor(255, 255, 255).setFont("helvetica", "bold").setFontSize(7.5);
-      doc.text(c.title, x + colW / 2, signY + 8, { align: "center" });
-
-      // Línea de firma
-      doc.setDrawColor(...C_MUTED).setLineWidth(0.4);
-      doc.line(x + 14, signY + 40, x + colW - 18, signY + 40);
-
-      doc.setTextColor(...C_TEXT).setFont("helvetica", "normal").setFontSize(7.5);
-      doc.text(c.name, x + colW / 2, signY + 50, { align: "center" });
-      doc.setTextColor(...C_MUTED).setFont("helvetica", "normal").setFontSize(7.5);
-      doc.text(c.role, x + colW / 2, signY + 58, { align: "center" });
-      doc.text(`Fecha: ${c.date}`, x + colW / 2, signY + 65, { align: "center" });
     });
 
     // ===== Encabezado y pie en todas las páginas =====
