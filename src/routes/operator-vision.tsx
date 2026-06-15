@@ -1101,6 +1101,48 @@ function OperatorVisionPage() {
                             </tr>
                           );
                         })}
+                        {historial.length > 0 && (() => {
+                          const avg = (key: string, digits: number) => {
+                            const nums = historial
+                              .map((h) => h.vars.find((v) => v.clave === key)?.valor)
+                              .filter((x): x is number => x !== null && x !== undefined && !Number.isNaN(Number(x)))
+                              .map(Number);
+                            if (nums.length === 0) return "—";
+                            return (nums.reduce((a, b) => a + b, 0) / nums.length).toFixed(digits);
+                          };
+                          return (
+                            <tr className="border-t-2 border-slate-300 bg-slate-200/70 font-bold">
+                              <td className={`${cellPad} text-left text-slate-700`} style={{ fontSize: `${fz - 1}px` }}>
+                                Σ
+                              </td>
+                              <td
+                                className={`${cellPad} text-left uppercase tracking-wider text-slate-700 whitespace-nowrap`}
+                                style={{ fontSize: `${fz - 1}px` }}
+                                colSpan={2}
+                              >
+                                Promedio / Total Turno ({historial.length})
+                              </td>
+                              {COLS.map((c) => (
+                                <td
+                                  key={c.key}
+                                  className={`${cellPad} text-right whitespace-nowrap text-slate-800`}
+                                  style={{ fontSize: `${fz}px` }}
+                                >
+                                  {avg(c.key, c.digits)}
+                                </td>
+                              ))}
+                              <td
+                                className={`${cellPad} text-right whitespace-nowrap text-slate-800`}
+                                style={{ fontSize: `${fz}px` }}
+                              >
+                                {avg("peso", 2)}
+                              </td>
+                              <td className={`${cellPad} text-center text-slate-700`} style={{ fontSize: `${fz - 1}px` }}>
+                                {historial.length}
+                              </td>
+                            </tr>
+                          );
+                        })()}
                       </tbody>
                     </table>
                   )}
