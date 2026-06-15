@@ -25,7 +25,7 @@ export const Route = createFileRoute("/calidad/dashboard")({
   component: DashboardPage,
 });
 
-const ROLES_DASHBOARD = ["calidad", "gerente_general", "direccion", "administrador"];
+const ROLES_DASHBOARD: string[] = [];
 
 function pct(n: number, d: number) {
   if (d === 0) return 0;
