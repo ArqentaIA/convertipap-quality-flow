@@ -211,7 +211,7 @@ function KpiCard({
   };
   return (
     <div
-      className={`flex h-[96px] flex-col rounded-2xl border-[3px] ${palette[state]} px-3 py-1.5 shadow-sm`}
+      className={`flex h-full min-h-[110px] flex-col rounded-2xl border-[3px] ${palette[state]} px-3 py-1.5 shadow-sm`}
     >
 
       <div className="flex items-center justify-between">
@@ -282,22 +282,22 @@ function RolloActualCard({
   const c = stateCfg[status];
   return (
     <div
-      className={`flex h-[140px] flex-col justify-between rounded-2xl border-[3px] ${c.border} ${c.bg} px-5 py-2.5 shadow-lg ${c.text}`}
+      className={`flex h-full min-h-[110px] flex-col justify-between rounded-2xl border-[3px] ${c.border} ${c.bg} px-3 py-1.5 shadow-lg ${c.text}`}
     >
       <div className="flex items-center justify-between">
-        <span className="text-[13px] font-black uppercase tracking-[0.2em] opacity-90">
+        <span className="text-[11px] font-black uppercase tracking-[0.15em] opacity-90">
           Rollo Actual
         </span>
         <span
-          className={`rounded-md px-2 py-0.5 text-[11px] font-black uppercase tracking-wider ${c.chip}`}
+          className={`rounded px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider ${c.chip}`}
         >
           {labelLiberacion(status)}
         </span>
       </div>
-      <div className="font-mono text-[64px] font-black leading-none tabular-nums truncate">
+      <div className="font-mono text-[34px] font-black leading-none tabular-nums truncate">
         {rollo || "—"}
       </div>
-      <div className="flex items-center justify-between gap-2 text-[12px] font-bold uppercase tracking-wider opacity-90">
+      <div className="flex items-center justify-between gap-2 text-[10px] font-bold uppercase tracking-wider opacity-90">
         <span className="truncate">{producto || "—"}</span>
         <span className="shrink-0 font-mono tabular-nums">{hora}</span>
       </div>
@@ -813,139 +813,115 @@ function OperatorVisionPage() {
       <div className="flex min-h-0 flex-1 overflow-hidden">
         {/* MAIN */}
         <main className="flex min-w-0 flex-1 flex-col gap-2 overflow-hidden px-3 py-2">
-          {/* ÚLTIMO ROLLO CAPTURADO — tarjetas variables principales */}
+          {/* CUADRÍCULA UNIFICADA — 16 tarjetas en orden fijo */}
           <section className="shrink-0">
             {(() => {
-              const MAIN_ORDER = [
+              const ORDER: Array<string> = [
+                "calibre",
+                "blancuraR457",
+                "blancuraA",
+                "blancuraB",
                 "tensionMD",
                 "tensionCD",
                 "relMDCD",
                 "elongMD",
-                "peso",
-                "calibre",
                 "humedad",
-                "blancuraR457",
-                "blancuraA",
-                "blancuraB",
                 "pesoBase",
                 "anchoUtil",
                 "diametro",
               ];
-              const mainVars = MAIN_ORDER.map((k) =>
-                variablesParaMostrar.find((v) => v.clave === k),
-              ).filter(Boolean) as typeof variablesParaMostrar;
-              if (mainVars.length === 0) {
-                return (
-                  <div className="flex h-[140px] items-center justify-center rounded-xl border-2 border-dashed border-slate-300 bg-white text-sm font-semibold text-slate-400">
-                    Sin variables activas
-                  </div>
-                );
-              }
+              const varByKey = new Map(variablesParaMostrar.map((v) => [v.clave, v]));
               return (
-                <div className="grid grid-cols-7 gap-1.5">
-                  {mainVars.map((v) => (
-                    <VarCard
-                      key={v.clave}
-                      etiqueta={v.etiqueta}
-                      unidad={v.unidad}
-                      value={
-                        mapMedActual.get(v.clave) === undefined
-                          ? null
-                          : (mapMedActual.get(v.clave) as number | null)
-                      }
-                      min={v.min}
-                      max={v.max}
-                      obj={v.obj}
-                      digits={DIGITS_DE_CLAVE[v.clave] ?? 2}
-                      hasSpec={
-                        v.hasSpec ||
-                        (mapSpecActual.get(v.clave)?.min !== null &&
-                          mapSpecActual.get(v.clave)?.max !== null &&
-                          mapSpecActual.get(v.clave)?.obj !== null)
-                      }
-                    />
-                  ))}
+                <div
+                  className="grid grid-cols-8 gap-1.5"
+                  style={{ gridAutoRows: "120px" }}
+                >
+                  {/* 1. Rollo Actual */}
+                  <RolloActualCard
+                    rollo={current?.rollo ? String(current.rollo) : "—"}
+                    status={currentStatus}
+                    producto={orden?.producto ?? ""}
+                    hora={horaRolloActual}
+                  />
+
+                  {/* 2-13. Variables */}
+                  {ORDER.map((k) => {
+                    const v = varByKey.get(k);
+                    if (!v) {
+                      return (
+                        <div
+                          key={k}
+                          className="flex h-full items-center justify-center rounded-2xl border-[3px] border-dashed border-slate-300 bg-white text-[10px] font-semibold text-slate-400"
+                        >
+                          {k}
+                        </div>
+                      );
+                    }
+                    return (
+                      <VarCard
+                        key={v.clave}
+                        etiqueta={v.etiqueta}
+                        unidad={v.unidad}
+                        value={
+                          mapMedActual.get(v.clave) === undefined
+                            ? null
+                            : (mapMedActual.get(v.clave) as number | null)
+                        }
+                        min={v.min}
+                        max={v.max}
+                        obj={v.obj}
+                        digits={DIGITS_DE_CLAVE[v.clave] ?? 2}
+                        hasSpec={
+                          v.hasSpec ||
+                          (mapSpecActual.get(v.clave)?.min !== null &&
+                            mapSpecActual.get(v.clave)?.max !== null &&
+                            mapSpecActual.get(v.clave)?.obj !== null)
+                        }
+                      />
+                    );
+                  })}
+
+                  {/* 14. Rollos Producidos */}
+                  <KpiCard
+                    label="Rollos Producidos"
+                    value={muestrasAll.length.toString()}
+                    state={rollosOK > 0 ? "ok" : "neutral"}
+                    icon={CheckCircle2}
+                    subtitle="EN ESPECIFICACIÓN"
+                  />
+
+                  {/* 15. No Conformes */}
+                  <KpiCard
+                    label="No Conformes"
+                    value={rollosNC.toString()}
+                    state={rollosNC === 0 ? "ok" : "bad"}
+                    icon={AlertTriangle}
+                    subtitle={rollosNC === 0 ? "SIN INCIDENCIAS" : "REVISAR PROCESO"}
+                  />
+
+                  {/* 16. Tiempo Sin Captura */}
+                  <KpiCard
+                    label="Tiempo Sin Captura"
+                    value={lastCaptureMin === null ? "—" : String(lastCaptureMin)}
+                    unit="min"
+                    state={sinCapturaState}
+                    icon={Timer}
+                    subtitle={
+                      lastCaptureMin === null
+                        ? "SIN DATOS"
+                        : sinCapturaState === "ok"
+                          ? "EN RANGO"
+                          : sinCapturaState === "warn"
+                            ? "ATENCIÓN"
+                            : "CRÍTICO"
+                    }
+                  />
                 </div>
               );
             })()}
-
           </section>
 
-          {/* KPI strip: Rollos producidos · Rollo actual (wide) · Cumplimiento · No conformes */}
-          <section className="shrink-0 grid grid-cols-6 gap-2">
-            <KpiCard
-              label="Rollos Producidos"
-              value={muestrasAll.length.toString()}
-              state={rollosOK > 0 ? "ok" : "neutral"}
-              icon={CheckCircle2}
-              subtitle="EN ESPECIFICACIÓN"
-            />
-            <div className="col-span-2">
-              <RolloActualCard
-                rollo={current?.rollo ? String(current.rollo) : "—"}
-                status={currentStatus}
-                producto={orden?.producto ?? ""}
-                hora={horaRolloActual}
-              />
-            </div>
-            <div
-              className={cn(
-                "flex h-[140px] flex-col rounded-2xl border-[3px] bg-white px-4 py-2.5 shadow-sm",
-                cumplimiento.pct >= 90
-                  ? "border-emerald-400"
-                  : cumplimiento.pct >= 70
-                    ? "border-amber-400"
-                    : "border-rose-500",
-              )}
-            >
-              <div className="flex items-center justify-between">
-                <span className="truncate text-[13px] font-black uppercase tracking-[0.15em] text-slate-500">
-                  Cumplimiento
-                </span>
-                <CheckCircle2 className="h-6 w-6 shrink-0 opacity-60" />
-              </div>
-              <div className="flex flex-1 items-end">
-                <span
-                  className={cn(
-                    "font-mono text-[44px] font-black leading-none tabular-nums",
-                    cumplimiento.pct >= 90
-                      ? "text-emerald-700"
-                      : cumplimiento.pct >= 70
-                        ? "text-amber-700"
-                        : "text-rose-700",
-                  )}
-                >
-                  {cumplimiento.pct}%
-                </span>
-              </div>
-              <div className="mt-1 truncate text-[12px] font-black uppercase tracking-wider text-slate-600">
-                {cumplimiento.enSpec} EN SPEC DE {cumplimiento.capturados}
-              </div>
-            </div>
-            <KpiCard
-              label="No Conformes"
-              value={rollosNC.toString()}
-              state={rollosNC === 0 ? "ok" : "bad"}
-              icon={AlertTriangle}
-              subtitle={rollosNC === 0 ? "SIN INCIDENCIAS" : "REVISAR PROCESO"}
-            />
-            <KpiCard
-              label="Tiempo Sin Captura"
-              value={lastCaptureMin === null ? "—" : String(lastCaptureMin)}
-              unit="min"
-              state={sinCapturaState}
-              icon={Timer}
-              subtitle={
-                lastCaptureMin === null
-                  ? "SIN DATOS"
-                  : sinCapturaState === "ok"
-                    ? "EN RANGO"
-                    : sinCapturaState === "warn"
-                      ? "ATENCIÓN"
-                      : "CRÍTICO"
-              }
-            />
-          </section>
+
 
 
           {/* HISTORIAL DE ROLLOS DEL TURNO — tabla SCADA */}
