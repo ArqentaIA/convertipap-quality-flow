@@ -936,15 +936,14 @@ function OperatorVisionPage() {
             </div>
             {(() => {
               const COLS = [
-                { key: "tensionMD", label: "T. Seca MD", unit: "g/in", digits: 2 },
-                { key: "tensionCD", label: "T. Seca CD", unit: "g/in", digits: 2 },
-                { key: "relMDCD", label: "Rel MD/CD", unit: "", digits: 2 },
-                { key: "elongMD", label: "Elong MD", unit: "%", digits: 2 },
-                { key: "peso", label: "Peso", unit: "kg", digits: 2 },
                 { key: "calibre", label: "Calibre", unit: "mm", digits: 3 },
                 { key: "blancuraR457", label: "Blanc. R457", unit: "%", digits: 2 },
                 { key: "blancuraA", label: "Blanc. A*", unit: "", digits: 2 },
                 { key: "blancuraB", label: "Blanc. B*", unit: "", digits: 2 },
+                { key: "tensionMD", label: "T. Seca MD", unit: "g/in", digits: 2 },
+                { key: "tensionCD", label: "T. Seca CD", unit: "g/in", digits: 2 },
+                { key: "relMDCD", label: "Rel MD/CD", unit: "", digits: 2 },
+                { key: "elongMD", label: "Elong MD", unit: "%", digits: 2 },
                 { key: "humedad", label: "Humedad", unit: "%", digits: 2 },
                 { key: "pesoBase", label: "Peso Base", unit: "g/m²", digits: 2 },
                 { key: "anchoUtil", label: "Ancho Útil", unit: "cm", digits: 0 },
@@ -985,13 +984,13 @@ function OperatorVisionPage() {
                             className={`${cellPad} text-left font-black uppercase tracking-wider text-slate-600`}
                             style={{ fontSize: `${hz}px` }}
                           >
-                            Rollo
+                            Hora
                           </th>
                           <th
                             className={`${cellPad} text-left font-black uppercase tracking-wider text-slate-600`}
                             style={{ fontSize: `${hz}px` }}
                           >
-                            Hora
+                            Rollo
                           </th>
                           {COLS.map((c) => (
                             <th
@@ -1043,16 +1042,16 @@ function OperatorVisionPage() {
                                 {idx + 1}
                               </td>
                               <td
-                                className={`${cellPad} text-left font-extrabold text-slate-900 whitespace-nowrap`}
-                                style={{ fontSize: `${fz + 1}px` }}
-                              >
-                                {h.rollo}
-                              </td>
-                              <td
                                 className={`${cellPad} text-left font-semibold text-slate-500`}
                                 style={{ fontSize: `${fz - 1}px` }}
                               >
                                 {h.hora}
+                              </td>
+                              <td
+                                className={`${cellPad} text-left font-extrabold text-slate-900 whitespace-nowrap`}
+                                style={{ fontSize: `${fz + 1}px` }}
+                              >
+                                {h.rollo}
                               </td>
                               {COLS.map((c) => {
                                 const v = varByKey.get(c.key);
