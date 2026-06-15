@@ -1,10 +1,9 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Tv } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import {
   LayoutDashboard, Factory, ClipboardCheck, FileBarChart2,
   Settings, ChevronLeft, ChevronRight, Bell, ChevronDown, SlidersHorizontal,
-  LogOut, Lock, Loader2, BookOpen, Users, Monitor,
+  LogOut, Lock, Loader2, BookOpen, Users, Monitor, Tv,
 } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { PLANTS } from "@/lib/qc-data";
