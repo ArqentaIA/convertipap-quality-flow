@@ -1,8 +1,7 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { SessionGate } from "@/components/SessionGate";
-import { useAuth, type AppRole } from "@/lib/auth";
-import { Monitor, Copy, ExternalLink, Lock } from "lucide-react";
+import { Monitor, Copy, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/pantallas-operativas")({
@@ -10,7 +9,6 @@ export const Route = createFileRoute("/pantallas-operativas")({
   ssr: false,
 });
 
-const ALLOWED_ROLES: AppRole[] = ["administrador", "direccion", "calidad"];
 const OPERATOR_VISION_BASE = "https://www.convertipap.site";
 const MAQUINAS_OV = ["MP-04", "MP-05", "MP-06", "MP-07"] as const;
 
@@ -23,31 +21,10 @@ function PantallasGate() {
 }
 
 function PantallasPage() {
-  const auth = useAuth();
-  const allowed = ALLOWED_ROLES.some((r) => auth.hasRole(r));
-
   return (
     <AppLayout title="Pantallas Operativas">
-      {allowed ? <OperatorVisionUrls /> : <NoAccess />}
+      <OperatorVisionUrls />
     </AppLayout>
-  );
-}
-
-function NoAccess() {
-  return (
-    <div className="mx-auto mt-16 max-w-md rounded-xl border border-border bg-card p-8 text-center shadow-sm">
-      <Lock className="mx-auto mb-4 h-10 w-10 text-muted-foreground" />
-      <h2 className="text-lg font-semibold text-foreground">Sin acceso a este módulo</h2>
-      <p className="mt-2 text-sm text-muted-foreground">
-        Este módulo está reservado a administradores y dirección de calidad.
-      </p>
-      <Link
-        to="/"
-        className="mt-6 inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-      >
-        Volver al inicio
-      </Link>
-    </div>
   );
 }
 
