@@ -254,15 +254,8 @@ function VariablesCalidad() {
     const C_ZEBRA:   [number, number, number] = [247, 249, 252];
 
     const issuedAt = new Date();
-    const folio =
-      `CVP-VC-${activeSpec.code}-${issuedAt.getFullYear()}` +
-      `${String(issuedAt.getMonth() + 1).padStart(2, "0")}` +
-      `${String(issuedAt.getDate()).padStart(2, "0")}` +
-      `-${String(issuedAt.getHours()).padStart(2, "0")}` +
-      `${String(issuedAt.getMinutes()).padStart(2, "0")}`;
     const emisor = auth.profile?.nombre ?? auth.user?.email ?? "—";
     const rolEmisor = auth.roles.join(", ") || "—";
-    const version = records.length ? `R${String(records.length).padStart(2, "0")}` : "R00";
 
     // Logo precargado para encabezado en todas las páginas
     let logoDataUrl: string | null = null;
@@ -294,25 +287,6 @@ function VariablesCalidad() {
       doc.setTextColor(...C_MUTED).setFont("helvetica", "normal").setFontSize(8);
       doc.text("Catálogo Maestro de Especificaciones de Calidad", W / 2, 38, { align: "center" });
 
-      // Bloque control documental (derecha) — estilo ISO
-      const boxX = W - MARGIN_X - 170;
-      const boxY = 16;
-      const boxW = 170;
-      const rowH = 11;
-      doc.setDrawColor(...C_LINE).setLineWidth(0.5);
-      doc.rect(boxX, boxY, boxW, rowH * 4);
-      doc.line(boxX + 55, boxY, boxX + 55, boxY + rowH * 4);
-      for (let i = 1; i < 4; i++) doc.line(boxX, boxY + rowH * i, boxX + boxW, boxY + rowH * i);
-
-      doc.setFontSize(7).setTextColor(...C_MUTED).setFont("helvetica", "bold");
-      ["FOLIO", "CÓDIGO", "VERSIÓN", "EMISIÓN"].forEach((k, i) =>
-        doc.text(k, boxX + 4, boxY + rowH * i + 7.5),
-      );
-      doc.setTextColor(...C_TEXT).setFont("helvetica", "normal").setFontSize(7.5);
-      doc.text(folio, boxX + 58, boxY + 7.5);
-      doc.text(activeSpec.code, boxX + 58, boxY + rowH + 7.5);
-      doc.text(version, boxX + 58, boxY + rowH * 2 + 7.5);
-      doc.text(issuedAt.toLocaleDateString("es-MX"), boxX + 58, boxY + rowH * 3 + 7.5);
 
       // Línea inferior del encabezado
       doc.setDrawColor(...C_LINE).setLineWidth(0.5);
@@ -351,8 +325,6 @@ function VariablesCalidad() {
         ["Cláusula de referencia", "Cláusula 9.1.2 ISO 9001:2015"],
         ["Tipo de documento", "ESPECIFICACIÓN PST"],
         ["Área", "CALIDAD"],
-        ["Código", "EPST-004"],
-        ["Folio del reporte", folio],
         ["Fecha y hora de emisión", issuedAt.toLocaleString("es-MX")],
         ["Emitido por", `${emisor}  ·  ${rolEmisor}`],
       ],
