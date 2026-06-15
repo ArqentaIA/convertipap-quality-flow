@@ -84,16 +84,9 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
   // 2) Si está en una ruta sin permisos, mandarlo al primer módulo permitido.
   useEffect(() => {
     if (auth.loading || !auth.isAuthenticated) return;
-    // Excepción: pantallas-operativas se controla por rol, no por módulo.
-    if (pathname.startsWith("/pantallas-operativas")) {
-      if (PANTALLAS_ROLES.some((r) => auth.hasRole(r))) return;
-    } else {
-      const mod = moduleForPath(pathname);
-      if (auth.canAccess(mod)) return;
-    }
-    const firstAllowed = NAV.find((n) =>
-      n.allowedRoles ? n.allowedRoles.some((r) => auth.hasRole(r)) : auth.canAccess(n.module),
-    );
+    const mod = moduleForPath(pathname);
+    if (auth.canAccess(mod)) return;
+    const firstAllowed = NAV.find((n) => auth.canAccess(n.module));
     if (firstAllowed && firstAllowed.to !== pathname) {
       void navigate({ to: firstAllowed.to, replace: true });
     }
