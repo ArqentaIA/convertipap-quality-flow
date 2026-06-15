@@ -451,9 +451,9 @@ function VariablesCalidad() {
       // Fila 4: Firma
       const bg4: [number, number, number] = c % 2 === 0 ? [252, 253, 255] : C_ZEBRA;
       doc.setFillColor(...bg4);
-      doc.rect(x, tableY + rowH * 3, colW, rowH * 1.8, "F");
+      doc.rect(x, tableY + rowH * 3, colW, rowH * 1.6, "F");
       doc.setTextColor(...C_MUTED).setFontSize(5.5);
-      doc.text("Firma", x + colW / 2, tableY + rowH * 3 + 8, { align: "center" });
+      doc.text("Firma", x + colW / 2, tableY + rowH * 3 + 7, { align: "center" });
     }
 
     // Bordes de la tabla
