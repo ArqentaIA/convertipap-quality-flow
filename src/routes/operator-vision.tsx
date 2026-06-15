@@ -1009,6 +1009,15 @@ function OperatorVisionPage() {
                             </th>
                           ))}
                           <th
+                            className={`${cellPad} text-right font-black uppercase tracking-wider text-slate-600 whitespace-nowrap`}
+                            style={{ fontSize: `${hz}px` }}
+                          >
+                            Peso
+                            <span className="ml-0.5 font-semibold text-slate-400 normal-case">
+                              (kg)
+                            </span>
+                          </th>
+                          <th
                             className={`${cellPad} text-center font-black uppercase tracking-wider text-slate-600`}
                             style={{ fontSize: `${hz}px` }}
                           >
