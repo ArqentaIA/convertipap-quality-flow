@@ -73,6 +73,7 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
   const [collapsed, setCollapsed] = useState(false);
   const [plantId, setPlantId] = useState("tlx");
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const currentSearch = useRouterState({ select: (s) => s.location.search as { maquina?: string } });
   const plant = PLANTS.find((p) => p.id === plantId)!;
   const now = new Date();
   const dateStr = now.toLocaleDateString("es-MX", { weekday: "long", day: "2-digit", month: "long", year: "numeric" });
