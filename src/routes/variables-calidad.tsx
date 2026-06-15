@@ -241,81 +241,189 @@ function VariablesCalidad() {
     const doc = new jsPDF({ unit: "pt", format: "a4" });
     const records = [...log].sort((a, b) => a.modificado_at.localeCompare(b.modificado_at));
     const W = doc.internal.pageSize.getWidth();
+    const H = doc.internal.pageSize.getHeight();
+    const MARGIN_X = 36;
+    const CONTENT_W = W - MARGIN_X * 2;
 
-    let cursorY = 30;
+    // Paleta industrial sobria
+    const C_PRIMARY: [number, number, number] = [15, 42, 79];   // azul corporativo profundo
+    const C_ACCENT:  [number, number, number] = [37, 99, 235];  // azul vivo
+    const C_TEXT:    [number, number, number] = [30, 41, 59];
+    const C_MUTED:   [number, number, number] = [100, 116, 139];
+    const C_LINE:    [number, number, number] = [203, 213, 225];
+    const C_ZEBRA:   [number, number, number] = [247, 249, 252];
+
+    const issuedAt = new Date();
+    const folio =
+      `CVP-VC-${activeSpec.code}-${issuedAt.getFullYear()}` +
+      `${String(issuedAt.getMonth() + 1).padStart(2, "0")}` +
+      `${String(issuedAt.getDate()).padStart(2, "0")}` +
+      `-${String(issuedAt.getHours()).padStart(2, "0")}` +
+      `${String(issuedAt.getMinutes()).padStart(2, "0")}`;
+    const emisor = auth.profile?.nombre ?? auth.user?.email ?? "—";
+    const rolEmisor = auth.roles.join(", ") || "—";
+    const version = records.length ? `R${String(records.length).padStart(2, "0")}` : "R00";
+
+    // Logo precargado para encabezado en todas las páginas
+    let logoDataUrl: string | null = null;
     try {
       const blob = await fetch(logoUrl).then((r) => r.blob());
-      const dataUrl: string = await new Promise((res, rej) => {
+      logoDataUrl = await new Promise<string>((res, rej) => {
         const fr = new FileReader();
         fr.onload = () => res(fr.result as string);
         fr.onerror = rej;
         fr.readAsDataURL(blob);
       });
-      const logoW = 130;
-      const logoH = logoW * (300 / 700);
-      doc.addImage(dataUrl, "PNG", (W - logoW) / 2, cursorY, logoW, logoH);
-      cursorY += logoH + 18;
-    } catch {
-      cursorY = 50;
-    }
+    } catch { /* sin logo */ }
 
-    doc.setFontSize(14).setFont("helvetica", "bold");
-    doc.text("Reporte de Trazabilidad de Cambios de Especificaciones", W / 2, cursorY, { align: "center" });
-    cursorY += 16;
+    const drawHeader = () => {
+      // Banda superior fina
+      doc.setFillColor(...C_PRIMARY);
+      doc.rect(0, 0, W, 4, "F");
 
-    doc.setFontSize(10).setFont("helvetica", "normal");
-    const meta = [
-      ["Producto", activeSpec.name],
-      ["Código", activeSpec.code],
-      ["Familia", activeSpec.family],
-      ["Fecha de emisión", new Date().toLocaleString("es-MX")],
-    ];
+      // Logo a la izquierda
+      if (logoDataUrl) {
+        const logoW = 90;
+        const logoH = logoW * (300 / 700);
+        doc.addImage(logoDataUrl, "PNG", MARGIN_X, 16, logoW, logoH);
+      }
+
+      // Título central
+      doc.setTextColor(...C_PRIMARY).setFont("helvetica", "bold").setFontSize(11);
+      doc.text("REPORTE DE TRAZABILIDAD", W / 2, 26, { align: "center" });
+      doc.setTextColor(...C_MUTED).setFont("helvetica", "normal").setFontSize(8);
+      doc.text("Catálogo Maestro de Especificaciones de Calidad", W / 2, 38, { align: "center" });
+
+      // Bloque control documental (derecha) — estilo ISO
+      const boxX = W - MARGIN_X - 170;
+      const boxY = 16;
+      const boxW = 170;
+      const rowH = 11;
+      doc.setDrawColor(...C_LINE).setLineWidth(0.5);
+      doc.rect(boxX, boxY, boxW, rowH * 4);
+      doc.line(boxX + 55, boxY, boxX + 55, boxY + rowH * 4);
+      for (let i = 1; i < 4; i++) doc.line(boxX, boxY + rowH * i, boxX + boxW, boxY + rowH * i);
+
+      doc.setFontSize(7).setTextColor(...C_MUTED).setFont("helvetica", "bold");
+      ["FOLIO", "CÓDIGO", "VERSIÓN", "EMISIÓN"].forEach((k, i) =>
+        doc.text(k, boxX + 4, boxY + rowH * i + 7.5),
+      );
+      doc.setTextColor(...C_TEXT).setFont("helvetica", "normal").setFontSize(7.5);
+      doc.text(folio, boxX + 58, boxY + 7.5);
+      doc.text(activeSpec.code, boxX + 58, boxY + rowH + 7.5);
+      doc.text(version, boxX + 58, boxY + rowH * 2 + 7.5);
+      doc.text(issuedAt.toLocaleDateString("es-MX"), boxX + 58, boxY + rowH * 3 + 7.5);
+
+      // Línea inferior del encabezado
+      doc.setDrawColor(...C_LINE).setLineWidth(0.5);
+      doc.line(MARGIN_X, 78, W - MARGIN_X, 78);
+    };
+
+    const drawFooter = (pageNum: number, pageTotal: number) => {
+      const fy = H - 28;
+      doc.setDrawColor(...C_LINE).setLineWidth(0.5);
+      doc.line(MARGIN_X, fy, W - MARGIN_X, fy);
+      doc.setFontSize(7).setTextColor(...C_MUTED).setFont("helvetica", "normal");
+      doc.text("Convertipap · Fábrica de Papel Tissue", MARGIN_X, fy + 10);
+      doc.text(
+        `Generado por: ${emisor} (${rolEmisor})  ·  ${issuedAt.toLocaleString("es-MX")}`,
+        W / 2, fy + 10, { align: "center" },
+      );
+      doc.text(`Página ${pageNum} de ${pageTotal}`, W - MARGIN_X, fy + 10, { align: "right" });
+      doc.setFontSize(6.5).setTextColor(180, 180, 180);
+      doc.text(
+        "Documento controlado. Reproducción no autorizada prohibida.",
+        W / 2, fy + 19, { align: "center" },
+      );
+    };
+
+    let cursorY = 92;
+
+    // ===== Datos Generales =====
     autoTable(doc, {
       startY: cursorY,
-      head: [["Datos Generales", ""]],
-      body: meta,
+      margin: { left: MARGIN_X, right: MARGIN_X, top: 92, bottom: 44 },
+      head: [["DATOS GENERALES", ""]],
+      body: [
+        ["Producto", activeSpec.name],
+        ["Código de producto", activeSpec.code],
+        ["Familia", activeSpec.family],
+        ["Folio del reporte", folio],
+        ["Fecha y hora de emisión", issuedAt.toLocaleString("es-MX")],
+        ["Emitido por", `${emisor}  ·  ${rolEmisor}`],
+      ],
       theme: "grid",
-      styles: { fontSize: 9 },
-      headStyles: { fillColor: [37, 99, 235] },
-      columnStyles: { 0: { fontStyle: "bold", cellWidth: 140 } },
+      styles: { fontSize: 9, cellPadding: 5, textColor: C_TEXT, lineColor: C_LINE, lineWidth: 0.3 },
+      headStyles: { fillColor: C_PRIMARY, textColor: [255, 255, 255], fontStyle: "bold", fontSize: 8.5, halign: "left" },
+      columnStyles: {
+        0: { fontStyle: "bold", cellWidth: 150, fillColor: C_ZEBRA, textColor: C_PRIMARY },
+      },
     });
 
-    let titleY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 22;
-    doc.setFontSize(11).setFont("helvetica", "bold");
-    doc.text("Especificaciones Vigentes", 40, titleY);
+    // ===== Especificaciones Vigentes =====
+    cursorY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 18;
+    doc.setFontSize(10).setFont("helvetica", "bold").setTextColor(...C_PRIMARY);
+    doc.text("ESPECIFICACIONES VIGENTES", MARGIN_X, cursorY);
+    doc.setDrawColor(...C_ACCENT).setLineWidth(1);
+    doc.line(MARGIN_X, cursorY + 3, MARGIN_X + 130, cursorY + 3);
 
     autoTable(doc, {
-      head: [["Variable", "Unidad", "Mínimo", "Objetivo", "Máximo"]],
-      body: activeSpec.variables.map((v) => [
+      startY: cursorY + 8,
+      margin: { left: MARGIN_X, right: MARGIN_X, top: 92, bottom: 44 },
+      head: [["#", "Variable", "Unidad", "Mínimo", "Objetivo", "Máximo"]],
+      body: activeSpec.variables.map((v, i) => [
+        String(i + 1).padStart(2, "0"),
         v.label,
         v.unit || "—",
         v.min == null ? "—" : String(v.min),
         v.objective == null ? "—" : String(v.objective),
         v.max == null ? "—" : String(v.max),
       ]),
-      styles: { fontSize: 9, cellPadding: 4 },
-      headStyles: { fillColor: [37, 99, 235] },
+      theme: "grid",
+      styles: { fontSize: 9, cellPadding: 4.5, textColor: C_TEXT, lineColor: C_LINE, lineWidth: 0.3 },
+      headStyles: { fillColor: C_PRIMARY, textColor: [255, 255, 255], fontStyle: "bold", fontSize: 8.5, halign: "center" },
+      alternateRowStyles: { fillColor: C_ZEBRA },
       columnStyles: {
-        0: { fontStyle: "bold" },
-        2: { halign: "right" }, 3: { halign: "right" }, 4: { halign: "right" },
+        0: { halign: "center", cellWidth: 28, textColor: C_MUTED, fontSize: 8 },
+        1: { fontStyle: "bold", cellWidth: 170 },
+        2: { halign: "center", cellWidth: 55 },
+        3: { halign: "right", font: "courier", fontStyle: "bold" },
+        4: { halign: "right", font: "courier", fontStyle: "bold", textColor: C_ACCENT },
+        5: { halign: "right", font: "courier", fontStyle: "bold" },
       },
-      startY: titleY + 6,
     });
 
-    titleY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 22;
-    doc.setFontSize(11).setFont("helvetica", "bold");
-    doc.text("Características de los Atributos", 40, titleY);
+    // ===== Características de los Atributos =====
+    cursorY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 18;
+    doc.setFontSize(10).setFont("helvetica", "bold").setTextColor(...C_PRIMARY);
+    doc.text("CARACTERÍSTICAS DE LOS ATRIBUTOS", MARGIN_X, cursorY);
+    doc.setDrawColor(...C_ACCENT).setLineWidth(1);
+    doc.line(MARGIN_X, cursorY + 3, MARGIN_X + 160, cursorY + 3);
+
     autoTable(doc, {
-      body: [[caracteristicas?.trim() ? caracteristicas : "—"]],
-      styles: { fontSize: 9, cellPadding: 6 },
-      startY: titleY + 6,
+      startY: cursorY + 8,
+      margin: { left: MARGIN_X, right: MARGIN_X, top: 92, bottom: 44 },
+      body: [[caracteristicas?.trim() ? caracteristicas : "Sin características registradas."]],
+      theme: "grid",
+      styles: {
+        fontSize: 9, cellPadding: 8, textColor: C_TEXT,
+        lineColor: C_LINE, lineWidth: 0.3, minCellHeight: 40,
+        fillColor: [252, 253, 255],
+      },
     });
 
-    titleY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 22;
-    doc.setFontSize(11).setFont("helvetica", "bold");
-    doc.text("Bitácora de Cambios", 40, titleY);
+    // ===== Bitácora de Cambios =====
+    cursorY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 18;
+    doc.setFontSize(10).setFont("helvetica", "bold").setTextColor(...C_PRIMARY);
+    doc.text("BITÁCORA DE CAMBIOS", MARGIN_X, cursorY);
+    doc.setDrawColor(...C_ACCENT).setLineWidth(1);
+    doc.line(MARGIN_X, cursorY + 3, MARGIN_X + 110, cursorY + 3);
+    doc.setFont("helvetica", "normal").setFontSize(8).setTextColor(...C_MUTED);
+    doc.text(`${records.length} registro(s)`, W - MARGIN_X, cursorY, { align: "right" });
 
     autoTable(doc, {
+      startY: cursorY + 8,
+      margin: { left: MARGIN_X, right: MARGIN_X, top: 92, bottom: 44 },
       head: [["Fecha y Hora", "Nombre", "Rol", "Variable", "Campo", "Anterior", "Nuevo", "Motivo"]],
       body: records.length
         ? records.map((r) => {
@@ -341,26 +449,82 @@ function VariablesCalidad() {
             ];
           })
         : [["—", "—", "—", "Sin cambios registrados", "—", "—", "—", "—"]],
-      styles: { fontSize: 8, cellPadding: 4 },
-      headStyles: { fillColor: [37, 99, 235] },
-      startY: titleY + 6,
+      theme: "grid",
+      styles: { fontSize: 7.5, cellPadding: 3.5, textColor: C_TEXT, lineColor: C_LINE, lineWidth: 0.3, overflow: "linebreak" },
+      headStyles: { fillColor: C_PRIMARY, textColor: [255, 255, 255], fontStyle: "bold", fontSize: 7.5, halign: "left" },
+      alternateRowStyles: { fillColor: C_ZEBRA },
+      columnStyles: {
+        0: { cellWidth: 70 },
+        1: { cellWidth: 70 },
+        2: { cellWidth: 50 },
+        5: { halign: "right", font: "courier" },
+        6: { halign: "right", font: "courier", fontStyle: "bold", textColor: C_ACCENT },
+      },
     });
 
-    const last = records[records.length - 1];
-    const y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 24;
-    doc.setFontSize(10).setFont("helvetica", "bold");
-    doc.text("Último cambio realizado por:", 40, y);
-    doc.setFont("helvetica", "normal");
-    doc.text(last ? (last.modificado_por_nombre ?? "—") : "—", 40, y + 14);
-    doc.setFont("helvetica", "bold").text("Fecha:", 40, y + 32);
-    doc.setFont("helvetica", "normal").text(
-      last ? new Date(last.modificado_at).toLocaleString("es-MX") : "—",
-      90, y + 32,
-    );
-    doc.setFont("helvetica", "bold").text("Rol:", 40, y + 48);
-    doc.setFont("helvetica", "normal").text(last ? (last.modificado_por_rol ?? "—") : "—", 90, y + 48);
+    // ===== Bloque de firmas (control documental) =====
+    let signY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 24;
+    const SIGN_H = 70;
+    if (signY + SIGN_H > H - 50) { doc.addPage(); signY = 92; }
 
-    doc.save(`Trazabilidad_${activeSpec.code}_${new Date().toISOString().slice(0, 10)}.pdf`);
+    doc.setFontSize(10).setFont("helvetica", "bold").setTextColor(...C_PRIMARY);
+    doc.text("CONTROL Y AUTORIZACIÓN DEL DOCUMENTO", MARGIN_X, signY);
+    doc.setDrawColor(...C_ACCENT).setLineWidth(1);
+    doc.line(MARGIN_X, signY + 3, MARGIN_X + 180, signY + 3);
+    signY += 12;
+
+    const last = records[records.length - 1];
+    const colW = CONTENT_W / 3;
+    const cols = [
+      {
+        title: "ELABORÓ",
+        name: last ? (last.modificado_por_nombre ?? "—") : "Sistema QC",
+        role: last ? (last.modificado_por_rol ?? "—") : "Automático",
+        date: last ? new Date(last.modificado_at).toLocaleDateString("es-MX") : issuedAt.toLocaleDateString("es-MX"),
+      },
+      {
+        title: "REVISÓ",
+        name: "____________________",
+        role: "Jefatura de Calidad",
+        date: "____ / ____ / ______",
+      },
+      {
+        title: "APROBÓ",
+        name: "____________________",
+        role: "Gerencia de Planta",
+        date: "____ / ____ / ______",
+      },
+    ];
+
+    cols.forEach((c, i) => {
+      const x = MARGIN_X + colW * i;
+      doc.setDrawColor(...C_LINE).setLineWidth(0.4);
+      doc.rect(x + 4, signY, colW - 8, SIGN_H);
+      doc.setFillColor(...C_PRIMARY);
+      doc.rect(x + 4, signY, colW - 8, 12, "F");
+      doc.setTextColor(255, 255, 255).setFont("helvetica", "bold").setFontSize(8);
+      doc.text(c.title, x + colW / 2, signY + 8, { align: "center" });
+
+      // Línea de firma
+      doc.setDrawColor(...C_MUTED).setLineWidth(0.4);
+      doc.line(x + 14, signY + 40, x + colW - 18, signY + 40);
+
+      doc.setTextColor(...C_TEXT).setFont("helvetica", "bold").setFontSize(8.5);
+      doc.text(c.name, x + colW / 2, signY + 50, { align: "center" });
+      doc.setTextColor(...C_MUTED).setFont("helvetica", "normal").setFontSize(7);
+      doc.text(c.role, x + colW / 2, signY + 58, { align: "center" });
+      doc.text(`Fecha: ${c.date}`, x + colW / 2, signY + 65, { align: "center" });
+    });
+
+    // ===== Encabezado y pie en todas las páginas =====
+    const pageCount = doc.getNumberOfPages();
+    for (let p = 1; p <= pageCount; p++) {
+      doc.setPage(p);
+      drawHeader();
+      drawFooter(p, pageCount);
+    }
+
+    doc.save(`Trazabilidad_${activeSpec.code}_${issuedAt.toISOString().slice(0, 10)}.pdf`);
   };
 
   if (especs.length === 0) {
