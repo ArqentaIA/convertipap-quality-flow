@@ -93,19 +93,12 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
   }, [auth.loading, auth.isAuthenticated, auth.modules, auth.roles, pathname, navigate]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const visibleNav = useMemo(
-    () =>
-      NAV.filter((item) =>
-        item.allowedRoles
-          ? item.allowedRoles.some((r) => auth.hasRole(r))
-          : auth.canAccess(item.module),
-      ),
+    () => NAV.filter((item) => auth.canAccess(item.module)),
     [auth.modules, auth.roles], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   const currentModule = moduleForPath(pathname);
-  const allowedHere = pathname.startsWith("/pantallas-operativas")
-    ? PANTALLAS_ROLES.some((r) => auth.hasRole(r))
-    : auth.canAccess(currentModule);
+  const allowedHere = auth.canAccess(currentModule);
 
   if (auth.loading || !auth.isAuthenticated) {
     return (
