@@ -254,15 +254,8 @@ function VariablesCalidad() {
     const C_ZEBRA:   [number, number, number] = [247, 249, 252];
 
     const issuedAt = new Date();
-    const folio =
-      `CVP-VC-${activeSpec.code}-${issuedAt.getFullYear()}` +
-      `${String(issuedAt.getMonth() + 1).padStart(2, "0")}` +
-      `${String(issuedAt.getDate()).padStart(2, "0")}` +
-      `-${String(issuedAt.getHours()).padStart(2, "0")}` +
-      `${String(issuedAt.getMinutes()).padStart(2, "0")}`;
     const emisor = auth.profile?.nombre ?? auth.user?.email ?? "—";
     const rolEmisor = auth.roles.join(", ") || "—";
-    const version = records.length ? `R${String(records.length).padStart(2, "0")}` : "R00";
 
     // Logo precargado para encabezado en todas las páginas
     let logoDataUrl: string | null = null;
