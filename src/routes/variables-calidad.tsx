@@ -325,8 +325,6 @@ function VariablesCalidad() {
         ["Cláusula de referencia", "Cláusula 9.1.2 ISO 9001:2015"],
         ["Tipo de documento", "ESPECIFICACIÓN PST"],
         ["Área", "CALIDAD"],
-        ["Código", "EPST-004"],
-        ["Folio del reporte", folio],
         ["Fecha y hora de emisión", issuedAt.toLocaleString("es-MX")],
         ["Emitido por", `${emisor}  ·  ${rolEmisor}`],
       ],
