@@ -384,6 +384,86 @@ export async function exportConsolidadoXLSX(payload: ConsolidadoPayload): Promis
       if (t.fmt) c.numFmt = t.fmt;
     });
 
+    resRow += 1;
+
+    // ── Tablas de ESTATUS por turno (CONDICIONADOS / NO CONFORMES) ──
+    // Lado a lado debajo del resumen. 3 columnas cada una: TURNO | ROLLOS | KG
+    ws.getColumn(RES_COL_START + 5).width = 14;
+    const COND_START = RES_COL_START;       // 3 cols: +0,+1,+2
+    const NC_START = RES_COL_START + 3;     // 3 cols: +3,+4,+5
+
+    resRow += 1; // fila en blanco de separación
+    const estatusTitleRow = resRow;
+    ws.mergeCells(estatusTitleRow, COND_START, estatusTitleRow, COND_START + 2);
+    const condTitle = ws.getCell(estatusTitleRow, COND_START);
+    condTitle.value = "CONDICIONADOS POR TURNO";
+    condTitle.font = { name: "Calibri", size: 10, bold: true, color: { argb: "FFFFFFFF" } };
+    condTitle.alignment = { horizontal: "center", vertical: "middle" };
+    condTitle.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFD97706" } };
+    condTitle.border = styleBorder();
+
+    ws.mergeCells(estatusTitleRow, NC_START, estatusTitleRow, NC_START + 2);
+    const ncTitle = ws.getCell(estatusTitleRow, NC_START);
+    ncTitle.value = "NO CONFORMES POR TURNO";
+    ncTitle.font = { name: "Calibri", size: 10, bold: true, color: { argb: "FFFFFFFF" } };
+    ncTitle.alignment = { horizontal: "center", vertical: "middle" };
+    ncTitle.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFDC2626" } };
+    ncTitle.border = styleBorder();
+    resRow += 1;
+
+    // Encabezados
+    ["TURNO", "ROLLOS", "KG"].forEach((h, i) => {
+      applyHeaderFill(ws.getCell(resRow, COND_START + i));
+      ws.getCell(resRow, COND_START + i).value = h;
+      applyHeaderFill(ws.getCell(resRow, NC_START + i));
+      ws.getCell(resRow, NC_START + i).value = h;
+    });
+    resRow += 1;
+
+    let condRollosTot = 0, condKgTot = 0, ncRollosTot = 0, ncKgTot = 0;
+    for (const turno of TURNOS) {
+      const rowsTurno = block.rows.filter((r) => r.turno === turno);
+      const cond = rowsTurno.filter((r) => (r.estatus_liberacion ?? "").trim() === "C");
+      const nc = rowsTurno.filter((r) => (r.estatus_liberacion ?? "").trim() === "NC");
+      const condKg = cond.reduce((a, r) => a + (r.mediciones.peso ?? 0), 0);
+      const ncKg = nc.reduce((a, r) => a + (r.mediciones.peso ?? 0), 0);
+      condRollosTot += cond.length; condKgTot += condKg;
+      ncRollosTot += nc.length; ncKgTot += ncKg;
+
+      const fills = [
+        { col: COND_START, vals: [TURNO_LABEL[turno], cond.length, condKg] },
+        { col: NC_START, vals: [TURNO_LABEL[turno], nc.length, ncKg] },
+      ];
+      for (const f of fills) {
+        f.vals.forEach((v, i) => {
+          const c = ws.getCell(resRow, f.col + i);
+          c.value = v;
+          c.border = styleBorder();
+          c.alignment = { horizontal: "center", vertical: "middle" };
+          c.font = { name: "Calibri", size: 10 };
+          if (i === 2 && typeof v === "number") c.numFmt = "#,##0";
+        });
+      }
+      resRow += 1;
+    }
+
+    // Totales
+    const totals = [
+      { col: COND_START, vals: ["TOTAL", condRollosTot, condKgTot], color: "FFD97706" },
+      { col: NC_START, vals: ["TOTAL", ncRollosTot, ncKgTot], color: "FFDC2626" },
+    ];
+    for (const t of totals) {
+      t.vals.forEach((v, i) => {
+        const c = ws.getCell(resRow, t.col + i);
+        c.value = v;
+        c.font = { name: "Calibri", size: 10, bold: true, color: { argb: "FFFFFFFF" } };
+        c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: t.color } };
+        c.alignment = { horizontal: "center", vertical: "middle" };
+        c.border = styleBorder();
+        if (i === 2 && typeof v === "number") c.numFmt = "#,##0";
+      });
+    }
+
     cursor += 1;
 
     totalesPorMaquina.push({ codigo: block.codigo, kg: kgMaquina });
