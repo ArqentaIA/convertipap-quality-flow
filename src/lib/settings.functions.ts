@@ -3,8 +3,49 @@
 // =============================================================================
 
 import { createServerFn } from "@tanstack/react-start";
+import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import type { Database } from "@/integrations/supabase/types";
+
+export type TurnosConfig = {
+  turno1_inicio: string;
+  turno1_fin: string;
+  turno2_inicio: string;
+  turno2_fin: string;
+  turno3_inicio: string;
+  turno3_fin: string;
+};
+
+const DEFAULT_TURNOS: TurnosConfig = {
+  turno1_inicio: "06:00",
+  turno1_fin: "14:00",
+  turno2_inicio: "14:00",
+  turno2_fin: "22:00",
+  turno3_inicio: "22:00",
+  turno3_fin: "06:00",
+};
+
+export const getTurnosConfig = createServerFn({ method: "GET" })
+  .handler(async (): Promise<TurnosConfig> => {
+    try {
+      const url = process.env.SUPABASE_URL;
+      const key = process.env.SUPABASE_PUBLISHABLE_KEY;
+      if (!url || !key) return DEFAULT_TURNOS;
+      const sb = createClient<Database>(url, key, {
+        auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
+      });
+      const { data } = await sb
+        .from("app_settings")
+        .select("turno1_inicio, turno1_fin, turno2_inicio, turno2_fin, turno3_inicio, turno3_fin")
+        .eq("singleton", true)
+        .maybeSingle();
+      if (!data) return DEFAULT_TURNOS;
+      return data as TurnosConfig;
+    } catch {
+      return DEFAULT_TURNOS;
+    }
+  });
 
 export type AppSettings = {
   id: string;
