@@ -1119,7 +1119,7 @@ function OperatorVisionPage() {
                             return (nums.reduce((a, b) => a + b, 0) / nums.length).toFixed(digits);
                           };
                           return (
-                            <tr className="border-t-2 border-slate-300 bg-slate-200/70 font-bold">
+                            <tr className="sticky bottom-0 z-10 border-t-2 border-slate-300 bg-slate-200/95 font-bold backdrop-blur-sm">
                               <td className={`${cellPad} text-left text-slate-700`} style={{ fontSize: `${fz - 1}px` }}>
                                 Σ
                               </td>
