@@ -493,6 +493,59 @@ export async function exportConsolidadoXLSX(payload: ConsolidadoPayload): Promis
       });
     }
 
+    resRow += 1;
+
+    // ── Tabla LIBERADOS por turno y código (debajo) ──
+    const LIB_START = RES_COL_START; // 4 cols
+    resRow += 1; // separación
+    const libTitleRow = resRow;
+    ws.mergeCells(libTitleRow, LIB_START, libTitleRow, LIB_START + 3);
+    const libTitle = ws.getCell(libTitleRow, LIB_START);
+    libTitle.value = "LIBERADOS POR TURNO Y CÓDIGO";
+    libTitle.font = { name: "Calibri", size: 10, bold: true, color: { argb: "FFFFFFFF" } };
+    libTitle.alignment = { horizontal: "center", vertical: "middle" };
+    libTitle.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF16A34A" } };
+    libTitle.border = styleBorder();
+    resRow += 1;
+
+    ["TURNO", "CÓDIGO", "ROLLOS", "KG"].forEach((h, i) => {
+      applyHeaderFill(ws.getCell(resRow, LIB_START + i));
+      ws.getCell(resRow, LIB_START + i).value = h;
+    });
+    resRow += 1;
+
+    const libGroups = buildGroups("L");
+    const libRollosTot = libGroups.reduce((a, g) => a + g.rollos, 0);
+    const libKgTot = libGroups.reduce((a, g) => a + g.kg, 0);
+
+    const libRows = libGroups.length || 1;
+    for (let i = 0; i < libRows; i++) {
+      const g = libGroups[i];
+      const vals: (string | number | null)[] = g
+        ? [TURNO_LABEL[g.turno], g.codigo, g.rollos, g.kg]
+        : [null, null, null, null];
+      vals.forEach((v, j) => {
+        const c = ws.getCell(resRow, LIB_START + j);
+        c.value = v;
+        c.border = styleBorder();
+        c.alignment = { horizontal: "center", vertical: "middle" };
+        c.font = { name: "Calibri", size: 10 };
+        if (j === 3 && typeof v === "number") c.numFmt = "#,##0";
+      });
+      resRow += 1;
+    }
+
+    ["TOTAL", "", libRollosTot, libKgTot].forEach((v, i) => {
+      const c = ws.getCell(resRow, LIB_START + i);
+      c.value = v;
+      c.font = { name: "Calibri", size: 10, bold: true, color: { argb: "FFFFFFFF" } };
+      c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF16A34A" } };
+      c.alignment = { horizontal: "center", vertical: "middle" };
+      c.border = styleBorder();
+      if (i === 3 && typeof v === "number") c.numFmt = "#,##0";
+    });
+    resRow += 1;
+
     cursor += 1;
 
     totalesPorMaquina.push({ codigo: block.codigo, kg: kgMaquina });
