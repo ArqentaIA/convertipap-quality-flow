@@ -262,83 +262,74 @@ export async function exportConsolidadoXLSX(payload: ConsolidadoPayload): Promis
       to: { row: dataEnd, column: TOTAL_COLS },
     };
 
-    cursor += 1;
+    // ── Resumen por turno (a la derecha de la tabla principal) ──
+    // Columnas: O (15) TURNO, P (16) PRODUCCIÓN (Kg), Q (17) PROM PESO BASE
+    const RES_COL_START = TOTAL_COLS + 2; // deja una columna de separación
+    ws.getColumn(RES_COL_START).width = 14;
+    ws.getColumn(RES_COL_START + 1).width = 18;
+    ws.getColumn(RES_COL_START + 2).width = 18;
 
-    // ── Resumen por turno (kg + promedios) ──
-    const resumenTitle = ws.getCell(`A${cursor}`);
-    ws.mergeCells(`A${cursor}:${LAST_COL}${cursor}`);
-    resumenTitle.value = `RESUMEN POR TURNO — ${block.codigo}`;
+    const resTitleRow = headerRowNum - 1; // alineado con el título del bloque
+    // Título del resumen sobre las 3 columnas
+    ws.mergeCells(resTitleRow, RES_COL_START, resTitleRow, RES_COL_START + 2);
+    const resumenTitle = ws.getCell(resTitleRow, RES_COL_START);
+    resumenTitle.value = `RESUMEN — ${block.codigo}`;
     resumenTitle.font = { name: "Calibri", size: 11, bold: true, color: { argb: "FFFFFFFF" } };
     resumenTitle.alignment = { horizontal: "center", vertical: "middle" };
     resumenTitle.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF374151" } };
     resumenTitle.border = styleBorder();
-    cursor += 1;
 
-    // Encabezado del resumen: TURNO | PRODUCCIÓN (Kg) | UNIONES | + promedios
-    const promVars: { key: VariableClave; label: string }[] = [
-      { key: "pesoBase", label: "PESO BASE" },
-      { key: "blancuraR457", label: "BLANCURA (R457)" },
-      { key: "blancuraA", label: "a*" },
-      { key: "blancuraB", label: "b*" },
-      { key: "anchoUtil", label: "ANCHO ÚTIL" },
-      { key: "peso", label: "PESO BOBINA" },
-    ];
-    const resHeaders = ["TURNO", "PRODUCCIÓN (Kg)", ...promVars.map((v) => `PROM ${v.label}`)];
-    const resHeaderRow = ws.getRow(cursor);
+    // Encabezado del resumen (alineado con encabezado de tabla principal)
+    const resHeaders = ["TURNO", "PRODUCCIÓN (Kg)", "PROM PESO BASE"];
     resHeaders.forEach((h, i) => {
-      const cell = resHeaderRow.getCell(i + 1);
+      const cell = ws.getCell(headerRowNum, RES_COL_START + i);
       cell.value = h;
       applyHeaderFill(cell);
     });
-    resHeaderRow.height = 28;
-    cursor += 1;
 
     let kgMaquina = 0;
+    let resRow = headerRowNum + 1;
     for (const turno of TURNOS) {
       const rowsTurno = block.rows.filter((r) => r.turno === turno);
       const kgTurno = rowsTurno.reduce((a, r) => a + (r.mediciones.peso ?? 0), 0);
       kgMaquina += kgTurno;
-      const r = ws.getRow(cursor);
+      const pesoBaseNums = rowsTurno
+        .map((r) => r.mediciones.pesoBase)
+        .filter((x): x is number => typeof x === "number");
       const vals: (string | number | null)[] = [
         TURNO_LABEL[turno],
         rowsTurno.length === 0 ? null : kgTurno,
+        avg(pesoBaseNums),
       ];
-      for (const v of promVars) {
-        const nums = rowsTurno
-          .map((r) => r.mediciones[v.key])
-          .filter((x): x is number => typeof x === "number");
-        vals.push(avg(nums));
-      }
       vals.forEach((val, i) => {
-        const cell = r.getCell(i + 1);
+        const cell = ws.getCell(resRow, RES_COL_START + i);
         cell.value = val;
         cell.border = styleBorder();
         cell.alignment = { horizontal: "center", vertical: "middle" };
         cell.font = { name: "Calibri", size: 10 };
         if (i === 1) cell.numFmt = "#,##0";
-        else if (i >= 2 && typeof val === "number") cell.numFmt = "0.00";
+        else if (i === 2 && typeof val === "number") cell.numFmt = "0.00";
       });
-      cursor += 1;
+      resRow += 1;
     }
 
     // Total máquina
-    const totalRow = ws.getRow(cursor);
-    totalRow.getCell(1).value = `TOTAL ${block.codigo}`;
-    totalRow.getCell(2).value = kgMaquina;
-    for (let i = 1; i <= 2; i++) {
-      const c = totalRow.getCell(i);
+    const totalCells = [
+      { v: `TOTAL ${block.codigo}` as string | number, fmt: undefined as string | undefined },
+      { v: kgMaquina, fmt: "#,##0" },
+      { v: null as unknown as string | number, fmt: undefined },
+    ];
+    totalCells.forEach((t, i) => {
+      const c = ws.getCell(resRow, RES_COL_START + i);
+      c.value = t.v;
       c.font = { name: "Calibri", size: 10, bold: true, color: { argb: "FFFFFFFF" } };
       c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF2563EB" } };
       c.alignment = { horizontal: "center", vertical: "middle" };
       c.border = styleBorder();
-    }
-    totalRow.getCell(2).numFmt = "#,##0";
-    for (let i = 3; i <= resHeaders.length; i++) {
-      const c = totalRow.getCell(i);
-      c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF2563EB" } };
-      c.border = styleBorder();
-    }
-    cursor += 2;
+      if (t.fmt) c.numFmt = t.fmt;
+    });
+
+    cursor += 1;
 
     totalesPorMaquina.push({ codigo: block.codigo, kg: kgMaquina });
   }
