@@ -357,6 +357,8 @@ function ReportesPage() {
           enabled={!!auth.session?.access_token}
         />
 
+        <ReporteConsolidadoItem enabled={!!auth.session?.access_token} />
+
         <ReporteGeneralItem enabled={!!auth.session?.access_token} />
 
 
