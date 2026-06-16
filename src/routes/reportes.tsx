@@ -18,6 +18,8 @@ import {
   exportReporteTurnoXLSX,
   filterCentroByTurnoFecha,
 } from "@/lib/reporte-turno-export";
+import { getConsolidado } from "@/lib/consolidado.functions";
+import { exportConsolidadoXLSX } from "@/lib/consolidado-export";
 
 
 export const Route = createFileRoute("/reportes")({
