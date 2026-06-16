@@ -835,8 +835,7 @@ function OperatorVisionPage() {
               const varByKey = new Map(variablesParaMostrar.map((v) => [v.clave, v]));
               return (
                 <div
-                  className="grid grid-cols-8 gap-1.5"
-                  style={{ gridAutoRows: "120px" }}
+                  className="grid grid-cols-8 gap-2 [grid-auto-rows:135px] xl:[grid-auto-rows:150px] 2xl:[grid-auto-rows:160px]"
                 >
                   {/* 1. Rollo Actual */}
                   <RolloActualCard
@@ -927,7 +926,7 @@ function OperatorVisionPage() {
 
 
           {/* HISTORIAL DE ROLLOS DEL TURNO — tabla SCADA */}
-          <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border-2 border-slate-300 bg-white shadow-sm">
+          <section className="flex min-h-0 flex-col overflow-hidden rounded-xl border-2 border-slate-300 bg-white shadow-sm">
             <div className="flex shrink-0 items-center justify-between border-b-2 border-slate-700 bg-slate-700 px-3 py-1.5">
               <h2 className="text-[12px] font-black uppercase tracking-[0.22em] text-white">
                 Historial de Rollos del Turno{turnoLabel ? ` (${turnoLabel})` : ""}
@@ -966,8 +965,17 @@ function OperatorVisionPage() {
                     : s === "ok"
                       ? "text-slate-900"
                       : "text-slate-400";
+              // Altura aprox. de fila para limitar a ~15 visibles antes de scroll
+              const rowH = filas <= 8 ? 32 : filas <= 14 ? 28 : 24;
+              const headerH = 30;
+              const summaryH = 30;
+              const maxBodyH = headerH + rowH * 15 + summaryH;
               return (
-                <div className="min-h-0 flex-1 overflow-auto">
+                <div
+                  className="overflow-auto"
+                  style={filas > 15 ? { maxHeight: `${maxBodyH}px` } : undefined}
+                >
+
                   {historial.length === 0 ? (
                     <div className="px-3 py-6 text-center text-sm font-semibold text-slate-400">
                       Aún no hay capturas para este turno.
@@ -1111,7 +1119,7 @@ function OperatorVisionPage() {
                             return (nums.reduce((a, b) => a + b, 0) / nums.length).toFixed(digits);
                           };
                           return (
-                            <tr className="border-t-2 border-slate-300 bg-slate-200/70 font-bold">
+                            <tr className="sticky bottom-0 z-10 border-t-2 border-slate-300 bg-slate-200/95 font-bold backdrop-blur-sm">
                               <td className={`${cellPad} text-left text-slate-700`} style={{ fontSize: `${fz - 1}px` }}>
                                 Σ
                               </td>
