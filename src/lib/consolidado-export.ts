@@ -1,0 +1,430 @@
+// =====================================================================
+// Exportación XLSX — Reporte CONSOLIDADO
+// Estilo basado en consolidado.xlsx: bloques por máquina, encabezados
+// negros con texto blanco, bordes visibles, totales/promedios resaltados.
+// =====================================================================
+import ExcelJS from "exceljs";
+import logoUrl from "@/assets/logo-convertipap.png";
+import {
+  MAQUINAS_CONSOLIDADO,
+  VARIABLES_PROMEDIO,
+  type ConsolidadoPayload,
+  type ConsolidadoRow,
+  type VariableClave,
+} from "./consolidado.functions";
+
+const TURNO_LABEL: Record<string, string> = {
+  "1": "1ER TURNO",
+  "2": "2DO TURNO",
+  "3": "3ER TURNO",
+};
+
+const TURNOS = ["1", "2", "3"] as const;
+
+// Columnas: TURNO, FECHA, CÓDIGO, N.° ROLLO, OBSERVACIONES, ESTATUS, HORA,
+// PESO BASE, BLANCURA (R457), a*, b*, PESO BOBINA (Kg), ANCHO ÚTIL,
+// CALIBRE, DIÁMETRO, ELONG MD, HUMEDAD, REL MD/CD, TENSIÓN CD, TENSIÓN MD,
+// TENSIÓN RH, UNIONES
+type ColDef = {
+  key: string;
+  header: string;
+  variable?: VariableClave;
+  width: number;
+  numFmt?: string;
+};
+
+const COLS: ColDef[] = [
+  { key: "turno", header: "TURNO", width: 14 },
+  { key: "fecha", header: "FECHA", width: 12 },
+  { key: "codigo", header: "CÓDIGO", width: 10 },
+  { key: "rollo", header: "N.° ROLLO", width: 12 },
+  { key: "observaciones", header: "OBSERVACIONES", width: 36 },
+  { key: "estatus", header: "ESTATUS", width: 12 },
+  { key: "hora", header: "HORA", width: 9 },
+  { key: "pesoBase", header: "PESO BASE", variable: "pesoBase", width: 11, numFmt: "0.00" },
+  { key: "blancuraR457", header: "BLANCURA (R457)", variable: "blancuraR457", width: 14, numFmt: "0.00" },
+  { key: "blancuraA", header: "a*", variable: "blancuraA", width: 8, numFmt: "0.00" },
+  { key: "blancuraB", header: "b*", variable: "blancuraB", width: 8, numFmt: "0.00" },
+  { key: "peso", header: "PESO BOBINA (Kg)", variable: "peso", width: 16, numFmt: "0.00" },
+  { key: "anchoUtil", header: "ANCHO ÚTIL", variable: "anchoUtil", width: 12, numFmt: "0.00" },
+  { key: "calibre", header: "CALIBRE", variable: "calibre", width: 10, numFmt: "0.00" },
+  { key: "diametro", header: "DIÁMETRO", variable: "diametro", width: 11, numFmt: "0.00" },
+  { key: "elongMD", header: "ELONG MD", variable: "elongMD", width: 11, numFmt: "0.00" },
+  { key: "humedad", header: "HUMEDAD", variable: "humedad", width: 10, numFmt: "0.00" },
+  { key: "relMDCD", header: "REL MD/CD", variable: "relMDCD", width: 11, numFmt: "0.00" },
+  { key: "tensionCD", header: "TENSIÓN CD", variable: "tensionCD", width: 12, numFmt: "0.00" },
+  { key: "tensionMD", header: "TENSIÓN MD", variable: "tensionMD", width: 12, numFmt: "0.00" },
+  { key: "tensionRH", header: "TENSIÓN RH", variable: "tensionRH", width: 12, numFmt: "0.00" },
+  { key: "uniones", header: "UNIONES", variable: "uniones", width: 10, numFmt: "0" },
+];
+
+const TOTAL_COLS = COLS.length;
+
+function fmtFecha(iso: string): string {
+  // Convertir a TZ México (UTC-6)
+  const d = new Date(iso);
+  const local = new Date(d.getTime() + -6 * 60 * 60 * 1000 - d.getTimezoneOffset() * 60 * 1000);
+  const dd = String(local.getUTCDate()).padStart(2, "0");
+  const mm = String(local.getUTCMonth() + 1).padStart(2, "0");
+  const yyyy = local.getUTCFullYear();
+  return `${dd}/${mm}/${yyyy}`;
+}
+function fmtHora(iso: string): string {
+  const d = new Date(iso);
+  const local = new Date(d.getTime() + -6 * 60 * 60 * 1000 - d.getTimezoneOffset() * 60 * 1000);
+  const hh = String(local.getUTCHours()).padStart(2, "0");
+  const mi = String(local.getUTCMinutes()).padStart(2, "0");
+  return `${hh}:${mi}`;
+}
+
+function statusLabel(row: ConsolidadoRow): string {
+  const s = (row.estatus_liberacion ?? "").trim();
+  if (s === "L") return "L · Liberado";
+  if (s === "NC") return "NC · No Conforme";
+  if (s === "C") return "C · Condicionado";
+  if (s) return s;
+  return (row.estado ?? "").toString();
+}
+
+async function loadLogoBuffer(): Promise<ArrayBuffer | null> {
+  try {
+    const res = await fetch(logoUrl);
+    if (!res.ok) return null;
+    return await res.arrayBuffer();
+  } catch {
+    return null;
+  }
+}
+
+function styleBorder(): ExcelJS.Borders {
+  const thin: Partial<ExcelJS.Border> = { style: "thin", color: { argb: "FF808080" } };
+  return { top: thin, left: thin, bottom: thin, right: thin } as ExcelJS.Borders;
+}
+
+function applyHeaderFill(cell: ExcelJS.Cell) {
+  cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF000000" } };
+  cell.font = { name: "Calibri", size: 10, bold: true, color: { argb: "FFFFFFFF" } };
+  cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+  cell.border = styleBorder();
+}
+
+function lastColLetter(): string {
+  // Convert 1-based col index to letter (handles >26)
+  let n = TOTAL_COLS;
+  let s = "";
+  while (n > 0) {
+    const r = (n - 1) % 26;
+    s = String.fromCharCode(65 + r) + s;
+    n = Math.floor((n - 1) / 26);
+  }
+  return s;
+}
+
+function avg(vals: number[]): number | null {
+  if (vals.length === 0) return null;
+  return vals.reduce((a, b) => a + b, 0) / vals.length;
+}
+
+export async function exportConsolidadoXLSX(payload: ConsolidadoPayload): Promise<void> {
+  const wb = new ExcelJS.Workbook();
+  wb.creator = "ConvertiPap QMS";
+  wb.created = new Date();
+
+  const ws = wb.addWorksheet("Consolidado", {
+    views: [{ state: "frozen", ySplit: 6 }],
+    pageSetup: { orientation: "landscape", fitToPage: true, fitToWidth: 1, fitToHeight: 0 },
+  });
+
+  // Column widths
+  COLS.forEach((c, i) => {
+    ws.getColumn(i + 1).width = c.width;
+  });
+
+  const LAST_COL = lastColLetter();
+
+  // ── Encabezado institucional ──
+  const logoBuf = await loadLogoBuffer();
+  if (logoBuf) {
+    const imgId = wb.addImage({ buffer: logoBuf, extension: "png" });
+    ws.addImage(imgId, {
+      tl: { col: 0, row: 0 },
+      ext: { width: 150, height: 60 },
+      editAs: "oneCell",
+    });
+  }
+  ws.getRow(1).height = 22;
+  ws.getRow(2).height = 22;
+  ws.getRow(3).height = 22;
+
+  ws.mergeCells(`C1:${LAST_COL}1`);
+  const titleCell = ws.getCell("C1");
+  titleCell.value = "CONVERTIPAP S.A. DE C.V. — PLANTA TLAXCALA";
+  titleCell.font = { name: "Calibri", size: 14, bold: true };
+  titleCell.alignment = { horizontal: "center", vertical: "middle" };
+
+  ws.mergeCells(`C2:${LAST_COL}2`);
+  const subCell = ws.getCell("C2");
+  subCell.value = "REPORTE CONSOLIDADO DE PRODUCCIÓN — CALIDAD";
+  subCell.font = { name: "Calibri", size: 11, bold: true, color: { argb: "FF333333" } };
+  subCell.alignment = { horizontal: "center", vertical: "middle" };
+
+  ws.mergeCells(`C3:${LAST_COL}3`);
+  const docCell = ws.getCell("C3");
+  docCell.value =
+    "CLÁUSULA DE REFERENCIA: Cláusula 9.1.2 ISO 9001:2015  ·  TIPO DOCUMENTO: ESPECIFICACIÓN PST  ·  ÁREA: CALIDAD  ·  CÓDIGO: EPST-004";
+  docCell.font = { name: "Calibri", size: 9, italic: true, color: { argb: "FF555555" } };
+  docCell.alignment = { horizontal: "center", vertical: "middle" };
+
+  // Fecha del reporte
+  ws.mergeCells(`A5:${LAST_COL}5`);
+  const fechaCell = ws.getCell("A5");
+  const [yy, mm, dd] = payload.fecha.split("-");
+  fechaCell.value = `FECHA DEL REPORTE: ${dd}/${mm}/${yy}`;
+  fechaCell.font = { name: "Calibri", size: 12, bold: true };
+  fechaCell.alignment = { horizontal: "center", vertical: "middle" };
+  fechaCell.fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FFE5E7EB" },
+  };
+  ws.getRow(5).height = 22;
+
+  let cursor = 7;
+  const totalesPorMaquina: { codigo: string; kg: number }[] = [];
+
+  // ── Bloques por máquina ──
+  for (const block of payload.maquinas) {
+    // Título de bloque
+    ws.mergeCells(`A${cursor}:${LAST_COL}${cursor}`);
+    const titulo = ws.getCell(`A${cursor}`);
+    titulo.value = `PRODUCCIONES MÁQUINA ${block.codigo}`;
+    titulo.font = { name: "Calibri", size: 12, bold: true, color: { argb: "FFFFFFFF" } };
+    titulo.alignment = { horizontal: "center", vertical: "middle" };
+    titulo.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF1F2937" } };
+    titulo.border = styleBorder();
+    ws.getRow(cursor).height = 22;
+    cursor += 1;
+
+    // Encabezados de tabla
+    const headerRow = ws.getRow(cursor);
+    COLS.forEach((c, i) => {
+      const cell = headerRow.getCell(i + 1);
+      cell.value = c.header;
+      applyHeaderFill(cell);
+    });
+    headerRow.height = 30;
+    const headerRowNum = cursor;
+    cursor += 1;
+
+    if (block.rows.length === 0) {
+      ws.mergeCells(`A${cursor}:${LAST_COL}${cursor}`);
+      const empty = ws.getCell(`A${cursor}`);
+      empty.value = "Sin registros para la fecha seleccionada";
+      empty.font = { italic: true, color: { argb: "FF6B7280" } };
+      empty.alignment = { horizontal: "center", vertical: "middle" };
+      empty.border = styleBorder();
+      ws.getRow(cursor).height = 22;
+      cursor += 2;
+      totalesPorMaquina.push({ codigo: block.codigo, kg: 0 });
+      continue;
+    }
+
+    // Filas de datos
+    const dataStart = cursor;
+    for (const row of block.rows) {
+      const r = ws.getRow(cursor);
+      const values: (string | number | null)[] = [
+        TURNO_LABEL[row.turno] ?? row.turno,
+        fmtFecha(row.hora_muestreo),
+        row.codigo_producto ?? "",
+        row.numero_rollo,
+        row.observaciones ?? "",
+        statusLabel(row),
+        fmtHora(row.hora_muestreo),
+      ];
+      // Variables numéricas (col 8 en adelante)
+      for (let i = 7; i < COLS.length; i++) {
+        const def = COLS[i];
+        const v = def.variable ? row.mediciones[def.variable] : undefined;
+        values.push(v == null ? null : v);
+      }
+      values.forEach((val, i) => {
+        const cell = r.getCell(i + 1);
+        cell.value = val;
+        cell.border = styleBorder();
+        cell.alignment = {
+          horizontal: i === 4 ? "left" : "center",
+          vertical: "middle",
+          wrapText: i === 4,
+        };
+        cell.font = { name: "Calibri", size: 10 };
+        const def = COLS[i];
+        if (def.numFmt && typeof val === "number") cell.numFmt = def.numFmt;
+      });
+      cursor += 1;
+    }
+    const dataEnd = cursor - 1;
+
+    // Filtros en encabezado
+    ws.autoFilter = {
+      from: { row: headerRowNum, column: 1 },
+      to: { row: dataEnd, column: TOTAL_COLS },
+    };
+
+    cursor += 1;
+
+    // ── Resumen por turno (kg + promedios) ──
+    const resumenTitle = ws.getCell(`A${cursor}`);
+    ws.mergeCells(`A${cursor}:${LAST_COL}${cursor}`);
+    resumenTitle.value = `RESUMEN POR TURNO — ${block.codigo}`;
+    resumenTitle.font = { name: "Calibri", size: 11, bold: true, color: { argb: "FFFFFFFF" } };
+    resumenTitle.alignment = { horizontal: "center", vertical: "middle" };
+    resumenTitle.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF374151" } };
+    resumenTitle.border = styleBorder();
+    cursor += 1;
+
+    // Encabezado del resumen: TURNO | PRODUCCIÓN (Kg) | UNIONES | + promedios
+    const promVars: { key: VariableClave; label: string }[] = [
+      { key: "pesoBase", label: "PESO BASE" },
+      { key: "blancuraR457", label: "BLANCURA (R457)" },
+      { key: "blancuraA", label: "a*" },
+      { key: "blancuraB", label: "b*" },
+      { key: "anchoUtil", label: "ANCHO ÚTIL" },
+      { key: "calibre", label: "CALIBRE" },
+      { key: "diametro", label: "DIÁMETRO" },
+      { key: "elongMD", label: "ELONG MD" },
+      { key: "humedad", label: "HUMEDAD" },
+      { key: "relMDCD", label: "REL MD/CD" },
+      { key: "tensionCD", label: "TENSIÓN CD" },
+      { key: "tensionMD", label: "TENSIÓN MD" },
+      { key: "tensionRH", label: "TENSIÓN RH" },
+      { key: "peso", label: "PESO BOBINA" },
+    ];
+    const resHeaders = ["TURNO", "PRODUCCIÓN (Kg)", "TOTAL UNIONES", ...promVars.map((v) => `PROM ${v.label}`)];
+    const resHeaderRow = ws.getRow(cursor);
+    resHeaders.forEach((h, i) => {
+      const cell = resHeaderRow.getCell(i + 1);
+      cell.value = h;
+      applyHeaderFill(cell);
+    });
+    resHeaderRow.height = 28;
+    cursor += 1;
+
+    let kgMaquina = 0;
+    for (const turno of TURNOS) {
+      const rowsTurno = block.rows.filter((r) => r.turno === turno);
+      const kgTurno = rowsTurno.reduce((a, r) => a + (r.mediciones.peso ?? 0), 0);
+      const unionesTurno = rowsTurno.reduce((a, r) => a + (r.mediciones.uniones ?? 0), 0);
+      kgMaquina += kgTurno;
+      const r = ws.getRow(cursor);
+      const vals: (string | number | null)[] = [
+        TURNO_LABEL[turno],
+        rowsTurno.length === 0 ? null : kgTurno,
+        rowsTurno.length === 0 ? null : unionesTurno,
+      ];
+      for (const v of promVars) {
+        const nums = rowsTurno
+          .map((r) => r.mediciones[v.key])
+          .filter((x): x is number => typeof x === "number");
+        vals.push(avg(nums));
+      }
+      vals.forEach((val, i) => {
+        const cell = r.getCell(i + 1);
+        cell.value = val;
+        cell.border = styleBorder();
+        cell.alignment = { horizontal: "center", vertical: "middle" };
+        cell.font = { name: "Calibri", size: 10 };
+        if (i === 1) cell.numFmt = "#,##0";
+        else if (i === 2) cell.numFmt = "0";
+        else if (i >= 3 && typeof val === "number") cell.numFmt = "0.00";
+      });
+      cursor += 1;
+    }
+
+    // Total máquina
+    const totalRow = ws.getRow(cursor);
+    totalRow.getCell(1).value = `TOTAL ${block.codigo}`;
+    totalRow.getCell(2).value = kgMaquina;
+    totalRow.getCell(3).value = block.rows.reduce((a, r) => a + (r.mediciones.uniones ?? 0), 0);
+    for (let i = 1; i <= 3; i++) {
+      const c = totalRow.getCell(i);
+      c.font = { name: "Calibri", size: 10, bold: true, color: { argb: "FFFFFFFF" } };
+      c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF2563EB" } };
+      c.alignment = { horizontal: "center", vertical: "middle" };
+      c.border = styleBorder();
+    }
+    totalRow.getCell(2).numFmt = "#,##0";
+    totalRow.getCell(3).numFmt = "0";
+    for (let i = 4; i <= resHeaders.length; i++) {
+      const c = totalRow.getCell(i);
+      c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF2563EB" } };
+      c.border = styleBorder();
+    }
+    cursor += 2;
+
+    totalesPorMaquina.push({ codigo: block.codigo, kg: kgMaquina });
+  }
+
+  // ── Resumen general del día ──
+  ws.mergeCells(`A${cursor}:${LAST_COL}${cursor}`);
+  const grandTitle = ws.getCell(`A${cursor}`);
+  grandTitle.value = "RESUMEN GENERAL DEL DÍA";
+  grandTitle.font = { name: "Calibri", size: 12, bold: true, color: { argb: "FFFFFFFF" } };
+  grandTitle.alignment = { horizontal: "center", vertical: "middle" };
+  grandTitle.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF111827" } };
+  grandTitle.border = styleBorder();
+  cursor += 1;
+
+  const grandHeaderRow = ws.getRow(cursor);
+  ["MÁQUINA", "PRODUCCIÓN (Kg)"].forEach((h, i) => {
+    const cell = grandHeaderRow.getCell(i + 1);
+    cell.value = h;
+    applyHeaderFill(cell);
+  });
+  cursor += 1;
+
+  let kgDia = 0;
+  for (const t of totalesPorMaquina) {
+    const r = ws.getRow(cursor);
+    r.getCell(1).value = t.codigo;
+    r.getCell(2).value = t.kg;
+    r.getCell(2).numFmt = "#,##0";
+    for (let i = 1; i <= 2; i++) {
+      const c = r.getCell(i);
+      c.border = styleBorder();
+      c.alignment = { horizontal: "center", vertical: "middle" };
+      c.font = { name: "Calibri", size: 10 };
+    }
+    kgDia += t.kg;
+    cursor += 1;
+  }
+  const grandTotalRow = ws.getRow(cursor);
+  grandTotalRow.getCell(1).value = "TOTAL DEL DÍA";
+  grandTotalRow.getCell(2).value = kgDia;
+  grandTotalRow.getCell(2).numFmt = "#,##0";
+  for (let i = 1; i <= 2; i++) {
+    const c = grandTotalRow.getCell(i);
+    c.font = { name: "Calibri", size: 11, bold: true, color: { argb: "FFFFFFFF" } };
+    c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF16A34A" } };
+    c.alignment = { horizontal: "center", vertical: "middle" };
+    c.border = styleBorder();
+  }
+
+  // Asegurar que las cuatro máquinas usadas son las solicitadas
+  void MAQUINAS_CONSOLIDADO;
+  void VARIABLES_PROMEDIO;
+
+  // Descargar
+  const buf = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buf], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `Consolidado_${payload.fecha}.xlsx`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
