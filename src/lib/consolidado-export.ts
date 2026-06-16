@@ -297,13 +297,11 @@ export async function exportConsolidadoXLSX(payload: ConsolidadoPayload): Promis
     for (const turno of TURNOS) {
       const rowsTurno = block.rows.filter((r) => r.turno === turno);
       const kgTurno = rowsTurno.reduce((a, r) => a + (r.mediciones.peso ?? 0), 0);
-      const unionesTurno = rowsTurno.reduce((a, r) => a + (r.mediciones.uniones ?? 0), 0);
       kgMaquina += kgTurno;
       const r = ws.getRow(cursor);
       const vals: (string | number | null)[] = [
         TURNO_LABEL[turno],
         rowsTurno.length === 0 ? null : kgTurno,
-        rowsTurno.length === 0 ? null : unionesTurno,
       ];
       for (const v of promVars) {
         const nums = rowsTurno
@@ -318,8 +316,7 @@ export async function exportConsolidadoXLSX(payload: ConsolidadoPayload): Promis
         cell.alignment = { horizontal: "center", vertical: "middle" };
         cell.font = { name: "Calibri", size: 10 };
         if (i === 1) cell.numFmt = "#,##0";
-        else if (i === 2) cell.numFmt = "0";
-        else if (i >= 3 && typeof val === "number") cell.numFmt = "0.00";
+        else if (i >= 2 && typeof val === "number") cell.numFmt = "0.00";
       });
       cursor += 1;
     }
