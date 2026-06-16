@@ -325,8 +325,7 @@ export async function exportConsolidadoXLSX(payload: ConsolidadoPayload): Promis
     const totalRow = ws.getRow(cursor);
     totalRow.getCell(1).value = `TOTAL ${block.codigo}`;
     totalRow.getCell(2).value = kgMaquina;
-    totalRow.getCell(3).value = block.rows.reduce((a, r) => a + (r.mediciones.uniones ?? 0), 0);
-    for (let i = 1; i <= 3; i++) {
+    for (let i = 1; i <= 2; i++) {
       const c = totalRow.getCell(i);
       c.font = { name: "Calibri", size: 10, bold: true, color: { argb: "FFFFFFFF" } };
       c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF2563EB" } };
@@ -334,8 +333,7 @@ export async function exportConsolidadoXLSX(payload: ConsolidadoPayload): Promis
       c.border = styleBorder();
     }
     totalRow.getCell(2).numFmt = "#,##0";
-    totalRow.getCell(3).numFmt = "0";
-    for (let i = 4; i <= resHeaders.length; i++) {
+    for (let i = 3; i <= resHeaders.length; i++) {
       const c = totalRow.getCell(i);
       c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF2563EB" } };
       c.border = styleBorder();
