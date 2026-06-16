@@ -47,15 +47,6 @@ const COLS: ColDef[] = [
   { key: "blancuraB", header: "b*", variable: "blancuraB", width: 8, numFmt: "0.00" },
   { key: "peso", header: "PESO BOBINA (Kg)", variable: "peso", width: 16, numFmt: "0.00" },
   { key: "anchoUtil", header: "ANCHO ÚTIL", variable: "anchoUtil", width: 12, numFmt: "0.00" },
-  { key: "calibre", header: "CALIBRE", variable: "calibre", width: 10, numFmt: "0.00" },
-  { key: "diametro", header: "DIÁMETRO", variable: "diametro", width: 11, numFmt: "0.00" },
-  { key: "elongMD", header: "ELONG MD", variable: "elongMD", width: 11, numFmt: "0.00" },
-  { key: "humedad", header: "HUMEDAD", variable: "humedad", width: 10, numFmt: "0.00" },
-  { key: "relMDCD", header: "REL MD/CD", variable: "relMDCD", width: 11, numFmt: "0.00" },
-  { key: "tensionCD", header: "TENSIÓN CD", variable: "tensionCD", width: 12, numFmt: "0.00" },
-  { key: "tensionMD", header: "TENSIÓN MD", variable: "tensionMD", width: 12, numFmt: "0.00" },
-  { key: "tensionRH", header: "TENSIÓN RH", variable: "tensionRH", width: 12, numFmt: "0.00" },
-  { key: "uniones", header: "UNIONES", variable: "uniones", width: 10, numFmt: "0" },
 ];
 
 const TOTAL_COLS = COLS.length;
