@@ -422,7 +422,7 @@ export async function exportConsolidadoXLSX(payload: ConsolidadoPayload): Promis
 
     // Agrupar por turno+código por cada estatus
     type Agg = { rollos: number; kg: number };
-    const buildGroups = (estatus: "C" | "NC") => {
+    const buildGroups = (estatus: "C" | "NC" | "L") => {
       const groups: { turno: typeof TURNOS[number]; codigo: string; rollos: number; kg: number }[] = [];
       for (const turno of TURNOS) {
         const rowsTurno = block.rows.filter(
