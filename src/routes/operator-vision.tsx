@@ -15,7 +15,7 @@ import {
   Weight,
 } from "lucide-react";
 import { getOperatorVisionData } from "@/lib/operator-vision.functions";
-import { getAppSettings } from "@/lib/settings.functions";
+import { getTurnosConfig } from "@/lib/settings.functions";
 import { useOperatorVisionRealtime } from "@/hooks/use-operator-vision-realtime";
 import logoConvertipap from "@/assets/logo-convertipap.png";
 
