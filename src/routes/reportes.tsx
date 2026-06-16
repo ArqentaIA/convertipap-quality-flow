@@ -869,3 +869,81 @@ function ReporteGeneralItem({ enabled }: { enabled: boolean }) {
   );
 }
 
+
+// ─────────────────────────────────────────────────────────────────
+// Reporte CONSOLIDADO — por fecha (todas las máquinas MP-04..MP-07)
+// ─────────────────────────────────────────────────────────────────
+function ReporteConsolidadoItem({ enabled }: { enabled: boolean }) {
+  const todayISO = useMemo(() => {
+    const d = new Date();
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  }, []);
+  const [fecha, setFecha] = useState<string>(todayISO);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handle = async () => {
+    if (!enabled) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const data = await getConsolidado({ data: { fecha } });
+      await exportConsolidadoXLSX(data);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const totalRollos = "—";
+
+  return (
+    <div className={CARD_CLS}>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex items-start gap-3">
+          <div className={FILTER_PANEL_CLS}>
+            <label className={FILTER_LABEL_CLS}>Fecha del reporte</label>
+            <div className="flex flex-wrap items-center gap-2">
+              <CalendarRange className="h-4 w-4 text-blue-600" />
+              <input
+                type="date"
+                value={fecha}
+                onChange={(e) => setFecha(e.target.value)}
+                className="rounded-md border border-input bg-background px-2 py-1.5 text-xs"
+              />
+            </div>
+          </div>
+          <div>
+            <div className="text-sm font-bold text-foreground">Reporte Consolidado</div>
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Consolidado diario por máquina (MP-07, MP-06, MP-05, MP-04) con encabezado
+              documental EPST-004. Filtra por <code>hora_muestreo</code> en zona horaria de México.
+            </p>
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Bloques por máquina y turno, resumen por turno, total por máquina y total general del día.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
+        <div className="text-[11px] text-muted-foreground">
+          {busy ? "Generando…" : `Listo · ${totalRollos}`}
+          {error && <span className="ml-2 text-destructive">· {error}</span>}
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handle}
+            disabled={!enabled || busy || !fecha}
+            className={XLSX_BTN_CLS}
+            title="Exportar a Excel con logotipo y diseño documental"
+          >
+            <FileSpreadsheet className="h-3.5 w-3.5" /> {busy ? "Generando…" : "Exportar a Excel"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
