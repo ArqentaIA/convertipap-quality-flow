@@ -467,7 +467,7 @@ function OperatorVisionPage() {
   // Config de turnos (para derivar el turno real por hora del sistema).
   const { data: appSettings } = useQuery({
     queryKey: ["app-settings-turnos"],
-    queryFn: () => getAppSettings(),
+    queryFn: () => getTurnosConfig(),
     staleTime: 5 * 60_000,
     refetchOnWindowFocus: false,
   });
