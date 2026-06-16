@@ -835,8 +835,7 @@ function OperatorVisionPage() {
               const varByKey = new Map(variablesParaMostrar.map((v) => [v.clave, v]));
               return (
                 <div
-                  className="grid grid-cols-8 gap-1.5"
-                  style={{ gridAutoRows: "120px" }}
+                  className="grid grid-cols-8 gap-2 [grid-auto-rows:135px] xl:[grid-auto-rows:150px] 2xl:[grid-auto-rows:160px]"
                 >
                   {/* 1. Rollo Actual */}
                   <RolloActualCard
