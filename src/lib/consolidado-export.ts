@@ -281,17 +281,9 @@ export async function exportConsolidadoXLSX(payload: ConsolidadoPayload): Promis
       { key: "blancuraA", label: "a*" },
       { key: "blancuraB", label: "b*" },
       { key: "anchoUtil", label: "ANCHO ÚTIL" },
-      { key: "calibre", label: "CALIBRE" },
-      { key: "diametro", label: "DIÁMETRO" },
-      { key: "elongMD", label: "ELONG MD" },
-      { key: "humedad", label: "HUMEDAD" },
-      { key: "relMDCD", label: "REL MD/CD" },
-      { key: "tensionCD", label: "TENSIÓN CD" },
-      { key: "tensionMD", label: "TENSIÓN MD" },
-      { key: "tensionRH", label: "TENSIÓN RH" },
       { key: "peso", label: "PESO BOBINA" },
     ];
-    const resHeaders = ["TURNO", "PRODUCCIÓN (Kg)", "TOTAL UNIONES", ...promVars.map((v) => `PROM ${v.label}`)];
+    const resHeaders = ["TURNO", "PRODUCCIÓN (Kg)", ...promVars.map((v) => `PROM ${v.label}`)];
     const resHeaderRow = ws.getRow(cursor);
     resHeaders.forEach((h, i) => {
       const cell = resHeaderRow.getCell(i + 1);
