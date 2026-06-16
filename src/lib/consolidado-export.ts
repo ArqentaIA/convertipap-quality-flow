@@ -263,15 +263,17 @@ export async function exportConsolidadoXLSX(payload: ConsolidadoPayload): Promis
     };
 
     // ── Resumen por turno (a la derecha de la tabla principal) ──
-    // Columnas: O (15) TURNO, P (16) PRODUCCIÓN (Kg), Q (17) PROM PESO BASE
+    // Columnas: TURNO | CÓDIGO | PRODUCCIÓN (Kg) | PROM PESO BASE | PROM PESO BASE x TURNO x CÓDIGO
     const RES_COL_START = TOTAL_COLS + 2; // deja una columna de separación
-    ws.getColumn(RES_COL_START).width = 14;
-    ws.getColumn(RES_COL_START + 1).width = 18;
-    ws.getColumn(RES_COL_START + 2).width = 18;
+    ws.getColumn(RES_COL_START).width = 12;
+    ws.getColumn(RES_COL_START + 1).width = 12;
+    ws.getColumn(RES_COL_START + 2).width = 16;
+    ws.getColumn(RES_COL_START + 3).width = 16;
+    ws.getColumn(RES_COL_START + 4).width = 22;
 
+    const RES_TOTAL_COLS = 5;
     const resTitleRow = headerRowNum - 1; // alineado con el título del bloque
-    // Título del resumen sobre las 3 columnas
-    ws.mergeCells(resTitleRow, RES_COL_START, resTitleRow, RES_COL_START + 2);
+    ws.mergeCells(resTitleRow, RES_COL_START, resTitleRow, RES_COL_START + RES_TOTAL_COLS - 1);
     const resumenTitle = ws.getCell(resTitleRow, RES_COL_START);
     resumenTitle.value = `RESUMEN — ${block.codigo}`;
     resumenTitle.font = { name: "Calibri", size: 11, bold: true, color: { argb: "FFFFFFFF" } };
@@ -279,8 +281,13 @@ export async function exportConsolidadoXLSX(payload: ConsolidadoPayload): Promis
     resumenTitle.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF374151" } };
     resumenTitle.border = styleBorder();
 
-    // Encabezado del resumen (alineado con encabezado de tabla principal)
-    const resHeaders = ["TURNO", "PRODUCCIÓN (Kg)", "PROM PESO BASE"];
+    const resHeaders = [
+      "TURNO",
+      "CÓDIGO",
+      "PRODUCCIÓN (Kg)",
+      "PROM PESO BASE",
+      "PROM PESO BASE × TURNO × CÓDIGO",
+    ];
     resHeaders.forEach((h, i) => {
       const cell = ws.getCell(headerRowNum, RES_COL_START + i);
       cell.value = h;
@@ -296,27 +303,75 @@ export async function exportConsolidadoXLSX(payload: ConsolidadoPayload): Promis
       const pesoBaseNums = rowsTurno
         .map((r) => r.mediciones.pesoBase)
         .filter((x): x is number => typeof x === "number");
-      const vals: (string | number | null)[] = [
-        TURNO_LABEL[turno],
-        rowsTurno.length === 0 ? null : kgTurno,
-        avg(pesoBaseNums),
-      ];
-      vals.forEach((val, i) => {
-        const cell = ws.getCell(resRow, RES_COL_START + i);
-        cell.value = val;
-        cell.border = styleBorder();
-        cell.alignment = { horizontal: "center", vertical: "middle" };
-        cell.font = { name: "Calibri", size: 10 };
-        if (i === 1) cell.numFmt = "#,##0";
-        else if (i === 2 && typeof val === "number") cell.numFmt = "0.00";
-      });
-      resRow += 1;
+      const promTurno = avg(pesoBaseNums);
+
+      // Agrupar por código de producto dentro del turno
+      const porCodigo = new Map<string, number[]>();
+      for (const r of rowsTurno) {
+        const cod = (r.codigo_producto ?? "—").toString();
+        if (typeof r.mediciones.pesoBase !== "number") continue;
+        const arr = porCodigo.get(cod) ?? [];
+        arr.push(r.mediciones.pesoBase);
+        porCodigo.set(cod, arr);
+      }
+      const codigos = Array.from(porCodigo.keys()).sort();
+
+      if (codigos.length === 0) {
+        // Fila vacía (sin códigos con peso base)
+        const vals: (string | number | null)[] = [
+          TURNO_LABEL[turno],
+          null,
+          rowsTurno.length === 0 ? null : kgTurno,
+          promTurno,
+          null,
+        ];
+        vals.forEach((val, i) => {
+          const cell = ws.getCell(resRow, RES_COL_START + i);
+          cell.value = val;
+          cell.border = styleBorder();
+          cell.alignment = { horizontal: "center", vertical: "middle" };
+          cell.font = { name: "Calibri", size: 10 };
+          if (i === 2) cell.numFmt = "#,##0";
+          else if ((i === 3 || i === 4) && typeof val === "number") cell.numFmt = "0.00";
+        });
+        resRow += 1;
+      } else {
+        const firstRow = resRow;
+        codigos.forEach((cod, idx) => {
+          const promCod = avg(porCodigo.get(cod)!);
+          const vals: (string | number | null)[] = [
+            idx === 0 ? TURNO_LABEL[turno] : null,
+            cod,
+            idx === 0 ? (rowsTurno.length === 0 ? null : kgTurno) : null,
+            idx === 0 ? promTurno : null,
+            promCod,
+          ];
+          vals.forEach((val, i) => {
+            const cell = ws.getCell(resRow, RES_COL_START + i);
+            cell.value = val;
+            cell.border = styleBorder();
+            cell.alignment = { horizontal: "center", vertical: "middle" };
+            cell.font = { name: "Calibri", size: 10 };
+            if (i === 2) cell.numFmt = "#,##0";
+            else if ((i === 3 || i === 4) && typeof val === "number") cell.numFmt = "0.00";
+          });
+          resRow += 1;
+        });
+        // Merge vertical para TURNO, PRODUCCIÓN, PROM PESO BASE si hay >1 código
+        if (codigos.length > 1) {
+          ws.mergeCells(firstRow, RES_COL_START, resRow - 1, RES_COL_START);
+          ws.mergeCells(firstRow, RES_COL_START + 2, resRow - 1, RES_COL_START + 2);
+          ws.mergeCells(firstRow, RES_COL_START + 3, resRow - 1, RES_COL_START + 3);
+        }
+      }
     }
 
     // Total máquina
     const totalCells = [
       { v: `TOTAL ${block.codigo}` as string | number, fmt: undefined as string | undefined },
+      { v: null as unknown as string | number, fmt: undefined },
       { v: kgMaquina, fmt: "#,##0" },
+      { v: null as unknown as string | number, fmt: undefined },
       { v: null as unknown as string | number, fmt: undefined },
     ];
     totalCells.forEach((t, i) => {
