@@ -47,15 +47,6 @@ const COLS: ColDef[] = [
   { key: "blancuraB", header: "b*", variable: "blancuraB", width: 8, numFmt: "0.00" },
   { key: "peso", header: "PESO BOBINA (Kg)", variable: "peso", width: 16, numFmt: "0.00" },
   { key: "anchoUtil", header: "ANCHO ÚTIL", variable: "anchoUtil", width: 12, numFmt: "0.00" },
-  { key: "calibre", header: "CALIBRE", variable: "calibre", width: 10, numFmt: "0.00" },
-  { key: "diametro", header: "DIÁMETRO", variable: "diametro", width: 11, numFmt: "0.00" },
-  { key: "elongMD", header: "ELONG MD", variable: "elongMD", width: 11, numFmt: "0.00" },
-  { key: "humedad", header: "HUMEDAD", variable: "humedad", width: 10, numFmt: "0.00" },
-  { key: "relMDCD", header: "REL MD/CD", variable: "relMDCD", width: 11, numFmt: "0.00" },
-  { key: "tensionCD", header: "TENSIÓN CD", variable: "tensionCD", width: 12, numFmt: "0.00" },
-  { key: "tensionMD", header: "TENSIÓN MD", variable: "tensionMD", width: 12, numFmt: "0.00" },
-  { key: "tensionRH", header: "TENSIÓN RH", variable: "tensionRH", width: 12, numFmt: "0.00" },
-  { key: "uniones", header: "UNIONES", variable: "uniones", width: 10, numFmt: "0" },
 ];
 
 const TOTAL_COLS = COLS.length;
@@ -290,17 +281,9 @@ export async function exportConsolidadoXLSX(payload: ConsolidadoPayload): Promis
       { key: "blancuraA", label: "a*" },
       { key: "blancuraB", label: "b*" },
       { key: "anchoUtil", label: "ANCHO ÚTIL" },
-      { key: "calibre", label: "CALIBRE" },
-      { key: "diametro", label: "DIÁMETRO" },
-      { key: "elongMD", label: "ELONG MD" },
-      { key: "humedad", label: "HUMEDAD" },
-      { key: "relMDCD", label: "REL MD/CD" },
-      { key: "tensionCD", label: "TENSIÓN CD" },
-      { key: "tensionMD", label: "TENSIÓN MD" },
-      { key: "tensionRH", label: "TENSIÓN RH" },
       { key: "peso", label: "PESO BOBINA" },
     ];
-    const resHeaders = ["TURNO", "PRODUCCIÓN (Kg)", "TOTAL UNIONES", ...promVars.map((v) => `PROM ${v.label}`)];
+    const resHeaders = ["TURNO", "PRODUCCIÓN (Kg)", ...promVars.map((v) => `PROM ${v.label}`)];
     const resHeaderRow = ws.getRow(cursor);
     resHeaders.forEach((h, i) => {
       const cell = resHeaderRow.getCell(i + 1);
@@ -314,13 +297,11 @@ export async function exportConsolidadoXLSX(payload: ConsolidadoPayload): Promis
     for (const turno of TURNOS) {
       const rowsTurno = block.rows.filter((r) => r.turno === turno);
       const kgTurno = rowsTurno.reduce((a, r) => a + (r.mediciones.peso ?? 0), 0);
-      const unionesTurno = rowsTurno.reduce((a, r) => a + (r.mediciones.uniones ?? 0), 0);
       kgMaquina += kgTurno;
       const r = ws.getRow(cursor);
       const vals: (string | number | null)[] = [
         TURNO_LABEL[turno],
         rowsTurno.length === 0 ? null : kgTurno,
-        rowsTurno.length === 0 ? null : unionesTurno,
       ];
       for (const v of promVars) {
         const nums = rowsTurno
@@ -335,8 +316,7 @@ export async function exportConsolidadoXLSX(payload: ConsolidadoPayload): Promis
         cell.alignment = { horizontal: "center", vertical: "middle" };
         cell.font = { name: "Calibri", size: 10 };
         if (i === 1) cell.numFmt = "#,##0";
-        else if (i === 2) cell.numFmt = "0";
-        else if (i >= 3 && typeof val === "number") cell.numFmt = "0.00";
+        else if (i >= 2 && typeof val === "number") cell.numFmt = "0.00";
       });
       cursor += 1;
     }
@@ -345,8 +325,7 @@ export async function exportConsolidadoXLSX(payload: ConsolidadoPayload): Promis
     const totalRow = ws.getRow(cursor);
     totalRow.getCell(1).value = `TOTAL ${block.codigo}`;
     totalRow.getCell(2).value = kgMaquina;
-    totalRow.getCell(3).value = block.rows.reduce((a, r) => a + (r.mediciones.uniones ?? 0), 0);
-    for (let i = 1; i <= 3; i++) {
+    for (let i = 1; i <= 2; i++) {
       const c = totalRow.getCell(i);
       c.font = { name: "Calibri", size: 10, bold: true, color: { argb: "FFFFFFFF" } };
       c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF2563EB" } };
@@ -354,8 +333,7 @@ export async function exportConsolidadoXLSX(payload: ConsolidadoPayload): Promis
       c.border = styleBorder();
     }
     totalRow.getCell(2).numFmt = "#,##0";
-    totalRow.getCell(3).numFmt = "0";
-    for (let i = 4; i <= resHeaders.length; i++) {
+    for (let i = 3; i <= resHeaders.length; i++) {
       const c = totalRow.getCell(i);
       c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF2563EB" } };
       c.border = styleBorder();
