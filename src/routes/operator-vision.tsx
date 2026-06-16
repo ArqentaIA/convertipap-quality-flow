@@ -965,8 +965,17 @@ function OperatorVisionPage() {
                     : s === "ok"
                       ? "text-slate-900"
                       : "text-slate-400";
+              // Altura aprox. de fila para limitar a ~15 visibles antes de scroll
+              const rowH = filas <= 8 ? 32 : filas <= 14 ? 28 : 24;
+              const headerH = 30;
+              const summaryH = 30;
+              const maxBodyH = headerH + rowH * 15 + summaryH;
               return (
-                <div className="min-h-0 flex-1 overflow-auto">
+                <div
+                  className="overflow-auto"
+                  style={filas > 15 ? { maxHeight: `${maxBodyH}px` } : undefined}
+                >
+
                   {historial.length === 0 ? (
                     <div className="px-3 py-6 text-center text-sm font-semibold text-slate-400">
                       Aún no hay capturas para este turno.
