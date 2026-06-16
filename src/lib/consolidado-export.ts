@@ -386,25 +386,25 @@ export async function exportConsolidadoXLSX(payload: ConsolidadoPayload): Promis
 
     resRow += 1;
 
-    // ── Tablas de ESTATUS por turno (CONDICIONADOS / NO CONFORMES) ──
-    // Lado a lado debajo del resumen. 3 columnas cada una: TURNO | ROLLOS | KG
-    ws.getColumn(RES_COL_START + 5).width = 14;
-    const COND_START = RES_COL_START;       // 3 cols: +0,+1,+2
-    const NC_START = RES_COL_START + 3;     // 3 cols: +3,+4,+5
+    // ── Tablas de ESTATUS por turno + código (CONDICIONADOS / NO CONFORMES) ──
+    // Lado a lado debajo del resumen. 4 columnas cada una: TURNO | CÓDIGO | ROLLOS | KG
+    const COND_START = RES_COL_START;       // 4 cols: +0,+1,+2,+3
+    const NC_START = RES_COL_START + 5;     // 4 cols: +5,+6,+7,+8 (gap en +4)
+    for (let i = 0; i < 9; i++) ws.getColumn(RES_COL_START + i).width = 14;
 
     resRow += 1; // fila en blanco de separación
     const estatusTitleRow = resRow;
-    ws.mergeCells(estatusTitleRow, COND_START, estatusTitleRow, COND_START + 2);
+    ws.mergeCells(estatusTitleRow, COND_START, estatusTitleRow, COND_START + 3);
     const condTitle = ws.getCell(estatusTitleRow, COND_START);
-    condTitle.value = "CONDICIONADOS POR TURNO";
+    condTitle.value = "CONDICIONADOS POR TURNO Y CÓDIGO";
     condTitle.font = { name: "Calibri", size: 10, bold: true, color: { argb: "FFFFFFFF" } };
     condTitle.alignment = { horizontal: "center", vertical: "middle" };
     condTitle.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFD97706" } };
     condTitle.border = styleBorder();
 
-    ws.mergeCells(estatusTitleRow, NC_START, estatusTitleRow, NC_START + 2);
+    ws.mergeCells(estatusTitleRow, NC_START, estatusTitleRow, NC_START + 3);
     const ncTitle = ws.getCell(estatusTitleRow, NC_START);
-    ncTitle.value = "NO CONFORMES POR TURNO";
+    ncTitle.value = "NO CONFORMES POR TURNO Y CÓDIGO";
     ncTitle.font = { name: "Calibri", size: 10, bold: true, color: { argb: "FFFFFFFF" } };
     ncTitle.alignment = { horizontal: "center", vertical: "middle" };
     ncTitle.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFDC2626" } };
@@ -412,7 +412,7 @@ export async function exportConsolidadoXLSX(payload: ConsolidadoPayload): Promis
     resRow += 1;
 
     // Encabezados
-    ["TURNO", "ROLLOS", "KG"].forEach((h, i) => {
+    ["TURNO", "CÓDIGO", "ROLLOS", "KG"].forEach((h, i) => {
       applyHeaderFill(ws.getCell(resRow, COND_START + i));
       ws.getCell(resRow, COND_START + i).value = h;
       applyHeaderFill(ws.getCell(resRow, NC_START + i));
@@ -420,37 +420,66 @@ export async function exportConsolidadoXLSX(payload: ConsolidadoPayload): Promis
     });
     resRow += 1;
 
-    let condRollosTot = 0, condKgTot = 0, ncRollosTot = 0, ncKgTot = 0;
-    for (const turno of TURNOS) {
-      const rowsTurno = block.rows.filter((r) => r.turno === turno);
-      const cond = rowsTurno.filter((r) => (r.estatus_liberacion ?? "").trim() === "C");
-      const nc = rowsTurno.filter((r) => (r.estatus_liberacion ?? "").trim() === "NC");
-      const condKg = cond.reduce((a, r) => a + (r.mediciones.peso ?? 0), 0);
-      const ncKg = nc.reduce((a, r) => a + (r.mediciones.peso ?? 0), 0);
-      condRollosTot += cond.length; condKgTot += condKg;
-      ncRollosTot += nc.length; ncKgTot += ncKg;
+    // Agrupar por turno+código por cada estatus
+    type Agg = { rollos: number; kg: number };
+    const buildGroups = (estatus: "C" | "NC") => {
+      const groups: { turno: typeof TURNOS[number]; codigo: string; rollos: number; kg: number }[] = [];
+      for (const turno of TURNOS) {
+        const rowsTurno = block.rows.filter(
+          (r) => r.turno === turno && (r.estatus_liberacion ?? "").trim() === estatus,
+        );
+        const porCod = new Map<string, Agg>();
+        for (const r of rowsTurno) {
+          const cod = (r.codigo_producto ?? "—").toString();
+          const a = porCod.get(cod) ?? { rollos: 0, kg: 0 };
+          a.rollos += 1;
+          a.kg += r.mediciones.peso ?? 0;
+          porCod.set(cod, a);
+        }
+        const cods = Array.from(porCod.keys()).sort();
+        for (const cod of cods) {
+          const a = porCod.get(cod)!;
+          groups.push({ turno, codigo: cod, rollos: a.rollos, kg: a.kg });
+        }
+      }
+      return groups;
+    };
+    const condGroups = buildGroups("C");
+    const ncGroups = buildGroups("NC");
 
-      const fills = [
-        { col: COND_START, vals: [TURNO_LABEL[turno], cond.length, condKg] },
-        { col: NC_START, vals: [TURNO_LABEL[turno], nc.length, ncKg] },
+    const condRollosTot = condGroups.reduce((a, g) => a + g.rollos, 0);
+    const condKgTot = condGroups.reduce((a, g) => a + g.kg, 0);
+    const ncRollosTot = ncGroups.reduce((a, g) => a + g.rollos, 0);
+    const ncKgTot = ncGroups.reduce((a, g) => a + g.kg, 0);
+
+    const maxRows = Math.max(condGroups.length, ncGroups.length, 1);
+    const dataStartRow = resRow;
+    for (let i = 0; i < maxRows; i++) {
+      const sides = [
+        { col: COND_START, g: condGroups[i] },
+        { col: NC_START, g: ncGroups[i] },
       ];
-      for (const f of fills) {
-        f.vals.forEach((v, i) => {
-          const c = ws.getCell(resRow, f.col + i);
+      for (const s of sides) {
+        const vals: (string | number | null)[] = s.g
+          ? [TURNO_LABEL[s.g.turno], s.g.codigo, s.g.rollos, s.g.kg]
+          : [null, null, null, null];
+        vals.forEach((v, j) => {
+          const c = ws.getCell(resRow, s.col + j);
           c.value = v;
           c.border = styleBorder();
           c.alignment = { horizontal: "center", vertical: "middle" };
           c.font = { name: "Calibri", size: 10 };
-          if (i === 2 && typeof v === "number") c.numFmt = "#,##0";
+          if (j === 3 && typeof v === "number") c.numFmt = "#,##0";
         });
       }
       resRow += 1;
     }
+    void dataStartRow;
 
     // Totales
     const totals = [
-      { col: COND_START, vals: ["TOTAL", condRollosTot, condKgTot], color: "FFD97706" },
-      { col: NC_START, vals: ["TOTAL", ncRollosTot, ncKgTot], color: "FFDC2626" },
+      { col: COND_START, vals: ["TOTAL", "", condRollosTot, condKgTot], color: "FFD97706" },
+      { col: NC_START, vals: ["TOTAL", "", ncRollosTot, ncKgTot], color: "FFDC2626" },
     ];
     for (const t of totals) {
       t.vals.forEach((v, i) => {
@@ -460,7 +489,7 @@ export async function exportConsolidadoXLSX(payload: ConsolidadoPayload): Promis
         c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: t.color } };
         c.alignment = { horizontal: "center", vertical: "middle" };
         c.border = styleBorder();
-        if (i === 2 && typeof v === "number") c.numFmt = "#,##0";
+        if (i === 3 && typeof v === "number") c.numFmt = "#,##0";
       });
     }
 
