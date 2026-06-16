@@ -15,7 +15,7 @@ import {
   Weight,
 } from "lucide-react";
 import { getOperatorVisionData } from "@/lib/operator-vision.functions";
-import { getAppSettings } from "@/lib/settings.functions";
+import { getTurnosConfig } from "@/lib/settings.functions";
 import { useOperatorVisionRealtime } from "@/hooks/use-operator-vision-realtime";
 import logoConvertipap from "@/assets/logo-convertipap.png";
 
@@ -467,7 +467,7 @@ function OperatorVisionPage() {
   // Config de turnos (para derivar el turno real por hora del sistema).
   const { data: appSettings } = useQuery({
     queryKey: ["app-settings-turnos"],
-    queryFn: () => getAppSettings(),
+    queryFn: () => getTurnosConfig(),
     staleTime: 5 * 60_000,
     refetchOnWindowFocus: false,
   });
