@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      _backup_eliminacion_captura_prueba: {
+        Row: {
+          created_at: string
+          eliminado_at: string
+          eliminado_por: string | null
+          id: string
+          motivo_eliminacion: string
+          payload: Json
+          registro_id: string
+          tabla_origen: string
+        }
+        Insert: {
+          created_at?: string
+          eliminado_at?: string
+          eliminado_por?: string | null
+          id?: string
+          motivo_eliminacion: string
+          payload: Json
+          registro_id: string
+          tabla_origen: string
+        }
+        Update: {
+          created_at?: string
+          eliminado_at?: string
+          eliminado_por?: string | null
+          id?: string
+          motivo_eliminacion?: string
+          payload?: Json
+          registro_id?: string
+          tabla_origen?: string
+        }
+        Relationships: []
+      }
       _backup_sufijo_numero_rollo: {
         Row: {
           capturado_at: string | null
