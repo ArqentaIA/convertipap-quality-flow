@@ -52,10 +52,14 @@ function ProduccionPage() {
   const [rango, setRango] = useState<Rango>("turno");
   const listFn = useServerFn(listMaquinasConEstado);
   const labFilter = useLabFilter();
-  const { data: all = [], isFetching, dataUpdatedAt } = useQuery({
+  const rtStatus = useProduccionRealtime();
+  const { data: all = [], isFetching } = useQuery({
     queryKey: ["produccion", "maquinas", rango],
     queryFn: () => listFn({ data: { rango } }),
-    refetchInterval: 60_000,
+    refetchInterval: 15_000,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    staleTime: 0,
   });
 
   // Todos los roles ven las estadísticas de todas las máquinas.
