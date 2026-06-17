@@ -186,13 +186,13 @@ export const getReportes = createServerFn({ method: "POST" })
       return `S${week}`;
     }
     // Índice de mediciones por muestra (para cumplimiento de variables)
-    const medsByMuestra = new Map<string, { eval: number; conf: number }>();
+    const medsConfByMuestra = new Map<string, { eval: number; conf: number }>();
     for (const med of mediciones ?? []) {
       if (med.estado !== "conforme" && med.estado !== "no_conforme" && med.estado !== "fuera_rango_critico") continue;
-      const e = medsByMuestra.get(med.muestra_id) ?? { eval: 0, conf: 0 };
+      const e = medsConfByMuestra.get(med.muestra_id) ?? { eval: 0, conf: 0 };
       e.eval++;
       if (med.estado === "conforme") e.conf++;
-      medsByMuestra.set(med.muestra_id, e);
+      medsConfByMuestra.set(med.muestra_id, e);
     }
     const cumplMap = new Map<
       string,
@@ -215,7 +215,7 @@ export const getReportes = createServerFn({ method: "POST" })
         };
       e.total++;
       if (esLiberadoOficial(m)) e.conformes++;
-      const ms = medsByMuestra.get(m.id);
+      const ms = medsConfByMuestra.get(m.id);
       if (ms) {
         e.varsEval += ms.eval;
         e.varsConf += ms.conf;
