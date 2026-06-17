@@ -109,8 +109,18 @@ export const getReportes = createServerFn({ method: "POST" })
       .lte("inicio", end);
 
     // ====================================================
-    // Desempeño por planta (cumplimiento, rollos, NC, delta)
+    // Desempeño por planta — Fase 1 v2 (reglas A/B/E)
+    // "Cumplimiento de liberación" = estatus_liberacion ∈ {L, C}.
+    // NC oficial = estatus_liberacion = 'NC' (o dictamen rechazada cuando
+    // no hay estatus oficial). NO se degrada por mediciones fuera de spec.
     // ====================================================
+    const esLiberadoOficial = (m: { estatus_liberacion?: string | null; dictamen?: string | null }) =>
+      m.estatus_liberacion === "L" || m.estatus_liberacion === "C" ||
+      (m.estatus_liberacion == null && m.dictamen === "liberada");
+    const esNcOficial = (m: { estatus_liberacion?: string | null; dictamen?: string | null }) =>
+      m.estatus_liberacion === "NC" ||
+      (m.estatus_liberacion == null && m.dictamen === "rechazada");
+
     const desempenoMap = new Map<
       string,
       { total: number; conformes: number; rollos: number; nc: number }
@@ -120,8 +130,8 @@ export const getReportes = createServerFn({ method: "POST" })
       const entry =
         desempenoMap.get(k) ?? { total: 0, conformes: 0, rollos: 0, nc: 0 };
       entry.total++;
-      if (m.dictamen === "liberada") entry.conformes++;
-      if (m.dictamen === "rechazada") entry.nc++;
+      if (esLiberadoOficial(m)) entry.conformes++;
+      if (esNcOficial(m)) entry.nc++;
       desempenoMap.set(k, entry);
     }
     for (const r of rollos ?? []) {
@@ -141,7 +151,7 @@ export const getReportes = createServerFn({ method: "POST" })
     for (const m of muestrasPrev ?? []) {
       const e = prevByPlanta.get(m.planta_id) ?? { total: 0, conformes: 0 };
       e.total++;
-      if (m.dictamen === "liberada") e.conformes++;
+      if (esLiberadoOficial(m)) e.conformes++;
       prevByPlanta.set(m.planta_id, e);
     }
 
@@ -162,7 +172,10 @@ export const getReportes = createServerFn({ method: "POST" })
     );
 
     // ====================================================
-    // Cumplimiento por máquina y semana
+    // Cumplimiento por máquina y semana — Fase 1 v2
+    // Reportamos DOS columnas separadas (regla D/E):
+    //   - cumplimiento_pct          → liberación oficial (L+C)/total
+    //   - cumplimiento_variables_pct → mediciones conformes/evaluadas
     // ====================================================
     function weekKey(iso: string) {
       const d = new Date(iso);
@@ -172,9 +185,18 @@ export const getReportes = createServerFn({ method: "POST" })
       );
       return `S${week}`;
     }
+    // Índice de mediciones por muestra (para cumplimiento de variables)
+    const medsByMuestra = new Map<string, { eval: number; conf: number }>();
+    for (const med of mediciones ?? []) {
+      if (med.estado !== "conforme" && med.estado !== "no_conforme" && med.estado !== "fuera_rango_critico") continue;
+      const e = medsByMuestra.get(med.muestra_id) ?? { eval: 0, conf: 0 };
+      e.eval++;
+      if (med.estado === "conforme") e.conf++;
+      medsByMuestra.set(med.muestra_id, e);
+    }
     const cumplMap = new Map<
       string,
-      { semana: string; planta: string; maquina: string; total: number; conformes: number }
+      { semana: string; planta: string; maquina: string; total: number; conformes: number; varsEval: number; varsConf: number }
     >();
     for (const m of muestras ?? []) {
       const maq = maquinaById.get(m.maquina_id);
@@ -188,16 +210,24 @@ export const getReportes = createServerFn({ method: "POST" })
           maquina: maq?.codigo ?? "—",
           total: 0,
           conformes: 0,
+          varsEval: 0,
+          varsConf: 0,
         };
       e.total++;
-      if (m.dictamen === "liberada") e.conformes++;
+      if (esLiberadoOficial(m)) e.conformes++;
+      const ms = medsByMuestra.get(m.id);
+      if (ms) {
+        e.varsEval += ms.eval;
+        e.varsConf += ms.conf;
+      }
       cumplMap.set(key, e);
     }
     const cumplRows = Array.from(cumplMap.values()).map((v) => ({
       semana: v.semana,
       planta: v.planta,
       maquina: v.maquina,
-      cumplimiento_pct: Number(((v.conformes / v.total) * 100).toFixed(1)),
+      cumplimiento_pct: v.total ? Number(((v.conformes / v.total) * 100).toFixed(1)) : 0,
+      cumplimiento_variables_pct: v.varsEval ? Number(((v.varsConf / v.varsEval) * 100).toFixed(1)) : 0,
       meta_pct: 90,
     }));
 
