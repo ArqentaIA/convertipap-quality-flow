@@ -106,11 +106,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "ajustes_calidad_muestra_id_fkey"
+            columns: ["muestra_id"]
+            isOneToOne: false
+            referencedRelation: "v_muestra_kpis_v2"
+            referencedColumns: ["muestra_id"]
+          },
+          {
             foreignKeyName: "ajustes_calidad_muestra_verificacion_id_fkey"
             columns: ["muestra_verificacion_id"]
             isOneToOne: false
             referencedRelation: "muestras_calidad"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ajustes_calidad_muestra_verificacion_id_fkey"
+            columns: ["muestra_verificacion_id"]
+            isOneToOne: false
+            referencedRelation: "v_muestra_kpis_v2"
+            referencedColumns: ["muestra_id"]
           },
           {
             foreignKeyName: "ajustes_calidad_orden_id_fkey"
@@ -448,6 +462,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "muestras_calidad"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mediciones_calidad_muestra_id_fkey"
+            columns: ["muestra_id"]
+            isOneToOne: false
+            referencedRelation: "v_muestra_kpis_v2"
+            referencedColumns: ["muestra_id"]
           },
           {
             foreignKeyName: "mediciones_calidad_variable_id_fkey"
@@ -1437,7 +1458,74 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      v_muestra_kpis_v2: {
+        Row: {
+          autorizado_por: string | null
+          capturado_at: string | null
+          cumplimiento_variables_pct: number | null
+          dictamen: Database["public"]["Enums"]["qc_dictamen"] | null
+          estado_workflow:
+            | Database["public"]["Enums"]["qc_muestra_estado"]
+            | null
+          estatus_oficial: string | null
+          maquina_id: string | null
+          muestra_id: string | null
+          numero_rollo: string | null
+          op_date: string | null
+          orden_id: string | null
+          producto_id: string | null
+          tiene_variables_fuera_spec: boolean | null
+          turno: string | null
+          variables_conformes: number | null
+          variables_evaluables: number | null
+          variables_no_conformes: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "muestras_calidad_maquina_id_fkey"
+            columns: ["maquina_id"]
+            isOneToOne: false
+            referencedRelation: "maquinas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "muestras_calidad_orden_id_fkey"
+            columns: ["orden_id"]
+            isOneToOne: false
+            referencedRelation: "ordenes_fabricacion"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "muestras_calidad_producto_id_fkey"
+            columns: ["producto_id"]
+            isOneToOne: false
+            referencedRelation: "productos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_turno_kpis_v2: {
+        Row: {
+          cumplimiento_turno_pct: number | null
+          maquina_id: string | null
+          op_date: string | null
+          rollos_capturados: number | null
+          rollos_concesion: number | null
+          rollos_liberados: number | null
+          rollos_no_conformes: number | null
+          rollos_sin_estatus: number | null
+          turno: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "muestras_calidad_maquina_id_fkey"
+            columns: ["maquina_id"]
+            isOneToOne: false
+            referencedRelation: "maquinas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       audit_action: {
@@ -1485,6 +1573,30 @@ export type Database = {
           _user_id: string
         }
         Returns: string
+      }
+      fn_cumplimiento_turno_v2: {
+        Args: { _maquina_id: string; _op_date: string; _turno: string }
+        Returns: {
+          cumplimiento_turno_pct: number
+          maquina_id: string
+          op_date: string
+          rollos_capturados: number
+          rollos_concesion: number
+          rollos_liberados: number
+          rollos_no_conformes: number
+          rollos_sin_estatus: number
+          turno: string
+        }[]
+      }
+      fn_cumplimiento_variables_rollo_v2: {
+        Args: { _muestra_id: string }
+        Returns: {
+          cumplimiento_variables_pct: number
+          muestra_id: string
+          variables_conformes: number
+          variables_evaluables: number
+          variables_no_conformes: number
+        }[]
       }
       has_role: {
         Args: {
