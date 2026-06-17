@@ -1079,22 +1079,36 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
                 <Label htmlFor="rollo" className="text-base">
                   Número de rollo{" "}
                   <span className="text-muted-foreground font-normal">
-                    (letras, números o guion)
+                    (sufijo automático según máquina)
                   </span>
                 </Label>
-                <Input
-                  id="rollo"
-                  type="text"
-                  inputMode="text"
-                  placeholder="4438-6"
-                  pattern="[A-Za-z0-9-]{1,30}"
-                  value={numeroRollo}
-                  onChange={(e) => setNumeroRollo(e.target.value)}
+                <div
                   className={cn(
-                    "h-11 text-base",
+                    "flex h-11 items-stretch rounded-md border border-input bg-transparent shadow-sm focus-within:ring-1 focus-within:ring-ring",
                     numeroRollo && !ROLLO_REGEX.test(numeroRollo.trim()) && "border-destructive",
                   )}
-                />
+                >
+                  <Input
+                    id="rollo"
+                    type="text"
+                    inputMode="text"
+                    placeholder="4438"
+                    pattern="[A-Za-z0-9-]{1,28}"
+                    value={baseRollo}
+                    onChange={(e) => {
+                      const raw = e.target.value.replace(/-+$/, "");
+                      setNumeroRollo(raw ? `${raw}-${sufijoMaq}` : "");
+                    }}
+                    className="h-full flex-1 border-0 bg-transparent text-base shadow-none focus-visible:ring-0"
+                  />
+                  <span
+                    className="flex items-center rounded-r-md border-l border-input bg-muted px-3 text-base font-semibold text-muted-foreground select-none"
+                    title={`Sufijo fijo para ${maquina.codigo}`}
+                    aria-label={`Sufijo fijo -${sufijoMaq}`}
+                  >
+                    -{sufijoMaq || "?"}
+                  </span>
+                </div>
                 {numeroRollo && !ROLLO_REGEX.test(numeroRollo.trim()) && (
                   <p className="text-[11px] text-destructive">
                     Usa máximo 30 caracteres: letras, números y guion.
