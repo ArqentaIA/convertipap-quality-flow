@@ -548,6 +548,36 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
       if (error) throw new Error(error.message);
     }
 
+    // Auditoría explícita de los hallazgos del rollo (creación o edición).
+    if (
+      data.defecto_visual_conversion ||
+      data.variable_tecnica_dimensional ||
+      data.criterio_defecto
+    ) {
+      try {
+        await (sb as unknown as { rpc: (n: string, a: unknown) => Promise<unknown> }).rpc(
+          "audit_action",
+          {
+            p_modulo: "control_calidad",
+            p_descripcion: data.muestra_id
+              ? "Edición de hallazgos del rollo"
+              : "Captura de hallazgos del rollo",
+            p_registro_id: muestraId,
+            p_datos: {
+              numero_rollo: data.numero_rollo,
+              maquina_id: data.maquina_id,
+              turno: data.turno,
+              defecto_visual_conversion: data.defecto_visual_conversion ?? null,
+              variable_tecnica_dimensional: data.variable_tecnica_dimensional ?? null,
+              criterio_defecto: data.criterio_defecto ?? null,
+            },
+          },
+        );
+      } catch {
+        // No bloquear la captura si la auditoría falla.
+      }
+    }
+
     return { muestra_id: muestraId, reabre_dictamen: !!dictamenPrevioAt };
   });
 
