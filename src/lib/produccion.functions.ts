@@ -644,7 +644,7 @@ export const listMaquinasConEstado = createServerFn({ method: "GET" })
       .select("turno1_inicio, turno1_fin, turno2_inicio, turno2_fin, turno3_inicio, turno3_fin")
       .limit(1)
       .maybeSingle();
-    const desde24h = rangoToDesde(rangoNorm, turnosCfg) ?? new Date(Date.now() - 24 * 3600_000).toISOString();
+    const desde24h = rangoToDesde(rango, turnosCfg) ?? new Date(Date.now() - 24 * 3600_000).toISOString();
 
     const [
       { data: estados },
