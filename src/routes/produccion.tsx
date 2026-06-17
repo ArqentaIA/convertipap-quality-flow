@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { listMaquinasConEstado } from "@/lib/produccion.functions";
+import { useProduccionRealtime } from "@/hooks/use-produccion-realtime";
 
 import { BuscadorRollo } from "@/components/qc/BuscadorRollo";
 import { useLabFilter } from "@/lib/lab";
