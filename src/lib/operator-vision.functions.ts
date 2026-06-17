@@ -384,6 +384,7 @@ export const getOperatorVisionData = createServerFn({ method: "GET" })
           }
         : null,
       cumplimientoTurno,
+      cumplimientoVariables,
     };
   });
 
