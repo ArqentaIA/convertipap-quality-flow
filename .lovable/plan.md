@@ -1,75 +1,89 @@
-# Plan: RBAC centralizado + Calidad como único editor de estatus
+## Alcance
 
-## 1. Permisos por rol (base de datos)
+Reemplazar el campo libre `observaciones_generales` por 3 selects controlados en Captura de Calidad, persistirlos en BD, auditar creación y edición, y propagar el formato concatenado (con color rojo si es CRÍTICO) al visor, modal de antecedentes y reportes.
 
-Recalibrar `module_permissions` para que coincida exactamente con la matriz solicitada:
+---
 
-| Rol | Módulos |
-|---|---|
-| administrador | dashboard, produccion, control_calidad, variables_calidad, catalogos, reportes, auditoria, configuracion, usuarios_permisos |
-| gerente_general | dashboard, produccion, control_calidad (read), variables_calidad (read), reportes, auditoria |
-| direccion | dashboard, produccion, control_calidad (read), variables_calidad (read), reportes, auditoria |
-| calidad | dashboard, produccion, control_calidad, variables_calidad, reportes, auditoria |
-| capturista | control_calidad |
+## 1. Migración de base de datos
 
-Cambios concretos:
-- Agregar `catalogos` al enum `app_module` (falta).
-- Agregar permiso de `auditoria` a `direccion` y `calidad`.
-- Quitar `configuracion` y `usuarios_permisos` de `gerente_general`.
-- Agregar `control_calidad` a `direccion`.
+Tabla `muestras_calidad` — agregar 3 columnas nullable:
 
-## 2. Modo solo-lectura (frontend + backend)
+```sql
+ALTER TABLE public.muestras_calidad
+  ADD COLUMN defecto_visual_conversion text,
+  ADD COLUMN variable_tecnica_dimensional text,
+  ADD COLUMN criterio_defecto text
+    CHECK (criterio_defecto IN ('MENOR','MAYOR','CRÍTICO'));
+```
 
-Nueva tabla/columna o función `can_edit_module(user, module)`:
-- `gerente_general` y `direccion`: pueden ver `control_calidad` y `variables_calidad` pero **no** editar.
-- En UI: ocultar botones de captura/guardar/editar cuando el usuario no tiene edición.
-- En RLS de `variables_calidad` y `mediciones_calidad`/`muestras_calidad`: solo `calidad`, `administrador`, `capturista` (cuando aplique) pueden `INSERT/UPDATE/DELETE`.
+- No se borra `observaciones_generales` (compatibilidad histórica), pero deja de escribirse desde la UI.
+- Las 3 columnas se incluyen en el trigger `audit_trigger_fn` existente (ya audita UPDATE/INSERT sobre la tabla → cubre el requisito de auditar ediciones automáticamente).
+- Adicional: un audit_action explícito al guardar/editar con módulo `control_calidad` para registrar `muestra_id, numero_rollo, maquina_id, turno, usuario, defecto_visual_conversion, variable_tecnica_dimensional, criterio_defecto`.
 
-## 3. Restricción por laboratorio (capturistas)
+## 2. Captura (`src/routes/calidad.captura.tsx`)
 
-- Hoy `lab.ts` ya filtra UI por `profile.laboratorio`. Reforzar en backend con función `user_allowed_machines(uid)` que devuelva los IDs/códigos permitidos:
-  - `capturista norte` → MP-06, MP-07
-  - `capturista sur` → MP-04, MP-05
-  - Otros roles → todas
-- Aplicar a RLS de `muestras_calidad`, `mediciones_calidad`, `rollos_producidos`, `ajustes_calidad`, `paros_maquina`, `maquina_estado_actual` para SELECT/INSERT/UPDATE.
+Debajo de "Mediciones por Variable", **reemplazar** el textarea actual de observaciones por una nueva sección "Hallazgos del rollo" con 3 selects opcionales:
 
-## 4. Estatus de rollo: solo Calidad + doble validación
+- **Defectos Visuales y de Conversión** (17 opciones: Uniones, Desfases, Pintos, Área sucia, Picado, Oscilación de la hoja, Gomas, Hoyos, Adherencia, Porosidad, Embobinado flojo, Tonalidad rosa, Tonalidad verde, Tonalidad azul, Suciedad, Arrugas, Grumos).
+- **Variables Técnicas y Dimensionales** (Blancura, RH, Diámetro <, Ancho, Largo, Tensión Húmeda, Stretch, Suavidad, Otros — confirmar lista exacta en implementación leyendo el prompt original).
+- **Criterio de defecto** (MENOR, MAYOR, CRÍTICO).
 
-- Centralizar **toda** mutación de estatus (`muestras_calidad.estado`/`dictamen`, `rollos_producidos.estatus`) en un `createServerFn` único `changeRollStatus` que:
-  - Verifica `has_role(uid, 'calidad') OR has_role(uid, 'administrador')`.
-  - Requiere `motivo` (string mínimo 5 chars).
-  - Re-valida credenciales: el frontend pide email+password al usuario y llama `supabase.auth.signInWithPassword` contra **el mismo usuario** antes de invocar la serverFn; la serverFn recibe un token recién emitido y lo verifica.
-  - Inserta en `audit_log` con: usuario, rol, planta, máquina, lab, folio/ID, estatus anterior, estatus nuevo, motivo, IP (`x-forwarded-for`), user-agent.
-- Bloquear en RLS: solo `service_role` o roles `calidad/administrador` pueden hacer `UPDATE` sobre columnas de estatus.
-- Mensaje estándar cuando un usuario sin permiso intente: *"Acceso denegado. Solo el responsable de Calidad está autorizado para modificar el estatus de un rollo."*
+Cada select tiene opción "— Sin hallazgo —" (null). Estado en `useState`. Se envían al server fn `upsertMuestraConMediciones` y `dictaminarMuestra`/update path. Eliminar `observaciones` textarea actual; `observaciones_generales` se envía siempre como `""`.
 
-## 5. Frontend: ocultar lo no autorizado
+## 3. Server functions (`src/lib/qc.functions.ts`)
 
-- `AppLayout` ya filtra el menú por `auth.canAccess` ✓ — agregar entry `catalogos`.
-- En `calidad.captura.tsx` y selectores de máquina, filtrar opciones con `useLabFilter` (ya existe). Asegurar que las consultas de máquinas también pasen por el filtro.
-- Botones de cambio de estatus en `calidad.revision.tsx`, `muestra.$id.tsx`, `control-calidad.tsx`, `produccion.tsx`, `historial.$maquina.tsx`: ocultarlos para usuarios no-calidad/no-admin; mostrarlos detrás de un modal "Confirmar identidad" para los autorizados.
-- En módulos solo-lectura (gerente/dirección): ocultar todos los botones de acción (capturar, editar, guardar) en `control-calidad`, `calidad.*`, `variables-calidad`.
+- Extender el `inputValidator` de `upsertMuestraConMediciones` con los 3 campos opcionales.
+- Persistir en INSERT y UPDATE.
+- Tras el upsert, llamar `audit_action('control_calidad', 'Captura/edición de hallazgos del rollo', muestra_id, { numero_rollo, maquina, turno, defecto_visual_conversion, variable_tecnica_dimensional, criterio_defecto })`.
+- Extender el SELECT de `listMisMuestrasRecientes` y demás lectores para incluir las 3 columnas.
 
-## 6. Auditoría enriquecida
+## 4. Helper de formato (`src/lib/roll-label.ts` o nuevo `src/lib/hallazgo.ts`)
 
-- Agregar columnas a `audit_log`: `ip_address text`, `user_agent text`, `planta_id`, `maquina_id`, `laboratorio`, `folio_rollo`, `estatus_anterior`, `estatus_nuevo`, `motivo`.
-- Nueva RPC `audit_status_change(...)` que recibe todo el contexto.
-- RLS de `audit_log` SELECT: solo `administrador`, `calidad`, `direccion`, `gerente_general` (ya existe, validar).
-- Bloquear `UPDATE`/`DELETE` en `audit_log` para todos (inmutable).
+```ts
+export function formatHallazgo(m): string | null
+export function isHallazgoCritico(m): boolean
+```
 
-## 7. Detalles técnicos
+Formato: `[Defecto] | [Variable] | [Criterio]` omitiendo segmentos vacíos. Devuelve null si los 3 están vacíos.
 
-- Nuevo archivo `src/lib/roll-status.functions.ts` con `changeRollStatus` (serverFn protegido).
-- Nuevo componente `src/components/qc/ReautenticarModal.tsx` para doble validación.
-- Hook `useCanEditModule(module)` en `src/lib/auth.tsx`.
-- Migración SQL única que: actualiza `app_module` enum, reescribe `module_permissions`, crea `can_edit_module`, `user_allowed_machines`, endurece RLS y extiende `audit_log`.
-- No se tocan: `src/integrations/supabase/*` autogenerados, `auth.users`, schema `auth`.
+## 5. Visor — solo encabezado del **rollo actual**
 
-## 8. Riesgos / preguntas abiertas
+`src/routes/operator-vision.tsx` (y el card del rollo en curso): donde se muestren observaciones del rollo actual, sustituir por `formatHallazgo(rolloActual)`. Si `isHallazgoCritico` → clase `text-red-600 font-semibold`. El historial de rollos del visor NO cambia color (solo encabezado del actual, según tu respuesta 1).
 
-- **Doble validación**: confirmar que aceptas re-login con email+password del MISMO usuario (no de un supervisor distinto).
-- **Capturistas y cambio de estatus**: en la definición actual no editan estatus, solo capturan mediciones. Lo dejo así.
-- **Catálogos**: hoy ningún rol salvo admin lo tendrá. Confirmar.
-- **Reversión de cambios**: lo trato como otro `changeRollStatus` con motivo, no como acción separada.
+También extender el payload de `getOperatorVisionData` (`src/lib/operator-vision.functions.ts`) para incluir los 3 campos en cada muestra.
 
-¿Procedo con esta implementación o quieres ajustar algo (especialmente puntos 4 y 8)?
+## 6. Antecedentes / Modal de detalle
+
+`src/components/qc/DetalleCalidadModal.tsx` — agregar fila "Hallazgos" con el texto concatenado en rojo si es CRÍTICO.
+
+`src/routes/muestra.$id.tsx` — idem.
+
+## 7. Reportes (todos)
+
+Reemplazar columna "Observaciones" por "Hallazgos" en:
+
+- `src/lib/reporte-turno-export.ts`
+- `src/lib/consolidado-export.ts`
+- `src/lib/reporte-mensual-export.ts`
+- `src/lib/ceo-report.functions.ts`
+- `src/lib/roll-report.ts` (QR/etiqueta detalle)
+
+Para los Excel: si es CRÍTICO, aplicar `font: { color: { rgb: 'FFFF0000' }, bold: true }` en esa celda.
+
+## 8. Lo que NO se toca
+
+- `observaciones_generales` columna en BD (se conserva por historial).
+- Otros indicadores del visor.
+- Estados de liberación / dictamen.
+- Captura de mediciones por variable.
+- Lógica de `capturado_at` ni `hora_muestreo`.
+
+---
+
+## Riesgos / supuestos
+
+1. La lista exacta de "Variables Técnicas y Dimensionales" del prompt original se truncó en el contexto. La leeré completa antes de implementar; si hay ambigüedad pregunto.
+2. Los registros históricos tendrán las 3 nuevas columnas en NULL → en reportes mostrarán vacío (esperado).
+3. Reportes mensuales/CEO ya generados no se re-procesan.
+
+¿Procedo con la migración + los cambios de UI/server fn/exportadores tal cual o ajustamos algo?

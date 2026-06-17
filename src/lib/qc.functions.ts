@@ -295,6 +295,7 @@ export const listMisMuestrasRecientes = createServerFn({ method: "GET" })
       .from("muestras_calidad")
       .select(
         `id, hora_muestreo, capturado_at, secuencia_captura, numero_rollo, estado, observaciones_generales,
+         defecto_visual_conversion, variable_tecnica_dimensional, criterio_defecto,
          producto_id, maquina_id, capturado_por, turno,
          jefe_maquina, operador, prensero, analista,
          estatus_liberacion, defectos,
@@ -403,6 +404,9 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
         tipo_muestreo: z.enum(["por_rollo", "por_tiempo"]),
         hora_muestreo: z.string().nullable().optional(),
         observaciones_generales: z.string().default(""),
+        defecto_visual_conversion: z.string().trim().max(60).nullable().optional(),
+        variable_tecnica_dimensional: z.string().trim().max(60).nullable().optional(),
+        criterio_defecto: z.enum(["MENOR", "MAYOR", "CRÍTICO"]).nullable().optional(),
         variables_snapshot_json: z.record(z.string(), z.unknown()).default({}),
         mediciones: z.array(medicionInputSchema),
         enviar_a_revision: z.boolean().default(false),
@@ -459,7 +463,23 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
       defectos: data.defectos ?? [],
       tipo_muestreo: data.tipo_muestreo,
       hora_muestreo: data.hora_muestreo || new Date().toISOString(),
-      observaciones_generales: data.observaciones_generales,
+      // observaciones_generales mantiene compatibilidad con reportes/etiqueta/modal:
+      // si hay hallazgos del rollo, los serializa como "[Defecto] | [Variable] | [Criterio]".
+      // Si el criterio es CRÍTICO, se prefija "🔴 CRÍTICO · " para que destaque en exports
+      // sin estilo de celda (xlsx community no soporta colores de fuente por celda).
+      observaciones_generales: (() => {
+        const partes = [
+          data.defecto_visual_conversion?.trim(),
+          data.variable_tecnica_dimensional?.trim(),
+          data.criterio_defecto?.trim(),
+        ].filter((x): x is string => !!x && x.length > 0);
+        if (partes.length === 0) return data.observaciones_generales ?? "";
+        const txt = partes.join(" | ");
+        return data.criterio_defecto === "CRÍTICO" ? `🔴 CRÍTICO · ${txt}` : txt;
+      })(),
+      defecto_visual_conversion: data.defecto_visual_conversion ?? null,
+      variable_tecnica_dimensional: data.variable_tecnica_dimensional ?? null,
+      criterio_defecto: data.criterio_defecto ?? null,
       variables_snapshot_json: data.variables_snapshot_json as never,
       estado: estadoMuestra,
       capturado_por: userId,
@@ -539,6 +559,36 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
     if (medsPayload.length > 0) {
       const { error } = await sb.from("mediciones_calidad").insert(medsPayload);
       if (error) throw new Error(error.message);
+    }
+
+    // Auditoría explícita de los hallazgos del rollo (creación o edición).
+    if (
+      data.defecto_visual_conversion ||
+      data.variable_tecnica_dimensional ||
+      data.criterio_defecto
+    ) {
+      try {
+        await (sb as unknown as { rpc: (n: string, a: unknown) => Promise<unknown> }).rpc(
+          "audit_action",
+          {
+            p_modulo: "control_calidad",
+            p_descripcion: data.muestra_id
+              ? "Edición de hallazgos del rollo"
+              : "Captura de hallazgos del rollo",
+            p_registro_id: muestraId,
+            p_datos: {
+              numero_rollo: data.numero_rollo,
+              maquina_id: data.maquina_id,
+              turno: data.turno,
+              defecto_visual_conversion: data.defecto_visual_conversion ?? null,
+              variable_tecnica_dimensional: data.variable_tecnica_dimensional ?? null,
+              criterio_defecto: data.criterio_defecto ?? null,
+            },
+          },
+        );
+      } catch {
+        // No bloquear la captura si la auditoría falla.
+      }
     }
 
     return { muestra_id: muestraId, reabre_dictamen: !!dictamenPrevioAt };
