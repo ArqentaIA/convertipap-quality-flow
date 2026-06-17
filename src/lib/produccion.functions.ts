@@ -533,54 +533,81 @@ export const cancelarOrden = createServerFn({ method: "POST" })
  */
 const rangoEnum = z.enum(["turno", "dia", "semana", "mes", "año", "todo"]).default("turno");
 
-function rangoToDesde(r: "turno" | "dia" | "semana" | "mes" | "año" | "todo"): string | null {
+function rangoToDesde(
+  r: "turno" | "dia" | "semana" | "mes" | "año" | "todo",
+  turnos?: {
+    turno1_inicio: string; turno1_fin: string;
+    turno2_inicio: string; turno2_fin: string;
+    turno3_inicio: string; turno3_fin: string;
+  } | null,
+): string | null {
   const now = new Date();
   const H = 3600_000;
   switch (r) {
     case "turno": {
-      // Turnos estándar (hora local México): 06-14, 14-22, 22-06.
-      // El servidor corre en UTC; convertimos primero a hora local MX para
-      // determinar a qué turno pertenece "ahora" y luego regresamos a UTC.
+      // Lee la configuración real de turnos (app_settings) para que la
+      // ventana coincida con la del Visor del Operador.
       const TZ = "America/Mexico_City";
       const parts = new Intl.DateTimeFormat("en-CA", {
         timeZone: TZ,
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-        hourCycle: "h23",
+        year: "numeric", month: "2-digit", day: "2-digit",
+        hour: "2-digit", minute: "2-digit", hourCycle: "h23",
       }).formatToParts(now);
       const get = (t: string) => Number(parts.find((p) => p.type === t)?.value ?? "0");
-      const y = get("year");
-      const m = get("month");
-      let d = get("day");
-      const hLocal = get("hour");
-      let hStart: number;
-      if (hLocal >= 6 && hLocal < 14) hStart = 6;
-      else if (hLocal >= 14 && hLocal < 22) hStart = 14;
-      else {
-        hStart = 22;
-        if (hLocal < 6) {
-          // El turno noche comenzó ayer 22:00 local
-          const yesterday = new Date(Date.UTC(y, m - 1, d) - 24 * H);
-          d = yesterday.getUTCDate();
+      const y = get("year"); const m = get("month"); let d = get("day");
+      const hLocal = get("hour"); const minLocal = get("minute");
+      const curMin = hLocal * 60 + minLocal;
+
+      const hhmmToMin = (s?: string | null): number | null => {
+        if (!s) return null;
+        const [hh, mm] = String(s).split(":").map((x) => Number(x));
+        if (!Number.isFinite(hh) || !Number.isFinite(mm)) return null;
+        return hh * 60 + mm;
+      };
+
+      const ranges = turnos
+        ? [
+            { ini: turnos.turno1_inicio, fin: turnos.turno1_fin },
+            { ini: turnos.turno2_inicio, fin: turnos.turno2_fin },
+            { ini: turnos.turno3_inicio, fin: turnos.turno3_fin },
+          ]
+        : [
+            { ini: "07:00", fin: "15:00" },
+            { ini: "15:00", fin: "23:00" },
+            { ini: "23:00", fin: "07:00" },
+          ];
+
+      let hStart = 6;
+      let mStart = 0;
+      let crossedMidnight = false;
+      for (const rg of ranges) {
+        const ini = hhmmToMin(rg.ini);
+        const fin = hhmmToMin(rg.fin);
+        if (ini === null || fin === null) continue;
+        const inRange = ini <= fin
+          ? curMin >= ini && curMin < fin
+          : curMin >= ini || curMin < fin;
+        if (inRange) {
+          hStart = Math.floor(ini / 60);
+          mStart = ini % 60;
+          if (ini > fin && curMin < fin) crossedMidnight = true;
+          break;
         }
       }
-      // Buscar el offset de MX en ese instante (DST = false en MX desde 2022, pero seguro)
-      // Construir la fecha local objetivo y convertir restando offset.
+      if (crossedMidnight) {
+        const yesterday = new Date(Date.UTC(y, m - 1, d) - 24 * H);
+        d = yesterday.getUTCDate();
+      }
+
       const offsetMin = (() => {
-        const local = new Date(Date.UTC(y, m - 1, d, hStart, 0, 0));
+        const local = new Date(Date.UTC(y, m - 1, d, hStart, mStart, 0));
         const asMX = new Intl.DateTimeFormat("en-US", {
-          timeZone: TZ,
-          hour: "2-digit",
-          hourCycle: "h23",
+          timeZone: TZ, hour: "2-digit", hourCycle: "h23",
         }).format(local);
-        // Diferencia entre la hora local mostrada y hStart nos da el offset acumulado.
         const shown = Number(asMX);
         return (shown - hStart) * 60;
       })();
-      const startUTC = new Date(Date.UTC(y, m - 1, d, hStart, 0, 0) - offsetMin * 60_000);
+      const startUTC = new Date(Date.UTC(y, m - 1, d, hStart, mStart, 0) - offsetMin * 60_000);
       return startUTC.toISOString();
     }
     case "dia": return new Date(now.getTime() - 24 * H).toISOString();
