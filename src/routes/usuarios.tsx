@@ -21,6 +21,7 @@ const ROL_LABEL: Record<AppRole, string> = {
   gerente_general: "Gerente General",
   direccion: "Dirección",
   calidad: "Calidad",
+  calidad_operativo: "Calidad Operativo",
   capturista: "Capturista",
   reportes_consulta: "Reportes / Consulta",
 };
@@ -30,6 +31,7 @@ const ROL_COLORS: Record<AppRole, string> = {
   gerente_general: "bg-primary/10 text-primary border-primary/25",
   direccion: "bg-accent text-accent-foreground border-border",
   calidad: "bg-success/15 text-success border-success/30",
+  calidad_operativo: "bg-success/10 text-success border-success/25",
   capturista: "bg-muted text-foreground/80 border-border",
   reportes_consulta: "bg-accent text-accent-foreground border-border",
 };

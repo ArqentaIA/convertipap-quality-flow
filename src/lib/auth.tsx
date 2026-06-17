@@ -8,6 +8,7 @@ export type AppRole =
   | "gerente_general"
   | "direccion"
   | "calidad"
+  | "calidad_operativo"
   | "capturista"
   | "reportes_consulta";
 
