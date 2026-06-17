@@ -859,6 +859,22 @@ function OperatorVisionPage() {
                     status={currentStatus}
                     producto={orden?.producto ?? ""}
                     hora={horaRolloActual}
+                    hallazgo={(() => {
+                      const partes = [
+                        (current as { defectoVisualConversion?: string | null } | undefined)
+                          ?.defectoVisualConversion,
+                        (current as { variableTecnicaDimensional?: string | null } | undefined)
+                          ?.variableTecnicaDimensional,
+                        (current as { criterioDefecto?: string | null } | undefined)
+                          ?.criterioDefecto,
+                      ].filter((x): x is string => !!x && x.trim().length > 0);
+                      return partes.length > 0 ? partes.join(" | ") : null;
+                    })()}
+                    hallazgoCritico={
+                      ((current as { criterioDefecto?: string | null } | undefined)
+                        ?.criterioDefecto ?? "")
+                        .toUpperCase() === "CRÍTICO"
+                    }
                   />
 
                   {/* 2-13. Variables */}
