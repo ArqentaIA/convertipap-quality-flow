@@ -158,6 +158,9 @@ export const getOperatorVisionData = createServerFn({ method: "GET" })
       velocidadMaquina: m.velocidad_maquina === null || m.velocidad_maquina === undefined ? null : Number(m.velocidad_maquina),
       velocidadEnrollador: m.velocidad_enrollador === null || m.velocidad_enrollador === undefined ? null : Number(m.velocidad_enrollador),
       estatus: (m.estatus_liberacion ?? m.dictamen ?? "pendiente") as string,
+      defectoVisualConversion: (m.defecto_visual_conversion as string | null) ?? null,
+      variableTecnicaDimensional: (m.variable_tecnica_dimensional as string | null) ?? null,
+      criterioDefecto: (m.criterio_defecto as string | null) ?? null,
       mediciones: (m.mediciones_calidad ?? []).map((x: any) => ({
         clave: x.variable_clave as string,
         valor: x.valor === null ? null : Number(x.valor),
