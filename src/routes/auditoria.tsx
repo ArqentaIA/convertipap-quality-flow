@@ -102,7 +102,8 @@ function AuditoriaPage() {
       if (modulo.trim()) q = q.ilike("modulo", `%${modulo.trim()}%`);
       if (operacion) q = q.eq("operacion", operacion);
       // Ocultar accesos de administradores (rol=administrador AND modulo=auth)
-      q = q.or("rol.neq.administrador,modulo.neq.auth");
+      // Ocultar todos los registros de administradores
+      q = q.or("rol.is.null,rol.neq.administrador");
 
       const from = page * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
