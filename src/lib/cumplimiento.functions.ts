@@ -35,8 +35,8 @@ export const getCumplimientoIndicador = createServerFn({ method: "GET" })
     let q = sb
       .from("muestras_calidad")
       .select("id, estado", { count: "exact" })
-      .gte("hora_muestreo", data.from)
-      .lte("hora_muestreo", data.to);
+      .gte("capturado_at", data.from)
+      .lte("capturado_at", data.to);
     if (data.maquina_id) q = q.eq("maquina_id", data.maquina_id);
     if (data.turno) q = q.eq("turno", data.turno);
 
