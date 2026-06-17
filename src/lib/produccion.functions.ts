@@ -905,8 +905,12 @@ export const getDetalleCalidadOrden = createServerFn({ method: "GET" })
       const peso = meds.find((x) => x.clave === "peso")?.valor;
       const ncCount = meds.filter((x) => x.estado === "no_conforme" || x.estado === "fuera_rango_critico").length;
       const total = meds.length;
-      const cumplimiento = total > 0 ? Math.round(((total - ncCount) / total) * 1000) / 10 : null;
+      const totalEval = meds.filter((x) => x.estado === "conforme" || x.estado === "no_conforme" || x.estado === "fuera_rango_critico").length;
+      // Cumplimiento de VARIABLES (no sustituye al estatus oficial)
+      const cumplimiento = totalEval > 0 ? Math.round(((totalEval - ncCount) / totalEval) * 1000) / 10 : null;
+      // Estatus OFICIAL (Fase 1 v2 · regla A/B): estatus_liberacion no se degrada
       const estatus = m.estatus_liberacion ?? m.dictamen ?? "pendiente";
+      const tieneVariablesFueraSpec = ncCount > 0;
       return {
         muestraId: m.id as string,
         rollo: m.numero_rollo as string,
@@ -922,6 +926,7 @@ export const getDetalleCalidadOrden = createServerFn({ method: "GET" })
         ncCount,
         totalMediciones: total,
         cumplimiento,
+        tieneVariablesFueraSpec,
         mediciones: meds,
       };
     });
