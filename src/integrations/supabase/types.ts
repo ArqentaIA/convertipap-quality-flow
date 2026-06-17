@@ -1500,6 +1500,7 @@ export type Database = {
         | "calidad"
         | "capturista"
         | "reportes_consulta"
+        | "calidad_operativo"
       maquina_estado: "libre" | "produciendo" | "paro" | "mantenimiento"
       orden_estado:
         | "borrador"
@@ -1697,6 +1698,7 @@ export const Constants = {
         "calidad",
         "capturista",
         "reportes_consulta",
+        "calidad_operativo",
       ],
       maquina_estado: ["libre", "produciendo", "paro", "mantenimiento"],
       orden_estado: [
