@@ -259,6 +259,12 @@ export const getOperatorVisionData = createServerFn({ method: "GET" })
     const startToday = startTodayHist;
     const endNow = endNowHist;
 
+    // -----------------------------------------------------------------
+    // Cumplimiento del TURNO vigente (Fase 1 v2 · regla A + D)
+    // Fuente única: muestras_calidad.estatus_liberacion (L o C cuentan).
+    // Adicionalmente exponemos el cumplimiento de VARIABLES como métrica
+    // SEPARADA — nunca sustituye al oficial.
+    // -----------------------------------------------------------------
     let cumplimientoTurno: {
       liberados: number;
       capturados: number;
@@ -272,39 +278,56 @@ export const getOperatorVisionData = createServerFn({ method: "GET" })
       texto: "0 liberados de 0 capturados (0%)",
       turno: turnoRef,
     };
+    let cumplimientoVariables: {
+      conformes: number;
+      evaluadas: number;
+      pct: number;
+      texto: string;
+    } = {
+      conformes: 0,
+      evaluadas: 0,
+      pct: 0,
+      texto: "0 variables conformes de 0 evaluadas (0%)",
+    };
     {
       let cq = sb
         .from("muestras_calidad")
-        .select("id, mediciones_calidad(variable_clave, valor, min_snapshot, max_snapshot)")
+        .select("id, estatus_liberacion, mediciones_calidad(estado)")
         .eq("maquina_id", maquina.id)
         .gte("capturado_at", startToday.toISOString())
         .lte("capturado_at", endNow.toISOString());
       if (turnoRef) cq = cq.eq("turno", turnoRef);
       const { data: rows } = await cq;
       const capturados = rows?.length ?? 0;
-      const cumplen = (rows ?? []).filter((r: any) => {
-        const meds = (r.mediciones_calidad ?? []) as Array<{
-          variable_clave: string;
-          valor: number | null;
-          min_snapshot: number | null;
-          max_snapshot: number | null;
-        }>;
-        const get = (clave: string) => meds.find((m) => m.variable_clave === clave);
-        const pb = get("pesoBase");
-        if (pb && pb.valor !== null && pb.max_snapshot !== null && Number(pb.valor) > Number(pb.max_snapshot)) return false;
-        const tmd = get("tensionMD");
-        if (tmd && tmd.valor !== null && tmd.min_snapshot !== null && Number(tmd.valor) < Number(tmd.min_snapshot)) return false;
-        const tcd = get("tensionCD");
-        if (tcd && tcd.valor !== null && tcd.min_snapshot !== null && Number(tcd.valor) < Number(tcd.min_snapshot)) return false;
-        return true;
-      }).length;
-      const pct = capturados > 0 ? Number(((cumplen / capturados) * 100).toFixed(1)) : 0;
+      const liberados = (rows ?? []).filter(
+        (r: any) => r.estatus_liberacion === "L" || r.estatus_liberacion === "C",
+      ).length;
+      const pct = capturados > 0 ? Number(((liberados / capturados) * 100).toFixed(1)) : 0;
       cumplimientoTurno = {
-        liberados: cumplen,
+        liberados,
         capturados,
         pct,
-        texto: `${cumplen} cumplen de ${capturados} capturados (${pct}%)`,
+        texto: `${liberados} liberados/concesión de ${capturados} capturados (${pct}%)`,
         turno: turnoRef,
+      };
+
+      // Cumplimiento de variables (complementario, no sustituye)
+      const allMeds = (rows ?? []).flatMap(
+        (r: any) => (r.mediciones_calidad ?? []) as Array<{ estado?: string | null }>,
+      );
+      const evaluables = allMeds.filter(
+        (m) =>
+          m.estado === "conforme" ||
+          m.estado === "no_conforme" ||
+          m.estado === "fuera_rango_critico",
+      );
+      const conformes = evaluables.filter((m) => m.estado === "conforme").length;
+      const vpct = evaluables.length > 0 ? Number(((conformes / evaluables.length) * 100).toFixed(1)) : 0;
+      cumplimientoVariables = {
+        conformes,
+        evaluadas: evaluables.length,
+        pct: vpct,
+        texto: `${conformes} variables conformes de ${evaluables.length} evaluadas (${vpct}%)`,
       };
     }
 
@@ -361,6 +384,7 @@ export const getOperatorVisionData = createServerFn({ method: "GET" })
           }
         : null,
       cumplimientoTurno,
+      cumplimientoVariables,
     };
   });
 

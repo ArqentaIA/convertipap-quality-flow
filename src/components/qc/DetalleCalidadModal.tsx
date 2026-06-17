@@ -64,11 +64,23 @@ export function DetalleCalidadModal({
                   <Field label="Operador" value={r.operador} />
                   <Field label="Jefe Máquina" value={r.jefeMaquina} />
                   <Field label="Analista" value={r.analista} />
-                  <Field label="Estatus" value={r.estatus} />
-                  <Field label="Cumplimiento" value={r.cumplimiento == null ? "—" : `${r.cumplimiento}%`} />
-                  <Field label="No conformes" value={String(r.ncCount)} tone={r.ncCount > 0 ? "danger" : "default"} />
+                  <Field label="Estatus oficial" value={r.estatus} />
+                  <Field label="Cumplimiento variables" value={r.cumplimientoVariables == null ? "—" : `${r.cumplimientoVariables}%`} />
+                  <Field label="Variables fuera de spec" value={String(r.ncCount)} tone={r.ncCount > 0 ? "danger" : "default"} />
                 </div>
+                {r.tieneVariablesFueraSpec && (r.estatus === "L" || r.estatus === "C" || r.estatus === "liberada" || r.estatus === "concesion") && (
+                  <div className="mt-3 flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-2 text-[11px] text-amber-700 dark:text-amber-300">
+                    <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                    <div>
+                      <strong>Aviso informativo:</strong> el estatus oficial de este rollo es{" "}
+                      <strong>{r.estatus}</strong>, pero presenta {r.ncCount} variable
+                      {r.ncCount === 1 ? "" : "s"} fuera de especificación. Esta información es
+                      complementaria y no modifica el dictamen de liberación.
+                    </div>
+                  </div>
+                )}
               </div>
+
 
               {/* Tabla 14 variables */}
               {meds.length === 0 ? (
