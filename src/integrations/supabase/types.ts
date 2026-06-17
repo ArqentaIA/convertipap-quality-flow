@@ -1475,6 +1475,17 @@ export type Database = {
         }
         Returns: string
       }
+      ensure_orden_auto: {
+        Args: {
+          _maquina_id: string
+          _op_date: string
+          _planta_id: string
+          _producto_id: string
+          _turno: string
+          _user_id: string
+        }
+        Returns: string
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1482,6 +1493,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      shift_op_date: { Args: { _ts: string; _turno: string }; Returns: string }
       user_allowed_machine_codes: {
         Args: { _user_id: string }
         Returns: string[]
