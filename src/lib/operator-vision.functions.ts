@@ -271,23 +271,39 @@ export const getOperatorVisionData = createServerFn({ method: "GET" })
     {
       let cq = sb
         .from("muestras_calidad")
-        .select("id, estado")
+        .select("id, mediciones_calidad(variable_clave, valor, min_snapshot, max_snapshot)")
         .eq("maquina_id", maquina.id)
         .gte("hora_muestreo", startToday.toISOString())
         .lte("hora_muestreo", endNow.toISOString());
       if (turnoRef) cq = cq.eq("turno", turnoRef);
       const { data: rows } = await cq;
       const capturados = rows?.length ?? 0;
-      const liberados = (rows ?? []).filter((r) => r.estado === "liberada").length;
-      const pct = capturados > 0 ? Number(((liberados / capturados) * 100).toFixed(1)) : 0;
+      const cumplen = (rows ?? []).filter((r: any) => {
+        const meds = (r.mediciones_calidad ?? []) as Array<{
+          variable_clave: string;
+          valor: number | null;
+          min_snapshot: number | null;
+          max_snapshot: number | null;
+        }>;
+        const get = (clave: string) => meds.find((m) => m.variable_clave === clave);
+        const pb = get("pesoBase");
+        if (pb && pb.valor !== null && pb.max_snapshot !== null && Number(pb.valor) > Number(pb.max_snapshot)) return false;
+        const tmd = get("tensionMD");
+        if (tmd && tmd.valor !== null && tmd.min_snapshot !== null && Number(tmd.valor) < Number(tmd.min_snapshot)) return false;
+        const tcd = get("tensionCD");
+        if (tcd && tcd.valor !== null && tcd.min_snapshot !== null && Number(tcd.valor) < Number(tcd.min_snapshot)) return false;
+        return true;
+      }).length;
+      const pct = capturados > 0 ? Number(((cumplen / capturados) * 100).toFixed(1)) : 0;
       cumplimientoTurno = {
-        liberados,
+        liberados: cumplen,
         capturados,
         pct,
-        texto: `${liberados} liberados de ${capturados} capturados (${pct}%)`,
+        texto: `${cumplen} cumplen de ${capturados} capturados (${pct}%)`,
         turno: turnoRef,
       };
     }
+
 
     return {
       maquina: {
