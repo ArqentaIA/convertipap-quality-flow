@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { listMaquinasConEstado } from "@/lib/produccion.functions";
+import { useProduccionRealtime } from "@/hooks/use-produccion-realtime";
 
 import { BuscadorRollo } from "@/components/qc/BuscadorRollo";
 import { useLabFilter } from "@/lib/lab";
@@ -51,10 +52,14 @@ function ProduccionPage() {
   const [rango, setRango] = useState<Rango>("turno");
   const listFn = useServerFn(listMaquinasConEstado);
   const labFilter = useLabFilter();
-  const { data: all = [], isFetching, dataUpdatedAt } = useQuery({
+  const rtStatus = useProduccionRealtime();
+  const { data: all = [], isFetching } = useQuery({
     queryKey: ["produccion", "maquinas", rango],
     queryFn: () => listFn({ data: { rango } }),
-    refetchInterval: 60_000,
+    refetchInterval: 15_000,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    staleTime: 0,
   });
 
   // Todos los roles ven las estadísticas de todas las máquinas.
@@ -115,8 +120,18 @@ function ProduccionPage() {
             </span>
           </div>
           <span className="inline-flex items-center gap-1.5 text-muted-foreground">
-            <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? "animate-spin text-primary" : ""}`} />
-            Actualización automática cada 60s
+            <span
+              className={`inline-block h-1.5 w-1.5 rounded-full ${
+                rtStatus === "live"
+                  ? "bg-success"
+                  : rtStatus === "offline"
+                  ? "bg-destructive"
+                  : "bg-warning"
+              }`}
+            />
+            {rtStatus === "live" ? "EN VIVO" : rtStatus === "offline" ? "SIN CONEXIÓN" : "CONECTANDO"}
+            <RefreshCw className={`ml-2 h-3.5 w-3.5 ${isFetching ? "animate-spin text-primary" : ""}`} />
+            Auto-refresh 15s
           </span>
         </div>
 

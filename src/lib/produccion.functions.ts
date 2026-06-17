@@ -674,13 +674,18 @@ export const listMaquinasConEstado = createServerFn({ method: "GET" })
           "id, orden_id, peso_kg, registrado_at, ordenes_fabricacion:orden_id(maquina_id, fecha_inicio)",
         )
         .gte("registrado_at", desde24h),
+      // Producción usa `created_at` (sello del servidor al capturar) en
+      // lugar de `hora_muestreo` (capturada por el operador, puede ser
+      // retroactiva). Así el panel siempre refleja lo que se está
+      // capturando AHORA dentro del turno vigente, sin depender de la
+      // hora declarada por el usuario.
       sb
         .from("muestras_calidad")
         .select(
-          "id, maquina_id, hora_muestreo, numero_rollo, mediciones_calidad(variable_clave, valor)",
+          "id, maquina_id, hora_muestreo, created_at, numero_rollo, mediciones_calidad(variable_clave, valor)",
         )
         .in("maquina_id", ids)
-        .gte("hora_muestreo", desde24h),
+        .gte("created_at", desde24h),
     ]);
 
     return (maquinas ?? []).map((m) => {
