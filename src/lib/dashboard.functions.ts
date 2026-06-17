@@ -87,9 +87,9 @@ export const getDashboard = createServerFn({ method: "POST" })
         sb.from("maquinas").select("id, codigo").order("codigo"),
         sb
           .from("muestras_calidad")
-          .select("id, maquina_id, hora_muestreo, dictamen, estatus_liberacion, defectos, estado")
-          .gte("hora_muestreo", start.toISOString())
-          .lte("hora_muestreo", end.toISOString()),
+          .select("id, maquina_id, capturado_at, dictamen, estatus_liberacion, defectos, estado")
+          .gte("capturado_at", start.toISOString())
+          .lte("capturado_at", end.toISOString()),
         sb
           .from("mediciones_calidad")
           .select("id, muestra_id, variable_clave, valor, estado, created_at")
@@ -160,7 +160,7 @@ export const getDashboard = createServerFn({ method: "POST" })
 
       for (const codigo of maquinaList) {
         const muestrasBucket = (muestras ?? []).filter((m) => {
-          const t = new Date(m.hora_muestreo).getTime();
+          const t = new Date(m.capturado_at).getTime();
           return maquinaCodeById.get(m.maquina_id) === codigo && t >= b.start.getTime() && t < b.end.getTime();
         });
         const conformes = muestrasBucket.filter(isConforme).length;

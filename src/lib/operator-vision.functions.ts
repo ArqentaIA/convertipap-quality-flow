@@ -135,8 +135,8 @@ export const getOperatorVisionData = createServerFn({ method: "GET" })
          mediciones_calidad(variable_clave, valor, min_snapshot, objetivo_snapshot, max_snapshot, estado)`,
       )
       .eq("maquina_id", maquina.id)
-      .gte("hora_muestreo", startTodayHist.toISOString())
-      .lte("hora_muestreo", endNowHist.toISOString())
+      .gte("capturado_at", startTodayHist.toISOString())
+      .lte("capturado_at", endNowHist.toISOString())
       .order("capturado_at", { ascending: false })
       .limit(50);
     if (turnoVigente) muestrasQ = muestrasQ.eq("turno", turnoVigente);
@@ -273,8 +273,8 @@ export const getOperatorVisionData = createServerFn({ method: "GET" })
         .from("muestras_calidad")
         .select("id, mediciones_calidad(variable_clave, valor, min_snapshot, max_snapshot)")
         .eq("maquina_id", maquina.id)
-        .gte("hora_muestreo", startToday.toISOString())
-        .lte("hora_muestreo", endNow.toISOString());
+        .gte("capturado_at", startToday.toISOString())
+        .lte("capturado_at", endNow.toISOString());
       if (turnoRef) cq = cq.eq("turno", turnoRef);
       const { data: rows } = await cq;
       const capturados = rows?.length ?? 0;
