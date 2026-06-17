@@ -959,7 +959,7 @@ export const getDetalleCalidadOrden = createServerFn({ method: "GET" })
         fechaInicio: orden.fecha_inicio as string | null,
         fechaFin: orden.fecha_fin as string | null,
       },
-      resumen: { totalRollos, okRollos, ncRollos, cumplimientoProm, kgTotal: Math.round(kgTotal * 10) / 10 },
+      resumen: { totalRollos, okRollos, ncRollos, rollosConVariablesFueraSpec, cumplimientoProm, kgTotal: Math.round(kgTotal * 10) / 10 },
       filas,
     };
   });
