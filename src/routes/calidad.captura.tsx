@@ -613,6 +613,9 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
       setNumeroRollo("");
       setEstatusLiberacion("");
       setDefectos([]);
+      setDefectoVisual("");
+      setVariableTecnica("");
+      setCriterioDefecto("");
       setHoraMuestreo(toLocalDateTimeInputValue(new Date()));
     },
     onError: (err: Error) =>
