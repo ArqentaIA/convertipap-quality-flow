@@ -22,6 +22,7 @@ const ROL_LABEL: Record<AppRole, string> = {
   direccion: "Dirección",
   calidad: "Calidad",
   capturista: "Capturista",
+  reportes_consulta: "Reportes / Consulta",
 };
 
 const ROL_COLORS: Record<AppRole, string> = {
@@ -30,6 +31,7 @@ const ROL_COLORS: Record<AppRole, string> = {
   direccion: "bg-accent text-accent-foreground border-border",
   calidad: "bg-success/15 text-success border-success/30",
   capturista: "bg-muted text-foreground/80 border-border",
+  reportes_consulta: "bg-accent text-accent-foreground border-border",
 };
 
 const MODULO_LABEL: Record<AppModule, string> = {
