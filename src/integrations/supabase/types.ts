@@ -482,7 +482,9 @@ export type Database = {
           capturado_por: string
           created_at: string
           crepado_pct: number | null
+          criterio_defecto: string | null
           cumplimiento_pct: number | null
+          defecto_visual_conversion: string | null
           defectos: string[]
           destino: string | null
           dictamen: Database["public"]["Enums"]["qc_dictamen"] | null
@@ -517,6 +519,7 @@ export type Database = {
           tipo_muestreo: Database["public"]["Enums"]["qc_tipo_muestreo"]
           turno: string
           updated_at: string
+          variable_tecnica_dimensional: string | null
           variables_snapshot_json: Json
           velocidad_enrollador: number | null
           velocidad_maquina: number | null
@@ -529,7 +532,9 @@ export type Database = {
           capturado_por: string
           created_at?: string
           crepado_pct?: number | null
+          criterio_defecto?: string | null
           cumplimiento_pct?: number | null
+          defecto_visual_conversion?: string | null
           defectos?: string[]
           destino?: string | null
           dictamen?: Database["public"]["Enums"]["qc_dictamen"] | null
@@ -564,6 +569,7 @@ export type Database = {
           tipo_muestreo: Database["public"]["Enums"]["qc_tipo_muestreo"]
           turno: string
           updated_at?: string
+          variable_tecnica_dimensional?: string | null
           variables_snapshot_json?: Json
           velocidad_enrollador?: number | null
           velocidad_maquina?: number | null
@@ -576,7 +582,9 @@ export type Database = {
           capturado_por?: string
           created_at?: string
           crepado_pct?: number | null
+          criterio_defecto?: string | null
           cumplimiento_pct?: number | null
+          defecto_visual_conversion?: string | null
           defectos?: string[]
           destino?: string | null
           dictamen?: Database["public"]["Enums"]["qc_dictamen"] | null
@@ -611,6 +619,7 @@ export type Database = {
           tipo_muestreo?: Database["public"]["Enums"]["qc_tipo_muestreo"]
           turno?: string
           updated_at?: string
+          variable_tecnica_dimensional?: string | null
           variables_snapshot_json?: Json
           velocidad_enrollador?: number | null
           velocidad_maquina?: number | null
