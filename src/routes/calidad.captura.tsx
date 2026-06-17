@@ -1421,6 +1421,89 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
           <Card className={cn(isBlocked && "opacity-60 pointer-events-none")}>
             <CardHeader className="pb-2">
               <CardTitle className="text-base font-semibold">
+                E. Hallazgos del rollo{" "}
+                <span className="text-xs font-normal text-muted-foreground">(opcional)</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <div className="space-y-1.5">
+                <Label className="text-base">Defectos Visuales y de Conversión</Label>
+                <Select
+                  value={defectoVisual || "__none__"}
+                  onValueChange={(v) => setDefectoVisual(v === "__none__" ? "" : v)}
+                >
+                  <SelectTrigger className="h-11 text-base">
+                    <SelectValue placeholder="— Sin hallazgo —" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">— Sin hallazgo —</SelectItem>
+                    {DEFECTOS_VISUALES_CONVERSION.map((d) => (
+                      <SelectItem key={d} value={d}>
+                        {d}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-base">Variables Técnicas y Dimensionales</Label>
+                <Select
+                  value={variableTecnica || "__none__"}
+                  onValueChange={(v) => setVariableTecnica(v === "__none__" ? "" : v)}
+                >
+                  <SelectTrigger className="h-11 text-base">
+                    <SelectValue placeholder="— Sin hallazgo —" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">— Sin hallazgo —</SelectItem>
+                    {VARIABLES_TECNICAS_DIMENSIONALES.map((d) => (
+                      <SelectItem key={d} value={d}>
+                        {d}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-base">Criterio de defecto</Label>
+                <Select
+                  value={criterioDefecto || "__none__"}
+                  onValueChange={(v) =>
+                    setCriterioDefecto(
+                      v === "__none__" ? "" : (v as "MENOR" | "MAYOR" | "CRÍTICO"),
+                    )
+                  }
+                >
+                  <SelectTrigger
+                    className={cn(
+                      "h-11 text-base",
+                      criterioDefecto === "CRÍTICO" && "border-red-600 text-red-700 font-semibold",
+                    )}
+                  >
+                    <SelectValue placeholder="— Sin criterio —" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">— Sin criterio —</SelectItem>
+                    {CRITERIOS_DEFECTO.map((c) => (
+                      <SelectItem key={c} value={c}>
+                        {c}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-[11px] text-muted-foreground">
+                  Si es <strong>CRÍTICO</strong>, el hallazgo se resaltará en rojo en el visor y
+                  reportes.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {spec && (
+          <Card className={cn(isBlocked && "opacity-60 pointer-events-none")}>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base font-semibold">
                 F. Cierre — Estatus de liberación y defectos
               </CardTitle>
             </CardHeader>
