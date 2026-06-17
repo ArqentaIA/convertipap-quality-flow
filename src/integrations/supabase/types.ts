@@ -47,40 +47,52 @@ export type Database = {
       _excepciones_sufijo_numero_rollo: {
         Row: {
           capturado_at: string | null
+          estatus_revision: string
           id: string
           maquina_id: string
           motivo_exclusion: string
+          motivo_revision: string | null
           numero_rollo_actual: string
           numero_rollo_propuesto: string
           operador: string | null
           orden_id: string | null
           registrado_at: string
+          revisado_at: string | null
+          revisado_por: string | null
           secuencia_captura: number | null
           turno: string | null
         }
         Insert: {
           capturado_at?: string | null
+          estatus_revision?: string
           id: string
           maquina_id: string
           motivo_exclusion: string
+          motivo_revision?: string | null
           numero_rollo_actual: string
           numero_rollo_propuesto: string
           operador?: string | null
           orden_id?: string | null
           registrado_at?: string
+          revisado_at?: string | null
+          revisado_por?: string | null
           secuencia_captura?: number | null
           turno?: string | null
         }
         Update: {
           capturado_at?: string | null
+          estatus_revision?: string
           id?: string
           maquina_id?: string
           motivo_exclusion?: string
+          motivo_revision?: string | null
           numero_rollo_actual?: string
           numero_rollo_propuesto?: string
           operador?: string | null
           orden_id?: string | null
           registrado_at?: string
+          revisado_at?: string | null
+          revisado_por?: string | null
           secuencia_captura?: number | null
           turno?: string | null
         }
