@@ -14,6 +14,78 @@ export type Database = {
   }
   public: {
     Tables: {
+      _backup_sufijo_numero_rollo: {
+        Row: {
+          capturado_at: string | null
+          created_at: string
+          id: string
+          maquina_id: string
+          numero_rollo_anterior: string
+          numero_rollo_nuevo: string
+          operador: string | null
+        }
+        Insert: {
+          capturado_at?: string | null
+          created_at?: string
+          id: string
+          maquina_id: string
+          numero_rollo_anterior: string
+          numero_rollo_nuevo: string
+          operador?: string | null
+        }
+        Update: {
+          capturado_at?: string | null
+          created_at?: string
+          id?: string
+          maquina_id?: string
+          numero_rollo_anterior?: string
+          numero_rollo_nuevo?: string
+          operador?: string | null
+        }
+        Relationships: []
+      }
+      _excepciones_sufijo_numero_rollo: {
+        Row: {
+          capturado_at: string | null
+          id: string
+          maquina_id: string
+          motivo_exclusion: string
+          numero_rollo_actual: string
+          numero_rollo_propuesto: string
+          operador: string | null
+          orden_id: string | null
+          registrado_at: string
+          secuencia_captura: number | null
+          turno: string | null
+        }
+        Insert: {
+          capturado_at?: string | null
+          id: string
+          maquina_id: string
+          motivo_exclusion: string
+          numero_rollo_actual: string
+          numero_rollo_propuesto: string
+          operador?: string | null
+          orden_id?: string | null
+          registrado_at?: string
+          secuencia_captura?: number | null
+          turno?: string | null
+        }
+        Update: {
+          capturado_at?: string | null
+          id?: string
+          maquina_id?: string
+          motivo_exclusion?: string
+          numero_rollo_actual?: string
+          numero_rollo_propuesto?: string
+          operador?: string | null
+          orden_id?: string | null
+          registrado_at?: string
+          secuencia_captura?: number | null
+          turno?: string | null
+        }
+        Relationships: []
+      }
       ajustes_calidad: {
         Row: {
           accion_realizada: string | null
