@@ -132,6 +132,7 @@ export const getOperatorVisionData = createServerFn({ method: "GET" })
         `id, numero_rollo, capturado_at, hora_muestreo, turno, estado,
          operador, analista, estatus_liberacion, dictamen, producto_id, orden_id, crepado_pct,
          velocidad_maquina, velocidad_enrollador,
+         defecto_visual_conversion, variable_tecnica_dimensional, criterio_defecto,
          mediciones_calidad(variable_clave, valor, min_snapshot, objetivo_snapshot, max_snapshot, estado)`,
       )
       .eq("maquina_id", maquina.id)
