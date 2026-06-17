@@ -431,6 +431,9 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
         setObservaciones("");
         setEstatusLiberacion("");
         setDefectos([]);
+        setDefectoVisual("");
+        setVariableTecnica("");
+        setCriterioDefecto("");
         const ahora = new Date();
         const pad = (n: number) => String(n).padStart(2, "0");
         setHoraMuestreo(
