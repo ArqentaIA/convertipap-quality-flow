@@ -773,6 +773,9 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
         tipo_muestreo: "por_rollo" as const,
         hora_muestreo: horaMuestreo ? new Date(horaMuestreo).toISOString() : undefined,
         observaciones_generales: observaciones,
+        defecto_visual_conversion: defectoVisual || null,
+        variable_tecnica_dimensional: variableTecnica || null,
+        criterio_defecto: criterioDefecto || null,
         variables_snapshot_json: variablesSnapshot,
         mediciones: evalMediciones
           .filter((m) => m.input.valor !== "" && Number.isFinite(m.num))
