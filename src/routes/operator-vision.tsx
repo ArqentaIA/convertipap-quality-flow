@@ -1194,22 +1194,34 @@ function OperatorVisionPage() {
 
 
 
-                  <KpiCard
-                    label="Velocidad Máquina"
-                    value="—"
-                    unit="m/min"
-                    state="neutral"
-                    icon={Gauge}
-                    subtitle="SIN DATO"
-                  />
-                  <KpiCard
-                    label="Velocidad Enrollador"
-                    value="—"
-                    unit="m/min"
-                    state="neutral"
-                    icon={Gauge}
-                    subtitle="SIN DATO"
-                  />
+                  {(() => {
+                    const vm = (current as any)?.velocidadMaquina;
+                    const hasVm = vm !== null && vm !== undefined && Number.isFinite(Number(vm));
+                    return (
+                      <KpiCard
+                        label="Velocidad Máquina"
+                        value={hasVm ? Number(vm).toFixed(0) : "—"}
+                        unit={hasVm ? "m/min" : undefined}
+                        state={hasVm ? "ok" : "neutral"}
+                        icon={Gauge}
+                        subtitle={hasVm ? undefined : "SIN DATO"}
+                      />
+                    );
+                  })()}
+                  {(() => {
+                    const ve = (current as any)?.velocidadEnrollador;
+                    const hasVe = ve !== null && ve !== undefined && Number.isFinite(Number(ve));
+                    return (
+                      <KpiCard
+                        label="Velocidad Enrollador"
+                        value={hasVe ? Number(ve).toFixed(0) : "—"}
+                        unit={hasVe ? "m/min" : undefined}
+                        state={hasVe ? "ok" : "neutral"}
+                        icon={Gauge}
+                        subtitle={hasVe ? undefined : "SIN DATO"}
+                      />
+                    );
+                  })()}
                   {(() => {
                     const cp = (current as any)?.crepadoPct;
                     const hasCp = cp !== null && cp !== undefined && Number.isFinite(Number(cp));
