@@ -1250,28 +1250,34 @@ function OperatorVisionPage() {
                       />
                     );
                   })()}
-                  {sideVars.map((v) => (
-                    <VarCard
-                      key={v.clave}
-                      etiqueta={v.etiqueta}
-                      unidad={v.unidad}
-                      value={
-                        mapMedActual.get(v.clave) === undefined
-                          ? null
-                          : (mapMedActual.get(v.clave) as number | null)
+                  {(() => {
+                    // Total acumulado de "uniones" en TODOS los rollos del
+                    // turno actual (la query del servidor ya filtra por
+                    // máquina + turno vigente + día). No promedio, no último
+                    // valor: suma estricta.
+                    let total = 0;
+                    let hasAny = false;
+                    for (const m of muestrasAll) {
+                      const med = m.mediciones.find(
+                        (x: { clave: string; valor: number | null }) => x.clave === "uniones",
+                      );
+                      if (med && med.valor !== null && med.valor !== undefined && Number.isFinite(Number(med.valor))) {
+                        total += Number(med.valor);
+                        hasAny = true;
                       }
-                      min={v.min}
-                      max={v.max}
-                      obj={v.obj}
-                      digits={DIGITS_DE_CLAVE[v.clave] ?? 2}
-                      hasSpec={
-                        v.hasSpec ||
-                        (mapSpecActual.get(v.clave)?.min !== null &&
-                          mapSpecActual.get(v.clave)?.max !== null &&
-                          mapSpecActual.get(v.clave)?.obj !== null)
-                      }
-                    />
-                  ))}
+                    }
+                    void sideVars; // mantener referencia (uniones se renderiza aquí)
+                    return (
+                      <KpiCard
+                        label="Uniones"
+                        value={hasAny ? String(Math.round(total)) : "0"}
+                        unit="u"
+                        state="neutral"
+                        icon={Gauge}
+                        subtitle={`ACUMULADO TURNO · ${muestrasAll.length} ROLLOS`}
+                      />
+                    );
+                  })()}
                 </>
               );
             })()}
