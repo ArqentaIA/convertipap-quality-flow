@@ -732,6 +732,17 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
     if (numeroRollo.trim() && !ROLLO_REGEX.test(numeroRollo.trim()))
       return { error: "El número de rollo solo puede usar letras, números y guion", faltantes: 0 };
 
+    // Fase 2 — Validación de sufijo según máquina (solo en envío, no afecta históricos).
+    if (modo === "envio" && sufijoMaq && numeroRollo.trim()) {
+      const m = /^(.*)-(\d)$/.exec(numeroRollo.trim());
+      if (m && m[2] !== sufijoMaq) {
+        return {
+          error: `Sufijo inválido: ${maquina.codigo} requiere -${sufijoMaq}. Capturaste -${m[2]}. Corrige o deja sólo el número base para que se complete automáticamente.`,
+          faltantes: 0,
+        };
+      }
+    }
+
     if (crepadoPct.trim() !== "" && (Number(crepadoPct) < 0 || Number(crepadoPct) > 100))
       return { error: "El campo % Crepado debe estar entre 0 y 100", faltantes: 0 };
     // Cumplimiento se calcula automáticamente desde la base de datos.
@@ -741,6 +752,10 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
     let faltantes = 0;
     if (modo === "envio") {
       if (!numeroRollo.trim()) faltantes += 1;
+      // Fase 2 — Operador obligatorio en nuevas capturas (no afecta históricos).
+      if (!operador.trim()) {
+        return { error: "El operador es obligatorio para guardar la captura.", faltantes: 0 };
+      }
       faltantes += evalMediciones.filter(
         (m) => CAMPOS_OBLIGATORIOS_CLAVES.includes(m.spec.clave) && m.input.valor === "",
       ).length;
@@ -750,6 +765,17 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
   }
 
   function handleSubmit(modo: "borrador" | "envio") {
+    // Fase 2 — Normalizar número de rollo antes de validar:
+    // si el usuario capturó sólo el número base sin sufijo, autocompletar.
+    if (modo === "envio" && sufijoMaq && numeroRollo.trim()) {
+      const raw = numeroRollo.trim();
+      if (!/-\d$/.test(raw)) {
+        const corregido = `${raw}-${sufijoMaq}`;
+        setNumeroRollo(corregido);
+        toast.info(`Número de rollo completado a ${corregido} para ${maquina.codigo}`);
+      }
+    }
+
     const { error, faltantes } = validar(modo);
     if (error) {
       toast.error(error);
