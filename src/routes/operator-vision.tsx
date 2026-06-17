@@ -248,11 +248,15 @@ function RolloActualCard({
   status,
   producto,
   hora,
+  hallazgo,
+  hallazgoCritico,
 }: {
   rollo: string;
   status: VarStatus;
   producto: string;
   hora: string;
+  hallazgo: string | null;
+  hallazgoCritico: boolean;
 }) {
   const stateCfg: Record<VarStatus, { bg: string; border: string; chip: string; text: string }> = {
     ok: {
@@ -298,6 +302,18 @@ function RolloActualCard({
       <div className="font-mono text-[34px] font-black leading-none tabular-nums truncate">
         {rollo || "—"}
       </div>
+      {hallazgo && (
+        <div
+          className={
+            hallazgoCritico
+              ? "truncate rounded bg-red-600 px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-white"
+              : "truncate text-[10px] font-bold uppercase tracking-wider opacity-90"
+          }
+          title={hallazgo}
+        >
+          {hallazgo}
+        </div>
+      )}
       <div className="flex items-center justify-between gap-2 text-[10px] font-bold uppercase tracking-wider opacity-90">
         <span className="truncate">{producto || "—"}</span>
         <span className="shrink-0 font-mono tabular-nums">{hora}</span>
