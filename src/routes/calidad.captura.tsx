@@ -1504,7 +1504,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
           <Card className={cn(isBlocked && "opacity-60 pointer-events-none")}>
             <CardHeader className="pb-2">
               <CardTitle className="text-base font-semibold">
-                F. Cierre — Estatus de liberación y defectos
+                F. Cierre — Estatus de liberación
               </CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -1526,29 +1526,6 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
                 <p className="text-[11px] text-muted-foreground">
                   Si no se elige, se calcula automáticamente según las mediciones.
                 </p>
-              </div>
-              <div className="md:col-span-2 space-y-2">
-                <Label className="text-base">Defectos observados</Label>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {DEFECTOS_OPCIONES.map((d) => (
-                    <label
-                      key={d}
-                      className="flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm cursor-pointer hover:bg-muted/40"
-                    >
-                      <Checkbox
-                        checked={defectos.includes(d)}
-                        onCheckedChange={() => toggleDefecto(d)}
-                      />
-                      <span>{d}</span>
-                    </label>
-                  ))}
-                </div>
-                {defectos.includes("Otro") && (
-                  <p className="text-[11px] text-muted-foreground">
-                    Describe el detalle de "Otro" en el campo de observaciones generales (sección
-                    C).
-                  </p>
-                )}
               </div>
             </CardContent>
           </Card>
