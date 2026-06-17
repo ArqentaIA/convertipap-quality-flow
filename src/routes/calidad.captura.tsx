@@ -767,25 +767,54 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
   function handleSubmit(modo: "borrador" | "envio") {
     // Fase 2 — Normalizar número de rollo antes de validar:
     // si el usuario capturó sólo el número base sin sufijo, autocompletar.
-    if (modo === "envio" && sufijoMaq && numeroRollo.trim()) {
-      const raw = numeroRollo.trim();
-      if (!/-\d$/.test(raw)) {
-        const corregido = `${raw}-${sufijoMaq}`;
+    let rolloNormalizado = numeroRollo.trim();
+    if (modo === "envio" && sufijoMaq && rolloNormalizado) {
+      if (!/-\d$/.test(rolloNormalizado)) {
+        const corregido = `${rolloNormalizado}-${sufijoMaq}`;
+        rolloNormalizado = corregido;
         setNumeroRollo(corregido);
         toast.info(`Número de rollo completado a ${corregido} para ${maquina.codigo}`);
       }
     }
 
-    const { error, faltantes } = validar(modo);
-    if (error) {
-      toast.error(error);
-      return;
+    // Validación (usa el valor normalizado para sufijo).
+    if (!spec) { toast.error("Selecciona un producto con especificación vigente"); return; }
+    if (!canCapture) { toast.error("Sin permiso de captura"); return; }
+    if (!auth.user?.id) { toast.error("Sesión inválida — vuelve a iniciar sesión"); return; }
+    if (rolloNormalizado && !ROLLO_REGEX.test(rolloNormalizado)) {
+      toast.error("El número de rollo solo puede usar letras, números y guion"); return;
     }
-    if (modo === "envio" && faltantes > 0) {
-      toast(`Te faltaron de capturar ${faltantes} campos obligatorios.`, { duration: 2000 });
-      return;
+    if (modo === "envio" && sufijoMaq && rolloNormalizado) {
+      const m = /^(.*)-(\d)$/.exec(rolloNormalizado);
+      if (m && m[2] !== sufijoMaq) {
+        toast.error(
+          `Sufijo inválido: ${maquina.codigo} requiere -${sufijoMaq}. Capturaste -${m[2]}. Corrige o deja sólo el número base para que se complete automáticamente.`,
+        );
+        return;
+      }
     }
-    if (!spec) return;
+    if (crepadoPct.trim() !== "" && (Number(crepadoPct) < 0 || Number(crepadoPct) > 100)) {
+      toast.error("El campo % Crepado debe estar entre 0 y 100"); return;
+    }
+    if (porcentajeRupturasPct.trim() !== "" && (Number(porcentajeRupturasPct) < 0 || Number(porcentajeRupturasPct) > 100)) {
+      toast.error("El campo Porcentaje de rupturas debe estar entre 0 y 100"); return;
+    }
+    let faltantes = 0;
+    if (modo === "envio") {
+      if (!rolloNormalizado) faltantes += 1;
+      // Fase 2 — Operador obligatorio en nuevas capturas (no afecta históricos).
+      if (!operador.trim()) {
+        toast.error("El operador es obligatorio para guardar la captura.");
+        return;
+      }
+      faltantes += evalMediciones.filter(
+        (m) => CAMPOS_OBLIGATORIOS_CLAVES.includes(m.spec.clave) && m.input.valor === "",
+      ).length;
+      if (faltantes > 0) {
+        toast(`Te faltaron de capturar ${faltantes} campos obligatorios.`, { duration: 2000 });
+        return;
+      }
+    }
 
     const variablesSnapshot: Record<string, unknown> = {};
     variables.forEach((v) => {
@@ -808,7 +837,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
         producto_id: producto.producto_id,
         turno,
         operario_id: auth.user!.id,
-        numero_rollo: numeroRollo.trim(),
+        numero_rollo: rolloNormalizado,
         jefe_maquina: jefeMaquina.trim() || undefined,
         operador: operador.trim() || undefined,
         prensero: prensero.trim() || undefined,
