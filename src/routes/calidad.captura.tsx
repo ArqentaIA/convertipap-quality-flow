@@ -725,44 +725,11 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
     return String(Math.max(min, Math.min(max, num)));
   }
 
-  function validar(modo: "borrador" | "envio"): { error: string | null; faltantes: number } {
-    if (!spec) return { error: "Selecciona un producto con especificación vigente", faltantes: 0 };
-    if (!canCapture) return { error: "Sin permiso de captura", faltantes: 0 };
-    if (!auth.user?.id) return { error: "Sesión inválida — vuelve a iniciar sesión", faltantes: 0 };
-    if (numeroRollo.trim() && !ROLLO_REGEX.test(numeroRollo.trim()))
-      return { error: "El número de rollo solo puede usar letras, números y guion", faltantes: 0 };
+  // Nota: la validación se realiza directamente dentro de handleSubmit
+  // (Fase 2 · cutover Convertipap) para usar el número de rollo normalizado
+  // en el mismo tick que el envío.
 
-    // Fase 2 — Validación de sufijo según máquina (solo en envío, no afecta históricos).
-    if (modo === "envio" && sufijoMaq && numeroRollo.trim()) {
-      const m = /^(.*)-(\d)$/.exec(numeroRollo.trim());
-      if (m && m[2] !== sufijoMaq) {
-        return {
-          error: `Sufijo inválido: ${maquina.codigo} requiere -${sufijoMaq}. Capturaste -${m[2]}. Corrige o deja sólo el número base para que se complete automáticamente.`,
-          faltantes: 0,
-        };
-      }
-    }
 
-    if (crepadoPct.trim() !== "" && (Number(crepadoPct) < 0 || Number(crepadoPct) > 100))
-      return { error: "El campo % Crepado debe estar entre 0 y 100", faltantes: 0 };
-    // Cumplimiento se calcula automáticamente desde la base de datos.
-    if (porcentajeRupturasPct.trim() !== "" && (Number(porcentajeRupturasPct) < 0 || Number(porcentajeRupturasPct) > 100))
-      return { error: "El campo Porcentaje de rupturas debe estar entre 0 y 100", faltantes: 0 };
-
-    let faltantes = 0;
-    if (modo === "envio") {
-      if (!numeroRollo.trim()) faltantes += 1;
-      // Fase 2 — Operador obligatorio en nuevas capturas (no afecta históricos).
-      if (!operador.trim()) {
-        return { error: "El operador es obligatorio para guardar la captura.", faltantes: 0 };
-      }
-      faltantes += evalMediciones.filter(
-        (m) => CAMPOS_OBLIGATORIOS_CLAVES.includes(m.spec.clave) && m.input.valor === "",
-      ).length;
-    }
-
-    return { error: null, faltantes };
-  }
 
   function handleSubmit(modo: "borrador" | "envio") {
     // Fase 2 — Normalizar número de rollo antes de validar:
