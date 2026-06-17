@@ -783,28 +783,32 @@ export const listHistorialMaquina = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
 
     const ordIds = (ordenes ?? []).map((o) => o.id);
-    let muestrasPorOrden: Record<string, { total: number; liberadas: number; rechazadas: number }> =
+    let muestrasPorOrden: Record<string, { total: number; liberadas: number; rechazadas: number; nc_oficial: number }> =
       {};
     if (ordIds.length > 0) {
       const { data: muestras } = await sb
         .from("muestras_calidad")
-        .select("orden_id, dictamen")
+        .select("orden_id, dictamen, estatus_liberacion")
         .in("orden_id", ordIds);
       muestrasPorOrden = (muestras ?? []).reduce<typeof muestrasPorOrden>((acc, m) => {
         const k = m.orden_id;
         if (!k) return acc;
-        acc[k] ??= { total: 0, liberadas: 0, rechazadas: 0 };
+        acc[k] ??= { total: 0, liberadas: 0, rechazadas: 0, nc_oficial: 0 };
         acc[k].total++;
-        if (m.dictamen === "liberada") acc[k].liberadas++;
-        if (m.dictamen === "rechazada") acc[k].rechazadas++;
+        // Fase 1 v2 · reglas A/B — estatus oficial proviene de estatus_liberacion
+        if (m.estatus_liberacion === "L" || m.estatus_liberacion === "C") acc[k].liberadas++;
+        else if (m.estatus_liberacion === "NC") acc[k].nc_oficial++;
+        else if (m.dictamen === "liberada") acc[k].liberadas++;
+        else if (m.dictamen === "rechazada") acc[k].rechazadas++;
         return acc;
       }, {});
     }
 
     return (ordenes ?? []).map((o) => {
-      const ms = muestrasPorOrden[o.id] ?? { total: 0, liberadas: 0, rechazadas: 0 };
+      const ms = muestrasPorOrden[o.id] ?? { total: 0, liberadas: 0, rechazadas: 0, nc_oficial: 0 };
       const cumplimiento = ms.total > 0 ? Math.round((ms.liberadas / ms.total) * 1000) / 10 : null;
-      const estatus: "L" | "NC" | "C" = ms.rechazadas > 0 ? "NC" : ms.liberadas > 0 ? "L" : "C";
+      const totalNC = ms.rechazadas + ms.nc_oficial;
+      const estatus: "L" | "NC" | "C" = totalNC > 0 ? "NC" : ms.liberadas > 0 ? "L" : "C";
       return {
         ordenId: o.id,
         folio: o.folio,
