@@ -58,14 +58,14 @@ export const getReportes = createServerFn({ method: "POST" })
     const { data: muestras } = await sb
       .from("muestras_calidad")
       .select(
-        "id, planta_id, maquina_id, turno, hora_muestreo, dictamen, estado",
+        "id, planta_id, maquina_id, turno, hora_muestreo, dictamen, estado, estatus_liberacion",
       )
       .gte("hora_muestreo", start)
       .lte("hora_muestreo", end);
 
     const { data: muestrasPrev } = await sb
       .from("muestras_calidad")
-      .select("id, planta_id, dictamen")
+      .select("id, planta_id, dictamen, estatus_liberacion")
       .gte("hora_muestreo", prevStart)
       .lt("hora_muestreo", prevEnd);
 
