@@ -932,10 +932,15 @@ export const getDetalleCalidadOrden = createServerFn({ method: "GET" })
     });
 
 
-    // Resumen
+    // Resumen — Fase 1 v2 (reglas A/B/D)
+    // NC oficial: estatus_liberacion === 'NC' o dictamen === 'rechazada'.
+    // Las variables fuera de spec NO degradan L/C a NC (se reportan aparte).
     const totalRollos = filas.length;
-    const ncRollos = filas.filter((f) => f.estatus === "rechazada" || f.estatus === "NC" || f.ncCount > 0).length;
+    const ncRollos = filas.filter(
+      (f) => f.estatus === "rechazada" || f.estatus === "NC",
+    ).length;
     const okRollos = totalRollos - ncRollos;
+    const rollosConVariablesFueraSpec = filas.filter((f) => f.tieneVariablesFueraSpec).length;
     const cumplimientoProm = filas.length
       ? Math.round(
           (filas.reduce((s, f) => s + (f.cumplimiento ?? 100), 0) / filas.length) * 10,
