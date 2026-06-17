@@ -330,6 +330,32 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
 
   const ahoraLocal = useMemo(() => toLocalDateTimeInputValue(new Date()), []);
   const [numeroRollo, setNumeroRollo] = useState<string>("");
+  // Sufijo automático según máquina: MP-04→"4", MP-05→"5", etc.
+  const sufijoMaq = useMemo(() => {
+    const m = /(\d)$/.exec(maquina.codigo);
+    return m ? m[1] : "";
+  }, [maquina.codigo]);
+  const baseRollo = useMemo(() => {
+    if (!numeroRollo) return "";
+    const m = /^(.*)-(\d)$/.exec(numeroRollo);
+    return m ? m[1] : numeroRollo;
+  }, [numeroRollo]);
+  // Auto-corrige el sufijo cuando cambia la máquina.
+  useEffect(() => {
+    if (!sufijoMaq) return;
+    setNumeroRollo((prev) => {
+      if (!prev) return prev;
+      const m = /^(.*)-(\d)$/.exec(prev);
+      if (m) {
+        if (m[2] !== sufijoMaq) {
+          toast.info(`Sufijo de rollo corregido a -${sufijoMaq} para ${maquina.codigo}`);
+          return `${m[1]}-${sufijoMaq}`;
+        }
+        return prev;
+      }
+      return `${prev}-${sufijoMaq}`;
+    });
+  }, [sufijoMaq, maquina.codigo]);
   const [horaMuestreo, setHoraMuestreo] = useState<string>(ahoraLocal);
   const [observaciones, setObservaciones] = useState<string>("");
   const [mediciones, setMediciones] = useState<MedicionInputState>({});
