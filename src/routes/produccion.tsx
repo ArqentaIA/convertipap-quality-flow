@@ -120,8 +120,18 @@ function ProduccionPage() {
             </span>
           </div>
           <span className="inline-flex items-center gap-1.5 text-muted-foreground">
-            <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? "animate-spin text-primary" : ""}`} />
-            Actualización automática cada 60s
+            <span
+              className={`inline-block h-1.5 w-1.5 rounded-full ${
+                rtStatus === "live"
+                  ? "bg-success"
+                  : rtStatus === "offline"
+                  ? "bg-destructive"
+                  : "bg-warning"
+              }`}
+            />
+            {rtStatus === "live" ? "EN VIVO" : rtStatus === "offline" ? "SIN CONEXIÓN" : "CONECTANDO"}
+            <RefreshCw className={`ml-2 h-3.5 w-3.5 ${isFetching ? "animate-spin text-primary" : ""}`} />
+            Auto-refresh 15s
           </span>
         </div>
 
