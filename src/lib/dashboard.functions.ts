@@ -160,7 +160,7 @@ export const getDashboard = createServerFn({ method: "POST" })
 
       for (const codigo of maquinaList) {
         const muestrasBucket = (muestras ?? []).filter((m) => {
-          const t = new Date(m.hora_muestreo).getTime();
+          const t = new Date(m.capturado_at).getTime();
           return maquinaCodeById.get(m.maquina_id) === codigo && t >= b.start.getTime() && t < b.end.getTime();
         });
         const conformes = muestrasBucket.filter(isConforme).length;
