@@ -1033,9 +1033,13 @@ export const getDetalleRollo = createServerFn({ method: "GET" })
     const ord = (m as any).ordenes_fabricacion;
     const ncCount = meds.filter((x) => x.estado === "no_conforme" || x.estado === "fuera_rango_critico").length;
     const totalConValor = meds.filter((x) => x.valor !== null).length;
-    const cumplimiento = totalConValor > 0
+    // Cumplimiento de VARIABLES (complemento, no estatus oficial)
+    const cumplimientoVariables = totalConValor > 0
       ? Math.round(((totalConValor - ncCount) / totalConValor) * 1000) / 10
       : null;
+    // Estatus OFICIAL (regla A/B): no se degrada por mediciones
+    const estatusOficial = (m.estatus_liberacion ?? m.dictamen ?? "pendiente") as string;
+    const tieneVariablesFueraSpec = ncCount > 0;
 
     return {
       rollo: {
@@ -1046,7 +1050,7 @@ export const getDetalleRollo = createServerFn({ method: "GET" })
         operador: (m.operador as string) ?? "—",
         jefeMaquina: (m.jefe_maquina as string) ?? "—",
         analista: (m.analista as string) ?? "—",
-        estatus: (m.estatus_liberacion ?? m.dictamen ?? "pendiente") as string,
+        estatus: estatusOficial,
         defectos: ((m.defectos ?? []) as string[]).filter(Boolean),
         observaciones: (m.observaciones_generales as string) ?? "",
         folioOrden: ord?.folio ?? "—",
@@ -1055,7 +1059,10 @@ export const getDetalleRollo = createServerFn({ method: "GET" })
         maquina: ord?.maquinas?.codigo ?? "—",
         planta: ord?.plantas?.nombre ?? "—",
         ncCount,
-        cumplimiento,
+        // Cumplimiento de variables (métrica separada del estatus oficial)
+        cumplimiento: cumplimientoVariables,
+        cumplimientoVariables,
+        tieneVariablesFueraSpec,
       },
       mediciones: meds,
     };
