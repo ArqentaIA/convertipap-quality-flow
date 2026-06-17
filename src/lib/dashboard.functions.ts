@@ -87,9 +87,9 @@ export const getDashboard = createServerFn({ method: "POST" })
         sb.from("maquinas").select("id, codigo").order("codigo"),
         sb
           .from("muestras_calidad")
-          .select("id, maquina_id, hora_muestreo, dictamen, estatus_liberacion, defectos, estado")
-          .gte("hora_muestreo", start.toISOString())
-          .lte("hora_muestreo", end.toISOString()),
+          .select("id, maquina_id, capturado_at, dictamen, estatus_liberacion, defectos, estado")
+          .gte("capturado_at", start.toISOString())
+          .lte("capturado_at", end.toISOString()),
         sb
           .from("mediciones_calidad")
           .select("id, muestra_id, variable_clave, valor, estado, created_at")
