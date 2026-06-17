@@ -330,6 +330,32 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
 
   const ahoraLocal = useMemo(() => toLocalDateTimeInputValue(new Date()), []);
   const [numeroRollo, setNumeroRollo] = useState<string>("");
+  // Sufijo automático según máquina: MP-04→"4", MP-05→"5", etc.
+  const sufijoMaq = useMemo(() => {
+    const m = /(\d)$/.exec(maquina.codigo);
+    return m ? m[1] : "";
+  }, [maquina.codigo]);
+  const baseRollo = useMemo(() => {
+    if (!numeroRollo) return "";
+    const m = /^(.*)-(\d)$/.exec(numeroRollo);
+    return m ? m[1] : numeroRollo;
+  }, [numeroRollo]);
+  // Auto-corrige el sufijo cuando cambia la máquina.
+  useEffect(() => {
+    if (!sufijoMaq) return;
+    setNumeroRollo((prev) => {
+      if (!prev) return prev;
+      const m = /^(.*)-(\d)$/.exec(prev);
+      if (m) {
+        if (m[2] !== sufijoMaq) {
+          toast.info(`Sufijo de rollo corregido a -${sufijoMaq} para ${maquina.codigo}`);
+          return `${m[1]}-${sufijoMaq}`;
+        }
+        return prev;
+      }
+      return `${prev}-${sufijoMaq}`;
+    });
+  }, [sufijoMaq, maquina.codigo]);
   const [horaMuestreo, setHoraMuestreo] = useState<string>(ahoraLocal);
   const [observaciones, setObservaciones] = useState<string>("");
   const [mediciones, setMediciones] = useState<MedicionInputState>({});
@@ -1053,22 +1079,36 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
                 <Label htmlFor="rollo" className="text-base">
                   Número de rollo{" "}
                   <span className="text-muted-foreground font-normal">
-                    (letras, números o guion)
+                    (sufijo automático según máquina)
                   </span>
                 </Label>
-                <Input
-                  id="rollo"
-                  type="text"
-                  inputMode="text"
-                  placeholder="4438-6"
-                  pattern="[A-Za-z0-9-]{1,30}"
-                  value={numeroRollo}
-                  onChange={(e) => setNumeroRollo(e.target.value)}
+                <div
                   className={cn(
-                    "h-11 text-base",
+                    "flex h-11 items-stretch rounded-md border border-input bg-transparent shadow-sm focus-within:ring-1 focus-within:ring-ring",
                     numeroRollo && !ROLLO_REGEX.test(numeroRollo.trim()) && "border-destructive",
                   )}
-                />
+                >
+                  <Input
+                    id="rollo"
+                    type="text"
+                    inputMode="text"
+                    placeholder="4438"
+                    pattern="[A-Za-z0-9-]{1,28}"
+                    value={baseRollo}
+                    onChange={(e) => {
+                      const raw = e.target.value.replace(/-+$/, "");
+                      setNumeroRollo(raw ? `${raw}-${sufijoMaq}` : "");
+                    }}
+                    className="h-full flex-1 border-0 bg-transparent text-base shadow-none focus-visible:ring-0"
+                  />
+                  <span
+                    className="flex items-center rounded-r-md border-l border-input bg-muted px-3 text-base font-semibold text-muted-foreground select-none"
+                    title={`Sufijo fijo para ${maquina.codigo}`}
+                    aria-label={`Sufijo fijo -${sufijoMaq}`}
+                  >
+                    -{sufijoMaq || "?"}
+                  </span>
+                </div>
                 {numeroRollo && !ROLLO_REGEX.test(numeroRollo.trim()) && (
                   <p className="text-[11px] text-destructive">
                     Usa máximo 30 caracteres: letras, números y guion.
