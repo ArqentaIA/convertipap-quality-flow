@@ -8,7 +8,8 @@ export type AppRole =
   | "gerente_general"
   | "direccion"
   | "calidad"
-  | "capturista";
+  | "capturista"
+  | "reportes_consulta";
 
 export type AppModule =
   | "dashboard"
