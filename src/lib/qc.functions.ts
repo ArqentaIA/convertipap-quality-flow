@@ -463,7 +463,20 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
       defectos: data.defectos ?? [],
       tipo_muestreo: data.tipo_muestreo,
       hora_muestreo: data.hora_muestreo || new Date().toISOString(),
-      observaciones_generales: data.observaciones_generales,
+      // observaciones_generales mantiene compatibilidad con reportes/etiqueta/modal:
+      // si hay hallazgos del rollo, los serializa como "[Defecto] | [Variable] | [Criterio]".
+      // Si el criterio es CRÍTICO, se prefija "🔴 CRÍTICO · " para que destaque en exports
+      // sin estilo de celda (xlsx community no soporta colores de fuente por celda).
+      observaciones_generales: (() => {
+        const partes = [
+          data.defecto_visual_conversion?.trim(),
+          data.variable_tecnica_dimensional?.trim(),
+          data.criterio_defecto?.trim(),
+        ].filter((x): x is string => !!x && x.length > 0);
+        if (partes.length === 0) return data.observaciones_generales ?? "";
+        const txt = partes.join(" | ");
+        return data.criterio_defecto === "CRÍTICO" ? `🔴 CRÍTICO · ${txt}` : txt;
+      })(),
       defecto_visual_conversion: data.defecto_visual_conversion ?? null,
       variable_tecnica_dimensional: data.variable_tecnica_dimensional ?? null,
       criterio_defecto: data.criterio_defecto ?? null,
