@@ -360,6 +360,11 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
   const toggleDefecto = (d: string) =>
     setDefectos((prev) => (prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]));
 
+  // Sección E — Hallazgos del rollo (3 selects opcionales)
+  const [defectoVisual, setDefectoVisual] = useState<string>("");
+  const [variableTecnica, setVariableTecnica] = useState<string>("");
+  const [criterioDefecto, setCriterioDefecto] = useState<"" | "MENOR" | "MAYOR" | "CRÍTICO">("");
+
   // Reinicializar mediciones cuando cambia el producto / spec
   useEffect(() => {
     const base: MedicionInputState = {};
