@@ -52,6 +52,11 @@ import {
 } from "@/components/ui/dialog";
 import { getAppSettings } from "@/lib/settings.functions";
 import { cn } from "@/lib/utils";
+import {
+  DEFECTOS_VISUALES_CONVERSION,
+  VARIABLES_TECNICAS_DIMENSIONALES,
+  CRITERIOS_DEFECTO,
+} from "@/lib/hallazgo";
 
 const ROLLO_REGEX = /^[A-Za-z0-9-]{1,30}$/;
 
