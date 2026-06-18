@@ -952,6 +952,7 @@ function OperatorVisionPage() {
                             mapSpecActual.get(v.clave)?.obj !== null)
                         }
                         isCritical={k === "pesoBase" || k === "tensionMD" || k === "tensionCD"}
+                        clave={v.clave}
                       />
                     );
                   })}
