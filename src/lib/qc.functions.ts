@@ -300,6 +300,7 @@ export const listMisMuestrasRecientes = createServerFn({ method: "GET" })
          producto_id, maquina_id, capturado_por, turno,
          jefe_maquina, operador, prensero, analista,
          estatus_liberacion, defectos,
+         liberado_con_justificacion, liberacion_justificacion, liberado_por, liberado_at, variables_fuera_spec,
          dictamen, dictamen_observaciones, dictamen_motivo, dictamen_at,
          autorizado_por, autorizado_at, rol_autorizador,
          productos(id, codigo, nombre),
