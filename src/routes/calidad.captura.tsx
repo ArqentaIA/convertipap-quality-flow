@@ -833,19 +833,41 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
         }
       }
     }
-    let faltantes = 0;
     if (modo === "envio") {
-      if (!rolloNormalizado) faltantes += 1;
-      // Fase 2 — Operador obligatorio en nuevas capturas (no afecta históricos).
-      if (!operador.trim()) {
-        toast.error("El operador es obligatorio para guardar la captura.");
-        return;
-      }
-      faltantes += evalMediciones.filter(
-        (m) => CAMPOS_OBLIGATORIOS_CLAVES.includes(m.spec.clave) && m.input.valor === "",
-      ).length;
-      if (faltantes > 0) {
-        toast(`Te faltaron de capturar ${faltantes} campos obligatorios.`, { duration: 2000 });
+      // TODOS los campos son obligatorios para nuevas capturas
+      // (aplica a Control de Calidad y Captura fuera de turno).
+      const camposEncabezado: Array<{ valor: string; etiqueta: string }> = [
+        { valor: rolloNormalizado, etiqueta: "Número de rollo" },
+        { valor: horaMuestreo, etiqueta: "Fecha y hora de muestreo" },
+        { valor: jefeMaquina, etiqueta: "Jefe de máquina" },
+        { valor: operador, etiqueta: "Operador" },
+        { valor: prensero, etiqueta: "Prensero" },
+        { valor: analista, etiqueta: "Analista" },
+        { valor: velocidadMaquina, etiqueta: "Velocidad de máquina" },
+        { valor: velocidadEnrollador, etiqueta: "Velocidad de enrollador" },
+        { valor: crepadoPct, etiqueta: "% Crepado" },
+        { valor: porcentajeRupturasPct, etiqueta: "% Rupturas" },
+        { valor: destino, etiqueta: "Destino" },
+        { valor: observaciones, etiqueta: "Observaciones" },
+      ];
+      const faltantesEncabezado = camposEncabezado.filter((c) => !String(c.valor ?? "").trim());
+      const medicionesFaltantes = evalMediciones.filter((m) => m.input.valor === "");
+      const totalFaltantes = faltantesEncabezado.length + medicionesFaltantes.length;
+      if (totalFaltantes > 0) {
+        const detalle = [
+          ...faltantesEncabezado.map((c) => c.etiqueta),
+          ...medicionesFaltantes.map((m) => m.spec.etiqueta),
+        ]
+          .slice(0, 6)
+          .join(", ");
+        toast.error(
+          `Faltan ${totalFaltantes} campo(s) obligatorio(s). Todos los campos son requeridos.`,
+          {
+            description:
+              detalle + (totalFaltantes > 6 ? ` y ${totalFaltantes - 6} más…` : ""),
+            duration: 7000,
+          },
+        );
         return;
       }
     }
