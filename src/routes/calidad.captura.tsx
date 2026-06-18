@@ -920,26 +920,18 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
           <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <div className="space-y-1.5">
               <Label className="text-base">Turno</Label>
-              <Select value={turno} onValueChange={(v) => setTurno(v as "1" | "2" | "3")}>
-                <SelectTrigger className="h-11 text-base">
-                  <SelectValue placeholder="Selecciona turno" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1">
-                    Turno 1 · {settings?.turno1_inicio ?? "07:00"} –{" "}
-                    {settings?.turno1_fin ?? "15:00"}
-                  </SelectItem>
-                  <SelectItem value="2">
-                    Turno 2 · {settings?.turno2_inicio ?? "15:00"} –{" "}
-                    {settings?.turno2_fin ?? "23:00"}
-                  </SelectItem>
-                  <SelectItem value="3">
-                    Turno 3 · {settings?.turno3_inicio ?? "23:00"} –{" "}
-                    {settings?.turno3_fin ?? "07:00"}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="flex h-11 items-center rounded-md border border-input bg-muted px-3 text-base text-muted-foreground">
+                {turno === "1"
+                  ? `Turno 1 · ${settings?.turno1_inicio ?? "07:00"} – ${settings?.turno1_fin ?? "15:00"}`
+                  : turno === "2"
+                  ? `Turno 2 · ${settings?.turno2_inicio ?? "15:00"} – ${settings?.turno2_fin ?? "23:00"}`
+                  : `Turno 3 · ${settings?.turno3_inicio ?? "23:00"} – ${settings?.turno3_fin ?? "07:00"}`}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Asignado automáticamente según el horario configurado.
+              </p>
             </div>
+
             <div className="space-y-1.5">
               <Label className="text-base">Máquina</Label>
               <Select value={maquinaId} onValueChange={setMaquinaId}>
