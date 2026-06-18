@@ -527,9 +527,9 @@ export const getReportes = createServerFn({ method: "POST" })
         if (med && med.valor !== null && med.valor !== undefined) {
           row[etiqueta] = med.valor;
         } else if (aplicables.has(clave)) {
-          row[etiqueta] = "Pendiente";
+          row[etiqueta] = "NO CAPTURADO";
         } else if (aplicables.size === 0) {
-          row[etiqueta] = SIN_INFO;
+          row[etiqueta] = "NO CAPTURADO";
         } else {
           row[etiqueta] = "No aplica";
         }
