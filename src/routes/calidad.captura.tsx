@@ -508,6 +508,35 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
   );
   const hayCritico = evalMediciones.some((m) => m.estado === "fuera_rango_critico");
 
+  // ---------------------------------------------------------------------------
+  // REGLA CRÍTICA OFICIAL (Fase 3) — Pre-validación en el cliente.
+  // El backend es la fuente de verdad; aquí mostramos la consecuencia al
+  // operador y bloqueamos selección manual de L o C.
+  // ---------------------------------------------------------------------------
+  const criticalRuleEval = useMemo(
+    () =>
+      evaluateCriticalRule(
+        evalMediciones
+          .filter((m) => Number.isFinite(m.num))
+          .map((m) => ({
+            variable_clave: m.spec.clave,
+            valor: m.num,
+            min_snapshot: m.spec.min_valor,
+            max_snapshot: m.spec.max_valor,
+          })),
+      ),
+    [evalMediciones],
+  );
+  const fuerzaNCPorReglaCritica = criticalRuleEval.forzarNC;
+
+  // Si la regla crítica fuerza NC, alinear el selector visual.
+  useEffect(() => {
+    if (fuerzaNCPorReglaCritica && estatusLiberacion !== "NC") {
+      setEstatusLiberacion("NC");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fuerzaNCPorReglaCritica]);
+
   const upsertFn = useServerFn(upsertMuestraConMediciones);
   const dictaminarFn = useServerFn(dictaminarMuestra);
   const [ultimaEtiqueta, setUltimaEtiqueta] = useState<EtiquetaData | null>(null);
