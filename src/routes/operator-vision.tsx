@@ -1030,7 +1030,7 @@ function OperatorVisionPage() {
               const maxBodyH = headerH + rowH * 15 + summaryH;
               return (
                 <div
-                  className="overflow-auto"
+                  className={historial.length === 0 ? "flex flex-1 items-center justify-center" : "overflow-auto"}
                   style={filas > 15 ? { maxHeight: `${maxBodyH}px` } : undefined}
                 >
 
