@@ -500,6 +500,24 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
       porcentaje_rupturas_pct: data.porcentaje_rupturas_pct ?? null,
       destino: data.destino?.trim() ? data.destino.trim() : null,
       estatus_liberacion: estatusLiberacionEfectivo,
+      // Regla de oro: persistir flags de liberación con justificación.
+      liberado_con_justificacion: wantLiberarJustif && criticalEval.forzarNC && justifTrim.length >= 10,
+      liberacion_justificacion:
+        wantLiberarJustif && criticalEval.forzarNC && justifTrim.length >= 10 ? justifTrim : null,
+      liberado_por:
+        wantLiberarJustif && criticalEval.forzarNC && justifTrim.length >= 10 ? userId : null,
+      liberado_at:
+        wantLiberarJustif && criticalEval.forzarNC && justifTrim.length >= 10
+          ? new Date().toISOString()
+          : null,
+      variables_fuera_spec: criticalEval.fallas.map((f) => ({
+        variable: f.variable_clave,
+        etiqueta: f.etiqueta,
+        valor: f.valor,
+        min: f.min,
+        max: f.max,
+        tipo: f.tipo,
+      })) as never,
       defectos: data.defectos ?? [],
       tipo_muestreo: data.tipo_muestreo,
       hora_muestreo: data.hora_muestreo || new Date().toISOString(),
