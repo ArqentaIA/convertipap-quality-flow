@@ -1,25 +1,20 @@
 // =============================================================================
-// REGLA CRÍTICA OFICIAL DE CONFORMIDAD (Fase 3 · cutover 18-Jun-2026)
+// REGLA DE ORO OFICIAL DE CONFORMIDAD (cutover 18-Jun-2026)
 // -----------------------------------------------------------------------------
-// Un rollo NO puede capturarse como Liberado (L) o Concesión (C) si incumple
-// cualquiera de estas 3 condiciones críticas:
+// Un rollo se considera CUMPLE / NO CUMPLE evaluando SOLO 3 variables críticas
+// con comparación ESTRICTA y SIMÉTRICA (min y max). Igual al límite SÍ cumple.
 //
-//   1) Peso Base       > máximo permitido  → NO CUMPLE
-//   2) Tensión Seca MD < mínimo permitido  → NO CUMPLE
-//   3) Tensión Seca CD < mínimo permitido  → NO CUMPLE
+//   1) Peso Base       fuera de [min, max] → NO CUMPLE
+//   2) Tensión Seca MD fuera de [min, max] → NO CUMPLE
+//   3) Tensión Seca CD fuera de [min, max] → NO CUMPLE
 //
-// Comparación ESTRICTA (>, <). Si el valor está exactamente en el límite,
-// se considera dentro de especificación.
+// Si NO CUMPLE, el capturista puede liberar marcando
+// `liberado_con_justificacion = true` y proporcionando un motivo (≥10 chars).
+// El estatus efectivo resultante es "Liberado con justificación" (amarillo).
 //
-// Aplica para todos los productos que tengan definidas estas variables.
-// Si el producto no tiene la variable en su especificación, esa condición
-// simplemente no aplica (no bloquea ni invalida).
-//
-// La regla es la MISMA en captura (frontend) y en `upsertMuestraConMediciones`
-// (backend). Esta función es la fuente única de verdad.
-//
-// NO modifica históricos. Sólo afecta el guardado de NUEVAS muestras o la
-// edición de muestras existentes en su próximo upsert.
+// Esta función es la fuente única de verdad para la UI; el backend (trigger
+// `qc_recalc_estatus_muestra` + `upsertMuestraConMediciones`) aplica la misma
+// regla de forma autoritativa.
 // =============================================================================
 
 export type CriticalVariableKey = "pesoBase" | "tensionMD" | "tensionCD";
@@ -35,15 +30,18 @@ export interface CriticalFailure {
   variable_clave: CriticalVariableKey;
   etiqueta: string;
   valor: number;
-  limite: number;
+  min: number;
+  max: number;
   tipo: "max_excedido" | "min_no_alcanzado";
   /** Mensaje listo para mostrar al operador / registrar en auditoría. */
   mensaje: string;
 }
 
 export interface CriticalRuleResult {
-  /** true si AL MENOS UNA de las 3 condiciones críticas se incumple. */
+  /** true cuando al menos una de las 3 condiciones críticas se incumple. */
   forzarNC: boolean;
+  /** Sinónimo semántico de !forzarNC (regla de oro). */
+  cumple: boolean;
   fallas: CriticalFailure[];
   /** Mensaje multilínea apto para toasts y logs de auditoría. */
   resumen: string;
@@ -60,8 +58,8 @@ function esCritica(clave: string): clave is CriticalVariableKey {
 }
 
 /**
- * Evalúa la regla crítica oficial sobre el conjunto de mediciones de una muestra.
- * Sólo considera mediciones con `valor` finito (las celdas vacías no fuerzan NC).
+ * Evalúa la regla de oro sobre el conjunto de mediciones de una muestra.
+ * Solo considera mediciones con `valor` finito.
  */
 export function evaluateCriticalRule(
   mediciones: CriticalMedicionInput[],
@@ -73,40 +71,39 @@ export function evaluateCriticalRule(
     const v = Number(m.valor);
     if (!Number.isFinite(v)) continue;
 
-    if (m.variable_clave === "pesoBase") {
-      // Estricto: > max → NC. v === max permitido.
-      if (Number.isFinite(m.max_snapshot) && v > m.max_snapshot) {
-        fallas.push({
-          variable_clave: "pesoBase",
-          etiqueta: ETIQUETAS.pesoBase,
-          valor: v,
-          limite: m.max_snapshot,
-          tipo: "max_excedido",
-          mensaje: `Peso Base ${v} excede el máximo permitido (${m.max_snapshot}).`,
-        });
-      }
-    } else {
-      // tensionMD / tensionCD — Estricto: < min → NC. v === min permitido.
-      if (Number.isFinite(m.min_snapshot) && v < m.min_snapshot) {
-        fallas.push({
-          variable_clave: m.variable_clave,
-          etiqueta: ETIQUETAS[m.variable_clave],
-          valor: v,
-          limite: m.min_snapshot,
-          tipo: "min_no_alcanzado",
-          mensaje: `${ETIQUETAS[m.variable_clave]} ${v} es menor al mínimo permitido (${m.min_snapshot}).`,
-        });
-      }
+    const etiqueta = ETIQUETAS[m.variable_clave];
+
+    if (Number.isFinite(m.max_snapshot) && v > m.max_snapshot) {
+      fallas.push({
+        variable_clave: m.variable_clave,
+        etiqueta,
+        valor: v,
+        min: m.min_snapshot,
+        max: m.max_snapshot,
+        tipo: "max_excedido",
+        mensaje: `${etiqueta} ${v} excede el máximo permitido (${m.max_snapshot}).`,
+      });
+    } else if (Number.isFinite(m.min_snapshot) && v < m.min_snapshot) {
+      fallas.push({
+        variable_clave: m.variable_clave,
+        etiqueta,
+        valor: v,
+        min: m.min_snapshot,
+        max: m.max_snapshot,
+        tipo: "min_no_alcanzado",
+        mensaje: `${etiqueta} ${v} es menor al mínimo permitido (${m.min_snapshot}).`,
+      });
     }
   }
 
   return {
     forzarNC: fallas.length > 0,
+    cumple: fallas.length === 0,
     fallas,
     resumen:
       fallas.length === 0
-        ? ""
-        : `Rollo marcado como NO CONFORME por incumplimiento de variable crítica:\n• ${fallas
+        ? "El rollo CUMPLE con la regla de oro."
+        : `El rollo NO CUMPLE la regla de oro:\n• ${fallas
             .map((f) => f.mensaje)
             .join("\n• ")}`,
   };
