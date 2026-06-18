@@ -611,7 +611,41 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
       }
     }
 
-    return { muestra_id: muestraId, reabre_dictamen: !!dictamenPrevioAt };
+    // Auditoría de la regla crítica oficial cuando forzó NC automático.
+    if (criticalEval.forzarNC) {
+      try {
+        await (sb as unknown as { rpc: (n: string, a: unknown) => Promise<unknown> }).rpc(
+          "audit_action",
+          {
+            p_modulo: "control_calidad",
+            p_descripcion:
+              "Regla crítica oficial: estatus forzado a NC por incumplimiento de variable crítica",
+            p_registro_id: muestraId,
+            p_datos: {
+              numero_rollo: data.numero_rollo,
+              maquina_id: data.maquina_id,
+              turno: data.turno,
+              estatus_liberacion_solicitado: data.estatus_liberacion ?? null,
+              estatus_liberacion_aplicado: "NC",
+              fallas: criticalEval.fallas,
+              resumen: criticalEval.resumen,
+            },
+          },
+        );
+      } catch {
+        // No bloquear la captura si la auditoría falla.
+      }
+    }
+
+    return {
+      muestra_id: muestraId,
+      reabre_dictamen: !!dictamenPrevioAt,
+      regla_critica: {
+        forzado_nc: criticalEval.forzarNC,
+        fallas: criticalEval.fallas,
+        resumen: criticalEval.resumen,
+      },
+    };
   });
 
 export const dictaminarMuestra = createServerFn({ method: "POST" })
