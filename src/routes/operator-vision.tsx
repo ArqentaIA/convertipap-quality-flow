@@ -1044,20 +1044,31 @@ function OperatorVisionPage() {
                           >
                             Rollo
                           </th>
-                          {COLS.map((c) => (
-                            <th
-                              key={c.key}
-                              className={`${cellPad} text-right font-black uppercase tracking-wider text-slate-600 whitespace-nowrap`}
-                              style={{ fontSize: `${hz}px` }}
-                            >
-                              {c.label}
-                              {c.unit && (
-                                <span className="ml-0.5 font-semibold text-slate-400 normal-case">
-                                  ({c.unit})
-                                </span>
-                              )}
-                            </th>
-                          ))}
+                          {COLS.map((c) => {
+                            const isCrit =
+                              c.key === "pesoBase" ||
+                              c.key === "tensionMD" ||
+                              c.key === "tensionCD";
+                            return (
+                              <th
+                                key={c.key}
+                                className={cn(
+                                  `${cellPad} text-right font-black uppercase tracking-wider whitespace-nowrap`,
+                                  isCrit
+                                    ? "relative z-[1] bg-white text-slate-800 shadow-[0_0_0_2px_#ffffff,0_0_14px_4px_rgba(255,255,255,0.95)]"
+                                    : "text-slate-600",
+                                )}
+                                style={{ fontSize: `${hz}px` }}
+                              >
+                                {c.label}
+                                {c.unit && (
+                                  <span className={cn("ml-0.5 font-semibold normal-case", isCrit ? "text-slate-500" : "text-slate-400")}>
+                                    ({c.unit})
+                                  </span>
+                                )}
+                              </th>
+                            );
+                          })}
                           <th
                             className={`${cellPad} text-right font-black uppercase tracking-wider text-slate-600 whitespace-nowrap`}
                             style={{ fontSize: `${hz}px` }}
@@ -1117,10 +1128,17 @@ function OperatorVisionPage() {
                               {COLS.map((c) => {
                                 const v = varByKey.get(c.key);
                                 const val = v?.valor;
+                                const isCrit =
+                                  c.key === "pesoBase" ||
+                                  c.key === "tensionMD" ||
+                                  c.key === "tensionCD";
                                 return (
                                   <td
                                     key={c.key}
-                                    className={`${cellPad} text-right whitespace-nowrap ${stColor((v?.status ?? "none") as VarStatus)}`}
+                                    className={cn(
+                                      `${cellPad} text-right whitespace-nowrap ${stColor((v?.status ?? "none") as VarStatus)}`,
+                                      isCrit && "relative z-[1] bg-white shadow-[0_0_0_2px_#ffffff,0_0_14px_4px_rgba(255,255,255,0.95)]",
+                                    )}
                                     style={{ fontSize: `${fz}px` }}
                                   >
                                     {val === null || val === undefined
@@ -1172,15 +1190,24 @@ function OperatorVisionPage() {
                               >
                                 Promedio / Total Turno ({historial.length})
                               </td>
-                              {COLS.map((c) => (
-                                <td
-                                  key={c.key}
-                                  className={`${cellPad} text-right whitespace-nowrap text-slate-800`}
-                                  style={{ fontSize: `${fz}px` }}
-                                >
-                                  {avg(c.key, c.digits)}
-                                </td>
-                              ))}
+                              {COLS.map((c) => {
+                                const isCrit =
+                                  c.key === "pesoBase" ||
+                                  c.key === "tensionMD" ||
+                                  c.key === "tensionCD";
+                                return (
+                                  <td
+                                    key={c.key}
+                                    className={cn(
+                                      `${cellPad} text-right whitespace-nowrap text-slate-800`,
+                                      isCrit && "relative z-[1] bg-white shadow-[0_0_0_2px_#ffffff,0_0_14px_4px_rgba(255,255,255,0.95)]",
+                                    )}
+                                    style={{ fontSize: `${fz}px` }}
+                                  >
+                                    {avg(c.key, c.digits)}
+                                  </td>
+                                );
+                              })}
                               <td
                                 className={`${cellPad} text-right whitespace-nowrap text-slate-800`}
                                 style={{ fontSize: `${fz}px` }}
