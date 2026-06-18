@@ -420,6 +420,7 @@ export const getReportes = createServerFn({ method: "POST" })
       .select(
         `id, numero_rollo, hora_muestreo, turno, operador, jefe_maquina, prensero, analista,
          estatus_liberacion, dictamen, defectos, liberado_con_justificacion, liberacion_justificacion,
+         fuera_de_turno, fuera_de_turno_motivo,
          maquina_id, planta_id, orden_id, producto_id,
          productos!muestras_calidad_producto_id_fkey(nombre, codigo, capas, gramaje, tipos_producto(codigo, nombre, familias_producto(codigo, nombre))),
          ordenes_fabricacion(folio)`,
