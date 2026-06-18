@@ -819,13 +819,27 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
     }
 
     // ---------------------------------------------------------------------
-    // Regla crítica oficial (Fase 3): si se incumple, el estatus se fuerza a
-    // NC y se notifica al operador. El backend valida igualmente.
+    // REGLA DE ORO (cutover 18-Jun-2026): el estatus lo decide el sistema.
+    // - CUMPLE → 'L' automático.
+    // - NO CUMPLE sin justificación → bloquear envío con instrucciones claras.
+    // - NO CUMPLE con justificación válida (≥10 chars) → 'L' + flag de
+    //   liberado_con_justificacion. El backend y el trigger en BD validan
+    //   igualmente para defensa en profundidad.
     // ---------------------------------------------------------------------
-    const estatusLiberacionPayload: "L" | "NC" | "C" | "" =
-      criticalRuleEval.forzarNC ? "NC" : estatusLiberacion;
     if (modo === "envio" && criticalRuleEval.forzarNC) {
-      toast.warning(criticalRuleEval.resumen, { duration: 6000 });
+      if (!liberarConJustif) {
+        toast.error(
+          "Este rollo NO CUMPLE la regla de oro. Para guardarlo como NO CONFORME desmarque esta confirmación; para liberarlo, marque 'Liberar con justificación' y escriba el motivo.",
+          { duration: 8000, description: criticalRuleEval.resumen },
+        );
+        return;
+      }
+      if (!justifValida) {
+        toast.error("La justificación de liberación debe tener al menos 10 caracteres.", {
+          duration: 6000,
+        });
+        return;
+      }
     }
 
 
@@ -866,7 +880,9 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
         porcentaje_rupturas_pct:
           porcentajeRupturasPct.trim() === "" ? null : Number(porcentajeRupturasPct),
         destino: destino.trim() === "" ? null : destino.trim(),
-        estatus_liberacion: estatusLiberacionPayload || undefined,
+        // estatus_liberacion ya NO viene del cliente: lo deriva la BD por la regla de oro.
+        liberado_con_justificacion: liberarConJustif,
+        liberacion_justificacion: liberarConJustif ? justifTrimmed : null,
         defectos,
         tipo_muestreo: "por_rollo" as const,
         hora_muestreo: horaMuestreo ? new Date(horaMuestreo).toISOString() : undefined,
