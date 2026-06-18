@@ -37,11 +37,21 @@ export type ReporteTurnoData = {
 };
 
 // ── Derivaciones (sin datos inventados) ────────────────────────────────
+function isJustificada(r: TablaRow) {
+  return !!r.liberado_con_justificacion;
+}
 function isLiberada(r: TablaRow) {
-  return r.dictamen === "liberada" || r.estatus_liberacion === "L";
+  return !isJustificada(r) && (r.dictamen === "liberada" || r.estatus_liberacion === "L");
 }
 function isRechazada(r: TablaRow) {
   return r.dictamen === "rechazada" || r.estatus_liberacion === "NC";
+}
+function estatusLabel(r: TablaRow): string {
+  if (isJustificada(r)) return "Liberado c/justif";
+  if (isLiberada(r)) return "Liberado";
+  if (isRechazada(r)) return "No conforme";
+  if (r.estatus_liberacion === "C" || r.dictamen === "concesion") return "Concesión";
+  return r.dictamen ?? r.estatus_liberacion ?? r.estado ?? "Pendiente";
 }
 
 export function buildResumen(rows: TablaRow[]) {
