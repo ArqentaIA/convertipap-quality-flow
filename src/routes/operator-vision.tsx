@@ -1128,10 +1128,17 @@ function OperatorVisionPage() {
                               {COLS.map((c) => {
                                 const v = varByKey.get(c.key);
                                 const val = v?.valor;
+                                const isCrit =
+                                  c.key === "pesoBase" ||
+                                  c.key === "tensionMD" ||
+                                  c.key === "tensionCD";
                                 return (
                                   <td
                                     key={c.key}
-                                    className={`${cellPad} text-right whitespace-nowrap ${stColor((v?.status ?? "none") as VarStatus)}`}
+                                    className={cn(
+                                      `${cellPad} text-right whitespace-nowrap ${stColor((v?.status ?? "none") as VarStatus)}`,
+                                      isCrit && "relative z-[1] bg-white shadow-[0_0_0_2px_#ffffff,0_0_14px_4px_rgba(255,255,255,0.95)]",
+                                    )}
                                     style={{ fontSize: `${fz}px` }}
                                   >
                                     {val === null || val === undefined
