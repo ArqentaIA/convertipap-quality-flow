@@ -648,18 +648,14 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
           max: m.spec.max_valor,
           fueraSpec: m.estado === "no_conforme" || m.estado === "fuera_rango_critico",
         })),
-        estatusLiberacion: estatusLiberacion || null,
+        estatusLiberacion: fueraSpecAlguno
+          ? (liberarConJustif ? "L" : "NC")
+          : "L",
+        justificacionLiberacion: liberarConJustif ? justifTrimmed : null,
         defectos,
-        estatus:
-          estatusLiberacion === "L"
-            ? "LIBERADO"
-            : estatusLiberacion === "NC"
-              ? "NO CONFORME"
-              : estatusLiberacion === "C"
-                ? "CONDICIONAL"
-                : fueraSpecAlguno
-                  ? "NO CONFORME"
-                  : "CONFORME",
+        estatus: fueraSpecAlguno
+          ? (liberarConJustif ? "LIBERADO C/JUSTIF" : "NO CONFORME")
+          : "LIBERADO",
       };
       setUltimaEtiqueta(etiqueta);
       setMediciones((prev) => {
@@ -675,7 +671,8 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
       setAnalista("");
       setObservaciones("");
       setNumeroRollo("");
-      setEstatusLiberacion("");
+      setLiberarConJustif(false);
+      setJustificacionLib("");
       setDefectos([]);
       setDefectoVisual("");
       setVariableTecnica("");
