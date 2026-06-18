@@ -156,6 +156,7 @@ export const getOperatorVisionData = createServerFn({ method: "GET" })
          mediciones_calidad(variable_clave, valor, min_snapshot, objetivo_snapshot, max_snapshot, estado)`,
       )
       .eq("maquina_id", maquina.id)
+      .eq("fuera_de_turno", false)
       .gte("capturado_at", (inicioTurnoVigente ?? nowUtc).toISOString())
       .lte("capturado_at", endNowHist.toISOString())
       .order("capturado_at", { ascending: false })
