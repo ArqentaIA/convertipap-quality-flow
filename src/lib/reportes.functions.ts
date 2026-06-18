@@ -54,20 +54,43 @@ export const getReportes = createServerFn({ method: "POST" })
     const plantaById = new Map((plantas ?? []).map((p) => [p.id, p]));
     const maquinaById = new Map((maquinas ?? []).map((m) => [m.id, m]));
 
-    // --------- Muestras del periodo ---------
-    const { data: muestras } = await sb
-      .from("muestras_calidad")
-      .select(
-        "id, planta_id, maquina_id, turno, hora_muestreo, dictamen, estado, estatus_liberacion",
-      )
-      .gte("hora_muestreo", start)
-      .lte("hora_muestreo", end);
+    // --------- Muestras del periodo (paginado) ---------
+    async function fetchAllPaged<T>(
+      builder: () => any,
+    ): Promise<T[]> {
+      const PAGE = 1000;
+      const out: T[] = [];
+      let from = 0;
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const { data, error } = await builder().range(from, from + PAGE - 1);
+        if (error) throw error;
+        const rows = (data ?? []) as T[];
+        out.push(...rows);
+        if (rows.length < PAGE) break;
+        from += PAGE;
+      }
+      return out;
+    }
 
-    const { data: muestrasPrev } = await sb
+    const muestras = await fetchAllPaged<{
+      id: string; planta_id: string; maquina_id: string; turno: string;
+      hora_muestreo: string; dictamen: string | null; estado: string | null;
+      estatus_liberacion: string | null;
+    }>(() => sb
+      .from("muestras_calidad")
+      .select("id, planta_id, maquina_id, turno, hora_muestreo, dictamen, estado, estatus_liberacion")
+      .gte("hora_muestreo", start)
+      .lte("hora_muestreo", end));
+
+    const muestrasPrev = await fetchAllPaged<{
+      id: string; planta_id: string; dictamen: string | null; estatus_liberacion: string | null;
+    }>(() => sb
       .from("muestras_calidad")
       .select("id, planta_id, dictamen, estatus_liberacion")
       .gte("hora_muestreo", prevStart)
-      .lt("hora_muestreo", prevEnd);
+      .lt("hora_muestreo", prevEnd));
+
 
     // --------- Mediciones del periodo (paginado: PostgREST limita a 1000) ---------
     type MedRow = {
