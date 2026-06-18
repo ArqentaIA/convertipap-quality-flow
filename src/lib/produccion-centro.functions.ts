@@ -341,6 +341,8 @@ export const getProduccionCentro = createServerFn({ method: "POST" })
         estado: last.estado,
         dictamen: last.dictamen,
         estatus_liberacion: last.estatus_liberacion,
+        liberado_con_justificacion: !!(last as { liberado_con_justificacion?: boolean | null }).liberado_con_justificacion,
+        liberacion_justificacion: (last as { liberacion_justificacion?: string | null }).liberacion_justificacion ?? null,
         analista: last.analista,
         semaforo: semaforo(last),
         comparativo: prev
