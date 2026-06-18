@@ -129,12 +129,13 @@ export const getReportes = createServerFn({ method: "POST" })
       }
     }
 
-    // --------- Rollos del periodo ---------
-    const { data: rollos } = await sb
-      .from("rollos_producidos")
-      .select("id, orden_id, registrado_at")
-      .gte("registrado_at", start)
-      .lte("registrado_at", end);
+    // --------- Rollos del periodo (paginado) ---------
+    const rollos = await fetchAllPaged<{ id: string; orden_id: string; registrado_at: string }>(
+      () => sb.from("rollos_producidos")
+        .select("id, orden_id, registrado_at")
+        .gte("registrado_at", start)
+        .lte("registrado_at", end),
+    );
 
     const { data: ordenes } = await sb
       .from("ordenes_fabricacion")
