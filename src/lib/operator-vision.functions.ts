@@ -94,23 +94,12 @@ export const getOperatorVisionData = createServerFn({ method: "GET" })
     }
 
     // 4) Historial del turno vigente para esta máquina.
-     //    - Filtrado estricto por máquina actual.
-     //    - Filtrado estricto por turno vigente (orden activa, o turno de la
-     //      última muestra capturada en la máquina si no hay orden activa).
-     //    - Ventana: hoy (00:00 → ahora) para acotar al turno en curso.
-     //    - Ordenado del más reciente al más antiguo.
-    // Inicio del día en zona horaria de la planta (México, UTC-6 sin DST).
-    // Calcular en UTC el instante equivalente a 00:00 hora local de México.
+    //    Fuente única: turno vigente por reloj de planta + ventana exacta
+    //    inicio_del_turno → ahora. Esto evita arrastrar rollos del T3 anterior
+    //    durante la madrugada o al inicio del siguiente T3.
     const PLANT_TZ_OFFSET_HOURS = -6;
     const nowUtc = new Date();
     const nowPlant = new Date(nowUtc.getTime() + PLANT_TZ_OFFSET_HOURS * 3600 * 1000);
-    const startTodayHist = new Date(Date.UTC(
-      nowPlant.getUTCFullYear(),
-      nowPlant.getUTCMonth(),
-      nowPlant.getUTCDate(),
-      -PLANT_TZ_OFFSET_HOURS, 0, 0, 0,
-    ));
-    const endNowHist = nowUtc;
 
     // Determinar turno vigente ESTRICTAMENTE por la hora del sistema (planta)
     // y los rangos configurados en app_settings. Fuente única — no se cae a
@@ -135,13 +124,26 @@ export const getOperatorVisionData = createServerFn({ method: "GET" })
     ];
     const curMin = nowPlant.getUTCHours() * 60 + nowPlant.getUTCMinutes();
     let turnoVigente: string | null = null;
+    let inicioTurnoVigente: Date | null = null;
     for (const r of ranges) {
       const ini = hhmmToMin(r.ini);
       const fin = hhmmToMin(r.fin);
       if (ini === null || fin === null) continue;
       const inRange = ini <= fin ? curMin >= ini && curMin < fin : curMin >= ini || curMin < fin;
-      if (inRange) { turnoVigente = r.id; break; }
+      if (inRange) {
+        turnoVigente = r.id;
+        const y = nowPlant.getUTCFullYear();
+        const m = nowPlant.getUTCMonth();
+        const d = nowPlant.getUTCDate();
+        const startsYesterday = ini > fin && curMin < fin;
+        inicioTurnoVigente = new Date(
+          Date.UTC(y, m, d - (startsYesterday ? 1 : 0), 0, ini, 0, 0) -
+            PLANT_TZ_OFFSET_HOURS * 3600 * 1000,
+        );
+        break;
+      }
     }
+    const endNowHist = nowUtc;
 
     let muestrasQ = sb
       .from("muestras_calidad")
@@ -154,7 +156,7 @@ export const getOperatorVisionData = createServerFn({ method: "GET" })
          mediciones_calidad(variable_clave, valor, min_snapshot, objetivo_snapshot, max_snapshot, estado)`,
       )
       .eq("maquina_id", maquina.id)
-      .gte("capturado_at", startTodayHist.toISOString())
+      .gte("capturado_at", (inicioTurnoVigente ?? nowUtc).toISOString())
       .lte("capturado_at", endNowHist.toISOString())
       .order("capturado_at", { ascending: false })
       .limit(50);
@@ -277,7 +279,7 @@ export const getOperatorVisionData = createServerFn({ method: "GET" })
     // header dice "T3" y no hay capturas del T3, todos los contadores quedan
     // en 0 hasta que llegue la primera muestra de ese turno.
     const turnoRef = turnoVigente;
-    const startToday = startTodayHist;
+    const startToday = inicioTurnoVigente ?? nowUtc;
     const endNow = endNowHist;
 
     // -----------------------------------------------------------------
