@@ -38,6 +38,8 @@ export type ConsolidadoRow = {
   observaciones: string | null;
   estatus_liberacion: string | null;
   estado: string | null;
+  liberado_con_justificacion: boolean;
+  liberacion_justificacion: string | null;
   mediciones: Partial<Record<VariableClave, number>>;
 };
 
@@ -88,7 +90,7 @@ export const getConsolidado = createServerFn({ method: "GET" })
     const { data: muestras, error: muErr } = await supabase
       .from("muestras_calidad")
       .select(
-        "id, turno, hora_muestreo, numero_rollo, observaciones_generales, estado, estatus_liberacion, maquina_id, producto:productos(codigo)",
+        "id, turno, hora_muestreo, numero_rollo, observaciones_generales, estado, estatus_liberacion, liberado_con_justificacion, liberacion_justificacion, maquina_id, producto:productos(codigo)",
       )
       .in("maquina_id", Array.from(maqMap.keys()))
       .gte("hora_muestreo", startIso)
@@ -133,6 +135,8 @@ export const getConsolidado = createServerFn({ method: "GET" })
         observaciones: (mu.observaciones_generales as string | null) ?? null,
         estatus_liberacion: (mu.estatus_liberacion as string | null) ?? null,
         estado: (mu.estado as string | null) ?? null,
+        liberado_con_justificacion: !!(mu as { liberado_con_justificacion?: boolean | null }).liberado_con_justificacion,
+        liberacion_justificacion: (mu as { liberacion_justificacion?: string | null }).liberacion_justificacion ?? null,
         mediciones: medByMuestra.get(mu.id as string) ?? {},
       });
     }

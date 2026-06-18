@@ -37,11 +37,21 @@ export type ReporteTurnoData = {
 };
 
 // ── Derivaciones (sin datos inventados) ────────────────────────────────
+function isJustificada(r: TablaRow) {
+  return !!r.liberado_con_justificacion;
+}
 function isLiberada(r: TablaRow) {
-  return r.dictamen === "liberada" || r.estatus_liberacion === "L";
+  return !isJustificada(r) && (r.dictamen === "liberada" || r.estatus_liberacion === "L");
 }
 function isRechazada(r: TablaRow) {
   return r.dictamen === "rechazada" || r.estatus_liberacion === "NC";
+}
+function estatusLabel(r: TablaRow): string {
+  if (isJustificada(r)) return "Liberado c/justif";
+  if (isLiberada(r)) return "Liberado";
+  if (isRechazada(r)) return "No conforme";
+  if (r.estatus_liberacion === "C" || r.dictamen === "concesion") return "Concesión";
+  return r.dictamen ?? r.estatus_liberacion ?? r.estado ?? "Pendiente";
 }
 
 export function buildResumen(rows: TablaRow[]) {
@@ -463,7 +473,7 @@ export async function exportReporteTurnoPDF(
           dash(row.maquina),
           dash(row.producto),
           row.peso_kg != null ? fmtKg(row.peso_kg) : "—",
-          row.dictamen ?? row.estatus_liberacion ?? row.estado ?? "—",
+          estatusLabel(row),
           dash(row.analista),
         ]),
     styles: { fontSize: 8, cellPadding: 4 },
@@ -548,7 +558,7 @@ export async function exportReporteTurnoXLSX(
         Máquina: row.maquina ?? "—",
         Producto: row.producto ?? "—",
         "Peso (kg)": row.peso_kg ?? "—",
-        "Estado / Dictamen": row.dictamen ?? row.estatus_liberacion ?? row.estado ?? "—",
+        "Estado / Dictamen": estatusLabel(row),
         Capturista: row.analista ?? "—",
       }));
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(tablaRows), "Tabla del Turno");
@@ -590,7 +600,7 @@ export async function exportReporteTurnoXLSX(
         Turno: TURNO_LABEL[row.turno] ?? row.turno,
         Producto: row.producto ?? "—",
         Capturista: row.analista ?? "—",
-        "Estado/Dictamen": row.dictamen ?? row.estatus_liberacion ?? row.estado ?? "—",
+        "Estado/Dictamen": estatusLabel(row),
       }));
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(trazaRows), "Trazabilidad");
 

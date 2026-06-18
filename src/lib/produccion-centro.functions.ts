@@ -26,6 +26,8 @@ export type UltimoRollo = {
   estado: string;
   dictamen: string | null;
   estatus_liberacion: string | null;
+  liberado_con_justificacion: boolean;
+  liberacion_justificacion: string | null;
   analista: string | null;
   semaforo: "verde" | "amarillo" | "rojo";
   comparativo: {
@@ -115,6 +117,8 @@ export type TablaRow = {
   ancho_util: number | null;
   estado: string;
   estatus_liberacion: string | null;
+  liberado_con_justificacion: boolean;
+  liberacion_justificacion: string | null;
   dictamen: string | null;
   analista: string | null;
 };
@@ -220,7 +224,7 @@ export const getProduccionCentro = createServerFn({ method: "POST" })
       sb
         .from("muestras_calidad")
         .select(
-          "id, secuencia_captura, numero_rollo, capturado_at, hora_muestreo, maquina_id, producto_id, turno, estado, dictamen, estatus_liberacion, analista, defectos",
+          "id, secuencia_captura, numero_rollo, capturado_at, hora_muestreo, maquina_id, producto_id, turno, estado, dictamen, estatus_liberacion, liberado_con_justificacion, liberacion_justificacion, autorizado_por, analista, defectos",
         )
         .gte("capturado_at", start.toISOString())
         .lte("capturado_at", end.toISOString())
@@ -268,6 +272,8 @@ export const getProduccionCentro = createServerFn({ method: "POST" })
       m.dictamen === "liberada" || m.estatus_liberacion === "L";
     const isRechazada = (m: { dictamen: string | null; estatus_liberacion: string | null }) =>
       m.dictamen === "rechazada" || m.estatus_liberacion === "NC";
+    const isJustificada = (m: { liberado_con_justificacion?: boolean | null; autorizado_por?: string | null }) =>
+      !!m.liberado_con_justificacion && !m.autorizado_por;
     const isConforme = (m: {
       id: string;
       dictamen: string | null;
@@ -280,8 +286,13 @@ export const getProduccionCentro = createServerFn({ method: "POST" })
       const def = (m.defectos ?? []).filter(Boolean).length;
       return nc === 0 && def === 0;
     };
-    const semaforo = (m: { dictamen: string | null; estatus_liberacion: string | null }): "verde" | "amarillo" | "rojo" =>
-      isLiberada(m) ? "verde" : isRechazada(m) ? "rojo" : "amarillo";
+    const semaforo = (m: {
+      dictamen: string | null;
+      estatus_liberacion: string | null;
+      liberado_con_justificacion?: boolean | null;
+      autorizado_por?: string | null;
+    }): "verde" | "amarillo" | "rojo" =>
+      isJustificada(m) ? "amarillo" : isLiberada(m) ? "verde" : isRechazada(m) ? "rojo" : "amarillo";
 
     const muestrasAsc = [...(muestras ?? [])].sort(
       (a, b) => new Date(a.capturado_at).getTime() - new Date(b.capturado_at).getTime(),
@@ -291,7 +302,7 @@ export const getProduccionCentro = createServerFn({ method: "POST" })
     const { data: ultimasGlobal } = await sb
       .from("muestras_calidad")
       .select(
-        "id, secuencia_captura, numero_rollo, capturado_at, maquina_id, producto_id, turno, estado, dictamen, estatus_liberacion, analista, defectos",
+        "id, secuencia_captura, numero_rollo, capturado_at, maquina_id, producto_id, turno, estado, dictamen, estatus_liberacion, liberado_con_justificacion, liberacion_justificacion, autorizado_por, analista, defectos",
       )
       .order("capturado_at", { ascending: false })
       .limit(2);
@@ -330,6 +341,8 @@ export const getProduccionCentro = createServerFn({ method: "POST" })
         estado: last.estado,
         dictamen: last.dictamen,
         estatus_liberacion: last.estatus_liberacion,
+        liberado_con_justificacion: !!(last as { liberado_con_justificacion?: boolean | null }).liberado_con_justificacion,
+        liberacion_justificacion: (last as { liberacion_justificacion?: string | null }).liberacion_justificacion ?? null,
         analista: last.analista,
         semaforo: semaforo(last),
         comparativo: prev
@@ -593,6 +606,8 @@ export const getProduccionCentro = createServerFn({ method: "POST" })
         ancho_util: anchoUtilPorMuestra.get(m.id) ?? null,
         estado: m.estado,
         estatus_liberacion: m.estatus_liberacion,
+        liberado_con_justificacion: !!(m as { liberado_con_justificacion?: boolean | null }).liberado_con_justificacion,
+        liberacion_justificacion: (m as { liberacion_justificacion?: string | null }).liberacion_justificacion ?? null,
         dictamen: m.dictamen,
         analista: m.analista,
       }));

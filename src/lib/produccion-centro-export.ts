@@ -40,12 +40,14 @@ export function filtrarTabla(rows: TablaRow[], f: ReporteProdFiltros): TablaRow[
     if (f.maquina && r.maquina !== f.maquina) return false;
     if (f.producto && r.producto !== f.producto) return false;
     if (f.estado) {
-      const lib = r.dictamen === "liberada" || r.estatus_liberacion === "L";
+      const justif = !!r.liberado_con_justificacion;
+      const lib = !justif && (r.dictamen === "liberada" || r.estatus_liberacion === "L");
       const rech = r.dictamen === "rechazada" || r.estatus_liberacion === "NC";
-      const pend = !lib && !rech;
+      const pend = !lib && !rech && !justif;
       if (f.estado === "liberado" && !lib) return false;
       if (f.estado === "rechazado" && !rech) return false;
       if (f.estado === "pendiente" && !pend) return false;
+      if (f.estado === "liberado_justif" && !justif) return false;
     }
     return true;
   });
@@ -55,20 +57,31 @@ export function hayFiltros(f: ReporteProdFiltros): boolean {
   return !!(f.turno || f.maquina || f.producto || f.estado);
 }
 
+/** Etiqueta humana del estatus oficial del rollo (regla de oro). */
+export function rowEstatusLabel(r: TablaRow): string {
+  if (r.liberado_con_justificacion) return "Liberado c/justif";
+  if (r.dictamen === "liberada" || r.estatus_liberacion === "L") return "Liberado";
+  if (r.dictamen === "rechazada" || r.estatus_liberacion === "NC") return "No conforme";
+  if (r.estatus_liberacion === "C" || r.dictamen === "concesion") return "Concesión";
+  return r.dictamen ?? r.estatus_liberacion ?? r.estado ?? "Pendiente";
+}
+
 export function metricsFromRows(rows: TablaRow[]) {
-  let rollos = 0, kgTotal = 0, kgLib = 0, kgNoLib = 0, lib = 0, rech = 0;
+  let rollos = 0, kgTotal = 0, kgLib = 0, kgNoLib = 0, kgJustif = 0, lib = 0, rech = 0, justif = 0;
   for (const r of rows) {
     rollos++;
     const peso = r.peso_kg ?? 0;
     kgTotal += peso;
-    const isLib = r.dictamen === "liberada" || r.estatus_liberacion === "L";
+    const isJustif = !!r.liberado_con_justificacion;
+    const isLib = !isJustif && (r.dictamen === "liberada" || r.estatus_liberacion === "L");
     const isRech = r.dictamen === "rechazada" || r.estatus_liberacion === "NC";
-    if (isLib) { kgLib += peso; lib++; }
+    if (isJustif) { kgJustif += peso; justif++; }
+    else if (isLib) { kgLib += peso; lib++; }
     else if (isRech) { kgNoLib += peso; rech++; }
   }
-  const calidadPct = rollos > 0 ? (lib / rollos) * 100 : null;
-  const liberacionPct = kgTotal > 0 ? (kgLib / kgTotal) * 100 : null;
-  return { rollos, kgTotal, kgLib, kgNoLib, lib, rech, calidadPct, liberacionPct };
+  const calidadPct = rollos > 0 ? ((lib + justif) / rollos) * 100 : null;
+  const liberacionPct = kgTotal > 0 ? ((kgLib + kgJustif) / kgTotal) * 100 : null;
+  return { rollos, kgTotal, kgLib, kgNoLib, kgJustif, lib, rech, justif, calidadPct, liberacionPct };
 }
 
 function stamp() {
@@ -229,7 +242,9 @@ export async function exportProduccionXLSX(
         "b*": r.blancura_b ?? DASH,
         "Ancho útil (cm)": r.ancho_util ?? DASH,
         Estado: r.estado,
+        "Estatus Oficial": rowEstatusLabel(r),
         Dictamen: r.dictamen ?? DASH,
+        "Justificación de liberación": r.liberado_con_justificacion ? (r.liberacion_justificacion ?? DASH) : DASH,
         Analista: r.analista ?? DASH,
       })) : empty,
     },

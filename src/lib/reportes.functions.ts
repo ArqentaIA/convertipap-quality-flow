@@ -378,7 +378,7 @@ export const getReportes = createServerFn({ method: "POST" })
       .from("muestras_calidad")
       .select(
         `id, numero_rollo, hora_muestreo, turno, operador, jefe_maquina, prensero, analista,
-         estatus_liberacion, dictamen, defectos,
+         estatus_liberacion, dictamen, defectos, liberado_con_justificacion, liberacion_justificacion,
          maquina_id, planta_id, orden_id, producto_id,
          productos!muestras_calidad_producto_id_fkey(nombre, codigo, capas, gramaje, tipos_producto(codigo, nombre, familias_producto(codigo, nombre))),
          ordenes_fabricacion(folio)`,
@@ -431,7 +431,11 @@ export const getReportes = createServerFn({ method: "POST" })
         prensero: txt(m.prensero),
         analista: txt(m.analista),
         
-        estatus: txt(m.estatus_liberacion ?? m.dictamen ?? "pendiente"),
+        estatus: txt(
+          m.liberado_con_justificacion
+            ? "L (c/justif)"
+            : (m.estatus_liberacion ?? m.dictamen ?? "pendiente"),
+        ),
       };
       for (const clave of clavesOrden) {
         const etiqueta = etiquetaPorClave.get(clave) ?? clave;

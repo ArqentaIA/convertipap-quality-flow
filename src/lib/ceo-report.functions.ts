@@ -24,7 +24,7 @@ export type CEOReportRollo = {
   anchoUtil: number | null;
   blancuraR457: number | null;
   diametro: number | null;
-  estatus: "Liberado" | "Retenido" | "Rechazado" | "Pendiente";
+  estatus: "Liberado" | "Liberado c/justif" | "Retenido" | "Rechazado" | "Pendiente";
   defectos: string[];
 };
 
@@ -73,7 +73,7 @@ export const getCEOReport = createServerFn({ method: "GET" })
       sb
         .from("muestras_calidad")
         .select(
-          "id, maquina_id, planta_id, hora_muestreo, numero_rollo, turno, dictamen, estatus_liberacion, defectos, productos(codigo), maquinas(codigo)",
+          "id, maquina_id, planta_id, hora_muestreo, numero_rollo, turno, dictamen, estatus_liberacion, liberado_con_justificacion, defectos, productos(codigo), maquinas(codigo)",
         )
         .gte("hora_muestreo", startIso)
         .lte("hora_muestreo", endIso)
@@ -125,6 +125,7 @@ export const getCEOReport = createServerFn({ method: "GET" })
 
 
     const estatusDe = (m: any): CEOReportRollo["estatus"] => {
+      if (m.liberado_con_justificacion === true) return "Liberado c/justif";
       if (m.dictamen === "liberada" || m.estatus_liberacion === "L") return "Liberado";
       if (m.dictamen === "rechazada" || m.estatus_liberacion === "NC") return "Rechazado";
       if (m.dictamen === "retenida" || m.estatus_liberacion === "R") return "Retenido";
@@ -132,7 +133,7 @@ export const getCEOReport = createServerFn({ method: "GET" })
     };
     const esConforme = (m: any): boolean => {
       const st = estatusDe(m);
-      if (st === "Liberado") return true;
+      if (st === "Liberado" || st === "Liberado c/justif") return true;
       if (st === "Rechazado" || st === "Retenido") return false;
       const nc = ncPorMuestra.get(m.id) ?? 0;
       const def = ((m.defectos ?? []) as string[]).filter(Boolean).length;

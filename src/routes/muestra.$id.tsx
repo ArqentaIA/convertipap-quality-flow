@@ -64,21 +64,27 @@ function MuestraTracePage() {
   const conformes = trace.mediciones.filter((m) => m.estado === "conforme").length;
   const total = trace.mediciones.length;
 
-  // Estatus manual de liberación tiene prioridad sobre el cálculo automático
+  // Estatus efectivo (regla de oro): el dictamen autorizado manda; si no, el
+  // estatus_liberacion derivado por BD. Liberado con justificación = amarillo.
   const estManual = trace.estatus_liberacion;
-  const liberada = estManual === "L" || trace.dictamen === "liberada" || trace.estado === "liberada";
+  const justificada = trace.liberado_con_justificacion === true;
+  const liberadaLimpia = !justificada && (estManual === "L" || trace.dictamen === "liberada" || trace.estado === "liberada");
   const condicional = estManual === "C";
   const noConforme = estManual === "NC" || trace.dictamen === "rechazada"
     || (estManual == null && trace.mediciones.some((m) => m.estado !== "conforme"));
 
-  const estatusLabel = liberada
+  const estatusLabel = justificada
+    ? "LIBERADO C/JUSTIF"
+    : liberadaLimpia
     ? "CONFORME"
     : condicional
     ? "CONDICIONAL"
     : noConforme
     ? "NO CONFORME"
     : "EN REVISIÓN";
-  const estatusClass = liberada
+  const estatusClass = justificada
+    ? "bg-yellow-300 text-yellow-900"
+    : liberadaLimpia
     ? "bg-emerald-600 text-white"
     : condicional
     ? "bg-amber-500 text-white"
@@ -102,7 +108,7 @@ function MuestraTracePage() {
 
           {/* Status banner */}
           <div className={`flex items-center justify-center gap-2 py-3 font-extrabold tracking-widest text-lg ${estatusClass}`}>
-            {liberada ? <ShieldCheck className="h-5 w-5" /> : <AlertTriangle className="h-5 w-5" />}
+            {liberadaLimpia ? <ShieldCheck className="h-5 w-5" /> : <AlertTriangle className="h-5 w-5" />}
             <span>{estatusLabel}</span>
           </div>
 
@@ -152,6 +158,20 @@ function MuestraTracePage() {
             </div>
           )}
         </div>
+
+        {/* Liberación con justificación (regla de oro) */}
+        {justificada && (
+          <div className="bg-yellow-50 border-2 border-yellow-400 rounded-lg p-4 text-sm shadow-sm">
+            <div className="flex items-center gap-2 text-yellow-900 font-bold mb-2">
+              <AlertTriangle className="h-4 w-4" />
+              LIBERADO CON JUSTIFICACIÓN
+            </div>
+            <div className="text-[11px] uppercase text-yellow-800/80 tracking-wide mb-1">Motivo de liberación</div>
+            <div className="whitespace-pre-wrap text-yellow-950">
+              {trace.liberacion_justificacion || "Sin motivo capturado."}
+            </div>
+          </div>
+        )}
 
         {/* Mediciones */}
         <div className="bg-card border border-border rounded-lg shadow-sm overflow-hidden">

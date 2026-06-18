@@ -109,10 +109,15 @@ function DashboardPage() {
     const concesion = conDict.filter((x) => x.d === "concesion").length;
     const pendientes = muestras.filter((m) => m.estado === "pendiente_revision").length;
     const enAjuste = muestras.filter((m) => m.estado === "en_ajuste" || m.estado === "reproceso").length;
+    // Regla de oro: rollos liberados con justificación del capturista (amarillo).
+    const liberadasJustif = muestras.filter((m) => {
+      const r = m as { liberado_con_justificacion?: boolean | null; autorizado_por?: string | null };
+      return !!r.liberado_con_justificacion && !r.autorizado_por;
+    }).length;
     return {
       total: muestras.length,
       dictaminadas: conDict.length,
-      liberadas, rechazadas, concesion, pendientes, enAjuste,
+      liberadas, rechazadas, concesion, pendientes, enAjuste, liberadasJustif,
       conformidadPct: pct(liberadas, conDict.length),
       rechazoPct: pct(rechazadas, conDict.length),
       concesionPct: pct(concesion, conDict.length),
@@ -270,13 +275,20 @@ function DashboardPage() {
         </div>
 
         {/* KPIs primarios */}
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5">
           <KpiCard
             label="Conformidad global"
             value={`${stats.conformidadPct}%`}
             icon={<CheckCircle2 className="h-5 w-5" />}
             sub={`${stats.liberadas} liberadas de ${stats.dictaminadas} dictaminadas`}
             tone="success"
+          />
+          <KpiCard
+            label="Liberados c/justif"
+            value={String(stats.liberadasJustif)}
+            icon={<AlertTriangle className="h-5 w-5" />}
+            sub="Capturista liberó rollo NO CUMPLE con motivo"
+            tone="justif"
           />
           <KpiCard
             label="Rechazo"
@@ -499,13 +511,14 @@ function DashboardPage() {
 
 // --- Subcomponentes -------------------------------------------------------
 
-type Tone = "success" | "danger" | "warning" | "info";
+type Tone = "success" | "danger" | "warning" | "info" | "justif";
 
 const TONE_CLASSES: Record<Tone, string> = {
   success: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30",
   danger: "bg-destructive/10 text-destructive border-destructive/30",
   warning: "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30",
   info: "bg-primary/10 text-primary border-primary/30",
+  justif: "bg-yellow-300/40 text-yellow-900 dark:text-yellow-200 border-yellow-500/50",
 };
 
 function KpiCard({
