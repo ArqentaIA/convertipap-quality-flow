@@ -416,6 +416,8 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
         variables_snapshot_json: z.record(z.string(), z.unknown()).default({}),
         mediciones: z.array(medicionInputSchema),
         enviar_a_revision: z.boolean().default(false),
+        fuera_de_turno: z.boolean().optional().default(false),
+        fuera_de_turno_motivo: z.string().trim().max(2000).nullable().optional(),
       })
       .parse(input),
   )
@@ -424,6 +426,27 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
     const userId = context.userId;
     const roles = await getUserRoles(sb, userId);
     requireAnyRole(roles, ROLES_CAPTURA);
+
+    // Validación específica del módulo "Captura fuera de turno":
+    // requiere motivo (≥10 chars) y limita la fecha a ±24h respecto a ahora.
+    const motivoFueraTurnoTrim = (data.fuera_de_turno_motivo ?? "").trim();
+    if (data.fuera_de_turno) {
+      if (motivoFueraTurnoTrim.length < 10) {
+        throw new Error(
+          "Captura fuera de turno: el motivo es obligatorio y debe tener al menos 10 caracteres.",
+        );
+      }
+      if (data.hora_muestreo) {
+        const hm = new Date(data.hora_muestreo).getTime();
+        const now = Date.now();
+        const horasDiff = Math.abs(now - hm) / 3_600_000;
+        if (!Number.isFinite(hm) || horasDiff > 24) {
+          throw new Error(
+            "Captura fuera de turno: la fecha y hora solo puede modificarse dentro de las últimas 24 horas.",
+          );
+        }
+      }
+    }
 
     // ¿Modificación posterior a dictamen autorizado? → marca trazabilidad.
     let dictamenPrevioAt: string | null = null;
@@ -545,6 +568,8 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
       variables_snapshot_json: data.variables_snapshot_json as never,
       estado: estadoMuestra,
       capturado_por: userId,
+      fuera_de_turno: data.fuera_de_turno === true,
+      fuera_de_turno_motivo: data.fuera_de_turno === true ? motivoFueraTurnoTrim : null,
       ...(dictamenPrevioAt
         ? {
             mediciones_modificadas_at: new Date().toISOString(),

@@ -89,7 +89,7 @@ const specQO = (productoId: string) =>
   });
 
 export const Route = createFileRoute("/calidad/captura")({
-  component: CapturaCalidadPage,
+  component: () => <CapturaCalidadPage modoFueraTurno={false} />,
   errorComponent: ({ error }) => (
     <AppLayout title="Captura de Muestra de Calidad">
       <Alert variant="destructive">
@@ -198,7 +198,7 @@ function inferirTurno(
   return "3";
 }
 
-function CapturaCalidadPage() {
+export function CapturaCalidadPage({ modoFueraTurno = false }: { modoFueraTurno?: boolean } = {}) {
   const auth = useAuth();
   const hasAuthToken = auth.isAuthenticated && !!auth.session?.access_token;
   const maquinasQuery = useQuery({ ...maquinasQO, enabled: hasAuthToken, retry: false });
@@ -206,9 +206,11 @@ function CapturaCalidadPage() {
   const maquinas = maquinasQuery.data ?? [];
   const productos = productosQuery.data ?? [];
 
+  const titulo = modoFueraTurno ? "Captura fuera de turno" : "Captura de Muestra de Calidad";
+
   if (auth.loading || !hasAuthToken || maquinasQuery.isLoading || productosQuery.isLoading) {
     return (
-      <AppLayout title="Captura de Muestra de Calidad">
+      <AppLayout title={titulo}>
         <div className="mx-auto mt-12 max-w-xl rounded-xl border border-border bg-card p-8 text-center shadow-sm">
           <ClipboardCheck className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
           <h2 className="text-lg font-semibold text-foreground">Cargando captura</h2>
@@ -226,7 +228,7 @@ function CapturaCalidadPage() {
       productosQuery.error?.message ??
       "No se pudo cargar la información";
     return (
-      <AppLayout title="Captura de Muestra de Calidad">
+      <AppLayout title={titulo}>
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
           <AlertTitle>Error al cargar captura</AlertTitle>
@@ -238,7 +240,7 @@ function CapturaCalidadPage() {
 
   if (maquinas.length === 0) {
     return (
-      <AppLayout title="Captura de Muestra de Calidad">
+      <AppLayout title={titulo}>
         <div className="mx-auto mt-12 max-w-xl rounded-xl border border-border bg-card p-8 text-center shadow-sm">
           <Factory className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
           <h2 className="text-lg font-semibold text-foreground">Sin máquinas asignadas</h2>
@@ -253,7 +255,7 @@ function CapturaCalidadPage() {
 
   if (productos.length === 0) {
     return (
-      <AppLayout title="Captura de Muestra de Calidad">
+      <AppLayout title={titulo}>
         <div className="mx-auto mt-12 max-w-xl rounded-xl border border-border bg-card p-8 text-center shadow-sm">
           <ClipboardCheck className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
           <h2 className="text-lg font-semibold text-foreground">
@@ -270,13 +272,13 @@ function CapturaCalidadPage() {
     );
   }
 
-  return <CapturaInner maquinas={maquinas} productos={productos} />;
+  return <CapturaInner maquinas={maquinas} productos={productos} modoFueraTurno={modoFueraTurno} />;
 }
 
 type Maquina = Awaited<ReturnType<typeof listMaquinasCaptura>>[number];
 type Producto = Awaited<ReturnType<typeof listProductosConSpec>>[number];
 
-function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos: Producto[] }) {
+function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquinas: Maquina[]; productos: Producto[]; modoFueraTurno?: boolean }) {
   const router = useRouter();
   const auth = useAuth();
   const queryClient = useQueryClient();
@@ -385,6 +387,20 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
   const [porcentajeRupturasPct, setPorcentajeRupturasPct] = useState<string>("");
   const [destino, setDestino] = useState<string>("");
 
+  // Motivo obligatorio para "Captura fuera de turno"
+  const [motivoFueraTurno, setMotivoFueraTurno] = useState<string>("");
+  // Cota de ±24h para el datetime-local cuando es captura retroactiva
+  const horaMinMax = useMemo(() => {
+    if (!modoFueraTurno) return { min: undefined, max: undefined };
+    const ahora = new Date();
+    const min = new Date(ahora.getTime() - 24 * 3600 * 1000);
+    const max = new Date(ahora.getTime() + 24 * 3600 * 1000);
+    return {
+      min: toLocalDateTimeInputValue(min),
+      max: toLocalDateTimeInputValue(max),
+    };
+  }, [modoFueraTurno]);
+
   // Sección F — Cierre: defectos + liberación con justificación (regla de oro 18-Jun-2026)
   const DEFECTOS_OPCIONES = ["Arruga", "Picado", "Porosidad", "Hoyos por gomas", "Otro"] as const;
   // El estatus L/NC ya no se selecciona manualmente: lo determina la regla de oro
@@ -444,6 +460,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
   // se limpia el formulario, se notifica y se invalida producción para todas las máquinas.
   const lastTurnoRef = useRef<"1" | "2" | "3" | null>(null);
   useEffect(() => {
+    if (modoFueraTurno) return; // No aplica cierre automático en captura retroactiva.
     if (lastTurnoRef.current === null) {
       lastTurnoRef.current = inferirTurno(new Date(), settings);
     }
@@ -490,7 +507,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
     };
     const id = setInterval(tick, 30_000);
     return () => clearInterval(id);
-  }, [settings, queryClient]);
+  }, [settings, queryClient, modoFueraTurno]);
 
   const canCapture =
     auth.hasRole("capturista") ||
@@ -678,6 +695,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
       setVariableTecnica("");
       setCriterioDefecto("");
       setHoraMuestreo(toLocalDateTimeInputValue(new Date()));
+      setMotivoFueraTurno("");
     },
     onError: (err: Error) =>
       toast.error("No se pudo guardar la captura", { description: err.message, duration: 7000 }),
@@ -801,6 +819,20 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
     if (porcentajeRupturasPct.trim() !== "" && (Number(porcentajeRupturasPct) < 0 || Number(porcentajeRupturasPct) > 100)) {
       toast.error("El campo Porcentaje de rupturas debe estar entre 0 y 100"); return;
     }
+    if (modo === "envio" && modoFueraTurno) {
+      if (motivoFueraTurno.trim().length < 10) {
+        toast.error("Captura fuera de turno: el motivo es obligatorio (mínimo 10 caracteres).");
+        return;
+      }
+      if (horaMuestreo) {
+        const hm = new Date(horaMuestreo).getTime();
+        const horas = Math.abs(Date.now() - hm) / 3_600_000;
+        if (!Number.isFinite(hm) || horas > 24) {
+          toast.error("La fecha y hora solo puede modificarse dentro de las últimas 24 horas.");
+          return;
+        }
+      }
+    }
     let faltantes = 0;
     if (modo === "envio") {
       if (!rolloNormalizado) faltantes += 1;
@@ -902,6 +934,8 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
             max_snapshot: m.spec.max_valor,
           })),
         enviar_a_revision: modo === "envio",
+        fuera_de_turno: modoFueraTurno,
+        fuera_de_turno_motivo: modoFueraTurno ? motivoFueraTurno.trim() : null,
       },
     });
   }
@@ -909,7 +943,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
   const puedeEnviar = !isBlocked && !mutation.isPending && !!spec;
 
   return (
-    <AppLayout title="Captura de Muestra de Calidad">
+    <AppLayout title={modoFueraTurno ? "Captura fuera de turno" : "Captura de Muestra de Calidad"}>
       <div className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
@@ -917,15 +951,24 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
               <ArrowLeft className="mr-1.5 h-4 w-4" /> Volver
             </Button>
             <div>
-              <h1 className="text-xl font-semibold">Nueva Muestra de Calidad</h1>
+              <h1 className="text-xl font-semibold">
+                {modoFueraTurno ? "Nueva captura fuera de turno" : "Nueva Muestra de Calidad"}
+              </h1>
               <p className="text-xs text-muted-foreground">
-                {auth.profile?.laboratorio
-                  ? `Laboratorio ${auth.profile.laboratorio === "norte" ? "Norte" : "Sur"}`
-                  : "Captura directa"}
+                {modoFueraTurno
+                  ? "Captura retroactiva · no se envía a visores operativos"
+                  : auth.profile?.laboratorio
+                    ? `Laboratorio ${auth.profile.laboratorio === "norte" ? "Norte" : "Sur"}`
+                    : "Captura directa"}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {modoFueraTurno && (
+              <Badge variant="secondary" className="gap-1 border-amber-500 bg-amber-50 text-amber-800">
+                <AlertTriangle className="h-3 w-3" /> Fuera de turno
+              </Badge>
+            )}
             {!canCapture && (
               <Badge variant="destructive" className="gap-1">
                 <Lock className="h-3 w-3" /> Sin permiso de captura
@@ -934,6 +977,20 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
           </div>
         </div>
 
+        {modoFueraTurno && (
+          <Alert className="border-amber-500 bg-amber-50 text-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
+            <Info className="h-4 w-4" />
+            <AlertTitle>Captura fuera de turno</AlertTitle>
+            <AlertDescription>
+              Estás registrando una muestra de forma retroactiva. Puedes ajustar manualmente la
+              fecha, hora y turno (solo dentro de las últimas 24 horas). Estos registros NO se
+              enviarán a las pantallas operativas y aparecerán marcados como
+              <strong> &quot;Capturado fuera de tiempo: Sí&quot; </strong> en los reportes. El
+              motivo es obligatorio.
+            </AlertDescription>
+          </Alert>
+        )}
+
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base font-semibold">A. Turno, máquina y producto</CardTitle>
@@ -941,17 +998,44 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
           <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <div className="space-y-1.5">
               <Label className="text-base">Turno</Label>
-              <div className="flex h-11 items-center rounded-md border border-input bg-muted px-3 text-base text-muted-foreground">
-                {turno === "1"
-                  ? `Turno 1 · ${settings?.turno1_inicio ?? "07:00"} – ${settings?.turno1_fin ?? "15:00"}`
-                  : turno === "2"
-                  ? `Turno 2 · ${settings?.turno2_inicio ?? "15:00"} – ${settings?.turno2_fin ?? "23:00"}`
-                  : `Turno 3 · ${settings?.turno3_inicio ?? "23:00"} – ${settings?.turno3_fin ?? "07:00"}`}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Asignado automáticamente según el horario configurado.
-              </p>
+              {modoFueraTurno ? (
+                <>
+                  <Select value={turno} onValueChange={(v) => setTurno(v as "1" | "2" | "3")}>
+                    <SelectTrigger className="h-11 text-base">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1">
+                        Turno 1 · {settings?.turno1_inicio ?? "07:00"} – {settings?.turno1_fin ?? "15:00"}
+                      </SelectItem>
+                      <SelectItem value="2">
+                        Turno 2 · {settings?.turno2_inicio ?? "15:00"} – {settings?.turno2_fin ?? "23:00"}
+                      </SelectItem>
+                      <SelectItem value="3">
+                        Turno 3 · {settings?.turno3_inicio ?? "23:00"} – {settings?.turno3_fin ?? "07:00"}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Se recalcula al cambiar la fecha/hora. Puedes ajustarlo manualmente.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <div className="flex h-11 items-center rounded-md border border-input bg-muted px-3 text-base text-muted-foreground">
+                    {turno === "1"
+                      ? `Turno 1 · ${settings?.turno1_inicio ?? "07:00"} – ${settings?.turno1_fin ?? "15:00"}`
+                      : turno === "2"
+                      ? `Turno 2 · ${settings?.turno2_inicio ?? "15:00"} – ${settings?.turno2_fin ?? "23:00"}`
+                      : `Turno 3 · ${settings?.turno3_inicio ?? "23:00"} – ${settings?.turno3_fin ?? "07:00"}`}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Asignado automáticamente según el horario configurado.
+                  </p>
+                </>
+              )}
             </div>
+
 
             <div className="space-y-1.5">
               <Label className="text-base">Máquina</Label>
@@ -1194,13 +1278,16 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="hora" className="text-base">
-                  Hora de muestreo
+                  Fecha y hora de muestreo
+                  {modoFueraTurno && <span className="ml-1 text-amber-700">(editable · ±24h)</span>}
                 </Label>
                 <Input
                   id="hora"
                   type="datetime-local"
                   className="h-11 text-base"
                   value={horaMuestreo}
+                  min={horaMinMax.min}
+                  max={horaMinMax.max}
                   onChange={(e) => setHoraMuestreo(e.target.value)}
                 />
               </div>
@@ -1216,6 +1303,29 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
             </CardContent>
           </Card>
         )}
+
+        {modoFueraTurno && spec && (
+          <Card className={cn(isBlocked && "opacity-60 pointer-events-none")}>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base font-semibold">
+                Motivo de captura fuera de turno <span className="text-destructive">*</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Textarea
+                value={motivoFueraTurno}
+                onChange={(e) => setMotivoFueraTurno(e.target.value)}
+                rows={3}
+                placeholder="Explica por qué se está registrando esta muestra fuera del turno (mínimo 10 caracteres)…"
+                className="text-base"
+              />
+              <p className="mt-1 text-xs text-muted-foreground">
+                {motivoFueraTurno.trim().length}/10 caracteres mínimos · obligatorio para guardar.
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
 
         {variablesFueraDeSpec.length > 0 && !isBlocked && (
           <Alert
