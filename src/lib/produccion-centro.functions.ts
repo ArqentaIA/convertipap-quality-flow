@@ -117,6 +117,8 @@ export type TablaRow = {
   ancho_util: number | null;
   estado: string;
   estatus_liberacion: string | null;
+  liberado_con_justificacion: boolean;
+  liberacion_justificacion: string | null;
   dictamen: string | null;
   analista: string | null;
 };
