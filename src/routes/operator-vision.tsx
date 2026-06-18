@@ -103,13 +103,27 @@ function fmt(n: number | null | undefined, digits = 2) {
   return n.toFixed(digits);
 }
 
-function evaluate(value: number | null, min: number, max: number): VarStatus {
+// Regla de oro: Tensión Seca MD/CD NO tienen tope superior crítico —
+// rebasar el MAX no degrada calidad; sólo el mínimo es vinculante.
+function esSinTopeSuperior(clave?: string): boolean {
+  return clave === "tensionMD" || clave === "tensionCD";
+}
+
+function evaluate(
+  value: number | null,
+  min: number,
+  max: number,
+  clave?: string,
+): VarStatus {
   if (value === null || isNaN(value)) return "none";
-  if (value < min || value > max) return "bad";
+  const sinTope = esSinTopeSuperior(clave);
+  if (value < min) return "bad";
+  if (!sinTope && value > max) return "bad";
   const range = max - min;
   if (range <= 0) return "ok";
   const margin = range * 0.1;
-  if (value < min + margin || value > max - margin) return "warn";
+  if (value < min + margin) return "warn";
+  if (!sinTope && value > max - margin) return "warn";
   return "ok";
 }
 
@@ -334,6 +348,7 @@ function VarCard({
   digits,
   hasSpec,
   isCritical = false,
+  clave,
 }: {
   etiqueta: string;
   unidad: string;
@@ -344,8 +359,9 @@ function VarCard({
   digits: number;
   hasSpec: boolean;
   isCritical?: boolean;
+  clave?: string;
 }) {
-  const st = hasSpec ? evaluate(value, min, max) : "none";
+  const st = hasSpec ? evaluate(value, min, max, clave) : "none";
 
   const ring =
     st === "bad"
@@ -601,7 +617,7 @@ function OperatorVisionPage() {
     for (const v of variables) {
       const med = m.mediciones.find((x: { clave: string; valor: number | null }) => x.clave === v.clave);
       if (!med || med.valor === null) continue;
-      const s = evaluate(Number(med.valor), v.min, v.max);
+      const s = evaluate(Number(med.valor), v.min, v.max, v.clave);
       if (s === "bad") return "bad";
       if (s === "warn") worst = "warn";
     }
@@ -726,7 +742,7 @@ function OperatorVisionPage() {
           );
           const valor = med?.valor ?? null;
           const status: VarStatus =
-            valor === null || !v.hasSpec ? "none" : evaluate(Number(valor), v.min, v.max);
+            valor === null || !v.hasSpec ? "none" : evaluate(Number(valor), v.min, v.max, v.clave);
           return {
             clave: v.clave,
             etiqueta: v.etiqueta,
@@ -936,6 +952,7 @@ function OperatorVisionPage() {
                             mapSpecActual.get(v.clave)?.obj !== null)
                         }
                         isCritical={k === "pesoBase" || k === "tensionMD" || k === "tensionCD"}
+                        clave={v.clave}
                       />
                     );
                   })}
