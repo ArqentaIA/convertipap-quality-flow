@@ -159,6 +159,20 @@ function MuestraTracePage() {
           )}
         </div>
 
+        {/* Liberación con justificación (regla de oro) */}
+        {justificada && (
+          <div className="bg-yellow-50 border-2 border-yellow-400 rounded-lg p-4 text-sm shadow-sm">
+            <div className="flex items-center gap-2 text-yellow-900 font-bold mb-2">
+              <AlertTriangle className="h-4 w-4" />
+              LIBERADO CON JUSTIFICACIÓN
+            </div>
+            <div className="text-[11px] uppercase text-yellow-800/80 tracking-wide mb-1">Motivo de liberación</div>
+            <div className="whitespace-pre-wrap text-yellow-950">
+              {trace.liberacion_justificacion || "Sin motivo capturado."}
+            </div>
+          </div>
+        )}
+
         {/* Mediciones */}
         <div className="bg-card border border-border rounded-lg shadow-sm overflow-hidden">
           <div className="px-4 py-3 border-b border-border flex items-center justify-between">
