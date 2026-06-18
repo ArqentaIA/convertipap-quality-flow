@@ -112,18 +112,35 @@ export const getOperatorVisionData = createServerFn({ method: "GET" })
     ));
     const endNowHist = nowUtc;
 
-    // Determinar turno vigente: orden activa o última muestra de la máquina.
-    let turnoVigente: string | null =
-      (ordenActiva?.turno as string | undefined) ?? null;
-    if (!turnoVigente) {
-      const { data: ultMuestra } = await sb
-        .from("muestras_calidad")
-        .select("turno")
-        .eq("maquina_id", maquina.id)
-        .order("capturado_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      turnoVigente = (ultMuestra?.turno as string | undefined) ?? null;
+    // Determinar turno vigente ESTRICTAMENTE por la hora del sistema (planta)
+    // y los rangos configurados en app_settings. Fuente única — no se cae a
+    // la orden activa ni a la última muestra: si el reloj entró a un turno
+    // donde aún no hay capturas, el historial debe quedar vacío en lugar de
+    // arrastrar rollos del turno anterior (preserva trazabilidad header↔datos).
+    const { data: turnosCfg } = await sb
+      .from("app_settings")
+      .select("turno1_inicio, turno1_fin, turno2_inicio, turno2_fin, turno3_inicio, turno3_fin")
+      .limit(1)
+      .maybeSingle();
+    const hhmmToMin = (s?: string | null): number | null => {
+      if (!s) return null;
+      const [h, m] = s.split(":").map((x) => parseInt(x, 10));
+      if (Number.isNaN(h) || Number.isNaN(m)) return null;
+      return h * 60 + m;
+    };
+    const ranges = [
+      { id: "1", ini: turnosCfg?.turno1_inicio ?? "07:00", fin: turnosCfg?.turno1_fin ?? "15:00" },
+      { id: "2", ini: turnosCfg?.turno2_inicio ?? "15:00", fin: turnosCfg?.turno2_fin ?? "23:00" },
+      { id: "3", ini: turnosCfg?.turno3_inicio ?? "23:00", fin: turnosCfg?.turno3_fin ?? "07:00" },
+    ];
+    const curMin = nowPlant.getUTCHours() * 60 + nowPlant.getUTCMinutes();
+    let turnoVigente: string | null = null;
+    for (const r of ranges) {
+      const ini = hhmmToMin(r.ini);
+      const fin = hhmmToMin(r.fin);
+      if (ini === null || fin === null) continue;
+      const inRange = ini <= fin ? curMin >= ini && curMin < fin : curMin >= ini || curMin < fin;
+      if (inRange) { turnoVigente = r.id; break; }
     }
 
     let muestrasQ = sb
@@ -252,10 +269,11 @@ export const getOperatorVisionData = createServerFn({ method: "GET" })
     // 6) Cumplimiento del turno vigente (último estatus de cada rollo).
     //    Ventana: hoy (00:00 → ahora) y filtrado por turno de la orden
     //    activa o, en su defecto, el turno de la última muestra capturada.
-    const turnoRef =
-      (ordenActiva?.turno as string | undefined) ??
-      (muestrasRaw?.[0]?.turno as string | undefined) ??
-      null;
+    // Cumplimiento alineado al MISMO turno vigente (por reloj de planta).
+    // Garantiza que los KPIs del turno y el historial nunca diverjan: si el
+    // header dice "T3" y no hay capturas del T3, todos los contadores quedan
+    // en 0 hasta que llegue la primera muestra de ese turno.
+    const turnoRef = turnoVigente;
     const startToday = startTodayHist;
     const endNow = endNowHist;
 
