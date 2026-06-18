@@ -933,6 +933,8 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
             max_snapshot: m.spec.max_valor,
           })),
         enviar_a_revision: modo === "envio",
+        fuera_de_turno: modoFueraTurno,
+        fuera_de_turno_motivo: modoFueraTurno ? motivoFueraTurno.trim() : null,
       },
     });
   }
