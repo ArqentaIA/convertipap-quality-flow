@@ -302,7 +302,7 @@ export const getProduccionCentro = createServerFn({ method: "POST" })
     const { data: ultimasGlobal } = await sb
       .from("muestras_calidad")
       .select(
-        "id, secuencia_captura, numero_rollo, capturado_at, maquina_id, producto_id, turno, estado, dictamen, estatus_liberacion, analista, defectos",
+        "id, secuencia_captura, numero_rollo, capturado_at, maquina_id, producto_id, turno, estado, dictamen, estatus_liberacion, liberado_con_justificacion, liberacion_justificacion, autorizado_por, analista, defectos",
       )
       .order("capturado_at", { ascending: false })
       .limit(2);
