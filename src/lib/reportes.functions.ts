@@ -391,7 +391,7 @@ export const getReportes = createServerFn({ method: "POST" })
     // ====================================================
     // Reporte General: todos los rollos del periodo con sus variables
     // ====================================================
-    const SIN_INFO = "Sin información";
+    const SIN_INFO = "NO CAPTURADO";
     const txt = (v: unknown): string => {
       if (v === null || v === undefined) return SIN_INFO;
       const s = String(v).trim();
@@ -495,7 +495,7 @@ export const getReportes = createServerFn({ method: "POST" })
         ? "SIN ESPECIFICACIÓN"
         : pendientes === 0
           ? "CON CALIDAD"
-          : `MUESTRA INCOMPLETA (${pendientes} pendientes)`;
+          : `MUESTRA INCOMPLETA (${pendientes} NO CAPTURADO${pendientes === 1 ? "" : "S"})`;
 
       const row: Record<string, string | number> = {
         fecha: (m.hora_muestreo as string)?.slice(0, 10) || SIN_INFO,
@@ -527,9 +527,9 @@ export const getReportes = createServerFn({ method: "POST" })
         if (med && med.valor !== null && med.valor !== undefined) {
           row[etiqueta] = med.valor;
         } else if (aplicables.has(clave)) {
-          row[etiqueta] = "Pendiente";
+          row[etiqueta] = "NO CAPTURADO";
         } else if (aplicables.size === 0) {
-          row[etiqueta] = SIN_INFO;
+          row[etiqueta] = "NO CAPTURADO";
         } else {
           row[etiqueta] = "No aplica";
         }
