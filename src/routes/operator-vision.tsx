@@ -10,6 +10,7 @@ import {
   Camera,
   CheckCircle2,
   Gauge,
+  Images,
   Maximize2,
   Timer,
   Weight,
