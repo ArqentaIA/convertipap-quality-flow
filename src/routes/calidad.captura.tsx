@@ -278,7 +278,7 @@ export function CapturaCalidadPage({ modoFueraTurno = false }: { modoFueraTurno?
 type Maquina = Awaited<ReturnType<typeof listMaquinasCaptura>>[number];
 type Producto = Awaited<ReturnType<typeof listProductosConSpec>>[number];
 
-function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos: Producto[] }) {
+function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquinas: Maquina[]; productos: Producto[]; modoFueraTurno?: boolean }) {
   const router = useRouter();
   const auth = useAuth();
   const queryClient = useQueryClient();
