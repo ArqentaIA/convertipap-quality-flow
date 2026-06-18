@@ -634,6 +634,8 @@ export type Database = {
           estado: Database["public"]["Enums"]["qc_muestra_estado"]
           estatus_liberacion: string | null
           evidencia_url: string | null
+          fuera_de_turno: boolean
+          fuera_de_turno_motivo: string | null
           hora_muestreo: string
           id: string
           jefe_maquina: string | null
@@ -689,6 +691,8 @@ export type Database = {
           estado?: Database["public"]["Enums"]["qc_muestra_estado"]
           estatus_liberacion?: string | null
           evidencia_url?: string | null
+          fuera_de_turno?: boolean
+          fuera_de_turno_motivo?: string | null
           hora_muestreo?: string
           id?: string
           jefe_maquina?: string | null
@@ -744,6 +748,8 @@ export type Database = {
           estado?: Database["public"]["Enums"]["qc_muestra_estado"]
           estatus_liberacion?: string | null
           evidencia_url?: string | null
+          fuera_de_turno?: boolean
+          fuera_de_turno_motivo?: string | null
           hora_muestreo?: string
           id?: string
           jefe_maquina?: string | null
