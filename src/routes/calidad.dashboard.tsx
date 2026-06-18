@@ -511,13 +511,14 @@ function DashboardPage() {
 
 // --- Subcomponentes -------------------------------------------------------
 
-type Tone = "success" | "danger" | "warning" | "info";
+type Tone = "success" | "danger" | "warning" | "info" | "justif";
 
 const TONE_CLASSES: Record<Tone, string> = {
   success: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30",
   danger: "bg-destructive/10 text-destructive border-destructive/30",
   warning: "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30",
   info: "bg-primary/10 text-primary border-primary/30",
+  justif: "bg-yellow-300/40 text-yellow-900 dark:text-yellow-200 border-yellow-500/50",
 };
 
 function KpiCard({
