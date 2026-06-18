@@ -332,6 +332,7 @@ function VarCard({
   obj,
   digits,
   hasSpec,
+  isCritical = false,
 }: {
   etiqueta: string;
   unidad: string;
@@ -341,6 +342,7 @@ function VarCard({
   obj: number;
   digits: number;
   hasSpec: boolean;
+  isCritical?: boolean;
 }) {
   const st = hasSpec ? evaluate(value, min, max) : "none";
 
@@ -382,8 +384,15 @@ function VarCard({
   const markerColor =
     st === "bad" ? "bg-rose-600" : st === "warn" ? "bg-amber-500" : "bg-emerald-600";
 
+  const borderWidth = isCritical ? "border-[6px]" : "border-[3px]";
+  const criticalRing = isCritical
+    ? st === "bad"
+      ? "ring-4 ring-rose-500/70"
+      : "ring-2 ring-cyan-500/60"
+    : "";
+
   return (
-    <div className={`flex h-full min-h-[110px] flex-col rounded-xl border-[3px] ${ring} p-1.5`}>
+    <div className={`flex h-full min-h-[110px] flex-col rounded-xl ${borderWidth} ${ring} ${criticalRing} p-1.5`}>
       <div className="flex items-start justify-between gap-1">
         <span className="text-[11px] font-black uppercase leading-tight tracking-wider text-slate-700 break-words">
           {etiqueta}
@@ -910,6 +919,7 @@ function OperatorVisionPage() {
                             mapSpecActual.get(v.clave)?.max !== null &&
                             mapSpecActual.get(v.clave)?.obj !== null)
                         }
+                        isCritical={k === "pesoBase" || k === "tensionMD" || k === "tensionCD"}
                       />
                     );
                   })}
