@@ -69,25 +69,42 @@ export const getReportes = createServerFn({ method: "POST" })
       .gte("hora_muestreo", prevStart)
       .lt("hora_muestreo", prevEnd);
 
-    // --------- Mediciones del periodo (para tendencia / NC) ---------
+    // --------- Mediciones del periodo (paginado: PostgREST limita a 1000) ---------
+    type MedRow = {
+      id: string;
+      muestra_id: string;
+      variable_clave: string;
+      valor: number;
+      min_snapshot: number;
+      max_snapshot: number;
+      estado: string;
+      created_at: string;
+    };
     const muestraIds = (muestras ?? []).map((m) => m.id);
-    const { data: mediciones } = muestraIds.length
-      ? await sb
-          .from("mediciones_calidad")
-          .select(
-            "id, muestra_id, variable_clave, valor, min_snapshot, max_snapshot, estado, created_at",
-          )
-          .in("muestra_id", muestraIds)
-      : { data: [] as Array<{
-          id: string;
-          muestra_id: string;
-          variable_clave: string;
-          valor: number;
-          min_snapshot: number;
-          max_snapshot: number;
-          estado: string;
-          created_at: string;
-        }> };
+    const mediciones: MedRow[] = [];
+    if (muestraIds.length > 0) {
+      const PAGE = 1000;
+      const ID_CHUNK = 200; // evita URLs demasiado largas en .in()
+      for (let i = 0; i < muestraIds.length; i += ID_CHUNK) {
+        const idsSlice = muestraIds.slice(i, i + ID_CHUNK);
+        let from = 0;
+        // eslint-disable-next-line no-constant-condition
+        while (true) {
+          const { data: page, error } = await sb
+            .from("mediciones_calidad")
+            .select(
+              "id, muestra_id, variable_clave, valor, min_snapshot, max_snapshot, estado, created_at",
+            )
+            .in("muestra_id", idsSlice)
+            .range(from, from + PAGE - 1);
+          if (error) throw error;
+          const rows = (page ?? []) as MedRow[];
+          mediciones.push(...rows);
+          if (rows.length < PAGE) break;
+          from += PAGE;
+        }
+      }
+    }
 
     // --------- Rollos del periodo ---------
     const { data: rollos } = await sb
