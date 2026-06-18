@@ -479,7 +479,7 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
       cumplimiento_pct: data.cumplimiento_pct ?? null,
       porcentaje_rupturas_pct: data.porcentaje_rupturas_pct ?? null,
       destino: data.destino?.trim() ? data.destino.trim() : null,
-      estatus_liberacion: data.estatus_liberacion ?? null,
+      estatus_liberacion: estatusLiberacionEfectivo,
       defectos: data.defectos ?? [],
       tipo_muestreo: data.tipo_muestreo,
       hora_muestreo: data.hora_muestreo || new Date().toISOString(),
