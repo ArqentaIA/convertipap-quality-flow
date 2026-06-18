@@ -72,8 +72,12 @@ export function evaluateCriticalRule(
     if (!Number.isFinite(v)) continue;
 
     const etiqueta = ETIQUETAS[m.variable_clave];
+    // Regla operativa: Tensión Seca MD/CD NO tienen tope superior crítico
+    // (rebasar el MAX no degrada la calidad). Sólo el mínimo es vinculante.
+    const sinTopeSuperior =
+      m.variable_clave === "tensionMD" || m.variable_clave === "tensionCD";
 
-    if (Number.isFinite(m.max_snapshot) && v > m.max_snapshot) {
+    if (!sinTopeSuperior && Number.isFinite(m.max_snapshot) && v > m.max_snapshot) {
       fallas.push({
         variable_clave: m.variable_clave,
         etiqueta,
