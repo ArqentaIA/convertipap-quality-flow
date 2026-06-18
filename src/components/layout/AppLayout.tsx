@@ -26,6 +26,7 @@ const NAV: NavItem[] = [
   { to: "/pantallas-operativas", label: "Pantallas Operativas", icon: Monitor, module: "dashboard" },
   { to: "/produccion", label: "Producción", icon: Factory, module: "produccion", pathPrefixes: ["/produccion", "/historial"] },
   { to: "/calidad/captura", label: "Control de Calidad", icon: ClipboardCheck, module: "control_calidad" },
+  { to: "/calidad/captura-fuera-turno", label: "Captura fuera de turno", icon: ClipboardCheck, module: "control_calidad" },
   { to: "/variables-calidad", label: "Variables de Calidad", icon: SlidersHorizontal, module: "variables_calidad" },
   { to: "/catalogos", label: "Catálogos", icon: BookOpen, module: "configuracion" },
   { to: "/reportes", label: "Reportes", icon: FileBarChart2, module: "reportes" },
