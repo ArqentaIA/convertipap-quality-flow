@@ -926,7 +926,7 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
   const puedeEnviar = !isBlocked && !mutation.isPending && !!spec;
 
   return (
-    <AppLayout title="Captura de Muestra de Calidad">
+    <AppLayout title={modoFueraTurno ? "Captura fuera de turno" : "Captura de Muestra de Calidad"}>
       <div className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
@@ -934,15 +934,24 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
               <ArrowLeft className="mr-1.5 h-4 w-4" /> Volver
             </Button>
             <div>
-              <h1 className="text-xl font-semibold">Nueva Muestra de Calidad</h1>
+              <h1 className="text-xl font-semibold">
+                {modoFueraTurno ? "Nueva captura fuera de turno" : "Nueva Muestra de Calidad"}
+              </h1>
               <p className="text-xs text-muted-foreground">
-                {auth.profile?.laboratorio
-                  ? `Laboratorio ${auth.profile.laboratorio === "norte" ? "Norte" : "Sur"}`
-                  : "Captura directa"}
+                {modoFueraTurno
+                  ? "Captura retroactiva · no se envía a visores operativos"
+                  : auth.profile?.laboratorio
+                    ? `Laboratorio ${auth.profile.laboratorio === "norte" ? "Norte" : "Sur"}`
+                    : "Captura directa"}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {modoFueraTurno && (
+              <Badge variant="secondary" className="gap-1 border-amber-500 bg-amber-50 text-amber-800">
+                <AlertTriangle className="h-3 w-3" /> Fuera de turno
+              </Badge>
+            )}
             {!canCapture && (
               <Badge variant="destructive" className="gap-1">
                 <Lock className="h-3 w-3" /> Sin permiso de captura
@@ -951,6 +960,20 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
           </div>
         </div>
 
+        {modoFueraTurno && (
+          <Alert className="border-amber-500 bg-amber-50 text-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
+            <Info className="h-4 w-4" />
+            <AlertTitle>Captura fuera de turno</AlertTitle>
+            <AlertDescription>
+              Estás registrando una muestra de forma retroactiva. Puedes ajustar manualmente la
+              fecha, hora y turno (solo dentro de las últimas 24 horas). Estos registros NO se
+              enviarán a las pantallas operativas y aparecerán marcados como
+              <strong> &quot;Capturado fuera de tiempo: Sí&quot; </strong> en los reportes. El
+              motivo es obligatorio.
+            </AlertDescription>
+          </Alert>
+        )}
+
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base font-semibold">A. Turno, máquina y producto</CardTitle>
@@ -958,17 +981,44 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
           <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <div className="space-y-1.5">
               <Label className="text-base">Turno</Label>
-              <div className="flex h-11 items-center rounded-md border border-input bg-muted px-3 text-base text-muted-foreground">
-                {turno === "1"
-                  ? `Turno 1 · ${settings?.turno1_inicio ?? "07:00"} – ${settings?.turno1_fin ?? "15:00"}`
-                  : turno === "2"
-                  ? `Turno 2 · ${settings?.turno2_inicio ?? "15:00"} – ${settings?.turno2_fin ?? "23:00"}`
-                  : `Turno 3 · ${settings?.turno3_inicio ?? "23:00"} – ${settings?.turno3_fin ?? "07:00"}`}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Asignado automáticamente según el horario configurado.
-              </p>
+              {modoFueraTurno ? (
+                <>
+                  <Select value={turno} onValueChange={(v) => setTurno(v as "1" | "2" | "3")}>
+                    <SelectTrigger className="h-11 text-base">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1">
+                        Turno 1 · {settings?.turno1_inicio ?? "07:00"} – {settings?.turno1_fin ?? "15:00"}
+                      </SelectItem>
+                      <SelectItem value="2">
+                        Turno 2 · {settings?.turno2_inicio ?? "15:00"} – {settings?.turno2_fin ?? "23:00"}
+                      </SelectItem>
+                      <SelectItem value="3">
+                        Turno 3 · {settings?.turno3_inicio ?? "23:00"} – {settings?.turno3_fin ?? "07:00"}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Se recalcula al cambiar la fecha/hora. Puedes ajustarlo manualmente.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <div className="flex h-11 items-center rounded-md border border-input bg-muted px-3 text-base text-muted-foreground">
+                    {turno === "1"
+                      ? `Turno 1 · ${settings?.turno1_inicio ?? "07:00"} – ${settings?.turno1_fin ?? "15:00"}`
+                      : turno === "2"
+                      ? `Turno 2 · ${settings?.turno2_inicio ?? "15:00"} – ${settings?.turno2_fin ?? "23:00"}`
+                      : `Turno 3 · ${settings?.turno3_inicio ?? "23:00"} – ${settings?.turno3_fin ?? "07:00"}`}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Asignado automáticamente según el horario configurado.
+                  </p>
+                </>
+              )}
             </div>
+
 
             <div className="space-y-1.5">
               <Label className="text-base">Máquina</Label>
