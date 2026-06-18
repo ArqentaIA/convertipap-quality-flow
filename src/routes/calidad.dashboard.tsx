@@ -275,13 +275,20 @@ function DashboardPage() {
         </div>
 
         {/* KPIs primarios */}
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5">
           <KpiCard
             label="Conformidad global"
             value={`${stats.conformidadPct}%`}
             icon={<CheckCircle2 className="h-5 w-5" />}
             sub={`${stats.liberadas} liberadas de ${stats.dictaminadas} dictaminadas`}
             tone="success"
+          />
+          <KpiCard
+            label="Liberados c/justif"
+            value={String(stats.liberadasJustif)}
+            icon={<AlertTriangle className="h-5 w-5" />}
+            sub="Capturista liberó rollo NO CUMPLE con motivo"
+            tone="justif"
           />
           <KpiCard
             label="Rechazo"
