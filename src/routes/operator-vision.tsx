@@ -402,7 +402,7 @@ function VarCard({
         </span>
       </div>
 
-      <div className="flex flex-1 items-baseline justify-center gap-1 overflow-hidden py-0.5">
+      <div className="flex flex-1 items-center justify-center gap-1 overflow-hidden py-0.5">
         <span className="font-mono text-[32px] font-black leading-none tabular-nums text-slate-900">
           {fmt(value, digits)}
         </span>
