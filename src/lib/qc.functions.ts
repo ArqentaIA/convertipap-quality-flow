@@ -573,10 +573,14 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
     }
 
     let muestraId = data.muestra_id;
+    // Cast: nuevas columnas (liberado_con_justificacion, liberacion_justificacion,
+    // liberado_por, liberado_at, variables_fuera_spec) introducidas en la
+    // migración 18-Jun-2026 aún no están en los tipos generados.
+    const muestraPayloadSb = muestraPayload as unknown as never;
     if (muestraId) {
       const { error } = await sb
         .from("muestras_calidad")
-        .update(muestraPayload)
+        .update(muestraPayloadSb)
         .eq("id", muestraId);
       if (error) {
         if (error.code === "23505" || /duplicate key|unique/i.test(error.message)) {
@@ -593,7 +597,7 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
     } else {
       const { data: nueva, error } = await sb
         .from("muestras_calidad")
-        .insert(muestraPayload)
+        .insert(muestraPayloadSb)
         .select("id")
         .single();
       if (error) {
