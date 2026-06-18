@@ -27,6 +27,7 @@ import { Route as MuestraIdRouteImport } from './routes/muestra.$id'
 import { Route as HistorialMaquinaRouteImport } from './routes/historial.$maquina'
 import { Route as CalidadRevisionRouteImport } from './routes/calidad.revision'
 import { Route as CalidadDashboardRouteImport } from './routes/calidad.dashboard'
+import { Route as CalidadCapturaFueraTurnoRouteImport } from './routes/calidad.captura-fuera-turno'
 import { Route as CalidadCapturaRouteImport } from './routes/calidad.captura'
 import { Route as CalidadAjustesRouteImport } from './routes/calidad.ajustes'
 
@@ -120,6 +121,12 @@ const CalidadDashboardRoute = CalidadDashboardRouteImport.update({
   path: '/calidad/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CalidadCapturaFueraTurnoRoute =
+  CalidadCapturaFueraTurnoRouteImport.update({
+    id: '/calidad/captura-fuera-turno',
+    path: '/calidad/captura-fuera-turno',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const CalidadCapturaRoute = CalidadCapturaRouteImport.update({
   id: '/calidad/captura',
   path: '/calidad/captura',
@@ -147,6 +154,7 @@ export interface FileRoutesByFullPath {
   '/variables-calidad': typeof VariablesCalidadRoute
   '/calidad/ajustes': typeof CalidadAjustesRoute
   '/calidad/captura': typeof CalidadCapturaRoute
+  '/calidad/captura-fuera-turno': typeof CalidadCapturaFueraTurnoRoute
   '/calidad/dashboard': typeof CalidadDashboardRoute
   '/calidad/revision': typeof CalidadRevisionRoute
   '/historial/$maquina': typeof HistorialMaquinaRoute
@@ -169,6 +177,7 @@ export interface FileRoutesByTo {
   '/variables-calidad': typeof VariablesCalidadRoute
   '/calidad/ajustes': typeof CalidadAjustesRoute
   '/calidad/captura': typeof CalidadCapturaRoute
+  '/calidad/captura-fuera-turno': typeof CalidadCapturaFueraTurnoRoute
   '/calidad/dashboard': typeof CalidadDashboardRoute
   '/calidad/revision': typeof CalidadRevisionRoute
   '/historial/$maquina': typeof HistorialMaquinaRoute
@@ -192,6 +201,7 @@ export interface FileRoutesById {
   '/variables-calidad': typeof VariablesCalidadRoute
   '/calidad/ajustes': typeof CalidadAjustesRoute
   '/calidad/captura': typeof CalidadCapturaRoute
+  '/calidad/captura-fuera-turno': typeof CalidadCapturaFueraTurnoRoute
   '/calidad/dashboard': typeof CalidadDashboardRoute
   '/calidad/revision': typeof CalidadRevisionRoute
   '/historial/$maquina': typeof HistorialMaquinaRoute
@@ -216,6 +226,7 @@ export interface FileRouteTypes {
     | '/variables-calidad'
     | '/calidad/ajustes'
     | '/calidad/captura'
+    | '/calidad/captura-fuera-turno'
     | '/calidad/dashboard'
     | '/calidad/revision'
     | '/historial/$maquina'
@@ -238,6 +249,7 @@ export interface FileRouteTypes {
     | '/variables-calidad'
     | '/calidad/ajustes'
     | '/calidad/captura'
+    | '/calidad/captura-fuera-turno'
     | '/calidad/dashboard'
     | '/calidad/revision'
     | '/historial/$maquina'
@@ -260,6 +272,7 @@ export interface FileRouteTypes {
     | '/variables-calidad'
     | '/calidad/ajustes'
     | '/calidad/captura'
+    | '/calidad/captura-fuera-turno'
     | '/calidad/dashboard'
     | '/calidad/revision'
     | '/historial/$maquina'
@@ -283,6 +296,7 @@ export interface RootRouteChildren {
   VariablesCalidadRoute: typeof VariablesCalidadRoute
   CalidadAjustesRoute: typeof CalidadAjustesRoute
   CalidadCapturaRoute: typeof CalidadCapturaRoute
+  CalidadCapturaFueraTurnoRoute: typeof CalidadCapturaFueraTurnoRoute
   CalidadDashboardRoute: typeof CalidadDashboardRoute
   CalidadRevisionRoute: typeof CalidadRevisionRoute
   HistorialMaquinaRoute: typeof HistorialMaquinaRoute
@@ -418,6 +432,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CalidadDashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/calidad/captura-fuera-turno': {
+      id: '/calidad/captura-fuera-turno'
+      path: '/calidad/captura-fuera-turno'
+      fullPath: '/calidad/captura-fuera-turno'
+      preLoaderRoute: typeof CalidadCapturaFueraTurnoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/calidad/captura': {
       id: '/calidad/captura'
       path: '/calidad/captura'
@@ -451,6 +472,7 @@ const rootRouteChildren: RootRouteChildren = {
   VariablesCalidadRoute: VariablesCalidadRoute,
   CalidadAjustesRoute: CalidadAjustesRoute,
   CalidadCapturaRoute: CalidadCapturaRoute,
+  CalidadCapturaFueraTurnoRoute: CalidadCapturaFueraTurnoRoute,
   CalidadDashboardRoute: CalidadDashboardRoute,
   CalidadRevisionRoute: CalidadRevisionRoute,
   HistorialMaquinaRoute: HistorialMaquinaRoute,
