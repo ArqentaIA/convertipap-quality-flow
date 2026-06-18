@@ -64,21 +64,27 @@ function MuestraTracePage() {
   const conformes = trace.mediciones.filter((m) => m.estado === "conforme").length;
   const total = trace.mediciones.length;
 
-  // Estatus manual de liberación tiene prioridad sobre el cálculo automático
+  // Estatus efectivo (regla de oro): el dictamen autorizado manda; si no, el
+  // estatus_liberacion derivado por BD. Liberado con justificación = amarillo.
   const estManual = trace.estatus_liberacion;
-  const liberada = estManual === "L" || trace.dictamen === "liberada" || trace.estado === "liberada";
+  const justificada = trace.liberado_con_justificacion === true;
+  const liberadaLimpia = !justificada && (estManual === "L" || trace.dictamen === "liberada" || trace.estado === "liberada");
   const condicional = estManual === "C";
   const noConforme = estManual === "NC" || trace.dictamen === "rechazada"
     || (estManual == null && trace.mediciones.some((m) => m.estado !== "conforme"));
 
-  const estatusLabel = liberada
+  const estatusLabel = justificada
+    ? "LIBERADO C/JUSTIF"
+    : liberadaLimpia
     ? "CONFORME"
     : condicional
     ? "CONDICIONAL"
     : noConforme
     ? "NO CONFORME"
     : "EN REVISIÓN";
-  const estatusClass = liberada
+  const estatusClass = justificada
+    ? "bg-yellow-300 text-yellow-900"
+    : liberadaLimpia
     ? "bg-emerald-600 text-white"
     : condicional
     ? "bg-amber-500 text-white"
