@@ -861,7 +861,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
         porcentaje_rupturas_pct:
           porcentajeRupturasPct.trim() === "" ? null : Number(porcentajeRupturasPct),
         destino: destino.trim() === "" ? null : destino.trim(),
-        estatus_liberacion: estatusLiberacion || undefined,
+        estatus_liberacion: estatusLiberacionPayload || undefined,
         defectos,
         tipo_muestreo: "por_rollo" as const,
         hora_muestreo: horaMuestreo ? new Date(horaMuestreo).toISOString() : undefined,
