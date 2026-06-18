@@ -39,8 +39,10 @@ export type EtiquetaData = {
   productoNombre: string;
   observacionesGenerales: string;
   mediciones: EtiquetaMedicion[];
-  estatus: "CONFORME" | "NO CONFORME" | "LIBERADO" | "CONDICIONAL";
+  estatus: "CONFORME" | "NO CONFORME" | "LIBERADO" | "CONDICIONAL" | "LIBERADO C/JUSTIF";
   estatusLiberacion?: "L" | "NC" | "C" | null;
+  /** Cuando estatus = 'LIBERADO C/JUSTIF', motivo capturado por el operario. */
+  justificacionLiberacion?: string | null;
   defectos?: string[];
   turno?: string | null;
   jefeMaquina?: string | null;
@@ -84,16 +86,22 @@ const OBS_OPCIONES = ["Arruga", "Picado", "Porosidad", "Hoyos por gomas", "Otro"
 
 function buildHtml(data: EtiquetaData, qrDataUrl: string, logoDataUrl: string): string {
   const fechaImpresion = new Date().toLocaleString("es-MX");
-  const estatusColor = data.estatus === "CONFORME" || data.estatus === "LIBERADO"
-    ? "#15803d"
-    : data.estatus === "CONDICIONAL"
-    ? "#b45309"
-    : "#b91c1c";
-  const estatusBg = data.estatus === "CONFORME" || data.estatus === "LIBERADO"
-    ? "#dcfce7"
-    : data.estatus === "CONDICIONAL"
-    ? "#fef3c7"
-    : "#fee2e2";
+  const estatusColor =
+    data.estatus === "CONFORME" || data.estatus === "LIBERADO"
+      ? "#15803d"
+      : data.estatus === "LIBERADO C/JUSTIF"
+      ? "#854d0e"
+      : data.estatus === "CONDICIONAL"
+      ? "#b45309"
+      : "#b91c1c";
+  const estatusBg =
+    data.estatus === "CONFORME" || data.estatus === "LIBERADO"
+      ? "#dcfce7"
+      : data.estatus === "LIBERADO C/JUSTIF"
+      ? "#fef08a"
+      : data.estatus === "CONDICIONAL"
+      ? "#fef3c7"
+      : "#fee2e2";
 
   // Mediciones en dos columnas
   const left: string[] = [];
