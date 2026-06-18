@@ -507,7 +507,7 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
     };
     const id = setInterval(tick, 30_000);
     return () => clearInterval(id);
-  }, [settings, queryClient]);
+  }, [settings, queryClient, modoFueraTurno]);
 
   const canCapture =
     auth.hasRole("capturista") ||
