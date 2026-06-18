@@ -73,7 +73,7 @@ export const getCEOReport = createServerFn({ method: "GET" })
       sb
         .from("muestras_calidad")
         .select(
-          "id, maquina_id, planta_id, hora_muestreo, numero_rollo, turno, dictamen, estatus_liberacion, defectos, productos(codigo), maquinas(codigo)",
+          "id, maquina_id, planta_id, hora_muestreo, numero_rollo, turno, dictamen, estatus_liberacion, liberado_con_justificacion, defectos, productos(codigo), maquinas(codigo)",
         )
         .gte("hora_muestreo", startIso)
         .lte("hora_muestreo", endIso)
