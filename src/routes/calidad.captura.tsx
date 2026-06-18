@@ -1621,59 +1621,90 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
           <Card className={cn(isBlocked && "opacity-60 pointer-events-none")}>
             <CardHeader className="pb-2">
               <CardTitle className="text-base font-semibold">
-                F. Cierre — Estatus de liberación
+                F. Resultado automático del rollo
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {fuerzaNCPorReglaCritica && (
+              {!fuerzaNCPorReglaCritica ? (
+                <Alert className="border-emerald-500 bg-emerald-50 text-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-100">
+                  <CheckCircle2 className="h-4 w-4" />
+                  <AlertTitle>CUMPLE — Liberado automático</AlertTitle>
+                  <AlertDescription className="text-xs">
+                    El rollo cumple con la regla de oro (Peso Base, Tensión MD y Tensión CD
+                    dentro de [min, max]). Se guardará como <strong>Liberado</strong>.
+                  </AlertDescription>
+                </Alert>
+              ) : (
                 <Alert variant="destructive">
-                  <AlertTitle>Rollo marcado como NO CONFORME por regla crítica</AlertTitle>
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertTitle>NO CUMPLE la regla de oro</AlertTitle>
                   <AlertDescription>
-                    <p className="mb-1">
-                      Se detectó incumplimiento en variable(s) crítica(s). El estatus se
-                      asignará automáticamente como <strong>NC</strong> y no puede capturarse
-                      como Liberado o Concesión. Solo Gerencia de Calidad podrá liberarlo
-                      posteriormente mediante dictamen autorizado.
+                    <p className="mb-2 text-xs">
+                      Variables fuera de límites permitidos:
                     </p>
                     <ul className="ml-4 list-disc text-xs">
                       {criticalRuleEval.fallas.map((f) => (
-                        <li key={f.variable_clave}>{f.mensaje}</li>
+                        <li key={f.variable_clave}>
+                          <strong>{f.etiqueta}</strong>: valor {f.valor} — rango permitido
+                          [{f.min}, {f.max}]
+                        </li>
                       ))}
                     </ul>
+                    <div className="mt-3 rounded-md border border-yellow-400 bg-yellow-50 p-3 text-yellow-900 dark:bg-yellow-950/30 dark:text-yellow-100">
+                      <div className="flex items-start gap-2">
+                        <Checkbox
+                          id="liberar-justif"
+                          checked={liberarConJustif}
+                          onCheckedChange={(c) => setLiberarConJustif(c === true)}
+                        />
+                        <div className="space-y-2 flex-1">
+                          <Label
+                            htmlFor="liberar-justif"
+                            className="font-semibold cursor-pointer"
+                          >
+                            Liberar este rollo con justificación del capturista
+                          </Label>
+                          <p className="text-[11px] text-yellow-800 dark:text-yellow-200">
+                            Al marcar y guardar, el rollo aparecerá como{" "}
+                            <strong>Liberado con justificación</strong> (amarillo) en visores,
+                            reportes y etiqueta. Quedará registrado tu usuario, fecha/hora y el
+                            motivo en la auditoría.
+                          </p>
+                          {liberarConJustif && (
+                            <>
+                              <Textarea
+                                value={justificacionLib}
+                                onChange={(e) => setJustificacionLib(e.target.value)}
+                                placeholder="Motivo de la liberación (mín. 10 caracteres). Ej.: Cliente acepta variación, lote demostrativo, etc."
+                                rows={3}
+                                className="text-sm"
+                              />
+                              <p
+                                className={cn(
+                                  "text-[11px]",
+                                  justifValida
+                                    ? "text-emerald-700 dark:text-emerald-300"
+                                    : "text-red-700 dark:text-red-300",
+                                )}
+                              >
+                                {justifTrimmed.length}/10 caracteres mínimos
+                                {justifValida ? " ✓" : ""}
+                              </p>
+                            </>
+                          )}
+                          {!liberarConJustif && (
+                            <p className="text-[11px] text-yellow-800 dark:text-yellow-200">
+                              Si NO marcas esta casilla, el rollo se guardará como{" "}
+                              <strong>No Conforme</strong> y solo Gerencia de Calidad podrá
+                              liberarlo mediante dictamen autorizado.
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   </AlertDescription>
                 </Alert>
               )}
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                <div className="space-y-1.5">
-                  <Label className="text-base">Estatus de liberación</Label>
-                  <Select
-                    value={fuerzaNCPorReglaCritica ? "NC" : estatusLiberacion}
-                    onValueChange={(v) => {
-                      if (fuerzaNCPorReglaCritica) return;
-                      setEstatusLiberacion(v as "" | "L" | "NC" | "C");
-                    }}
-                    disabled={fuerzaNCPorReglaCritica}
-                  >
-                    <SelectTrigger className="h-11 text-base">
-                      <SelectValue placeholder="Selecciona estatus" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="L" disabled={fuerzaNCPorReglaCritica}>
-                        L — Liberado
-                      </SelectItem>
-                      <SelectItem value="NC">NC — No Conforme</SelectItem>
-                      <SelectItem value="C" disabled={fuerzaNCPorReglaCritica}>
-                        C — Condicional
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <p className="text-[11px] text-muted-foreground">
-                    {fuerzaNCPorReglaCritica
-                      ? "Bloqueado por regla crítica: solo Gerencia de Calidad puede liberar mediante dictamen autorizado."
-                      : "Si no se elige, se calcula automáticamente según las mediciones."}
-                  </p>
-                </div>
-              </div>
             </CardContent>
           </Card>
         )}
