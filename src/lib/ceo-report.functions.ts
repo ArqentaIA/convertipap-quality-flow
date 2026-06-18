@@ -125,6 +125,7 @@ export const getCEOReport = createServerFn({ method: "GET" })
 
 
     const estatusDe = (m: any): CEOReportRollo["estatus"] => {
+      if (m.liberado_con_justificacion === true) return "Liberado c/justif";
       if (m.dictamen === "liberada" || m.estatus_liberacion === "L") return "Liberado";
       if (m.dictamen === "rechazada" || m.estatus_liberacion === "NC") return "Rechazado";
       if (m.dictamen === "retenida" || m.estatus_liberacion === "R") return "Retenido";
