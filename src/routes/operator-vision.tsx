@@ -919,6 +919,7 @@ function OperatorVisionPage() {
                             mapSpecActual.get(v.clave)?.max !== null &&
                             mapSpecActual.get(v.clave)?.obj !== null)
                         }
+                        isCritical={k === "pesoBase" || k === "tensionMD" || k === "tensionCD"}
                       />
                     );
                   })}
