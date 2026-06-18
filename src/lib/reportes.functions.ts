@@ -431,7 +431,11 @@ export const getReportes = createServerFn({ method: "POST" })
         prensero: txt(m.prensero),
         analista: txt(m.analista),
         
-        estatus: txt(m.estatus_liberacion ?? m.dictamen ?? "pendiente"),
+        estatus: txt(
+          m.liberado_con_justificacion
+            ? "L (c/justif)"
+            : (m.estatus_liberacion ?? m.dictamen ?? "pendiente"),
+        ),
       };
       for (const clave of clavesOrden) {
         const etiqueta = etiquetaPorClave.get(clave) ?? clave;
