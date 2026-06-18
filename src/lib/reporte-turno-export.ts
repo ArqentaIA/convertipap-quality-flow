@@ -473,7 +473,7 @@ export async function exportReporteTurnoPDF(
           dash(row.maquina),
           dash(row.producto),
           row.peso_kg != null ? fmtKg(row.peso_kg) : "—",
-          row.dictamen ?? row.estatus_liberacion ?? row.estado ?? "—",
+          estatusLabel(row),
           dash(row.analista),
         ]),
     styles: { fontSize: 8, cellPadding: 4 },
@@ -558,7 +558,7 @@ export async function exportReporteTurnoXLSX(
         Máquina: row.maquina ?? "—",
         Producto: row.producto ?? "—",
         "Peso (kg)": row.peso_kg ?? "—",
-        "Estado / Dictamen": row.dictamen ?? row.estatus_liberacion ?? row.estado ?? "—",
+        "Estado / Dictamen": estatusLabel(row),
         Capturista: row.analista ?? "—",
       }));
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(tablaRows), "Tabla del Turno");
@@ -600,7 +600,7 @@ export async function exportReporteTurnoXLSX(
         Turno: TURNO_LABEL[row.turno] ?? row.turno,
         Producto: row.producto ?? "—",
         Capturista: row.analista ?? "—",
-        "Estado/Dictamen": row.dictamen ?? row.estatus_liberacion ?? row.estado ?? "—",
+        "Estado/Dictamen": estatusLabel(row),
       }));
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(trazaRows), "Trazabilidad");
 
