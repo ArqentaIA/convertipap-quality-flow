@@ -596,32 +596,25 @@ function OperatorVisionPage() {
 
   function evalRollo(m: typeof muestrasAll[number] | undefined): VarStatus {
     if (!m) return "none";
-    // Regla de oro: evaluar las 3 variables críticas (Peso Base, Tensión MD/CD)
-    // de forma estricta y simétrica sobre las mediciones de la muestra.
+    // Regla de oro (única fuente de verdad para el estatus del rollo):
+    //   1) Peso Base dentro de [min, max]
+    //   2) Tensión Seca MD ≥ min  (sin tope superior crítico)
+    //   3) Tensión Seca CD ≥ min  (sin tope superior crítico)
+    // Si las 3 se cumplen → verde. Las demás variables NO degradan el estatus.
     const criticasKeys = new Set(["pesoBase", "tensionMD", "tensionCD"]);
     let forzarNC = false;
     for (const med of m.mediciones as Array<{ clave: string; valor: number | null; min: number | null; max: number | null }>) {
       if (!criticasKeys.has(med.clave)) continue;
       if (med.valor === null || !Number.isFinite(Number(med.valor))) continue;
       const v = Number(med.valor);
-      if (Number.isFinite(Number(med.max)) && v > Number(med.max)) { forzarNC = true; break; }
+      const sinTope = esSinTopeSuperior(med.clave);
+      if (!sinTope && Number.isFinite(Number(med.max)) && v > Number(med.max)) { forzarNC = true; break; }
       if (Number.isFinite(Number(med.min)) && v < Number(med.min)) { forzarNC = true; break; }
     }
     // Si fue liberado con justificación → amarillo siempre (trazabilidad).
     if ((m as any).liberadoConJustificacion) return "warn";
     if (forzarNC) return "bad";
-    // Cae al estatus formal si está disponible, o evalúa por variables.
-    const fromDict = statusFromLiberacion(m.estatus);
-    if (fromDict === "bad") return "bad";
-    let worst: VarStatus = "ok";
-    for (const v of variables) {
-      const med = m.mediciones.find((x: { clave: string; valor: number | null }) => x.clave === v.clave);
-      if (!med || med.valor === null) continue;
-      const s = evaluate(Number(med.valor), v.min, v.max, v.clave);
-      if (s === "bad") return "bad";
-      if (s === "warn") worst = "warn";
-    }
-    return worst;
+    return "ok";
   }
 
   const currentStatus = evalRollo(current);
