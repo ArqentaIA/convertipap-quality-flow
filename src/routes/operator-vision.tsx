@@ -742,7 +742,7 @@ function OperatorVisionPage() {
           );
           const valor = med?.valor ?? null;
           const status: VarStatus =
-            valor === null || !v.hasSpec ? "none" : evaluate(Number(valor), v.min, v.max);
+            valor === null || !v.hasSpec ? "none" : evaluate(Number(valor), v.min, v.max, v.clave);
           return {
             clave: v.clave,
             etiqueta: v.etiqueta,
