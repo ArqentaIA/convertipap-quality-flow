@@ -318,6 +318,7 @@ export const getOperatorVisionData = createServerFn({ method: "GET" })
         .from("muestras_calidad")
         .select("id, estatus_liberacion, mediciones_calidad(estado)")
         .eq("maquina_id", maquina.id)
+        .eq("fuera_de_turno", false)
         .gte("capturado_at", startToday.toISOString())
         .lte("capturado_at", endNow.toISOString());
       if (turnoRef) cq = cq.eq("turno", turnoRef);
