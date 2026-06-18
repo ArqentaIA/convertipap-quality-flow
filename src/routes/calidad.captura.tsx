@@ -387,6 +387,20 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
   const [porcentajeRupturasPct, setPorcentajeRupturasPct] = useState<string>("");
   const [destino, setDestino] = useState<string>("");
 
+  // Motivo obligatorio para "Captura fuera de turno"
+  const [motivoFueraTurno, setMotivoFueraTurno] = useState<string>("");
+  // Cota de ±24h para el datetime-local cuando es captura retroactiva
+  const horaMinMax = useMemo(() => {
+    if (!modoFueraTurno) return { min: undefined, max: undefined };
+    const ahora = new Date();
+    const min = new Date(ahora.getTime() - 24 * 3600 * 1000);
+    const max = new Date(ahora.getTime() + 24 * 3600 * 1000);
+    return {
+      min: toLocalDateTimeInputValue(min),
+      max: toLocalDateTimeInputValue(max),
+    };
+  }, [modoFueraTurno]);
+
   // Sección F — Cierre: defectos + liberación con justificación (regla de oro 18-Jun-2026)
   const DEFECTOS_OPCIONES = ["Arruga", "Picado", "Porosidad", "Hoyos por gomas", "Otro"] as const;
   // El estatus L/NC ya no se selecciona manualmente: lo determina la regla de oro
