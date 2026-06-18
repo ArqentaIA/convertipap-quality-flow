@@ -198,7 +198,7 @@ function inferirTurno(
   return "3";
 }
 
-function CapturaCalidadPage() {
+export function CapturaCalidadPage({ modoFueraTurno = false }: { modoFueraTurno?: boolean } = {}) {
   const auth = useAuth();
   const hasAuthToken = auth.isAuthenticated && !!auth.session?.access_token;
   const maquinasQuery = useQuery({ ...maquinasQO, enabled: hasAuthToken, retry: false });
@@ -206,9 +206,11 @@ function CapturaCalidadPage() {
   const maquinas = maquinasQuery.data ?? [];
   const productos = productosQuery.data ?? [];
 
+  const titulo = modoFueraTurno ? "Captura fuera de turno" : "Captura de Muestra de Calidad";
+
   if (auth.loading || !hasAuthToken || maquinasQuery.isLoading || productosQuery.isLoading) {
     return (
-      <AppLayout title="Captura de Muestra de Calidad">
+      <AppLayout title={titulo}>
         <div className="mx-auto mt-12 max-w-xl rounded-xl border border-border bg-card p-8 text-center shadow-sm">
           <ClipboardCheck className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
           <h2 className="text-lg font-semibold text-foreground">Cargando captura</h2>
@@ -226,7 +228,7 @@ function CapturaCalidadPage() {
       productosQuery.error?.message ??
       "No se pudo cargar la información";
     return (
-      <AppLayout title="Captura de Muestra de Calidad">
+      <AppLayout title={titulo}>
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
           <AlertTitle>Error al cargar captura</AlertTitle>
@@ -238,7 +240,7 @@ function CapturaCalidadPage() {
 
   if (maquinas.length === 0) {
     return (
-      <AppLayout title="Captura de Muestra de Calidad">
+      <AppLayout title={titulo}>
         <div className="mx-auto mt-12 max-w-xl rounded-xl border border-border bg-card p-8 text-center shadow-sm">
           <Factory className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
           <h2 className="text-lg font-semibold text-foreground">Sin máquinas asignadas</h2>
@@ -253,7 +255,7 @@ function CapturaCalidadPage() {
 
   if (productos.length === 0) {
     return (
-      <AppLayout title="Captura de Muestra de Calidad">
+      <AppLayout title={titulo}>
         <div className="mx-auto mt-12 max-w-xl rounded-xl border border-border bg-card p-8 text-center shadow-sm">
           <ClipboardCheck className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
           <h2 className="text-lg font-semibold text-foreground">
@@ -270,7 +272,7 @@ function CapturaCalidadPage() {
     );
   }
 
-  return <CapturaInner maquinas={maquinas} productos={productos} />;
+  return <CapturaInner maquinas={maquinas} productos={productos} modoFueraTurno={modoFueraTurno} />;
 }
 
 type Maquina = Awaited<ReturnType<typeof listMaquinasCaptura>>[number];
