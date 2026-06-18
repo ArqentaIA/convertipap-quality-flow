@@ -348,6 +348,7 @@ function VarCard({
   digits,
   hasSpec,
   isCritical = false,
+  clave,
 }: {
   etiqueta: string;
   unidad: string;
@@ -358,8 +359,9 @@ function VarCard({
   digits: number;
   hasSpec: boolean;
   isCritical?: boolean;
+  clave?: string;
 }) {
-  const st = hasSpec ? evaluate(value, min, max) : "none";
+  const st = hasSpec ? evaluate(value, min, max, clave) : "none";
 
   const ring =
     st === "bad"
