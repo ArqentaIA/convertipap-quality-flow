@@ -2056,6 +2056,8 @@ function buildEtiquetaFromMuestra(m: MuestraReciente): EtiquetaData {
     analista: (m as { analista?: string | null }).analista ?? null,
     mediciones: meds,
     estatusLiberacion: est as "L" | "NC" | "C" | null,
+    justificacionLiberacion:
+      (m as { liberacion_justificacion?: string | null }).liberacion_justificacion ?? null,
     defectos,
     estatus,
     autorizacion: (m as { autorizado_por?: string | null }).autorizado_por
