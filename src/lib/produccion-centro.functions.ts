@@ -26,6 +26,8 @@ export type UltimoRollo = {
   estado: string;
   dictamen: string | null;
   estatus_liberacion: string | null;
+  liberado_con_justificacion: boolean;
+  liberacion_justificacion: string | null;
   analista: string | null;
   semaforo: "verde" | "amarillo" | "rojo";
   comparativo: {
