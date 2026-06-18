@@ -1611,25 +1611,55 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
                 F. Cierre — Estatus de liberación
               </CardTitle>
             </CardHeader>
-            <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-3">
-              <div className="space-y-1.5">
-                <Label className="text-base">Estatus de liberación</Label>
-                <Select
-                  value={estatusLiberacion}
-                  onValueChange={(v) => setEstatusLiberacion(v as "" | "L" | "NC" | "C")}
-                >
-                  <SelectTrigger className="h-11 text-base">
-                    <SelectValue placeholder="Selecciona estatus" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="L">L — Liberado</SelectItem>
-                    <SelectItem value="NC">NC — No Conforme</SelectItem>
-                    <SelectItem value="C">C — Condicional</SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-[11px] text-muted-foreground">
-                  Si no se elige, se calcula automáticamente según las mediciones.
-                </p>
+            <CardContent className="space-y-4">
+              {fuerzaNCPorReglaCritica && (
+                <Alert variant="destructive">
+                  <AlertTitle>Rollo marcado como NO CONFORME por regla crítica</AlertTitle>
+                  <AlertDescription>
+                    <p className="mb-1">
+                      Se detectó incumplimiento en variable(s) crítica(s). El estatus se
+                      asignará automáticamente como <strong>NC</strong> y no puede capturarse
+                      como Liberado o Concesión. Solo Gerencia de Calidad podrá liberarlo
+                      posteriormente mediante dictamen autorizado.
+                    </p>
+                    <ul className="ml-4 list-disc text-xs">
+                      {criticalRuleEval.fallas.map((f) => (
+                        <li key={f.variable_clave}>{f.mensaje}</li>
+                      ))}
+                    </ul>
+                  </AlertDescription>
+                </Alert>
+              )}
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                <div className="space-y-1.5">
+                  <Label className="text-base">Estatus de liberación</Label>
+                  <Select
+                    value={fuerzaNCPorReglaCritica ? "NC" : estatusLiberacion}
+                    onValueChange={(v) => {
+                      if (fuerzaNCPorReglaCritica) return;
+                      setEstatusLiberacion(v as "" | "L" | "NC" | "C");
+                    }}
+                    disabled={fuerzaNCPorReglaCritica}
+                  >
+                    <SelectTrigger className="h-11 text-base">
+                      <SelectValue placeholder="Selecciona estatus" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="L" disabled={fuerzaNCPorReglaCritica}>
+                        L — Liberado
+                      </SelectItem>
+                      <SelectItem value="NC">NC — No Conforme</SelectItem>
+                      <SelectItem value="C" disabled={fuerzaNCPorReglaCritica}>
+                        C — Condicional
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-[11px] text-muted-foreground">
+                    {fuerzaNCPorReglaCritica
+                      ? "Bloqueado por regla crítica: solo Gerencia de Calidad puede liberar mediante dictamen autorizado."
+                      : "Si no se elige, se calcula automáticamente según las mediciones."}
+                  </p>
+                </div>
               </div>
             </CardContent>
           </Card>
