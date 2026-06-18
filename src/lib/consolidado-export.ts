@@ -70,6 +70,7 @@ function fmtHora(iso: string): string {
 
 function statusLabel(row: ConsolidadoRow): string {
   const s = (row.estatus_liberacion ?? "").trim();
+  if (s === "L" && row.liberado_con_justificacion) return "L · Liberado c/justif";
   if (s === "L") return "L · Liberado";
   if (s === "NC") return "NC · No Conforme";
   if (s === "C") return "C · Condicionado";
