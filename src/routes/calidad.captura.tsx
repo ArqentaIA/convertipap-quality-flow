@@ -16,6 +16,7 @@ import {
 import { printEtiquetaLiberacion, type EtiquetaData } from "@/lib/etiqueta-liberacion";
 import { auditAction } from "@/lib/audit";
 import { getEffectiveStatus, toEtiquetaEstatus } from "@/lib/qc-effective-status";
+import { evaluateCriticalRule } from "@/lib/qc-critical-rule";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
