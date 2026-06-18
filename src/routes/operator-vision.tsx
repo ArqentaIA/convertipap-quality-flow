@@ -103,13 +103,27 @@ function fmt(n: number | null | undefined, digits = 2) {
   return n.toFixed(digits);
 }
 
-function evaluate(value: number | null, min: number, max: number): VarStatus {
+// Regla de oro: Tensión Seca MD/CD NO tienen tope superior crítico —
+// rebasar el MAX no degrada calidad; sólo el mínimo es vinculante.
+function esSinTopeSuperior(clave?: string): boolean {
+  return clave === "tensionMD" || clave === "tensionCD";
+}
+
+function evaluate(
+  value: number | null,
+  min: number,
+  max: number,
+  clave?: string,
+): VarStatus {
   if (value === null || isNaN(value)) return "none";
-  if (value < min || value > max) return "bad";
+  const sinTope = esSinTopeSuperior(clave);
+  if (value < min) return "bad";
+  if (!sinTope && value > max) return "bad";
   const range = max - min;
   if (range <= 0) return "ok";
   const margin = range * 0.1;
-  if (value < min + margin || value > max - margin) return "warn";
+  if (value < min + margin) return "warn";
+  if (!sinTope && value > max - margin) return "warn";
   return "ok";
 }
 
