@@ -34,6 +34,7 @@ export type ConsolidadoRow = {
   turno: string; // "1" | "2" | "3"
   hora_muestreo: string; // ISO
   codigo_producto: string | null;
+  producto_id: string | null;
   numero_rollo: string;
   observaciones: string | null;
   estatus_liberacion: string | null;
@@ -41,6 +42,8 @@ export type ConsolidadoRow = {
   liberado_con_justificacion: boolean;
   liberacion_justificacion: string | null;
   mediciones: Partial<Record<VariableClave, number>>;
+  /** Claves declaradas en la especificación del producto (para distinguir "No aplica" vs "Pendiente"). */
+  variablesAplicables: VariableClave[];
 };
 
 export type ConsolidadoMaquina = {
