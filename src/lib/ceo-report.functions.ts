@@ -133,7 +133,7 @@ export const getCEOReport = createServerFn({ method: "GET" })
     };
     const esConforme = (m: any): boolean => {
       const st = estatusDe(m);
-      if (st === "Liberado") return true;
+      if (st === "Liberado" || st === "Liberado c/justif") return true;
       if (st === "Rechazado" || st === "Retenido") return false;
       const nc = ncPorMuestra.get(m.id) ?? 0;
       const def = ((m.defectos ?? []) as string[]).filter(Boolean).length;
