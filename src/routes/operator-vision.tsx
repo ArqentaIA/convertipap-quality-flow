@@ -10,6 +10,7 @@ import {
   Camera,
   CheckCircle2,
   Gauge,
+  Images,
   Maximize2,
   Timer,
   Weight,
@@ -1029,13 +1030,16 @@ function OperatorVisionPage() {
               const maxBodyH = headerH + rowH * 15 + summaryH;
               return (
                 <div
-                  className="overflow-auto"
+                  className={historial.length === 0 ? "flex flex-1 items-center justify-center" : "overflow-auto"}
                   style={filas > 15 ? { maxHeight: `${maxBodyH}px` } : undefined}
                 >
 
                   {historial.length === 0 ? (
-                    <div className="px-3 py-6 text-center text-sm font-semibold text-slate-400">
-                      Aún no hay capturas para este turno.
+                    <div className="flex items-center gap-2">
+                      <Images className="h-5 w-5" style={{ color: "#5B6472" }} />
+                      <span className="text-[15px] font-medium" style={{ color: "#5B6472" }}>
+                        No se han registrado capturas para este turno.
+                      </span>
                     </div>
                   ) : (
                     <table className="w-full border-collapse font-mono tabular-nums">
