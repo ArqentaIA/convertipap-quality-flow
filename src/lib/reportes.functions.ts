@@ -415,7 +415,7 @@ export const getReportes = createServerFn({ method: "POST" })
       etiquetaPorClave.set((v as any).clave, `${(v as any).etiqueta ?? (v as any).clave}${u}`);
     }
 
-    const { data: muestrasFull } = await sb
+    const muestrasFull = await fetchAllPaged<any>(() => sb
       .from("muestras_calidad")
       .select(
         `id, numero_rollo, hora_muestreo, turno, operador, jefe_maquina, prensero, analista,
@@ -426,7 +426,7 @@ export const getReportes = createServerFn({ method: "POST" })
       )
       .gte("hora_muestreo", start)
       .lte("hora_muestreo", end)
-      .order("hora_muestreo", { ascending: false });
+      .order("hora_muestreo", { ascending: false }));
 
     const medsByMuestra = new Map<string, Array<{ variable_clave: string; valor: number | null }>>();
     for (const med of mediciones ?? []) {
