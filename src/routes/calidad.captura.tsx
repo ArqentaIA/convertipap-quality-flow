@@ -460,6 +460,7 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
   // se limpia el formulario, se notifica y se invalida producción para todas las máquinas.
   const lastTurnoRef = useRef<"1" | "2" | "3" | null>(null);
   useEffect(() => {
+    if (modoFueraTurno) return; // No aplica cierre automático en captura retroactiva.
     if (lastTurnoRef.current === null) {
       lastTurnoRef.current = inferirTurno(new Date(), settings);
     }
