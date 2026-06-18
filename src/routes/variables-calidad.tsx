@@ -381,9 +381,9 @@ function VariablesCalidad() {
         0: { halign: "center", cellWidth: 28, textColor: C_MUTED, fontSize: 7.5 },
         1: { cellWidth: 170 },
         2: { halign: "center", cellWidth: 55 },
-        3: { halign: "right", font: "courier" },
-        4: { halign: "right", font: "courier", textColor: C_ACCENT },
-        5: { halign: "right", font: "courier" },
+        3: { halign: "center", font: "courier" },
+        4: { halign: "center", font: "courier", textColor: C_ACCENT },
+        5: { halign: "center", font: "courier" },
       },
     });
 
