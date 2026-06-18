@@ -606,6 +606,8 @@ export const getProduccionCentro = createServerFn({ method: "POST" })
         ancho_util: anchoUtilPorMuestra.get(m.id) ?? null,
         estado: m.estado,
         estatus_liberacion: m.estatus_liberacion,
+        liberado_con_justificacion: !!(m as { liberado_con_justificacion?: boolean | null }).liberado_con_justificacion,
+        liberacion_justificacion: (m as { liberacion_justificacion?: string | null }).liberacion_justificacion ?? null,
         dictamen: m.dictamen,
         analista: m.analista,
       }));
