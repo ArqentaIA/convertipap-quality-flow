@@ -546,7 +546,10 @@ export async function exportConsolidadoXLSX(payload: ConsolidadoPayload): Promis
     });
     resRow += 1;
 
-    cursor += 1;
+    // Avanza el cursor del bloque al final del panel derecho (resumen + estatus + liberados),
+    // para que el siguiente bloque no traslape merges existentes y dispare
+    // "Cannot merge already merged cells".
+    cursor = Math.max(cursor, resRow) + 1;
 
     totalesPorMaquina.push({ codigo: block.codigo, kg: kgMaquina });
   }
