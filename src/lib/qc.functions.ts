@@ -24,6 +24,7 @@ import {
   type RolloStatusInfo,
 } from "@/lib/roll-status";
 import type { MuestraCalidad, AjusteCalidad } from "@/lib/qc-types";
+import { evaluateCriticalRule } from "@/lib/qc-critical-rule";
 
 type SB = SupabaseClient<Database>;
 
