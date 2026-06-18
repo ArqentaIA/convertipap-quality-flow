@@ -130,6 +130,7 @@ function focusNextCaptureField(current: HTMLElement) {
 function esVariableSinTopeSuperior(clave?: string | null): boolean {
   if (!clave) return false;
   const k = clave.toLowerCase().replace(/[\s_-]/g, "");
+  if (k === "tensionmd" || k === "tensioncd") return true;
   return k.includes("blancura") || k.includes("r457");
 }
 
