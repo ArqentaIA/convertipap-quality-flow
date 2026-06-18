@@ -391,7 +391,7 @@ export const getReportes = createServerFn({ method: "POST" })
     // ====================================================
     // Reporte General: todos los rollos del periodo con sus variables
     // ====================================================
-    const SIN_INFO = "Sin información";
+    const SIN_INFO = "NO CAPTURADO";
     const txt = (v: unknown): string => {
       if (v === null || v === undefined) return SIN_INFO;
       const s = String(v).trim();
