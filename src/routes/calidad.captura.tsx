@@ -89,7 +89,7 @@ const specQO = (productoId: string) =>
   });
 
 export const Route = createFileRoute("/calidad/captura")({
-  component: CapturaCalidadPage,
+  component: () => <CapturaCalidadPage modoFueraTurno={false} />,
   errorComponent: ({ error }) => (
     <AppLayout title="Captura de Muestra de Calidad">
       <Alert variant="destructive">
