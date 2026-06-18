@@ -224,7 +224,7 @@ export const getProduccionCentro = createServerFn({ method: "POST" })
       sb
         .from("muestras_calidad")
         .select(
-          "id, secuencia_captura, numero_rollo, capturado_at, hora_muestreo, maquina_id, producto_id, turno, estado, dictamen, estatus_liberacion, analista, defectos",
+          "id, secuencia_captura, numero_rollo, capturado_at, hora_muestreo, maquina_id, producto_id, turno, estado, dictamen, estatus_liberacion, liberado_con_justificacion, liberacion_justificacion, autorizado_por, analista, defectos",
         )
         .gte("capturado_at", start.toISOString())
         .lte("capturado_at", end.toISOString())
