@@ -221,7 +221,7 @@ function KpiCard({
         </span>
         <Icon className="h-4 w-4 shrink-0 opacity-60" />
       </div>
-      <div className="flex flex-1 items-end gap-1.5 overflow-hidden">
+      <div className="flex flex-1 items-center justify-center gap-1.5 overflow-hidden">
         <span
           className={`font-mono text-[40px] font-black leading-none tabular-nums ${valueColor[state]} truncate`}
         >
@@ -402,7 +402,7 @@ function VarCard({
         </span>
       </div>
 
-      <div className="flex flex-1 items-baseline justify-center gap-1 overflow-hidden py-0.5">
+      <div className="flex flex-1 items-center justify-center gap-1 overflow-hidden py-0.5">
         <span className="font-mono text-[32px] font-black leading-none tabular-nums text-slate-900">
           {fmt(value, digits)}
         </span>
