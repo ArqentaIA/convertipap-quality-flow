@@ -1212,7 +1212,13 @@ function OperatorVisionPage() {
                                 className={`${cellPad} text-right whitespace-nowrap text-slate-800`}
                                 style={{ fontSize: `${fz}px` }}
                               >
-                                {avg("peso", 2)}
+                                {(() => {
+                                  const nums = historial
+                                    .map((h) => h.vars.find((v) => v.clave === "peso")?.valor)
+                                    .filter((x): x is number => x !== null && x !== undefined && !Number.isNaN(Number(x)))
+                                    .map(Number);
+                                  return nums.length === 0 ? "—" : nums.reduce((a, b) => a + b, 0).toFixed(2);
+                                })()}
                               </td>
                               <td className={`${cellPad} text-center text-slate-700`} style={{ fontSize: `${fz - 1}px` }}>
                                 {historial.length}
