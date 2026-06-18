@@ -38,6 +38,8 @@ export type ConsolidadoRow = {
   observaciones: string | null;
   estatus_liberacion: string | null;
   estado: string | null;
+  liberado_con_justificacion: boolean;
+  liberacion_justificacion: string | null;
   mediciones: Partial<Record<VariableClave, number>>;
 };
 
