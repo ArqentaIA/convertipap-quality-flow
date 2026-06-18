@@ -813,6 +813,18 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
       }
     }
 
+    // ---------------------------------------------------------------------
+    // Regla crítica oficial (Fase 3): si se incumple, el estatus se fuerza a
+    // NC y se notifica al operador. El backend valida igualmente.
+    // ---------------------------------------------------------------------
+    const estatusLiberacionPayload: "L" | "NC" | "C" | "" =
+      criticalRuleEval.forzarNC ? "NC" : estatusLiberacion;
+    if (modo === "envio" && criticalRuleEval.forzarNC) {
+      toast.warning(criticalRuleEval.resumen, { duration: 6000 });
+    }
+
+
+
     const variablesSnapshot: Record<string, unknown> = {};
     variables.forEach((v) => {
       variablesSnapshot[v.variable_id] = {
