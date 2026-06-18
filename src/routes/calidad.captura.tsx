@@ -1261,13 +1261,16 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="hora" className="text-base">
-                  Hora de muestreo
+                  Fecha y hora de muestreo
+                  {modoFueraTurno && <span className="ml-1 text-amber-700">(editable · ±24h)</span>}
                 </Label>
                 <Input
                   id="hora"
                   type="datetime-local"
                   className="h-11 text-base"
                   value={horaMuestreo}
+                  min={horaMinMax.min}
+                  max={horaMinMax.max}
                   onChange={(e) => setHoraMuestreo(e.target.value)}
                 />
               </div>
@@ -1283,6 +1286,29 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
             </CardContent>
           </Card>
         )}
+
+        {modoFueraTurno && spec && (
+          <Card className={cn(isBlocked && "opacity-60 pointer-events-none")}>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base font-semibold">
+                Motivo de captura fuera de turno <span className="text-destructive">*</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Textarea
+                value={motivoFueraTurno}
+                onChange={(e) => setMotivoFueraTurno(e.target.value)}
+                rows={3}
+                placeholder="Explica por qué se está registrando esta muestra fuera del turno (mínimo 10 caracteres)…"
+                className="text-base"
+              />
+              <p className="mt-1 text-xs text-muted-foreground">
+                {motivoFueraTurno.trim().length}/10 caracteres mínimos · obligatorio para guardar.
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
 
         {variablesFueraDeSpec.length > 0 && !isBlocked && (
           <Alert
