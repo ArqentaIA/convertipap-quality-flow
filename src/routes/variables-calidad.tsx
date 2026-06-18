@@ -357,9 +357,9 @@ function VariablesCalidad() {
     // ===== Especificaciones Vigentes =====
     cursorY = cursorY + 10 + policyBlockHeight + 6;
     doc.setFontSize(7.5).setFont("helvetica", "bold").setTextColor(...C_PRIMARY);
-    doc.text("ESPECIFICACIONES VIGENTES", MARGIN_X, cursorY);
+    doc.text("ESPECIFICACIONES VIGENTES", MARGIN_X + CONTENT_W / 2, cursorY, { align: "center" });
     doc.setDrawColor(...C_ACCENT).setLineWidth(1);
-    doc.line(MARGIN_X, cursorY + 3, MARGIN_X + 130, cursorY + 3);
+    doc.line(MARGIN_X + CONTENT_W / 2 - 65, cursorY + 3, MARGIN_X + CONTENT_W / 2 + 65, cursorY + 3);
 
     autoTable(doc, {
       startY: cursorY + 6,
