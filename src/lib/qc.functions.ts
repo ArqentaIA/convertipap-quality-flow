@@ -66,6 +66,9 @@ function requireRollStatusRole(roles: string[]) {
 function esVariableSinTopeSuperior(clave?: string | null): boolean {
   if (!clave) return false;
   const k = clave.toLowerCase().replace(/[\s_-]/g, "");
+  // Blancura R457: a mayor mejor. Tensión Seca MD/CD: rebasar el MAX no es no-conforme
+  // (regla operativa: valores altos de tensión no degradan la calidad del rollo).
+  if (k === "tensionmd" || k === "tensioncd") return true;
   return k.includes("blancura") || k.includes("r457");
 }
 
