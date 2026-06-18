@@ -579,8 +579,23 @@ function OperatorVisionPage() {
 
   function evalRollo(m: typeof muestrasAll[number] | undefined): VarStatus {
     if (!m) return "none";
+    // Regla de oro: evaluar las 3 variables críticas (Peso Base, Tensión MD/CD)
+    // de forma estricta y simétrica sobre las mediciones de la muestra.
+    const criticasKeys = new Set(["pesoBase", "tensionMD", "tensionCD"]);
+    let forzarNC = false;
+    for (const med of m.mediciones as Array<{ clave: string; valor: number | null; min: number | null; max: number | null }>) {
+      if (!criticasKeys.has(med.clave)) continue;
+      if (med.valor === null || !Number.isFinite(Number(med.valor))) continue;
+      const v = Number(med.valor);
+      if (Number.isFinite(Number(med.max)) && v > Number(med.max)) { forzarNC = true; break; }
+      if (Number.isFinite(Number(med.min)) && v < Number(med.min)) { forzarNC = true; break; }
+    }
+    // Si fue liberado con justificación → amarillo siempre (trazabilidad).
+    if ((m as any).liberadoConJustificacion) return "warn";
+    if (forzarNC) return "bad";
+    // Cae al estatus formal si está disponible, o evalúa por variables.
     const fromDict = statusFromLiberacion(m.estatus);
-    if (fromDict === "ok" || fromDict === "bad") return fromDict;
+    if (fromDict === "bad") return "bad";
     let worst: VarStatus = "ok";
     for (const v of variables) {
       const med = m.mediciones.find((x: { clave: string; valor: number | null }) => x.clave === v.clave);
