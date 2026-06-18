@@ -400,7 +400,11 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
         cumplimiento_pct: z.number().min(0, "El Cumplimiento debe ser al menos 0").max(100, "El Cumplimiento debe ser como máximo 100").nullable().optional(),
         porcentaje_rupturas_pct: z.number().min(0, "El % Rupturas debe ser al menos 0").max(100, "El % Rupturas debe ser como máximo 100").nullable().optional(),
         destino: z.string().trim().max(200).nullable().optional(),
+        // estatus_liberacion ya NO se acepta del cliente: lo deriva la regla de oro
+        // server-side y el trigger BD `qc_recalc_estatus_muestra`.
         estatus_liberacion: z.enum(["L", "NC", "C"]).nullable().optional(),
+        liberado_con_justificacion: z.boolean().default(false),
+        liberacion_justificacion: z.string().trim().max(2000).nullable().optional(),
         defectos: z.array(z.string().max(60)).max(20).default([]),
         tipo_muestreo: z.enum(["por_rollo", "por_tiempo"]),
         hora_muestreo: z.string().nullable().optional(),
@@ -432,11 +436,12 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
     }
 
     // -------------------------------------------------------------------------
-    // REGLA CRÍTICA OFICIAL (Fase 3) — Fuente única de verdad: backend.
-    // Si alguna de las 3 variables críticas (Peso Base > max, T. Seca MD < min,
-    // T. Seca CD < min) incumple, se fuerza estatus_liberacion = 'NC'. No se
-    // permite L ni C por captura del operador. Solo Gerencia de Calidad podrá
-    // cambiarlo posteriormente mediante dictamen autorizado.
+    // REGLA DE ORO (cutover 18-Jun-2026) — Fuente única de verdad: backend.
+    // El estatus_liberacion se DERIVA: si las 3 variables críticas (Peso Base,
+    // Tensión MD, Tensión CD) están dentro de [min, max] → 'L'. Si alguna sale,
+    // por defecto 'NC'. El capturista puede liberar marcando
+    // `liberado_con_justificacion = true` con motivo ≥10 chars → 'L' con flag.
+    // El trigger BD `qc_recalc_estatus_muestra` aplica la misma regla al final.
     // -------------------------------------------------------------------------
     const criticalEval = evaluateCriticalRule(
       data.mediciones.map((m) => ({
@@ -446,9 +451,24 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
         max_snapshot: m.max_snapshot,
       })),
     );
-    const estatusLiberacionEfectivo: "L" | "NC" | "C" | null = criticalEval.forzarNC
-      ? "NC"
-      : (data.estatus_liberacion ?? null);
+
+    const justifTrim = (data.liberacion_justificacion ?? "").trim();
+    const wantLiberarJustif = data.liberado_con_justificacion === true;
+
+    if (criticalEval.forzarNC && wantLiberarJustif && justifTrim.length < 10) {
+      throw new Error(
+        "Para liberar un rollo NO CUMPLE se requiere una justificación de al menos 10 caracteres.",
+      );
+    }
+
+    let estatusLiberacionEfectivo: "L" | "NC" | "C" | null;
+    if (!criticalEval.forzarNC) {
+      estatusLiberacionEfectivo = "L";
+    } else if (wantLiberarJustif && justifTrim.length >= 10) {
+      estatusLiberacionEfectivo = "L";
+    } else {
+      estatusLiberacionEfectivo = "NC";
+    }
 
     // NC capturado se envía automáticamente a Bandeja de Revisión de Calidad,
     // ya que solo el Gerente de Calidad puede liberarlo. Esto evita que rollos
