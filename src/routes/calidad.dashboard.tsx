@@ -109,10 +109,15 @@ function DashboardPage() {
     const concesion = conDict.filter((x) => x.d === "concesion").length;
     const pendientes = muestras.filter((m) => m.estado === "pendiente_revision").length;
     const enAjuste = muestras.filter((m) => m.estado === "en_ajuste" || m.estado === "reproceso").length;
+    // Regla de oro: rollos liberados con justificación del capturista (amarillo).
+    const liberadasJustif = muestras.filter((m) => {
+      const r = m as { liberado_con_justificacion?: boolean | null; autorizado_por?: string | null };
+      return !!r.liberado_con_justificacion && !r.autorizado_por;
+    }).length;
     return {
       total: muestras.length,
       dictaminadas: conDict.length,
-      liberadas, rechazadas, concesion, pendientes, enAjuste,
+      liberadas, rechazadas, concesion, pendientes, enAjuste, liberadasJustif,
       conformidadPct: pct(liberadas, conDict.length),
       rechazoPct: pct(rechazadas, conDict.length),
       concesionPct: pct(concesion, conDict.length),
