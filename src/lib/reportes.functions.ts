@@ -54,47 +54,88 @@ export const getReportes = createServerFn({ method: "POST" })
     const plantaById = new Map((plantas ?? []).map((p) => [p.id, p]));
     const maquinaById = new Map((maquinas ?? []).map((m) => [m.id, m]));
 
-    // --------- Muestras del periodo ---------
-    const { data: muestras } = await sb
-      .from("muestras_calidad")
-      .select(
-        "id, planta_id, maquina_id, turno, hora_muestreo, dictamen, estado, estatus_liberacion",
-      )
-      .gte("hora_muestreo", start)
-      .lte("hora_muestreo", end);
+    // --------- Muestras del periodo (paginado) ---------
+    async function fetchAllPaged<T>(
+      builder: () => any,
+    ): Promise<T[]> {
+      const PAGE = 1000;
+      const out: T[] = [];
+      let from = 0;
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const { data, error } = await builder().range(from, from + PAGE - 1);
+        if (error) throw error;
+        const rows = (data ?? []) as T[];
+        out.push(...rows);
+        if (rows.length < PAGE) break;
+        from += PAGE;
+      }
+      return out;
+    }
 
-    const { data: muestrasPrev } = await sb
+    const muestras = await fetchAllPaged<{
+      id: string; planta_id: string; maquina_id: string; turno: string;
+      hora_muestreo: string; dictamen: string | null; estado: string | null;
+      estatus_liberacion: string | null;
+    }>(() => sb
+      .from("muestras_calidad")
+      .select("id, planta_id, maquina_id, turno, hora_muestreo, dictamen, estado, estatus_liberacion")
+      .gte("hora_muestreo", start)
+      .lte("hora_muestreo", end));
+
+    const muestrasPrev = await fetchAllPaged<{
+      id: string; planta_id: string; dictamen: string | null; estatus_liberacion: string | null;
+    }>(() => sb
       .from("muestras_calidad")
       .select("id, planta_id, dictamen, estatus_liberacion")
       .gte("hora_muestreo", prevStart)
-      .lt("hora_muestreo", prevEnd);
+      .lt("hora_muestreo", prevEnd));
 
-    // --------- Mediciones del periodo (para tendencia / NC) ---------
+
+    // --------- Mediciones del periodo (paginado: PostgREST limita a 1000) ---------
+    type MedRow = {
+      id: string;
+      muestra_id: string;
+      variable_clave: string;
+      valor: number;
+      min_snapshot: number;
+      max_snapshot: number;
+      estado: string;
+      created_at: string;
+    };
     const muestraIds = (muestras ?? []).map((m) => m.id);
-    const { data: mediciones } = muestraIds.length
-      ? await sb
-          .from("mediciones_calidad")
-          .select(
-            "id, muestra_id, variable_clave, valor, min_snapshot, max_snapshot, estado, created_at",
-          )
-          .in("muestra_id", muestraIds)
-      : { data: [] as Array<{
-          id: string;
-          muestra_id: string;
-          variable_clave: string;
-          valor: number;
-          min_snapshot: number;
-          max_snapshot: number;
-          estado: string;
-          created_at: string;
-        }> };
+    const mediciones: MedRow[] = [];
+    if (muestraIds.length > 0) {
+      const PAGE = 1000;
+      const ID_CHUNK = 200; // evita URLs demasiado largas en .in()
+      for (let i = 0; i < muestraIds.length; i += ID_CHUNK) {
+        const idsSlice = muestraIds.slice(i, i + ID_CHUNK);
+        let from = 0;
+        // eslint-disable-next-line no-constant-condition
+        while (true) {
+          const { data: page, error } = await sb
+            .from("mediciones_calidad")
+            .select(
+              "id, muestra_id, variable_clave, valor, min_snapshot, max_snapshot, estado, created_at",
+            )
+            .in("muestra_id", idsSlice)
+            .range(from, from + PAGE - 1);
+          if (error) throw error;
+          const rows = (page ?? []) as MedRow[];
+          mediciones.push(...rows);
+          if (rows.length < PAGE) break;
+          from += PAGE;
+        }
+      }
+    }
 
-    // --------- Rollos del periodo ---------
-    const { data: rollos } = await sb
-      .from("rollos_producidos")
-      .select("id, orden_id, registrado_at")
-      .gte("registrado_at", start)
-      .lte("registrado_at", end);
+    // --------- Rollos del periodo (paginado) ---------
+    const rollos = await fetchAllPaged<{ id: string; orden_id: string; registrado_at: string }>(
+      () => sb.from("rollos_producidos")
+        .select("id, orden_id, registrado_at")
+        .gte("registrado_at", start)
+        .lte("registrado_at", end),
+    );
 
     const { data: ordenes } = await sb
       .from("ordenes_fabricacion")
@@ -374,7 +415,7 @@ export const getReportes = createServerFn({ method: "POST" })
       etiquetaPorClave.set((v as any).clave, `${(v as any).etiqueta ?? (v as any).clave}${u}`);
     }
 
-    const { data: muestrasFull } = await sb
+    const muestrasFull = await fetchAllPaged<any>(() => sb
       .from("muestras_calidad")
       .select(
         `id, numero_rollo, hora_muestreo, turno, operador, jefe_maquina, prensero, analista,
@@ -385,7 +426,7 @@ export const getReportes = createServerFn({ method: "POST" })
       )
       .gte("hora_muestreo", start)
       .lte("hora_muestreo", end)
-      .order("hora_muestreo", { ascending: false });
+      .order("hora_muestreo", { ascending: false }));
 
     const medsByMuestra = new Map<string, Array<{ variable_clave: string; valor: number | null }>>();
     for (const med of mediciones ?? []) {
