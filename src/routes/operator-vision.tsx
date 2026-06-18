@@ -1190,15 +1190,24 @@ function OperatorVisionPage() {
                               >
                                 Promedio / Total Turno ({historial.length})
                               </td>
-                              {COLS.map((c) => (
-                                <td
-                                  key={c.key}
-                                  className={`${cellPad} text-right whitespace-nowrap text-slate-800`}
-                                  style={{ fontSize: `${fz}px` }}
-                                >
-                                  {avg(c.key, c.digits)}
-                                </td>
-                              ))}
+                              {COLS.map((c) => {
+                                const isCrit =
+                                  c.key === "pesoBase" ||
+                                  c.key === "tensionMD" ||
+                                  c.key === "tensionCD";
+                                return (
+                                  <td
+                                    key={c.key}
+                                    className={cn(
+                                      `${cellPad} text-right whitespace-nowrap text-slate-800`,
+                                      isCrit && "relative z-[1] bg-white shadow-[0_0_0_2px_#ffffff,0_0_14px_4px_rgba(255,255,255,0.95)]",
+                                    )}
+                                    style={{ fontSize: `${fz}px` }}
+                                  >
+                                    {avg(c.key, c.digits)}
+                                  </td>
+                                );
+                              })}
                               <td
                                 className={`${cellPad} text-right whitespace-nowrap text-slate-800`}
                                 style={{ fontSize: `${fz}px` }}
