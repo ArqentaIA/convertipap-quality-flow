@@ -385,9 +385,13 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
   const [porcentajeRupturasPct, setPorcentajeRupturasPct] = useState<string>("");
   const [destino, setDestino] = useState<string>("");
 
-  // Sección F — Cierre: estatus manual y defectos
+  // Sección F — Cierre: defectos + liberación con justificación (regla de oro 18-Jun-2026)
   const DEFECTOS_OPCIONES = ["Arruga", "Picado", "Porosidad", "Hoyos por gomas", "Otro"] as const;
-  const [estatusLiberacion, setEstatusLiberacion] = useState<"" | "L" | "NC" | "C">("");
+  // El estatus L/NC ya no se selecciona manualmente: lo determina la regla de oro
+  // sobre Peso Base / Tensión MD / Tensión CD. Cuando NO CUMPLE, el capturista
+  // puede liberar marcando esta casilla y escribiendo una justificación.
+  const [liberarConJustif, setLiberarConJustif] = useState<boolean>(false);
+  const [justificacionLib, setJustificacionLib] = useState<string>("");
   const [defectos, setDefectos] = useState<string[]>([]);
   const toggleDefecto = (d: string) =>
     setDefectos((prev) => (prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]));
@@ -461,7 +465,8 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
         setPrensero("");
         setAnalista("");
         setObservaciones("");
-        setEstatusLiberacion("");
+        setLiberarConJustif(false);
+        setJustificacionLib("");
         setDefectos([]);
         setDefectoVisual("");
         setVariableTecnica("");
@@ -529,11 +534,14 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
     [evalMediciones],
   );
   const fuerzaNCPorReglaCritica = criticalRuleEval.forzarNC;
+  const justifTrimmed = justificacionLib.trim();
+  const justifValida = justifTrimmed.length >= 10;
 
-  // Si la regla crítica fuerza NC, alinear el selector visual.
+  // Si el rollo CUMPLE limpiar cualquier flag previo de justificación.
   useEffect(() => {
-    if (fuerzaNCPorReglaCritica && estatusLiberacion !== "NC") {
-      setEstatusLiberacion("NC");
+    if (!fuerzaNCPorReglaCritica && (liberarConJustif || justificacionLib !== "")) {
+      setLiberarConJustif(false);
+      setJustificacionLib("");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fuerzaNCPorReglaCritica]);
