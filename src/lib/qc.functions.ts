@@ -427,6 +427,27 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
     const roles = await getUserRoles(sb, userId);
     requireAnyRole(roles, ROLES_CAPTURA);
 
+    // Validación específica del módulo "Captura fuera de turno":
+    // requiere motivo (≥10 chars) y limita la fecha a ±24h respecto a ahora.
+    const motivoFueraTurnoTrim = (data.fuera_de_turno_motivo ?? "").trim();
+    if (data.fuera_de_turno) {
+      if (motivoFueraTurnoTrim.length < 10) {
+        throw new Error(
+          "Captura fuera de turno: el motivo es obligatorio y debe tener al menos 10 caracteres.",
+        );
+      }
+      if (data.hora_muestreo) {
+        const hm = new Date(data.hora_muestreo).getTime();
+        const now = Date.now();
+        const horasDiff = Math.abs(now - hm) / 3_600_000;
+        if (!Number.isFinite(hm) || horasDiff > 24) {
+          throw new Error(
+            "Captura fuera de turno: la fecha y hora solo puede modificarse dentro de las últimas 24 horas.",
+          );
+        }
+      }
+    }
+
     // ¿Modificación posterior a dictamen autorizado? → marca trazabilidad.
     let dictamenPrevioAt: string | null = null;
     if (data.muestra_id) {
