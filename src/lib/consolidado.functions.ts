@@ -135,6 +135,8 @@ export const getConsolidado = createServerFn({ method: "GET" })
         observaciones: (mu.observaciones_generales as string | null) ?? null,
         estatus_liberacion: (mu.estatus_liberacion as string | null) ?? null,
         estado: (mu.estado as string | null) ?? null,
+        liberado_con_justificacion: !!(mu as { liberado_con_justificacion?: boolean | null }).liberado_con_justificacion,
+        liberacion_justificacion: (mu as { liberacion_justificacion?: string | null }).liberacion_justificacion ?? null,
         mediciones: medByMuestra.get(mu.id as string) ?? {},
       });
     }
