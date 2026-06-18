@@ -488,14 +488,17 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
       // Si el criterio es CRÍTICO, se prefija "🔴 CRÍTICO · " para que destaque en exports
       // sin estilo de celda (xlsx community no soporta colores de fuente por celda).
       observaciones_generales: (() => {
+        const esCritico = data.criterio_defecto === "CRÍTICO";
         const partes = [
           data.defecto_visual_conversion?.trim(),
           data.variable_tecnica_dimensional?.trim(),
-          data.criterio_defecto?.trim(),
+          // Si es CRÍTICO se omite el criterio del cuerpo porque ya va en el prefijo
+          // "🔴 CRÍTICO · ..." y evitamos que aparezca dos veces en el reporte.
+          esCritico ? null : data.criterio_defecto?.trim(),
         ].filter((x): x is string => !!x && x.length > 0);
         if (partes.length === 0) return data.observaciones_generales ?? "";
         const txt = partes.join(" | ");
-        return data.criterio_defecto === "CRÍTICO" ? `🔴 CRÍTICO · ${txt}` : txt;
+        return esCritico ? `🔴 CRÍTICO · ${txt}` : txt;
       })(),
       defecto_visual_conversion: data.defecto_visual_conversion ?? null,
       variable_tecnica_dimensional: data.variable_tecnica_dimensional ?? null,
