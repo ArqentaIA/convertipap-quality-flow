@@ -24,7 +24,7 @@ export type CEOReportRollo = {
   anchoUtil: number | null;
   blancuraR457: number | null;
   diametro: number | null;
-  estatus: "Liberado" | "Retenido" | "Rechazado" | "Pendiente";
+  estatus: "Liberado" | "Liberado c/justif" | "Retenido" | "Rechazado" | "Pendiente";
   defectos: string[];
 };
 
