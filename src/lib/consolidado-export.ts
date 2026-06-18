@@ -237,8 +237,15 @@ export async function exportConsolidadoXLSX(payload: ConsolidadoPayload): Promis
       // Variables numéricas (col 8 en adelante)
       for (let i = 7; i < COLS.length; i++) {
         const def = COLS[i];
-        const v = def.variable ? row.mediciones[def.variable] : undefined;
-        values.push(v == null ? null : v);
+        if (!def.variable) { values.push(null); continue; }
+        const v = row.mediciones[def.variable];
+        if (v != null) {
+          values.push(v);
+        } else if (row.variablesAplicables.includes(def.variable)) {
+          values.push("Pendiente");
+        } else {
+          values.push("No aplica");
+        }
       }
       values.forEach((val, i) => {
         const cell = r.getCell(i + 1);
@@ -252,6 +259,9 @@ export async function exportConsolidadoXLSX(payload: ConsolidadoPayload): Promis
         cell.font = { name: "Calibri", size: 10 };
         const def = COLS[i];
         if (def.numFmt && typeof val === "number") cell.numFmt = def.numFmt;
+        if (typeof val === "string" && (val === "Pendiente" || val === "No aplica")) {
+          cell.font = { name: "Calibri", size: 9, italic: true, color: { argb: val === "Pendiente" ? "FFB45309" : "FF9CA3AF" } };
+        }
       });
       cursor += 1;
     }
