@@ -617,7 +617,7 @@ function OperatorVisionPage() {
     for (const v of variables) {
       const med = m.mediciones.find((x: { clave: string; valor: number | null }) => x.clave === v.clave);
       if (!med || med.valor === null) continue;
-      const s = evaluate(Number(med.valor), v.min, v.max);
+      const s = evaluate(Number(med.valor), v.min, v.max, v.clave);
       if (s === "bad") return "bad";
       if (s === "warn") worst = "warn";
     }
