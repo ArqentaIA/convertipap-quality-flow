@@ -108,7 +108,7 @@ function MuestraTracePage() {
 
           {/* Status banner */}
           <div className={`flex items-center justify-center gap-2 py-3 font-extrabold tracking-widest text-lg ${estatusClass}`}>
-            {liberada ? <ShieldCheck className="h-5 w-5" /> : <AlertTriangle className="h-5 w-5" />}
+            {liberadaLimpia ? <ShieldCheck className="h-5 w-5" /> : <AlertTriangle className="h-5 w-5" />}
             <span>{estatusLabel}</span>
           </div>
 
