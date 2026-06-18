@@ -407,6 +407,34 @@ export const getReportes = createServerFn({ method: "POST" })
       .filter((c) => !EXCLUDED_VAR_CLAVES.has(c))
       .sort();
 
+    // Variables aplicables por producto (especificación) — para distinguir "No aplica" vs "Pendiente"
+    const productoIdsScope = Array.from(
+      new Set((muestrasFull ?? []).map((m: any) => m.producto_id as string | null).filter((x): x is string => !!x)),
+    );
+    const aplicablesPorProducto = new Map<string, Set<string>>();
+    if (productoIdsScope.length > 0) {
+      const { data: specs } = await sb
+        .from("producto_especificaciones")
+        .select("id, producto_id")
+        .in("producto_id", productoIdsScope);
+      const specIds = (specs ?? []).map((s) => s.id as string);
+      const specToProd = new Map<string, string>((specs ?? []).map((s) => [s.id as string, s.producto_id as string]));
+      if (specIds.length > 0) {
+        const { data: pvars } = await sb
+          .from("producto_variables")
+          .select("especificacion_id, variables_calidad(clave)")
+          .in("especificacion_id", specIds);
+        for (const pv of (pvars ?? []) as any[]) {
+          const prodId = specToProd.get(pv.especificacion_id);
+          const clave = pv.variables_calidad?.clave;
+          if (!prodId || !clave) continue;
+          const s = aplicablesPorProducto.get(prodId) ?? new Set<string>();
+          s.add(clave);
+          aplicablesPorProducto.set(prodId, s);
+        }
+      }
+    }
+
     const generalRows: Record<string, string | number>[] = (muestrasFull ?? []).map((m: any) => {
       const maq = maquinaById.get(m.maquina_id);
       const planta = plantaById.get(m.planta_id);
@@ -414,6 +442,20 @@ export const getReportes = createServerFn({ method: "POST" })
       const tipo = producto?.tipos_producto;
       const meds = medsByMuestra.get(m.id) ?? [];
       const medsByClave = new Map(meds.map((x) => [x.variable_clave, x]));
+      const aplicables = m.producto_id ? (aplicablesPorProducto.get(m.producto_id) ?? new Set<string>()) : new Set<string>();
+
+      // Diagnóstico de muestreo: CON CALIDAD si midió todas las aplicables; MUESTRA INCOMPLETA si faltan
+      let pendientes = 0;
+      for (const clave of aplicables) {
+        const med = medsByClave.get(clave);
+        if (!med || med.valor === null || med.valor === undefined) pendientes++;
+      }
+      const estatusMuestreo = aplicables.size === 0
+        ? "SIN ESPECIFICACIÓN"
+        : pendientes === 0
+          ? "CON CALIDAD"
+          : `MUESTRA INCOMPLETA (${pendientes} pendientes)`;
+
       const row: Record<string, string | number> = {
         fecha: (m.hora_muestreo as string)?.slice(0, 10) || SIN_INFO,
         hora: (m.hora_muestreo as string)?.slice(11, 16) || SIN_INFO,
@@ -423,24 +465,33 @@ export const getReportes = createServerFn({ method: "POST" })
         tipo_producto: txt(tipo?.nombre),
         tipo_codigo: txt(tipo?.codigo),
         codigo_producto: txt(producto?.codigo),
-        
+
         gramaje: num(producto?.gramaje),
         rollo: txt(m.numero_rollo),
         operador: txt(m.operador),
         jefe_maquina: txt(m.jefe_maquina),
         prensero: txt(m.prensero),
         analista: txt(m.analista),
-        
+
         estatus: txt(
           m.liberado_con_justificacion
             ? "L (c/justif)"
             : (m.estatus_liberacion ?? m.dictamen ?? "pendiente"),
         ),
+        estatus_muestreo: estatusMuestreo,
       };
       for (const clave of clavesOrden) {
         const etiqueta = etiquetaPorClave.get(clave) ?? clave;
         const med = medsByClave.get(clave);
-        row[etiqueta] = med && med.valor !== null && med.valor !== undefined ? med.valor : SIN_INFO;
+        if (med && med.valor !== null && med.valor !== undefined) {
+          row[etiqueta] = med.valor;
+        } else if (aplicables.has(clave)) {
+          row[etiqueta] = "Pendiente";
+        } else if (aplicables.size === 0) {
+          row[etiqueta] = SIN_INFO;
+        } else {
+          row[etiqueta] = "No aplica";
+        }
       }
       return row;
     });
