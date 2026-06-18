@@ -24,6 +24,7 @@ import {
   type RolloStatusInfo,
 } from "@/lib/roll-status";
 import type { MuestraCalidad, AjusteCalidad } from "@/lib/qc-types";
+import { evaluateCriticalRule } from "@/lib/qc-critical-rule";
 
 type SB = SupabaseClient<Database>;
 
@@ -430,12 +431,31 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
       dictamenPrevioAt = prev?.autorizado_at ?? prev?.dictamen_at ?? null;
     }
 
+    // -------------------------------------------------------------------------
+    // REGLA CRÍTICA OFICIAL (Fase 3) — Fuente única de verdad: backend.
+    // Si alguna de las 3 variables críticas (Peso Base > max, T. Seca MD < min,
+    // T. Seca CD < min) incumple, se fuerza estatus_liberacion = 'NC'. No se
+    // permite L ni C por captura del operador. Solo Gerencia de Calidad podrá
+    // cambiarlo posteriormente mediante dictamen autorizado.
+    // -------------------------------------------------------------------------
+    const criticalEval = evaluateCriticalRule(
+      data.mediciones.map((m) => ({
+        variable_clave: m.variable_clave,
+        valor: m.valor,
+        min_snapshot: m.min_snapshot,
+        max_snapshot: m.max_snapshot,
+      })),
+    );
+    const estatusLiberacionEfectivo: "L" | "NC" | "C" | null = criticalEval.forzarNC
+      ? "NC"
+      : (data.estatus_liberacion ?? null);
+
     // NC capturado se envía automáticamente a Bandeja de Revisión de Calidad,
     // ya que solo el Gerente de Calidad puede liberarlo. Esto evita que rollos
     // No Conformes queden "ocultos" en estado borrador sin posibilidad de
     // dictamen autorizado.
     const estadoMuestra: Database["public"]["Enums"]["qc_muestra_estado"] =
-      data.enviar_a_revision || data.estatus_liberacion === "NC"
+      data.enviar_a_revision || estatusLiberacionEfectivo === "NC"
         ? "pendiente_revision"
         : "borrador";
 
@@ -459,7 +479,7 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
       cumplimiento_pct: data.cumplimiento_pct ?? null,
       porcentaje_rupturas_pct: data.porcentaje_rupturas_pct ?? null,
       destino: data.destino?.trim() ? data.destino.trim() : null,
-      estatus_liberacion: data.estatus_liberacion ?? null,
+      estatus_liberacion: estatusLiberacionEfectivo,
       defectos: data.defectos ?? [],
       tipo_muestreo: data.tipo_muestreo,
       hora_muestreo: data.hora_muestreo || new Date().toISOString(),
@@ -591,7 +611,41 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
       }
     }
 
-    return { muestra_id: muestraId, reabre_dictamen: !!dictamenPrevioAt };
+    // Auditoría de la regla crítica oficial cuando forzó NC automático.
+    if (criticalEval.forzarNC) {
+      try {
+        await (sb as unknown as { rpc: (n: string, a: unknown) => Promise<unknown> }).rpc(
+          "audit_action",
+          {
+            p_modulo: "control_calidad",
+            p_descripcion:
+              "Regla crítica oficial: estatus forzado a NC por incumplimiento de variable crítica",
+            p_registro_id: muestraId,
+            p_datos: {
+              numero_rollo: data.numero_rollo,
+              maquina_id: data.maquina_id,
+              turno: data.turno,
+              estatus_liberacion_solicitado: data.estatus_liberacion ?? null,
+              estatus_liberacion_aplicado: "NC",
+              fallas: criticalEval.fallas,
+              resumen: criticalEval.resumen,
+            },
+          },
+        );
+      } catch {
+        // No bloquear la captura si la auditoría falla.
+      }
+    }
+
+    return {
+      muestra_id: muestraId,
+      reabre_dictamen: !!dictamenPrevioAt,
+      regla_critica: {
+        forzado_nc: criticalEval.forzarNC,
+        fallas: criticalEval.fallas,
+        resumen: criticalEval.resumen,
+      },
+    };
   });
 
 export const dictaminarMuestra = createServerFn({ method: "POST" })
