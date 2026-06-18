@@ -340,9 +340,9 @@ function VariablesCalidad() {
     // ===== Política Ambiental =====
     cursorY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 8;
     doc.setFontSize(7.5).setFont("helvetica", "bold").setTextColor(...C_PRIMARY);
-    doc.text("POLÍTICA AMBIENTAL", MARGIN_X, cursorY);
+    doc.text("POLÍTICA AMBIENTAL", MARGIN_X + CONTENT_W / 2, cursorY, { align: "center" });
     doc.setDrawColor(...C_ACCENT).setLineWidth(0.8);
-    doc.line(MARGIN_X, cursorY + 2, MARGIN_X + 130, cursorY + 2);
+    doc.line(MARGIN_X + CONTENT_W / 2 - 65, cursorY + 2, MARGIN_X + CONTENT_W / 2 + 65, cursorY + 2);
 
     const policyText =
       "En CONVERTIDOR DE PAPEL S. A. DE C. V. fabricamos papel higiénico, papel servilleta, toallas y toallas para cocina a base de fibras recicladas y otros aditivos de origen orgánico, características que permiten que nuestros productos sean 100 % biodegradables.\n\n" +
@@ -357,9 +357,9 @@ function VariablesCalidad() {
     // ===== Especificaciones Vigentes =====
     cursorY = cursorY + 10 + policyBlockHeight + 6;
     doc.setFontSize(7.5).setFont("helvetica", "bold").setTextColor(...C_PRIMARY);
-    doc.text("ESPECIFICACIONES VIGENTES", MARGIN_X, cursorY);
+    doc.text("ESPECIFICACIONES VIGENTES", MARGIN_X + CONTENT_W / 2, cursorY, { align: "center" });
     doc.setDrawColor(...C_ACCENT).setLineWidth(1);
-    doc.line(MARGIN_X, cursorY + 3, MARGIN_X + 130, cursorY + 3);
+    doc.line(MARGIN_X + CONTENT_W / 2 - 65, cursorY + 3, MARGIN_X + CONTENT_W / 2 + 65, cursorY + 3);
 
     autoTable(doc, {
       startY: cursorY + 6,
