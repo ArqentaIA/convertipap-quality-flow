@@ -637,6 +637,10 @@ export type Database = {
           hora_muestreo: string
           id: string
           jefe_maquina: string | null
+          liberacion_justificacion: string | null
+          liberado_at: string | null
+          liberado_con_justificacion: boolean
+          liberado_por: string | null
           maquina_id: string
           mediciones_modificacion_motivo: string | null
           mediciones_modificadas_at: string | null
@@ -658,6 +662,7 @@ export type Database = {
           turno: string
           updated_at: string
           variable_tecnica_dimensional: string | null
+          variables_fuera_spec: Json
           variables_snapshot_json: Json
           velocidad_enrollador: number | null
           velocidad_maquina: number | null
@@ -687,6 +692,10 @@ export type Database = {
           hora_muestreo?: string
           id?: string
           jefe_maquina?: string | null
+          liberacion_justificacion?: string | null
+          liberado_at?: string | null
+          liberado_con_justificacion?: boolean
+          liberado_por?: string | null
           maquina_id: string
           mediciones_modificacion_motivo?: string | null
           mediciones_modificadas_at?: string | null
@@ -708,6 +717,7 @@ export type Database = {
           turno: string
           updated_at?: string
           variable_tecnica_dimensional?: string | null
+          variables_fuera_spec?: Json
           variables_snapshot_json?: Json
           velocidad_enrollador?: number | null
           velocidad_maquina?: number | null
@@ -737,6 +747,10 @@ export type Database = {
           hora_muestreo?: string
           id?: string
           jefe_maquina?: string | null
+          liberacion_justificacion?: string | null
+          liberado_at?: string | null
+          liberado_con_justificacion?: boolean
+          liberado_por?: string | null
           maquina_id?: string
           mediciones_modificacion_motivo?: string | null
           mediciones_modificadas_at?: string | null
@@ -758,6 +772,7 @@ export type Database = {
           turno?: string
           updated_at?: string
           variable_tecnica_dimensional?: string | null
+          variables_fuera_spec?: Json
           variables_snapshot_json?: Json
           velocidad_enrollador?: number | null
           velocidad_maquina?: number | null
@@ -1721,6 +1736,11 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      qc_eval_regla_oro: { Args: { _muestra_id: string }; Returns: Json }
+      qc_recalc_estatus_muestra: {
+        Args: { _muestra_id: string }
+        Returns: undefined
       }
       shift_op_date: { Args: { _ts: string; _turno: string }; Returns: string }
       user_allowed_machine_codes: {

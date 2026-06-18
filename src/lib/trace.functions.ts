@@ -25,6 +25,8 @@ export type TraceMuestra = {
   estado: string;
   dictamen: string | null;
   estatus_liberacion: string | null;
+  liberado_con_justificacion: boolean;
+  liberacion_justificacion: string | null;
   defectos: string[];
   observaciones_generales: string;
   jefe_maquina: string | null;
@@ -48,6 +50,7 @@ export const getMuestraTrace = createServerFn({ method: "GET" })
       .select(
         `id, hora_muestreo, capturado_at, turno, estado, dictamen, numero_rollo,
          estatus_liberacion, defectos,
+         liberado_con_justificacion, liberacion_justificacion,
          observaciones_generales, jefe_maquina, operador, prensero, analista,
          producto:productos(codigo, nombre),
          maquina:maquinas(codigo, nombre),
@@ -98,6 +101,8 @@ export const getMuestraTrace = createServerFn({ method: "GET" })
       estado: m.estado,
       dictamen: m.dictamen,
       estatus_liberacion: (m as { estatus_liberacion?: string | null }).estatus_liberacion ?? null,
+      liberado_con_justificacion: !!(m as { liberado_con_justificacion?: boolean }).liberado_con_justificacion,
+      liberacion_justificacion: (m as { liberacion_justificacion?: string | null }).liberacion_justificacion ?? null,
       defectos: ((m as { defectos?: string[] | null }).defectos ?? []) as string[],
       observaciones_generales: m.observaciones_generales ?? "",
       // PII enmascarada en endpoint público: no exponer nombres de personal.

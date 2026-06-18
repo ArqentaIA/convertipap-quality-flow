@@ -148,6 +148,7 @@ export const getOperatorVisionData = createServerFn({ method: "GET" })
       .select(
         `id, numero_rollo, capturado_at, hora_muestreo, turno, estado,
          operador, analista, estatus_liberacion, dictamen, producto_id, orden_id, crepado_pct,
+         liberado_con_justificacion, liberacion_justificacion, autorizado_por,
          velocidad_maquina, velocidad_enrollador,
          defecto_visual_conversion, variable_tecnica_dimensional, criterio_defecto,
          mediciones_calidad(variable_clave, valor, min_snapshot, objetivo_snapshot, max_snapshot, estado)`,
@@ -175,6 +176,8 @@ export const getOperatorVisionData = createServerFn({ method: "GET" })
       velocidadMaquina: m.velocidad_maquina === null || m.velocidad_maquina === undefined ? null : Number(m.velocidad_maquina),
       velocidadEnrollador: m.velocidad_enrollador === null || m.velocidad_enrollador === undefined ? null : Number(m.velocidad_enrollador),
       estatus: (m.estatus_liberacion ?? m.dictamen ?? "pendiente") as string,
+      liberadoConJustificacion: !!m.liberado_con_justificacion,
+      justificacionLiberacion: (m.liberacion_justificacion as string | null) ?? null,
       defectoVisualConversion: (m.defecto_visual_conversion as string | null) ?? null,
       variableTecnicaDimensional: (m.variable_tecnica_dimensional as string | null) ?? null,
       criterioDefecto: (m.criterio_defecto as string | null) ?? null,

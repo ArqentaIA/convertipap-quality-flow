@@ -385,9 +385,13 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
   const [porcentajeRupturasPct, setPorcentajeRupturasPct] = useState<string>("");
   const [destino, setDestino] = useState<string>("");
 
-  // Sección F — Cierre: estatus manual y defectos
+  // Sección F — Cierre: defectos + liberación con justificación (regla de oro 18-Jun-2026)
   const DEFECTOS_OPCIONES = ["Arruga", "Picado", "Porosidad", "Hoyos por gomas", "Otro"] as const;
-  const [estatusLiberacion, setEstatusLiberacion] = useState<"" | "L" | "NC" | "C">("");
+  // El estatus L/NC ya no se selecciona manualmente: lo determina la regla de oro
+  // sobre Peso Base / Tensión MD / Tensión CD. Cuando NO CUMPLE, el capturista
+  // puede liberar marcando esta casilla y escribiendo una justificación.
+  const [liberarConJustif, setLiberarConJustif] = useState<boolean>(false);
+  const [justificacionLib, setJustificacionLib] = useState<string>("");
   const [defectos, setDefectos] = useState<string[]>([]);
   const toggleDefecto = (d: string) =>
     setDefectos((prev) => (prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]));
@@ -461,7 +465,8 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
         setPrensero("");
         setAnalista("");
         setObservaciones("");
-        setEstatusLiberacion("");
+        setLiberarConJustif(false);
+        setJustificacionLib("");
         setDefectos([]);
         setDefectoVisual("");
         setVariableTecnica("");
@@ -529,11 +534,14 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
     [evalMediciones],
   );
   const fuerzaNCPorReglaCritica = criticalRuleEval.forzarNC;
+  const justifTrimmed = justificacionLib.trim();
+  const justifValida = justifTrimmed.length >= 10;
 
-  // Si la regla crítica fuerza NC, alinear el selector visual.
+  // Si el rollo CUMPLE limpiar cualquier flag previo de justificación.
   useEffect(() => {
-    if (fuerzaNCPorReglaCritica && estatusLiberacion !== "NC") {
-      setEstatusLiberacion("NC");
+    if (!fuerzaNCPorReglaCritica && (liberarConJustif || justificacionLib !== "")) {
+      setLiberarConJustif(false);
+      setJustificacionLib("");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fuerzaNCPorReglaCritica]);
@@ -587,7 +595,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
       const opcionalesTexto: string[] = [
         jefeMaquina, operador, prensero, analista,
         velocidadMaquina, velocidadEnrollador, crepadoPct,
-        porcentajeRupturasPct, destino, observaciones, estatusLiberacion,
+        porcentajeRupturasPct, destino, observaciones,
       ];
       let noObligatoriosFaltantes = opcionalesTexto.filter((v) => !String(v ?? "").trim()).length;
       noObligatoriosFaltantes += evalMediciones.filter(
@@ -640,18 +648,14 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
           max: m.spec.max_valor,
           fueraSpec: m.estado === "no_conforme" || m.estado === "fuera_rango_critico",
         })),
-        estatusLiberacion: estatusLiberacion || null,
+        estatusLiberacion: fueraSpecAlguno
+          ? (liberarConJustif ? "L" : "NC")
+          : "L",
+        justificacionLiberacion: liberarConJustif ? justifTrimmed : null,
         defectos,
-        estatus:
-          estatusLiberacion === "L"
-            ? "LIBERADO"
-            : estatusLiberacion === "NC"
-              ? "NO CONFORME"
-              : estatusLiberacion === "C"
-                ? "CONDICIONAL"
-                : fueraSpecAlguno
-                  ? "NO CONFORME"
-                  : "CONFORME",
+        estatus: fueraSpecAlguno
+          ? (liberarConJustif ? "LIBERADO C/JUSTIF" : "NO CONFORME")
+          : "LIBERADO",
       };
       setUltimaEtiqueta(etiqueta);
       setMediciones((prev) => {
@@ -667,7 +671,8 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
       setAnalista("");
       setObservaciones("");
       setNumeroRollo("");
-      setEstatusLiberacion("");
+      setLiberarConJustif(false);
+      setJustificacionLib("");
       setDefectos([]);
       setDefectoVisual("");
       setVariableTecnica("");
@@ -814,13 +819,27 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
     }
 
     // ---------------------------------------------------------------------
-    // Regla crítica oficial (Fase 3): si se incumple, el estatus se fuerza a
-    // NC y se notifica al operador. El backend valida igualmente.
+    // REGLA DE ORO (cutover 18-Jun-2026): el estatus lo decide el sistema.
+    // - CUMPLE → 'L' automático.
+    // - NO CUMPLE sin justificación → bloquear envío con instrucciones claras.
+    // - NO CUMPLE con justificación válida (≥10 chars) → 'L' + flag de
+    //   liberado_con_justificacion. El backend y el trigger en BD validan
+    //   igualmente para defensa en profundidad.
     // ---------------------------------------------------------------------
-    const estatusLiberacionPayload: "L" | "NC" | "C" | "" =
-      criticalRuleEval.forzarNC ? "NC" : estatusLiberacion;
     if (modo === "envio" && criticalRuleEval.forzarNC) {
-      toast.warning(criticalRuleEval.resumen, { duration: 6000 });
+      if (!liberarConJustif) {
+        toast.error(
+          "Este rollo NO CUMPLE la regla de oro. Para guardarlo como NO CONFORME desmarque esta confirmación; para liberarlo, marque 'Liberar con justificación' y escriba el motivo.",
+          { duration: 8000, description: criticalRuleEval.resumen },
+        );
+        return;
+      }
+      if (!justifValida) {
+        toast.error("La justificación de liberación debe tener al menos 10 caracteres.", {
+          duration: 6000,
+        });
+        return;
+      }
     }
 
 
@@ -861,7 +880,9 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
         porcentaje_rupturas_pct:
           porcentajeRupturasPct.trim() === "" ? null : Number(porcentajeRupturasPct),
         destino: destino.trim() === "" ? null : destino.trim(),
-        estatus_liberacion: estatusLiberacionPayload || undefined,
+        // estatus_liberacion ya NO viene del cliente: lo deriva la BD por la regla de oro.
+        liberado_con_justificacion: liberarConJustif,
+        liberacion_justificacion: liberarConJustif ? justifTrimmed : null,
         defectos,
         tipo_muestreo: "por_rollo" as const,
         hora_muestreo: horaMuestreo ? new Date(horaMuestreo).toISOString() : undefined,
@@ -1600,59 +1621,90 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
           <Card className={cn(isBlocked && "opacity-60 pointer-events-none")}>
             <CardHeader className="pb-2">
               <CardTitle className="text-base font-semibold">
-                F. Cierre — Estatus de liberación
+                F. Resultado automático del rollo
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {fuerzaNCPorReglaCritica && (
+              {!fuerzaNCPorReglaCritica ? (
+                <Alert className="border-emerald-500 bg-emerald-50 text-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-100">
+                  <CheckCircle2 className="h-4 w-4" />
+                  <AlertTitle>CUMPLE — Liberado automático</AlertTitle>
+                  <AlertDescription className="text-xs">
+                    El rollo cumple con la regla de oro (Peso Base, Tensión MD y Tensión CD
+                    dentro de [min, max]). Se guardará como <strong>Liberado</strong>.
+                  </AlertDescription>
+                </Alert>
+              ) : (
                 <Alert variant="destructive">
-                  <AlertTitle>Rollo marcado como NO CONFORME por regla crítica</AlertTitle>
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertTitle>NO CUMPLE la regla de oro</AlertTitle>
                   <AlertDescription>
-                    <p className="mb-1">
-                      Se detectó incumplimiento en variable(s) crítica(s). El estatus se
-                      asignará automáticamente como <strong>NC</strong> y no puede capturarse
-                      como Liberado o Concesión. Solo Gerencia de Calidad podrá liberarlo
-                      posteriormente mediante dictamen autorizado.
+                    <p className="mb-2 text-xs">
+                      Variables fuera de límites permitidos:
                     </p>
                     <ul className="ml-4 list-disc text-xs">
                       {criticalRuleEval.fallas.map((f) => (
-                        <li key={f.variable_clave}>{f.mensaje}</li>
+                        <li key={f.variable_clave}>
+                          <strong>{f.etiqueta}</strong>: valor {f.valor} — rango permitido
+                          [{f.min}, {f.max}]
+                        </li>
                       ))}
                     </ul>
+                    <div className="mt-3 rounded-md border border-yellow-400 bg-yellow-50 p-3 text-yellow-900 dark:bg-yellow-950/30 dark:text-yellow-100">
+                      <div className="flex items-start gap-2">
+                        <Checkbox
+                          id="liberar-justif"
+                          checked={liberarConJustif}
+                          onCheckedChange={(c) => setLiberarConJustif(c === true)}
+                        />
+                        <div className="space-y-2 flex-1">
+                          <Label
+                            htmlFor="liberar-justif"
+                            className="font-semibold cursor-pointer"
+                          >
+                            Liberar este rollo con justificación del capturista
+                          </Label>
+                          <p className="text-[11px] text-yellow-800 dark:text-yellow-200">
+                            Al marcar y guardar, el rollo aparecerá como{" "}
+                            <strong>Liberado con justificación</strong> (amarillo) en visores,
+                            reportes y etiqueta. Quedará registrado tu usuario, fecha/hora y el
+                            motivo en la auditoría.
+                          </p>
+                          {liberarConJustif && (
+                            <>
+                              <Textarea
+                                value={justificacionLib}
+                                onChange={(e) => setJustificacionLib(e.target.value)}
+                                placeholder="Motivo de la liberación (mín. 10 caracteres). Ej.: Cliente acepta variación, lote demostrativo, etc."
+                                rows={3}
+                                className="text-sm"
+                              />
+                              <p
+                                className={cn(
+                                  "text-[11px]",
+                                  justifValida
+                                    ? "text-emerald-700 dark:text-emerald-300"
+                                    : "text-red-700 dark:text-red-300",
+                                )}
+                              >
+                                {justifTrimmed.length}/10 caracteres mínimos
+                                {justifValida ? " ✓" : ""}
+                              </p>
+                            </>
+                          )}
+                          {!liberarConJustif && (
+                            <p className="text-[11px] text-yellow-800 dark:text-yellow-200">
+                              Si NO marcas esta casilla, el rollo se guardará como{" "}
+                              <strong>No Conforme</strong> y solo Gerencia de Calidad podrá
+                              liberarlo mediante dictamen autorizado.
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   </AlertDescription>
                 </Alert>
               )}
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                <div className="space-y-1.5">
-                  <Label className="text-base">Estatus de liberación</Label>
-                  <Select
-                    value={fuerzaNCPorReglaCritica ? "NC" : estatusLiberacion}
-                    onValueChange={(v) => {
-                      if (fuerzaNCPorReglaCritica) return;
-                      setEstatusLiberacion(v as "" | "L" | "NC" | "C");
-                    }}
-                    disabled={fuerzaNCPorReglaCritica}
-                  >
-                    <SelectTrigger className="h-11 text-base">
-                      <SelectValue placeholder="Selecciona estatus" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="L" disabled={fuerzaNCPorReglaCritica}>
-                        L — Liberado
-                      </SelectItem>
-                      <SelectItem value="NC">NC — No Conforme</SelectItem>
-                      <SelectItem value="C" disabled={fuerzaNCPorReglaCritica}>
-                        C — Condicional
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <p className="text-[11px] text-muted-foreground">
-                    {fuerzaNCPorReglaCritica
-                      ? "Bloqueado por regla crítica: solo Gerencia de Calidad puede liberar mediante dictamen autorizado."
-                      : "Si no se elige, se calcula automáticamente según las mediciones."}
-                  </p>
-                </div>
-              </div>
             </CardContent>
           </Card>
         )}
@@ -2004,6 +2056,8 @@ function buildEtiquetaFromMuestra(m: MuestraReciente): EtiquetaData {
     analista: (m as { analista?: string | null }).analista ?? null,
     mediciones: meds,
     estatusLiberacion: est as "L" | "NC" | "C" | null,
+    justificacionLiberacion:
+      (m as { liberacion_justificacion?: string | null }).liberacion_justificacion ?? null,
     defectos,
     estatus,
     autorizacion: (m as { autorizado_por?: string | null }).autorizado_por
