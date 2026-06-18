@@ -269,10 +269,11 @@ export const getOperatorVisionData = createServerFn({ method: "GET" })
     // 6) Cumplimiento del turno vigente (último estatus de cada rollo).
     //    Ventana: hoy (00:00 → ahora) y filtrado por turno de la orden
     //    activa o, en su defecto, el turno de la última muestra capturada.
-    const turnoRef =
-      (ordenActiva?.turno as string | undefined) ??
-      (muestrasRaw?.[0]?.turno as string | undefined) ??
-      null;
+    // Cumplimiento alineado al MISMO turno vigente (por reloj de planta).
+    // Garantiza que los KPIs del turno y el historial nunca diverjan: si el
+    // header dice "T3" y no hay capturas del T3, todos los contadores quedan
+    // en 0 hasta que llegue la primera muestra de ese turno.
+    const turnoRef = turnoVigente;
     const startToday = startTodayHist;
     const endNow = endNowHist;
 
