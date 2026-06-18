@@ -1,0 +1,1 @@
+DELETE FROM public.module_permissions WHERE role = 'capturista' AND module = 'produccion';
