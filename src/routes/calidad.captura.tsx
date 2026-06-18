@@ -818,6 +818,20 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
     if (porcentajeRupturasPct.trim() !== "" && (Number(porcentajeRupturasPct) < 0 || Number(porcentajeRupturasPct) > 100)) {
       toast.error("El campo Porcentaje de rupturas debe estar entre 0 y 100"); return;
     }
+    if (modo === "envio" && modoFueraTurno) {
+      if (motivoFueraTurno.trim().length < 10) {
+        toast.error("Captura fuera de turno: el motivo es obligatorio (mínimo 10 caracteres).");
+        return;
+      }
+      if (horaMuestreo) {
+        const hm = new Date(horaMuestreo).getTime();
+        const horas = Math.abs(Date.now() - hm) / 3_600_000;
+        if (!Number.isFinite(hm) || horas > 24) {
+          toast.error("La fecha y hora solo puede modificarse dentro de las últimas 24 horas.");
+          return;
+        }
+      }
+    }
     let faltantes = 0;
     if (modo === "envio") {
       if (!rolloNormalizado) faltantes += 1;
