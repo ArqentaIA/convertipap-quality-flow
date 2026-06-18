@@ -595,7 +595,7 @@ function CapturaInner({ maquinas, productos }: { maquinas: Maquina[]; productos:
       const opcionalesTexto: string[] = [
         jefeMaquina, operador, prensero, analista,
         velocidadMaquina, velocidadEnrollador, crepadoPct,
-        porcentajeRupturasPct, destino, observaciones, estatusLiberacion,
+        porcentajeRupturasPct, destino, observaciones,
       ];
       let noObligatoriosFaltantes = opcionalesTexto.filter((v) => !String(v ?? "").trim()).length;
       noObligatoriosFaltantes += evalMediciones.filter(
