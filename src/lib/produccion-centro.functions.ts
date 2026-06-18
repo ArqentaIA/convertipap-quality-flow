@@ -272,6 +272,8 @@ export const getProduccionCentro = createServerFn({ method: "POST" })
       m.dictamen === "liberada" || m.estatus_liberacion === "L";
     const isRechazada = (m: { dictamen: string | null; estatus_liberacion: string | null }) =>
       m.dictamen === "rechazada" || m.estatus_liberacion === "NC";
+    const isJustificada = (m: { liberado_con_justificacion?: boolean | null; autorizado_por?: string | null }) =>
+      !!m.liberado_con_justificacion && !m.autorizado_por;
     const isConforme = (m: {
       id: string;
       dictamen: string | null;
@@ -284,8 +286,13 @@ export const getProduccionCentro = createServerFn({ method: "POST" })
       const def = (m.defectos ?? []).filter(Boolean).length;
       return nc === 0 && def === 0;
     };
-    const semaforo = (m: { dictamen: string | null; estatus_liberacion: string | null }): "verde" | "amarillo" | "rojo" =>
-      isLiberada(m) ? "verde" : isRechazada(m) ? "rojo" : "amarillo";
+    const semaforo = (m: {
+      dictamen: string | null;
+      estatus_liberacion: string | null;
+      liberado_con_justificacion?: boolean | null;
+      autorizado_por?: string | null;
+    }): "verde" | "amarillo" | "rojo" =>
+      isJustificada(m) ? "amarillo" : isLiberada(m) ? "verde" : isRechazada(m) ? "rojo" : "amarillo";
 
     const muestrasAsc = [...(muestras ?? [])].sort(
       (a, b) => new Date(a.capturado_at).getTime() - new Date(b.capturado_at).getTime(),
