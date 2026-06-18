@@ -416,6 +416,8 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
         variables_snapshot_json: z.record(z.string(), z.unknown()).default({}),
         mediciones: z.array(medicionInputSchema),
         enviar_a_revision: z.boolean().default(false),
+        fuera_de_turno: z.boolean().optional().default(false),
+        fuera_de_turno_motivo: z.string().trim().max(2000).nullable().optional(),
       })
       .parse(input),
   )
