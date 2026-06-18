@@ -568,6 +568,8 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
       variables_snapshot_json: data.variables_snapshot_json as never,
       estado: estadoMuestra,
       capturado_por: userId,
+      fuera_de_turno: data.fuera_de_turno === true,
+      fuera_de_turno_motivo: data.fuera_de_turno === true ? motivoFueraTurnoTrim : null,
       ...(dictamenPrevioAt
         ? {
             mediciones_modificadas_at: new Date().toISOString(),
