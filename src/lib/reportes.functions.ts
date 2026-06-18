@@ -495,7 +495,7 @@ export const getReportes = createServerFn({ method: "POST" })
         ? "SIN ESPECIFICACIÓN"
         : pendientes === 0
           ? "CON CALIDAD"
-          : `MUESTRA INCOMPLETA (${pendientes} pendientes)`;
+          : `MUESTRA INCOMPLETA (${pendientes} NO CAPTURADO${pendientes === 1 ? "" : "S"})`;
 
       const row: Record<string, string | number> = {
         fecha: (m.hora_muestreo as string)?.slice(0, 10) || SIN_INFO,
