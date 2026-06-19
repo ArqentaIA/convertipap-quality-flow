@@ -18,6 +18,7 @@ import {
 import { getOperatorVisionData } from "@/lib/operator-vision.functions";
 import { getTurnosConfig } from "@/lib/settings.functions";
 import { useOperatorVisionRealtime } from "@/hooks/use-operator-vision-realtime";
+import { useShiftTick } from "@/hooks/useCurrentShift";
 import logoConvertipap from "@/assets/logo-convertipap.png";
 
 // Convierte "HH:MM" en minutos desde 00:00 (hora local).
