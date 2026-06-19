@@ -340,28 +340,6 @@ function ReportesPage() {
         )}
 
 
-        <ReporteProduccionItem
-          start={start}
-          end={end}
-          freq={freq}
-          periodo={periodo}
-          usuario={auth.profile?.nombre ?? auth.user?.email ?? "—"}
-          enabled={!!auth.session?.access_token}
-          rango={rango}
-          setRango={setRango}
-          mesesSel={mesesSel}
-          setMesesSel={setMesesSel}
-        />
-
-        <ReporteMensualItem
-          usuario={auth.profile?.nombre ?? auth.user?.email ?? "—"}
-          enabled={!!auth.session?.access_token}
-        />
-
-        <ReporteTurnoItem
-          usuario={auth.profile?.nombre ?? auth.user?.email ?? "—"}
-          enabled={!!auth.session?.access_token}
-        />
 
         <ReporteConsolidadoItem enabled={!!auth.session?.access_token} />
 
