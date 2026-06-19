@@ -368,6 +368,8 @@ function ReportesPage() {
 
         <ReporteProduccionMesItem enabled={!!auth.session?.access_token} />
 
+        <ReporteNoConformeItem enabled={!!auth.session?.access_token} />
+
         <ReporteGeneralItem enabled={!!auth.session?.access_token} />
 
 
