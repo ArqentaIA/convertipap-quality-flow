@@ -521,8 +521,6 @@ export const getReportes = createServerFn({ method: "POST" })
             : (m.estatus_liberacion ?? m.dictamen ?? "pendiente"),
         ),
         estatus_muestreo: estatusMuestreo,
-        capturado_fuera_de_tiempo: m.fuera_de_turno ? "Sí" : "No",
-        Justificacion_usuario: m.fuera_de_turno ? txt(m.fuera_de_turno_motivo) : SIN_INFO,
       };
       for (const clave of clavesOrden) {
         const etiqueta = etiquetaPorClave.get(clave) ?? clave;
