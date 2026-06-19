@@ -1312,7 +1312,11 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
               <div className="space-y-1.5">
                 <Label htmlFor="hora" className="text-base">
                   Fecha y hora de muestreo
-                  {modoFueraTurno && <span className="ml-1 text-amber-700">(editable · ±24h)</span>}
+                  {modoFueraTurno ? (
+                    <span className="ml-1 text-amber-700">(editable · últimas 24 h)</span>
+                  ) : (
+                    <span className="ml-1 text-muted-foreground">(automática · hora actual)</span>
+                  )}
                 </Label>
                 <Input
                   id="hora"
@@ -1321,9 +1325,17 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
                   value={horaMuestreo}
                   min={horaMinMax.min}
                   max={horaMinMax.max}
+                  readOnly={!modoFueraTurno}
+                  disabled={!modoFueraTurno}
                   onChange={(e) => setHoraMuestreo(e.target.value)}
                 />
+                {!modoFueraTurno && (
+                  <p className="text-[11px] text-muted-foreground">
+                    La hora se fija automáticamente al momento de la captura y no es editable.
+                  </p>
+                )}
               </div>
+
               <div className="space-y-1.5">
                 <Label className="text-base">Especificación vigente</Label>
                 <div className="flex items-center gap-2 h-11 px-3 rounded-md border border-border bg-muted text-base">
