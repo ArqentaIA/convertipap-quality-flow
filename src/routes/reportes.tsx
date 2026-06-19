@@ -20,6 +20,8 @@ import {
 } from "@/lib/reporte-turno-export";
 import { getConsolidado } from "@/lib/consolidado.functions";
 import { exportConsolidadoXLSX } from "@/lib/consolidado-export";
+import { getReporteProduccionMes } from "@/lib/reporte-produccion-mes.functions";
+import { exportReporteProduccionMesXLSX } from "@/lib/reporte-produccion-mes-export";
 
 
 export const Route = createFileRoute("/reportes")({
