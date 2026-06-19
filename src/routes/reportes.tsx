@@ -20,6 +20,8 @@ import {
 } from "@/lib/reporte-turno-export";
 import { getConsolidado } from "@/lib/consolidado.functions";
 import { exportConsolidadoXLSX } from "@/lib/consolidado-export";
+import { getReporteProduccionMes } from "@/lib/reporte-produccion-mes.functions";
+import { exportReporteProduccionMesXLSX } from "@/lib/reporte-produccion-mes-export";
 
 
 export const Route = createFileRoute("/reportes")({
@@ -359,7 +361,10 @@ function ReportesPage() {
 
         <ReporteConsolidadoItem enabled={!!auth.session?.access_token} />
 
+        <ReporteProduccionMesItem enabled={!!auth.session?.access_token} />
+
         <ReporteGeneralItem enabled={!!auth.session?.access_token} />
+
 
 
       </div>
@@ -941,6 +946,105 @@ function ReporteConsolidadoItem({ enabled }: { enabled: boolean }) {
             title="Exportar a Excel con logotipo y diseño documental"
           >
             <FileSpreadsheet className="h-3.5 w-3.5" /> {busy ? "Generando…" : "Exportar a Excel"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Reporte de Producción Mensual (dinámico) — formato FOR-PRO-05
+// ─────────────────────────────────────────────────────────────────
+function ReporteProduccionMesItem({ enabled }: { enabled: boolean }) {
+  const now = new Date();
+  const [year, setYear] = useState<number>(now.getFullYear());
+  const [month, setMonth] = useState<number>(now.getMonth() + 1);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const query = useQuery({
+    queryKey: ["reporte-produccion-mes", year, month],
+    queryFn: () => getReporteProduccionMes({ data: { year, month } }),
+    enabled,
+    staleTime: 30_000,
+  });
+  const data = query.data;
+
+  const yearOptions = useMemo(() => {
+    const arr: number[] = [];
+    for (let y = now.getFullYear() + 1; y >= 2020; y--) arr.push(y);
+    return arr;
+  }, [now]);
+
+  const handle = async () => {
+    if (!data) return;
+    setBusy(true); setError(null);
+    try {
+      await exportReporteProduccionMesXLSX(data);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const diasCount = data?.dias.length ?? 0;
+  const periodo = `${MESES_RM[month - 1]} ${year}`;
+
+  return (
+    <div className={CARD_CLS}>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex items-start gap-3">
+          <div className={FILTER_PANEL_CLS}>
+            <label className={FILTER_LABEL_CLS}>Mes / Año</label>
+            <div className="flex items-center gap-2">
+              <select
+                value={month}
+                onChange={(e) => setMonth(Number(e.target.value))}
+                className="rounded-md border border-input bg-background px-2 py-1.5 text-xs"
+              >
+                {MESES_RM.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}
+              </select>
+              <select
+                value={year}
+                onChange={(e) => setYear(Number(e.target.value))}
+                className="rounded-md border border-input bg-background px-2 py-1.5 text-xs"
+              >
+                {yearOptions.map((y) => <option key={y} value={y}>{y}</option>)}
+              </select>
+            </div>
+          </div>
+          <div>
+            <div className="text-sm font-bold text-foreground">Producción por Mes (dinámico)</div>
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Formato FOR-PRO-05. Columnas por día generadas automáticamente: inicia el día 1 desde el Turno 2 y avanza hasta el último turno cerrado al momento de generar el reporte.
+            </p>
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Periodo: <span className="font-medium">{periodo}</span> · {diasCount} días incluidos
+              {data?.ultimoTurnoCerrado && <> · Último cierre: <span className="font-medium">{data.ultimoTurnoCerrado}</span></>}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
+        <div className="text-[11px] text-muted-foreground">
+          {query.isLoading
+            ? "Cargando datos…"
+            : data
+              ? `${data.maquinas.length} máquinas con producción · ${data.totalGeneral.toLocaleString("es-MX", { minimumFractionDigits: 2 })} kg totales`
+              : "Sin datos disponibles"}
+          {error && <span className="ml-2 text-destructive">· {error}</span>}
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handle}
+            disabled={!data || busy}
+            className={XLSX_BTN_CLS}
+            title="Descargar reporte mensual de producción en Excel"
+          >
+            <FileSpreadsheet className="h-3.5 w-3.5" /> {busy ? "Generando…" : "XLSX"}
           </button>
         </div>
       </div>
