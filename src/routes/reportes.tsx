@@ -25,7 +25,6 @@ import { exportReporteProduccionMesXLSX } from "@/lib/reporte-produccion-mes-exp
 import { getReporteNoConforme, type NoConformeRow } from "@/lib/reporte-no-conforme.functions";
 import {
   exportReporteNoConformeXLSX,
-  exportReporteNoConformePDF,
 } from "@/lib/reporte-no-conforme-export";
 
 
@@ -1084,12 +1083,11 @@ function ReporteNoConformeItem({ enabled }: { enabled: boolean }) {
     return arr;
   }, [now]);
 
-  const handle = async (kind: "pdf" | "xlsx") => {
+  const handle = async (kind: "xlsx") => {
     if (!data) return;
     setBusy(kind); setError(null);
     try {
       if (kind === "xlsx") await exportReporteNoConformeXLSX(data, rows);
-      else await exportReporteNoConformePDF(data, rows);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -1144,10 +1142,6 @@ function ReporteNoConformeItem({ enabled }: { enabled: boolean }) {
           {error && <span className="ml-2 text-destructive">· {error}</span>}
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={() => handle("pdf")} disabled={!data || busy !== null} className={PDF_BTN_CLS}
-            title="Exportar PDF del seguimiento de rollos no conformes">
-            <Download className="h-3.5 w-3.5" /> {busy === "pdf" ? "Generando…" : "PDF"}
-          </button>
           <button onClick={() => handle("xlsx")} disabled={!data || busy !== null} className={XLSX_BTN_CLS}
             title="Descargar Excel del seguimiento de rollos no conformes">
             <FileSpreadsheet className="h-3.5 w-3.5" /> {busy === "xlsx" ? "Generando…" : "XLSX"}
