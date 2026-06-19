@@ -25,7 +25,6 @@ import { exportReporteProduccionMesXLSX } from "@/lib/reporte-produccion-mes-exp
 import { getReporteNoConforme, type NoConformeRow } from "@/lib/reporte-no-conforme.functions";
 import {
   exportReporteNoConformeXLSX,
-  exportReporteNoConformePDF,
 } from "@/lib/reporte-no-conforme-export";
 
 
