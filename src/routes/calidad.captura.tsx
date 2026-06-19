@@ -883,7 +883,7 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
     if (modo === "envio" && criticalRuleEval.forzarNC) {
       if (!liberarConJustif) {
         toast.error(
-          "Este rollo NO CUMPLE la regla de oro. Para guardarlo como NO CONFORME desmarque esta confirmación; para liberarlo, marque 'Liberar con justificación' y escriba el motivo.",
+          "Este rollo NO CUMPLE la regla de oro. Para continuar: marque 'Liberar este rollo con justificación del capturista' y escriba el motivo (mínimo 10 caracteres), o corrija el valor fuera de rango.",
           { duration: 8000, description: criticalRuleEval.resumen },
         );
         return;
