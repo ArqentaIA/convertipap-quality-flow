@@ -361,7 +361,10 @@ function ReportesPage() {
 
         <ReporteConsolidadoItem enabled={!!auth.session?.access_token} />
 
+        <ReporteProduccionMesItem enabled={!!auth.session?.access_token} />
+
         <ReporteGeneralItem enabled={!!auth.session?.access_token} />
+
 
 
       </div>
