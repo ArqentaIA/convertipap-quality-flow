@@ -390,16 +390,26 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
 
   // Motivo obligatorio para "Captura fuera de turno"
   const [motivoFueraTurno, setMotivoFueraTurno] = useState<string>("");
-  // Cota de ±24h para el datetime-local cuando es captura retroactiva
+  // Cota de las últimas 24h hacia atrás para captura retroactiva
+  // (no se permite seleccionar una hora futura).
   const horaMinMax = useMemo(() => {
     if (!modoFueraTurno) return { min: undefined, max: undefined };
     const ahora = new Date();
     const min = new Date(ahora.getTime() - 24 * 3600 * 1000);
-    const max = new Date(ahora.getTime() + 24 * 3600 * 1000);
     return {
       min: toLocalDateTimeInputValue(min),
-      max: toLocalDateTimeInputValue(max),
+      max: toLocalDateTimeInputValue(ahora),
     };
+  }, [modoFueraTurno]);
+
+  // En Control de Calidad (en turno) la hora de muestreo NO es editable:
+  // se fija siempre a la hora actual. Se refresca cada 30s para mantenerla viva.
+  useEffect(() => {
+    if (modoFueraTurno) return;
+    const tick = () => setHoraMuestreo(toLocalDateTimeInputValue(new Date()));
+    tick();
+    const id = setInterval(tick, 30_000);
+    return () => clearInterval(id);
   }, [modoFueraTurno]);
 
   // Sección F — Cierre: defectos + liberación con justificación (regla de oro 18-Jun-2026)
