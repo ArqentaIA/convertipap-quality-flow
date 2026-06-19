@@ -22,6 +22,11 @@ import { getConsolidado } from "@/lib/consolidado.functions";
 import { exportConsolidadoXLSX } from "@/lib/consolidado-export";
 import { getReporteProduccionMes } from "@/lib/reporte-produccion-mes.functions";
 import { exportReporteProduccionMesXLSX } from "@/lib/reporte-produccion-mes-export";
+import { getReporteNoConforme, type NoConformeRow } from "@/lib/reporte-no-conforme.functions";
+import {
+  exportReporteNoConformeXLSX,
+  exportReporteNoConformePDF,
+} from "@/lib/reporte-no-conforme-export";
 
 
 export const Route = createFileRoute("/reportes")({
