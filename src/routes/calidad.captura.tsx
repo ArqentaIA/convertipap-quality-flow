@@ -390,16 +390,26 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
 
   // Motivo obligatorio para "Captura fuera de turno"
   const [motivoFueraTurno, setMotivoFueraTurno] = useState<string>("");
-  // Cota de ±24h para el datetime-local cuando es captura retroactiva
+  // Cota de las últimas 24h hacia atrás para captura retroactiva
+  // (no se permite seleccionar una hora futura).
   const horaMinMax = useMemo(() => {
     if (!modoFueraTurno) return { min: undefined, max: undefined };
     const ahora = new Date();
     const min = new Date(ahora.getTime() - 24 * 3600 * 1000);
-    const max = new Date(ahora.getTime() + 24 * 3600 * 1000);
     return {
       min: toLocalDateTimeInputValue(min),
-      max: toLocalDateTimeInputValue(max),
+      max: toLocalDateTimeInputValue(ahora),
     };
+  }, [modoFueraTurno]);
+
+  // En Control de Calidad (en turno) la hora de muestreo NO es editable:
+  // se fija siempre a la hora actual. Se refresca cada 30s para mantenerla viva.
+  useEffect(() => {
+    if (modoFueraTurno) return;
+    const tick = () => setHoraMuestreo(toLocalDateTimeInputValue(new Date()));
+    tick();
+    const id = setInterval(tick, 30_000);
+    return () => clearInterval(id);
   }, [modoFueraTurno]);
 
   // Sección F — Cierre: defectos + liberación con justificación (regla de oro 18-Jun-2026)
@@ -827,9 +837,10 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
       }
       if (horaMuestreo) {
         const hm = new Date(horaMuestreo).getTime();
-        const horas = Math.abs(Date.now() - hm) / 3_600_000;
-        if (!Number.isFinite(hm) || horas > 24) {
-          toast.error("La fecha y hora solo puede modificarse dentro de las últimas 24 horas.");
+        const ahora = Date.now();
+        const horasAtras = (ahora - hm) / 3_600_000;
+        if (!Number.isFinite(hm) || hm > ahora || horasAtras > 24) {
+          toast.error("La fecha y hora solo puede ajustarse dentro de las últimas 24 horas (no se permiten horas futuras).");
           return;
         }
       }
@@ -1301,7 +1312,11 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
               <div className="space-y-1.5">
                 <Label htmlFor="hora" className="text-base">
                   Fecha y hora de muestreo
-                  {modoFueraTurno && <span className="ml-1 text-amber-700">(editable · ±24h)</span>}
+                  {modoFueraTurno ? (
+                    <span className="ml-1 text-amber-700">(editable · últimas 24 h)</span>
+                  ) : (
+                    <span className="ml-1 text-muted-foreground">(automática · hora actual)</span>
+                  )}
                 </Label>
                 <Input
                   id="hora"
@@ -1310,9 +1325,17 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
                   value={horaMuestreo}
                   min={horaMinMax.min}
                   max={horaMinMax.max}
+                  readOnly={!modoFueraTurno}
+                  disabled={!modoFueraTurno}
                   onChange={(e) => setHoraMuestreo(e.target.value)}
                 />
+                {!modoFueraTurno && (
+                  <p className="text-[11px] text-muted-foreground">
+                    La hora se fija automáticamente al momento de la captura y no es editable.
+                  </p>
+                )}
               </div>
+
               <div className="space-y-1.5">
                 <Label className="text-base">Especificación vigente</Label>
                 <div className="flex items-center gap-2 h-11 px-3 rounded-md border border-border bg-muted text-base">
