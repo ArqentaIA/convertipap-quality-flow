@@ -849,7 +849,6 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
         { valor: crepadoPct, etiqueta: "% Crepado" },
         { valor: porcentajeRupturasPct, etiqueta: "% Rupturas" },
         { valor: destino, etiqueta: "Destino" },
-        { valor: observaciones, etiqueta: "Observaciones" },
       ];
       const faltantesEncabezado = camposEncabezado.filter((c) => !String(c.valor ?? "").trim());
       const medicionesFaltantes = evalMediciones.filter((m) => m.input.valor === "");
@@ -1103,7 +1102,7 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
             <div className="space-y-1.5">
               <Label htmlFor="vel-maq" className="text-base">
                 Vel. Máquina{" "}
-                <span className="text-muted-foreground font-normal">(m/min · opcional)</span>
+                <span className="text-muted-foreground font-normal">(m/min)</span>
               </Label>
               <Input
                 id="vel-maq"
@@ -1119,7 +1118,7 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
             <div className="space-y-1.5">
               <Label htmlFor="vel-enr" className="text-base">
                 Vel. Enrollador{" "}
-                <span className="text-muted-foreground font-normal">(m/min · opcional)</span>
+                <span className="text-muted-foreground font-normal">(m/min)</span>
               </Label>
               <Input
                 id="vel-enr"
@@ -1135,7 +1134,7 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
             <div className="space-y-1.5">
               <Label htmlFor="crepado" className="text-base">
                 % Crepado{" "}
-                <span className="text-muted-foreground font-normal">(% · opcional)</span>
+                <span className="text-muted-foreground font-normal">(%)</span>
               </Label>
               <Input
                 id="crepado"
