@@ -1083,12 +1083,11 @@ function ReporteNoConformeItem({ enabled }: { enabled: boolean }) {
     return arr;
   }, [now]);
 
-  const handle = async (kind: "pdf" | "xlsx") => {
+  const handle = async (kind: "xlsx") => {
     if (!data) return;
     setBusy(kind); setError(null);
     try {
       if (kind === "xlsx") await exportReporteNoConformeXLSX(data, rows);
-      else await exportReporteNoConformePDF(data, rows);
     } catch (e) {
       setError((e as Error).message);
     } finally {
