@@ -849,7 +849,6 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
         { valor: crepadoPct, etiqueta: "% Crepado" },
         { valor: porcentajeRupturasPct, etiqueta: "% Rupturas" },
         { valor: destino, etiqueta: "Destino" },
-        { valor: observaciones, etiqueta: "Observaciones" },
       ];
       const faltantesEncabezado = camposEncabezado.filter((c) => !String(c.valor ?? "").trim());
       const medicionesFaltantes = evalMediciones.filter((m) => m.input.valor === "");
