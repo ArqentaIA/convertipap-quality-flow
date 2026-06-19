@@ -17,6 +17,7 @@ import { printEtiquetaLiberacion, type EtiquetaData } from "@/lib/etiqueta-liber
 import { auditAction } from "@/lib/audit";
 import { getEffectiveStatus, toEtiquetaEstatus } from "@/lib/qc-effective-status";
 import { evaluateCriticalRule } from "@/lib/qc-critical-rule";
+import { useShiftTick } from "@/hooks/useCurrentShift";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -363,10 +364,13 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
   const [horaMuestreo, setHoraMuestreo] = useState<string>(ahoraLocal);
   const [observaciones, setObservaciones] = useState<string>("");
   const [mediciones, setMediciones] = useState<MedicionInputState>({});
-  // Turno: auto-inferido por hora, editable manualmente
+  // Turno: auto-inferido por hora, editable manualmente.
+  // `shiftTick` fuerza el recálculo cada 60 s para que el turno vigente se
+  // actualice automáticamente al cruzar un cambio de horario, sin recargar.
+  const shiftTick = useShiftTick(60_000);
   const turnoInferido = useMemo(
     () => inferirTurno(new Date(horaMuestreo || Date.now()), settings),
-    [horaMuestreo, settings],
+    [horaMuestreo, settings, shiftTick],
   );
   const [turno, setTurno] = useState<"1" | "2" | "3">(turnoInferido);
   useEffect(() => {

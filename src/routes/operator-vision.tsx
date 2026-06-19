@@ -18,6 +18,7 @@ import {
 import { getOperatorVisionData } from "@/lib/operator-vision.functions";
 import { getTurnosConfig } from "@/lib/settings.functions";
 import { useOperatorVisionRealtime } from "@/hooks/use-operator-vision-realtime";
+import { useShiftTick } from "@/hooks/useCurrentShift";
 import logoConvertipap from "@/assets/logo-convertipap.png";
 
 // Convierte "HH:MM" en minutos desde 00:00 (hora local).
@@ -523,9 +524,14 @@ function OperatorVisionPage() {
   // Turno actual derivado de la hora del sistema y los horarios configurados.
   // Es la fuente de verdad de la UI; el turno de la orden puede quedar obsoleto
   // si la orden se abrió en un turno anterior y sigue corriendo.
+  // `now` proviene de useTicker(1000) → recalcula automáticamente al cambiar
+  // de turno sin necesidad de recargar. Se añade `shiftTick` (60s) como
+  // dependencia redundante para garantizar el recálculo aun si en el futuro
+  // se reduce la frecuencia de `now`.
+  const shiftTick = useShiftTick(60_000);
   const turnoActual = useMemo(
     () => computeTurnoActual(now, appSettings ?? null),
-    [now, appSettings],
+    [now, appSettings, shiftTick],
   );
   const turnoDisplay = turnoActual ?? (orden?.turno ? String(orden.turno) : current?.turno ? String(current.turno) : "");
   const turnoLabel = turnoDisplay ? (turnoDisplay.startsWith("T") ? turnoDisplay : `T${turnoDisplay}`) : "";
