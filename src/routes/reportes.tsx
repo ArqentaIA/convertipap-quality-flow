@@ -1058,3 +1058,264 @@ function ReporteProduccionMesItem({ enabled }: { enabled: boolean }) {
     </div>
   );
 }
+
+// ─────────────────────────────────────────────────────────────────
+// Reporte NO CONFORME — rollos NC y CONDICIONADO del mes vigente
+// ─────────────────────────────────────────────────────────────────
+function ReporteNoConformeItem({ enabled }: { enabled: boolean }) {
+  const now = new Date();
+  const [year, setYear] = useState<number>(now.getFullYear());
+  const [month, setMonth] = useState<number>(now.getMonth() + 1);
+  const [fTurno, setFTurno] = useState("");
+  const [fMaquina, setFMaquina] = useState("");
+  const [fCalidad, setFCalidad] = useState("");
+  const [fEstatus, setFEstatus] = useState("");
+  const [fFecha, setFFecha] = useState("");
+  const [fDefecto, setFDefecto] = useState("");
+  const [fRollo, setFRollo] = useState("");
+  const [busy, setBusy] = useState<"pdf" | "xlsx" | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const query = useQuery({
+    queryKey: ["reporte-no-conforme", year, month],
+    queryFn: () => getReporteNoConforme({ data: { year, month } }),
+    enabled,
+    staleTime: 30_000,
+  });
+  const data = query.data;
+  const rows: NoConformeRow[] = data?.rows ?? [];
+
+  const yearOptions = useMemo(() => {
+    const arr: number[] = [];
+    for (let y = now.getFullYear() + 1; y >= 2020; y--) arr.push(y);
+    return arr;
+  }, [now]);
+
+  const turnos = useMemo(() => Array.from(new Set(rows.map((r) => r.turno))), [rows]);
+  const maquinas = useMemo(() => Array.from(new Set(rows.map((r) => r.maquinaCodigo))), [rows]);
+  const calidades = useMemo(() => Array.from(new Set(rows.map((r) => r.calidad))).sort(), [rows]);
+  const fechas = useMemo(() => Array.from(new Set(rows.map((r) => r.fechaOperativa))).sort(), [rows]);
+  const defectosUnicos = useMemo(() => {
+    const set = new Set<string>();
+    rows.forEach((r) => r.defecto.split(",").map((d) => d.trim()).filter(Boolean).forEach((d) => set.add(d)));
+    return Array.from(set).sort();
+  }, [rows]);
+
+  const rowsFiltradas = useMemo(() => {
+    return rows.filter((r) => {
+      if (fTurno && r.turno !== fTurno) return false;
+      if (fMaquina && r.maquinaCodigo !== fMaquina) return false;
+      if (fCalidad && r.calidad !== fCalidad) return false;
+      if (fEstatus && r.estatus !== fEstatus) return false;
+      if (fFecha && r.fechaOperativa !== fFecha) return false;
+      if (fDefecto && !r.defecto.toLowerCase().includes(fDefecto.toLowerCase())) return false;
+      if (fRollo && !r.rollo.toLowerCase().includes(fRollo.toLowerCase())) return false;
+      return true;
+    });
+  }, [rows, fTurno, fMaquina, fCalidad, fEstatus, fFecha, fDefecto, fRollo]);
+
+  // KPIs
+  const kpis = useMemo(() => {
+    const totalNC = rowsFiltradas.filter((r) => r.estatus === "NO CONFORME").length;
+    const totalCond = rowsFiltradas.filter((r) => r.estatus === "CONDICIONADO").length;
+    const pesoTotal = rowsFiltradas.reduce((s, r) => s + (r.pesoRollo ?? 0), 0);
+    const defectoFreq = new Map<string, number>();
+    rowsFiltradas.forEach((r) =>
+      r.defecto
+        .split(",")
+        .map((d) => d.trim())
+        .filter(Boolean)
+        .forEach((d) => defectoFreq.set(d, (defectoFreq.get(d) ?? 0) + 1)),
+    );
+    const topDefectos = Array.from(defectoFreq.entries()).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    const porMaquina = new Map<string, number>();
+    rowsFiltradas.forEach((r) => porMaquina.set(r.maquinaCodigo, (porMaquina.get(r.maquinaCodigo) ?? 0) + 1));
+    return { totalNC, totalCond, pesoTotal, topDefectos, porMaquina: Array.from(porMaquina.entries()).sort() };
+  }, [rowsFiltradas]);
+
+  const handle = async (kind: "pdf" | "xlsx") => {
+    if (!data) return;
+    setBusy(kind); setError(null);
+    try {
+      if (kind === "xlsx") await exportReporteNoConformeXLSX(data, rowsFiltradas);
+      else await exportReporteNoConformePDF(data, rowsFiltradas);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const periodo = `${MESES_RM[month - 1]} ${year}`;
+
+  return (
+    <div className={CARD_CLS}>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex items-start gap-3 flex-wrap">
+          <div className={FILTER_PANEL_CLS}>
+            <label className={FILTER_LABEL_CLS}>Mes / Año</label>
+            <div className="flex items-center gap-2">
+              <select value={month} onChange={(e) => setMonth(Number(e.target.value))}
+                className="rounded-md border border-input bg-background px-2 py-1.5 text-xs">
+                {MESES_RM.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}
+              </select>
+              <select value={year} onChange={(e) => setYear(Number(e.target.value))}
+                className="rounded-md border border-input bg-background px-2 py-1.5 text-xs">
+                {yearOptions.map((y) => <option key={y} value={y}>{y}</option>)}
+              </select>
+            </div>
+          </div>
+          <div>
+            <div className="text-sm font-bold text-foreground">NO CONFORME</div>
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Seguimiento diario a rollos retenidos (NC) y condicionados (liberados con justificación)
+              del periodo. Día 1 desde el Turno 2 · solo turnos cerrados.
+            </p>
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Periodo: <span className="font-medium">{periodo}</span>
+              {data?.ultimoTurnoCerrado && <> · Último cierre: <span className="font-medium">{data.ultimoTurnoCerrado}</span></>}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* KPIs */}
+      <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-5">
+        <div className="rounded-lg border border-red-200 bg-red-50 p-3">
+          <div className="text-[10px] font-semibold uppercase text-red-700">No conformes</div>
+          <div className="mt-1 text-2xl font-bold text-red-900">{kpis.totalNC}</div>
+        </div>
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+          <div className="text-[10px] font-semibold uppercase text-amber-700">Condicionados</div>
+          <div className="mt-1 text-2xl font-bold text-amber-900">{kpis.totalCond}</div>
+        </div>
+        <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
+          <div className="text-[10px] font-semibold uppercase text-blue-700">Peso retenido (kg)</div>
+          <div className="mt-1 text-2xl font-bold text-blue-900">
+            {kpis.pesoTotal.toLocaleString("es-MX", { maximumFractionDigits: 0 })}
+          </div>
+        </div>
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 sm:col-span-2 lg:col-span-2">
+          <div className="text-[10px] font-semibold uppercase text-slate-700">Distribución por máquina</div>
+          <div className="mt-1 flex flex-wrap gap-2 text-[11px] text-slate-700">
+            {kpis.porMaquina.length === 0 ? <span className="text-muted-foreground">Sin datos</span> :
+              kpis.porMaquina.map(([m, c]) => (
+                <span key={m} className="rounded-md bg-white px-2 py-0.5 border border-slate-200">
+                  <strong>{m}</strong>: {c}
+                </span>
+              ))}
+          </div>
+        </div>
+      </div>
+
+      {kpis.topDefectos.length > 0 && (
+        <div className="mt-2 rounded-lg border border-slate-200 bg-white p-3">
+          <div className="text-[10px] font-semibold uppercase text-slate-700">Top defectos</div>
+          <div className="mt-1 flex flex-wrap gap-2 text-[11px]">
+            {kpis.topDefectos.map(([d, c]) => (
+              <span key={d} className="rounded-md bg-slate-100 px-2 py-0.5">{d} · <strong>{c}</strong></span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Filtros */}
+      <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
+        <select value={fFecha} onChange={(e) => setFFecha(e.target.value)}
+          className="rounded-md border border-input bg-background px-2 py-1.5 text-xs">
+          <option value="">Todas las fechas</option>
+          {fechas.map((f) => <option key={f} value={f}>{f}</option>)}
+        </select>
+        <select value={fTurno} onChange={(e) => setFTurno(e.target.value)}
+          className="rounded-md border border-input bg-background px-2 py-1.5 text-xs">
+          <option value="">Todos los turnos</option>
+          {turnos.map((t) => <option key={t} value={t}>{t}</option>)}
+        </select>
+        <select value={fMaquina} onChange={(e) => setFMaquina(e.target.value)}
+          className="rounded-md border border-input bg-background px-2 py-1.5 text-xs">
+          <option value="">Todas las máquinas</option>
+          {maquinas.map((m) => <option key={m} value={m}>{m}</option>)}
+        </select>
+        <select value={fCalidad} onChange={(e) => setFCalidad(e.target.value)}
+          className="rounded-md border border-input bg-background px-2 py-1.5 text-xs">
+          <option value="">Todas las calidades</option>
+          {calidades.map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
+        <select value={fEstatus} onChange={(e) => setFEstatus(e.target.value)}
+          className="rounded-md border border-input bg-background px-2 py-1.5 text-xs">
+          <option value="">Todos los estatus</option>
+          <option value="NO CONFORME">NO CONFORME</option>
+          <option value="CONDICIONADO">CONDICIONADO</option>
+        </select>
+        <input list="nc-defectos" value={fDefecto} onChange={(e) => setFDefecto(e.target.value)}
+          placeholder="Defecto…"
+          className="rounded-md border border-input bg-background px-2 py-1.5 text-xs" />
+        <datalist id="nc-defectos">
+          {defectosUnicos.map((d) => <option key={d} value={d} />)}
+        </datalist>
+        <input value={fRollo} onChange={(e) => setFRollo(e.target.value)}
+          placeholder="Rollo…"
+          className="rounded-md border border-input bg-background px-2 py-1.5 text-xs" />
+      </div>
+
+      {/* Tabla */}
+      <div className="mt-3 overflow-x-auto rounded-lg border border-slate-200">
+        <table className="w-full text-xs">
+          <thead className="bg-slate-800 text-white">
+            <tr>
+              {["Turno","Fecha","Calidad","Rollo","Defecto","Estatus","Hora","PB","BT (R457)","a*","b*","Peso Rollo","Ancho Útil","Máquina","Destino"].map((h) => (
+                <th key={h} className="px-2 py-1.5 text-left font-semibold whitespace-nowrap">{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {query.isLoading && (
+              <tr><td colSpan={15} className="px-2 py-4 text-center text-muted-foreground">Cargando…</td></tr>
+            )}
+            {!query.isLoading && rowsFiltradas.length === 0 && (
+              <tr><td colSpan={15} className="px-2 py-4 text-center text-muted-foreground">Sin registros para los filtros aplicados.</td></tr>
+            )}
+            {rowsFiltradas.map((r) => {
+              const colorBg = r.estatus === "NO CONFORME" ? "bg-red-100 text-red-800" : "bg-amber-100 text-amber-800";
+              return (
+                <tr key={r.id} className="border-t border-slate-100 hover:bg-slate-50"
+                    title={`ID: ${r.id}\nCapturado: ${r.capturadoAt ? new Date(r.capturadoAt).toLocaleString("es-MX") : "—"}${r.capturadoPorNombre ? ` por ${r.capturadoPorNombre}` : ""}${r.modificadoAt ? `\nModificado: ${new Date(r.modificadoAt).toLocaleString("es-MX")}${r.modificadoPorNombre ? ` por ${r.modificadoPorNombre}` : ""}` : ""}`}>
+                  <td className="px-2 py-1 whitespace-nowrap">{r.turno}</td>
+                  <td className="px-2 py-1 whitespace-nowrap">{r.fechaOperativa}</td>
+                  <td className="px-2 py-1 whitespace-nowrap">{r.calidad}</td>
+                  <td className="px-2 py-1 whitespace-nowrap font-mono">{r.rollo}</td>
+                  <td className="px-2 py-1 max-w-[320px]">{r.defecto}</td>
+                  <td className="px-2 py-1 whitespace-nowrap"><span className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${colorBg}`}>{r.estatus}</span></td>
+                  <td className="px-2 py-1 whitespace-nowrap">{r.hora}</td>
+                  <td className="px-2 py-1">{r.pb ?? <span className="text-muted-foreground italic">N/D</span>}</td>
+                  <td className="px-2 py-1">{r.btR457 ?? <span className="text-muted-foreground italic">N/D</span>}</td>
+                  <td className="px-2 py-1">{r.aStar ?? <span className="text-muted-foreground italic">N/D</span>}</td>
+                  <td className="px-2 py-1">{r.bStar ?? <span className="text-muted-foreground italic">N/D</span>}</td>
+                  <td className="px-2 py-1">{r.pesoRollo ?? <span className="text-muted-foreground italic">N/D</span>}</td>
+                  <td className="px-2 py-1">{r.anchoUtil ?? <span className="text-muted-foreground italic">N/D</span>}</td>
+                  <td className="px-2 py-1 whitespace-nowrap">{r.maquinaCodigo}</td>
+                  <td className="px-2 py-1 max-w-[260px]">{r.destino}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+        <div className="text-[11px] text-muted-foreground">
+          {rowsFiltradas.length} de {rows.length} registros
+          {error && <span className="ml-2 text-destructive">· {error}</span>}
+        </div>
+        <div className="flex items-center gap-2">
+          <button onClick={() => handle("pdf")} disabled={!data || busy !== null} className={PDF_BTN_CLS}>
+            <Download className="h-3.5 w-3.5" /> {busy === "pdf" ? "Generando…" : "PDF"}
+          </button>
+          <button onClick={() => handle("xlsx")} disabled={!data || busy !== null} className={XLSX_BTN_CLS}>
+            <FileSpreadsheet className="h-3.5 w-3.5" /> {busy === "xlsx" ? "Generando…" : "XLSX"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
