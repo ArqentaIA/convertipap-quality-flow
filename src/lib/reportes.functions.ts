@@ -522,7 +522,7 @@ export const getReportes = createServerFn({ method: "POST" })
         ),
         estatus_muestreo: estatusMuestreo,
         capturado_fuera_de_tiempo: m.fuera_de_turno ? "Sí" : "No",
-        motivo_fuera_de_tiempo: m.fuera_de_turno ? txt(m.fuera_de_turno_motivo) : SIN_INFO,
+        Justificacion_usuario: m.fuera_de_turno ? txt(m.fuera_de_turno_motivo) : SIN_INFO,
       };
       for (const clave of clavesOrden) {
         const etiqueta = etiquetaPorClave.get(clave) ?? clave;
