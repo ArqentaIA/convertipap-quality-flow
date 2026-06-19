@@ -837,9 +837,10 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
       }
       if (horaMuestreo) {
         const hm = new Date(horaMuestreo).getTime();
-        const horas = Math.abs(Date.now() - hm) / 3_600_000;
-        if (!Number.isFinite(hm) || horas > 24) {
-          toast.error("La fecha y hora solo puede modificarse dentro de las últimas 24 horas.");
+        const ahora = Date.now();
+        const horasAtras = (ahora - hm) / 3_600_000;
+        if (!Number.isFinite(hm) || hm > ahora || horasAtras > 24) {
+          toast.error("La fecha y hora solo puede ajustarse dentro de las últimas 24 horas (no se permiten horas futuras).");
           return;
         }
       }
