@@ -101,17 +101,29 @@ export const getCumplimientoVariables = createServerFn({ method: "GET" })
   .inputValidator((input: z.infer<typeof inputSchema>) => inputSchema.parse(input))
   .handler(async ({ data, context }) => {
     const sb = context.supabase;
-    let mq = sb
-      .from("muestras_calidad")
-      .select("id")
-      .gte("capturado_at", data.from)
-      .lte("capturado_at", data.to);
-    if (data.maquina_id) mq = mq.eq("maquina_id", data.maquina_id);
-    if (data.turno) mq = mq.eq("turno", data.turno);
-    const { data: muestras, error: eM } = await mq;
-    if (eM) throw new Error(eM.message);
+    const PAGE = 1000;
 
-    const ids = (muestras ?? []).map((m) => m.id);
+    // 1) Paginar muestras (id)
+    let from = 0;
+    const muestras: { id: string }[] = [];
+    for (let p = 0; p < 100; p++) {
+      let mq = sb
+        .from("muestras_calidad")
+        .select("id")
+        .gte("capturado_at", data.from)
+        .lte("capturado_at", data.to)
+        .range(from, from + PAGE - 1);
+      if (data.maquina_id) mq = mq.eq("maquina_id", data.maquina_id);
+      if (data.turno) mq = mq.eq("turno", data.turno);
+      const { data: page, error: eM } = await mq;
+      if (eM) throw new Error(eM.message);
+      const chunk = (page ?? []) as { id: string }[];
+      muestras.push(...chunk);
+      if (chunk.length < PAGE) break;
+      from += PAGE;
+    }
+
+    const ids = muestras.map((m) => m.id);
     if (ids.length === 0) {
       return {
         variablesEvaluadas: 0,
@@ -121,13 +133,27 @@ export const getCumplimientoVariables = createServerFn({ method: "GET" })
       } as CumplimientoVariables;
     }
 
-    const { data: meds, error: eMed } = await sb
-      .from("mediciones_calidad")
-      .select("estado")
-      .in("muestra_id", ids);
-    if (eMed) throw new Error(eMed.message);
+    // 2) Paginar mediciones por lotes de IDs (PostgREST limita a 1000 filas/respuesta)
+    const ID_CHUNK = 500;
+    const meds: { estado: string }[] = [];
+    for (let i = 0; i < ids.length; i += ID_CHUNK) {
+      const slice = ids.slice(i, i + ID_CHUNK);
+      let mfrom = 0;
+      for (let p = 0; p < 100; p++) {
+        const { data: page, error: eMed } = await sb
+          .from("mediciones_calidad")
+          .select("estado")
+          .in("muestra_id", slice)
+          .range(mfrom, mfrom + PAGE - 1);
+        if (eMed) throw new Error(eMed.message);
+        const chunk = (page ?? []) as { estado: string }[];
+        meds.push(...chunk);
+        if (chunk.length < PAGE) break;
+        mfrom += PAGE;
+      }
+    }
 
-    const evaluables = (meds ?? []).filter(
+    const evaluables = meds.filter(
       (m) =>
         m.estado === "conforme" ||
         m.estado === "no_conforme" ||
