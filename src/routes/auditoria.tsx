@@ -13,6 +13,7 @@ import {
 import { Download, ChevronLeft, ChevronRight, ShieldCheck, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { auditAction } from "@/lib/audit";
+import { fetchAllPaged } from "@/lib/paginate";
 
 export const Route = createFileRoute("/auditoria")({
   head: () => ({
