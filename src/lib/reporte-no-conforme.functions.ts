@@ -192,12 +192,35 @@ export const getReporteNoConforme = createServerFn({ method: "POST" })
       ),
     );
 
-    const [{ data: medsRaw }, { data: prods }, { data: maqs }, { data: profs }] = await Promise.all([
-      sb
-        .from("mediciones_calidad")
-        .select("muestra_id, variable_clave, valor")
-        .in("muestra_id", muestraIds)
-        .in("variable_clave", ["pesoBase", "blancuraR457", "blancuraA", "blancuraB", "peso", "anchoUtil"]),
+    // Paginación: PostgREST limita a 1000 filas por respuesta. Particionamos
+    // muestraIds en lotes para evitar truncamiento silencioso de mediciones.
+    async function fetchMedicionesPaged(ids: string[]) {
+      const VARS = ["pesoBase", "blancuraR457", "blancuraA", "blancuraB", "peso", "anchoUtil"];
+      const ID_CHUNK = 150; // ~150 muestras × 6 vars ≈ 900 filas/lote (margen vs 1000)
+      const PAGE = 1000;
+      const out: { muestra_id: string; variable_clave: string; valor: number | null }[] = [];
+      for (let i = 0; i < ids.length; i += ID_CHUNK) {
+        const slice = ids.slice(i, i + ID_CHUNK);
+        let from = 0;
+        for (let p = 0; p < 50; p++) {
+          const { data, error } = await sb
+            .from("mediciones_calidad")
+            .select("muestra_id, variable_clave, valor")
+            .in("muestra_id", slice)
+            .in("variable_clave", VARS)
+            .range(from, from + PAGE - 1);
+          if (error) throw new Error(error.message);
+          const chunk = (data ?? []) as typeof out;
+          out.push(...chunk);
+          if (chunk.length < PAGE) break;
+          from += PAGE;
+        }
+      }
+      return out;
+    }
+
+    const [medsRaw, { data: prods }, { data: maqs }, { data: profs }] = await Promise.all([
+      fetchMedicionesPaged(muestraIds),
       productoIds.length
         ? sb.from("productos").select("id, codigo").in("id", productoIds)
         : Promise.resolve({ data: [] as { id: string; codigo: string }[] }),
