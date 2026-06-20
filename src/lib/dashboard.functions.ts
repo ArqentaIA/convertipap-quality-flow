@@ -83,31 +83,61 @@ export const getDashboard = createServerFn({ method: "POST" })
     const start = new Date(data.start);
     const end = new Date(data.end);
 
-    const [{ data: maquinas }, { data: muestras }, { data: mediciones }, { data: rollos }, { data: ordenes }, { data: paros }, settingsResp] =
+    const [maquinas, muestras, mediciones, rollos, ordenes, paros, settingsResp] =
       await Promise.all([
-        sb.from("maquinas").select("id, codigo").order("codigo"),
-        sb
-          .from("muestras_calidad")
-          .select("id, maquina_id, capturado_at, dictamen, estatus_liberacion, defectos, estado")
-          .gte("capturado_at", start.toISOString())
-          .lte("capturado_at", end.toISOString()),
-        sb
-          .from("mediciones_calidad")
-          .select("id, muestra_id, variable_clave, valor, estado, created_at")
-          .gte("created_at", start.toISOString())
-          .lte("created_at", end.toISOString()),
-
-        sb
-          .from("rollos_producidos")
-          .select("id, orden_id, registrado_at")
-          .gte("registrado_at", start.toISOString())
-          .lte("registrado_at", end.toISOString()),
-        sb.from("ordenes_fabricacion").select("id, maquina_id"),
-        sb
-          .from("paros_maquina")
-          .select("maquina_id, duracion_min, inicio")
-          .gte("inicio", start.toISOString())
-          .lte("inicio", end.toISOString()),
+        fetchAllPaged<{ id: string; codigo: string }>((from, to) =>
+          sb.from("maquinas").select("id, codigo").order("codigo").range(from, to),
+        ),
+        fetchAllPaged<{
+          id: string;
+          maquina_id: string;
+          capturado_at: string;
+          dictamen: string | null;
+          estatus_liberacion: string | null;
+          defectos: string[] | null;
+          estado: string | null;
+        }>((from, to) =>
+          sb
+            .from("muestras_calidad")
+            .select("id, maquina_id, capturado_at, dictamen, estatus_liberacion, defectos, estado")
+            .gte("capturado_at", start.toISOString())
+            .lte("capturado_at", end.toISOString())
+            .range(from, to),
+        ),
+        fetchAllPaged<{
+          id: string;
+          muestra_id: string;
+          variable_clave: string;
+          valor: number | null;
+          estado: string | null;
+          created_at: string;
+        }>((from, to) =>
+          sb
+            .from("mediciones_calidad")
+            .select("id, muestra_id, variable_clave, valor, estado, created_at")
+            .gte("created_at", start.toISOString())
+            .lte("created_at", end.toISOString())
+            .range(from, to),
+        ),
+        fetchAllPaged<{ id: string; orden_id: string; registrado_at: string }>((from, to) =>
+          sb
+            .from("rollos_producidos")
+            .select("id, orden_id, registrado_at")
+            .gte("registrado_at", start.toISOString())
+            .lte("registrado_at", end.toISOString())
+            .range(from, to),
+        ),
+        fetchAllPaged<{ id: string; maquina_id: string }>((from, to) =>
+          sb.from("ordenes_fabricacion").select("id, maquina_id").range(from, to),
+        ),
+        fetchAllPaged<{ maquina_id: string; duracion_min: number | null; inicio: string }>((from, to) =>
+          sb
+            .from("paros_maquina")
+            .select("maquina_id, duracion_min, inicio")
+            .gte("inicio", start.toISOString())
+            .lte("inicio", end.toISOString())
+            .range(from, to),
+        ),
         sb.from("app_settings").select("costo_no_calidad_kg").limit(1).maybeSingle(),
       ]);
 
