@@ -296,6 +296,12 @@ export const getReportes = createServerFn({ method: "POST" })
       else baseRow.limite_inf = Number(med.min_snapshot);
       ncRows.push(baseRow);
     }
+    // Ordenar por fecha descendente (más reciente primero)
+    ncRows.sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)));
+    // Reasignar IDs según el nuevo orden
+    ncRows.forEach((r, i) => {
+      r.id = `NC-${String(i + 1).padStart(4, "0")}`;
+    });
 
     // ====================================================
     // Tendencia de variables críticas (agregado por mes)
