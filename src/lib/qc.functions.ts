@@ -492,6 +492,11 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
         "Para liberar un rollo NO CUMPLE se requiere una justificación de al menos 10 caracteres.",
       );
     }
+    if (wantLiberarJustif && justifTrim.length > 240) {
+      throw new Error(
+        "La justificación de liberación no puede exceder 240 caracteres.",
+      );
+    }
 
     let estatusLiberacionEfectivo: "L" | "NC" | "C" | null;
     if (!criticalEval.forzarNC) {
