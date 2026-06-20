@@ -4,6 +4,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { fetchAllPaged } from "@/lib/paginate";
 
 const inputSchema = z.object({
   rango: z.enum(["dia", "semana", "mes", "año", "custom"]),
