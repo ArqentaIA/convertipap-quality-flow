@@ -90,28 +90,34 @@ export const getConsolidado = createServerFn({ method: "GET" })
     const maqMap = new Map<string, MaquinaConsolidado>();
     for (const m of maqs ?? []) maqMap.set(m.id as string, m.codigo as MaquinaConsolidado);
 
-    // 2) Muestras en rango + producto
-    const { data: muestras, error: muErr } = await supabase
-      .from("muestras_calidad")
-      .select(
-        "id, turno, hora_muestreo, numero_rollo, observaciones_generales, estado, estatus_liberacion, liberado_con_justificacion, liberacion_justificacion, maquina_id, producto_id, producto:productos(codigo)",
-      )
-      .in("maquina_id", Array.from(maqMap.keys()))
-      .gte("hora_muestreo", startIso)
-      .lt("hora_muestreo", endIso);
-    if (muErr) throw muErr;
+    // 2) Muestras en rango + producto (paginado)
+    const muestras = await fetchAllPaged<any>((from, to) =>
+      supabase
+        .from("muestras_calidad")
+        .select(
+          "id, turno, hora_muestreo, numero_rollo, observaciones_generales, estado, estatus_liberacion, liberado_con_justificacion, liberacion_justificacion, maquina_id, producto_id, producto:productos(codigo)",
+        )
+        .in("maquina_id", Array.from(maqMap.keys()))
+        .gte("hora_muestreo", startIso)
+        .lt("hora_muestreo", endIso)
+        .range(from, to),
+    );
 
-    const muestraIds = (muestras ?? []).map((m) => m.id as string);
+    const muestraIds = muestras.map((m) => m.id as string);
 
-    // 3) Mediciones para esas muestras
+    // 3) Mediciones para esas muestras (paginado en lotes de 200 ids)
     let mediciones: { muestra_id: string; variable_clave: string; valor: number | null }[] = [];
     if (muestraIds.length > 0) {
-      const { data: meds, error: medErr } = await supabase
-        .from("mediciones_calidad")
-        .select("muestra_id, variable_clave, valor")
-        .in("muestra_id", muestraIds);
-      if (medErr) throw medErr;
-      mediciones = (meds ?? []) as typeof mediciones;
+      mediciones = await fetchInChunks<{ muestra_id: string; variable_clave: string; valor: number | null }>(
+        muestraIds,
+        200,
+        (slice, from, to) =>
+          supabase
+            .from("mediciones_calidad")
+            .select("muestra_id, variable_clave, valor")
+            .in("muestra_id", slice)
+            .range(from, to),
+      );
     }
 
     const medByMuestra = new Map<string, Partial<Record<VariableClave, number>>>();
