@@ -232,8 +232,9 @@ export const getReporteNoConforme = createServerFn({ method: "POST" })
       const defectoTxt =
         defs.length > 0
           ? defs.join(", ")
-          : (mu.defecto_visual_conversion as string) || "Dato no disponible";
-      const maquinaCodigo = mu.maquina_id ? (maqById.get(mu.maquina_id) ?? "Dato no disponible") : "Dato no disponible";
+          : (mu.defecto_visual_conversion as string) || "Sin defecto registrado";
+      // Producto y Máquina son obligatorios en captura (NOT NULL); no se requiere fallback de "Dato no disponible"
+      const maquinaCodigo = maqById.get(mu.maquina_id as string) ?? "—";
       const maquinaCorta = maquinaCodigo.startsWith("MP-")
         ? String(parseInt(maquinaCodigo.slice(3), 10))
         : maquinaCodigo;
@@ -244,11 +245,11 @@ export const getReporteNoConforme = createServerFn({ method: "POST" })
         turno: TURNO_LABEL[mu.turno as string] ?? `TURNO ${mu.turno}`,
         turnoNum: mu.turno as "1" | "2" | "3",
         fechaOperativa: opDate,
-        calidad: mu.producto_id ? (prodById.get(mu.producto_id) ?? "Dato no disponible") : "Dato no disponible",
-        rollo: (mu.numero_rollo as string) || "Dato no disponible",
+        calidad: prodById.get(mu.producto_id as string) ?? "—",
+        rollo: (mu.numero_rollo as string) || "—",
         defecto: defectoTxt,
         estatus,
-        hora: horaIso ? localHHmm(horaIso) : "Dato no disponible",
+        hora: horaIso ? localHHmm(horaIso) : "—",
         pb: Number.isFinite(meds.pesoBase) ? meds.pesoBase : null,
         btR457: Number.isFinite(meds.blancuraR457) ? meds.blancuraR457 : null,
         aStar: Number.isFinite(meds.blancuraA) ? meds.blancuraA : null,
@@ -257,7 +258,7 @@ export const getReporteNoConforme = createServerFn({ method: "POST" })
         anchoUtil: Number.isFinite(meds.anchoUtil) ? meds.anchoUtil : null,
         maquina: maquinaCorta,
         maquinaCodigo,
-        destino: (mu.destino as string) || "Dato no disponible",
+        destino: (mu.destino as string) || "Sin destino registrado",
         capturadoAt: (mu.capturado_at as string) ?? null,
         capturadoPorNombre: mu.capturado_por ? (userById.get(mu.capturado_por) ?? null) : null,
         modificadoAt: (mu.mediciones_modificadas_at as string) ?? null,
