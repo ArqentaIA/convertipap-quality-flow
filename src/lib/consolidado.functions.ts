@@ -6,6 +6,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { fetchAllPaged, fetchInChunks } from "@/lib/paginate";
 
 export const MAQUINAS_CONSOLIDADO = ["MP-07", "MP-06", "MP-05", "MP-04"] as const;
 export type MaquinaConsolidado = (typeof MAQUINAS_CONSOLIDADO)[number];
