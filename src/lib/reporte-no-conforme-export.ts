@@ -1,4 +1,4 @@
-// Exportadores XLSX y PDF del reporte NO CONFORME.
+// Exportador XLSX del reporte NO CONFORME.
 import type { NoConformePayload, NoConformeRow } from "./reporte-no-conforme.functions";
 
 const HEADERS = [

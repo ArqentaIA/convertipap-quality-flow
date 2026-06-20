@@ -204,7 +204,7 @@ function ReportesPage() {
 }
 
 // ─────────────────────────────────────────────────────────────────
-// Reporte de Producción — generador de PDF/XLSX con filtros propios
+// Reporte de Producción — generador XLSX con filtros propios
 // ─────────────────────────────────────────────────────────────────
 function ReporteProduccionItem(props: {
 
@@ -361,7 +361,7 @@ function FilterSelect(p: { label: string; value: string; onChange: (v: string) =
 
 
 // ─────────────────────────────────────────────────────────────────
-// Reporte Mensual / Anual — generador de PDF/XLSX (filtros propios)
+// Reporte Mensual / Anual — generador XLSX (filtros propios)
 // ─────────────────────────────────────────────────────────────────
 const MESES_RM = [
   "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
