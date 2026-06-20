@@ -30,7 +30,6 @@ export const VARIABLES_TECNICAS_DIMENSIONALES = [
   "Tensión Húmeda",
   "Stretch",
   "Suavidad",
-  "Otros",
 ] as const;
 
 export const CRITERIOS_DEFECTO = ["MENOR", "MAYOR", "CRÍTICO"] as const;
