@@ -121,6 +121,19 @@ function RootComponent() {
   const router = useRouter();
 
   useEffect(() => {
+    // Redirige el dominio publicado *.lovable.app al dominio personalizado.
+    // Excluye el preview de edición (id-preview--*) para no romper el editor.
+    if (typeof window !== "undefined") {
+      const host = window.location.hostname;
+      const isLovableHost = host.endsWith(".lovable.app");
+      const isPreviewHost = host.startsWith("id-preview--");
+      if (isLovableHost && !isPreviewHost) {
+        const target = `https://www.convertipap.site${window.location.pathname}${window.location.search}${window.location.hash}`;
+        window.location.replace(target);
+        return;
+      }
+    }
+
     const { data: sub } = supabase.auth.onAuthStateChange((event) => {
       if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
       if (event === "SIGNED_OUT") {
