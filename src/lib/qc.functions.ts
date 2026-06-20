@@ -408,7 +408,12 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
         // server-side y el trigger BD `qc_recalc_estatus_muestra`.
         estatus_liberacion: z.enum(["L", "NC", "C"]).nullable().optional(),
         liberado_con_justificacion: z.boolean().default(false),
-        liberacion_justificacion: z.string().trim().max(2000).nullable().optional(),
+        liberacion_justificacion: z
+          .string()
+          .trim()
+          .max(240, "La justificación no puede exceder 240 caracteres.")
+          .nullable()
+          .optional(),
         defectos: z.array(z.string().max(60)).max(20).default([]),
         tipo_muestreo: z.enum(["por_rollo", "por_tiempo"]),
         hora_muestreo: z.string().nullable().optional(),
@@ -485,6 +490,11 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
     if (criticalEval.forzarNC && wantLiberarJustif && justifTrim.length < 10) {
       throw new Error(
         "Para liberar un rollo NO CUMPLE se requiere una justificación de al menos 10 caracteres.",
+      );
+    }
+    if (wantLiberarJustif && justifTrim.length > 240) {
+      throw new Error(
+        "La justificación de liberación no puede exceder 240 caracteres.",
       );
     }
 
