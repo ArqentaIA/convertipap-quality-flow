@@ -517,7 +517,10 @@ export const getReportes = createServerFn({ method: "POST" })
 
         estatus: txt(
           m.liberado_con_justificacion
-            ? "L (c/justif)"
+            ? (typeof m.liberacion_justificacion === "string" &&
+              m.liberacion_justificacion.trim().length > 0
+                ? m.liberacion_justificacion.trim()
+                : "SIN JUSTIFICACIÓN")
             : (m.estatus_liberacion ?? m.dictamen ?? "pendiente"),
         ),
         estatus_muestreo: estatusMuestreo,
