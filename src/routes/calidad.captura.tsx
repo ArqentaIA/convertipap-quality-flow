@@ -1875,8 +1875,15 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
             <AlertDescription className="flex flex-wrap items-center justify-between gap-3">
               <span>
                 Folio <strong className="font-mono">{ultimaEtiqueta.folio}</strong> · estatus{" "}
-                <strong>{ultimaEtiqueta.estatus}</strong>. Imprime la etiqueta de liberación para el
-                rollo.
+                <strong>
+                  {ultimaEtiqueta.estatus === "LIBERADO C/JUSTIF"
+                    ? (ultimaEtiqueta.justificacionLiberacion &&
+                      ultimaEtiqueta.justificacionLiberacion.trim().length > 0
+                        ? ultimaEtiqueta.justificacionLiberacion.trim()
+                        : "SIN JUSTIFICACIÓN")
+                    : ultimaEtiqueta.estatus}
+                </strong>
+                . Imprime la etiqueta de liberación para el rollo.
               </span>
               <div className="flex gap-2">
                 <Button size="sm" variant="ghost" onClick={() => setUltimaEtiqueta(null)}>
