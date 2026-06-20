@@ -1833,22 +1833,43 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
                             <>
                               <Textarea
                                 value={justificacionLib}
-                                onChange={(e) => setJustificacionLib(e.target.value)}
-                                placeholder="Motivo de la liberación (mín. 10 caracteres). Ej.: Cliente acepta variación, lote demostrativo, etc."
+                                onChange={(e) =>
+                                  setJustificacionLib(e.target.value.slice(0, 240))
+                                }
+                                maxLength={240}
+                                placeholder="Motivo de la liberación (mín. 10, máx. 240 caracteres). Ej.: Cliente acepta variación, lote demostrativo, etc."
                                 rows={3}
                                 className="text-sm"
                               />
-                              <p
-                                className={cn(
-                                  "text-[11px]",
-                                  justifValida
-                                    ? "text-emerald-700 dark:text-emerald-300"
-                                    : "text-red-700 dark:text-red-300",
-                                )}
-                              >
-                                {justifTrimmed.length}/10 caracteres mínimos
-                                {justifValida ? " ✓" : ""}
-                              </p>
+                              <div className="flex items-center justify-between gap-2">
+                                <p
+                                  className={cn(
+                                    "text-[11px]",
+                                    justifValida
+                                      ? "text-emerald-700 dark:text-emerald-300"
+                                      : "text-red-700 dark:text-red-300",
+                                  )}
+                                >
+                                  Mínimo 10 caracteres
+                                  {justifValida ? " ✓" : ""}
+                                </p>
+                                <p
+                                  className={cn(
+                                    "text-[11px] tabular-nums",
+                                    justificacionLib.length >= 240
+                                      ? "text-amber-700 dark:text-amber-300 font-semibold"
+                                      : "text-muted-foreground",
+                                  )}
+                                >
+                                  {justificacionLib.length}/240 caracteres
+                                </p>
+                              </div>
+                              {justificacionLib.length >= 240 && (
+                                <p className="text-[11px] text-amber-700 dark:text-amber-300">
+                                  Máximo 240 caracteres para garantizar la correcta
+                                  impresión de la etiqueta.
+                                </p>
+                              )}
                             </>
                           )}
                           {!liberarConJustif && (
