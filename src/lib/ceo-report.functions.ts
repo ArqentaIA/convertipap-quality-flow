@@ -3,6 +3,7 @@
 // =============================================================================
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { fetchAllPaged } from "@/lib/paginate";
 
 export type CEOReportMaquina = {
   codigo: string;
