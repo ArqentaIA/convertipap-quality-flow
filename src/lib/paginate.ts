@@ -19,7 +19,7 @@
 const PAGE = 1000;
 const MAX_PAGES = 500; // tope de seguridad (≤500k filas por llamada)
 
-type PagedResp<T> = Promise<{ data: T[] | null; error: { message: string } | null }>;
+type PagedResp<T> = PromiseLike<{ data: T[] | null; error: { message: string } | null }>;
 
 /** Itera .range() sobre un único builder hasta agotar resultados. */
 export async function fetchAllPaged<T>(
