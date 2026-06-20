@@ -1,35 +1,7 @@
 // =====================================================================
-// Exportación PDF / XLSX — Reporte Mensual / Anual
-// Estilo industrial premium, alineado con identidad Convertipap.
+// Exportación XLSX — Reporte Mensual / Anual
 // =====================================================================
-import logoUrl from "@/assets/logo-convertipap.png";
 import type { ReporteMensualPayload } from "./reporte-mensual.functions";
-
-const EMPRESA = {
-  nombre: "ConvertiPap S.A. de C.V.",
-  planta: "Planta Tlaxcala",
-  sistema: "ConvertiPap QMS · v1.0",
-};
-
-const fmt = (n: number) => n.toLocaleString("es-MX");
-const fmtKg = (n: number) =>
-  n.toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const fmtPct = (n: number | null) => (n == null ? "—" : `${n.toFixed(1)}%`);
-
-async function urlToDataURL(url: string): Promise<string | null> {
-  try {
-    const res = await fetch(url);
-    const blob = await res.blob();
-    return await new Promise((resolve) => {
-      const r = new FileReader();
-      r.onloadend = () => resolve(typeof r.result === "string" ? r.result : null);
-      r.onerror = () => resolve(null);
-      r.readAsDataURL(blob);
-    });
-  } catch {
-    return null;
-  }
-}
 
 function buildFileName(base: string) {
   const safe = base.replace(/[^a-z0-9]+/gi, "_").replace(/^_|_$/g, "").toLowerCase();
@@ -41,6 +13,8 @@ function buildFileName(base: string) {
 export type ExportCtx = {
   usuario: string;
 };
+
+
 
 
 export async function exportReporteMensualXLSX(

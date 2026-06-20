@@ -1,14 +1,14 @@
 // =====================================================================
-// Reporte de Producción — exportación a PDF y XLSX
+// Reporte de Producción — exportación a XLSX
 // Datos provenientes exclusivamente de la BD (getProduccionCentro).
 // Sin IA, sin simulaciones. Si no hay datos: "—" o "Sin datos disponibles".
 // =====================================================================
-import logoUrl from "@/assets/logo-convertipap.png";
 import { formatCaptura } from "@/lib/format";
 import type { CentroProduccionPayload, TablaRow } from "@/lib/produccion-centro.functions";
 
 const DASH = "—";
 const SIN_DATOS = "Sin datos disponibles";
+
 
 export type ReporteProdFiltros = {
   turno?: string;

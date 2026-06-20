@@ -1,23 +1,10 @@
 // =====================================================================
-// Exportación PDF / XLSX — Reporte de Turno
-// Reutiliza estilo visual de Reporte de Producción / Reporte Mensual.
+// Exportación XLSX — Reporte de Turno
 // Toda la información proviene del payload (BD productiva).
 // =====================================================================
-import logoUrl from "@/assets/logo-convertipap.png";
 import type { CentroProduccionPayload, TablaRow } from "./produccion-centro.functions";
 
-const EMPRESA = {
-  nombre: "ConvertiPap S.A. de C.V.",
-  planta: "Planta Tlaxcala",
-  sistema: "ConvertiPap QMS · v1.0",
-};
 
-const fmt = (n: number) => n.toLocaleString("es-MX");
-const fmtKg = (n: number) =>
-  n.toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const fmtPct = (n: number | null) => (n == null ? "—" : `${n.toFixed(1)}%`);
-const dash = (v: string | number | null | undefined) =>
-  v === null || v === undefined || v === "" ? "—" : String(v);
 
 const TURNO_LABEL: Record<string, string> = {
   "1": "1er Turno",
