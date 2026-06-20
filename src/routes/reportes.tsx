@@ -3,18 +3,16 @@ import { useMemo, useState } from "react";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { SessionGate } from "@/components/SessionGate";
-import { Download, FileSpreadsheet, TrendingUp, TrendingDown, CalendarRange } from "lucide-react";
-import logoUrl from "@/assets/logo-convertipap.png";
+import { FileSpreadsheet, TrendingUp, TrendingDown, CalendarRange } from "lucide-react";
 import { RangoSelector, MESES, rangoLabel, rangoToFreq, type Rango } from "@/components/qc/RangoSelector";
 import { useLabFilter, LAB_LABEL } from "@/lib/lab";
 import { getReportes } from "@/lib/reportes.functions";
 import { useAuth } from "@/lib/auth";
 import { getProduccionCentro } from "@/lib/produccion-centro.functions";
-import { exportProduccionPDF, exportProduccionXLSX } from "@/lib/produccion-centro-export";
+import { exportProduccionXLSX } from "@/lib/produccion-centro-export";
 import { getReporteMensual } from "@/lib/reporte-mensual.functions";
-import { exportReporteMensualPDF, exportReporteMensualXLSX } from "@/lib/reporte-mensual-export";
+import { exportReporteMensualXLSX } from "@/lib/reporte-mensual-export";
 import {
-  exportReporteTurnoPDF,
   exportReporteTurnoXLSX,
   filterCentroByTurnoFecha,
 } from "@/lib/reporte-turno-export";
@@ -55,20 +53,9 @@ const FILTER_PANEL_CLS =
   "mt-4 flex flex-col gap-2 rounded-xl border border-sky-200/70 bg-white/75 p-3.5 shadow-sm backdrop-blur-sm ring-1 ring-white/60";
 const FILTER_LABEL_CLS =
   "text-[10px] font-semibold uppercase tracking-[0.12em] text-blue-700/80";
-const PDF_BTN_CLS =
-  "inline-flex items-center gap-2 rounded-lg border border-[#DC2626]/30 bg-gradient-to-b from-[#DC2626]/10 to-[#DC2626]/5 px-3.5 py-1.5 text-xs font-semibold text-[#DC2626] shadow-sm transition-all hover:from-[#DC2626]/20 hover:to-[#DC2626]/10 hover:shadow-md active:scale-[0.98] disabled:opacity-50";
 const XLSX_BTN_CLS =
   "inline-flex items-center gap-2 rounded-lg border border-[#16A34A]/30 bg-gradient-to-b from-[#16A34A]/10 to-[#16A34A]/5 px-3.5 py-1.5 text-xs font-semibold text-[#16A34A] shadow-sm transition-all hover:from-[#16A34A]/20 hover:to-[#16A34A]/10 hover:shadow-md active:scale-[0.98] disabled:opacity-50";
 
-
-const META_EMPRESA = {
-  empresa: "ConvertiPap S.A. de C.V.",
-  planta: "Planta Tlaxcala",
-  direccion: "Parque Industrial Xicohténcatl, Tlaxcala, México",
-  responsable: "Ing. Jonatan Alberto Pelaez · Gerente de Calidad",
-  operador: "Carlos Ramírez · Supervisor de turno",
-  sistema: "ConvertiPap QMS · v1.0",
-};
 
 // Convierte (rango, mesesSel) a un par ISO start/end.
 function computeWindow(rango: Rango, mesesSel: number[]): { start: string; end: string } {
@@ -131,148 +118,7 @@ function buildFileName(nombre: string) {
   return `${safe}_${fecha}_${hora}`;
 }
 
-async function urlToDataURL(url: string): Promise<string | null> {
-  try {
-    const res = await fetch(url);
-    const blob = await res.blob();
-    return await new Promise((resolve) => {
-      const r = new FileReader();
-      r.onloadend = () => resolve(typeof r.result === "string" ? r.result : null);
-      r.onerror = () => resolve(null);
-      r.readAsDataURL(blob);
-    });
-  } catch {
-    return null;
-  }
-}
 
-async function descargarPDF(
-  nombre: string,
-  freq: string,
-  hojas: { sheet: string; rows: Record<string, string | number>[] }[],
-) {
-  const [{ default: jsPDF }, autoTableMod] = await Promise.all([
-    import("jspdf"),
-    import("jspdf-autotable"),
-  ]);
-  const autoTable = (autoTableMod as { default: (doc: unknown, opts: unknown) => void }).default;
-
-  const doc = new jsPDF({ unit: "pt", format: "letter" });
-  const pageW = doc.internal.pageSize.getWidth();
-  const pageH = doc.internal.pageSize.getHeight();
-  const M = 40;
-
-  const logoData = await urlToDataURL(logoUrl);
-  if (logoData) {
-    try { doc.addImage(logoData, "PNG", M, M, 90, 36); } catch { /* logo opcional */ }
-  }
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(14);
-  doc.setTextColor(20, 20, 30);
-  doc.text(META_EMPRESA.empresa, pageW - M, M + 14, { align: "right" });
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  doc.setTextColor(110);
-  doc.text(META_EMPRESA.planta, pageW - M, M + 28, { align: "right" });
-  doc.text(META_EMPRESA.direccion, pageW - M, M + 40, { align: "right" });
-
-  doc.setDrawColor(220);
-  doc.setLineWidth(0.6);
-  doc.line(M, M + 56, pageW - M, M + 56);
-
-  doc.setTextColor(20, 20, 30);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(18);
-  doc.text(nombre, M, M + 84);
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-  doc.setTextColor(110);
-  const fechaGen = new Date().toLocaleString("es-MX", { dateStyle: "long", timeStyle: "short" });
-  doc.text(`Reporte ${freq.toLowerCase()} · Generado: ${fechaGen}`, M, M + 100);
-
-  autoTable(doc, {
-    startY: M + 120,
-    theme: "plain",
-    styles: { fontSize: 9, cellPadding: 4, textColor: [40, 40, 50] },
-    columnStyles: {
-      0: { fontStyle: "bold", textColor: [90, 90, 110], cellWidth: 110 },
-      1: { cellWidth: (pageW - M * 2) / 2 - 110 },
-      2: { fontStyle: "bold", textColor: [90, 90, 110], cellWidth: 110 },
-      3: { cellWidth: (pageW - M * 2) / 2 - 110 },
-    },
-    body: [
-      ["Responsable", META_EMPRESA.responsable, "Operador", META_EMPRESA.operador],
-      ["Planta", META_EMPRESA.planta, "Sistema origen", META_EMPRESA.sistema],
-      ["Frecuencia", freq, "Folio", `RPT-${Date.now().toString().slice(-8)}`],
-    ],
-  });
-
-  const lastY1 = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY;
-  doc.setFillColor(245, 247, 251);
-  doc.rect(M, lastY1 + 16, pageW - M * 2, 60, "F");
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(10);
-  doc.setTextColor(60, 80, 140);
-  doc.text("Resumen ejecutivo", M + 12, lastY1 + 34);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  doc.setTextColor(60);
-  const resumen = doc.splitTextToSize(
-    `Este reporte presenta los indicadores clave de "${nombre}" para la ${META_EMPRESA.planta}. ` +
-      `Los datos provienen del sistema ${META_EMPRESA.sistema} y han sido validados por el área de calidad. ` +
-      `Use el archivo XLSX adjunto para análisis detallado en base de datos.`,
-    pageW - M * 2 - 24,
-  );
-  doc.text(resumen, M + 12, lastY1 + 48);
-
-  let cursorY = lastY1 + 96;
-  for (const h of hojas) {
-    if (cursorY > pageH - 120) { doc.addPage(); cursorY = M; }
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(11);
-    doc.setTextColor(20, 20, 30);
-    doc.text(h.sheet, M, cursorY);
-
-    const cols = h.rows.length ? Object.keys(h.rows[0]) : ["—"];
-    const head = [cols.map((c) => c.replace(/_/g, " ").replace(/\b\w/g, (m) => m.toUpperCase()))];
-    const body = h.rows.map((row) => cols.map((c) => String(row[c] ?? "")));
-
-    autoTable(doc, {
-      startY: cursorY + 8,
-      head,
-      body: body.length ? body : [["Sin datos"]],
-      styles: { fontSize: 8.5, cellPadding: 5 },
-      headStyles: { fillColor: [60, 80, 140], textColor: 255, fontStyle: "bold" },
-      alternateRowStyles: { fillColor: [248, 250, 253] },
-      margin: { left: M, right: M },
-    });
-    cursorY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 20;
-  }
-
-  const total = doc.getNumberOfPages();
-  for (let i = 1; i <= total; i++) {
-    doc.setPage(i);
-    doc.setDrawColor(220);
-    doc.line(M, pageH - 40, pageW - M, pageH - 40);
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(8);
-    doc.setTextColor(130);
-    doc.text(`${META_EMPRESA.empresa} · Documento confidencial`, M, pageH - 24);
-    doc.text(`Página ${i} de ${total}`, pageW - M, pageH - 24, { align: "right" });
-  }
-
-  doc.save(`${buildFileName(nombre)}.pdf`);
-}
-
-const REPORTES: { nombre: string; xlsxOnly?: boolean; xlsxDataset?: string; descripcion: string }[] = [
-  { nombre: "Detalle de no conformidades", descripcion: "PDF ejecutivo + XLSX para BD" },
-  { nombre: "Tendencia de variables críticas", descripcion: "PDF ejecutivo + XLSX para BD" },
-  { nombre: "Costo de No Calidad", xlsxDataset: "Costo de No Calidad (detalle)", descripcion: "PDF con detalle general · XLSX con 14 variables + personal" },
-  { nombre: "Reporte General", xlsxOnly: true, descripcion: "Todos los rollos producidos del periodo con sus 14 variables (solo XLSX)" },
-];
 
 function ReportesPage() {
   const auth = useAuth();
@@ -378,7 +224,7 @@ function ReporteProduccionItem(props: {
   const [maquina, setMaquina] = useState("");
   const [producto, setProducto] = useState("");
   const [estado, setEstado] = useState("");
-  const [busy, setBusy] = useState<"pdf" | "xlsx" | null>(null);
+  const [busy, setBusy] = useState<"xlsx" | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // Carga datos para poblar filtros (máquinas, productos, turnos) y exportar.
@@ -414,12 +260,11 @@ function ReporteProduccionItem(props: {
     [freq, periodo, usuario, turno, maquina, producto, estado],
   );
 
-  const handle = async (kind: "pdf" | "xlsx") => {
+  const handle = async (kind: "xlsx") => {
     if (!data) return;
     setBusy(kind); setError(null);
     try {
-      if (kind === "pdf") await exportProduccionPDF(data, ctx);
-      else await exportProduccionXLSX(data, ctx);
+      await exportProduccionXLSX(data, ctx);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -445,7 +290,7 @@ function ReporteProduccionItem(props: {
           <div>
             <div className="text-sm font-bold text-foreground">Reporte de Producción</div>
             <p className="mt-1 text-[11px] text-muted-foreground">
-              Genera reporte ejecutivo (PDF) o detallado (XLSX) del periodo seleccionado, con filtros por turno, máquina, producto y estado de calidad.
+              Genera reporte detallado XLSX del periodo seleccionado, con filtros por turno, máquina, producto y estado de calidad.
             </p>
             <p className="mt-1 text-[11px] text-muted-foreground">
               Periodo: <span className="font-medium">{periodo}</span> · {freq}
@@ -483,14 +328,6 @@ function ReporteProduccionItem(props: {
           {error && <span className="ml-2 text-destructive">· {error}</span>}
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => handle("pdf")}
-            disabled={!data || busy !== null}
-            className={PDF_BTN_CLS}
-            title="Descargar reporte ejecutivo PDF"
-          >
-            <Download className="h-3.5 w-3.5" /> {busy === "pdf" ? "Generando…" : "PDF"}
-          </button>
           <button
             onClick={() => handle("xlsx")}
             disabled={!data || busy !== null}
@@ -535,7 +372,7 @@ function ReporteMensualItem({ usuario, enabled }: { usuario: string; enabled: bo
   const now = new Date();
   const [year, setYear] = useState<number>(now.getFullYear());
   const [month, setMonth] = useState<number | "">("");
-  const [busy, setBusy] = useState<"pdf" | "xlsx" | null>(null);
+  const [busy, setBusy] = useState<"xlsx" | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const modo: "anual" | "mensual" = month === "" ? "anual" : "mensual";
@@ -556,12 +393,11 @@ function ReporteMensualItem({ usuario, enabled }: { usuario: string; enabled: bo
     return arr;
   }, [now]);
 
-  const handle = async (kind: "pdf" | "xlsx") => {
+  const handle = async (kind: "xlsx") => {
     if (!data) return;
     setBusy(kind); setError(null);
     try {
-      if (kind === "pdf") await exportReporteMensualPDF(data, { usuario });
-      else await exportReporteMensualXLSX(data, { usuario });
+      await exportReporteMensualXLSX(data, { usuario });
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -617,14 +453,6 @@ function ReporteMensualItem({ usuario, enabled }: { usuario: string; enabled: bo
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => handle("pdf")}
-            disabled={!data || busy !== null}
-            className={PDF_BTN_CLS}
-            title="Descargar reporte ejecutivo PDF"
-          >
-            <Download className="h-3.5 w-3.5" /> {busy === "pdf" ? "Generando…" : "PDF"}
-          </button>
-          <button
             onClick={() => handle("xlsx")}
             disabled={!data || busy !== null}
             className={XLSX_BTN_CLS}
@@ -656,7 +484,7 @@ function ReporteTurnoItem({ usuario, enabled }: { usuario: string; enabled: bool
   const [fecha, setFecha] = useState<string>(todayISO);
   const [turno, setTurno] = useState<string>("1");
   const [consultaKey, setConsultaKey] = useState<{ fecha: string; turno: string } | null>(null);
-  const [busy, setBusy] = useState<"pdf" | "xlsx" | null>(null);
+  const [busy, setBusy] = useState<"xlsx" | null>(null);
   const [error, setError] = useState<string | null>(null);
   
 
@@ -680,12 +508,11 @@ function ReporteTurnoItem({ usuario, enabled }: { usuario: string; enabled: bool
 
   const ctx = consultaKey ? { fecha: consultaKey.fecha, turno: consultaKey.turno, usuario } : null;
 
-  const handle = async (kind: "pdf" | "xlsx") => {
+  const handle = async (kind: "xlsx") => {
     if (!filtered || !ctx) return;
     setBusy(kind); setError(null);
     try {
-      if (kind === "pdf") await exportReporteTurnoPDF(filtered, ctx);
-      else await exportReporteTurnoXLSX(filtered, ctx);
+      await exportReporteTurnoXLSX(filtered, ctx);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -752,14 +579,6 @@ function ReporteTurnoItem({ usuario, enabled }: { usuario: string; enabled: bool
           {error && <span className="ml-2 text-destructive">· {error}</span>}
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => handle("pdf")}
-            disabled={!filtered || busy !== null}
-            className={PDF_BTN_CLS}
-            title="Exportar PDF"
-          >
-            <Download className="h-3.5 w-3.5" /> {busy === "pdf" ? "Generando…" : "PDF"}
-          </button>
           <button
             onClick={() => handle("xlsx")}
             disabled={!filtered || busy !== null}
