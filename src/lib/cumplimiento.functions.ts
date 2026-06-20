@@ -51,19 +51,33 @@ export const getCumplimientoIndicador = createServerFn({ method: "GET" })
   .inputValidator((input: z.infer<typeof inputSchema>) => inputSchema.parse(input))
   .handler(async ({ data, context }) => {
     const sb = context.supabase;
-    let q = sb
-      .from("muestras_calidad")
-      .select("id, estatus_liberacion", { count: "exact" })
-      .gte("capturado_at", data.from)
-      .lte("capturado_at", data.to);
-    if (data.maquina_id) q = q.eq("maquina_id", data.maquina_id);
-    if (data.turno) q = q.eq("turno", data.turno);
+    // Paginación: PostgREST limita a 1000 filas por respuesta. Recorremos
+    // todas las páginas para que `capturados` refleje el total real, no el
+    // length truncado de la primera página.
+    const PAGE = 1000;
+    let from = 0;
+    const rows: { id: string; estatus_liberacion: string | null }[] = [];
+    let totalCount: number | null = null;
+    for (let p = 0; p < 100; p++) {
+      let q = sb
+        .from("muestras_calidad")
+        .select("id, estatus_liberacion", { count: "exact" })
+        .gte("capturado_at", data.from)
+        .lte("capturado_at", data.to)
+        .range(from, from + PAGE - 1);
+      if (data.maquina_id) q = q.eq("maquina_id", data.maquina_id);
+      if (data.turno) q = q.eq("turno", data.turno);
+      const { data: page, error, count } = await q;
+      if (error) throw new Error(error.message);
+      if (totalCount === null) totalCount = count ?? null;
+      const chunk = (page ?? []) as typeof rows;
+      rows.push(...chunk);
+      if (chunk.length < PAGE) break;
+      from += PAGE;
+    }
 
-    const { data: rows, error } = await q;
-    if (error) throw new Error(error.message);
-
-    const capturados = rows?.length ?? 0;
-    const liberados = (rows ?? []).filter(
+    const capturados = totalCount ?? rows.length;
+    const liberados = rows.filter(
       (r) => r.estatus_liberacion === "L" || r.estatus_liberacion === "C",
     ).length;
     const pct = capturados > 0 ? (liberados / capturados) * 100 : 0;
