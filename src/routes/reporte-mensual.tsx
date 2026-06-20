@@ -3,10 +3,10 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { SessionGate } from "@/components/SessionGate";
-import { Download, FileSpreadsheet, CalendarRange, AlertTriangle, Eye, X } from "lucide-react";
+import { FileSpreadsheet, CalendarRange, AlertTriangle, Eye, X } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { getReporteMensual, type ReporteMensualPayload } from "@/lib/reporte-mensual.functions";
-import { exportReporteMensualPDF, exportReporteMensualXLSX } from "@/lib/reporte-mensual-export";
+import { exportReporteMensualXLSX } from "@/lib/reporte-mensual-export";
 
 export const Route = createFileRoute("/reporte-mensual")({
   component: Gate,
@@ -45,7 +45,7 @@ function ReporteMensualPage() {
   const now = new Date();
   const [year, setYear] = useState<number>(now.getFullYear());
   const [month, setMonth] = useState<number | "">("");
-  const [busy, setBusy] = useState<"pdf" | "xlsx" | null>(null);
+  const [busy, setBusy] = useState<"xlsx" | null>(null);
   const [showTrace, setShowTrace] = useState(false);
 
   const modo: "anual" | "mensual" = month === "" ? "anual" : "mensual";
@@ -62,12 +62,11 @@ function ReporteMensualPage() {
   const data: ReporteMensualPayload | undefined = query.data;
   const usuario = auth.profile?.nombre ?? auth.user?.email ?? "—";
 
-  const handleExport = async (kind: "pdf" | "xlsx") => {
+  const handleExport = async () => {
     if (!data) return;
-    setBusy(kind);
+    setBusy("xlsx");
     try {
-      if (kind === "pdf") await exportReporteMensualPDF(data, { usuario });
-      else await exportReporteMensualXLSX(data, { usuario });
+      await exportReporteMensualXLSX(data, { usuario });
     } finally {
       setBusy(null);
     }
@@ -120,14 +119,7 @@ function ReporteMensualPage() {
                 </select>
               </div>
               <button
-                onClick={() => handleExport("pdf")}
-                disabled={!data || busy !== null}
-                className="inline-flex items-center gap-2 rounded-md border border-white/30 bg-white/10 px-3 py-2 text-xs font-semibold backdrop-blur hover:bg-white/20 disabled:opacity-50"
-              >
-                <Download className="h-3.5 w-3.5" /> {busy === "pdf" ? "Generando…" : "PDF"}
-              </button>
-              <button
-                onClick={() => handleExport("xlsx")}
+                onClick={handleExport}
                 disabled={!data || busy !== null}
                 className="inline-flex items-center gap-2 rounded-md border border-emerald-300/40 bg-emerald-400/20 px-3 py-2 text-xs font-semibold text-emerald-100 hover:bg-emerald-400/30 disabled:opacity-50"
               >
