@@ -262,6 +262,18 @@ function buildHtml(data: EtiquetaData, qrDataUrl: string, logoDataUrl: string): 
         <div class="obs-title">Comentarios</div>
         <div class="comentarios">${esc(data.observacionesGenerales || "—")}</div>
         ${
+          data.estatus === "LIBERADO C/JUSTIF"
+            ? (() => {
+                const j = (data.justificacionLiberacion ?? "").trim();
+                const texto = j.length > 0 ? j : "SIN JUSTIFICACIÓN";
+                return `<div style="margin-top:8px;padding:6px 8px;border-left:3px solid #ca8a04;background:#fef9c3;border-radius:4px;font-size:10px;line-height:1.4;word-wrap:break-word;overflow-wrap:anywhere">
+                 <div style="font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#854d0e;font-size:8.5px;margin-bottom:3px">Justificación de Liberación · Capturista</div>
+                 <div style="color:#1e293b;white-space:pre-wrap">${esc(texto)}</div>
+               </div>`;
+              })()
+            : ""
+        }
+        ${
           data.autorizacion
             ? `<div style="margin-top:8px;padding:6px 8px;border-left:3px solid #b45309;background:#fffbeb;border-radius:4px;font-size:9.5px;line-height:1.35">
                  <div style="font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#92400e;font-size:8.5px;margin-bottom:3px">Justificación · Gerente de Calidad</div>
