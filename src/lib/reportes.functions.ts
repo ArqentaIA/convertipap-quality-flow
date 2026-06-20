@@ -508,7 +508,6 @@ export const getReportes = createServerFn({ method: "POST" })
         tipo_codigo: txt(tipo?.codigo),
         codigo_producto: txt(producto?.codigo),
 
-        gramaje: num(producto?.gramaje),
         rollo: txt(m.numero_rollo),
         operador: txt(m.operador),
         jefe_maquina: txt(m.jefe_maquina),
@@ -523,7 +522,6 @@ export const getReportes = createServerFn({ method: "POST" })
                 : "SIN JUSTIFICACIÓN")
             : (m.estatus_liberacion ?? m.dictamen ?? "pendiente"),
         ),
-        estatus_muestreo: estatusMuestreo,
       };
       for (const clave of clavesOrden) {
         const etiqueta = etiquetaPorClave.get(clave) ?? clave;
