@@ -19,7 +19,7 @@ const HEADERS = [
   "DESTINO",
 ] as const;
 
-const NA = "Dato no disponible";
+const NA = "Sin medición";
 const fmt = (v: number | null | undefined) => (v === null || v === undefined ? NA : v);
 
 function rowToArr(r: NoConformeRow): (string | number)[] {
