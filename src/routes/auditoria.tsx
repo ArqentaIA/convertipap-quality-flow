@@ -115,27 +115,34 @@ function AuditoriaPage() {
   });
 
   const exportarCSV = async () => {
-    // Re-fetch all matching rows (cap at 5000 for safety)
-    let q = supabase
-      .from("audit_log" as never)
-      .select("*")
-      .order("timestamp", { ascending: false })
-      .limit(5000);
+    // Exporta TODO el resultado filtrado, paginando por bloques de 1000
+    // para evitar el límite por defecto de PostgREST.
     const dIso = toISO(desde, false);
     const hIso = toISO(hasta, true);
-    if (dIso) q = q.gte("timestamp", dIso);
-    if (hIso) q = q.lte("timestamp", hIso);
-    if (emailFilter.trim()) q = q.ilike("usuario_email", `%${emailFilter.trim()}%`);
-    if (modulo.trim()) q = q.ilike("modulo", `%${modulo.trim()}%`);
-    if (operacion) q = q.eq("operacion", operacion);
-    q = q.or("rol.is.null,rol.neq.administrador");
-    const { data, error } = await q;
-    if (error) { alert(error.message); return; }
-    const rows = (data ?? []) as unknown as AuditRow[];
-    downloadCSV(rows);
-    void auditAction("auditoria", `Exportación CSV (${rows.length} registros)`, null, {
-      desde, hasta, emailFilter, modulo, operacion, total: rows.length,
-    });
+    try {
+      const rows = await fetchAllPaged<AuditRow>((from, to) => {
+        let q = supabase
+          .from("audit_log" as never)
+          .select("*")
+          .order("timestamp", { ascending: false });
+        if (dIso) q = q.gte("timestamp", dIso);
+        if (hIso) q = q.lte("timestamp", hIso);
+        if (emailFilter.trim()) q = q.ilike("usuario_email", `%${emailFilter.trim()}%`);
+        if (modulo.trim()) q = q.ilike("modulo", `%${modulo.trim()}%`);
+        if (operacion) q = q.eq("operacion", operacion);
+        q = q.or("rol.is.null,rol.neq.administrador");
+        return q.range(from, to) as unknown as PromiseLike<{
+          data: AuditRow[] | null;
+          error: { message: string } | null;
+        }>;
+      });
+      downloadCSV(rows);
+      void auditAction("auditoria", `Exportación CSV (${rows.length} registros)`, null, {
+        desde, hasta, emailFilter, modulo, operacion, total: rows.length,
+      });
+    } catch (e) {
+      alert((e as Error).message);
+    }
   };
 
   const total = query.data?.count ?? 0;
