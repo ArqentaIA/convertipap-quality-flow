@@ -60,43 +60,53 @@ export const getCEOReport = createServerFn({ method: "GET" })
     const startIso = start.toISOString();
     const endIso = end.toISOString();
 
-    const [
-      { data: maquinas },
-      { data: estados },
-      { data: muestras },
-      { data: mediciones },
-      { data: rollosProd },
-      { data: ordenes },
-      { data: paros },
-    ] = await Promise.all([
-      sb.from("maquinas").select("id, codigo, plantas(nombre)").eq("activo", true).order("codigo"),
-      sb.from("maquina_estado_actual").select("maquina_id, estado"),
-      sb
-        .from("muestras_calidad")
-        .select(
-          "id, maquina_id, planta_id, hora_muestreo, numero_rollo, turno, dictamen, estatus_liberacion, liberado_con_justificacion, defectos, productos(codigo), maquinas(codigo)",
-        )
-        .gte("hora_muestreo", startIso)
-        .lte("hora_muestreo", endIso)
-        .order("hora_muestreo", { ascending: false }),
-      sb
-        .from("mediciones_calidad")
-        .select("muestra_id, variable_clave, valor, estado")
-        .gte("created_at", startIso)
-        .lte("created_at", endIso),
-
-      sb
-        .from("rollos_producidos")
-        .select("id, orden_id, peso_kg, registrado_at")
-        .gte("registrado_at", startIso)
-        .lte("registrado_at", endIso),
-      sb.from("ordenes_fabricacion").select("id, maquina_id"),
-      sb
-        .from("paros_maquina")
-        .select("maquina_id, inicio, fin, duracion_min")
-        .gte("inicio", startIso)
-        .lte("inicio", endIso),
-    ]);
+    const [maquinas, estados, muestras, mediciones, rollosProd, ordenes, paros] =
+      await Promise.all([
+        fetchAllPaged<any>((from, to) =>
+          sb.from("maquinas").select("id, codigo, plantas(nombre)").eq("activo", true).order("codigo").range(from, to),
+        ),
+        fetchAllPaged<any>((from, to) =>
+          sb.from("maquina_estado_actual").select("maquina_id, estado").range(from, to),
+        ),
+        fetchAllPaged<any>((from, to) =>
+          sb
+            .from("muestras_calidad")
+            .select(
+              "id, maquina_id, planta_id, hora_muestreo, numero_rollo, turno, dictamen, estatus_liberacion, liberado_con_justificacion, defectos, productos(codigo), maquinas(codigo)",
+            )
+            .gte("hora_muestreo", startIso)
+            .lte("hora_muestreo", endIso)
+            .order("hora_muestreo", { ascending: false })
+            .range(from, to),
+        ),
+        fetchAllPaged<any>((from, to) =>
+          sb
+            .from("mediciones_calidad")
+            .select("muestra_id, variable_clave, valor, estado")
+            .gte("created_at", startIso)
+            .lte("created_at", endIso)
+            .range(from, to),
+        ),
+        fetchAllPaged<any>((from, to) =>
+          sb
+            .from("rollos_producidos")
+            .select("id, orden_id, peso_kg, registrado_at")
+            .gte("registrado_at", startIso)
+            .lte("registrado_at", endIso)
+            .range(from, to),
+        ),
+        fetchAllPaged<any>((from, to) =>
+          sb.from("ordenes_fabricacion").select("id, maquina_id").range(from, to),
+        ),
+        fetchAllPaged<any>((from, to) =>
+          sb
+            .from("paros_maquina")
+            .select("maquina_id, inicio, fin, duracion_min")
+            .gte("inicio", startIso)
+            .lte("inicio", endIso)
+            .range(from, to),
+        ),
+      ]);
 
     const codigoById = new Map((maquinas ?? []).map((m: any) => [m.id, m.codigo]));
     const plantaById = new Map(
