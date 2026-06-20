@@ -109,20 +109,6 @@ export function filterCentroByTurnoFecha(
   return { rows, ultimaActualizacion: payload.ultimaActualizacion };
 }
 
-async function urlToDataURL(url: string): Promise<string | null> {
-  try {
-    const res = await fetch(url);
-    const blob = await res.blob();
-    return await new Promise((resolve) => {
-      const r = new FileReader();
-      r.onloadend = () => resolve(typeof r.result === "string" ? r.result : null);
-      r.onerror = () => resolve(null);
-      r.readAsDataURL(blob);
-    });
-  } catch {
-    return null;
-  }
-}
 
 function buildFileName(base: string, ctx: ReporteTurnoCtx) {
   const safe = base.replace(/[^a-z0-9]+/gi, "_").replace(/^_|_$/g, "").toLowerCase();

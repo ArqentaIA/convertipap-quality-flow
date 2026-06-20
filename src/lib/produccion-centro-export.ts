@@ -88,20 +88,6 @@ function stamp() {
   return new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
 }
 
-async function urlToDataURL(url: string): Promise<string | null> {
-  try {
-    const res = await fetch(url);
-    const blob = await res.blob();
-    return await new Promise((resolve) => {
-      const r = new FileReader();
-      r.onloadend = () => resolve(typeof r.result === "string" ? r.result : null);
-      r.onerror = () => resolve(null);
-      r.readAsDataURL(blob);
-    });
-  } catch {
-    return null;
-  }
-}
 
 // ────────────────────────────── XLSX ──────────────────────────────
 export async function exportProduccionXLSX(
