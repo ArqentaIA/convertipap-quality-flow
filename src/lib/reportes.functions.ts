@@ -566,7 +566,7 @@ export const getReportes = createServerFn({ method: "POST" })
           row[etiqueta] = "No aplica";
         }
       }
-      row["Justificacion_usuario"] = m.fuera_de_turno ? txt(m.fuera_de_turno_motivo) : SIN_INFO;
+      row["motivo_captura_fuera_turno"] = m.fuera_de_turno ? txt(m.fuera_de_turno_motivo) : SIN_INFO;
       row["capturado_fuera_de_tiempo"] = m.fuera_de_turno ? "Sí" : "No";
       return row;
     });
