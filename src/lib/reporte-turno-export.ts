@@ -3,6 +3,8 @@
 // Toda la información proviene del payload (BD productiva).
 // =====================================================================
 import type { CentroProduccionPayload, TablaRow } from "./produccion-centro.functions";
+import { fechaHoraMX } from "./format";
+
 
 
 
