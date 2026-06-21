@@ -255,10 +255,6 @@ function buildHtml(data: EtiquetaData, qrDataUrl: string, logoDataUrl: string): 
 
     <div class="obs-block">
       <div>
-        <div class="obs-title">Observaciones</div>
-        ${obsHtml}
-      </div>
-      <div>
         <div class="obs-title">Comentarios</div>
         <div class="comentarios">${esc(data.observacionesGenerales || "—")}</div>
         ${
