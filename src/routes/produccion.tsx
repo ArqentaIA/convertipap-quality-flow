@@ -124,14 +124,6 @@ function ProduccionPage() {
           </span>
         </div>
 
-        {/* KPIs ejecutivos */}
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
-          <KPI icon={Package} label="Producción total (kg)" value={fmtNum(kgTotal)} tone="primary" />
-          <KPI icon={BarChart3} label="Rollos producidos" value={fmtNum(rollosTotal)} />
-          <KPI icon={Gauge} label="OEE global" value={`${oeeProm}${oeeProm === "—" ? "" : "%"}`} tone="success" />
-          <KPI icon={Factory} label="Máquinas activas" value={`${activos} / ${maquinas.length}`} tone="primary" />
-          <KPI icon={AlertTriangle} label="Máquinas en paro" value={String(enParo)} tone={enParo > 0 ? "warning" : "default"} />
-        </div>
 
         {maquinas.length === 0 ? (
           <EmptyState />
