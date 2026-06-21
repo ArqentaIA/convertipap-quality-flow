@@ -146,8 +146,11 @@ export const getReporteProduccionMes = createServerFn({ method: "POST" })
     for (const d of dias) diasDetalle[d] = { turnos: [] };
     for (const p of pairs) diasDetalle[p.opDate].turnos.push(p.turno);
 
-    // Ventana amplia para query: desde inicio del mes (MX) hasta now+1día
-    const winStart = localToUtc(year, month, 1, 0);
+    // Ventana amplia para query: desde inicio del último día del mes anterior (MX) hasta now+1día
+    const prevMonth = month === 1 ? 12 : month - 1;
+    const prevYear = month === 1 ? year - 1 : year;
+    const lastPrev = daysInMonth(prevYear, prevMonth);
+    const winStart = localToUtc(prevYear, prevMonth, lastPrev, 0);
     const winEnd = new Date(now.getTime() + 24 * 3600_000);
 
     // 1) Catálogos máquinas (todas para orden estable)
