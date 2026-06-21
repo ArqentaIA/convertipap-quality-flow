@@ -255,7 +255,7 @@ export const getReporteNoConforme = createServerFn({ method: "POST" })
       const defectoTxt =
         defs.length > 0
           ? defs.join(", ")
-          : (mu.defecto_visual_conversion as string) || "Sin defecto registrado";
+          : (mu.defecto_visual_conversion as string)?.trim() || "SIN DEFECTO";
       // Producto y Máquina son obligatorios en captura (NOT NULL); no se requiere fallback de "Dato no disponible"
       const maquinaCodigo = maqById.get(mu.maquina_id as string) ?? "—";
       const maquinaCorta = maquinaCodigo.startsWith("MP-")

@@ -956,9 +956,13 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
         tipo_muestreo: "por_rollo" as const,
         hora_muestreo: horaMuestreo ? new Date(horaMuestreo).toISOString() : undefined,
         observaciones_generales: observaciones,
-        defecto_visual_conversion: defectoVisual || null,
-        variable_tecnica_dimensional: variableTecnica || null,
-        criterio_defecto: criterioDefecto || null,
+        defecto_visual_conversion: defectoVisual?.trim() ? defectoVisual : "SIN DEFECTO",
+        variable_tecnica_dimensional: variableTecnica?.trim() ? variableTecnica : "SIN DEFECTO",
+        criterio_defecto: (criterioDefecto?.trim() ? criterioDefecto : "SIN DEFECTO") as
+          | "MENOR"
+          | "MAYOR"
+          | "CRÍTICO"
+          | "SIN DEFECTO",
         variables_snapshot_json: variablesSnapshot,
         mediciones: evalMediciones
           .filter((m) => m.input.valor !== "" && Number.isFinite(m.num))
