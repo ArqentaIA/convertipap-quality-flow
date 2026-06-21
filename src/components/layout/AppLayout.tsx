@@ -235,6 +235,8 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
               <button
                 onClick={async () => {
                   void auditAction("auth", `Logout: ${auth.user?.email ?? ""}`);
+                  await queryClient.cancelQueries();
+                  queryClient.clear();
                   await auth.signOut();
                   void navigate({ to: "/login", replace: true });
                 }}
