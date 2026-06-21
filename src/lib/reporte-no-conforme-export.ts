@@ -1,5 +1,7 @@
 // Exportador XLSX del reporte NO CONFORME.
 import type { NoConformePayload, NoConformeRow } from "./reporte-no-conforme.functions";
+import { fechaHoraMX } from "./format";
+
 
 const HEADERS = [
   "TURNO",
@@ -66,7 +68,7 @@ export async function exportReporteNoConformeXLSX(
   // Subtítulo periodo
   ws.mergeCells(2, 1, 2, HEADERS.length);
   const sub = ws.getCell(2, 1);
-  sub.value = `Periodo: ${payload.rangoInicio}  →  ${payload.rangoFin}  ·  Generado: ${new Date(payload.generadoAt).toLocaleString("es-MX")}`;
+  sub.value = `Periodo: ${payload.rangoInicio}  →  ${payload.rangoFin}  ·  Generado: ${fechaHoraMX(payload.generadoAt)}`;
   sub.font = { italic: true, size: 10, color: { argb: "FF334155" } };
   sub.alignment = { horizontal: "center" };
 

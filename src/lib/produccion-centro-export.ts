@@ -3,7 +3,7 @@
 // Datos provenientes exclusivamente de la BD (getProduccionCentro).
 // Sin IA, sin simulaciones. Si no hay datos: "—" o "Sin datos disponibles".
 // =====================================================================
-import { formatCaptura } from "@/lib/format";
+import { formatCaptura, fechaHoraMX } from "@/lib/format";
 import type { CentroProduccionPayload, TablaRow } from "@/lib/produccion-centro.functions";
 
 const DASH = "—";
@@ -32,7 +32,7 @@ const fmtKg = (n: number | null | undefined) => (n == null ? DASH : fmt.format(n
 const fmtPct = (n: number | null | undefined) => (n == null ? DASH : `${n.toFixed(1)}%`);
 const fmtMoney = (n: number | null | undefined) => (n == null ? DASH : money.format(n));
 const fmtDate = (iso: string | null | undefined) =>
-  !iso ? DASH : new Date(iso).toLocaleString("es-MX", { dateStyle: "short", timeStyle: "short" });
+  !iso ? DASH : fechaHoraMX(iso);
 
 export function filtrarTabla(rows: TablaRow[], f: ReporteProdFiltros): TablaRow[] {
   return rows.filter((r) => {
@@ -114,7 +114,7 @@ export async function exportProduccionXLSX(
         "Periodo": ctx.periodoTexto,
         "Usuario": ctx.usuario,
         "Filtros": filtrosTxt,
-        "Impresión": new Date().toLocaleString("es-MX"),
+        "Impresión": fechaHoraMX(new Date()),
         "Rollos Producidos": data.kpis.rollosProducidos,
         "Total de Rollos": (data.maquinas?.reduce((s, m) => s + (m.rollos || 0), 0)) || data.kpis.rollosProducidos,
         "Kg Producidos": data.kpis.kgProducidos,

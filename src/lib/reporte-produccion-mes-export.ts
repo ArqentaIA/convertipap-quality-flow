@@ -6,6 +6,8 @@
 import type {
   ReporteProduccionMesPayload,
 } from "./reporte-produccion-mes.functions";
+import { fechaHoraLargaMX } from "./format";
+
 
 const MESES = [
   "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
@@ -73,7 +75,7 @@ export async function exportReporteProduccionMesXLSX(payload: ReporteProduccionM
   const ultimo = payload.ultimoTurnoCerrado
     ? `Último turno cerrado: ${payload.ultimoTurnoCerrado}`
     : "Sin turnos cerrados aún";
-  const gen = new Date(payload.generadoAt).toLocaleString("es-MX", { dateStyle: "long", timeStyle: "short" });
+  const gen = fechaHoraLargaMX(payload.generadoAt);
   c3.value = `Periodo: ${periodo}    ·    ${ultimo}    ·    Generado: ${gen}`;
   c3.font = { size: 9, italic: true, color: { argb: "FF334155" } };
   c3.alignment = { horizontal: "center", vertical: "middle" };

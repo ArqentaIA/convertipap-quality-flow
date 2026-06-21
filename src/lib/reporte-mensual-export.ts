@@ -2,6 +2,8 @@
 // Exportación XLSX — Reporte Mensual / Anual
 // =====================================================================
 import type { ReporteMensualPayload } from "./reporte-mensual.functions";
+import { fechaHoraMX } from "./format";
+
 
 function buildFileName(base: string) {
   const safe = base.replace(/[^a-z0-9]+/gi, "_").replace(/^_|_$/g, "").toLowerCase();
@@ -27,7 +29,7 @@ export async function exportReporteMensualXLSX(
   const resumen: Record<string, string | number>[] = [
     { Campo: "Tipo de reporte", Valor: payload.modo === "anual" ? "REPORTE ANUAL" : "REPORTE MENSUAL" },
     { Campo: "Periodo", Valor: payload.periodoTexto },
-    { Campo: "Generado", Valor: new Date(payload.generadoEn).toLocaleString("es-MX") },
+    { Campo: "Generado", Valor: fechaHoraMX(payload.generadoEn) },
     { Campo: "Usuario", Valor: ctx.usuario || "—" },
     { Campo: "Rollos producidos", Valor: payload.resumen.rollosTotal },
     { Campo: "Kg producidos", Valor: payload.resumen.kgTotal },
@@ -83,7 +85,7 @@ export async function exportReporteMensualXLSX(
   XLSX.utils.book_append_sheet(
     wb,
     XLSX.utils.json_to_sheet(payload.trazabilidad.map((t) => ({
-      Fecha: new Date(t.fecha).toLocaleString("es-MX"),
+      Fecha: fechaHoraMX(t.fecha),
       "N° Rollo": t.numero_rollo,
       Máquina: t.maquina ?? "—",
       Turno: t.turno,
