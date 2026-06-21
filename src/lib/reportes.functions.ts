@@ -544,15 +544,15 @@ export const getReportes = createServerFn({ method: "POST" })
         prensero: txt(m.prensero),
         analista: txt(m.analista),
 
-        estatus: txt(
-          m.liberado_con_justificacion
-            ? (typeof m.liberacion_justificacion === "string" &&
-              m.liberacion_justificacion.trim().length > 0
-                ? m.liberacion_justificacion.trim()
-                : "SIN JUSTIFICACIÓN")
-            : (m.estatus_liberacion ?? m.dictamen ?? "pendiente"),
-        ),
+        estatus: txt(m.estatus_liberacion ?? m.dictamen ?? "pendiente"),
+        motivo_liberacion: m.liberado_con_justificacion
+          ? (typeof m.liberacion_justificacion === "string" &&
+            m.liberacion_justificacion.trim().length > 0
+              ? m.liberacion_justificacion.trim()
+              : "SIN JUSTIFICACIÓN")
+          : SIN_INFO,
       };
+
       for (const clave of clavesOrden) {
         const etiqueta = etiquetaPorClave.get(clave) ?? clave;
         const med = medsByClave.get(clave);
