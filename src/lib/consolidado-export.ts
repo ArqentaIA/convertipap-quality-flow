@@ -225,12 +225,17 @@ export async function exportConsolidadoXLSX(payload: ConsolidadoPayload): Promis
     const dataStart = cursor;
     for (const row of block.rows) {
       const r = ws.getRow(cursor);
+      const obsParts: string[] = [];
+      if (row.observaciones && row.observaciones.trim()) obsParts.push(row.observaciones.trim());
+      if (row.liberacion_justificacion && row.liberacion_justificacion.trim()) {
+        obsParts.push(`Justificación: ${row.liberacion_justificacion.trim()}`);
+      }
       const values: (string | number | null)[] = [
         TURNO_LABEL[row.turno] ?? row.turno,
         fmtFecha(row.hora_muestreo),
         row.codigo_producto ?? "",
         row.numero_rollo,
-        row.observaciones ?? "",
+        obsParts.join(" | "),
         statusLabel(row),
         fmtHora(row.hora_muestreo),
       ];
