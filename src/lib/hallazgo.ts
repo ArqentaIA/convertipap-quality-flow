@@ -52,9 +52,15 @@ export const HALLAZGO_LABEL_ALIASES: Record<string, string> = {
   Stretch: "Elongación",
 };
 
-/** Devuelve la etiqueta visible homologada para un valor (histórico o actual). */
+export const SIN_DEFECTO_LABEL = "SIN DEFECTO";
+
+/**
+ * Devuelve la etiqueta visible homologada para un valor (histórico o actual).
+ * Valores null/vacíos se muestran como "SIN DEFECTO" (regla de negocio:
+ * los hallazgos son opcionales en captura pero los reportes deben rellenar el campo).
+ */
 export function displayHallazgoLabel(value: string | null | undefined): string {
-  if (!value) return "";
+  if (!value || !value.trim()) return SIN_DEFECTO_LABEL;
   const trimmed = value.trim();
   return HALLAZGO_LABEL_ALIASES[trimmed] ?? trimmed;
 }
@@ -68,15 +74,17 @@ export interface HallazgoSource {
   criterio_defecto?: string | null;
 }
 
-/** Devuelve `[Defecto] | [Variable] | [Criterio]` o null si los 3 están vacíos. */
+/**
+ * Devuelve `[Defecto] | [Variable] | [Criterio]`.
+ * Para reportes/visor: cualquier columna sin valor se rellena con "SIN DEFECTO".
+ */
 export function formatHallazgo(m: HallazgoSource | null | undefined): string | null {
-  if (!m) return null;
+  if (!m) return `${SIN_DEFECTO_LABEL} | ${SIN_DEFECTO_LABEL} | ${SIN_DEFECTO_LABEL}`;
   const partes = [
-    displayHallazgoLabel(m.defecto_visual_conversion).trim(),
-    displayHallazgoLabel(m.variable_tecnica_dimensional).trim(),
-    m.criterio_defecto?.trim(),
-  ].filter((x): x is string => !!x && x.length > 0);
-  if (partes.length === 0) return null;
+    displayHallazgoLabel(m.defecto_visual_conversion),
+    displayHallazgoLabel(m.variable_tecnica_dimensional),
+    m.criterio_defecto?.trim() ? m.criterio_defecto.trim() : SIN_DEFECTO_LABEL,
+  ];
   return partes.join(" | ");
 }
 

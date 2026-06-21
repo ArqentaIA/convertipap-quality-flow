@@ -420,7 +420,10 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
         observaciones_generales: z.string().default(""),
         defecto_visual_conversion: z.string().trim().max(60).nullable().optional(),
         variable_tecnica_dimensional: z.string().trim().max(60).nullable().optional(),
-        criterio_defecto: z.enum(["MENOR", "MAYOR", "CRÍTICO"]).nullable().optional(),
+        criterio_defecto: z
+          .enum(["MENOR", "MAYOR", "CRÍTICO", "SIN DEFECTO"])
+          .nullable()
+          .optional(),
         variables_snapshot_json: z.record(z.string(), z.unknown()).default({}),
         mediciones: z.array(medicionInputSchema),
         enviar_a_revision: z.boolean().default(false),
