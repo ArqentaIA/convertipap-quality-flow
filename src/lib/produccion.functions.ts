@@ -1035,11 +1035,26 @@ export const getDetalleRollo = createServerFn({ method: "GET" })
       presentes.add(norm(x.clave));
       presentes.add(norm(x.etiqueta));
     }
+    // Las mediciones reales usan variable_clave en texto (ej. "relMDCD").
+    // El snapshot a veces incluye entradas indexadas por UUID de variable con
+    // etiqueta distinta (ej. "Relación MD/CD"), lo que generaba duplicados
+    // visuales. Ignoramos cualquier clave con forma de UUID y deduplicamos
+    // adicionalmente por firma de rangos (min|obj|max) cuando aplique.
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const rangoSig = (mn: number | null, ob: number | null, mx: number | null) =>
+      `${mn ?? ""}|${ob ?? ""}|${mx ?? ""}`;
+    const rangosPresentes = new Set<string>();
+    for (const x of meds) rangosPresentes.add(rangoSig(x.min, x.objetivo, x.max));
+
     for (const [clave, s] of Object.entries(snap)) {
+      if (UUID_RE.test(clave)) continue;
       const etiqueta = s.etiqueta ?? clave;
       if (presentes.has(norm(clave)) || presentes.has(norm(etiqueta))) continue;
+      const sig = rangoSig(s.min ?? null, s.obj ?? null, s.max ?? null);
+      if (sig !== "||" && rangosPresentes.has(sig)) continue;
       presentes.add(norm(clave));
       presentes.add(norm(etiqueta));
+      rangosPresentes.add(sig);
       meds.push({
         clave,
         etiqueta,
