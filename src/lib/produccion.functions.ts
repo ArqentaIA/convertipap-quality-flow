@@ -1089,7 +1089,13 @@ export const listRollosMaquina = createServerFn({ method: "GET" })
   .inputValidator((input) => rollosSchema.parse(input))
   .handler(async ({ data, context }) => {
     const sb = context.supabase as SB;
-    const desde = rangoToDesde(data.rango ?? "dia");
+    // Ventana fija: turno actual + turno anterior (≈16h hacia atrás desde el
+    // inicio del turno actual). Se ignora `rango` para mantener una vista
+    // operativa consistente en producción.
+    const inicioTurno = rangoToDesde("turno");
+    const desde = inicioTurno
+      ? new Date(new Date(inicioTurno).getTime() - 8 * 3600_000).toISOString()
+      : new Date(Date.now() - 16 * 3600_000).toISOString();
 
     let q = sb
       .from("muestras_calidad")
@@ -1103,7 +1109,7 @@ export const listRollosMaquina = createServerFn({ method: "GET" })
       .eq("maquina_id", data.maquina_id)
       .order("hora_muestreo", { ascending: false })
       .limit(500);
-    if (desde) q = q.gte("hora_muestreo", desde);
+    q = q.gte("hora_muestreo", desde);
 
     const { data: rows, error } = await q;
     if (error) throw new Error(error.message);
