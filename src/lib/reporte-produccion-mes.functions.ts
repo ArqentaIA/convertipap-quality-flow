@@ -78,9 +78,9 @@ function daysInMonth(year: number, month1to12: number): number {
 
 /**
  * Construye los pares (op_date, turno) incluidos en el reporte aplicando:
- *  - Día 1 del mes: excluir T1.
+ *  - Incluye el último día del mes anterior (T1, T2, T3) como día previo.
+ *  - Todos los días del mes seleccionado incluyen T1, T2 y T3.
  *  - Solo turnos cerrados (fin_ts <= now).
- *  - Días del mes seleccionado.
  */
 function buildTurnosIncluidos(
   year: number,
@@ -90,32 +90,35 @@ function buildTurnosIncluidos(
   pairs: { opDate: string; turno: "1" | "2" | "3"; finTs: Date }[];
   ultimoTurnoCerrado: string | null;
 } {
-  const total = daysInMonth(year, month);
   const pairs: { opDate: string; turno: "1" | "2" | "3"; finTs: Date }[] = [];
-  for (let d = 1; d <= total; d++) {
-    // T1: 07-15 local; fin = 15:00 local
-    // T2: 15-23 local; fin = 23:00 local
-    // T3: 23-07+1 local; fin = 07:00 local del día siguiente
-    const finT1 = localToUtc(year, month, d, 15);
-    const finT2 = localToUtc(year, month, d, 23);
-    // día siguiente
-    const next = new Date(Date.UTC(year, month - 1, d + 1));
-    const finT3 = localToUtc(next.getUTCFullYear(), next.getUTCMonth() + 1, next.getUTCDate(), 7);
 
-    const opDate = ymd(year, month, d);
+  const pushDay = (y: number, m: number, d: number) => {
+    const finT1 = localToUtc(y, m, d, 15);
+    const finT2 = localToUtc(y, m, d, 23);
+    const next = new Date(Date.UTC(y, m - 1, d + 1));
+    const finT3 = localToUtc(next.getUTCFullYear(), next.getUTCMonth() + 1, next.getUTCDate(), 7);
+    const opDate = ymd(y, m, d);
     const candidates: { turno: "1" | "2" | "3"; fin: Date }[] = [
       { turno: "1", fin: finT1 },
       { turno: "2", fin: finT2 },
       { turno: "3", fin: finT3 },
     ];
     for (const c of candidates) {
-      // Excluir T1 del día 1
-      if (d === 1 && c.turno === "1") continue;
-      // Solo turnos cerrados
       if (c.fin.getTime() > now.getTime()) continue;
       pairs.push({ opDate, turno: c.turno, finTs: c.fin });
     }
-  }
+  };
+
+  // Día previo: último día del mes anterior
+  const prevMonth = month === 1 ? 12 : month - 1;
+  const prevYear = month === 1 ? year - 1 : year;
+  const lastPrev = daysInMonth(prevYear, prevMonth);
+  pushDay(prevYear, prevMonth, lastPrev);
+
+  // Días del mes seleccionado
+  const total = daysInMonth(year, month);
+  for (let d = 1; d <= total; d++) pushDay(year, month, d);
+
   let ultimo: string | null = null;
   if (pairs.length) {
     const last = pairs[pairs.length - 1];
