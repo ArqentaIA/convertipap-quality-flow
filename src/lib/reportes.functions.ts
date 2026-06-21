@@ -528,8 +528,9 @@ export const getReportes = createServerFn({ method: "POST" })
           : `MUESTRA INCOMPLETA (${pendientes} NO CAPTURADO${pendientes === 1 ? "" : "S"})`;
 
       const row: Record<string, string | number> = {
-        fecha: (m.hora_muestreo as string)?.slice(0, 10) || SIN_INFO,
-        hora: (m.hora_muestreo as string)?.slice(11, 16) || SIN_INFO,
+        fecha: fechaLocal(m.hora_muestreo) || SIN_INFO,
+        hora: horaLocal(m.hora_muestreo) || SIN_INFO,
+
         planta: txt(planta?.nombre),
         maquina: txt(maq?.codigo),
         turno: txt(m.turno),
