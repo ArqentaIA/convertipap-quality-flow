@@ -629,8 +629,9 @@ export const getReportes = createServerFn({ method: "POST" })
         const planta = plantaById.get(m.planta_id);
         const orden = m.ordenes_fabricacion;
         return {
-          fecha: (m.hora_muestreo as string)?.slice(0, 10) ?? "",
-          hora: (m.hora_muestreo as string)?.slice(11, 16) ?? "",
+          fecha: fechaLocal(m.hora_muestreo),
+          hora: horaLocal(m.hora_muestreo),
+
           planta: planta?.nombre ?? "—",
           maquina: maq?.codigo ?? "—",
           turno: m.turno ?? "—",
