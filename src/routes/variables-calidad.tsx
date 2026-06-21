@@ -16,6 +16,7 @@ import {
   listEspecsActivasConVariables,
   updateCaracteristicasByCode,
 } from "@/lib/qc.functions";
+import { imprimirVariablesCalidad } from "@/lib/variables-imprimir";
 import { useAuth } from "@/lib/auth";
 import {
   Pencil, Power, Lock, Save, X, ShieldAlert, Printer,
