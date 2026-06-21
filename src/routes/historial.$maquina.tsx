@@ -143,7 +143,7 @@ function HistorialPage() {
         operador: r.operador,
         peso: r.pesoKg ?? null,
         cumpl: r.cumplimiento ?? null,
-        estatus: r.estatus === "L" ? "Liberado" : r.estatus === "NC" ? "No conforme" : "Pendiente",
+        estatus: r.estatus === "L" ? "Liberado" : r.estatus === "NC" ? "Rechazado" : "Pendiente",
         obs: obsParts.join(" | "),
       });
     });
@@ -262,7 +262,7 @@ function HistorialPage() {
                       </td>
                       <td className="px-4 py-3">
                         <span className={`inline-flex items-center rounded-md border px-2 py-0.5 text-[11px] font-semibold ${tone}`}>
-                          {r.estatus === "L" ? "Liberado" : r.estatus === "NC" ? "No conforme" : "Pendiente"}
+                          {r.estatus === "L" ? "Liberado" : r.estatus === "NC" ? "Rechazado" : "Pendiente"}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-right">
