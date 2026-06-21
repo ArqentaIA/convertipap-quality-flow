@@ -22,14 +22,7 @@ import trofeoAsset from "@/assets/trofeo.png.asset.json";
 
 const TROFEO_URL = trofeoAsset.url;
 
-type Rango = "turno" | "dia" | "semana" | "mes" | "año";
-const RANGO_LABEL: Record<Rango, string> = {
-  turno: "Turno",
-  dia: "Día",
-  semana: "Semana",
-  mes: "Mes",
-  año: "Año",
-};
+const RANGO_LABEL = "Turno";
 
 export const Route = createFileRoute("/produccion")({
   component: ProduccionPage,
