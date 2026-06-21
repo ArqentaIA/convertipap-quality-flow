@@ -2,16 +2,13 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useMemo } from "react";
 import { useSuspenseQuery, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Search, Download, ArrowLeft, Lock, CircleDashed, ClipboardCheck } from "lucide-react";
+import { Download, ArrowLeft, Lock, CircleDashed, ClipboardCheck } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useLabFilter, LAB_LABEL } from "@/lib/lab";
 import { listMaquinasConEstado, listRollosMaquina } from "@/lib/produccion.functions";
 import { formatCaptura } from "@/lib/format";
 import { DetalleCalidadModal } from "@/components/qc/DetalleCalidadModal";
 import { BuscadorRollo } from "@/components/qc/BuscadorRollo";
-
-type Rango = "dia" | "semana" | "mes" | "año";
-const RANGO_LABEL: Record<Rango, string> = { dia: "Día", semana: "Semana", mes: "Mes", año: "Año" };
 
 export const Route = createFileRoute("/historial/$maquina")({
   component: HistorialPage,
@@ -27,7 +24,6 @@ export const Route = createFileRoute("/historial/$maquina")({
 function HistorialPage() {
   const { maquina: maquinaCodigo } = Route.useParams();
   const [q, setQ] = useState("");
-  const [rango, setRango] = useState<Rango>("dia");
   const [detalle, setDetalle] = useState<{ muestraId: string; folio: string } | null>(null);
   const labFilter = useLabFilter();
 
@@ -40,9 +36,9 @@ function HistorialPage() {
 
   const listRollosFn = useServerFn(listRollosMaquina);
   const { data: rollos = [], isFetching } = useQuery({
-    queryKey: ["produccion", "rollos", maquina?.id ?? "none", rango],
+    queryKey: ["produccion", "rollos", maquina?.id ?? "none", "turno+anterior"],
     queryFn: () =>
-      maquina ? listRollosFn({ data: { maquina_id: maquina.id, rango } }) : Promise.resolve([]),
+      maquina ? listRollosFn({ data: { maquina_id: maquina.id } }) : Promise.resolve([]),
     enabled: !!maquina,
     refetchInterval: 60_000,
   });
@@ -159,7 +155,7 @@ function HistorialPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `historial_${maquina.codigo}_${rango}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    a.download = `historial_${maquina.codigo}_turno_${new Date().toISOString().slice(0, 10)}.xlsx`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -177,31 +173,21 @@ function HistorialPage() {
           </Link>
           <div className="flex items-center gap-3">
             <BuscadorRollo />
-            <RangoTabs rango={rango} setRango={setRango} />
             <span className="text-xs text-muted-foreground">
-              60s {isFetching && <span className="animate-pulse">●</span>}
+              Turno actual + anterior · 60s {isFetching && <span className="animate-pulse">●</span>}
             </span>
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-          <StatCard label={`Rollos (${RANGO_LABEL[rango]})`} value={String(total)} hint="capturados" />
+          <StatCard label="Rollos (turno + anterior)" value={String(total)} hint="capturados" />
           <StatCard label="OK" value={String(ok)} hint="liberados" tone="success" />
           <StatCard label="No conformes" value={String(nc)} hint="rechazados / fuera" tone="danger" />
           <StatCard label="Cumpl. prom." value={`${cumpProm}${cumpProm === "—" ? "" : "%"}`} hint={`${kgTotal.toFixed(0)} kg total`} tone="primary" />
         </div>
 
         <div className="rounded-xl border border-border bg-card shadow-sm">
-          <div className="flex flex-wrap items-center gap-3 border-b border-border p-4">
-            <div className="relative flex-1 min-w-[240px]">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <input
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-                placeholder="Buscar rollo, orden, producto, operador…"
-                className="w-full rounded-md border border-input bg-background py-2 pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-              />
-            </div>
+          <div className="flex flex-wrap items-center justify-end gap-3 border-b border-border p-4">
             <button
               onClick={exportXlsx}
               disabled={filtered.length === 0}
@@ -232,7 +218,7 @@ function HistorialPage() {
                 {filtered.length === 0 && (
                   <tr>
                     <td colSpan={11} className="px-4 py-10 text-center text-sm text-muted-foreground">
-                      Sin rollos capturados para {maquina.codigo} en el rango "{RANGO_LABEL[rango]}".
+                      Sin rollos capturados para {maquina.codigo} en el turno actual ni el anterior.
                     </td>
                   </tr>
                 )}
@@ -282,7 +268,7 @@ function HistorialPage() {
           </div>
 
           <div className="flex items-center justify-between border-t border-border px-4 py-3 text-xs text-muted-foreground">
-            <div>Mostrando {filtered.length} de {rollos.length} rollos · rango {RANGO_LABEL[rango]}</div>
+            <div>Mostrando {filtered.length} de {rollos.length} rollos · turno actual + anterior</div>
           </div>
         </div>
       </div>
@@ -294,25 +280,6 @@ function HistorialPage() {
         onOpenChange={(v) => !v && setDetalle(null)}
       />
     </AppLayout>
-  );
-}
-
-function RangoTabs({ rango, setRango }: { rango: Rango; setRango: (r: Rango) => void }) {
-  const opts: Rango[] = ["dia", "semana", "mes", "año"];
-  return (
-    <div className="inline-flex rounded-lg border border-border bg-background p-1 shadow-sm">
-      {opts.map((r) => (
-        <button
-          key={r}
-          onClick={() => setRango(r)}
-          className={`rounded-md px-3 py-1.5 text-xs font-semibold transition ${
-            rango === r ? "bg-primary text-primary-foreground shadow" : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          {RANGO_LABEL[r]}
-        </button>
-      ))}
-    </div>
   );
 }
 
