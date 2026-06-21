@@ -177,7 +177,7 @@ function buildHtml(data: EtiquetaData, qrDataUrl: string, logoDataUrl: string): 
   td.val .u{font-weight:500;color:#64748b;margin-left:3px;font-size:12px}
 
   /* Observaciones + QR */
-  .obs-block{display:grid;grid-template-columns:1fr 1fr 140px;border-bottom:2px solid #0f172a}
+  .obs-block{display:grid;grid-template-columns:1fr 160px;border-bottom:2px solid #0f172a}
   .obs-block > div{padding:10px 12px;border-right:1px solid #0f172a}
   .obs-block > div:last-child{border-right:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#f8fafc}
   .obs-title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#475569;margin-bottom:6px}
