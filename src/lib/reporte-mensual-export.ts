@@ -2,6 +2,8 @@
 // Exportación XLSX — Reporte Mensual / Anual
 // =====================================================================
 import type { ReporteMensualPayload } from "./reporte-mensual.functions";
+import { fechaHoraMX } from "./format";
+
 
 function buildFileName(base: string) {
   const safe = base.replace(/[^a-z0-9]+/gi, "_").replace(/^_|_$/g, "").toLowerCase();
