@@ -1,5 +1,7 @@
 // Exportador XLSX del reporte NO CONFORME.
 import type { NoConformePayload, NoConformeRow } from "./reporte-no-conforme.functions";
+import { fechaHoraMX } from "./format";
+
 
 const HEADERS = [
   "TURNO",
