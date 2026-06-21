@@ -95,28 +95,71 @@ function HistorialPage() {
       ).toFixed(1)
     : "—";
 
-  const exportCsv = () => {
-    const headers = ["N° Captura", "Rollo", "Orden", "Fecha/Hora", "Turno", "Producto", "Operador", "Peso kg", "Cumpl %", "Estatus"];
-    const lines = [headers.join(",")];
-    filtered.forEach((r) => {
-      lines.push([
-        formatCaptura(r.secuenciaCaptura),
-        r.rollo,
-        r.folioOrden,
-        new Date(r.capturadoAt).toLocaleString("es-MX"),
-        r.turno,
-        `"${r.producto.replace(/"/g, '""')}"`,
-        `"${r.operador.replace(/"/g, '""')}"`,
-        r.pesoKg ?? "",
-        r.cumplimiento ?? "",
-        r.estatus,
-      ].join(","));
+  const exportXlsx = async () => {
+    const ExcelJS = (await import("exceljs")).default;
+    const wb = new ExcelJS.Workbook();
+    wb.creator = "ConvertiPap QMS";
+    wb.created = new Date();
+    const ws = wb.addWorksheet(`Historial ${maquina.codigo}`, {
+      views: [{ state: "frozen", ySplit: 1 }],
     });
-    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
+
+    ws.columns = [
+      { header: "N° Captura", key: "captura", width: 12 },
+      { header: "Rollo", key: "rollo", width: 12 },
+      { header: "Orden", key: "orden", width: 22 },
+      { header: "Fecha / Hora", key: "fecha", width: 20 },
+      { header: "Turno", key: "turno", width: 8 },
+      { header: "Producto", key: "producto", width: 28 },
+      { header: "Operador", key: "operador", width: 18 },
+      { header: "Peso (kg)", key: "peso", width: 12 },
+      { header: "Cumpl. %", key: "cumpl", width: 10 },
+      { header: "Estatus", key: "estatus", width: 14 },
+      { header: "Observaciones", key: "obs", width: 60 },
+    ];
+    const header = ws.getRow(1);
+    header.font = { bold: true, color: { argb: "FFFFFFFF" } };
+    header.alignment = { vertical: "middle", horizontal: "center" };
+    header.eachCell((c) => {
+      c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF0F2A57" } };
+      c.border = { bottom: { style: "thin", color: { argb: "FF0F2A57" } } };
+    });
+    header.height = 22;
+
+    filtered.forEach((r) => {
+      const obsParts: string[] = [];
+      if (r.observacionesGenerales?.trim()) obsParts.push(r.observacionesGenerales.trim());
+      if (r.liberacionJustificacion?.trim())
+        obsParts.push(`Justificación: ${r.liberacionJustificacion.trim()}`);
+      if (r.defectos && r.defectos.length > 0)
+        obsParts.push(`Defectos: ${r.defectos.join(", ")}`);
+      ws.addRow({
+        captura: formatCaptura(r.secuenciaCaptura),
+        rollo: r.rollo,
+        orden: r.folioOrden,
+        fecha: new Date(r.capturadoAt).toLocaleString("es-MX"),
+        turno: r.turno,
+        producto: r.producto,
+        operador: r.operador,
+        peso: r.pesoKg ?? null,
+        cumpl: r.cumplimiento ?? null,
+        estatus: r.estatus === "L" ? "Liberado" : r.estatus === "NC" ? "No conforme" : "Pendiente",
+        obs: obsParts.join(" | "),
+      });
+    });
+
+    ws.getColumn("obs").alignment = { wrapText: true, vertical: "top" };
+    ws.getColumn("peso").numFmt = "#,##0.0";
+    ws.getColumn("cumpl").numFmt = "0.0";
+
+    const buf = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buf], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `rollos_${maquina.codigo}_${rango}_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `historial_${maquina.codigo}_${rango}_${new Date().toISOString().slice(0, 10)}.xlsx`;
     a.click();
     URL.revokeObjectURL(url);
   };
