@@ -410,6 +410,29 @@ export const getReportes = createServerFn({ method: "POST" })
       return Number.isFinite(n) ? n : SIN_INFO;
     };
 
+    // Conversión a hora local México (America/Mexico_City) para evitar
+    // mostrar el UTC crudo del timestamp y que parezca inconsistente con el turno.
+    const MX_TZ = "America/Mexico_City";
+    const fmtFechaMX = new Intl.DateTimeFormat("en-CA", {
+      timeZone: MX_TZ, year: "numeric", month: "2-digit", day: "2-digit",
+    });
+    const fmtHoraMX = new Intl.DateTimeFormat("es-MX", {
+      timeZone: MX_TZ, hour: "2-digit", minute: "2-digit", hour12: false,
+    });
+    const fechaLocal = (iso: string | null | undefined): string => {
+      if (!iso) return "";
+      const d = new Date(iso);
+      if (Number.isNaN(d.getTime())) return String(iso).slice(0, 10);
+      return fmtFechaMX.format(d);
+    };
+    const horaLocal = (iso: string | null | undefined): string => {
+      if (!iso) return "";
+      const d = new Date(iso);
+      if (Number.isNaN(d.getTime())) return String(iso).slice(11, 16);
+      return fmtHoraMX.format(d).replace(/^24:/, "00:");
+    };
+
+
     // Catálogo canónico de variables (etiqueta + unidad) — evita columnas duplicadas
     const { data: varsCat } = await sb
       .from("variables_calidad")
@@ -505,8 +528,9 @@ export const getReportes = createServerFn({ method: "POST" })
           : `MUESTRA INCOMPLETA (${pendientes} NO CAPTURADO${pendientes === 1 ? "" : "S"})`;
 
       const row: Record<string, string | number> = {
-        fecha: (m.hora_muestreo as string)?.slice(0, 10) || SIN_INFO,
-        hora: (m.hora_muestreo as string)?.slice(11, 16) || SIN_INFO,
+        fecha: fechaLocal(m.hora_muestreo) || SIN_INFO,
+        hora: horaLocal(m.hora_muestreo) || SIN_INFO,
+
         planta: txt(planta?.nombre),
         maquina: txt(maq?.codigo),
         turno: txt(m.turno),
@@ -605,8 +629,9 @@ export const getReportes = createServerFn({ method: "POST" })
         const planta = plantaById.get(m.planta_id);
         const orden = m.ordenes_fabricacion;
         return {
-          fecha: (m.hora_muestreo as string)?.slice(0, 10) ?? "",
-          hora: (m.hora_muestreo as string)?.slice(11, 16) ?? "",
+          fecha: fechaLocal(m.hora_muestreo),
+          hora: horaLocal(m.hora_muestreo),
+
           planta: planta?.nombre ?? "—",
           maquina: maq?.codigo ?? "—",
           turno: m.turno ?? "—",
@@ -630,8 +655,9 @@ export const getReportes = createServerFn({ method: "POST" })
         const meds = medsByMuestra.get(m.id) ?? [];
         const medsByClave = new Map(meds.map((x) => [x.variable_clave, x]));
         const row: Record<string, string | number> = {
-          fecha: (m.hora_muestreo as string)?.slice(0, 10) ?? "",
-          hora: (m.hora_muestreo as string)?.slice(11, 16) ?? "",
+          fecha: fechaLocal(m.hora_muestreo),
+          hora: horaLocal(m.hora_muestreo),
+
           planta: planta?.nombre ?? "—",
           maquina: maq?.codigo ?? "—",
           turno: m.turno ?? "—",
