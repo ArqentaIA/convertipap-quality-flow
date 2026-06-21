@@ -39,14 +39,31 @@ export async function exportReporteProduccionMesXLSX(payload: ReporteProduccionM
   const wb = new ExcelJS.Workbook();
   wb.creator = "ConvertiPap QMS";
   wb.created = new Date();
-  const ws = wb.addWorksheet("Producción", {
-    views: [{ state: "frozen", xSplit: 1, ySplit: 5 }],
-  });
-
   const dias = payload.dias;
   // Columnas: A=producto, luego un col por día, luego TOTAL
   const numCols = 1 + dias.length + 1;
   const lastColLetter = colLetter(numCols);
+
+  // Detectar primer día con producción para posicionar la vista
+  const diasConDatos = new Set<string>();
+  for (const m of payload.maquinas) {
+    for (const d of dias) {
+      if ((m.totalesPorDia[d] ?? 0) > 0) diasConDatos.add(d);
+    }
+  }
+  const primerDiaConDatos = dias.find((d) => diasConDatos.has(d));
+  const colPrimerDato = primerDiaConDatos ? 2 + dias.indexOf(primerDiaConDatos) : 2;
+  const topLeftCell = `${colLetter(colPrimerDato)}6`;
+
+  const ws = wb.addWorksheet("Producción", {
+    views: [{
+      state: "frozen",
+      xSplit: 1,
+      ySplit: 5,
+      topLeftCell,
+      activeCell: topLeftCell,
+    }],
+  });
 
   // Anchos
   ws.getColumn(1).width = 28;
