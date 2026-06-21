@@ -16,9 +16,10 @@ import {
   listEspecsActivasConVariables,
   updateCaracteristicasByCode,
 } from "@/lib/qc.functions";
+import { imprimirVariablesCalidad } from "@/lib/variables-imprimir";
 import { useAuth } from "@/lib/auth";
 import {
-  Pencil, Power, Lock, Save, X, ShieldAlert,
+  Pencil, Power, Lock, Save, X, ShieldAlert, Printer,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -113,6 +114,38 @@ function VariablesCalidad() {
     setCaracteristicas(c);
     setCarInitial(c);
   }, [activeSpec?.code, activeSpec]);
+
+  const handleImprimir = async () => {
+    if (!activeSpec) return;
+    try {
+      await imprimirVariablesCalidad({
+        code: activeSpec.code,
+        name: activeSpec.name,
+        family: activeSpec.family,
+        specVersion: (activeSpec as unknown as { specVersion?: string | null }).specVersion ?? null,
+        variables: activeSpec.variables.map((v) => ({
+          label: v.label,
+          unit: v.unit,
+          min: v.min,
+          objective: v.objective,
+          max: v.max,
+        })),
+        caracteristicas: caracteristicas || null,
+        log: log.map((r) => ({
+          modificado_at: r.modificado_at,
+          modificado_por_nombre: r.modificado_por_nombre,
+          modificado_por_rol: r.modificado_por_rol,
+          variable_etiqueta: r.variable_etiqueta,
+          campo: r.campo,
+          valor_anterior: r.valor_anterior,
+          valor_nuevo: r.valor_nuevo,
+          motivo: r.motivo,
+        })),
+      });
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  };
 
   const startEdit = () => {
     if (!puedeEditar) {
@@ -307,16 +340,24 @@ function VariablesCalidad() {
             <div className="flex flex-wrap items-center gap-1.5">
               {!isEditing ? (
                 <>
-                  <Button
-                    variant="default"
-                    size="sm"
-                    onClick={startEdit}
-                    disabled={!puedeEditar || !activeSpec?.hasSpec}
-                    title={puedeEditar ? "" : "Sin permiso para editar"}
-                  >
-                    <Pencil className="h-4 w-4" /> Editar
-                  </Button>
-                </>
+              <Button
+                variant="default"
+                size="sm"
+                onClick={startEdit}
+                disabled={!puedeEditar || !activeSpec?.hasSpec}
+                title={puedeEditar ? "" : "Sin permiso para editar"}
+              >
+                <Pencil className="h-4 w-4" /> Editar
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleImprimir}
+                disabled={!activeSpec?.hasSpec}
+                className="bg-navy text-white hover:opacity-90"
+              >
+                <Printer className="h-4 w-4" /> Imprimir
+              </Button>
+            </>
               ) : (
                 <>
                   <span className="rounded-md border border-warning/40 bg-warning/10 px-2 py-1 text-[10px] font-semibold text-warning">
