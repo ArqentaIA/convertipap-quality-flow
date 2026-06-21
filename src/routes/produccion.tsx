@@ -430,35 +430,6 @@ function MaquinaCard({
   );
 }
 
-function KPI({
-  icon: Icon,
-  label,
-  value,
-  tone = "default",
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  value: string;
-  tone?: "default" | "primary" | "success" | "warning";
-}) {
-  const tones: Record<string, string> = {
-    default: "bg-muted text-foreground",
-    primary: "bg-primary/10 text-primary",
-    success: "bg-success/15 text-success",
-    warning: "bg-warning/20 text-foreground",
-  };
-  return (
-    <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-4 shadow-sm">
-      <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg ${tones[tone]}`}>
-        <Icon className="h-5 w-5" />
-      </div>
-      <div className="min-w-0">
-        <div className="truncate text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
-        <div className="text-xl font-bold text-foreground tabular-nums">{value}</div>
-      </div>
-    </div>
-  );
-}
 
 function Mini({ label, value, accent = false }: { label: string; value: string; accent?: boolean }) {
   return (
