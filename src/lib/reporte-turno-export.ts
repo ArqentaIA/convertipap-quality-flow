@@ -134,7 +134,7 @@ export async function exportReporteTurnoXLSX(
     { Indicador: "Fecha", Valor: ctx.fecha },
     { Indicador: "Turno", Valor: TURNO_LABEL[ctx.turno] ?? `Turno ${ctx.turno}` },
     { Indicador: "Usuario", Valor: ctx.usuario || "—" },
-    { Indicador: "Generado", Valor: new Date().toLocaleString("es-MX") },
+    { Indicador: "Generado", Valor: fechaHoraMX(new Date()) },
     { Indicador: "Rollos producidos", Valor: r.totalRollos },
     { Indicador: "Kg producidos", Valor: Math.round(r.kgTotal * 100) / 100 },
     { Indicador: "Rollos conformes", Valor: r.conformes },
@@ -174,7 +174,7 @@ export async function exportReporteTurnoXLSX(
       }]
     : data.rows.map((row) => ({
         "N° Captura": row.secuencia_captura ?? "—",
-        "Fecha y hora": new Date(row.capturado_at).toLocaleString("es-MX"),
+        "Fecha y hora": fechaHoraMX(row.capturado_at),
         "N° Rollo": row.numero_rollo ?? "—",
         Máquina: row.maquina ?? "—",
         Producto: row.producto ?? "—",
@@ -215,7 +215,7 @@ export async function exportReporteTurnoXLSX(
     : data.rows.map((row) => ({
         "ID interno": row.id,
         "N° Captura": row.secuencia_captura ?? "—",
-        "Fecha y hora": new Date(row.capturado_at).toLocaleString("es-MX"),
+        "Fecha y hora": fechaHoraMX(row.capturado_at),
         "N° Rollo": row.numero_rollo ?? "—",
         Máquina: row.maquina ?? "—",
         Turno: TURNO_LABEL[row.turno] ?? row.turno,
