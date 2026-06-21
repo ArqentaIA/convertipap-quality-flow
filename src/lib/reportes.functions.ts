@@ -655,8 +655,9 @@ export const getReportes = createServerFn({ method: "POST" })
         const meds = medsByMuestra.get(m.id) ?? [];
         const medsByClave = new Map(meds.map((x) => [x.variable_clave, x]));
         const row: Record<string, string | number> = {
-          fecha: (m.hora_muestreo as string)?.slice(0, 10) ?? "",
-          hora: (m.hora_muestreo as string)?.slice(11, 16) ?? "",
+          fecha: fechaLocal(m.hora_muestreo),
+          hora: horaLocal(m.hora_muestreo),
+
           planta: planta?.nombre ?? "—",
           maquina: maq?.codigo ?? "—",
           turno: m.turno ?? "—",
