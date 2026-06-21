@@ -203,11 +203,11 @@ function HistorialPage() {
               />
             </div>
             <button
-              onClick={exportCsv}
+              onClick={exportXlsx}
               disabled={filtered.length === 0}
               className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
             >
-              <Download className="h-4 w-4" /> Exportar CSV
+              <Download className="h-4 w-4" /> Exportar XLSX
             </button>
           </div>
 
