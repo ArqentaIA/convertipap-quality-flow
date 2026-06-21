@@ -86,8 +86,13 @@ export async function exportReporteNoConformeXLSX(
   });
   ws.getRow(3).height = 30;
 
-  // Datos
-  rows.forEach((r) => {
+  // Datos: ordenar por FECHA desc y HORA desc (más reciente primero)
+  const sorted = [...rows].sort((a, b) => {
+    const f = String(b.fechaOperativa).localeCompare(String(a.fechaOperativa));
+    if (f !== 0) return f;
+    return String(b.hora ?? "").localeCompare(String(a.hora ?? ""));
+  });
+  sorted.forEach((r) => {
     const row = ws.addRow(rowToArr(r));
     row.eachCell((c, col) => {
       c.alignment = {
