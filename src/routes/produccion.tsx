@@ -3,10 +3,6 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
 import {
-  Factory,
-  Gauge,
-  Package,
-  AlertTriangle,
   AlertOctagon,
   CircleDashed,
   Activity,
@@ -77,13 +73,6 @@ function ProduccionPage() {
     return copy;
   }, [maquinas]);
 
-  const kgTotal = maquinas.reduce((s, m) => s + m.kgTurno, 0);
-  const rollosTotal = maquinas.reduce((s, m) => s + m.rollosTurno, 0);
-  const activos = maquinas.filter((m) => m.estado === "operando").length;
-  const enParo = maquinas.filter((m) => m.estado === "paro").length;
-  const oeeProm = maquinas.length
-    ? (maquinas.reduce((s, m) => s + m.oee, 0) / maquinas.length).toFixed(1)
-    : "—";
   const maxKg = ranking[0]?.kgTurno ?? 0;
 
   const plantaLabel =
@@ -135,14 +124,6 @@ function ProduccionPage() {
           </span>
         </div>
 
-        {/* KPIs ejecutivos */}
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
-          <KPI icon={Package} label="Producción total (kg)" value={fmtNum(kgTotal)} tone="primary" />
-          <KPI icon={BarChart3} label="Rollos producidos" value={fmtNum(rollosTotal)} />
-          <KPI icon={Gauge} label="OEE global" value={`${oeeProm}${oeeProm === "—" ? "" : "%"}`} tone="success" />
-          <KPI icon={Factory} label="Máquinas activas" value={`${activos} / ${maquinas.length}`} tone="primary" />
-          <KPI icon={AlertTriangle} label="Máquinas en paro" value={String(enParo)} tone={enParo > 0 ? "warning" : "default"} />
-        </div>
 
         {maquinas.length === 0 ? (
           <EmptyState />
@@ -449,35 +430,6 @@ function MaquinaCard({
   );
 }
 
-function KPI({
-  icon: Icon,
-  label,
-  value,
-  tone = "default",
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  value: string;
-  tone?: "default" | "primary" | "success" | "warning";
-}) {
-  const tones: Record<string, string> = {
-    default: "bg-muted text-foreground",
-    primary: "bg-primary/10 text-primary",
-    success: "bg-success/15 text-success",
-    warning: "bg-warning/20 text-foreground",
-  };
-  return (
-    <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-4 shadow-sm">
-      <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg ${tones[tone]}`}>
-        <Icon className="h-5 w-5" />
-      </div>
-      <div className="min-w-0">
-        <div className="truncate text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
-        <div className="text-xl font-bold text-foreground tabular-nums">{value}</div>
-      </div>
-    </div>
-  );
-}
 
 function Mini({ label, value, accent = false }: { label: string; value: string; accent?: boolean }) {
   return (
