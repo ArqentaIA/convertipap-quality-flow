@@ -410,6 +410,29 @@ export const getReportes = createServerFn({ method: "POST" })
       return Number.isFinite(n) ? n : SIN_INFO;
     };
 
+    // Conversión a hora local México (America/Mexico_City) para evitar
+    // mostrar el UTC crudo del timestamp y que parezca inconsistente con el turno.
+    const MX_TZ = "America/Mexico_City";
+    const fmtFechaMX = new Intl.DateTimeFormat("en-CA", {
+      timeZone: MX_TZ, year: "numeric", month: "2-digit", day: "2-digit",
+    });
+    const fmtHoraMX = new Intl.DateTimeFormat("es-MX", {
+      timeZone: MX_TZ, hour: "2-digit", minute: "2-digit", hour12: false,
+    });
+    const fechaLocal = (iso: string | null | undefined): string => {
+      if (!iso) return "";
+      const d = new Date(iso);
+      if (Number.isNaN(d.getTime())) return String(iso).slice(0, 10);
+      return fmtFechaMX.format(d);
+    };
+    const horaLocal = (iso: string | null | undefined): string => {
+      if (!iso) return "";
+      const d = new Date(iso);
+      if (Number.isNaN(d.getTime())) return String(iso).slice(11, 16);
+      return fmtHoraMX.format(d).replace(/^24:/, "00:");
+    };
+
+
     // Catálogo canónico de variables (etiqueta + unidad) — evita columnas duplicadas
     const { data: varsCat } = await sb
       .from("variables_calidad")
