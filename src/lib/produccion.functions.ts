@@ -1095,7 +1095,8 @@ export const listRollosMaquina = createServerFn({ method: "GET" })
       .from("muestras_calidad")
       .select(
         `id, numero_rollo, secuencia_captura, hora_muestreo, turno, operador, jefe_maquina, analista,
-         dictamen, estatus_liberacion, defectos, orden_id,
+         dictamen, estatus_liberacion, defectos, observaciones_generales,
+         liberado_con_justificacion, liberacion_justificacion, orden_id,
          ordenes_fabricacion:orden_id(folio, productos(nombre, codigo)),
          mediciones_calidad(variable_clave, valor, estado)`,
       )
@@ -1134,6 +1135,10 @@ export const listRollosMaquina = createServerFn({ method: "GET" })
         ncCount: nc,
         totalMediciones: total,
         estatus,
+        observacionesGenerales: (r.observaciones_generales as string) ?? "",
+        liberacionJustificacion: (r.liberacion_justificacion as string) ?? "",
+        liberadoConJustificacion: !!r.liberado_con_justificacion,
+        defectos: ((r.defectos ?? []) as string[]).filter(Boolean),
       };
     });
   });
