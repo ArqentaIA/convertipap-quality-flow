@@ -66,6 +66,7 @@ function initials(name?: string | null, email?: string | null) {
 
 export function AppLayout({ children, title }: { children: React.ReactNode; title: string }) {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const auth = useAuth();
   const labFilter = useLabFilter();
   const [collapsed, setCollapsed] = useState(false);
