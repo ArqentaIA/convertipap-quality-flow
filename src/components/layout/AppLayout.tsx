@@ -1,5 +1,6 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   LayoutDashboard, Factory, ClipboardCheck, FileBarChart2,
   Settings, ChevronLeft, ChevronRight, Bell, ChevronDown, SlidersHorizontal,
@@ -65,6 +66,7 @@ function initials(name?: string | null, email?: string | null) {
 
 export function AppLayout({ children, title }: { children: React.ReactNode; title: string }) {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const auth = useAuth();
   const labFilter = useLabFilter();
   const [collapsed, setCollapsed] = useState(false);
@@ -233,6 +235,8 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
               <button
                 onClick={async () => {
                   void auditAction("auth", `Logout: ${auth.user?.email ?? ""}`);
+                  await queryClient.cancelQueries();
+                  queryClient.clear();
                   await auth.signOut();
                   void navigate({ to: "/login", replace: true });
                 }}
