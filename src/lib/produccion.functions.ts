@@ -1018,13 +1018,31 @@ export const getDetalleRollo = createServerFn({ method: "GET" })
     });
 
 
-    // Completar con variables del snapshot que aún no tengan medición
-    const presentes = new Set(meds.map((x) => x.clave));
+    // Completar con variables del snapshot que aún no tengan medición.
+    // OJO: mediciones_calidad usa variable_clave (texto, ej. "uniones"),
+    // mientras que variables_snapshot_json puede estar indexado por UUID de
+    // variable. Para evitar duplicados, deduplicamos por etiqueta normalizada
+    // y por clave.
+    const norm = (s: string) =>
+      (s ?? "")
+        .toString()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "");
+    const presentes = new Set<string>();
+    for (const x of meds) {
+      presentes.add(norm(x.clave));
+      presentes.add(norm(x.etiqueta));
+    }
     for (const [clave, s] of Object.entries(snap)) {
-      if (presentes.has(clave)) continue;
+      const etiqueta = s.etiqueta ?? clave;
+      if (presentes.has(norm(clave)) || presentes.has(norm(etiqueta))) continue;
+      presentes.add(norm(clave));
+      presentes.add(norm(etiqueta));
       meds.push({
         clave,
-        etiqueta: s.etiqueta ?? clave,
+        etiqueta,
         unidad: s.unidad ?? "",
         valor: null,
         min: s.min ?? null,
