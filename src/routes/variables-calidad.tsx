@@ -18,7 +18,7 @@ import {
 } from "@/lib/qc.functions";
 import { useAuth } from "@/lib/auth";
 import {
-  Pencil, Power, Lock, Save, X, ShieldAlert,
+  Pencil, Power, Lock, Save, X, ShieldAlert, Printer,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
