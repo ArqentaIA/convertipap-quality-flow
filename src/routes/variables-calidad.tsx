@@ -340,16 +340,24 @@ function VariablesCalidad() {
             <div className="flex flex-wrap items-center gap-1.5">
               {!isEditing ? (
                 <>
-                  <Button
-                    variant="default"
-                    size="sm"
-                    onClick={startEdit}
-                    disabled={!puedeEditar || !activeSpec?.hasSpec}
-                    title={puedeEditar ? "" : "Sin permiso para editar"}
-                  >
-                    <Pencil className="h-4 w-4" /> Editar
-                  </Button>
-                </>
+              <Button
+                variant="default"
+                size="sm"
+                onClick={startEdit}
+                disabled={!puedeEditar || !activeSpec?.hasSpec}
+                title={puedeEditar ? "" : "Sin permiso para editar"}
+              >
+                <Pencil className="h-4 w-4" /> Editar
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleImprimir}
+                disabled={!activeSpec?.hasSpec}
+                className="bg-navy text-white hover:opacity-90"
+              >
+                <Printer className="h-4 w-4" /> Imprimir
+              </Button>
+            </>
               ) : (
                 <>
                   <span className="rounded-md border border-warning/40 bg-warning/10 px-2 py-1 text-[10px] font-semibold text-warning">
