@@ -3,7 +3,7 @@
 // Datos provenientes exclusivamente de la BD (getProduccionCentro).
 // Sin IA, sin simulaciones. Si no hay datos: "—" o "Sin datos disponibles".
 // =====================================================================
-import { formatCaptura } from "@/lib/format";
+import { formatCaptura, fechaHoraMX } from "@/lib/format";
 import type { CentroProduccionPayload, TablaRow } from "@/lib/produccion-centro.functions";
 
 const DASH = "—";
