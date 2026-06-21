@@ -73,13 +73,6 @@ function ProduccionPage() {
     return copy;
   }, [maquinas]);
 
-  const kgTotal = maquinas.reduce((s, m) => s + m.kgTurno, 0);
-  const rollosTotal = maquinas.reduce((s, m) => s + m.rollosTurno, 0);
-  const activos = maquinas.filter((m) => m.estado === "operando").length;
-  const enParo = maquinas.filter((m) => m.estado === "paro").length;
-  const oeeProm = maquinas.length
-    ? (maquinas.reduce((s, m) => s + m.oee, 0) / maquinas.length).toFixed(1)
-    : "—";
   const maxKg = ranking[0]?.kgTurno ?? 0;
 
   const plantaLabel =
