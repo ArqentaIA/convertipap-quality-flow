@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import {
   AlertOctagon,
   CircleDashed,
@@ -22,14 +22,7 @@ import trofeoAsset from "@/assets/trofeo.png.asset.json";
 
 const TROFEO_URL = trofeoAsset.url;
 
-type Rango = "turno" | "dia" | "semana" | "mes" | "año";
-const RANGO_LABEL: Record<Rango, string> = {
-  turno: "Turno",
-  dia: "Día",
-  semana: "Semana",
-  mes: "Mes",
-  año: "Año",
-};
+const RANGO_LABEL = "Turno";
 
 export const Route = createFileRoute("/produccion")({
   component: ProduccionPage,
@@ -45,7 +38,7 @@ export const Route = createFileRoute("/produccion")({
 type MaquinaRow = Awaited<ReturnType<typeof listMaquinasConEstado>>[number];
 
 function ProduccionPage() {
-  const [rango, setRango] = useState<Rango>("turno");
+  const rango = "turno";
   const listFn = useServerFn(listMaquinasConEstado);
   const labFilter = useLabFilter();
   const rtStatus = useProduccionRealtime();
@@ -89,9 +82,8 @@ function ProduccionPage() {
   return (
     <AppLayout title="Producción · Estado de máquinas">
       <div className="space-y-5">
-        {/* Filtros + búsqueda */}
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <RangoTabs rango={rango} setRango={setRango} />
+        {/* Búsqueda */}
+        <div className="flex flex-wrap items-center justify-end gap-3">
           <BuscadorRollo />
         </div>
 
@@ -102,7 +94,7 @@ function ProduccionPage() {
               <MapPin className="h-3.5 w-3.5" /> {plantaLabel}
             </span>
             <span className="inline-flex items-center gap-1.5 font-semibold uppercase tracking-wider text-foreground">
-              <Activity className="h-3.5 w-3.5" /> Visualizando: {RANGO_LABEL[rango]}
+              <Activity className="h-3.5 w-3.5" /> Visualizando: {RANGO_LABEL}
             </span>
             <span className="inline-flex items-center gap-1.5 text-muted-foreground">
               <Calendar className="h-3.5 w-3.5" /> {fecha}
@@ -134,7 +126,7 @@ function ProduccionPage() {
               <div className="mb-4 flex items-center justify-between">
                 <div>
                   <h3 className="text-sm font-bold uppercase tracking-wider text-foreground">
-                    Comparativo de producción · {RANGO_LABEL[rango]}
+                    Comparativo de producción · {RANGO_LABEL}
                   </h3>
                   <p className="text-xs text-muted-foreground">Kg producidos por máquina · ranking de desempeño</p>
                 </div>
@@ -153,7 +145,7 @@ function ProduccionPage() {
                 <MaquinaCard
                   key={m.id}
                   m={m}
-                  rangoLabel={RANGO_LABEL[rango]}
+                  rangoLabel={RANGO_LABEL}
                   rank={idx + 1}
                   canAccess={labFilter.isMachineAllowed(m.codigo)}
                 />
@@ -170,24 +162,6 @@ function fmtNum(n: number): string {
   return new Intl.NumberFormat("es-MX", { maximumFractionDigits: 0 }).format(n);
 }
 
-function RangoTabs({ rango, setRango }: { rango: Rango; setRango: (r: Rango) => void }) {
-  const opts: Rango[] = ["turno", "dia", "semana", "mes", "año"];
-  return (
-    <div className="inline-flex rounded-lg border border-border bg-background p-1 shadow-sm">
-      {opts.map((r) => (
-        <button
-          key={r}
-          onClick={() => setRango(r)}
-          className={`rounded-md px-3 py-1.5 text-xs font-semibold uppercase tracking-wide transition ${
-            rango === r ? "bg-primary text-primary-foreground shadow" : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          {RANGO_LABEL[r]}
-        </button>
-      ))}
-    </div>
-  );
-}
 
 function EmptyState() {
   return (
