@@ -111,16 +111,17 @@ export function EvidenciaDocumentalPanel({
           mime_type: file.type,
           contenido_base64: b64,
           descripcion: descripcion.trim() || null,
+          target,
         },
       });
       toast.success("Documento cargado correctamente.");
       setDescripcion("");
       if (inputRef.current) inputRef.current.value = "";
       await queryClient.invalidateQueries({
-        queryKey: ["spec-documentos", productoCodigo],
+        queryKey: ["spec-documentos", productoCodigo, target],
       });
       await queryClient.invalidateQueries({
-        queryKey: ["spec-documentos-estado", productoCodigo],
+        queryKey: ["spec-documentos-estado", productoCodigo, target],
       });
     } catch (e) {
       toast.error((e as Error).message);
