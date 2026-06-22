@@ -99,6 +99,7 @@ function ConfigContent({ settings }: { settings: AppSettings }) {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div className="space-y-6">
           <Card icon={Sliders} title="Parámetros generales" desc="Aplican a todas las máquinas">
+            {false && (
             <Field
               label="Tolerancia de advertencia (% del rango)"
               value={String(form.tolerancia_advertencia_pct)}
@@ -106,6 +107,7 @@ function ConfigContent({ settings }: { settings: AppSettings }) {
               onChange={(v) => set("tolerancia_advertencia_pct", Number(v) || 0)}
               type="number"
             />
+            )}
             <ShiftRange
               label="Turno 1"
               inicio={form.turno1_inicio}
