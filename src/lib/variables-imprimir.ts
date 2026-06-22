@@ -55,18 +55,14 @@ function buildHtml(data: VariablesPrintData, logoDataUrl: string): string {
   const fechaImpresion = new Date().toLocaleString("es-MX");
   const vars = data.variables;
 
-  // Variables en dos columnas
-  const left: string[] = [];
-  const right: string[] = [];
-  vars.forEach((v, i) => {
-    const row = `
-      <tr>
-        <td class="lbl">${esc(v.label)}</td>
-        <td class="val">${v.objective != null ? esc(String(v.objective)) : "—"}${v.unit ? ` <span class="u">${esc(v.unit)}</span>` : ""}</td>
-        <td class="rng">${v.min != null ? esc(String(v.min)) : "—"} – ${v.max != null ? esc(String(v.max)) : "—"}</td>
-      </tr>`;
-    (i % 2 === 0 ? left : right).push(row);
-  });
+  const varRows = vars.map((v) => `
+    <tr>
+      <td class="lbl">${esc(v.label)}</td>
+      <td>${esc(v.unit ?? "—")}</td>
+      <td>${v.min != null ? esc(String(v.min)) : "—"}</td>
+      <td class="obj">${v.objective != null ? esc(String(v.objective)) : "—"}</td>
+      <td>${v.max != null ? esc(String(v.max)) : "—"}</td>
+    </tr>`).join("");
 
   const logRows = (data.log ?? []).map((r) => `
     <tr>
