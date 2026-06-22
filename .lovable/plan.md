@@ -1,111 +1,151 @@
+# Plan: Control documental en Catálogo Maestro de Especificaciones
 
-# Regla de oro de estatus + trazabilidad total
+Objetivo: introducir control documental (PDF/evidencia) y, posteriormente, flujo de aprobación sobre `producto_especificaciones`, sin tocar formularios de captura MP-04…MP-07 ni la lógica de resolución de spec vigente.
 
-## 1. Regla única (fuente de verdad)
+## Restricciones (vinculantes en todas las fases)
 
-Para CADA muestra se evalúan SOLO 3 variables críticas. Comparación **estricta y simétrica** (igual al límite SÍ cumple):
+- No eliminar ni renombrar tablas/columnas existentes.
+- No modificar formularios MP-04, MP-05, MP-06, MP-07 ni su lógica de captura.
+- No modificar APIs existentes (`qc.functions.ts`, triggers, funciones SQL).
+- No crear duplicados de `productos` ni `variables_calidad`.
+- Solo migraciones aditivas.
+- Sin publicación automática (eso es Fase 4, fuera de alcance de esta entrega).
 
-| Variable        | NO CUMPLE si            |
-|-----------------|-------------------------|
-| Peso Base       | valor < min  OR  valor > max |
-| Tensión Seca MD | valor < min  OR  valor > max |
-| Tensión Seca CD | valor < min  OR  valor > max |
+---
 
-- Si ninguna falla → **CUMPLE** → `estatus_liberacion = 'L'` automático.
-- Si al menos una falla → **NO CUMPLE** → estatus por defecto `'NC'`. El capturista puede liberar marcando "Liberar con justificación" + motivo (mín. 10 caracteres). En ese caso se guarda `'L'` con `liberado_con_justificacion = true`.
-- El operador NUNCA selecciona L/C/NC manualmente. El campo "Estatus de liberación" se **oculta** de la UI.
-- "C" (concesión) queda como estatus reservado solo para dictamen de Gerencia de Calidad (revisión posterior), no se asigna en captura.
+## FASE 1 — Diagnóstico (solo lectura, sin migraciones)
 
-## 2. Cambios de BD (migración)
+**Entregable:** informe en `docs/spec-control-documental/fase1-diagnostico.md`.
 
-Tabla `muestras_calidad` — añadir columnas:
-- `liberado_con_justificacion boolean NOT NULL DEFAULT false`
-- `liberacion_justificacion text` (NULL salvo cuando liberado_con_justificacion = true)
-- `liberado_por uuid REFERENCES auth.users(id)`
-- `liberado_at timestamptz`
-- `variables_fuera_spec jsonb DEFAULT '[]'` (snapshot de las fallas: variable, valor, min, max — para auditoría y reportes)
+Pasos:
 
-Trigger `muestras_enforce_regla_oro_fn` (BEFORE INSERT/UPDATE):
-- Recalcula las 3 condiciones con `variables_snapshot_json` + mediciones.
-- Si CUMPLE → fuerza `estatus_liberacion = 'L'`, limpia flags de justificación.
-- Si NO CUMPLE y `liberado_con_justificacion = false` → fuerza `'NC'`.
-- Si NO CUMPLE y `liberado_con_justificacion = true` → exige `liberacion_justificacion` (≥10), guarda `'L'`.
-- Llena `variables_fuera_spec`, `liberado_por`, `liberado_at`.
-- Sigue respetando `change_roll_status` (dictamen de Calidad sigue mandando sobre todo).
+1. Grep exhaustivo de lectores de `producto_especificaciones` y `producto_variables` en:
+   - `src/lib/qc.functions.ts`
+   - `src/lib/reportes.functions.ts`, `consolidado.functions.ts`, `reporte-mensual.functions.ts`, `reporte-no-conforme.functions.ts`, `produccion.functions.ts`, `operator-vision.functions.ts`, `trace.functions.ts`
+   - Funciones SQL: `ensure_orden_auto`, `muestras_autofill_uniones_fn`, vistas `vw_*`.
+2. Por cada lector, confirmar que filtra por `estado='vigente'`.
+3. Documentar el único punto sensible ya identificado: el fallback de `ensure_orden_auto` que toma la spec más reciente cuando no hay `vigente`. Marcar como “a endurecer en Fase 4”, NO tocar ahora.
+4. Confirmar que `mediciones_calidad` usa `min_snapshot`/`max_snapshot` (snapshot inmutable) → reportes históricos no se ven afectados por cambios futuros.
+5. Inventariar la UI editable de `variables-calidad.tsx`: identificar exactamente las acciones que dispararán el bloqueo por evidencia en Fase 2 (editar valor min/objetivo/max, agregar variable a producto, inactivar variable).
 
-Backfill: recalcular `estatus_liberacion` y `variables_fuera_spec` para todos los rollos históricos según la nueva regla (los que ya tienen `dictamen` autorizado no se tocan).
+**Criterio de aceptación Fase 1:** informe entregado y revisado. No hay cambios en código ni en base.
 
-Auditoría: cada liberación con justificación dispara `audit_log` (USER_LIBERA_NC) con las variables fuera de spec y el motivo.
+---
 
-## 3. Frontend
+## FASE 2 — Almacenamiento documental con evidencia obligatoria
 
-### `src/lib/qc-critical-rule.ts`
-Extender a regla simétrica (min y max para las 3 variables). Devolver además `variablesFueraSpec[]` para guardar/mostrar.
+**Alcance:** subir, ver y descargar PDF/evidencia ligada a una especificación, y bloquear ediciones del catálogo sin evidencia. **No** introduce estados de flujo nuevos ni toca el enum `spec_estado`.
 
-### `src/routes/calidad.captura.tsx`
-- Eliminar la sección "F. Cierre — Estatus de liberación" (selector L/NC/C).
-- Reemplazar por un panel en vivo: **"Resultado automático"** que muestra `CUMPLE` (verde) o `NO CUMPLE` (rojo) con la lista de variables fuera de spec.
-- Si NO CUMPLE: checkbox **"Liberar con justificación del capturista"** + textarea obligatoria (≥10 chars). Al activarlo, el estatus efectivo pasa a "Liberado con justificación" (amarillo).
-- Validación de submit bloquea cuando NO CUMPLE sin justificación marcada (no permite guardar como NC silencioso accidentalmente — debe ser decisión explícita).
+### 2.1 Backend — recursos nuevos
 
-### `src/lib/qc-effective-status.ts` y `src/lib/roll-status.ts`
-- Añadir nuevo key `LIBERADO_CON_JUSTIFICACION` → color amarillo (`#a16207` / `#fef3c7`), label "Liberado con justificación", `legacyCode: 'L'`.
-- `getEffectiveStatus`: cuando `estatus_liberacion='L'` y `liberado_con_justificacion=true` y NO hay dictamen autorizado de Gerencia → devuelve este nuevo estatus amarillo.
+Migración aditiva (un solo archivo):
 
-### Visores, reportes, etiqueta, QR
-- `roll-label.ts`, `roll-report.ts`, `etiqueta-liberacion.ts`: cuando estatus efectivo es `LIBERADO_CON_JUSTIFICACION` → banda amarilla con texto "LIBERADO CON JUSTIFICACIÓN — <motivo>".
-- `operator-vision.functions.ts`, `reportes.functions.ts`, `reporte-mensual.functions.ts`, `consolidado.functions.ts`, `produccion-centro.functions.ts`, `cumplimiento.functions.ts`: incluir conteo separado `rollos_liberados_con_justificacion` y mostrar columna/badge amarillo en cada visor que liste rollos.
-- KPI cumplimiento: los liberados con justificación siguen contando como "L" (cumplen para entrega) pero se reportan en columna aparte para que Gerencia los vea.
+- **Tabla `public.spec_documentos`**
+  - `id uuid PK`
+  - `especificacion_id uuid NOT NULL REFERENCES producto_especificaciones(id) ON DELETE CASCADE`
+  - `bucket_path text NOT NULL` (ruta dentro del bucket)
+  - `nombre_archivo text NOT NULL`
+  - `mime_type text NOT NULL`
+  - `tamano_bytes bigint NOT NULL`
+  - `hash_sha256 text` (deduplicación opcional)
+  - `descripcion text` (motivo / referencia del documento)
+  - `subido_por uuid NOT NULL REFERENCES auth.users(id)`
+  - `subido_at timestamptz NOT NULL DEFAULT now()`
+  - `vigente boolean NOT NULL DEFAULT true` (soft-archive; nunca DELETE de filas)
+  - `created_at`, `updated_at` + trigger `set_updated_at`
+  - Índice `(especificacion_id, vigente)`
+- **GRANTs**: `authenticated` SELECT/INSERT/UPDATE; `service_role` ALL. Sin `anon`.
+- **RLS**: 
+  - SELECT: cualquier `authenticated` (los límites de spec ya son visibles para roles consumidores).
+  - INSERT/UPDATE: `has_role(auth.uid(),'calidad')` OR `has_role(auth.uid(),'administrador')`.
+  - DELETE: prohibido (no policy).
 
-### Detalle de rollo / modal de antecedentes
-Mostrar bloque: usuario que liberó, fecha/hora, justificación, lista de variables fuera de spec con su valor y límites.
+- **Bucket privado `spec-documentos`** vía `supabase--storage_create_bucket` (public=false).
+- **Políticas RLS sobre `storage.objects` para `bucket_id='spec-documentos'`**:
+  - SELECT: `authenticated`.
+  - INSERT/UPDATE/DELETE: solo `calidad` / `administrador`.
+  - Convención de ruta: `{especificacion_id}/{uuid}-{nombre-saneado}.pdf`.
 
-## 4. Backend / server functions
+- **Función `public.spec_tiene_evidencia_vigente(_spec_id uuid) RETURNS boolean`** (SECURITY DEFINER, STABLE):
+  - `SELECT EXISTS(SELECT 1 FROM spec_documentos WHERE especificacion_id=_spec_id AND vigente=true)`.
+  - Sirve para gates server-side en server functions de edición.
 
-### `src/lib/qc.functions.ts` (`upsertMuestraConMediciones`)
-- Quitar la lectura de `estatus_liberacion` del input (ya no se envía desde UI).
-- Aplicar regla de oro server-side (defensa en profundidad, aunque el trigger también la aplica).
-- Aceptar `liberado_con_justificacion` + `liberacion_justificacion` del payload; validar que cuando NO CUMPLE y no hay justificación → error 422 con detalle de las variables fuera de spec.
-- Guardar `liberado_por = userId`, `liberado_at = now()` cuando aplica.
+### 2.2 Server functions — bloqueo por evidencia
 
-## 5. Trazabilidad / auditoría
+Sin tocar las funciones existentes de captura. Crear en `src/lib/spec-documentos.functions.ts`:
 
-- Cada liberación con justificación → `audit_log` (operación `LIBERA_CON_JUSTIFICACION`, datos: variables fuera de spec, motivo, usuario, rol).
-- Edición posterior que cambie alguna medición crítica → invalida `liberado_con_justificacion` y vuelve a evaluar (el trigger lo hace automático), registra cambio en audit_log.
-- La pantalla de auditoría (`/auditoria`) ya muestra `audit_log`; añadiremos filtro/badge para esta operación.
+- `listarDocumentos(spec_id)` — lista metadatos.
+- `subirDocumento(spec_id, file, descripcion)` — sube al bucket + inserta fila.
+- `urlFirmadaDescarga(documento_id)` — devuelve signed URL (TTL corto).
+- `archivarDocumento(documento_id)` — set `vigente=false` (no borra).
 
-## 6. Backfill histórico
+Endurecer **solo** los servers de mutación del catálogo en `qc.functions.ts` (las funciones que hoy escriben `producto_variables` / `spec_audit_log` desde la UI de Variables de Calidad). Añadir guard inicial:
 
-Migración corre al final un UPDATE masivo:
-- Recalcula `estatus_liberacion` y `variables_fuera_spec` para todas las muestras según la nueva regla.
-- NO toca muestras con `autorizado_por IS NOT NULL` (dictamen de Gerencia es soberano).
-- Las muestras históricas que tenían `'L'` con variables fuera de spec quedan marcadas con `liberado_con_justificacion = true` y `liberacion_justificacion = 'Migración: liberación histórica previa a regla de oro 18-Jun-2026'` para que aparezcan en amarillo y queden auditables.
-
-## 7. Detalles técnicos
-
-```text
-captura (UI) ── payload sin estatus ──▶ upsertMuestraConMediciones
-                                              │
-                                              ▼
-                                  evaluateRegolaOro() ──▶ persistencia
-                                              │
-                                              ▼
-                                      trigger BD valida
-                                              │
-                                              ▼
-                                      audit_log + visores
+```ts
+const ok = await supabase.rpc('spec_tiene_evidencia_vigente', { _spec_id: especificacion_id });
+if (!ok.data) throw new Error('Se requiere cargar evidencia documental antes de modificar la especificación.');
 ```
 
-- Componentes shadcn existentes (Checkbox, Textarea, Alert) — sin nuevas deps.
-- Los cambios de visores/reportes son derivaciones del nuevo estatus efectivo, sin tocar lógica de paginación/filtros existentes.
+Esto NO afecta a MP-04…MP-07: ellos no editan specs, solo las leen.
 
-## 8. Orden de entrega
+### 2.3 UI
 
-1. Migración BD (nuevas columnas + trigger + backfill).
-2. Tras aprobación, actualizar `qc-critical-rule`, `qc-effective-status`, `roll-status` (estatus amarillo).
-3. Refactor captura: ocultar selector, panel CUMPLE/NO CUMPLE + checkbox justificación.
-4. `qc.functions.ts` regla server-side + auditoría.
-5. Visores/reportes/etiqueta para reflejar amarillo y columna nueva.
-6. Verificar en preview con un rollo CUMPLE, uno NC y uno liberado-con-justificación.
+En `src/routes/variables-calidad.tsx`, pestaña/sección nueva **“Evidencia documental”** por especificación:
 
-¿Te parece bien así? Si lo apruebas, arranco con la migración.
+- Listado de documentos vigentes (nombre, tamaño, quién subió, fecha, descargar, archivar).
+- Botón “Subir documento” (drag & drop, valida mime PDF/PNG/JPG, máx N MB).
+- Visor in-app (iframe a signed URL) para PDFs.
+
+Banner de bloqueo: si `spec_tiene_evidencia_vigente=false`, deshabilitar acciones de:
+- editar min/objetivo/max de una variable
+- agregar variable al producto
+- inactivar variable
+…mostrando tooltip “Carga evidencia documental para habilitar cambios”.
+
+### 2.4 Auditoría
+
+Reutilizar `spec_audit_log` ya existente para registrar `documento_cargado` y `documento_archivado` (sin schema nuevo; usar el campo `campo` con valor descriptivo o `audit_action('variables_calidad', ...)`).
+
+### 2.5 Criterios de aceptación Fase 2
+
+- Bucket privado existe y solo `calidad`/`administrador` pueden escribir.
+- Sin documento vigente → ediciones del catálogo bloqueadas tanto en UI como en server.
+- Con documento vigente → flujo de edición existente funciona idéntico.
+- MP-04…MP-07 sin cambios de comportamiento (verificación manual de captura).
+- Lectores históricos (reportes) sin cambios.
+
+---
+
+## FASES POSTERIORES (no se implementan en esta entrega)
+
+- **FASE 3 — Flujo de aprobación**: ampliar enum `spec_estado` (`borrador`, `en_revision`, `aprobada`, `obsoleta`), tabla `spec_aprobaciones`, UI de transiciones. Las máquinas siguen viendo solo `vigente`.
+- **FASE 4 — Publicación atómica**: función `publicar_especificacion(spec_id)`, índice único parcial `(producto_id) WHERE estado='vigente'`, endurecimiento del fallback de `ensure_orden_auto`.
+- **FASE 5 — Pruebas de regresión y RLS**: suite manual + automatizada sobre captura, reportes y bucket.
+
+---
+
+## Detalles técnicos (resumen para revisión técnica)
+
+- Stack server: TanStack `createServerFn` + `requireSupabaseAuth`; sin Edge Functions.
+- Bucket creado con tool `supabase--storage_create_bucket` (no SQL).
+- Migración única para Fase 2 contiene: CREATE TABLE → GRANT → ENABLE RLS → POLICIES → función `spec_tiene_evidencia_vigente` → políticas en `storage.objects`.
+- Storage signed URLs vía `supabase.storage.from('spec-documentos').createSignedUrl(path, 300)`.
+- Tamaño máximo sugerido: 20 MB por archivo; mime allow-list: `application/pdf`, `image/png`, `image/jpeg`.
+
+## Riesgos y mitigación (Fase 2)
+
+| Riesgo | Mitigación |
+|---|---|
+| Usuario sube archivo y no aparece la fila en `spec_documentos` (subida parcial) | Subir primero al bucket; si éxito, insertar fila; si la inserción falla, borrar el objeto. Envolver en server fn. |
+| Bloqueo de edición rompe flujos en producción al desplegar | Feature flag en `app_settings` (`spec_evidencia_obligatoria` boolean, default `false`). Activar después de cargar evidencia de las specs vigentes existentes. |
+| Specs vigentes ya existentes sin documento | Script de seed opcional para insertar un “documento placeholder” marcado `vigente=false` para que la UI muestre el estado correctamente; o mantener flag apagado hasta que Calidad cargue evidencia inicial. |
+| Confusión entre `producto_especificaciones.vigente_desde` y `spec_documentos.vigente` | Nombrar la columna como `vigente` con comentario SQL claro; alternativamente `activo`. |
+
+## Pendiente de confirmación antes de empezar Fase 2
+
+1. Tipos de archivo permitidos (¿solo PDF, o también imágenes?).
+2. Tamaño máximo por archivo.
+3. ¿Debe el bloqueo aplicar también a `productos` (alta/baja/edición de SKU) o solo a variables de la spec?
+4. ¿Usamos feature flag `spec_evidencia_obligatoria` para activación gradual?
+
+Espero aprobación para ejecutar Fase 1 (sin migraciones) y, tras revisar el informe, proceder con la migración de Fase 2.
