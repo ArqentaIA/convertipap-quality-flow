@@ -366,8 +366,14 @@ function VariablesCalidad() {
                 variant="default"
                 size="sm"
                 onClick={startEdit}
-                disabled={!puedeEditar || !activeSpec?.hasSpec}
-                title={puedeEditar ? "" : "Sin permiso para editar"}
+                disabled={!puedeEditarConEvidencia || !activeSpec?.hasSpec}
+                title={
+                  !puedeEditar
+                    ? "Sin permiso para editar"
+                    : bloqueoEvidencia
+                      ? "Carga evidencia documental vigente para habilitar cambios"
+                      : ""
+                }
               >
                 <Pencil className="h-4 w-4" /> Editar
               </Button>
@@ -404,6 +410,13 @@ function VariablesCalidad() {
             <div className="border-b border-border bg-muted/20 px-5 py-2 text-[11px] text-muted-foreground flex items-center gap-2">
               <ShieldAlert className="h-3.5 w-3.5" />
               Solo Dirección, Calidad o Administrador pueden modificar especificaciones.
+            </div>
+          )}
+
+          {bloqueoEvidencia && puedeEditar && activeSpec?.hasSpec && (
+            <div className="border-b border-border bg-destructive/10 px-5 py-2 text-[11px] text-destructive flex items-center gap-2">
+              <ShieldAlert className="h-3.5 w-3.5" />
+              Esta especificación requiere evidencia documental vigente antes de poder agregar, modificar o inactivar variables. Carga el documento en el panel inferior.
             </div>
           )}
 
