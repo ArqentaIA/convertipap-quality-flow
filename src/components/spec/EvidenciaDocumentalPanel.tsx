@@ -343,7 +343,7 @@ export function EvidenciaDocumentalPanel({
                       >
                         <Download className="h-3.5 w-3.5" /> Descargar
                       </button>
-                      {puedeEditar && (
+                      {puedeSubir && (
                         <button
                           onClick={() => archivar(d.id)}
                           disabled={archivarMut.isPending}
