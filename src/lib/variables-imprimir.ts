@@ -46,6 +46,14 @@ export type VariablesPrintData = {
   name: string;
   family: string;
   specVersion?: string | null;
+  planta?: string | null;
+  clausula?: string | null;
+  tipoDocumento?: string | null;
+  area?: string | null;
+  docCode?: string | null;
+  fechaActualizacion?: string | null;
+  revision?: string | null;
+  pagina?: string | null;
   variables: VariableRow[];
   caracteristicas?: string | null;
   log?: LogRow[];
@@ -53,6 +61,7 @@ export type VariablesPrintData = {
 
 function buildHtml(data: VariablesPrintData, logoDataUrl: string): string {
   const fechaImpresion = new Date().toLocaleString("es-MX");
+  const fechaDoc = esc(data.fechaActualizacion ?? new Date().toLocaleDateString("es-MX"));
   const vars = data.variables;
 
   const varRows = vars.map((v) => `
@@ -92,28 +101,31 @@ function buildHtml(data: VariablesPrintData, logoDataUrl: string): string {
 
   .sheet{width:210mm;min-height:297mm;margin:0 auto;background:#fff;border:2px solid #0f172a;display:flex;flex-direction:column}
 
-  .head{display:grid;grid-template-columns:78px 1fr;border-bottom:2px solid #0f172a}
+  .head{display:grid;grid-template-columns:78px 1fr 210px;border-bottom:2px solid #0f172a}
   .head .brand{display:flex;align-items:center;justify-content:center;padding:6px;border-right:1px solid #0f172a}
   .head .brand img{max-width:72px;max-height:72px;object-fit:contain;display:block}
-  .head .title{padding:8px 10px;display:flex;flex-direction:column;justify-content:center;text-align:center}
-  .head .title b{font-size:12px;color:#475569;letter-spacing:.04em}
-  .head .title .sub{font-size:18px;font-weight:900;letter-spacing:.14em;margin-top:3px}
-  .head .meta-bar{grid-column:1/-1;display:flex;justify-content:space-between;font-size:10px;color:#475569;padding:4px 10px;border-top:1px solid #cbd5e1;background:#f8fafc;letter-spacing:.02em}
+  .head .title{padding:8px 10px;display:flex;flex-direction:column;justify-content:center;text-align:center;border-right:1px solid #0f172a}
+  .head .title .t1{font-size:14px;font-weight:900;letter-spacing:.12em;color:#0f172a}
+  .head .title .t2{font-size:11px;color:#475569;letter-spacing:.04em;margin-top:3px}
+  .head .title .t3{font-size:11px;font-weight:800;color:#0f172a;letter-spacing:.08em;margin-top:4px}
+  .head .info{display:flex;flex-direction:column}
+  .head .info .block{flex:1;padding:6px 8px;display:flex;flex-direction:column;justify-content:center;border-bottom:1px solid #0f172a}
+  .head .info .block:last-child{border-bottom:0}
+  .head .info .k{font-size:9px;color:#64748b;text-transform:uppercase;letter-spacing:.08em;font-weight:700}
+  .head .info .v{font-size:10px;color:#0f172a;margin-top:2px;font-weight:700}
 
-  .hero{display:grid;grid-template-columns:1fr 1fr;border-bottom:2px solid #0f172a}
-  .hero .code{padding:12px 14px;background:#0f172a;color:#fff;display:flex;flex-direction:column;justify-content:center}
-  .hero .code .tag{font-size:11px;letter-spacing:.18em;color:#e2e8f0;text-transform:uppercase;font-weight:700}
-  .hero .code .num{font-size:54px;font-weight:900;line-height:1;letter-spacing:-.02em;margin-top:6px;font-variant-numeric:tabular-nums}
-  .hero .producto{padding:12px 14px;display:flex;flex-direction:column;justify-content:center;background:#fff}
-  .hero .producto .tag{font-size:11px;letter-spacing:.18em;color:#64748b;text-transform:uppercase;font-weight:700}
-  .hero .producto .nombre{font-size:20px;font-weight:900;line-height:1.1;margin-top:5px;color:#0f172a;letter-spacing:-.01em}
-  .hero .producto .codigo{font-size:12px;color:#475569;margin-top:5px;font-family:ui-monospace,Menlo,monospace;letter-spacing:.04em}
+  .subhead{display:grid;grid-template-columns:1fr 1fr;border-bottom:2px solid #0f172a}
+  .subhead .product{padding:14px;display:flex;flex-direction:column;justify-content:center;background:#fff;border-right:1px solid #0f172a}
+  .subhead .product .code{font-size:26px;font-weight:900;line-height:1;letter-spacing:-.02em;color:#0f172a;font-variant-numeric:tabular-nums}
+  .subhead .product .name{font-size:13px;font-weight:800;line-height:1.25;margin-top:6px;color:#0f172a;text-transform:uppercase;letter-spacing:.02em}
+  .subhead .meta{padding:0}
+  .subhead .meta table{width:100%;height:100%;border-collapse:collapse}
+  .subhead .meta td{border:1px solid #0f172a;padding:5px 8px;font-size:10px;vertical-align:middle;text-align:center}
+  .subhead .meta td.k{color:#64748b;text-transform:uppercase;letter-spacing:.06em;font-weight:700;background:#f8fafc;font-size:9px}
+  .subhead .meta td.v{color:#0f172a;font-weight:800;font-size:11px}
 
-  .meta-band{display:grid;grid-template-columns:1fr 1fr 1fr;border-bottom:2px solid #0f172a}
-  .meta-band > div{padding:8px 10px;border-right:1px solid #0f172a}
-  .meta-band > div:last-child{border-right:0}
-  .meta-band .k{font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.1em;font-weight:700}
-  .meta-band .v{font-size:16px;font-weight:800;color:#0f172a;margin-top:3px;font-variant-numeric:tabular-nums;line-height:1.1}
+  .policy-bar{padding:5px 12px;background:#f1f5f9;border-bottom:1px solid #0f172a;font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#0f172a;text-align:center}
+  .policy-text{padding:8px 12px;border-bottom:2px solid #0f172a;font-size:10px;line-height:1.5;color:#334155;text-align:justify}
 
   .mediciones-title{padding:6px 12px;background:#0f172a;color:#fff;font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}
   .mediciones{border-bottom:2px solid #0f172a;padding:0}
@@ -166,32 +178,41 @@ function buildHtml(data: VariablesPrintData, logoDataUrl: string): string {
     <div class="head">
       <div class="brand"><img src="${logoDataUrl}" alt="Convertipap" /></div>
       <div class="title">
-        <b>CONVERTIDOR DE PAPEL S.A. DE C.V</b>
-        <span class="sub">ESPECIFICACIONES DE CALIDAD</span>
+        <div class="t1">CONVERTIDOR DE PAPEL</div>
+        <div class="t2">S.A DE C.V</div>
+        <div class="t3">* PLANTA ${esc(data.planta ?? "TLAXCALA")} *</div>
       </div>
-      <div class="meta-bar">
-        <span>Catálogo Maestro de Variables</span>
-        <span>Impresión: ${esc(fechaImpresion)}</span>
-      </div>
-    </div>
-
-    <div class="hero">
-      <div class="code">
-        <div class="tag">Código de Producto</div>
-        <div class="num">${esc(data.code)}</div>
-      </div>
-      <div class="producto">
-        <div class="tag">Producto</div>
-        <div class="nombre">${esc(data.name.toUpperCase())}</div>
-        <div class="codigo">${esc(data.family)}${data.specVersion ? ` · Versión ${esc(data.specVersion)}` : ""}</div>
+      <div class="info">
+        <div class="block">
+          <div class="k">CLAÚSULA DE REFERENCIA</div>
+          <div class="v">${esc(data.clausula ?? "Cláusula 9.1.2 ISO 9001:2015")}</div>
+        </div>
+        <div class="block">
+          <div class="k">TIPO DOCUMENTO</div>
+          <div class="v">${esc(data.tipoDocumento ?? "ESPECIFICACIÓN PST")}</div>
+        </div>
       </div>
     </div>
 
-    <div class="meta-band">
-      <div><div class="k">Familia</div><div class="v">${esc(data.family)}</div></div>
-      <div><div class="k">Variables</div><div class="v">${vars.length}</div></div>
-      <div><div class="k">Versión</div><div class="v">${esc(data.specVersion ?? "—")}</div></div>
+    <div class="subhead">
+      <div class="product">
+        <div class="code">${esc(data.code)}</div>
+        <div class="name">${esc(data.name.toUpperCase())}</div>
+      </div>
+      <div class="meta">
+        <table>
+          <tbody>
+            <tr><td class="k" colspan="2">ÁREA</td><td class="k">CÓDIGO</td></tr>
+            <tr><td class="v" colspan="2">${esc(data.area ?? "CALIDAD")}</td><td class="v">${esc(data.docCode ?? data.code)}</td></tr>
+            <tr><td class="k">FECHA DE ACTUALIZACIÓN</td><td class="k">REVISIÓN</td><td class="k">PÁGINA</td></tr>
+            <tr><td class="v">${fechaDoc}</td><td class="v">${esc(data.revision ?? data.specVersion ?? "—")}</td><td class="v">${esc(data.pagina ?? "1-1")}</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
+
+    <div class="policy-bar">POLÍTICA AL MEDIO AMBIENTE</div>
+    <div class="policy-text">En CONVERTIDOR DE PAPEL S. A. DE C. V. Fabricamos Papel Higiénico, Papel Servilleta, Toalla y Toalla para cocina a base de fibras recicladas y otros aditivos de origen orgánico. Características que hacen que nuestros productos sean 100% biodegradables. Para CONVERTIDOR DE PAPEL S. A. DE C. V. El salvaguardar el medio ambiente es un compromiso de nuestro trabajo con nuestros clientes y el planeta.</div>
 
     <div class="mediciones-title">Especificaciones Vigentes</div>
     <div class="mediciones">
