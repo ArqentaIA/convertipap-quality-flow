@@ -215,11 +215,11 @@ function buildHtml(data: VariablesPrintData, logoDataUrl: string): string {
 
     <div class="firmas-title">Firmas de Autorización</div>
     <div class="firmas">
-      <div class="f"><div class="rol">Elaboró · Jefe de Calidad</div><div class="line"></div><div class="nombre">Karina Méndez</div></div>
-      <div class="f"><div class="rol">Revisó · Gerente de Calidad</div><div class="line"></div><div class="nombre">Jonatan Peláez</div></div>
-      <div class="f"><div class="rol">Revisó · Gerente de Producción</div><div class="line"></div><div class="nombre">Luis Alcalá</div></div>
-      <div class="f"><div class="rol">Autorizó · Director de Planta</div><div class="line"></div><div class="nombre">Javier García</div></div>
-      <div class="f"><div class="rol">Autorizó · Dirección Corporativa</div><div class="line"></div><div class="nombre">Lic. Luis Reséndiz</div></div>
+      <div class="f"><div class="accion">Elaboró</div><div class="line"></div><div class="nombre">Karina Méndez</div><div class="rol">Jefe de Calidad</div></div>
+      <div class="f"><div class="accion">Revisó</div><div class="line"></div><div class="nombre">Jonatan Peláez</div><div class="rol">Gerente de Calidad</div></div>
+      <div class="f"><div class="accion">Revisó</div><div class="line"></div><div class="nombre">Luis Alcalá</div><div class="rol">Gerente de Producción</div></div>
+      <div class="f"><div class="accion">Autorizó</div><div class="line"></div><div class="nombre">Javier García</div><div class="rol">Director de Planta</div></div>
+      <div class="f"><div class="accion">Autorizó</div><div class="line"></div><div class="nombre">Lic. Luis Reséndiz</div><div class="rol">Dirección Corporativa</div></div>
     </div>
 
     ${data.log && data.log.length > 0 ? `
