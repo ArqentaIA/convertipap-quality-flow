@@ -1609,6 +1609,7 @@ function OperatorVisionPage() {
           </div>
         </div>
       </footer>
+      </div>
     </div>
   );
 }
