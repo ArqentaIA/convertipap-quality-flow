@@ -84,10 +84,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:title", content: "Convertipap · Control de Calidad" },
       { property: "og:description", content: "Sistema empresarial Convertipap" },
       { property: "og:type", content: "website" },
+      { property: "og:image", content: "https://www.convertipap.site/favicon.png" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Convertipap" },
       { name: "twitter:title", content: "Convertipap · Control de Calidad" },
       { name: "twitter:description", content: "Sistema empresarial Convertipap" },
+      { name: "twitter:image", content: "https://www.convertipap.site/favicon.png" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
