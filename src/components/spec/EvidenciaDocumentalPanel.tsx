@@ -149,10 +149,10 @@ export function EvidenciaDocumentalPanel({
       data: { documento_id: id, motivo: motivo.trim() },
     });
     await queryClient.invalidateQueries({
-      queryKey: ["spec-documentos", productoCodigo],
+      queryKey: ["spec-documentos", productoCodigo, target],
     });
     await queryClient.invalidateQueries({
-      queryKey: ["spec-documentos-estado", productoCodigo],
+      queryKey: ["spec-documentos-estado", productoCodigo, target],
     });
     toast.success("Documento archivado.");
   };
