@@ -78,7 +78,9 @@ function decodeBase64(b64: string): Uint8Array {
 }
 
 async function sha256Hex(bytes: Uint8Array): Promise<string> {
-  const buf = await crypto.subtle.digest("SHA-256", bytes);
+  const ab = new ArrayBuffer(bytes.byteLength);
+  new Uint8Array(ab).set(bytes);
+  const buf = await crypto.subtle.digest("SHA-256", ab);
   return Array.from(new Uint8Array(buf))
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
