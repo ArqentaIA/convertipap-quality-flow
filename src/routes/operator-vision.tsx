@@ -20,6 +20,9 @@ import { getTurnosConfig } from "@/lib/settings.functions";
 import { useOperatorVisionRealtime } from "@/hooks/use-operator-vision-realtime";
 import { useShiftTick } from "@/hooks/useCurrentShift";
 import logoConvertipap from "@/assets/logo-convertipap.png";
+import { useAuth } from "@/lib/auth";
+import { supabase } from "@/integrations/supabase/client";
+import { Lock } from "lucide-react";
 
 // Convierte "HH:MM" en minutos desde 00:00 (hora local).
 function hhmmToMin(s: string | undefined | null): number | null {
