@@ -132,11 +132,11 @@ function buildHtml(data: VariablesPrintData, logoDataUrl: string): string {
 
   .firmas-title{padding:6px 12px;background:#0f172a;color:#fff;font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}
   .firmas{display:grid;grid-template-columns:repeat(5,1fr);border-bottom:2px solid #0f172a}
-  .firmas .f{padding:22px 6px 8px;border-right:1px solid #cbd5e1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;min-height:92px}
+  .firmas .f{padding:8px 6px;border-right:1px solid #cbd5e1;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:92px}
   .firmas .f:last-child{border-right:0}
-  .firmas .line{width:92%;border-top:1px solid #0f172a;margin-bottom:5px}
-  .firmas .nombre{font-size:10.5px;font-weight:800;color:#0f172a;text-align:center;line-height:1.15}
-  .firmas .rol{font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#475569;text-align:center;margin-top:2px}
+  .firmas .line{width:92%;border-top:1px solid #0f172a;margin:4px 0}
+  .firmas .nombre{font-size:10.5px;font-weight:800;color:#0f172a;text-align:center;line-height:1.15;margin-top:4px}
+  .firmas .rol{font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#475569;text-align:center;margin-bottom:4px}
 
   .log-title{padding:6px 12px;background:#f8fafc;border-bottom:1px solid #0f172a;font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#475569}
   .log{padding:0;border-bottom:2px solid #0f172a}
@@ -214,11 +214,11 @@ function buildHtml(data: VariablesPrintData, logoDataUrl: string): string {
 
     <div class="firmas-title">Firmas de Autorización</div>
     <div class="firmas">
-      <div class="f"><div class="line"></div><div class="nombre">Karina Méndez</div><div class="rol">Elaboró · Jefe de Calidad</div></div>
-      <div class="f"><div class="line"></div><div class="nombre">Jonatan Peláez</div><div class="rol">Revisó · Gerente de Calidad</div></div>
-      <div class="f"><div class="line"></div><div class="nombre">Luis Alcalá</div><div class="rol">Gerente de Producción</div></div>
-      <div class="f"><div class="line"></div><div class="nombre">Javier García</div><div class="rol">Director de Planta</div></div>
-      <div class="f"><div class="line"></div><div class="nombre">Lic. Luis Reséndiz</div><div class="rol">Dirección Corporativa</div></div>
+      <div class="f"><div class="rol">Elaboró · Jefe de Calidad</div><div class="line"></div><div class="nombre">Karina Méndez</div></div>
+      <div class="f"><div class="rol">Revisó · Gerente de Calidad</div><div class="line"></div><div class="nombre">Jonatan Peláez</div></div>
+      <div class="f"><div class="rol">Revisó · Gerente de Producción</div><div class="line"></div><div class="nombre">Luis Alcalá</div></div>
+      <div class="f"><div class="rol">Autorizó · Director de Planta</div><div class="line"></div><div class="nombre">Javier García</div></div>
+      <div class="f"><div class="rol">Autorizó · Dirección Corporativa</div><div class="line"></div><div class="nombre">Lic. Luis Reséndiz</div></div>
     </div>
 
     ${data.log && data.log.length > 0 ? `
