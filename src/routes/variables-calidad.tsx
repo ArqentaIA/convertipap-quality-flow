@@ -510,6 +510,14 @@ function VariablesCalidad() {
           </div>
         </div>
 
+        {/* Evidencia documental (Fase 2 — control documental) */}
+        {activeSpec?.hasSpec && (
+          <EvidenciaDocumentalPanel
+            productoCodigo={activeSpec.code}
+            puedeEditar={puedeEditar}
+          />
+        )}
+
         {/* Características de los Atributos */}
         <div className="rounded-xl border border-border bg-card shadow-sm">
           <div className="flex items-center justify-between border-b border-border px-5 py-3">
