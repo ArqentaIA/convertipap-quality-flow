@@ -99,9 +99,23 @@ function VariablesCalidad() {
   });
   const log = (auditQuery.data ?? []) as AuditRow[];
 
+  const estadoEvidenciaFn = useServerFn(getEvidenciaEstado);
+  const evidenciaQuery = useQuery({
+    queryKey: ["spec-documentos-estado", activeSpec?.code],
+    queryFn: () =>
+      estadoEvidenciaFn({ data: { producto_codigo: activeSpec!.code } }),
+    enabled: !!activeSpec?.code && !!activeSpec?.hasSpec,
+  });
+  const evidenciaObligatoria =
+    evidenciaQuery.data?.evidencia_obligatoria === true;
+  const tieneEvidencia =
+    evidenciaQuery.data?.tiene_evidencia_vigente === true;
+  const bloqueoEvidencia = evidenciaObligatoria && !tieneEvidencia;
+
   const puedeEditar = auth.roles.some((r) =>
     (ROLES_EDIT as readonly string[]).includes(r),
   );
+  const puedeEditarConEvidencia = puedeEditar && !bloqueoEvidencia;
 
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState<DraftMap>({});
