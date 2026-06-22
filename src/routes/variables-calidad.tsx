@@ -168,6 +168,12 @@ function VariablesCalidad() {
       toast.error("Solo Calidad o Administrador pueden modificar especificaciones.");
       return;
     }
+    if (bloqueoEvidencia) {
+      toast.error(
+        "Carga evidencia documental vigente antes de modificar la especificación.",
+      );
+      return;
+    }
     const d: DraftMap = {};
     activeSpec?.variables.forEach((v) => {
       d[v.key] = { min: v.min, objective: v.objective, max: v.max };
