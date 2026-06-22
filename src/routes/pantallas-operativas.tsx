@@ -81,8 +81,17 @@ function OperatorVisionUrls() {
         <div className="space-y-2">
           {MAQUINAS_OV.map((maq) => {
             const url = `${OPERATOR_VISION_BASE}/operator-vision?maquina=${maq}`;
+            const internalUrl = `/operator-vision?maquina=${maq}`;
             const pin = codeByMaq.get(maq) ?? null;
             const visible = reveal[maq] ?? false;
+            const openInternal = () => {
+              try {
+                sessionStorage.setItem("ov_internal_intent", maq);
+              } catch {
+                /* ignore */
+              }
+              window.location.assign(internalUrl);
+            };
             return (
               <div
                 key={maq}
@@ -133,15 +142,14 @@ function OperatorVisionUrls() {
                 >
                   <Copy className="h-3.5 w-3.5" />
                 </button>
-                <a
-                  href={url}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <button
+                  type="button"
+                  onClick={openInternal}
                   className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-primary/40 bg-primary/5 text-primary hover:bg-primary/10"
-                  title="Abrir en nueva pestaña"
+                  title="Abrir visor (acceso interno, sin PIN)"
                 >
                   <ExternalLink className="h-3.5 w-3.5" />
-                </a>
+                </button>
               </div>
             );
           })}
