@@ -273,6 +273,7 @@ export type Database = {
           notif_resumen_diario: boolean
           notif_resumen_semanal: boolean
           singleton: boolean
+          spec_evidencia_obligatoria: boolean
           tolerancia_advertencia_pct: number
           turno1_fin: string
           turno1_inicio: string
@@ -296,6 +297,7 @@ export type Database = {
           notif_resumen_diario?: boolean
           notif_resumen_semanal?: boolean
           singleton?: boolean
+          spec_evidencia_obligatoria?: boolean
           tolerancia_advertencia_pct?: number
           turno1_fin?: string
           turno1_inicio?: string
@@ -319,6 +321,7 @@ export type Database = {
           notif_resumen_diario?: boolean
           notif_resumen_semanal?: boolean
           singleton?: boolean
+          spec_evidencia_obligatoria?: boolean
           tolerancia_advertencia_pct?: number
           turno1_fin?: string
           turno1_inicio?: string
@@ -1451,6 +1454,71 @@ export type Database = {
           },
         ]
       }
+      spec_documentos: {
+        Row: {
+          archivado_at: string | null
+          archivado_por: string | null
+          bucket_path: string
+          created_at: string
+          descripcion: string | null
+          especificacion_id: string
+          hash_sha256: string | null
+          id: string
+          mime_type: string
+          motivo_archivado: string | null
+          nombre_archivo: string
+          subido_at: string
+          subido_por: string
+          tamano_bytes: number
+          updated_at: string
+          vigente: boolean
+        }
+        Insert: {
+          archivado_at?: string | null
+          archivado_por?: string | null
+          bucket_path: string
+          created_at?: string
+          descripcion?: string | null
+          especificacion_id: string
+          hash_sha256?: string | null
+          id?: string
+          mime_type: string
+          motivo_archivado?: string | null
+          nombre_archivo: string
+          subido_at?: string
+          subido_por: string
+          tamano_bytes: number
+          updated_at?: string
+          vigente?: boolean
+        }
+        Update: {
+          archivado_at?: string | null
+          archivado_por?: string | null
+          bucket_path?: string
+          created_at?: string
+          descripcion?: string | null
+          especificacion_id?: string
+          hash_sha256?: string | null
+          id?: string
+          mime_type?: string
+          motivo_archivado?: string | null
+          nombre_archivo?: string
+          subido_at?: string
+          subido_por?: string
+          tamano_bytes?: number
+          updated_at?: string
+          vigente?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spec_documentos_especificacion_id_fkey"
+            columns: ["especificacion_id"]
+            isOneToOne: false
+            referencedRelation: "producto_especificaciones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tipos_paro: {
         Row: {
           activo: boolean
@@ -1749,6 +1817,10 @@ export type Database = {
         Returns: undefined
       }
       shift_op_date: { Args: { _ts: string; _turno: string }; Returns: string }
+      spec_tiene_evidencia_vigente: {
+        Args: { _spec_id: string }
+        Returns: boolean
+      }
       user_allowed_machine_codes: {
         Args: { _user_id: string }
         Returns: string[]
