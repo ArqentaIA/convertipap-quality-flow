@@ -30,16 +30,6 @@ export type VariableRow = {
   max: number;
 };
 
-export type LogRow = {
-  modificado_at: string;
-  modificado_por_nombre: string | null;
-  modificado_por_rol: string | null;
-  variable_etiqueta: string;
-  campo: string;
-  valor_anterior: number | string | null;
-  valor_nuevo: number | string | null;
-  motivo: string;
-};
 
 export type VariablesPrintData = {
   code: string;
