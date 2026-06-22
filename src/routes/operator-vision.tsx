@@ -95,22 +95,35 @@ export const Route = createFileRoute("/operator-vision")({
 // Permite entrar sin desafío si hay sesión autenticada (acceso desde el menú).
 // Si se entra por URL directa (sin sesión), exige el PIN de la máquina.
 // El PIN validado se recuerda en sessionStorage hasta cerrar el navegador.
+// Clave que la página "Pantallas Operativas" deposita en sessionStorage
+// justo antes de navegar al visor desde el menú lateral. Es un intento de
+// un solo uso: se consume al montar el gate. Recargar, abrir en otra pestaña
+// o entrar por URL directa NO tendrán este intento → se exige PIN.
+const INTERNAL_INTENT_KEY = "ov_internal_intent";
+
 function OperatorVisionGate() {
   const { maquina } = Route.useSearch();
   const auth = useAuth();
-  const storageKey = `ov_pin_ok_${maquina}`;
-  const [unlocked, setUnlocked] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
-    return sessionStorage.getItem(storageKey) === "1";
-  });
+  const [unlocked, setUnlocked] = useState<boolean>(false);
+  const [checkedIntent, setCheckedIntent] = useState<boolean>(false);
 
-  // Cuando cambia la máquina, releer el flag.
+  // Consume el intento de acceso interno una sola vez por montaje.
+  // Sólo concede acceso si hay sesión activa Y la clave coincide con la máquina.
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    setUnlocked(sessionStorage.getItem(storageKey) === "1");
-  }, [storageKey]);
+    if (typeof window === "undefined") {
+      setCheckedIntent(true);
+      return;
+    }
+    if (auth.loading) return;
+    const intent = sessionStorage.getItem(INTERNAL_INTENT_KEY);
+    if (intent) sessionStorage.removeItem(INTERNAL_INTENT_KEY); // un solo uso
+    if (auth.isAuthenticated && intent === maquina) {
+      setUnlocked(true);
+    }
+    setCheckedIntent(true);
+  }, [auth.loading, auth.isAuthenticated, maquina]);
 
-  if (auth.loading) {
+  if (auth.loading || !checkedIntent) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-100 text-sm text-slate-500">
         Cargando…
@@ -118,17 +131,14 @@ function OperatorVisionGate() {
     );
   }
 
-  if (auth.isAuthenticated || unlocked) {
+  if (unlocked) {
     return <OperatorVisionPage />;
   }
 
   return (
     <PinChallenge
       maquina={maquina}
-      onSuccess={() => {
-        sessionStorage.setItem(storageKey, "1");
-        setUnlocked(true);
-      }}
+      onSuccess={() => setUnlocked(true)}
     />
   );
 }
