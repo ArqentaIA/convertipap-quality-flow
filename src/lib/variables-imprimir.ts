@@ -235,7 +235,7 @@ function buildHtml(data: VariablesPrintData, logoDataUrl: string): string {
     </div>
     ` : ""}
 
-    <div class="foot">Documento generado automáticamente · Convertipap Quality Flow</div>
+    <div class="foot">Oficinas Corporativo Ajusco · Carretera Picacho Ajusco No. 130 Int. 404 · Col. Jardines en la Montaña · C.P. 14210<br/>Documento generado automáticamente · Convertipap Quality Flow</div>
   </div>
 </body>
 </html>`;
