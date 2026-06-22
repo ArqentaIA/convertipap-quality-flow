@@ -316,13 +316,19 @@ export const archivarDocumento = createServerFn({ method: "POST" })
 export const getEvidenciaEstado = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
-    z.object({ producto_codigo: z.string().min(1) }).parse(input),
+    z
+      .object({
+        producto_codigo: z.string().min(1),
+        target: z.enum(["vigente", "borrador"]).optional(),
+      })
+      .parse(input),
   )
   .handler(async ({ data, context }) => {
     const sb = context.supabase as SB;
     const { especificacion_id } = await resolveSpecIdByProductCode(
       sb,
       data.producto_codigo,
+      data.target ?? "vigente",
     );
 
     const { data: flagRow } = await sb
