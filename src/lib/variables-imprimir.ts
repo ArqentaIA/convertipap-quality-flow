@@ -206,8 +206,17 @@ function buildHtml(data: VariablesPrintData, logoDataUrl: string): string {
       </table>
     </div>
 
-    <div class="atrib-title">Características de los Atributos</div>
-    <div class="atrib">${esc(data.caracteristicas || "Sin características registradas.")}</div>
+    <div class="atrib-title"><span>Características de los Atributos</span><span class="lim">Máx. 250 caracteres</span></div>
+    <div class="atrib">${esc((data.caracteristicas || "Sin características registradas.").slice(0, 250))}</div>
+
+    <div class="firmas-title">Firmas de Autorización</div>
+    <div class="firmas">
+      <div class="f"><div class="line"></div><div class="rol">Elaboró</div></div>
+      <div class="f"><div class="line"></div><div class="rol">Revisó</div></div>
+      <div class="f"><div class="line"></div><div class="rol">Calidad</div></div>
+      <div class="f"><div class="line"></div><div class="rol">Producción</div></div>
+      <div class="f"><div class="line"></div><div class="rol">Autorizó</div></div>
+    </div>
 
     ${data.log && data.log.length > 0 ? `
     <div class="log-title">Bitácora de Cambios</div>
