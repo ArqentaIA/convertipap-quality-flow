@@ -1300,16 +1300,25 @@ export const updateCaracteristicasByCode = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!prod) throw new Error(`Producto ${data.producto_codigo} no encontrado`);
 
+    // Fase 3: las características se editan SIEMPRE sobre el borrador.
     const { data: spec } = await sb
       .from("producto_especificaciones")
-      .select("id, caracteristicas_atributos")
+      .select("id, estado, caracteristicas_atributos")
       .eq("producto_id", prod.id)
-      .order("created_at", { ascending: false })
-      .limit(1)
+      .in("estado", ["borrador", "en_revision"])
       .maybeSingle();
-    if (!spec) throw new Error(`Sin especificación registrada para ${data.producto_codigo}`);
+    if (!spec) {
+      throw new Error(
+        "Primero crea un borrador para modificar esta especificación.",
+      );
+    }
+    if (spec.estado === "en_revision") {
+      throw new Error(
+        "La especificación está en revisión; descarta o publica el borrador antes de editar.",
+      );
+    }
 
-    // Guard de evidencia documental (Fase 2).
+    // Guard de evidencia (flag ON) sobre el borrador.
     {
       const { data: flagRow } = await sb
         .from("app_settings")
@@ -1327,7 +1336,7 @@ export const updateCaracteristicasByCode = createServerFn({ method: "POST" })
         if (rErr) throw new Error(rErr.message);
         if (ok !== true) {
           throw new Error(
-            "Se requiere cargar evidencia documental vigente antes de modificar la especificación.",
+            "El borrador no tiene evidencia documental vigente. Cárgala antes de modificar características.",
           );
         }
       }
