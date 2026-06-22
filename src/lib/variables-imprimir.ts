@@ -30,16 +30,6 @@ export type VariableRow = {
   max: number;
 };
 
-export type LogRow = {
-  modificado_at: string;
-  modificado_por_nombre: string | null;
-  modificado_por_rol: string | null;
-  variable_etiqueta: string;
-  campo: string;
-  valor_anterior: number | string | null;
-  valor_nuevo: number | string | null;
-  motivo: string;
-};
 
 export type VariablesPrintData = {
   code: string;
@@ -56,7 +46,6 @@ export type VariablesPrintData = {
   pagina?: string | null;
   variables: VariableRow[];
   caracteristicas?: string | null;
-  log?: LogRow[];
 };
 
 function buildHtml(data: VariablesPrintData, logoDataUrl: string): string {
@@ -74,18 +63,6 @@ function buildHtml(data: VariablesPrintData, logoDataUrl: string): string {
       <td>INTERNO</td>
     </tr>`).join("");
 
-  const logRows = (data.log ?? []).map((r) => `
-    <tr>
-      <td>${esc(new Date(r.modificado_at).toLocaleString("es-MX"))}</td>
-      <td>${esc(r.modificado_por_nombre ?? "—")}</td>
-      <td>${esc(r.modificado_por_rol ?? "—")}</td>
-      <td>${esc(r.variable_etiqueta)}</td>
-      <td>${esc(r.campo)}</td>
-      <td class="num">${esc(String(r.valor_anterior ?? "—"))}</td>
-      <td class="num nvo">${esc(String(r.valor_nuevo ?? "—"))}</td>
-      <td>${esc(r.motivo)}</td>
-    </tr>
-  `).join("");
 
   return `<!doctype html>
 <html lang="es">
@@ -243,19 +220,6 @@ function buildHtml(data: VariablesPrintData, logoDataUrl: string): string {
       <div class="f"><div class="accion">Autorizó</div><div class="line"></div><div class="nombre">Lic. Luis Reséndiz</div><div class="rol">Dirección Corporativa</div></div>
     </div>
 
-    ${data.log && data.log.length > 0 ? `
-    <div class="log-title">Bitácora de Cambios</div>
-    <div class="log">
-      <table>
-        <thead>
-          <tr>
-            <th>Fecha</th><th>Usuario</th><th>Rol</th><th>Variable</th><th>Campo</th><th>Anterior</th><th>Nuevo</th><th>Motivo</th>
-          </tr>
-        </thead>
-        <tbody>${logRows}</tbody>
-      </table>
-    </div>
-    ` : ""}
 
     <div class="foot">Oficinas Corporativo Ajusco · Carretera Picacho Ajusco No. 130 Int. 404 · Col. Jardines en la Montaña · C.P. 14210<br/>Documento generado automáticamente · Convertipap Quality Flow</div>
   </div>

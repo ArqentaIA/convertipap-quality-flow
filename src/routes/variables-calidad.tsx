@@ -154,16 +154,6 @@ function VariablesCalidad() {
           max: v.max,
         })),
         caracteristicas: caracteristicas || null,
-        log: log.map((r) => ({
-          modificado_at: r.modificado_at,
-          modificado_por_nombre: r.modificado_por_nombre,
-          modificado_por_rol: r.modificado_por_rol,
-          variable_etiqueta: r.variable_etiqueta,
-          campo: r.campo,
-          valor_anterior: r.valor_anterior,
-          valor_nuevo: r.valor_nuevo,
-          motivo: r.motivo,
-        })),
       });
     } catch (e) {
       toast.error((e as Error).message);
