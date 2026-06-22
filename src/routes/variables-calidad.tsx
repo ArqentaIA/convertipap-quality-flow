@@ -16,6 +16,8 @@ import {
   listEspecsActivasConVariables,
   updateCaracteristicasByCode,
 } from "@/lib/qc.functions";
+import { getEvidenciaEstado } from "@/lib/spec-documentos.functions";
+import { EvidenciaDocumentalPanel } from "@/components/spec/EvidenciaDocumentalPanel";
 import { imprimirVariablesCalidad } from "@/lib/variables-imprimir";
 import { useAuth } from "@/lib/auth";
 import {
