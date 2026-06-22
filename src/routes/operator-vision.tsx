@@ -104,12 +104,16 @@ const INTERNAL_INTENT_KEY = "ov_internal_intent";
 function OperatorVisionGate() {
   const { maquina } = Route.useSearch();
   const auth = useAuth();
-  const [unlocked, setUnlocked] = useState<boolean>(false);
-  const [checkedIntent, setCheckedIntent] = useState<boolean>(false);
+  // PIN_REQUIRED: bandera para reactivar el desafío de PIN cuando se requiera.
+  // Cambiar a `true` para volver a exigir PIN en accesos externos.
+  const PIN_REQUIRED = false;
+  const [unlocked, setUnlocked] = useState<boolean>(!PIN_REQUIRED);
+  const [checkedIntent, setCheckedIntent] = useState<boolean>(!PIN_REQUIRED);
 
   // Consume el intento de acceso interno una sola vez por montaje.
   // Sólo concede acceso si hay sesión activa Y la clave coincide con la máquina.
   useEffect(() => {
+    if (!PIN_REQUIRED) return;
     if (typeof window === "undefined") {
       setCheckedIntent(true);
       return;
@@ -121,9 +125,9 @@ function OperatorVisionGate() {
       setUnlocked(true);
     }
     setCheckedIntent(true);
-  }, [auth.loading, auth.isAuthenticated, maquina]);
+  }, [PIN_REQUIRED, auth.loading, auth.isAuthenticated, maquina]);
 
-  if (auth.loading || !checkedIntent) {
+  if (PIN_REQUIRED && (auth.loading || !checkedIntent)) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-100 text-sm text-slate-500">
         Cargando…
