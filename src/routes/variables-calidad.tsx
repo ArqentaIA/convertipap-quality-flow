@@ -106,8 +106,15 @@ function VariablesCalidad() {
       estadoEvidenciaFn({ data: { producto_codigo: activeSpec!.code } }),
     enabled: !!activeSpec?.code && !!activeSpec?.hasSpec,
   });
+  const flagFn = useServerFn(getEvidenciaFlag);
+  const flagQuery = useQuery({
+    queryKey: ["spec-evidencia-flag"],
+    queryFn: () => flagFn(),
+    enabled: !!auth.session?.access_token,
+  });
   const evidenciaObligatoria =
-    evidenciaQuery.data?.evidencia_obligatoria === true;
+    evidenciaQuery.data?.evidencia_obligatoria === true ||
+    flagQuery.data?.evidencia_obligatoria === true;
   const tieneEvidencia =
     evidenciaQuery.data?.tiene_evidencia_vigente === true;
   const bloqueoEvidencia = evidenciaObligatoria && !tieneEvidencia;
