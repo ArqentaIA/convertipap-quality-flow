@@ -613,3 +613,110 @@ function KPI({ label, value }: { label: string; value: string }) {
   );
 }
 
+type MaquinaRow = { id: string; codigo: string; nombre: string; access_code: string | null };
+
+function MachineAccessCodesCard() {
+  const qc = useQueryClient();
+  const [edits, setEdits] = useState<Record<string, string>>({});
+  const [reveal, setReveal] = useState<Record<string, boolean>>({});
+
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["maquinas-access-codes"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("maquinas")
+        .select("id, codigo, nombre, access_code")
+        .eq("activo", true)
+        .order("codigo");
+      if (error) throw error;
+      return data as MaquinaRow[];
+    },
+  });
+
+  const saveMutation = useMutation({
+    mutationFn: async ({ id, code }: { id: string; code: string }) => {
+      const { error } = await supabase
+        .from("maquinas")
+        .update({ access_code: code })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: (_d, vars) => {
+      toast.success(`Código actualizado`);
+      setEdits((e) => {
+        const { [vars.id]: _omit, ...rest } = e;
+        return rest;
+      });
+      qc.invalidateQueries({ queryKey: ["maquinas-access-codes"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <Card
+      icon={Monitor}
+      title="Códigos de acceso · Pantallas Operativas"
+      desc="PIN solicitado al entrar a /operator-vision por URL directa (sin sesión iniciada). Usa 4 dígitos."
+    >
+      {isLoading && (
+        <div className="text-xs text-muted-foreground">Cargando máquinas…</div>
+      )}
+      {error && (
+        <div className="text-xs text-destructive">No se pudieron cargar las máquinas: {error.message}</div>
+      )}
+      <div className="space-y-2">
+        {data?.map((m) => {
+          const current = edits[m.id] ?? m.access_code ?? "";
+          const dirty = edits[m.id] !== undefined && edits[m.id] !== (m.access_code ?? "");
+          const visible = reveal[m.id] ?? false;
+          return (
+            <div key={m.id} className="flex items-center gap-2 rounded-md border border-border bg-background p-2">
+              <span className="inline-flex h-7 min-w-[58px] items-center justify-center rounded-md bg-primary/10 px-2 text-[11px] font-bold text-primary">
+                {m.codigo}
+              </span>
+              <span className="flex-1 truncate text-xs text-muted-foreground" title={m.nombre}>
+                {m.nombre}
+              </span>
+              <div className="relative">
+                <input
+                  type={visible ? "text" : "password"}
+                  inputMode="numeric"
+                  maxLength={8}
+                  value={current}
+                  onChange={(e) =>
+                    setEdits((prev) => ({ ...prev, [m.id]: e.target.value.replace(/\s/g, "") }))
+                  }
+                  placeholder="••••"
+                  className="h-8 w-28 rounded-md border border-input bg-background px-2 text-center font-mono text-sm tracking-widest text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => setReveal((r) => ({ ...r, [m.id]: !visible }))}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background text-muted-foreground hover:bg-accent"
+                title={visible ? "Ocultar" : "Mostrar"}
+              >
+                <Eye className="h-3.5 w-3.5" />
+              </button>
+              <button
+                type="button"
+                disabled={!dirty || current.length < 4 || saveMutation.isPending}
+                onClick={() => saveMutation.mutate({ id: m.id, code: current })}
+                className="inline-flex h-8 items-center gap-1 rounded-md bg-primary px-3 text-[11px] font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-40"
+              >
+                <Lock className="h-3 w-3" /> Guardar
+              </button>
+            </div>
+          );
+        })}
+      </div>
+      <div className="mt-3 flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-[11px] text-amber-800">
+        <ShieldAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+        <span>
+          Mantén estos códigos confidenciales. Quienes ingresen por el menú con sesión válida no requieren PIN.
+        </span>
+      </div>
+    </Card>
+  );
+}
+
