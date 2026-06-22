@@ -221,6 +221,64 @@ function ConfigContent({ settings }: { settings: AppSettings }) {
           </Card>
           {previewCEO && <CEOReportPreview onClose={() => setPreviewCEO(false)} />}
 
+          {isAdmin && (
+            <Card icon={FileCheck2} title="Control documental de especificaciones" desc="Variables de Calidad · Catálogo Maestro">
+              <Toggle
+                label="Exigir evidencia documental vigente"
+                on={form.spec_evidencia_obligatoria}
+                onChange={(v) => {
+                  if (v && !form.spec_evidencia_obligatoria) {
+                    setConfirmEvidencia(true);
+                  } else {
+                    set("spec_evidencia_obligatoria", false);
+                  }
+                }}
+                hint="Cuando está activa, no se puede editar, agregar ni inactivar variables si la especificación no tiene evidencia documental vigente."
+              />
+              <div className="mt-2 flex items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-2 text-[11px] text-muted-foreground">
+                <ShieldAlert className="h-3.5 w-3.5 text-amber-600" />
+                Estado actual:{" "}
+                <span className={`font-semibold ${form.spec_evidencia_obligatoria ? "text-emerald-700" : "text-muted-foreground"}`}>
+                  {form.spec_evidencia_obligatoria ? "Activa" : "Inactiva"}
+                </span>
+                <span className="opacity-60">· Recuerda guardar los cambios.</span>
+              </div>
+            </Card>
+          )}
+
+          {confirmEvidencia && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setConfirmEvidencia(false)}>
+              <div className="w-full max-w-md rounded-xl bg-card p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+                <div className="mb-3 flex items-start gap-3">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-700">
+                    <ShieldAlert className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold text-foreground">Activar evidencia obligatoria</h3>
+                    <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                      Al activar esta opción, no se permitirá editar, agregar o inactivar variables sin evidencia documental vigente.
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-4 flex justify-end gap-2">
+                  <button
+                    onClick={() => setConfirmEvidencia(false)}
+                    className="rounded-md border border-input bg-background px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-accent"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={() => { set("spec_evidencia_obligatoria", true); setConfirmEvidencia(false); }}
+                    className="rounded-md bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90"
+                  >
+                    Activar
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+
           <button
             onClick={handleSave}
             disabled={mutation.isPending}
