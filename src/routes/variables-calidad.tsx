@@ -311,6 +311,20 @@ function VariablesCalidad() {
   return (
     <AppLayout title="Variables de Calidad · Catálogo Maestro de Especificaciones">
       <div className="space-y-5">
+        {/* Indicador global de evidencia obligatoria */}
+        <div
+          className={`flex items-center gap-2 rounded-md border px-3 py-2 text-xs font-medium ${
+            evidenciaObligatoria
+              ? "border-emerald-300 bg-emerald-50 text-emerald-800"
+              : "border-border bg-muted/40 text-muted-foreground"
+          }`}
+        >
+          <ShieldAlert className={`h-3.5 w-3.5 ${evidenciaObligatoria ? "text-emerald-700" : "text-muted-foreground"}`} />
+          Evidencia obligatoria:{" "}
+          <span className="font-semibold">
+            {evidenciaObligatoria ? "Activa" : "Inactiva"}
+          </span>
+        </div>
         {/* Selectores */}
         <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
           <div className="grid grid-cols-1 gap-3 md:grid-cols-[260px,1fr]">
