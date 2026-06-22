@@ -182,10 +182,20 @@ function buildHtml(data: VariablesPrintData, logoDataUrl: string): string {
       <div><div class="k">Versión</div><div class="v">${esc(data.specVersion ?? "—")}</div></div>
     </div>
 
-    <div class="mediciones-title">Variables de Calidad</div>
+    <div class="mediciones-title">Especificaciones Vigentes</div>
     <div class="mediciones">
-      <div><table>${left.join("")}</table></div>
-      <div><table>${right.join("")}</table></div>
+      <table>
+        <thead>
+          <tr>
+            <th style="text-align:left">Variable</th>
+            <th>Unidad</th>
+            <th>Mínimo</th>
+            <th>Objetivo</th>
+            <th>Máximo</th>
+          </tr>
+        </thead>
+        <tbody>${varRows}</tbody>
+      </table>
     </div>
 
     <div class="atrib-title">Características de los Atributos</div>
