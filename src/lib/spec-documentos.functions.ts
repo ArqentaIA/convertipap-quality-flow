@@ -167,6 +167,7 @@ export const subirDocumento = createServerFn({ method: "POST" })
         mime_type: z.string().min(1),
         contenido_base64: z.string().min(1),
         descripcion: z.string().max(500).optional().nullable(),
+        target: z.enum(["vigente", "borrador"]).optional(),
       })
       .parse(input),
   )
@@ -199,6 +200,7 @@ export const subirDocumento = createServerFn({ method: "POST" })
     const { especificacion_id } = await resolveSpecIdByProductCode(
       sb,
       data.producto_codigo,
+      data.target ?? "vigente",
     );
 
     const ext = data.nombre_archivo.split(".").pop()?.toLowerCase() ?? "bin";
