@@ -55,9 +55,14 @@ function formatBytes(n: number): string {
 type Props = {
   productoCodigo: string;
   puedeEditar: boolean;
+  target?: "vigente" | "borrador";
 };
 
-export function EvidenciaDocumentalPanel({ productoCodigo, puedeEditar }: Props) {
+export function EvidenciaDocumentalPanel({
+  productoCodigo,
+  puedeEditar,
+  target = "vigente",
+}: Props) {
   const queryClient = useQueryClient();
   const listFn = useServerFn(listarDocumentos);
   const estadoFn = useServerFn(getEvidenciaEstado);
@@ -70,13 +75,15 @@ export function EvidenciaDocumentalPanel({ productoCodigo, puedeEditar }: Props)
   const [uploading, setUploading] = useState(false);
 
   const docsQuery = useQuery({
-    queryKey: ["spec-documentos", productoCodigo],
-    queryFn: () => listFn({ data: { producto_codigo: productoCodigo } }),
+    queryKey: ["spec-documentos", productoCodigo, target],
+    queryFn: () =>
+      listFn({ data: { producto_codigo: productoCodigo, target } }),
     enabled: !!productoCodigo,
   });
   const estadoQuery = useQuery({
-    queryKey: ["spec-documentos-estado", productoCodigo],
-    queryFn: () => estadoFn({ data: { producto_codigo: productoCodigo } }),
+    queryKey: ["spec-documentos-estado", productoCodigo, target],
+    queryFn: () =>
+      estadoFn({ data: { producto_codigo: productoCodigo, target } }),
     enabled: !!productoCodigo,
   });
 
