@@ -1,151 +1,110 @@
-# Plan: Control documental en Catálogo Maestro de Especificaciones
 
-Objetivo: introducir control documental (PDF/evidencia) y, posteriormente, flujo de aprobación sobre `producto_especificaciones`, sin tocar formularios de captura MP-04…MP-07 ni la lógica de resolución de spec vigente.
+# Fase 3 — Flujo de Borrador / Revisión / Publicación
 
-## Restricciones (vinculantes en todas las fases)
+Objetivo: que ningún cambio en Variables de Calidad afecte QR, reportes ni los formularios MP-04…MP-07 hasta que un usuario autorizado publique una nueva versión.
 
-- No eliminar ni renombrar tablas/columnas existentes.
-- No modificar formularios MP-04, MP-05, MP-06, MP-07 ni su lógica de captura.
-- No modificar APIs existentes (`qc.functions.ts`, triggers, funciones SQL).
-- No crear duplicados de `productos` ni `variables_calidad`.
-- Solo migraciones aditivas.
-- Sin publicación automática (eso es Fase 4, fuera de alcance de esta entrega).
+## Principio rector
+
+- `producto_especificaciones.estado='vigente'` sigue siendo la **única** fuente que leen QC, reportes, QR y formularios MP-04…MP-07. **No se toca esa lectura.**
+- Todas las ediciones (agregar / modificar / inactivar variables) ocurren sobre una **nueva fila** de `producto_especificaciones` en estado `borrador` (o `en_revision`), con su propio set de `producto_variables` clonado.
+- La publicación es una operación atómica que cambia estados: `vigente → obsoleta` y `borrador → vigente`.
 
 ---
 
-## FASE 1 — Diagnóstico (solo lectura, sin migraciones)
+## Cambios de base de datos (1 migración)
 
-**Entregable:** informe en `docs/spec-control-documental/fase1-diagnostico.md`.
+1. **Enum `spec_estado`**: añadir valores `borrador`, `en_revision`, `obsoleta`.
+   (Hoy solo hay `vigente`; los demás valores son nuevos, no rompen datos.)
+2. **`producto_especificaciones`**: nuevas columnas
+   - `borrador_de uuid REFERENCES producto_especificaciones(id)` — vínculo borrador → vigente origen.
+   - `enviado_revision_por uuid`, `enviado_revision_at timestamptz`.
+   - `publicado_por uuid`, `publicado_at timestamptz`.
+   - `motivo_cambio text`.
+3. **Índice único parcial**: una sola `vigente` y un solo `borrador` activo por producto.
+   ```text
+   UNIQUE (producto_id) WHERE estado='vigente'
+   UNIQUE (producto_id) WHERE estado IN ('borrador','en_revision')
+   ```
+4. **RPC `crear_borrador_especificacion(_producto_id uuid, _motivo text)`** (SECURITY DEFINER):
+   - Verifica rol (`calidad` o `administrador`) y, si el flag `spec_evidencia_obligatoria` está ON, exige evidencia vigente en la spec vigente origen.
+   - Si ya existe borrador → devuelve su id (idempotente).
+   - Inserta nueva fila copiando `caracteristicas_atributos`, `notas`, `version` (autoincrementada: `v{n+1}`).
+   - Clona todas las `producto_variables` de la vigente al nuevo `especificacion_id`.
+   - Registra en `spec_audit_log` (`campo='estado'`, motivo).
+5. **RPC `enviar_a_revision(_spec_id uuid, _motivo text)`**:
+   - Solo el borrador del producto; cambia `borrador → en_revision`; auditoría.
+6. **RPC `publicar_especificacion(_spec_id uuid, _motivo text)`**:
+   - Solo `calidad` o `administrador`.
+   - Exige `estado IN ('borrador','en_revision')` y (si flag ON) evidencia vigente asociada al borrador.
+   - En transacción: vigente actual → `obsoleta` (set `vigente_hasta=now()`); borrador → `vigente` (set `vigente_desde=now()`, `aprobado_por`, `aprobado_at`, `publicado_por`, `publicado_at`).
+   - **Re-apunta** los `spec_documentos` vigentes de la spec origen al nuevo `especificacion_id` (mantiene historial; los archivados quedan en la obsoleta).
+   - Registra auditoría `campo='publicacion'`.
+7. **RPC `descartar_borrador(_spec_id uuid, _motivo text)`**: solo admin/calidad; borra el borrador y sus `producto_variables`. Auditoría.
+8. GRANTs + RLS: `EXECUTE` a `authenticated` en los 4 RPCs; las políticas existentes de `producto_especificaciones` / `producto_variables` siguen igual (los RPCs son SECURITY DEFINER).
 
-Pasos:
-
-1. Grep exhaustivo de lectores de `producto_especificaciones` y `producto_variables` en:
-   - `src/lib/qc.functions.ts`
-   - `src/lib/reportes.functions.ts`, `consolidado.functions.ts`, `reporte-mensual.functions.ts`, `reporte-no-conforme.functions.ts`, `produccion.functions.ts`, `operator-vision.functions.ts`, `trace.functions.ts`
-   - Funciones SQL: `ensure_orden_auto`, `muestras_autofill_uniones_fn`, vistas `vw_*`.
-2. Por cada lector, confirmar que filtra por `estado='vigente'`.
-3. Documentar el único punto sensible ya identificado: el fallback de `ensure_orden_auto` que toma la spec más reciente cuando no hay `vigente`. Marcar como “a endurecer en Fase 4”, NO tocar ahora.
-4. Confirmar que `mediciones_calidad` usa `min_snapshot`/`max_snapshot` (snapshot inmutable) → reportes históricos no se ven afectados por cambios futuros.
-5. Inventariar la UI editable de `variables-calidad.tsx`: identificar exactamente las acciones que dispararán el bloqueo por evidencia en Fase 2 (editar valor min/objetivo/max, agregar variable a producto, inactivar variable).
-
-**Criterio de aceptación Fase 1:** informe entregado y revisado. No hay cambios en código ni en base.
-
----
-
-## FASE 2 — Almacenamiento documental con evidencia obligatoria
-
-**Alcance:** subir, ver y descargar PDF/evidencia ligada a una especificación, y bloquear ediciones del catálogo sin evidencia. **No** introduce estados de flujo nuevos ni toca el enum `spec_estado`.
-
-### 2.1 Backend — recursos nuevos
-
-Migración aditiva (un solo archivo):
-
-- **Tabla `public.spec_documentos`**
-  - `id uuid PK`
-  - `especificacion_id uuid NOT NULL REFERENCES producto_especificaciones(id) ON DELETE CASCADE`
-  - `bucket_path text NOT NULL` (ruta dentro del bucket)
-  - `nombre_archivo text NOT NULL`
-  - `mime_type text NOT NULL`
-  - `tamano_bytes bigint NOT NULL`
-  - `hash_sha256 text` (deduplicación opcional)
-  - `descripcion text` (motivo / referencia del documento)
-  - `subido_por uuid NOT NULL REFERENCES auth.users(id)`
-  - `subido_at timestamptz NOT NULL DEFAULT now()`
-  - `vigente boolean NOT NULL DEFAULT true` (soft-archive; nunca DELETE de filas)
-  - `created_at`, `updated_at` + trigger `set_updated_at`
-  - Índice `(especificacion_id, vigente)`
-- **GRANTs**: `authenticated` SELECT/INSERT/UPDATE; `service_role` ALL. Sin `anon`.
-- **RLS**: 
-  - SELECT: cualquier `authenticated` (los límites de spec ya son visibles para roles consumidores).
-  - INSERT/UPDATE: `has_role(auth.uid(),'calidad')` OR `has_role(auth.uid(),'administrador')`.
-  - DELETE: prohibido (no policy).
-
-- **Bucket privado `spec-documentos`** vía `supabase--storage_create_bucket` (public=false).
-- **Políticas RLS sobre `storage.objects` para `bucket_id='spec-documentos'`**:
-  - SELECT: `authenticated`.
-  - INSERT/UPDATE/DELETE: solo `calidad` / `administrador`.
-  - Convención de ruta: `{especificacion_id}/{uuid}-{nombre-saneado}.pdf`.
-
-- **Función `public.spec_tiene_evidencia_vigente(_spec_id uuid) RETURNS boolean`** (SECURITY DEFINER, STABLE):
-  - `SELECT EXISTS(SELECT 1 FROM spec_documentos WHERE especificacion_id=_spec_id AND vigente=true)`.
-  - Sirve para gates server-side en server functions de edición.
-
-### 2.2 Server functions — bloqueo por evidencia
-
-Sin tocar las funciones existentes de captura. Crear en `src/lib/spec-documentos.functions.ts`:
-
-- `listarDocumentos(spec_id)` — lista metadatos.
-- `subirDocumento(spec_id, file, descripcion)` — sube al bucket + inserta fila.
-- `urlFirmadaDescarga(documento_id)` — devuelve signed URL (TTL corto).
-- `archivarDocumento(documento_id)` — set `vigente=false` (no borra).
-
-Endurecer **solo** los servers de mutación del catálogo en `qc.functions.ts` (las funciones que hoy escriben `producto_variables` / `spec_audit_log` desde la UI de Variables de Calidad). Añadir guard inicial:
-
-```ts
-const ok = await supabase.rpc('spec_tiene_evidencia_vigente', { _spec_id: especificacion_id });
-if (!ok.data) throw new Error('Se requiere cargar evidencia documental antes de modificar la especificación.');
-```
-
-Esto NO afecta a MP-04…MP-07: ellos no editan specs, solo las leen.
-
-### 2.3 UI
-
-En `src/routes/variables-calidad.tsx`, pestaña/sección nueva **“Evidencia documental”** por especificación:
-
-- Listado de documentos vigentes (nombre, tamaño, quién subió, fecha, descargar, archivar).
-- Botón “Subir documento” (drag & drop, valida mime PDF/PNG/JPG, máx N MB).
-- Visor in-app (iframe a signed URL) para PDFs.
-
-Banner de bloqueo: si `spec_tiene_evidencia_vigente=false`, deshabilitar acciones de:
-- editar min/objetivo/max de una variable
-- agregar variable al producto
-- inactivar variable
-…mostrando tooltip “Carga evidencia documental para habilitar cambios”.
-
-### 2.4 Auditoría
-
-Reutilizar `spec_audit_log` ya existente para registrar `documento_cargado` y `documento_archivado` (sin schema nuevo; usar el campo `campo` con valor descriptivo o `audit_action('variables_calidad', ...)`).
-
-### 2.5 Criterios de aceptación Fase 2
-
-- Bucket privado existe y solo `calidad`/`administrador` pueden escribir.
-- Sin documento vigente → ediciones del catálogo bloqueadas tanto en UI como en server.
-- Con documento vigente → flujo de edición existente funciona idéntico.
-- MP-04…MP-07 sin cambios de comportamiento (verificación manual de captura).
-- Lectores históricos (reportes) sin cambios.
+**No se modifican** tablas/policies de `muestras_calidad`, `mediciones_calidad`, `productos`, `variables_calidad`, ni la función `ensure_orden_auto` (sigue resolviendo `estado='vigente'`).
 
 ---
 
-## FASES POSTERIORES (no se implementan en esta entrega)
+## Cambios en server functions
 
-- **FASE 3 — Flujo de aprobación**: ampliar enum `spec_estado` (`borrador`, `en_revision`, `aprobada`, `obsoleta`), tabla `spec_aprobaciones`, UI de transiciones. Las máquinas siguen viendo solo `vigente`.
-- **FASE 4 — Publicación atómica**: función `publicar_especificacion(spec_id)`, índice único parcial `(producto_id) WHERE estado='vigente'`, endurecimiento del fallback de `ensure_orden_auto`.
-- **FASE 5 — Pruebas de regresión y RLS**: suite manual + automatizada sobre captura, reportes y bucket.
+Archivo nuevo `src/lib/spec-publicacion.functions.ts` con:
+- `obtenerEstadoEspecificacion({ producto_codigo })` → `{ vigente, borrador, evidencia }`.
+- `crearBorrador({ producto_codigo, motivo })` → llama RPC.
+- `enviarARevision({ spec_id, motivo })`.
+- `publicarVersion({ spec_id, motivo })`.
+- `descartarBorrador({ spec_id, motivo })`.
+
+Ajustes mínimos en `src/lib/qc.functions.ts`:
+- Las mutaciones existentes (`upsertProductoVariable`, alta/baja de variable, etc.) deben **rechazar** si el `especificacion_id` recibido tiene `estado='vigente'` y existe un borrador del mismo producto — forzar a editar el borrador. Si no existe borrador, devolver error claro indicando que primero hay que crearlo desde la UI.
+- Lectura para captura / reportes / QR: **sin cambios** (siguen leyendo `vigente`).
+
+`spec-documentos.functions.ts`:
+- `resolveSpecIdByProductCode` se reemplaza por un selector explícito: por defecto resuelve la `vigente`; nuevos parámetros opcionales `incluir_borrador=true` para que la UI pueda subir evidencia al borrador.
+- `subirDocumento` acepta `target: 'vigente' | 'borrador'` (default `vigente` por compatibilidad). El bloqueo de edición exige evidencia vigente en el **borrador** para poder publicar.
 
 ---
 
-## Detalles técnicos (resumen para revisión técnica)
+## Cambios en UI (`src/routes/variables-calidad.tsx`)
 
-- Stack server: TanStack `createServerFn` + `requireSupabaseAuth`; sin Edge Functions.
-- Bucket creado con tool `supabase--storage_create_bucket` (no SQL).
-- Migración única para Fase 2 contiene: CREATE TABLE → GRANT → ENABLE RLS → POLICIES → función `spec_tiene_evidencia_vigente` → políticas en `storage.objects`.
-- Storage signed URLs vía `supabase.storage.from('spec-documentos').createSignedUrl(path, 300)`.
-- Tamaño máximo sugerido: 20 MB por archivo; mime allow-list: `application/pdf`, `image/png`, `image/jpeg`.
+- Encabezado muestra dos tarjetas: **Versión vigente** (read-only) y **Versión borrador** (editable o "Sin borrador activo").
+- Acciones nuevas en la barra:
+  - `Crear borrador` (visible si no hay borrador y el usuario es calidad/admin; requiere motivo).
+  - `Subir evidencia al borrador` (reutiliza `EvidenciaDocumentalPanel` apuntando al borrador).
+  - `Enviar a revisión` (habilitado solo con borrador + evidencia si flag ON).
+  - `Publicar versión` (solo admin/calidad; requiere `en_revision` o `borrador` + evidencia).
+  - `Descartar borrador` (admin/calidad).
+- La tabla editable de variables opera **siempre sobre el borrador**. Si no hay borrador, la tabla está en modo solo-lectura mostrando la vigente.
+- Banner: "Los cambios no impactan producción hasta publicar".
 
-## Riesgos y mitigación (Fase 2)
+**No se tocan** MP-04, MP-05, MP-06, MP-07, QR ni reportes.
 
-| Riesgo | Mitigación |
-|---|---|
-| Usuario sube archivo y no aparece la fila en `spec_documentos` (subida parcial) | Subir primero al bucket; si éxito, insertar fila; si la inserción falla, borrar el objeto. Envolver en server fn. |
-| Bloqueo de edición rompe flujos en producción al desplegar | Feature flag en `app_settings` (`spec_evidencia_obligatoria` boolean, default `false`). Activar después de cargar evidencia de las specs vigentes existentes. |
-| Specs vigentes ya existentes sin documento | Script de seed opcional para insertar un “documento placeholder” marcado `vigente=false` para que la UI muestre el estado correctamente; o mantener flag apagado hasta que Calidad cargue evidencia inicial. |
-| Confusión entre `producto_especificaciones.vigente_desde` y `spec_documentos.vigente` | Nombrar la columna como `vigente` con comentario SQL claro; alternativamente `activo`. |
+---
 
-## Pendiente de confirmación antes de empezar Fase 2
+## Auditoría
 
-1. Tipos de archivo permitidos (¿solo PDF, o también imágenes?).
-2. Tamaño máximo por archivo.
-3. ¿Debe el bloqueo aplicar también a `productos` (alta/baja/edición de SKU) o solo a variables de la spec?
-4. ¿Usamos feature flag `spec_evidencia_obligatoria` para activación gradual?
+Toda transición (`crear_borrador`, `enviar_a_revision`, `publicar`, `descartar`) genera fila en `spec_audit_log` con `campo='estado'` o `campo='publicacion'`, `valor_anterior_texto`/`valor_nuevo_texto` con los estados, y el motivo del usuario. Las ediciones de variables ya generan auditoría hoy y se mantienen.
 
-Espero aprobación para ejecutar Fase 1 (sin migraciones) y, tras revisar el informe, proceder con la migración de Fase 2.
+---
+
+## Restricciones respetadas
+
+- No se eliminan tablas ni filas históricas (la vigente pasa a `obsoleta`, no se borra).
+- No se modifican MP-04…MP-07, QR ni reportes.
+- No se cambian APIs existentes de lectura; las de escritura solo añaden validación "edita el borrador, no la vigente".
+- No se duplican productos ni variables (`variables_calidad`).
+- Reutiliza `producto_especificaciones`, `producto_variables`, `spec_documentos`, `spec_audit_log`.
+- `ensure_orden_auto` queda intacto.
+
+---
+
+## Entregables por orden de ejecución
+
+1. Migración SQL (enum + columnas + índices únicos + 4 RPCs + GRANTs).
+2. `src/lib/spec-publicacion.functions.ts` (nuevo).
+3. Ajustes mínimos en `spec-documentos.functions.ts` (selector vigente/borrador).
+4. Guard en mutaciones de `qc.functions.ts` (rechazar escritura sobre vigente cuando exista borrador).
+5. UI: rediseño del encabezado y acciones en `variables-calidad.tsx` + componente `VersionesPanel.tsx`.
+6. Pruebas manuales: crear borrador → editar → subir evidencia → enviar a revisión → publicar → verificar que captura MP-04 ve la nueva spec y la anterior quedó `obsoleta`.
+
+Espero aprobación antes de implementar.
