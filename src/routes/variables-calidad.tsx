@@ -537,7 +537,7 @@ function VariablesCalidad() {
               maxLength={700}
               onChange={(e) => setCaracteristicas(e.target.value.slice(0, 700))}
               placeholder="Captura características adicionales de los atributos…"
-              disabled={!puedeEditar || !activeSpec?.hasSpec}
+              disabled={!puedeEditarConEvidencia || !activeSpec?.hasSpec}
               rows={5}
               className="w-full resize-y rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-60"
             />
@@ -552,7 +552,7 @@ function VariablesCalidad() {
               <button
                 onClick={saveCaracteristicas}
                 disabled={
-                  !puedeEditar ||
+                  !puedeEditarConEvidencia ||
                   !activeSpec?.hasSpec ||
                   savingCar ||
                   caracteristicas === carInitial
