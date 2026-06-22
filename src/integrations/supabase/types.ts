@@ -1070,12 +1070,21 @@ export type Database = {
         Row: {
           aprobado_at: string | null
           aprobado_por: string | null
+          borrador_de: string | null
           caracteristicas_atributos: string | null
           created_at: string
+          descartado_at: string | null
+          descartado_por: string | null
+          enviado_revision_at: string | null
+          enviado_revision_por: string | null
           estado: Database["public"]["Enums"]["spec_status"]
           id: string
+          motivo_cambio: string | null
+          motivo_descarte: string | null
           notas: string | null
           producto_id: string
+          publicado_at: string | null
+          publicado_por: string | null
           updated_at: string
           version: string
           vigente_desde: string | null
@@ -1084,12 +1093,21 @@ export type Database = {
         Insert: {
           aprobado_at?: string | null
           aprobado_por?: string | null
+          borrador_de?: string | null
           caracteristicas_atributos?: string | null
           created_at?: string
+          descartado_at?: string | null
+          descartado_por?: string | null
+          enviado_revision_at?: string | null
+          enviado_revision_por?: string | null
           estado?: Database["public"]["Enums"]["spec_status"]
           id?: string
+          motivo_cambio?: string | null
+          motivo_descarte?: string | null
           notas?: string | null
           producto_id: string
+          publicado_at?: string | null
+          publicado_por?: string | null
           updated_at?: string
           version: string
           vigente_desde?: string | null
@@ -1098,18 +1116,34 @@ export type Database = {
         Update: {
           aprobado_at?: string | null
           aprobado_por?: string | null
+          borrador_de?: string | null
           caracteristicas_atributos?: string | null
           created_at?: string
+          descartado_at?: string | null
+          descartado_por?: string | null
+          enviado_revision_at?: string | null
+          enviado_revision_por?: string | null
           estado?: Database["public"]["Enums"]["spec_status"]
           id?: string
+          motivo_cambio?: string | null
+          motivo_descarte?: string | null
           notas?: string | null
           producto_id?: string
+          publicado_at?: string | null
+          publicado_por?: string | null
           updated_at?: string
           version?: string
           vigente_desde?: string | null
           vigente_hasta?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "producto_especificaciones_borrador_de_fkey"
+            columns: ["borrador_de"]
+            isOneToOne: false
+            referencedRelation: "producto_especificaciones"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "producto_especificaciones_producto_id_fkey"
             columns: ["producto_id"]
