@@ -92,6 +92,18 @@ export function EvidenciaDocumentalPanel({
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const refrescar = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({
+        queryKey: ["spec-documentos", productoCodigo, target],
+      }),
+      queryClient.invalidateQueries({
+        queryKey: ["spec-documentos-estado", productoCodigo, target],
+      }),
+    ]);
+    await Promise.all([docsQuery.refetch(), estadoQuery.refetch()]);
+  };
+
   const handleFile = async (file: File) => {
     if (!ALLOWED_MIMES.includes(file.type.toLowerCase())) {
       toast.error("Tipo no permitido. Solo PDF, JPG, JPEG o PNG.");
@@ -117,12 +129,7 @@ export function EvidenciaDocumentalPanel({
       toast.success("Documento cargado correctamente.");
       setDescripcion("");
       if (inputRef.current) inputRef.current.value = "";
-      await queryClient.invalidateQueries({
-        queryKey: ["spec-documentos", productoCodigo, target],
-      });
-      await queryClient.invalidateQueries({
-        queryKey: ["spec-documentos-estado", productoCodigo, target],
-      });
+      await refrescar();
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -148,12 +155,7 @@ export function EvidenciaDocumentalPanel({
     await archivarMut.mutateAsync({
       data: { documento_id: id, motivo: motivo.trim() },
     });
-    await queryClient.invalidateQueries({
-      queryKey: ["spec-documentos", productoCodigo, target],
-    });
-    await queryClient.invalidateQueries({
-      queryKey: ["spec-documentos-estado", productoCodigo, target],
-    });
+    await refrescar();
     toast.success("Documento archivado.");
   };
 
