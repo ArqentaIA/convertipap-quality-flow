@@ -41,6 +41,7 @@ async function getUserRoles(sb: SB, userId: string): Promise<string[]> {
 async function resolveSpecIdByProductCode(
   sb: SB,
   codigo: string,
+  target: "vigente" | "borrador" = "vigente",
 ): Promise<{ especificacion_id: string; producto_id: string }> {
   const { data: prod, error: pErr } = await sb
     .from("productos")
@@ -49,15 +50,25 @@ async function resolveSpecIdByProductCode(
     .maybeSingle();
   if (pErr) throw new Error(pErr.message);
   if (!prod) throw new Error(`Producto ${codigo} no encontrado`);
+
+  const estados =
+    target === "borrador" ? ["borrador", "en_revision"] : ["vigente"];
   const { data: spec, error: sErr } = await sb
     .from("producto_especificaciones")
     .select("id")
     .eq("producto_id", prod.id)
+    .in("estado", estados)
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
   if (sErr) throw new Error(sErr.message);
-  if (!spec) throw new Error(`Sin especificación registrada para ${codigo}`);
+  if (!spec) {
+    throw new Error(
+      target === "borrador"
+        ? `No hay borrador activo para ${codigo}`
+        : `Sin especificación vigente para ${codigo}`,
+    );
+  }
   return { especificacion_id: spec.id as string, producto_id: prod.id as string };
 }
 
