@@ -711,7 +711,8 @@ function VariablesCalidad() {
           </div>
         </div>
 
-        {/* Bitácora */}
+        {/* Bitácora — oculta temporalmente */}
+        {false && (
         <div className="rounded-xl border border-border bg-card shadow-sm">
           <div className="border-b border-border px-5 py-3">
             <h3 className="text-sm font-semibold text-foreground">Bitácora de cambios — {activeSpec?.code}</h3>
@@ -767,6 +768,7 @@ function VariablesCalidad() {
             </table>
           </div>
         </div>
+        )}
       </div>
     </AppLayout>
   );
