@@ -913,8 +913,9 @@ function OperatorVisionPage() {
   return (
     <div
       ref={screenRef}
-      className="flex h-screen w-full flex-col overflow-hidden bg-slate-100 text-slate-900"
+      className="h-screen w-full overflow-auto bg-slate-100 text-slate-900 xl:overflow-hidden"
     >
+      <div className="flex h-full min-h-screen w-full min-w-[1400px] flex-col">
       <style>{`
         @keyframes varPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(244,63,94,0.5);} 50% { box-shadow: 0 0 0 8px rgba(244,63,94,0);} }
       `}</style>
