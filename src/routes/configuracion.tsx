@@ -4,7 +4,7 @@ import { queryOptions, useQuery, useMutation, useQueryClient } from "@tanstack/r
 import { useServerFn } from "@tanstack/react-start";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { SessionGate } from "@/components/SessionGate";
-import { Save, Eye, X, Mail, Sliders, Bell } from "lucide-react";
+import { Save, Eye, X, Mail, Sliders, Bell, ShieldAlert, FileCheck2 } from "lucide-react";
 import logoConvertipap from "@/assets/logo-convertipap.png";
 import { toast } from "sonner";
 import { getAppSettings, updateAppSettings, type AppSettings } from "@/lib/settings.functions";
