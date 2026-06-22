@@ -449,92 +449,11 @@ function VariablesCalidad() {
           </div>
         </div>
 
-        {/* Panel Versiones — Fase 3 */}
-        {activeSpec && (
-          <div className="rounded-xl border border-border bg-card shadow-sm">
-            <div className="flex items-center justify-between border-b border-border px-5 py-3">
-              <h3 className="text-sm font-semibold text-foreground">Versiones — {activeSpec.code}</h3>
-              <span className="text-[11px] text-muted-foreground">
-                Los cambios no impactan producción hasta publicar.
-              </span>
-            </div>
-            <div className="grid grid-cols-1 gap-3 p-4 md:grid-cols-2">
-              {/* Vigente */}
-              <div className="rounded-lg border border-success/30 bg-success/5 p-3">
-                <div className="mb-1 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-success">
-                  <Power className="h-3 w-3" /> Vigente (lectura)
-                </div>
-                {activeSpec.hasSpec ? (
-                  <div className="text-sm">
-                    <div className="font-semibold text-foreground">
-                      Versión {activeSpec.specVersion ?? "—"}
-                    </div>
-                    <div className="text-[11px] text-muted-foreground">
-                      Esta versión es la que leen QC, reportes, QR y formularios MP-04…MP-07.
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-xs text-muted-foreground">Sin versión vigente.</div>
-                )}
-              </div>
-
-              {/* Borrador */}
-              <div
-                className={`rounded-lg border p-3 ${
-                  hayBorrador
-                    ? enRevision
-                      ? "border-warning/40 bg-warning/5"
-                      : "border-primary/40 bg-primary/5"
-                    : "border-dashed border-border bg-muted/20"
-                }`}
-              >
-                <div className="mb-1 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider">
-                  <Pencil className="h-3 w-3" />
-                  {hayBorrador
-                    ? enRevision
-                      ? "En revisión"
-                      : "Borrador (editable)"
-                    : "Sin borrador activo"}
-                </div>
-                {hayBorrador ? (
-                  <div className="space-y-2 text-sm">
-                    <div className="font-semibold text-foreground">
-                      Versión {borrador!.version}
-                    </div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {!enRevision && puedeEditar && (
-                        <Button size="sm" variant="outline" onClick={handleEnviarRevision}>
-                          <Send className="h-3.5 w-3.5" /> Enviar a revisión
-                        </Button>
-                      )}
-                      {puedeEditar && (
-                        <Button size="sm" onClick={handlePublicar} className="bg-success text-white hover:opacity-90">
-                          <CheckCircle2 className="h-3.5 w-3.5" /> Publicar versión
-                        </Button>
-                      )}
-                      {puedeEditar && (
-                        <Button size="sm" variant="outline" onClick={handleDescartar} className="border-destructive/40 text-destructive hover:bg-destructive/10">
-                          <Trash2 className="h-3.5 w-3.5" /> Descartar
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <p className="text-[11px] text-muted-foreground">
-                      Crea un borrador para modificar variables o características sin afectar la versión vigente.
-                    </p>
-                    {puedeEditar && (
-                      <Button size="sm" onClick={handleCrearBorrador}>
-                        <FilePlus2 className="h-3.5 w-3.5" /> Crear borrador
-                      </Button>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+        {/* Panel Versiones — Fase 3 (oculto temporalmente para presentación) */}
+        {false && activeSpec && (
+          <div />
         )}
+
 
         {/* Tarjeta principal */}
         <div className="rounded-xl border border-border bg-card shadow-sm">
@@ -724,8 +643,8 @@ function VariablesCalidad() {
           </div>
         </div>
 
-        {/* Evidencia documental — VIGENTE (histórica · solo lectura) */}
-        {activeSpec?.hasSpec && (
+        {/* Evidencia documental — oculta temporalmente para presentación */}
+        {false && activeSpec?.hasSpec && (
           <EvidenciaDocumentalPanel
             productoCodigo={activeSpec.code}
             puedeEditar={false}
@@ -733,21 +652,6 @@ function VariablesCalidad() {
           />
         )}
 
-        {/* Evidencia documental — BORRADOR (editable) */}
-        {hayBorrador ? (
-          <EvidenciaDocumentalPanel
-            productoCodigo={activeSpec!.code}
-            puedeEditar={puedeEditar}
-            target="borrador"
-          />
-        ) : (
-          activeSpec?.hasSpec &&
-          puedeEditar && (
-            <div className="rounded-xl border border-dashed border-border bg-muted/10 px-5 py-4 text-xs text-muted-foreground">
-              Para subir nueva evidencia, primero crea un borrador desde el panel de versiones.
-            </div>
-          )
-        )}
 
         {/* Características de los Atributos */}
         <div className="rounded-xl border border-border bg-card shadow-sm">
