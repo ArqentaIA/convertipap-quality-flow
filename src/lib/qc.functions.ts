@@ -1082,6 +1082,31 @@ export const registrarSpecAuditByCode = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!spec) throw new Error(`Sin especificación registrada para ${data.producto_codigo}`);
 
+    // Guard de evidencia documental (Fase 2). Si el flag global está activo
+    // y la spec no tiene evidencia vigente, bloquear la mutación.
+    {
+      const { data: flagRow } = await sb
+        .from("app_settings")
+        .select("spec_evidencia_obligatoria")
+        .limit(1)
+        .maybeSingle();
+      const obligatoria =
+        ((flagRow as unknown as { spec_evidencia_obligatoria?: boolean } | null)
+          ?.spec_evidencia_obligatoria ?? false) === true;
+      if (obligatoria) {
+        const { data: ok, error: rErr } = await sb.rpc(
+          "spec_tiene_evidencia_vigente",
+          { _spec_id: spec.id as string },
+        );
+        if (rErr) throw new Error(rErr.message);
+        if (ok !== true) {
+          throw new Error(
+            "Se requiere cargar evidencia documental vigente antes de modificar la especificación.",
+          );
+        }
+      }
+    }
+
     const { data: variable } = await sb
       .from("variables_calidad")
       .select("id")
@@ -1274,6 +1299,30 @@ export const updateCaracteristicasByCode = createServerFn({ method: "POST" })
       .limit(1)
       .maybeSingle();
     if (!spec) throw new Error(`Sin especificación registrada para ${data.producto_codigo}`);
+
+    // Guard de evidencia documental (Fase 2).
+    {
+      const { data: flagRow } = await sb
+        .from("app_settings")
+        .select("spec_evidencia_obligatoria")
+        .limit(1)
+        .maybeSingle();
+      const obligatoria =
+        ((flagRow as unknown as { spec_evidencia_obligatoria?: boolean } | null)
+          ?.spec_evidencia_obligatoria ?? false) === true;
+      if (obligatoria) {
+        const { data: ok, error: rErr } = await sb.rpc(
+          "spec_tiene_evidencia_vigente",
+          { _spec_id: spec.id as string },
+        );
+        if (rErr) throw new Error(rErr.message);
+        if (ok !== true) {
+          throw new Error(
+            "Se requiere cargar evidencia documental vigente antes de modificar la especificación.",
+          );
+        }
+      }
+    }
 
     const anterior = ((spec as unknown as { caracteristicas_atributos?: string | null })
       .caracteristicas_atributos ?? "") as string;

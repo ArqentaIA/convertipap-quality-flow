@@ -16,6 +16,8 @@ import {
   listEspecsActivasConVariables,
   updateCaracteristicasByCode,
 } from "@/lib/qc.functions";
+import { getEvidenciaEstado } from "@/lib/spec-documentos.functions";
+import { EvidenciaDocumentalPanel } from "@/components/spec/EvidenciaDocumentalPanel";
 import { imprimirVariablesCalidad } from "@/lib/variables-imprimir";
 import { useAuth } from "@/lib/auth";
 import {
@@ -97,9 +99,23 @@ function VariablesCalidad() {
   });
   const log = (auditQuery.data ?? []) as AuditRow[];
 
+  const estadoEvidenciaFn = useServerFn(getEvidenciaEstado);
+  const evidenciaQuery = useQuery({
+    queryKey: ["spec-documentos-estado", activeSpec?.code],
+    queryFn: () =>
+      estadoEvidenciaFn({ data: { producto_codigo: activeSpec!.code } }),
+    enabled: !!activeSpec?.code && !!activeSpec?.hasSpec,
+  });
+  const evidenciaObligatoria =
+    evidenciaQuery.data?.evidencia_obligatoria === true;
+  const tieneEvidencia =
+    evidenciaQuery.data?.tiene_evidencia_vigente === true;
+  const bloqueoEvidencia = evidenciaObligatoria && !tieneEvidencia;
+
   const puedeEditar = auth.roles.some((r) =>
     (ROLES_EDIT as readonly string[]).includes(r),
   );
+  const puedeEditarConEvidencia = puedeEditar && !bloqueoEvidencia;
 
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState<DraftMap>({});
@@ -150,6 +166,12 @@ function VariablesCalidad() {
   const startEdit = () => {
     if (!puedeEditar) {
       toast.error("Solo Calidad o Administrador pueden modificar especificaciones.");
+      return;
+    }
+    if (bloqueoEvidencia) {
+      toast.error(
+        "Carga evidencia documental vigente antes de modificar la especificación.",
+      );
       return;
     }
     const d: DraftMap = {};
@@ -344,8 +366,14 @@ function VariablesCalidad() {
                 variant="default"
                 size="sm"
                 onClick={startEdit}
-                disabled={!puedeEditar || !activeSpec?.hasSpec}
-                title={puedeEditar ? "" : "Sin permiso para editar"}
+                disabled={!puedeEditarConEvidencia || !activeSpec?.hasSpec}
+                title={
+                  !puedeEditar
+                    ? "Sin permiso para editar"
+                    : bloqueoEvidencia
+                      ? "Carga evidencia documental vigente para habilitar cambios"
+                      : ""
+                }
               >
                 <Pencil className="h-4 w-4" /> Editar
               </Button>
@@ -382,6 +410,13 @@ function VariablesCalidad() {
             <div className="border-b border-border bg-muted/20 px-5 py-2 text-[11px] text-muted-foreground flex items-center gap-2">
               <ShieldAlert className="h-3.5 w-3.5" />
               Solo Dirección, Calidad o Administrador pueden modificar especificaciones.
+            </div>
+          )}
+
+          {bloqueoEvidencia && puedeEditar && activeSpec?.hasSpec && (
+            <div className="border-b border-border bg-destructive/10 px-5 py-2 text-[11px] text-destructive flex items-center gap-2">
+              <ShieldAlert className="h-3.5 w-3.5" />
+              Esta especificación requiere evidencia documental vigente antes de poder agregar, modificar o inactivar variables. Carga el documento en el panel inferior.
             </div>
           )}
 
@@ -475,6 +510,14 @@ function VariablesCalidad() {
           </div>
         </div>
 
+        {/* Evidencia documental (Fase 2 — control documental) */}
+        {activeSpec?.hasSpec && (
+          <EvidenciaDocumentalPanel
+            productoCodigo={activeSpec.code}
+            puedeEditar={puedeEditar}
+          />
+        )}
+
         {/* Características de los Atributos */}
         <div className="rounded-xl border border-border bg-card shadow-sm">
           <div className="flex items-center justify-between border-b border-border px-5 py-3">
@@ -502,7 +545,7 @@ function VariablesCalidad() {
               maxLength={700}
               onChange={(e) => setCaracteristicas(e.target.value.slice(0, 700))}
               placeholder="Captura características adicionales de los atributos…"
-              disabled={!puedeEditar || !activeSpec?.hasSpec}
+              disabled={!puedeEditarConEvidencia || !activeSpec?.hasSpec}
               rows={5}
               className="w-full resize-y rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-60"
             />
@@ -517,7 +560,7 @@ function VariablesCalidad() {
               <button
                 onClick={saveCaracteristicas}
                 disabled={
-                  !puedeEditar ||
+                  !puedeEditarConEvidencia ||
                   !activeSpec?.hasSpec ||
                   savingCar ||
                   caracteristicas === carInitial
