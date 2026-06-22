@@ -107,6 +107,8 @@ function RootShell({ children }: { children: React.ReactNode }) {
     <html lang="en">
       <head>
         <HeadContent />
+        <meta property="og:image" content="https://www.convertipap.site/favicon.png" />
+        <meta name="twitter:image" content="https://www.convertipap.site/favicon.png" />
       </head>
       <body>
         {children}
