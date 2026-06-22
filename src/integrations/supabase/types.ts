@@ -1768,6 +1768,18 @@ export type Database = {
       }
     }
     Functions: {
+      _spec_audit_estado: {
+        Args: {
+          _campo: Database["public"]["Enums"]["qc_spec_audit_field"]
+          _motivo: string
+          _producto_id: string
+          _spec_id: string
+          _texto_anterior: string
+          _texto_nuevo: string
+          _user: string
+        }
+        Returns: undefined
+      }
       audit_action: {
         Args: {
           p_datos?: Json
@@ -1803,6 +1815,14 @@ export type Database = {
         }
         Returns: string
       }
+      crear_borrador_especificacion: {
+        Args: { _motivo: string; _producto_id: string }
+        Returns: string
+      }
+      descartar_borrador: {
+        Args: { _motivo: string; _spec_id: string }
+        Returns: undefined
+      }
       ensure_orden_auto: {
         Args: {
           _maquina_id: string
@@ -1813,6 +1833,10 @@ export type Database = {
           _user_id: string
         }
         Returns: string
+      }
+      enviar_a_revision: {
+        Args: { _motivo: string; _spec_id: string }
+        Returns: undefined
       }
       fn_cumplimiento_turno_v2: {
         Args: { _maquina_id: string; _op_date: string; _turno: string }
@@ -1844,6 +1868,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      publicar_especificacion: {
+        Args: { _motivo: string; _spec_id: string }
+        Returns: undefined
       }
       qc_eval_regla_oro: { Args: { _muestra_id: string }; Returns: Json }
       qc_recalc_estatus_muestra: {
