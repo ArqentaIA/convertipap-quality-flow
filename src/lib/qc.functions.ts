@@ -295,6 +295,7 @@ export const listMisMuestrasRecientes = createServerFn({ method: "GET" })
     const seesAll = roles.some((r) =>
       ["administrador", "gerente_general", "direccion", "calidad"].includes(r),
     );
+    const isCapturista = roles.includes("capturista");
     let q = sb
       .from("muestras_calidad")
       .select(
@@ -311,8 +312,27 @@ export const listMisMuestrasRecientes = createServerFn({ method: "GET" })
          mediciones_calidad(variable_id, variable_clave, valor, min_snapshot, objetivo_snapshot, max_snapshot, estado, variables_calidad(clave, etiqueta, unidad))`,
       )
       .order("secuencia_captura", { ascending: false })
-      .limit(seesAll ? 50 : 20);
-    if (!seesAll) q = q.eq("capturado_por", userId);
+      .limit(seesAll ? 50 : isCapturista ? 30 : 20);
+
+    if (!seesAll) {
+      if (isCapturista) {
+        // Capturista: mostrar historial reciente de SUS máquinas permitidas
+        // (no solo lo que él tecleó), porque varios capturistas se relevan
+        // en el mismo turno y necesitan ver continuidad del rollo.
+        const { data: maqRows } = await sb
+          .from("maquinas")
+          .select("id, codigo")
+          .eq("activo", true);
+        const allowedCodes = new Set(["MP-04", "MP-05", "MP-06", "MP-07"]);
+        const allowedIds = (maqRows ?? [])
+          .filter((m) => allowedCodes.has(m.codigo))
+          .map((m) => m.id);
+        if (allowedIds.length === 0) return [];
+        q = q.in("maquina_id", allowedIds);
+      } else {
+        q = q.eq("capturado_por", userId);
+      }
+    }
     const { data, error } = await q;
     if (error) throw new Error(error.message);
     return data ?? [];
