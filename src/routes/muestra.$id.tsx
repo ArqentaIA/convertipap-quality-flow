@@ -50,12 +50,20 @@ function estadoColor(estado: string): string {
   return "bg-slate-100 text-slate-700 border-slate-300";
 }
 
+const CANONICAL_HOST = "www.convertipap.site";
+
 function MuestraTracePage() {
   const { id } = Route.useParams();
   const { data } = useSuspenseQuery(traceQO(id));
   const trace = data as TraceMuestra;
 
   useEffect(() => {
+    // QRs ya impresos: si el host no es el canónico (p.ej. *.lovable.app), reenviar al dominio público.
+    if (typeof window !== "undefined" && window.location.hostname !== CANONICAL_HOST) {
+      const target = `https://${CANONICAL_HOST}/muestra/${id}${window.location.search}`;
+      window.location.replace(target);
+      return;
+    }
     if (trace.found) void auditAction("qr", `Visualización QR muestra ${id.slice(0, 8)}`, id);
   }, [id, trace.found]);
 
