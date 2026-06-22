@@ -62,6 +62,7 @@ function buildHtml(data: VariablesPrintData, logoDataUrl: string): string {
       <td>${v.min != null ? esc(String(v.min)) : "—"}</td>
       <td class="obj">${v.objective != null ? esc(String(v.objective)) : "—"}</td>
       <td>${v.max != null ? esc(String(v.max)) : "—"}</td>
+      <td>INTERNO</td>
     </tr>`).join("");
 
   const logRows = (data.log ?? []).map((r) => `
