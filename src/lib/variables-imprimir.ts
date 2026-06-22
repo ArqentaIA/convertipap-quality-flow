@@ -55,18 +55,14 @@ function buildHtml(data: VariablesPrintData, logoDataUrl: string): string {
   const fechaImpresion = new Date().toLocaleString("es-MX");
   const vars = data.variables;
 
-  // Variables en dos columnas
-  const left: string[] = [];
-  const right: string[] = [];
-  vars.forEach((v, i) => {
-    const row = `
-      <tr>
-        <td class="lbl">${esc(v.label)}</td>
-        <td class="val">${v.objective != null ? esc(String(v.objective)) : "—"}${v.unit ? ` <span class="u">${esc(v.unit)}</span>` : ""}</td>
-        <td class="rng">${v.min != null ? esc(String(v.min)) : "—"} – ${v.max != null ? esc(String(v.max)) : "—"}</td>
-      </tr>`;
-    (i % 2 === 0 ? left : right).push(row);
-  });
+  const varRows = vars.map((v) => `
+    <tr>
+      <td class="lbl">${esc(v.label)}</td>
+      <td>${esc(v.unit ?? "—")}</td>
+      <td>${v.min != null ? esc(String(v.min)) : "—"}</td>
+      <td class="obj">${v.objective != null ? esc(String(v.objective)) : "—"}</td>
+      <td>${v.max != null ? esc(String(v.max)) : "—"}</td>
+    </tr>`).join("");
 
   const logRows = (data.log ?? []).map((r) => `
     <tr>
@@ -119,15 +115,15 @@ function buildHtml(data: VariablesPrintData, logoDataUrl: string): string {
   .meta-band .v{font-size:16px;font-weight:800;color:#0f172a;margin-top:3px;font-variant-numeric:tabular-nums;line-height:1.1}
 
   .mediciones-title{padding:6px 12px;background:#0f172a;color:#fff;font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}
-  .mediciones{display:grid;grid-template-columns:1fr 1fr;border-bottom:2px solid #0f172a}
-  .mediciones > div{padding:0}
-  .mediciones > div + div{border-left:1px solid #0f172a}
+  .mediciones{border-bottom:2px solid #0f172a;padding:0}
   .mediciones table{border-collapse:collapse;width:100%}
-  .mediciones table td{border-bottom:1px solid #e2e8f0;padding:6px 10px;font-size:13px}
-  td.lbl{background:#f1f5f9;font-weight:700;text-align:right;width:38%;color:#334155}
-  td.val{font-weight:800;text-align:left;font-variant-numeric:tabular-nums;color:#0f172a;font-size:14px}
-  td.val .u{font-weight:500;color:#64748b;margin-left:3px;font-size:11px}
-  td.rng{font-size:11px;color:#475569;text-align:right;font-variant-numeric:tabular-nums;width:30%}
+  .mediciones thead th{background:#f1f5f9;padding:8px 10px;font-size:11px;font-weight:800;color:#334155;text-transform:uppercase;letter-spacing:.08em;text-align:center;border-bottom:2px solid #0f172a;border-right:1px solid #cbd5e1}
+  .mediciones thead th:last-child{border-right:0}
+  .mediciones tbody td{padding:7px 10px;font-size:13px;text-align:center;border-bottom:1px solid #e2e8f0;border-right:1px solid #e2e8f0;font-variant-numeric:tabular-nums;color:#0f172a}
+  .mediciones tbody td:last-child{border-right:0}
+  .mediciones tbody td.lbl{text-align:left;font-weight:700;color:#0f172a;background:#f8fafc}
+  .mediciones tbody td.obj{font-weight:900;background:#fef3c7;color:#0f172a}
+  .mediciones tbody tr:nth-child(even) td:not(.lbl):not(.obj){background:#fbfdff}
 
   .atrib-title{padding:6px 12px;background:#f8fafc;border-bottom:1px solid #0f172a;font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#475569}
   .atrib{padding:10px 12px;border-bottom:2px solid #0f172a;font-size:13px;line-height:1.45;color:#1e293b;white-space:pre-wrap;min-height:48px}
@@ -186,10 +182,20 @@ function buildHtml(data: VariablesPrintData, logoDataUrl: string): string {
       <div><div class="k">Versión</div><div class="v">${esc(data.specVersion ?? "—")}</div></div>
     </div>
 
-    <div class="mediciones-title">Variables de Calidad</div>
+    <div class="mediciones-title">Especificaciones Vigentes</div>
     <div class="mediciones">
-      <div><table>${left.join("")}</table></div>
-      <div><table>${right.join("")}</table></div>
+      <table>
+        <thead>
+          <tr>
+            <th style="text-align:left">Variable</th>
+            <th>Unidad</th>
+            <th>Mínimo</th>
+            <th>Objetivo</th>
+            <th>Máximo</th>
+          </tr>
+        </thead>
+        <tbody>${varRows}</tbody>
+      </table>
     </div>
 
     <div class="atrib-title">Características de los Atributos</div>
