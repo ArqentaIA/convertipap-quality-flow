@@ -29,7 +29,7 @@ const NAV: NavItem[] = [
   { to: "/calidad/captura", label: "Control de Calidad", icon: ClipboardCheck, module: "control_calidad" },
   { to: "/calidad/captura-fuera-turno", label: "Captura fuera de turno", icon: ClipboardCheck, module: "control_calidad" },
   { to: "/variables-calidad", label: "Variables de Calidad", icon: SlidersHorizontal, module: "variables_calidad" },
-  { to: "/catalogos", label: "Catálogos", icon: BookOpen, module: "configuracion" },
+  // { to: "/catalogos", label: "Catálogos", icon: BookOpen, module: "configuracion" }, // Oculto temporalmente
   { to: "/reportes", label: "Reportes", icon: FileBarChart2, module: "reportes" },
   // { to: "/auditoria", label: "Auditoría", icon: ShieldCheck, module: "auditoria" },
   { to: "/usuarios", label: "Usuarios y Permisos", icon: Users, module: "usuarios_permisos" },
