@@ -67,10 +67,14 @@ function esc(s: string): string {
     .replace(/>/g, "&gt;");
 }
 
+// Dominio público canónico: el QR SIEMPRE debe apuntar al dominio propio,
+// nunca al preview de Lovable (`*.lovable.app`) ni a window.location.origin,
+// para evitar que al escanear desde un teléfono aparezca el login de la
+// plataforma con marca ajena.
+const TRACE_BASE_URL = "https://www.convertipap.site";
+
 function buildTraceUrl(muestraId: string): string {
-  const origin =
-    typeof window !== "undefined" && window.location ? window.location.origin : "";
-  return `${origin}/muestra/${muestraId}`;
+  return `${TRACE_BASE_URL}/muestra/${muestraId}`;
 }
 
 function row(label: string, valor: string | number, unidad = ""): string {
