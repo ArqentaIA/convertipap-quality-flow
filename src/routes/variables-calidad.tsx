@@ -643,8 +643,8 @@ function VariablesCalidad() {
           </div>
         </div>
 
-        {/* Evidencia documental — VIGENTE (histórica · solo lectura) */}
-        {activeSpec?.hasSpec && (
+        {/* Evidencia documental — oculta temporalmente para presentación */}
+        {false && activeSpec?.hasSpec && (
           <EvidenciaDocumentalPanel
             productoCodigo={activeSpec.code}
             puedeEditar={false}
@@ -652,21 +652,6 @@ function VariablesCalidad() {
           />
         )}
 
-        {/* Evidencia documental — BORRADOR (editable) */}
-        {hayBorrador ? (
-          <EvidenciaDocumentalPanel
-            productoCodigo={activeSpec!.code}
-            puedeEditar={puedeEditar}
-            target="borrador"
-          />
-        ) : (
-          activeSpec?.hasSpec &&
-          puedeEditar && (
-            <div className="rounded-xl border border-dashed border-border bg-muted/10 px-5 py-4 text-xs text-muted-foreground">
-              Para subir nueva evidencia, primero crea un borrador desde el panel de versiones.
-            </div>
-          )
-        )}
 
         {/* Características de los Atributos */}
         <div className="rounded-xl border border-border bg-card shadow-sm">
