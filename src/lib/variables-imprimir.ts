@@ -202,6 +202,7 @@ function buildHtml(data: VariablesPrintData, logoDataUrl: string): string {
             <th>Mínimo</th>
             <th>Objetivo</th>
             <th>Máximo</th>
+            <th>Método</th>
           </tr>
         </thead>
         <tbody>${varRows}</tbody>
