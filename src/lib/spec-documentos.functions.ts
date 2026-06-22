@@ -103,13 +103,19 @@ async function sha256Hex(bytes: Uint8Array): Promise<string> {
 export const listarDocumentos = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
-    z.object({ producto_codigo: z.string().min(1) }).parse(input),
+    z
+      .object({
+        producto_codigo: z.string().min(1),
+        target: z.enum(["vigente", "borrador"]).optional(),
+      })
+      .parse(input),
   )
   .handler(async ({ data, context }) => {
     const sb = context.supabase as SB;
     const { especificacion_id } = await resolveSpecIdByProductCode(
       sb,
       data.producto_codigo,
+      data.target ?? "vigente",
     );
     const { data: rows, error } = await sb
       .from("spec_documentos")
