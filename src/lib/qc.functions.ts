@@ -1073,17 +1073,26 @@ export const registrarSpecAuditByCode = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!prod) throw new Error(`Producto ${data.producto_codigo} no encontrado en BD`);
 
-    const { data: spec } = await sb
+    // Fase 3: NUNCA escribir sobre la spec vigente. Resolver al borrador.
+    const { data: borradorRow } = await sb
       .from("producto_especificaciones")
-      .select("id")
+      .select("id, estado")
       .eq("producto_id", prod.id)
-      .order("created_at", { ascending: false })
-      .limit(1)
+      .in("estado", ["borrador", "en_revision"])
       .maybeSingle();
-    if (!spec) throw new Error(`Sin especificación registrada para ${data.producto_codigo}`);
+    if (!borradorRow) {
+      throw new Error(
+        "Primero crea un borrador para modificar esta especificación.",
+      );
+    }
+    if (borradorRow.estado === "en_revision") {
+      throw new Error(
+        "La especificación está en revisión; descarta o publica el borrador antes de editar.",
+      );
+    }
+    const spec = { id: borradorRow.id as string };
 
-    // Guard de evidencia documental (Fase 2). Si el flag global está activo
-    // y la spec no tiene evidencia vigente, bloquear la mutación.
+    // Guard de evidencia documental (Fase 2/3): evaluada SOBRE EL BORRADOR.
     {
       const { data: flagRow } = await sb
         .from("app_settings")
@@ -1096,12 +1105,12 @@ export const registrarSpecAuditByCode = createServerFn({ method: "POST" })
       if (obligatoria) {
         const { data: ok, error: rErr } = await sb.rpc(
           "spec_tiene_evidencia_vigente",
-          { _spec_id: spec.id as string },
+          { _spec_id: spec.id },
         );
         if (rErr) throw new Error(rErr.message);
         if (ok !== true) {
           throw new Error(
-            "Se requiere cargar evidencia documental vigente antes de modificar la especificación.",
+            "El borrador no tiene evidencia documental vigente. Cárgala antes de modificar variables.",
           );
         }
       }
