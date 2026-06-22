@@ -66,7 +66,10 @@ function ConfigPage() {
 }
 
 function ConfigContent({ settings }: { settings: AppSettings }) {
+  const { hasRole } = useAuth();
+  const isAdmin = hasRole("administrador");
   const [previewCEO, setPreviewCEO] = useState(false);
+  const [confirmEvidencia, setConfirmEvidencia] = useState(false);
   const [form, setForm] = useState<AppSettings>(settings);
   const qc = useQueryClient();
   const updateFn = useServerFn(updateAppSettings);
