@@ -214,11 +214,11 @@ function buildHtml(data: VariablesPrintData, logoDataUrl: string): string {
 
     <div class="firmas-title">Firmas de Autorización</div>
     <div class="firmas">
-      <div class="f"><div class="line"></div><div class="rol">Elaboró</div></div>
-      <div class="f"><div class="line"></div><div class="rol">Revisó</div></div>
-      <div class="f"><div class="line"></div><div class="rol">Calidad</div></div>
-      <div class="f"><div class="line"></div><div class="rol">Producción</div></div>
-      <div class="f"><div class="line"></div><div class="rol">Autorizó</div></div>
+      <div class="f"><div class="line"></div><div class="nombre">Karina Méndez</div><div class="rol">Elaboró · Jefe de Calidad</div></div>
+      <div class="f"><div class="line"></div><div class="nombre">Jonatan Peláez</div><div class="rol">Revisó · Gerente de Calidad</div></div>
+      <div class="f"><div class="line"></div><div class="nombre">Luis Alcalá</div><div class="rol">Gerente de Producción</div></div>
+      <div class="f"><div class="line"></div><div class="nombre">Javier García</div><div class="rol">Director de Planta</div></div>
+      <div class="f"><div class="line"></div><div class="nombre">Lic. Luis Reséndiz</div><div class="rol">Dirección Corporativa</div></div>
     </div>
 
     ${data.log && data.log.length > 0 ? `
