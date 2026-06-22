@@ -51,7 +51,7 @@ async function resolveSpecIdByProductCode(
   if (pErr) throw new Error(pErr.message);
   if (!prod) throw new Error(`Producto ${codigo} no encontrado`);
 
-  const estados =
+  const estados: ("borrador" | "en_revision" | "vigente")[] =
     target === "borrador" ? ["borrador", "en_revision"] : ["vigente"];
   const { data: spec, error: sErr } = await sb
     .from("producto_especificaciones")
