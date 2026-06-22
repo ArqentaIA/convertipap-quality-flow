@@ -20,6 +20,9 @@ import { getTurnosConfig } from "@/lib/settings.functions";
 import { useOperatorVisionRealtime } from "@/hooks/use-operator-vision-realtime";
 import { useShiftTick } from "@/hooks/useCurrentShift";
 import logoConvertipap from "@/assets/logo-convertipap.png";
+import { useAuth } from "@/lib/auth";
+import { supabase } from "@/integrations/supabase/client";
+import { Lock } from "lucide-react";
 
 // Convierte "HH:MM" en minutos desde 00:00 (hora local).
 function hhmmToMin(s: string | undefined | null): number | null {
@@ -84,8 +87,137 @@ export const Route = createFileRoute("/operator-vision")({
         : "MP-04",
     };
   },
-  component: OperatorVisionPage,
+  component: OperatorVisionGate,
+  ssr: false,
 });
+
+// ---------- Gate de acceso por PIN ----------
+// Permite entrar sin desafío si hay sesión autenticada (acceso desde el menú).
+// Si se entra por URL directa (sin sesión), exige el PIN de la máquina.
+// El PIN validado se recuerda en sessionStorage hasta cerrar el navegador.
+function OperatorVisionGate() {
+  const { maquina } = Route.useSearch();
+  const auth = useAuth();
+  const storageKey = `ov_pin_ok_${maquina}`;
+  const [unlocked, setUnlocked] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return sessionStorage.getItem(storageKey) === "1";
+  });
+
+  // Cuando cambia la máquina, releer el flag.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    setUnlocked(sessionStorage.getItem(storageKey) === "1");
+  }, [storageKey]);
+
+  if (auth.loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-100 text-sm text-slate-500">
+        Cargando…
+      </div>
+    );
+  }
+
+  if (auth.isAuthenticated || unlocked) {
+    return <OperatorVisionPage />;
+  }
+
+  return (
+    <PinChallenge
+      maquina={maquina}
+      onSuccess={() => {
+        sessionStorage.setItem(storageKey, "1");
+        setUnlocked(true);
+      }}
+    />
+  );
+}
+
+function PinChallenge({
+  maquina,
+  onSuccess,
+}: {
+  maquina: string;
+  onSuccess: () => void;
+}) {
+  const [pin, setPin] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!pin.trim() || submitting) return;
+    setSubmitting(true);
+    setError(null);
+    try {
+      const { data, error: rpcErr } = await supabase.rpc(
+        "validate_maquina_access",
+        { _codigo: maquina, _pin: pin.trim() },
+      );
+      if (rpcErr) throw rpcErr;
+      if (data === true) {
+        onSuccess();
+      } else {
+        setError("Código incorrecto");
+        setPin("");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al validar");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4">
+      <form
+        onSubmit={handleSubmit}
+        className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-6 shadow-lg"
+      >
+        <div className="mb-4 flex flex-col items-center text-center">
+          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+            <Lock className="h-6 w-6" />
+          </div>
+          <h1 className="text-lg font-bold text-slate-900">Acceso restringido</h1>
+          <p className="mt-1 text-sm text-slate-500">
+            Ingresa el código de la máquina{" "}
+            <span className="rounded bg-emerald-600 px-1.5 py-0.5 font-mono text-xs font-black text-white">
+              {maquina}
+            </span>
+          </p>
+        </div>
+        <input
+          type="password"
+          inputMode="numeric"
+          autoFocus
+          autoComplete="off"
+          value={pin}
+          onChange={(e) => {
+            setPin(e.target.value);
+            if (error) setError(null);
+          }}
+          placeholder="••••"
+          className="w-full rounded-lg border border-slate-300 bg-white px-3 py-3 text-center font-mono text-2xl tracking-[0.5em] text-slate-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+        />
+        {error && (
+          <div className="mt-2 text-center text-sm font-semibold text-rose-600">
+            {error}
+          </div>
+        )}
+        <button
+          type="submit"
+          disabled={submitting || !pin.trim()}
+          className="mt-4 w-full rounded-lg bg-emerald-600 px-4 py-3 text-sm font-bold text-white shadow-sm hover:bg-emerald-700 disabled:opacity-50"
+        >
+          {submitting ? "Validando…" : "Entrar"}
+        </button>
+        <p className="mt-4 text-center text-[11px] text-slate-400">
+          Pide el código al supervisor de turno.
+        </p>
+      </form>
+    </div>
+  );
+}
 
 // ---------- helpers ----------
 type VarStatus = "ok" | "warn" | "bad" | "none";
@@ -781,8 +913,9 @@ function OperatorVisionPage() {
   return (
     <div
       ref={screenRef}
-      className="flex h-screen w-full flex-col overflow-hidden bg-slate-100 text-slate-900"
+      className="h-screen w-full overflow-auto bg-slate-100 text-slate-900 xl:overflow-hidden"
     >
+      <div className="flex h-full min-h-screen w-full min-w-[1400px] flex-col">
       <style>{`
         @keyframes varPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(244,63,94,0.5);} 50% { box-shadow: 0 0 0 8px rgba(244,63,94,0);} }
       `}</style>
@@ -1476,6 +1609,7 @@ function OperatorVisionPage() {
           </div>
         </div>
       </footer>
+      </div>
     </div>
   );
 }

@@ -493,6 +493,7 @@ export type Database = {
       }
       maquinas: {
         Row: {
+          access_code: string | null
           activo: boolean
           area: string | null
           codigo: string
@@ -503,6 +504,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          access_code?: string | null
           activo?: boolean
           area?: string | null
           codigo: string
@@ -513,6 +515,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          access_code?: string | null
           activo?: boolean
           area?: string | null
           codigo?: string
@@ -1889,6 +1892,10 @@ export type Database = {
       }
       user_can_use_machine: {
         Args: { _maquina_id: string; _user_id: string }
+        Returns: boolean
+      }
+      validate_maquina_access: {
+        Args: { _codigo: string; _pin: string }
         Returns: boolean
       }
     }
