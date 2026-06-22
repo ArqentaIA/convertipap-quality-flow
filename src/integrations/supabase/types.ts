@@ -1070,12 +1070,21 @@ export type Database = {
         Row: {
           aprobado_at: string | null
           aprobado_por: string | null
+          borrador_de: string | null
           caracteristicas_atributos: string | null
           created_at: string
+          descartado_at: string | null
+          descartado_por: string | null
+          enviado_revision_at: string | null
+          enviado_revision_por: string | null
           estado: Database["public"]["Enums"]["spec_status"]
           id: string
+          motivo_cambio: string | null
+          motivo_descarte: string | null
           notas: string | null
           producto_id: string
+          publicado_at: string | null
+          publicado_por: string | null
           updated_at: string
           version: string
           vigente_desde: string | null
@@ -1084,12 +1093,21 @@ export type Database = {
         Insert: {
           aprobado_at?: string | null
           aprobado_por?: string | null
+          borrador_de?: string | null
           caracteristicas_atributos?: string | null
           created_at?: string
+          descartado_at?: string | null
+          descartado_por?: string | null
+          enviado_revision_at?: string | null
+          enviado_revision_por?: string | null
           estado?: Database["public"]["Enums"]["spec_status"]
           id?: string
+          motivo_cambio?: string | null
+          motivo_descarte?: string | null
           notas?: string | null
           producto_id: string
+          publicado_at?: string | null
+          publicado_por?: string | null
           updated_at?: string
           version: string
           vigente_desde?: string | null
@@ -1098,18 +1116,34 @@ export type Database = {
         Update: {
           aprobado_at?: string | null
           aprobado_por?: string | null
+          borrador_de?: string | null
           caracteristicas_atributos?: string | null
           created_at?: string
+          descartado_at?: string | null
+          descartado_por?: string | null
+          enviado_revision_at?: string | null
+          enviado_revision_por?: string | null
           estado?: Database["public"]["Enums"]["spec_status"]
           id?: string
+          motivo_cambio?: string | null
+          motivo_descarte?: string | null
           notas?: string | null
           producto_id?: string
+          publicado_at?: string | null
+          publicado_por?: string | null
           updated_at?: string
           version?: string
           vigente_desde?: string | null
           vigente_hasta?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "producto_especificaciones_borrador_de_fkey"
+            columns: ["borrador_de"]
+            isOneToOne: false
+            referencedRelation: "producto_especificaciones"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "producto_especificaciones_producto_id_fkey"
             columns: ["producto_id"]
@@ -1734,6 +1768,18 @@ export type Database = {
       }
     }
     Functions: {
+      _spec_audit_estado: {
+        Args: {
+          _campo: Database["public"]["Enums"]["qc_spec_audit_field"]
+          _motivo: string
+          _producto_id: string
+          _spec_id: string
+          _texto_anterior: string
+          _texto_nuevo: string
+          _user: string
+        }
+        Returns: undefined
+      }
       audit_action: {
         Args: {
           p_datos?: Json
@@ -1769,6 +1815,14 @@ export type Database = {
         }
         Returns: string
       }
+      crear_borrador_especificacion: {
+        Args: { _motivo: string; _producto_id: string }
+        Returns: string
+      }
+      descartar_borrador: {
+        Args: { _motivo: string; _spec_id: string }
+        Returns: undefined
+      }
       ensure_orden_auto: {
         Args: {
           _maquina_id: string
@@ -1779,6 +1833,10 @@ export type Database = {
           _user_id: string
         }
         Returns: string
+      }
+      enviar_a_revision: {
+        Args: { _motivo: string; _spec_id: string }
+        Returns: undefined
       }
       fn_cumplimiento_turno_v2: {
         Args: { _maquina_id: string; _op_date: string; _turno: string }
@@ -1810,6 +1868,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      publicar_especificacion: {
+        Args: { _motivo: string; _spec_id: string }
+        Returns: undefined
       }
       qc_eval_regla_oro: { Args: { _muestra_id: string }; Returns: Json }
       qc_recalc_estatus_muestra: {
@@ -1899,7 +1961,12 @@ export type Database = {
         | "otro"
       qc_tipo_muestreo: "por_rollo" | "por_tiempo"
       shift_code: "1" | "2" | "3"
-      spec_status: "borrador" | "vigente" | "obsoleta"
+      spec_status:
+        | "borrador"
+        | "vigente"
+        | "obsoleta"
+        | "en_revision"
+        | "descartada"
       unidad_objetivo: "kg" | "rollos" | "ambos"
     }
     CompositeTypes: {
@@ -2104,7 +2171,13 @@ export const Constants = {
       ],
       qc_tipo_muestreo: ["por_rollo", "por_tiempo"],
       shift_code: ["1", "2", "3"],
-      spec_status: ["borrador", "vigente", "obsoleta"],
+      spec_status: [
+        "borrador",
+        "vigente",
+        "obsoleta",
+        "en_revision",
+        "descartada",
+      ],
       unidad_objetivo: ["kg", "rollos", "ambos"],
     },
   },

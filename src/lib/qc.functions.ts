@@ -1073,17 +1073,26 @@ export const registrarSpecAuditByCode = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!prod) throw new Error(`Producto ${data.producto_codigo} no encontrado en BD`);
 
-    const { data: spec } = await sb
+    // Fase 3: NUNCA escribir sobre la spec vigente. Resolver al borrador.
+    const { data: borradorRow } = await sb
       .from("producto_especificaciones")
-      .select("id")
+      .select("id, estado")
       .eq("producto_id", prod.id)
-      .order("created_at", { ascending: false })
-      .limit(1)
+      .in("estado", ["borrador", "en_revision"])
       .maybeSingle();
-    if (!spec) throw new Error(`Sin especificación registrada para ${data.producto_codigo}`);
+    if (!borradorRow) {
+      throw new Error(
+        "Primero crea un borrador para modificar esta especificación.",
+      );
+    }
+    if (borradorRow.estado === "en_revision") {
+      throw new Error(
+        "La especificación está en revisión; descarta o publica el borrador antes de editar.",
+      );
+    }
+    const spec = { id: borradorRow.id as string };
 
-    // Guard de evidencia documental (Fase 2). Si el flag global está activo
-    // y la spec no tiene evidencia vigente, bloquear la mutación.
+    // Guard de evidencia documental (Fase 2/3): evaluada SOBRE EL BORRADOR.
     {
       const { data: flagRow } = await sb
         .from("app_settings")
@@ -1096,12 +1105,12 @@ export const registrarSpecAuditByCode = createServerFn({ method: "POST" })
       if (obligatoria) {
         const { data: ok, error: rErr } = await sb.rpc(
           "spec_tiene_evidencia_vigente",
-          { _spec_id: spec.id as string },
+          { _spec_id: spec.id },
         );
         if (rErr) throw new Error(rErr.message);
         if (ok !== true) {
           throw new Error(
-            "Se requiere cargar evidencia documental vigente antes de modificar la especificación.",
+            "El borrador no tiene evidencia documental vigente. Cárgala antes de modificar variables.",
           );
         }
       }
@@ -1187,20 +1196,55 @@ export const listEspecsActivasConVariables = createServerFn({ method: "GET" })
     const productoIds = productos.map((p) => p.id);
     const { data: specsRows, error: sErr } = await sb
       .from("producto_especificaciones")
-      .select("id, producto_id, version, estado, created_at")
+      .select(
+        "id, producto_id, version, estado, caracteristicas_atributos, created_at",
+      )
       .in("producto_id", productoIds)
+      .in("estado", ["vigente", "borrador", "en_revision"])
       .order("created_at", { ascending: false });
     if (sErr) throw new Error(sErr.message);
 
-    // Última spec por producto
-    const specByProd = new Map<string, { id: string; version: string }>();
+    // Fase 3: separar vigente (read-only) y borrador/en_revision (editable)
+    const vigByProd = new Map<
+      string,
+      { id: string; version: string; caracteristicas: string | null }
+    >();
+    const bdfByProd = new Map<
+      string,
+      {
+        id: string;
+        version: string;
+        estado: "borrador" | "en_revision";
+        caracteristicas: string | null;
+      }
+    >();
     for (const s of specsRows ?? []) {
-      if (!specByProd.has(s.producto_id)) {
-        specByProd.set(s.producto_id, { id: s.id, version: s.version });
+      const carac =
+        (s as unknown as { caracteristicas_atributos?: string | null })
+          .caracteristicas_atributos ?? null;
+      if (s.estado === "vigente" && !vigByProd.has(s.producto_id)) {
+        vigByProd.set(s.producto_id, {
+          id: s.id as string,
+          version: s.version as string,
+          caracteristicas: carac,
+        });
+      } else if (
+        (s.estado === "borrador" || s.estado === "en_revision") &&
+        !bdfByProd.has(s.producto_id)
+      ) {
+        bdfByProd.set(s.producto_id, {
+          id: s.id as string,
+          version: s.version as string,
+          estado: s.estado as "borrador" | "en_revision",
+          caracteristicas: carac,
+        });
       }
     }
 
-    const specIds = Array.from(specByProd.values()).map((s) => s.id);
+    const specIds = [
+      ...Array.from(vigByProd.values()).map((s) => s.id),
+      ...Array.from(bdfByProd.values()).map((s) => s.id),
+    ];
     type PVRow = {
       id: string;
       especificacion_id: string;
@@ -1228,21 +1272,8 @@ export const listEspecsActivasConVariables = createServerFn({ method: "GET" })
       pvRows = (data ?? []) as unknown as PVRow[];
     }
 
-    const specCaracMap = new Map<string, string | null>();
-    for (const s of specsRows ?? []) {
-      if (!specCaracMap.has(s.producto_id)) {
-        const row = s as unknown as { caracteristicas_atributos?: string | null };
-        specCaracMap.set(s.producto_id, row.caracteristicas_atributos ?? null);
-      }
-    }
-
-    return productos.map((p) => {
-      const spec = specByProd.get(p.id);
-      const tipo = (
-        p as { tipos_producto?: { nombre?: string; familias_producto?: { nombre?: string } } }
-      ).tipos_producto;
-      const familyName = tipo?.familias_producto?.nombre ?? tipo?.nombre ?? "Sin familia";
-      const variables = (spec ? pvRows.filter((r) => r.especificacion_id === spec.id) : [])
+    const mapVars = (specId: string | undefined) =>
+      (specId ? pvRows.filter((r) => r.especificacion_id === specId) : [])
         .map((r) => ({
           key: r.variables_calidad?.clave ?? "",
           label: r.variables_calidad?.etiqueta ?? r.variables_calidad?.clave ?? "—",
@@ -1253,14 +1284,33 @@ export const listEspecsActivasConVariables = createServerFn({ method: "GET" })
           orden: r.variables_calidad?.orden ?? 0,
         }))
         .sort((a, b) => a.orden - b.orden);
+
+    return productos.map((p) => {
+      const vig = vigByProd.get(p.id);
+      const bdf = bdfByProd.get(p.id);
+      const tipo = (
+        p as { tipos_producto?: { nombre?: string; familias_producto?: { nombre?: string } } }
+      ).tipos_producto;
+      const familyName = tipo?.familias_producto?.nombre ?? tipo?.nombre ?? "Sin familia";
       return {
         code: p.codigo,
         name: p.nombre,
         family: familyName,
-        specVersion: spec?.version ?? null,
-        hasSpec: !!spec,
-        caracteristicas: specCaracMap.get(p.id) ?? "",
-        variables,
+        specVersion: vig?.version ?? null,
+        hasSpec: !!vig,
+        caracteristicas: vig?.caracteristicas ?? "",
+        variables: mapVars(vig?.id),
+        // Fase 3
+        vigenteSpecId: vig?.id ?? null,
+        borrador: bdf
+          ? {
+              id: bdf.id,
+              version: bdf.version,
+              estado: bdf.estado,
+              caracteristicas: bdf.caracteristicas ?? "",
+              variables: mapVars(bdf.id),
+            }
+          : null,
       };
     });
   });
@@ -1291,16 +1341,25 @@ export const updateCaracteristicasByCode = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!prod) throw new Error(`Producto ${data.producto_codigo} no encontrado`);
 
+    // Fase 3: las características se editan SIEMPRE sobre el borrador.
     const { data: spec } = await sb
       .from("producto_especificaciones")
-      .select("id, caracteristicas_atributos")
+      .select("id, estado, caracteristicas_atributos")
       .eq("producto_id", prod.id)
-      .order("created_at", { ascending: false })
-      .limit(1)
+      .in("estado", ["borrador", "en_revision"])
       .maybeSingle();
-    if (!spec) throw new Error(`Sin especificación registrada para ${data.producto_codigo}`);
+    if (!spec) {
+      throw new Error(
+        "Primero crea un borrador para modificar esta especificación.",
+      );
+    }
+    if (spec.estado === "en_revision") {
+      throw new Error(
+        "La especificación está en revisión; descarta o publica el borrador antes de editar.",
+      );
+    }
 
-    // Guard de evidencia documental (Fase 2).
+    // Guard de evidencia (flag ON) sobre el borrador.
     {
       const { data: flagRow } = await sb
         .from("app_settings")
@@ -1318,7 +1377,7 @@ export const updateCaracteristicasByCode = createServerFn({ method: "POST" })
         if (rErr) throw new Error(rErr.message);
         if (ok !== true) {
           throw new Error(
-            "Se requiere cargar evidencia documental vigente antes de modificar la especificación.",
+            "El borrador no tiene evidencia documental vigente. Cárgala antes de modificar características.",
           );
         }
       }

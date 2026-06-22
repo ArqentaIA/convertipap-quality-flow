@@ -41,6 +41,7 @@ async function getUserRoles(sb: SB, userId: string): Promise<string[]> {
 async function resolveSpecIdByProductCode(
   sb: SB,
   codigo: string,
+  target: "vigente" | "borrador" = "vigente",
 ): Promise<{ especificacion_id: string; producto_id: string }> {
   const { data: prod, error: pErr } = await sb
     .from("productos")
@@ -49,15 +50,25 @@ async function resolveSpecIdByProductCode(
     .maybeSingle();
   if (pErr) throw new Error(pErr.message);
   if (!prod) throw new Error(`Producto ${codigo} no encontrado`);
+
+  const estados: ("borrador" | "en_revision" | "vigente")[] =
+    target === "borrador" ? ["borrador", "en_revision"] : ["vigente"];
   const { data: spec, error: sErr } = await sb
     .from("producto_especificaciones")
     .select("id")
     .eq("producto_id", prod.id)
+    .in("estado", estados)
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
   if (sErr) throw new Error(sErr.message);
-  if (!spec) throw new Error(`Sin especificación registrada para ${codigo}`);
+  if (!spec) {
+    throw new Error(
+      target === "borrador"
+        ? `No hay borrador activo para ${codigo}`
+        : `Sin especificación vigente para ${codigo}`,
+    );
+  }
   return { especificacion_id: spec.id as string, producto_id: prod.id as string };
 }
 
@@ -92,13 +103,19 @@ async function sha256Hex(bytes: Uint8Array): Promise<string> {
 export const listarDocumentos = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
-    z.object({ producto_codigo: z.string().min(1) }).parse(input),
+    z
+      .object({
+        producto_codigo: z.string().min(1),
+        target: z.enum(["vigente", "borrador"]).optional(),
+      })
+      .parse(input),
   )
   .handler(async ({ data, context }) => {
     const sb = context.supabase as SB;
     const { especificacion_id } = await resolveSpecIdByProductCode(
       sb,
       data.producto_codigo,
+      data.target ?? "vigente",
     );
     const { data: rows, error } = await sb
       .from("spec_documentos")
@@ -150,6 +167,7 @@ export const subirDocumento = createServerFn({ method: "POST" })
         mime_type: z.string().min(1),
         contenido_base64: z.string().min(1),
         descripcion: z.string().max(500).optional().nullable(),
+        target: z.enum(["vigente", "borrador"]).optional(),
       })
       .parse(input),
   )
@@ -182,6 +200,7 @@ export const subirDocumento = createServerFn({ method: "POST" })
     const { especificacion_id } = await resolveSpecIdByProductCode(
       sb,
       data.producto_codigo,
+      data.target ?? "vigente",
     );
 
     const ext = data.nombre_archivo.split(".").pop()?.toLowerCase() ?? "bin";
@@ -297,13 +316,19 @@ export const archivarDocumento = createServerFn({ method: "POST" })
 export const getEvidenciaEstado = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
-    z.object({ producto_codigo: z.string().min(1) }).parse(input),
+    z
+      .object({
+        producto_codigo: z.string().min(1),
+        target: z.enum(["vigente", "borrador"]).optional(),
+      })
+      .parse(input),
   )
   .handler(async ({ data, context }) => {
     const sb = context.supabase as SB;
     const { especificacion_id } = await resolveSpecIdByProductCode(
       sb,
       data.producto_codigo,
+      data.target ?? "vigente",
     );
 
     const { data: flagRow } = await sb
