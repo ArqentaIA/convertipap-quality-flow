@@ -92,6 +92,18 @@ export function EvidenciaDocumentalPanel({
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const refrescar = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({
+        queryKey: ["spec-documentos", productoCodigo, target],
+      }),
+      queryClient.invalidateQueries({
+        queryKey: ["spec-documentos-estado", productoCodigo, target],
+      }),
+    ]);
+    await Promise.all([docsQuery.refetch(), estadoQuery.refetch()]);
+  };
+
   const handleFile = async (file: File) => {
     if (!ALLOWED_MIMES.includes(file.type.toLowerCase())) {
       toast.error("Tipo no permitido. Solo PDF, JPG, JPEG o PNG.");
@@ -117,12 +129,7 @@ export function EvidenciaDocumentalPanel({
       toast.success("Documento cargado correctamente.");
       setDescripcion("");
       if (inputRef.current) inputRef.current.value = "";
-      await queryClient.invalidateQueries({
-        queryKey: ["spec-documentos", productoCodigo, target],
-      });
-      await queryClient.invalidateQueries({
-        queryKey: ["spec-documentos-estado", productoCodigo, target],
-      });
+      await refrescar();
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -148,12 +155,7 @@ export function EvidenciaDocumentalPanel({
     await archivarMut.mutateAsync({
       data: { documento_id: id, motivo: motivo.trim() },
     });
-    await queryClient.invalidateQueries({
-      queryKey: ["spec-documentos", productoCodigo, target],
-    });
-    await queryClient.invalidateQueries({
-      queryKey: ["spec-documentos-estado", productoCodigo, target],
-    });
+    await refrescar();
     toast.success("Documento archivado.");
   };
 
@@ -162,16 +164,38 @@ export function EvidenciaDocumentalPanel({
   const archivados = docs.filter((d) => !d.vigente);
   const estado = estadoQuery.data;
 
+  const esBorrador = target === "borrador";
+  const puedeSubir = esBorrador && puedeEditar;
+  const errorMsg =
+    (docsQuery.error as Error | null)?.message ??
+    (estadoQuery.error as Error | null)?.message ??
+    null;
+
   return (
     <div className="rounded-xl border border-border bg-card shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-3">
-        <div>
-          <h3 className="text-sm font-semibold text-foreground">
-            Evidencia documental
-          </h3>
-          <p className="text-xs text-muted-foreground">
-            PDF, JPG, JPEG o PNG · máximo 10 MB por archivo.
-          </p>
+        <div className="flex items-center gap-2">
+          <span
+            className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+              esBorrador
+                ? "bg-warning/15 text-warning"
+                : "bg-muted text-muted-foreground"
+            }`}
+          >
+            {esBorrador ? "Borrador" : "Vigente"}
+          </span>
+          <div>
+            <h3 className="text-sm font-semibold text-foreground">
+              {esBorrador
+                ? "Evidencia del borrador (editable)"
+                : "Evidencia vigente (histórica · solo lectura)"}
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              {esBorrador
+                ? "PDF, JPG, JPEG o PNG · máximo 10 MB por archivo."
+                : "Documentos asociados a la versión publicada. No se modifican aquí."}
+            </p>
+          </div>
         </div>
         {estado && (
           <div
@@ -202,53 +226,60 @@ export function EvidenciaDocumentalPanel({
         )}
       </div>
 
-      {/* Carga */}
-      <div className="border-b border-border bg-muted/10 px-5 py-4">
-        <div className="grid gap-3 md:grid-cols-[1fr,auto]">
-          <input
-            type="text"
-            placeholder="Descripción opcional (referencia, vigencia, autoriza…)"
-            value={descripcion}
-            onChange={(e) => setDescripcion(e.target.value.slice(0, 500))}
-            disabled={!puedeEditar || uploading}
-            className="rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-60"
-          />
-          <div className="flex gap-2">
+      {errorMsg && (
+        <div className="border-b border-destructive/30 bg-destructive/10 px-5 py-2 text-xs text-destructive">
+          Error al cargar evidencia: {errorMsg}
+        </div>
+      )}
+
+      {/* Carga — solo en panel de borrador con permisos */}
+      {puedeSubir && (
+        <div className="border-b border-border bg-muted/10 px-5 py-4">
+          <div className="grid gap-3 md:grid-cols-[1fr,auto]">
             <input
-              ref={inputRef}
-              type="file"
-              accept={ACCEPT}
-              disabled={!puedeEditar || uploading}
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) void handleFile(f);
-              }}
-              className="hidden"
-              id={`spec-doc-input-${productoCodigo}`}
+              type="text"
+              placeholder="Descripción opcional (referencia, vigencia, autoriza…)"
+              value={descripcion}
+              onChange={(e) => setDescripcion(e.target.value.slice(0, 500))}
+              disabled={uploading}
+              className="rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-60"
             />
-            <label
-              htmlFor={`spec-doc-input-${productoCodigo}`}
-              className={`inline-flex cursor-pointer items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:opacity-90 ${
-                !puedeEditar || uploading
-                  ? "pointer-events-none opacity-60"
-                  : ""
-              }`}
-            >
-              {uploading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <FileUp className="h-4 w-4" />
-              )}
-              {uploading ? "Subiendo…" : "Cargar documento"}
-            </label>
+            <div className="flex gap-2">
+              <input
+                ref={inputRef}
+                type="file"
+                accept={ACCEPT}
+                disabled={uploading}
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) void handleFile(f);
+                }}
+                className="hidden"
+                id={`spec-doc-input-${productoCodigo}-${target}`}
+              />
+              <label
+                htmlFor={`spec-doc-input-${productoCodigo}-${target}`}
+                className={`inline-flex cursor-pointer items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:opacity-90 ${
+                  uploading ? "pointer-events-none opacity-60" : ""
+                }`}
+              >
+                {uploading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <FileUp className="h-4 w-4" />
+                )}
+                {uploading ? "Subiendo…" : "Cargar documento"}
+              </label>
+            </div>
           </div>
         </div>
-        {!puedeEditar && (
-          <p className="mt-2 text-[11px] text-muted-foreground">
-            Solo los roles Calidad o Administrador pueden cargar evidencia.
-          </p>
-        )}
-      </div>
+      )}
+      {esBorrador && !puedeEditar && (
+        <div className="border-b border-border bg-muted/10 px-5 py-3 text-[11px] text-muted-foreground">
+          Solo los roles Calidad o Administrador pueden cargar evidencia.
+        </div>
+      )}
+
 
       {/* Lista vigentes */}
       <div className="overflow-x-auto">
@@ -312,7 +343,7 @@ export function EvidenciaDocumentalPanel({
                       >
                         <Download className="h-3.5 w-3.5" /> Descargar
                       </button>
-                      {puedeEditar && (
+                      {puedeSubir && (
                         <button
                           onClick={() => archivar(d.id)}
                           disabled={archivarMut.isPending}
