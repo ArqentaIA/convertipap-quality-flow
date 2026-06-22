@@ -16,12 +16,19 @@ import {
   listEspecsActivasConVariables,
   updateCaracteristicasByCode,
 } from "@/lib/qc.functions";
-import { getEvidenciaEstado, getEvidenciaFlag } from "@/lib/spec-documentos.functions";
+import { getEvidenciaFlag } from "@/lib/spec-documentos.functions";
+import {
+  crearBorrador,
+  enviarARevision,
+  publicarVersion,
+  descartarBorrador,
+} from "@/lib/spec-publicacion.functions";
 import { EvidenciaDocumentalPanel } from "@/components/spec/EvidenciaDocumentalPanel";
 import { imprimirVariablesCalidad } from "@/lib/variables-imprimir";
 import { useAuth } from "@/lib/auth";
 import {
   Pencil, Power, Lock, Save, X, ShieldAlert, Printer,
+  FilePlus2, Send, CheckCircle2, Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -45,7 +52,6 @@ function VariablesCalidadGate() {
 
 type DraftMap = Record<string, { min: number; objective: number; max: number }>;
 
-// Spec: Dirección y Gerencia General solo pueden CONSULTAR variables de calidad.
 const ROLES_EDIT = ["calidad", "administrador"] as const;
 
 type AuditRow = {
@@ -67,6 +73,10 @@ function VariablesCalidad() {
   const listAuditFn = useServerFn(listSpecAuditByProductCode);
   const registrarFn = useServerFn(registrarSpecAuditByCode);
   const updateCaracFn = useServerFn(updateCaracteristicasByCode);
+  const crearBorradorFn = useServerFn(crearBorrador);
+  const enviarRevisionFn = useServerFn(enviarARevision);
+  const publicarFn = useServerFn(publicarVersion);
+  const descartarFn = useServerFn(descartarBorrador);
 
   const especsQuery = useQuery({
     ...especsQueryOptions,
@@ -92,6 +102,14 @@ function VariablesCalidad() {
     [selected, filtered, especs],
   );
 
+  type Borrador = NonNullable<
+    (typeof especs)[number] extends { borrador: infer B } ? B : never
+  >;
+  const borrador: Borrador | null =
+    (activeSpec as unknown as { borrador?: Borrador | null })?.borrador ?? null;
+  const hayBorrador = !!borrador;
+  const enRevision = borrador?.estado === "en_revision";
+
   const auditQuery = useQuery({
     queryKey: ["spec-audit", activeSpec?.code],
     queryFn: () => listAuditFn({ data: { codigo: activeSpec!.code } }),
@@ -99,13 +117,6 @@ function VariablesCalidad() {
   });
   const log = (auditQuery.data ?? []) as AuditRow[];
 
-  const estadoEvidenciaFn = useServerFn(getEvidenciaEstado);
-  const evidenciaQuery = useQuery({
-    queryKey: ["spec-documentos-estado", activeSpec?.code],
-    queryFn: () =>
-      estadoEvidenciaFn({ data: { producto_codigo: activeSpec!.code } }),
-    enabled: !!activeSpec?.code && !!activeSpec?.hasSpec,
-  });
   const flagFn = useServerFn(getEvidenciaFlag);
   const flagQuery = useQuery({
     queryKey: ["spec-evidencia-flag"],
@@ -113,16 +124,20 @@ function VariablesCalidad() {
     enabled: !!auth.session?.access_token,
   });
   const evidenciaObligatoria =
-    evidenciaQuery.data?.evidencia_obligatoria === true ||
     flagQuery.data?.evidencia_obligatoria === true;
-  const tieneEvidencia =
-    evidenciaQuery.data?.tiene_evidencia_vigente === true;
-  const bloqueoEvidencia = evidenciaObligatoria && !tieneEvidencia;
 
   const puedeEditar = auth.roles.some((r) =>
     (ROLES_EDIT as readonly string[]).includes(r),
   );
-  const puedeEditarConEvidencia = puedeEditar && !bloqueoEvidencia;
+
+  // Variables a mostrar en la tabla: borrador (editable) o vigente (read-only).
+  const variablesEditadas = useMemo(
+    () => (hayBorrador ? borrador!.variables : activeSpec?.variables ?? []),
+    [hayBorrador, borrador, activeSpec],
+  );
+  const caracteristicasFuente = hayBorrador
+    ? borrador!.caracteristicas
+    : activeSpec?.caracteristicas ?? "";
 
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState<DraftMap>({});
@@ -133,10 +148,10 @@ function VariablesCalidad() {
 
   useEffect(() => {
     setIsEditing(false); setDraft({}); setReason("");
-    const c = ((activeSpec as unknown as { caracteristicas?: string })?.caracteristicas) ?? "";
+    const c = caracteristicasFuente ?? "";
     setCaracteristicas(c);
     setCarInitial(c);
-  }, [activeSpec?.code, activeSpec]);
+  }, [activeSpec?.code, borrador?.id, caracteristicasFuente]);
 
   const handleImprimir = async () => {
     if (!activeSpec) return;
@@ -145,7 +160,8 @@ function VariablesCalidad() {
         code: activeSpec.code,
         name: activeSpec.name,
         family: activeSpec.family,
-        specVersion: (activeSpec as unknown as { specVersion?: string | null }).specVersion ?? null,
+        specVersion:
+          (activeSpec as unknown as { specVersion?: string | null }).specVersion ?? null,
         variables: activeSpec.variables.map((v) => ({
           label: v.label,
           unit: v.unit,
@@ -153,7 +169,7 @@ function VariablesCalidad() {
           objective: v.objective,
           max: v.max,
         })),
-        caracteristicas: caracteristicas || null,
+        caracteristicas: activeSpec.caracteristicas || null,
       });
     } catch (e) {
       toast.error((e as Error).message);
@@ -165,14 +181,16 @@ function VariablesCalidad() {
       toast.error("Solo Calidad o Administrador pueden modificar especificaciones.");
       return;
     }
-    if (bloqueoEvidencia) {
-      toast.error(
-        "Carga evidencia documental vigente antes de modificar la especificación.",
-      );
+    if (!hayBorrador) {
+      toast.error("Primero crea un borrador para modificar esta especificación.");
+      return;
+    }
+    if (enRevision) {
+      toast.error("La especificación está en revisión; descarta o publica antes de editar.");
       return;
     }
     const d: DraftMap = {};
-    activeSpec?.variables.forEach((v) => {
+    variablesEditadas.forEach((v) => {
       d[v.key] = { min: v.min, objective: v.objective, max: v.max };
     });
     setDraft(d);
@@ -184,6 +202,85 @@ function VariablesCalidad() {
     mutationFn: registrarFn,
     onError: (e: Error) => toast.error(e.message),
   });
+
+  const invalidateAll = async () => {
+    await queryClient.invalidateQueries({ queryKey: ["variables-calidad", "especs"] });
+    if (activeSpec?.code) {
+      void queryClient.invalidateQueries({ queryKey: ["spec-audit", activeSpec.code] });
+      void queryClient.invalidateQueries({
+        queryKey: ["spec-documentos", activeSpec.code],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: ["spec-documentos-estado", activeSpec.code],
+      });
+    }
+  };
+
+  const handleCrearBorrador = async () => {
+    if (!activeSpec) return;
+    const motivo = window.prompt(
+      "Motivo del nuevo borrador (mínimo 5 caracteres):",
+      "",
+    );
+    if (!motivo || motivo.trim().length < 5) {
+      if (motivo !== null) toast.warning("Motivo obligatorio (mínimo 5 caracteres).");
+      return;
+    }
+    try {
+      await crearBorradorFn({
+        data: { producto_codigo: activeSpec.code, motivo: motivo.trim() },
+      });
+      toast.success("Borrador creado. Los cambios no impactan producción hasta publicar.");
+      await invalidateAll();
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  };
+
+  const handleEnviarRevision = async () => {
+    if (!borrador) return;
+    const motivo = window.prompt("Motivo para enviar a revisión:", "");
+    if (!motivo || motivo.trim().length < 5) return;
+    try {
+      await enviarRevisionFn({ data: { spec_id: borrador.id, motivo: motivo.trim() } });
+      toast.success("Enviado a revisión.");
+      await invalidateAll();
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  };
+
+  const handlePublicar = async () => {
+    if (!borrador) return;
+    const motivo = window.prompt(
+      "Motivo de publicación (la versión vigente pasará a obsoleta):",
+      "",
+    );
+    if (!motivo || motivo.trim().length < 5) return;
+    try {
+      await publicarFn({ data: { spec_id: borrador.id, motivo: motivo.trim() } });
+      toast.success("Versión publicada. La vigente anterior pasó a obsoleta.");
+      await invalidateAll();
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  };
+
+  const handleDescartar = async () => {
+    if (!borrador) return;
+    const motivo = window.prompt(
+      "Motivo del descarte (el borrador se conserva como 'descartada'):",
+      "",
+    );
+    if (!motivo || motivo.trim().length < 5) return;
+    try {
+      await descartarFn({ data: { spec_id: borrador.id, motivo: motivo.trim() } });
+      toast.success("Borrador descartado (no se eliminaron datos).");
+      await invalidateAll();
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  };
 
   if (especsQuery.error) {
     return (
@@ -204,7 +301,7 @@ function VariablesCalidad() {
   }
 
   const saveEdit = async () => {
-    if (!activeSpec) return;
+    if (!activeSpec || !borrador) return;
     if (!reason.trim()) { toast.warning("Indique el motivo del cambio."); return; }
 
     const changes: Array<{
@@ -213,7 +310,7 @@ function VariablesCalidad() {
       valor_anterior: number; valor_nuevo: number;
     }> = [];
 
-    activeSpec.variables.forEach((v) => {
+    variablesEditadas.forEach((v) => {
       const d = draft[v.key];
       if (!d) return;
       (["min", "objective", "max"] as const).forEach((field) => {
@@ -245,12 +342,11 @@ function VariablesCalidad() {
           },
         });
       }
-      toast.success(`${changes.length} cambio(s) guardados en la base de datos.`);
-      await queryClient.invalidateQueries({ queryKey: ["variables-calidad", "especs"] });
-      void queryClient.invalidateQueries({ queryKey: ["spec-audit", activeSpec.code] });
+      toast.success(`${changes.length} cambio(s) guardados en el borrador.`);
+      await invalidateAll();
       cancelEdit();
     } catch {
-      /* error ya notificado por onError */
+      /* ya notificado */
     }
   };
 
@@ -258,6 +354,10 @@ function VariablesCalidad() {
     if (!activeSpec) return;
     if (!puedeEditar) {
       toast.error("Solo Calidad o Administrador pueden modificar.");
+      return;
+    }
+    if (!hayBorrador) {
+      toast.error("Primero crea un borrador para modificar características.");
       return;
     }
     if (caracteristicas.length > 700) {
@@ -270,10 +370,9 @@ function VariablesCalidad() {
         data: { producto_codigo: activeSpec.code, caracteristicas },
       });
       if (res.changed) {
-        toast.success("Características guardadas.");
+        toast.success("Características guardadas en el borrador.");
         setCarInitial(caracteristicas);
-        await queryClient.invalidateQueries({ queryKey: ["variables-calidad", "especs"] });
-        void queryClient.invalidateQueries({ queryKey: ["spec-audit", activeSpec.code] });
+        await invalidateAll();
       } else {
         toast.info("Sin cambios.");
       }
@@ -284,10 +383,6 @@ function VariablesCalidad() {
     }
   };
 
-
-
-
-
   if (especs.length === 0) {
     return (
       <AppLayout title="Variables de Calidad · Catálogo Maestro de Especificaciones">
@@ -297,6 +392,9 @@ function VariablesCalidad() {
       </AppLayout>
     );
   }
+
+  const editEnabled =
+    puedeEditar && hayBorrador && !enRevision && !!activeSpec?.hasSpec;
 
   return (
     <AppLayout title="Variables de Calidad · Catálogo Maestro de Especificaciones">
@@ -315,6 +413,7 @@ function VariablesCalidad() {
             {evidenciaObligatoria ? "Activa" : "Inactiva"}
           </span>
         </div>
+
         {/* Selectores */}
         <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
           <div className="grid grid-cols-1 gap-3 md:grid-cols-[260px,1fr]">
@@ -342,6 +441,7 @@ function VariablesCalidad() {
                 {filtered.map((p) => (
                   <option key={p.code} value={p.code}>
                     {p.code} — {p.name} · {p.variables.length} var
+                    {p.borrador ? "  · ✎ borrador" : ""}
                   </option>
                 ))}
               </select>
@@ -349,6 +449,94 @@ function VariablesCalidad() {
           </div>
         </div>
 
+        {/* Panel Versiones — Fase 3 */}
+        {activeSpec && (
+          <div className="rounded-xl border border-border bg-card shadow-sm">
+            <div className="flex items-center justify-between border-b border-border px-5 py-3">
+              <h3 className="text-sm font-semibold text-foreground">Versiones — {activeSpec.code}</h3>
+              <span className="text-[11px] text-muted-foreground">
+                Los cambios no impactan producción hasta publicar.
+              </span>
+            </div>
+            <div className="grid grid-cols-1 gap-3 p-4 md:grid-cols-2">
+              {/* Vigente */}
+              <div className="rounded-lg border border-success/30 bg-success/5 p-3">
+                <div className="mb-1 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-success">
+                  <Power className="h-3 w-3" /> Vigente (lectura)
+                </div>
+                {activeSpec.hasSpec ? (
+                  <div className="text-sm">
+                    <div className="font-semibold text-foreground">
+                      Versión {activeSpec.specVersion ?? "—"}
+                    </div>
+                    <div className="text-[11px] text-muted-foreground">
+                      Esta versión es la que leen QC, reportes, QR y formularios MP-04…MP-07.
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-xs text-muted-foreground">Sin versión vigente.</div>
+                )}
+              </div>
+
+              {/* Borrador */}
+              <div
+                className={`rounded-lg border p-3 ${
+                  hayBorrador
+                    ? enRevision
+                      ? "border-warning/40 bg-warning/5"
+                      : "border-primary/40 bg-primary/5"
+                    : "border-dashed border-border bg-muted/20"
+                }`}
+              >
+                <div className="mb-1 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider">
+                  <Pencil className="h-3 w-3" />
+                  {hayBorrador
+                    ? enRevision
+                      ? "En revisión"
+                      : "Borrador (editable)"
+                    : "Sin borrador activo"}
+                </div>
+                {hayBorrador ? (
+                  <div className="space-y-2 text-sm">
+                    <div className="font-semibold text-foreground">
+                      Versión {borrador!.version}
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {!enRevision && puedeEditar && (
+                        <Button size="sm" variant="outline" onClick={handleEnviarRevision}>
+                          <Send className="h-3.5 w-3.5" /> Enviar a revisión
+                        </Button>
+                      )}
+                      {puedeEditar && (
+                        <Button size="sm" onClick={handlePublicar} className="bg-success text-white hover:opacity-90">
+                          <CheckCircle2 className="h-3.5 w-3.5" /> Publicar versión
+                        </Button>
+                      )}
+                      {puedeEditar && (
+                        <Button size="sm" variant="outline" onClick={handleDescartar} className="border-destructive/40 text-destructive hover:bg-destructive/10">
+                          <Trash2 className="h-3.5 w-3.5" /> Descartar
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <p className="text-[11px] text-muted-foreground">
+                      Crea un borrador para modificar variables o características sin afectar la versión vigente.
+                    </p>
+                    {puedeEditar && (
+                      <Button size="sm" onClick={handleCrearBorrador}>
+                        <FilePlus2 className="h-3.5 w-3.5" /> Crear borrador
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Tarjeta principal */}
         <div className="rounded-xl border border-border bg-card shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-3">
             <div>
@@ -361,46 +549,52 @@ function VariablesCalidad() {
                 {activeSpec?.specVersion && (
                   <>
                     <span>·</span>
-                    <span>Versión: <span className="font-semibold text-foreground tabular-nums">{activeSpec.specVersion}</span></span>
+                    <span>Versión vigente: <span className="font-semibold text-foreground tabular-nums">{activeSpec.specVersion}</span></span>
                   </>
                 )}
-                <span>·</span>
-                <span className="inline-flex items-center gap-1 rounded bg-success/10 px-1.5 py-0.5 font-semibold text-success">
-                  <Power className="h-2.5 w-2.5" /> Activa
-                </span>
+                {hayBorrador && (
+                  <>
+                    <span>·</span>
+                    <span className="inline-flex items-center gap-1 rounded bg-primary/10 px-1.5 py-0.5 font-semibold text-primary">
+                      <Pencil className="h-2.5 w-2.5" /> Editando borrador {borrador!.version}
+                    </span>
+                  </>
+                )}
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-1.5">
               {!isEditing ? (
                 <>
-              <Button
-                variant="default"
-                size="sm"
-                onClick={startEdit}
-                disabled={!puedeEditarConEvidencia || !activeSpec?.hasSpec}
-                title={
-                  !puedeEditar
-                    ? "Sin permiso para editar"
-                    : bloqueoEvidencia
-                      ? "Carga evidencia documental vigente para habilitar cambios"
-                      : ""
-                }
-              >
-                <Pencil className="h-4 w-4" /> Editar
-              </Button>
-              <Button
-                size="sm"
-                onClick={handleImprimir}
-                disabled={!activeSpec?.hasSpec}
-                className="bg-navy text-white hover:opacity-90"
-              >
-                <Printer className="h-4 w-4" /> Imprimir
-              </Button>
-            </>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={startEdit}
+                    disabled={!editEnabled}
+                    title={
+                      !puedeEditar
+                        ? "Sin permiso para editar"
+                        : !hayBorrador
+                          ? "Crea un borrador primero"
+                          : enRevision
+                            ? "Borrador en revisión"
+                            : ""
+                    }
+                  >
+                    <Pencil className="h-4 w-4" /> Editar variables
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={handleImprimir}
+                    disabled={!activeSpec?.hasSpec}
+                    className="bg-navy text-white hover:opacity-90"
+                  >
+                    <Printer className="h-4 w-4" /> Imprimir
+                  </Button>
+                </>
               ) : (
                 <>
                   <span className="rounded-md border border-warning/40 bg-warning/10 px-2 py-1 text-[10px] font-semibold text-warning">
-                    Editando como {auth.profile?.nombre ?? auth.user?.email} ({auth.roles.join(", ")})
+                    Editando borrador como {auth.profile?.nombre ?? auth.user?.email} ({auth.roles.join(", ")})
                   </span>
                   <button
                     onClick={saveEdit}
@@ -420,21 +614,28 @@ function VariablesCalidad() {
           {!puedeEditar && (
             <div className="border-b border-border bg-muted/20 px-5 py-2 text-[11px] text-muted-foreground flex items-center gap-2">
               <ShieldAlert className="h-3.5 w-3.5" />
-              Solo Dirección, Calidad o Administrador pueden modificar especificaciones.
+              Solo Calidad o Administrador pueden modificar especificaciones.
             </div>
           )}
 
-          {bloqueoEvidencia && puedeEditar && activeSpec?.hasSpec && (
-            <div className="border-b border-border bg-destructive/10 px-5 py-2 text-[11px] text-destructive flex items-center gap-2">
+          {puedeEditar && !hayBorrador && activeSpec?.hasSpec && (
+            <div className="border-b border-border bg-muted/30 px-5 py-2 text-[11px] text-foreground flex items-center gap-2">
               <ShieldAlert className="h-3.5 w-3.5" />
-              Esta especificación requiere evidencia documental vigente antes de poder agregar, modificar o inactivar variables. Carga el documento en el panel inferior.
+              Crea un borrador para modificar esta especificación. La versión vigente es solo de lectura.
+            </div>
+          )}
+
+          {enRevision && (
+            <div className="border-b border-border bg-warning/10 px-5 py-2 text-[11px] text-warning flex items-center gap-2">
+              <ShieldAlert className="h-3.5 w-3.5" />
+              Borrador en revisión: descarta o publica antes de seguir editando.
             </div>
           )}
 
           {!activeSpec?.hasSpec && (
             <div className="border-b border-border bg-warning/10 px-5 py-2 text-[11px] text-warning flex items-center gap-2">
               <ShieldAlert className="h-3.5 w-3.5" />
-              Este producto aún no tiene especificación registrada en la base de datos.
+              Este producto aún no tiene especificación vigente registrada.
             </div>
           )}
 
@@ -465,14 +666,14 @@ function VariablesCalidad() {
                 </tr>
               </thead>
               <tbody>
-                {activeSpec?.variables.length === 0 && (
+                {variablesEditadas.length === 0 && (
                   <tr>
                     <td colSpan={6} className="px-4 py-6 text-center text-xs text-muted-foreground">
                       Sin variables registradas para esta especificación.
                     </td>
                   </tr>
                 )}
-                {activeSpec?.variables.map((v) => {
+                {variablesEditadas.map((v) => {
                   const d = draft[v.key];
                   return (
                     <tr key={v.key} className="border-t border-border hover:bg-accent/40">
@@ -511,7 +712,9 @@ function VariablesCalidad() {
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border bg-muted/20 px-5 py-3 text-[11px] text-muted-foreground">
             <div className="flex items-center gap-1.5">
               <Lock className="h-3.5 w-3.5" />
-              Persistencia real · cambios escritos en producto_variables + spec_audit_log.
+              {hayBorrador
+                ? "Cambios escritos en el borrador. No impactan producción hasta publicar."
+                : "Versión vigente (solo lectura)."}
             </div>
             <div>
               {log.length > 0
@@ -521,11 +724,21 @@ function VariablesCalidad() {
           </div>
         </div>
 
-        {/* Evidencia documental (Fase 2 — control documental) */}
+        {/* Evidencia documental — VIGENTE (histórica) */}
         {activeSpec?.hasSpec && (
           <EvidenciaDocumentalPanel
             productoCodigo={activeSpec.code}
+            puedeEditar={false}
+            target="vigente"
+          />
+        )}
+
+        {/* Evidencia documental — BORRADOR (carga para habilitar edición) */}
+        {hayBorrador && (
+          <EvidenciaDocumentalPanel
+            productoCodigo={activeSpec!.code}
             puedeEditar={puedeEditar}
+            target="borrador"
           />
         )}
 
@@ -533,9 +746,13 @@ function VariablesCalidad() {
         <div className="rounded-xl border border-border bg-card shadow-sm">
           <div className="flex items-center justify-between border-b border-border px-5 py-3">
             <div>
-              <h3 className="text-sm font-semibold text-foreground">Características de los atributos</h3>
+              <h3 className="text-sm font-semibold text-foreground">
+                Características de los atributos {hayBorrador ? "(borrador)" : "(vigente · solo lectura)"}
+              </h3>
               <p className="text-xs text-muted-foreground">
-                Información adicional asociada al producto/especificación seleccionado.
+                {hayBorrador
+                  ? "Edita aquí; los cambios se aplican al borrador y no impactan producción hasta publicar."
+                  : "Crea un borrador para modificar."}
               </p>
             </div>
             <span
@@ -556,7 +773,7 @@ function VariablesCalidad() {
               maxLength={700}
               onChange={(e) => setCaracteristicas(e.target.value.slice(0, 700))}
               placeholder="Captura características adicionales de los atributos…"
-              disabled={!puedeEditarConEvidencia || !activeSpec?.hasSpec}
+              disabled={!editEnabled}
               rows={5}
               className="w-full resize-y rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-60"
             />
@@ -571,8 +788,7 @@ function VariablesCalidad() {
               <button
                 onClick={saveCaracteristicas}
                 disabled={
-                  !puedeEditarConEvidencia ||
-                  !activeSpec?.hasSpec ||
+                  !editEnabled ||
                   savingCar ||
                   caracteristicas === carInitial
                 }
@@ -588,7 +804,7 @@ function VariablesCalidad() {
         <div className="rounded-xl border border-border bg-card shadow-sm">
           <div className="border-b border-border px-5 py-3">
             <h3 className="text-sm font-semibold text-foreground">Bitácora de cambios — {activeSpec?.code}</h3>
-            <p className="text-xs text-muted-foreground">Registro permanente, no modificable (Supabase · spec_audit_log).</p>
+            <p className="text-xs text-muted-foreground">Registro permanente, no modificable.</p>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
