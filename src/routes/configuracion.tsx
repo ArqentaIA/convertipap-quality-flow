@@ -134,6 +134,7 @@ function ConfigContent({ settings }: { settings: AppSettings }) {
               onChange={(v) => set("frecuencia_muestreo_min", Number(v) || 0)}
               type="number"
             />
+            {false && (
             <Field
               label="Costo de no calidad"
               value={String(form.costo_no_calidad_kg ?? 18)}
@@ -141,6 +142,7 @@ function ConfigContent({ settings }: { settings: AppSettings }) {
               onChange={(v) => set("costo_no_calidad_kg", Number(v) || 0)}
               type="number"
             />
+            )}
           </Card>
         </div>
 
@@ -148,6 +150,7 @@ function ConfigContent({ settings }: { settings: AppSettings }) {
 
 
         <div className="space-y-6">
+          {false && (
           <Card icon={Bell} title="Notificaciones" desc="Alertas automáticas del sistema">
             <Toggle
               label="Alerta por valor fuera de rango"
@@ -219,9 +222,10 @@ function ConfigContent({ settings }: { settings: AppSettings }) {
               </div>
             </div>
           </Card>
+          )}
           {previewCEO && <CEOReportPreview onClose={() => setPreviewCEO(false)} />}
 
-          {isAdmin && (
+          {false && isAdmin && (
             <Card icon={FileCheck2} title="Control documental de especificaciones" desc="Variables de Calidad · Catálogo Maestro">
               <Toggle
                 label="Exigir evidencia documental vigente"
