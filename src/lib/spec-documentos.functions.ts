@@ -328,3 +328,22 @@ export const getEvidenciaEstado = createServerFn({ method: "GET" })
       puede_editar: !obligatoria || rpc === true,
     };
   });
+
+// =============================================================================
+// getEvidenciaFlag — lectura global del feature flag (sin requerir spec)
+// =============================================================================
+export const getEvidenciaFlag = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const sb = context.supabase as SB;
+    const { data: flagRow } = await sb
+      .from("app_settings")
+      .select("spec_evidencia_obligatoria")
+      .limit(1)
+      .maybeSingle();
+    const obligatoria =
+      ((flagRow as unknown as { spec_evidencia_obligatoria?: boolean } | null)
+        ?.spec_evidencia_obligatoria ?? false) === true;
+    return { evidencia_obligatoria: obligatoria };
+  });
+
