@@ -1899,7 +1899,12 @@ export type Database = {
         | "otro"
       qc_tipo_muestreo: "por_rollo" | "por_tiempo"
       shift_code: "1" | "2" | "3"
-      spec_status: "borrador" | "vigente" | "obsoleta"
+      spec_status:
+        | "borrador"
+        | "vigente"
+        | "obsoleta"
+        | "en_revision"
+        | "descartada"
       unidad_objetivo: "kg" | "rollos" | "ambos"
     }
     CompositeTypes: {
@@ -2104,7 +2109,13 @@ export const Constants = {
       ],
       qc_tipo_muestreo: ["por_rollo", "por_tiempo"],
       shift_code: ["1", "2", "3"],
-      spec_status: ["borrador", "vigente", "obsoleta"],
+      spec_status: [
+        "borrador",
+        "vigente",
+        "obsoleta",
+        "en_revision",
+        "descartada",
+      ],
       unidad_objetivo: ["kg", "rollos", "ambos"],
     },
   },
