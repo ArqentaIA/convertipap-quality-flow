@@ -125,8 +125,16 @@ function buildHtml(data: VariablesPrintData, logoDataUrl: string): string {
   .mediciones tbody td.obj{font-weight:900;background:#fef3c7;color:#0f172a}
   .mediciones tbody tr:nth-child(even) td:not(.lbl):not(.obj){background:#fbfdff}
 
-  .atrib-title{padding:6px 12px;background:#f8fafc;border-bottom:1px solid #0f172a;font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#475569}
-  .atrib{padding:10px 12px;border-bottom:2px solid #0f172a;font-size:13px;line-height:1.45;color:#1e293b;white-space:pre-wrap;min-height:48px}
+  .atrib-title{padding:6px 12px;background:#f8fafc;border-bottom:1px solid #0f172a;font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#475569;display:flex;justify-content:space-between;align-items:center}
+  .atrib-title .lim{font-size:9px;color:#94a3b8;font-weight:600;letter-spacing:.06em;text-transform:none}
+  .atrib{padding:10px 12px;border-bottom:2px solid #0f172a;font-size:12px;line-height:1.45;color:#1e293b;white-space:pre-wrap;min-height:64px}
+
+  .firmas-title{padding:6px 12px;background:#0f172a;color:#fff;font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}
+  .firmas{display:grid;grid-template-columns:repeat(5,1fr);border-bottom:2px solid #0f172a}
+  .firmas .f{padding:18px 6px 8px;border-right:1px solid #cbd5e1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;min-height:80px}
+  .firmas .f:last-child{border-right:0}
+  .firmas .line{width:90%;border-top:1px solid #0f172a;margin-bottom:5px}
+  .firmas .rol{font-size:9.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#334155;text-align:center}
 
   .log-title{padding:6px 12px;background:#f8fafc;border-bottom:1px solid #0f172a;font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#475569}
   .log{padding:0;border-bottom:2px solid #0f172a}
@@ -198,8 +206,17 @@ function buildHtml(data: VariablesPrintData, logoDataUrl: string): string {
       </table>
     </div>
 
-    <div class="atrib-title">Características de los Atributos</div>
-    <div class="atrib">${esc(data.caracteristicas || "Sin características registradas.")}</div>
+    <div class="atrib-title"><span>Características de los Atributos</span><span class="lim">Máx. 250 caracteres</span></div>
+    <div class="atrib">${esc((data.caracteristicas || "Sin características registradas.").slice(0, 250))}</div>
+
+    <div class="firmas-title">Firmas de Autorización</div>
+    <div class="firmas">
+      <div class="f"><div class="line"></div><div class="rol">Elaboró</div></div>
+      <div class="f"><div class="line"></div><div class="rol">Revisó</div></div>
+      <div class="f"><div class="line"></div><div class="rol">Calidad</div></div>
+      <div class="f"><div class="line"></div><div class="rol">Producción</div></div>
+      <div class="f"><div class="line"></div><div class="rol">Autorizó</div></div>
+    </div>
 
     ${data.log && data.log.length > 0 ? `
     <div class="log-title">Bitácora de Cambios</div>
