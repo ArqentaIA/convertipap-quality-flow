@@ -230,6 +230,16 @@ export async function exportConsolidadoXLSX(payload: ConsolidadoPayload): Promis
       if (row.liberacion_justificacion && row.liberacion_justificacion.trim()) {
         obsParts.push(`Justificación: ${row.liberacion_justificacion.trim()}`);
       }
+      const defectosList = (row.defectos ?? []).map((d) => d.trim()).filter(Boolean);
+      if (row.defecto_visual_conversion && row.defecto_visual_conversion.trim()) {
+        defectosList.push(row.defecto_visual_conversion.trim());
+      }
+      if (defectosList.length > 0) {
+        obsParts.push(`Defectos: ${defectosList.join(", ")}`);
+      }
+      if (obsParts.length === 0 && defectosList.length === 0) {
+        obsParts.push("SIN DEFECTO");
+      }
       const values: (string | number | null)[] = [
         TURNO_LABEL[row.turno] ?? row.turno,
         fmtFecha(row.hora_muestreo),
