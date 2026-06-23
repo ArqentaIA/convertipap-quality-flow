@@ -146,8 +146,8 @@ function buildHtml(data: EtiquetaData, qrDataUrl: string, logoDataUrl: string): 
 
   /* Bloque hero: No. Rollo + Producto */
   .hero{display:grid;grid-template-columns:1fr 1fr;border-bottom:2px solid #0f172a}
-  .hero .rollo{padding:12px 14px;background:#0f172a;color:#fff;display:flex;flex-direction:column;justify-content:center}
-  .hero .rollo .tag{font-size:11px;letter-spacing:.18em;color:#e2e8f0;text-transform:uppercase;font-weight:700}
+  .hero .rollo{padding:12px 14px;background:#fff;color:#0f172a;display:flex;flex-direction:column;justify-content:center}
+  .hero .rollo .tag{font-size:11px;letter-spacing:.18em;color:#64748b;text-transform:uppercase;font-weight:700}
   .hero .rollo .num{font-size:54px;font-weight:900;line-height:1;letter-spacing:-.02em;margin-top:6px;font-variant-numeric:tabular-nums}
   .hero .producto{padding:12px 14px;display:flex;flex-direction:column;justify-content:center;background:#fff}
   .hero .producto .tag{font-size:11px;letter-spacing:.18em;color:#64748b;text-transform:uppercase;font-weight:700}
