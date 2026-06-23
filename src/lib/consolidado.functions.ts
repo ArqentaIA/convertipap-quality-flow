@@ -42,6 +42,8 @@ export type ConsolidadoRow = {
   estado: string | null;
   liberado_con_justificacion: boolean;
   liberacion_justificacion: string | null;
+  defectos: string[];
+  defecto_visual_conversion: string | null;
   mediciones: Partial<Record<VariableClave, number>>;
   /** Claves declaradas en la especificación del producto (para distinguir "No aplica" vs "Pendiente"). */
   variablesAplicables: VariableClave[];
@@ -95,7 +97,7 @@ export const getConsolidado = createServerFn({ method: "GET" })
       supabase
         .from("muestras_calidad")
         .select(
-          "id, turno, hora_muestreo, numero_rollo, observaciones_generales, estado, estatus_liberacion, liberado_con_justificacion, liberacion_justificacion, maquina_id, producto_id, producto:productos(codigo)",
+          "id, turno, hora_muestreo, numero_rollo, observaciones_generales, estado, estatus_liberacion, liberado_con_justificacion, liberacion_justificacion, defectos, defecto_visual_conversion, maquina_id, producto_id, producto:productos(codigo)",
         )
         .in("maquina_id", Array.from(maqMap.keys()))
         .gte("hora_muestreo", startIso)
@@ -180,6 +182,10 @@ export const getConsolidado = createServerFn({ method: "GET" })
         estado: (mu.estado as string | null) ?? null,
         liberado_con_justificacion: !!(mu as { liberado_con_justificacion?: boolean | null }).liberado_con_justificacion,
         liberacion_justificacion: (mu as { liberacion_justificacion?: string | null }).liberacion_justificacion ?? null,
+        defectos: Array.isArray((mu as { defectos?: unknown }).defectos)
+          ? ((mu as { defectos: unknown[] }).defectos.filter((d): d is string => typeof d === "string" && d.trim().length > 0))
+          : [],
+        defecto_visual_conversion: ((mu as { defecto_visual_conversion?: string | null }).defecto_visual_conversion ?? null),
         mediciones: medByMuestra.get(mu.id as string) ?? {},
         variablesAplicables: prodId ? (aplicablesPorProducto.get(prodId) ?? []) : [],
       });
