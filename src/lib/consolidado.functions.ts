@@ -182,6 +182,10 @@ export const getConsolidado = createServerFn({ method: "GET" })
         estado: (mu.estado as string | null) ?? null,
         liberado_con_justificacion: !!(mu as { liberado_con_justificacion?: boolean | null }).liberado_con_justificacion,
         liberacion_justificacion: (mu as { liberacion_justificacion?: string | null }).liberacion_justificacion ?? null,
+        defectos: Array.isArray((mu as { defectos?: unknown }).defectos)
+          ? ((mu as { defectos: unknown[] }).defectos.filter((d): d is string => typeof d === "string" && d.trim().length > 0))
+          : [],
+        defecto_visual_conversion: ((mu as { defecto_visual_conversion?: string | null }).defecto_visual_conversion ?? null),
         mediciones: medByMuestra.get(mu.id as string) ?? {},
         variablesAplicables: prodId ? (aplicablesPorProducto.get(prodId) ?? []) : [],
       });
