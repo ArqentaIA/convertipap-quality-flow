@@ -97,7 +97,7 @@ export const getConsolidado = createServerFn({ method: "GET" })
       supabase
         .from("muestras_calidad")
         .select(
-          "id, turno, hora_muestreo, numero_rollo, observaciones_generales, estado, estatus_liberacion, liberado_con_justificacion, liberacion_justificacion, maquina_id, producto_id, producto:productos(codigo)",
+          "id, turno, hora_muestreo, numero_rollo, observaciones_generales, estado, estatus_liberacion, liberado_con_justificacion, liberacion_justificacion, defectos, defecto_visual_conversion, maquina_id, producto_id, producto:productos(codigo)",
         )
         .in("maquina_id", Array.from(maqMap.keys()))
         .gte("hora_muestreo", startIso)
