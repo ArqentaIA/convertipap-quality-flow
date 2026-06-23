@@ -42,6 +42,8 @@ export type ConsolidadoRow = {
   estado: string | null;
   liberado_con_justificacion: boolean;
   liberacion_justificacion: string | null;
+  defectos: string[];
+  defecto_visual_conversion: string | null;
   mediciones: Partial<Record<VariableClave, number>>;
   /** Claves declaradas en la especificación del producto (para distinguir "No aplica" vs "Pendiente"). */
   variablesAplicables: VariableClave[];
