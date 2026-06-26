@@ -117,22 +117,22 @@ function buildHtml(d: DetalleRolloPdfData, logoDataUrl: string): string {
   .head .info .v{font-size:11px;color:#0f172a;margin-top:2px;font-weight:800}
 
   .hero{display:grid;grid-template-columns:1.1fr 2fr;border-bottom:2px solid #0f172a}
-  .hero .rollo{padding:14px;background:#0f172a;color:#fff;display:flex;flex-direction:column;justify-content:center;border-right:1px solid #0f172a}
+  .hero .rollo{padding:10px 14px;background:#0f172a;color:#fff;display:flex;flex-direction:column;justify-content:center;border-right:1px solid #0f172a}
   .hero .rollo .k{font-size:9px;text-transform:uppercase;letter-spacing:.12em;color:#94a3b8;font-weight:700}
-  .hero .rollo .num{font-size:36px;font-weight:900;line-height:1;letter-spacing:-.02em;color:#fff;margin-top:4px;font-variant-numeric:tabular-nums}
-  .hero .rollo .of{font-size:11px;margin-top:10px;color:#cbd5e1;font-weight:700}
-  .hero .rollo .prod{font-size:12px;margin-top:6px;color:#fff;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
+  .hero .rollo .num{font-size:28px;font-weight:900;line-height:1;letter-spacing:-.02em;color:#fff;margin-top:3px;font-variant-numeric:tabular-nums}
+  .hero .rollo .of{font-size:10.5px;margin-top:6px;color:#cbd5e1;font-weight:700}
+  .hero .rollo .prod{font-size:11px;margin-top:4px;color:#fff;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
   .hero .meta{padding:0}
   .hero .meta table{width:100%;height:100%;border-collapse:collapse}
-  .hero .meta td{border:1px solid #e2e8f0;padding:6px 10px;font-size:10px;vertical-align:middle}
+  .hero .meta td{border:1px solid #e2e8f0;padding:4px 8px;font-size:10px;vertical-align:middle}
   .hero .meta td.k{color:#64748b;text-transform:uppercase;letter-spacing:.06em;font-weight:700;background:#f8fafc;font-size:9px;width:38%}
-  .hero .meta td.v{color:#0f172a;font-weight:800;font-size:11px}
+  .hero .meta td.v{color:#0f172a;font-weight:800;font-size:10.5px}
 
   .kpi{display:grid;grid-template-columns:repeat(3,1fr);border-bottom:2px solid #0f172a}
-  .kpi .k{padding:10px 14px;border-right:1px solid #e2e8f0;display:flex;flex-direction:column;align-items:flex-start}
+  .kpi .k{padding:6px 14px;border-right:1px solid #e2e8f0;display:flex;flex-direction:column;align-items:flex-start}
   .kpi .k:last-child{border-right:0}
   .kpi .k .lbl{font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:#64748b;font-weight:700}
-  .kpi .k .val{font-size:22px;font-weight:900;color:#0f172a;margin-top:3px;font-variant-numeric:tabular-nums}
+  .kpi .k .val{font-size:18px;font-weight:900;color:#0f172a;margin-top:2px;font-variant-numeric:tabular-nums}
   .kpi .k.danger .val{color:#dc2626}
   .kpi .k.ok .val{color:#059669}
 
