@@ -1,8 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { CheckCircle2, AlertTriangle, Loader2, Clock } from "lucide-react";
+import { CheckCircle2, AlertTriangle, Loader2, Clock, FileDown } from "lucide-react";
+import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { getDetalleRollo } from "@/lib/produccion.functions";
+import { imprimirDetalleRollo } from "@/lib/detalle-rollo-pdf";
+
 
 /**
  * Detalle de calidad de un rollo (solo consulta).
