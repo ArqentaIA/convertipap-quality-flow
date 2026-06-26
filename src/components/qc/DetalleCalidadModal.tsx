@@ -44,8 +44,9 @@ export function DetalleCalidadModal({
             </DialogTitle>
             <Button
               size="sm"
-              variant="outline"
+              className="bg-[#EB1000] hover:bg-[#C20B00] text-white border-transparent"
               disabled={!r}
+
               onClick={async () => {
                 if (!r) return;
                 try {
