@@ -146,7 +146,7 @@ function buildHtml(d: DetalleRolloPdfData, logoDataUrl: string): string {
   .tbl thead th{background:#f1f5f9;padding:7px 8px;font-size:10px;font-weight:800;color:#334155;text-transform:uppercase;letter-spacing:.06em;text-align:center;border-bottom:2px solid #0f172a;border-right:1px solid #cbd5e1}
   .tbl thead th:last-child{border-right:0}
   .tbl thead th.lbl-h{text-align:left}
-  .tbl tbody td{padding:6px 8px;font-size:11px;text-align:center;border-bottom:1px solid #e2e8f0;border-right:1px solid #e2e8f0;font-variant-numeric:tabular-nums;color:#0f172a}
+  .tbl tbody td{padding:4px 8px;font-size:10.5px;text-align:center;border-bottom:1px solid #e2e8f0;border-right:1px solid #e2e8f0;font-variant-numeric:tabular-nums;color:#0f172a}
   .tbl tbody td:last-child{border-right:0}
   .tbl tbody td.num{color:#94a3b8;font-weight:700}
   .tbl tbody td.lbl{text-align:left;background:#f8fafc}
