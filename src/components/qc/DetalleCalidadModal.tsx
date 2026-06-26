@@ -38,10 +38,58 @@ export function DetalleCalidadModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
-          <DialogTitle className="text-lg">
-            Detalle de calidad{folio ? ` · ${folio}` : ""}
-          </DialogTitle>
+          <div className="flex items-start justify-between gap-3 pr-8">
+            <DialogTitle className="text-lg">
+              Detalle de calidad{folio ? ` · ${folio}` : ""}
+            </DialogTitle>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={!r}
+              onClick={async () => {
+                if (!r) return;
+                try {
+                  await imprimirDetalleRollo({
+                    rollo: {
+                      numero: r.numero,
+                      folioOrden: r.folioOrden,
+                      producto: r.producto,
+                      productoCodigo: r.productoCodigo,
+                      maquina: r.maquina,
+                      planta: r.planta,
+                      capturadoAt: r.capturadoAt,
+                      turno: r.turno,
+                      operador: r.operador,
+                      jefeMaquina: r.jefeMaquina,
+                      analista: r.analista,
+                      estatus: r.estatus,
+                      cumplimientoVariables: r.cumplimientoVariables,
+                      ncCount: r.ncCount,
+                      defectos: r.defectos,
+                      observaciones: r.observaciones,
+                    },
+                    mediciones: meds.map((m) => ({
+                      clave: m.clave,
+                      etiqueta: m.etiqueta,
+                      unidad: m.unidad,
+                      min: m.min,
+                      objetivo: m.objetivo,
+                      max: m.max,
+                      valor: m.valor,
+                      estado: m.estado,
+                    })),
+                  });
+                } catch (e) {
+                  toast.error((e as Error).message);
+                }
+              }}
+            >
+              <FileDown className="mr-2 h-4 w-4" />
+              Exportar PDF
+            </Button>
+          </div>
         </DialogHeader>
+
 
         <div className="flex-1 overflow-auto">
           {isLoading && (
