@@ -254,13 +254,6 @@ function buildHtml(d: DetalleRolloPdfData, logoDataUrl: string): string {
       <div style="margin-top:4px"><span class="k">Observaciones:</span>${r.observaciones ? esc(r.observaciones) : "SIN OBSERVACIONES"}</div>
     </div>
 
-    <div class="sec-title">Firmas</div>
-    <div class="firmas">
-      <div class="f"><div class="line"></div><div class="rol">Operador</div><div class="nom">${esc(r.operador)}</div></div>
-      <div class="f"><div class="line"></div><div class="rol">Jefe de Máquina</div><div class="nom">${esc(r.jefeMaquina)}</div></div>
-      <div class="f"><div class="line"></div><div class="rol">Analista de Calidad</div><div class="nom">${esc(r.analista)}</div></div>
-      <div class="f"><div class="line"></div><div class="rol">Jefe de Calidad</div><div class="nom">&nbsp;</div></div>
-    </div>
 
     <div class="foot">
       <div>Convertipap Quality Flow · Reporte generado automáticamente</div>
