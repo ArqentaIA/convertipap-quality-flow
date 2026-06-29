@@ -82,6 +82,28 @@ function lastDayOfMonth(year: number, month0: number): number {
   return new Date(Date.UTC(year, month0 + 1, 0)).getUTCDate();
 }
 
+// Replica en JS de la función SQL public.shift_op_date:
+// si turno = '3' y la hora local MX < 23, el día operativo es el día MX - 1.
+// Devuelve un Date en UTC a medianoche del día operativo (para comparar y agrupar).
+function shiftOpDateUTC(iso: string, turno: string): Date {
+  const d = new Date(iso);
+  const fmt = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Mexico_City",
+    year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", hour12: false,
+  });
+  const parts: Record<string, string> = {};
+  for (const p of fmt.formatToParts(d)) parts[p.type] = p.value;
+  const y = Number(parts.year);
+  const m = Number(parts.month);
+  const day = Number(parts.day);
+  const h = Number(parts.hour);
+  const base = new Date(Date.UTC(y, m - 1, day));
+  if (String(turno) === "3" && h < 23) {
+    base.setUTCDate(base.getUTCDate() - 1);
+  }
+  return base;
+}
+
 export const getReporteMensual = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => inputSchema.parse(i))
@@ -109,6 +131,11 @@ export const getReporteMensual = createServerFn({ method: "POST" })
       estatus_liberacion: string | null;
       capturado_por: string | null;
     }> = [];
+    // Ventana ampliada ±1 día para no perder turnos 3 que cruzan los bordes:
+
+    // un turno 3 capturado el día N a las 05:00 cuenta como op_date N-1.
+    const queryStart = new Date(startDate.getTime() - 24 * 60 * 60 * 1000);
+    const queryEnd = new Date(endDate.getTime() + 24 * 60 * 60 * 1000);
     {
       const pageSize = 1000;
       let from = 0;
@@ -116,8 +143,8 @@ export const getReporteMensual = createServerFn({ method: "POST" })
         const { data: page, error } = await sb
           .from("muestras_calidad")
           .select("id, numero_rollo, capturado_at, maquina_id, producto_id, turno, estado, dictamen, estatus_liberacion, capturado_por")
-          .gte("capturado_at", startDate.toISOString())
-          .lt("capturado_at", endDate.toISOString())
+          .gte("capturado_at", queryStart.toISOString())
+          .lt("capturado_at", queryEnd.toISOString())
           .neq("estado", "borrador")
           .order("capturado_at", { ascending: true })
           .range(from, from + pageSize - 1);
@@ -129,12 +156,14 @@ export const getReporteMensual = createServerFn({ method: "POST" })
       }
     }
 
-    // 2) Aplicar regla: último día de cada mes → solo Primer Turno ("1")
+    // 2) Filtrar por DÍA OPERATIVO (regla shift_op_date) dentro del periodo
+    //    y aplicar "último día del mes → solo Primer Turno" sobre el op_date.
     const muestras = muestrasAll.filter((m) => {
-      const d = new Date(m.capturado_at);
-      const y = d.getUTCFullYear();
-      const m0 = d.getUTCMonth();
-      const day = d.getUTCDate();
+      const op = shiftOpDateUTC(m.capturado_at, m.turno);
+      if (op < startDate || op >= endDate) return false;
+      const y = op.getUTCFullYear();
+      const m0 = op.getUTCMonth();
+      const day = op.getUTCDate();
       const last = lastDayOfMonth(y, m0);
       if (day === last) return String(m.turno) === "1";
       return true;
@@ -216,7 +245,7 @@ export const getReporteMensual = createServerFn({ method: "POST" })
     if (modo === "anual") {
       for (let m0 = 0; m0 < 12; m0++) {
         const inMes = muestras.filter((s) => {
-          const d = new Date(s.capturado_at);
+          const d = shiftOpDateUTC(s.capturado_at, s.turno);
           return d.getUTCFullYear() === year && d.getUTCMonth() === m0;
         });
         const rollos = inMes.length;
@@ -241,7 +270,7 @@ export const getReporteMensual = createServerFn({ method: "POST" })
       const days = lastDayOfMonth(year, m0);
       for (let d = 1; d <= days; d++) {
         const inDia = muestras.filter((s) => {
-          const dt = new Date(s.capturado_at);
+          const dt = shiftOpDateUTC(s.capturado_at, s.turno);
           return dt.getUTCFullYear() === year && dt.getUTCMonth() === m0 && dt.getUTCDate() === d;
         });
         if (inDia.length === 0) {
