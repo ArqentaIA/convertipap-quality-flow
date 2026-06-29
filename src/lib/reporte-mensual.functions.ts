@@ -245,7 +245,7 @@ export const getReporteMensual = createServerFn({ method: "POST" })
     if (modo === "anual") {
       for (let m0 = 0; m0 < 12; m0++) {
         const inMes = muestras.filter((s) => {
-          const d = new Date(s.capturado_at);
+          const d = shiftOpDateUTC(s.capturado_at, s.turno);
           return d.getUTCFullYear() === year && d.getUTCMonth() === m0;
         });
         const rollos = inMes.length;
