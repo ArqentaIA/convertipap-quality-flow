@@ -131,10 +131,8 @@ export const getReporteMensual = createServerFn({ method: "POST" })
       estatus_liberacion: string | null;
       capturado_por: string | null;
     }> = [];
-    {
-      const pageSize = 1000;
-      let from = 0;
     // Ventana ampliada ±1 día para no perder turnos 3 que cruzan los bordes:
+
     // un turno 3 capturado el día N a las 05:00 cuenta como op_date N-1.
     const queryStart = new Date(startDate.getTime() - 24 * 60 * 60 * 1000);
     const queryEnd = new Date(endDate.getTime() + 24 * 60 * 60 * 1000);
