@@ -82,6 +82,28 @@ function lastDayOfMonth(year: number, month0: number): number {
   return new Date(Date.UTC(year, month0 + 1, 0)).getUTCDate();
 }
 
+// Replica en JS de la función SQL public.shift_op_date:
+// si turno = '3' y la hora local MX < 23, el día operativo es el día MX - 1.
+// Devuelve un Date en UTC a medianoche del día operativo (para comparar y agrupar).
+function shiftOpDateUTC(iso: string, turno: string): Date {
+  const d = new Date(iso);
+  const fmt = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Mexico_City",
+    year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", hour12: false,
+  });
+  const parts: Record<string, string> = {};
+  for (const p of fmt.formatToParts(d)) parts[p.type] = p.value;
+  const y = Number(parts.year);
+  const m = Number(parts.month);
+  const day = Number(parts.day);
+  const h = Number(parts.hour);
+  const base = new Date(Date.UTC(y, m - 1, day));
+  if (String(turno) === "3" && h < 23) {
+    base.setUTCDate(base.getUTCDate() - 1);
+  }
+  return base;
+}
+
 export const getReporteMensual = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => inputSchema.parse(i))
