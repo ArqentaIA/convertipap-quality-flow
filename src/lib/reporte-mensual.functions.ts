@@ -134,12 +134,19 @@ export const getReporteMensual = createServerFn({ method: "POST" })
     {
       const pageSize = 1000;
       let from = 0;
+    // Ventana ampliada ±1 día para no perder turnos 3 que cruzan los bordes:
+    // un turno 3 capturado el día N a las 05:00 cuenta como op_date N-1.
+    const queryStart = new Date(startDate.getTime() - 24 * 60 * 60 * 1000);
+    const queryEnd = new Date(endDate.getTime() + 24 * 60 * 60 * 1000);
+    {
+      const pageSize = 1000;
+      let from = 0;
       for (let i = 0; i < 100; i++) {
         const { data: page, error } = await sb
           .from("muestras_calidad")
           .select("id, numero_rollo, capturado_at, maquina_id, producto_id, turno, estado, dictamen, estatus_liberacion, capturado_por")
-          .gte("capturado_at", startDate.toISOString())
-          .lt("capturado_at", endDate.toISOString())
+          .gte("capturado_at", queryStart.toISOString())
+          .lt("capturado_at", queryEnd.toISOString())
           .neq("estado", "borrador")
           .order("capturado_at", { ascending: true })
           .range(from, from + pageSize - 1);
@@ -151,12 +158,14 @@ export const getReporteMensual = createServerFn({ method: "POST" })
       }
     }
 
-    // 2) Aplicar regla: último día de cada mes → solo Primer Turno ("1")
+    // 2) Filtrar por DÍA OPERATIVO (regla shift_op_date) dentro del periodo
+    //    y aplicar "último día del mes → solo Primer Turno" sobre el op_date.
     const muestras = muestrasAll.filter((m) => {
-      const d = new Date(m.capturado_at);
-      const y = d.getUTCFullYear();
-      const m0 = d.getUTCMonth();
-      const day = d.getUTCDate();
+      const op = shiftOpDateUTC(m.capturado_at, m.turno);
+      if (op < startDate || op >= endDate) return false;
+      const y = op.getUTCFullYear();
+      const m0 = op.getUTCMonth();
+      const day = op.getUTCDate();
       const last = lastDayOfMonth(y, m0);
       if (day === last) return String(m.turno) === "1";
       return true;
