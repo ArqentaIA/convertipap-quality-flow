@@ -107,7 +107,7 @@ export const getReportes = createServerFn({ method: "POST" })
     const mediciones: MedRow[] = [];
     if (muestraIds.length > 0) {
       const PAGE = 1000;
-      const ID_CHUNK = 200; // evita URLs demasiado largas en .in()
+      const ID_CHUNK = 100; // chunk pequeño para que cada slice quepa en una sola página (≈1500 meds máx)
       for (let i = 0; i < muestraIds.length; i += ID_CHUNK) {
         const idsSlice = muestraIds.slice(i, i + ID_CHUNK);
         let from = 0;
@@ -119,6 +119,7 @@ export const getReportes = createServerFn({ method: "POST" })
               "id, muestra_id, variable_clave, valor, min_snapshot, max_snapshot, estado, created_at",
             )
             .in("muestra_id", idsSlice)
+            .order("id", { ascending: true }) // orden estable para que range() no duplique ni omita filas
             .range(from, from + PAGE - 1);
           if (error) throw error;
           const rows = (page ?? []) as MedRow[];
