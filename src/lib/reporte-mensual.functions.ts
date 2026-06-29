@@ -270,7 +270,7 @@ export const getReporteMensual = createServerFn({ method: "POST" })
       const days = lastDayOfMonth(year, m0);
       for (let d = 1; d <= days; d++) {
         const inDia = muestras.filter((s) => {
-          const dt = new Date(s.capturado_at);
+          const dt = shiftOpDateUTC(s.capturado_at, s.turno);
           return dt.getUTCFullYear() === year && dt.getUTCMonth() === m0 && dt.getUTCDate() === d;
         });
         if (inDia.length === 0) {
