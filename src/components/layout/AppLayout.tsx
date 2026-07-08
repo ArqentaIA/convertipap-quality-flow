@@ -32,7 +32,9 @@ const NAV: NavItem[] = [
   // { to: "/catalogos", label: "Catálogos", icon: BookOpen, module: "configuracion" }, // Oculto temporalmente
   { to: "/reportes", label: "Reportes", icon: FileBarChart2, module: "reportes" },
   // { to: "/auditoria", label: "Auditoría", icon: ShieldCheck, module: "auditoria" },
-  { to: "/usuarios", label: "Usuarios y Permisos", icon: Users, module: "usuarios_permisos" },
+  // Usuarios y Permisos: oculto del menú lateral por decisión de negocio.
+  // Solo accesible mediante ruta directa /usuarios (o enlace desde Configuración).
+  // { to: "/usuarios", label: "Usuarios y Permisos", icon: Users, module: "usuarios_permisos" },
   { to: "/configuracion", label: "Configuración", icon: Settings, module: "configuracion" },
 ];
 
