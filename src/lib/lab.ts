@@ -87,50 +87,17 @@ export function useLabFilter(): LabFilter {
 
   return useMemo<LabFilter>(() => {
     const isCapturista = auth.hasRole("capturista");
-    const canSeeAll = ROLES_VEN_TODOS.some((r) => auth.hasRole(r));
-
-    // Roles superiores siempre ven todo (aunque también tengan rol capturista).
-    if (canSeeAll || !isCapturista) {
-      return {
-        lab: null,
-        isCapturista,
-        canSeeAll: true,
-        allowedMachineCodes: null,
-        allowedMachineIds: null,
-        isMachineAllowed: () => true,
-        isMachineIdAllowed: () => true,
-      };
-    }
-
-    // Preferir el laboratorio persistido en el perfil; fallback a regla por email
-    const lab = (auth.profile?.laboratorio as LabZona | null | undefined)
-      ?? getLabForEmail(auth.user?.email);
-    if (!lab) {
-      // Capturista sin laboratorio asignado: no ve nada (seguridad por defecto).
-      return {
-        lab: null,
-        isCapturista: true,
-        canSeeAll: false,
-        allowedMachineCodes: [],
-        allowedMachineIds: [],
-        isMachineAllowed: () => false,
-        isMachineIdAllowed: () => false,
-      };
-    }
-
-    const codes = LAB_MAQUINAS[lab];
-    const ids = LAB_MAQUINA_IDS[lab];
-    const codeSet = new Set(codes.map((c) => c.toUpperCase()));
-    const idSet = new Set(ids);
-
+    // Restricción Norte/Sur eliminada: todos los roles (incluido capturista)
+    // pueden ver y capturar en las 4 máquinas (MP-04 a MP-07).
     return {
-      lab,
-      isCapturista: true,
-      canSeeAll: false,
-      allowedMachineCodes: codes,
-      allowedMachineIds: ids,
-      isMachineAllowed: (c) => (c ? codeSet.has(c.toUpperCase()) : false),
-      isMachineIdAllowed: (id) => (id ? idSet.has(id) : false),
+      lab: null,
+      isCapturista,
+      canSeeAll: true,
+      allowedMachineCodes: null,
+      allowedMachineIds: null,
+      isMachineAllowed: () => true,
+      isMachineIdAllowed: () => true,
     };
   }, [auth]);
 }
+
