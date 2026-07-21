@@ -124,31 +124,15 @@ export const listMaquinasCaptura = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const sb = context.supabase as SB;
-    const userId = context.userId;
 
-    const [{ data: profile }, { data: roleRows }] = await Promise.all([
-      sb.from("profiles").select("laboratorio").eq("id", userId).maybeSingle(),
-      sb.from("user_roles").select("role").eq("user_id", userId),
-    ]);
-    const roles = (roleRows ?? []).map((r) => r.role as string);
-    const seesAll = roles.some((r) =>
-      ["administrador", "gerente_general", "direccion", "calidad"].includes(r),
-    );
-    const isCapturista = roles.includes("capturista");
-
-    let q = sb
+    // Restricción Norte/Sur eliminada: todos los roles (incluido capturista)
+    // pueden ver y capturar en todas las máquinas activas.
+    const q = sb
       .from("maquinas")
       .select("id, nombre, codigo, area, planta_id, plantas(id, nombre, codigo)")
       .eq("activo", true)
       .order("codigo");
 
-    if (!seesAll && isCapturista) {
-      const lab = profile?.laboratorio as "norte" | "sur" | null | undefined;
-      if (!lab) return [];
-      // BD usa 'Laboratorio Nte.' / 'Laboratorio Sur' — matchear ambas variantes.
-      const orExpr = lab === "norte" ? "area.ilike.%Nte%,area.ilike.%Norte%" : "area.ilike.%Sur%";
-      q = q.or(orExpr);
-    }
 
     const { data, error } = await q;
     if (error) throw new Error(error.message);
