@@ -143,6 +143,7 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
               (pathPrefixes ?? []).some((p) => pathname.startsWith(p));
             const isPantallas = to === "/pantallas-operativas";
             const isOrdenes = to === "/ordenes-produccion";
+            const isPesaje = to === "/pesaje/bobina-madre";
             return (
               <div key={to}>
                 <Link
@@ -161,6 +162,25 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
                   <Icon className="h-[18px] w-[18px] shrink-0" />
                   {!collapsed && <span className="truncate">{label}</span>}
                 </Link>
+                {isPesaje && !collapsed && (
+                  <div className="ml-6 mb-1 border-l border-sidebar-border/60 pl-2">
+                    <Link
+                      to="/pesaje/bobina-madre"
+                      className="cabinet-panel mx-1 my-0.5 flex items-center gap-2 rounded-md px-2.5 py-1.5 text-xs font-medium text-sidebar-foreground/80 hover:text-white"
+                      data-active={pathname === "/pesaje/bobina-madre"}
+                    >
+                      <Scale className="h-3.5 w-3.5 shrink-0" />
+                      <span className="truncate">Pesaje de Bobina Madre</span>
+                    </Link>
+                    <div
+                      className="mx-1 my-0.5 flex items-center gap-2 rounded-md px-2.5 py-1.5 text-xs font-medium text-sidebar-foreground/40 cursor-not-allowed"
+                      title="Disponible próximamente"
+                    >
+                      <Scale className="h-3.5 w-3.5 shrink-0" />
+                      <span className="truncate">Pesaje de Cintas</span>
+                    </div>
+                  </div>
+                )}
                 {isPantallas && !collapsed && (
                   <div className="ml-6 mb-1 border-l border-sidebar-border/60 pl-2">
                     {(["MP-04", "MP-05", "MP-06", "MP-07"] as const).map((maq) => {
@@ -187,6 +207,7 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
               </div>
             );
           })}
+
         </nav>
 
 
