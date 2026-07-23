@@ -27,78 +27,13 @@ export type PesajeBobina = {
   created_at: string;
 };
 
-const createSchema = z.object({
-  numero_rollo: z.string().trim().min(1).max(64),
-  maquina_id: z.string().uuid(),
-  numero_orden: z.string().trim().max(64).optional().nullable(),
-  peso_bruto_kg: z.number().finite().gt(PESO_EJE),
-  evidencia_path: z.string().min(1),
-  ocr_confianza: z.number().min(0).max(100).optional().nullable(),
-  ocr_raw: z.unknown().optional().nullable(),
-  fecha_hora_pesaje: z.string().optional(),
-});
+// NOTA DE SEGURIDAD:
+// La creación de pesajes ya no se realiza desde el cliente.
+// El registro definitivo se hace exclusivamente dentro de la Edge Function
+// `analizar-peso-bobina`, que valida al usuario, ejecuta el OCR, aplica las
+// validaciones estrictas, resta el eje (300 kg) y persiste con service role.
+// El frontend sólo sube la evidencia y llama a esa función.
 
-/** Crea un registro de pesaje. La evidencia debe estar ya en el bucket privado. */
-export const crearPesaje = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((d) => createSchema.parse(d))
-  .handler(async ({ data, context }): Promise<PesajeBobina> => {
-    const sb = context.supabase;
-
-    // Máquina
-    const { data: maq, error: mErr } = await sb
-      .from("maquinas")
-      .select("id, codigo")
-      .eq("id", data.maquina_id)
-      .maybeSingle();
-    if (mErr || !maq) throw new Error("Máquina no encontrada.");
-
-    // Duplicado (rollo + máquina)
-    const { data: dup } = await sb
-      .from("pesajes_bobina_madre")
-      .select("id")
-      .eq("maquina_id", data.maquina_id)
-      .eq("numero_rollo", data.numero_rollo)
-      .maybeSingle();
-    if (dup) throw new Error(`El rollo ${data.numero_rollo} ya tiene un pesaje registrado en ${maq.codigo}.`);
-
-    // Orden de producción (opcional)
-    let orden_produccion_id: string | null = null;
-    let numero_orden: string | null = data.numero_orden?.trim() || null;
-    if (numero_orden) {
-      const { data: ord } = await sb
-        .from("ordenes_produccion")
-        .select("id, numero_orden")
-        .eq("numero_orden", numero_orden)
-        .maybeSingle();
-      if (ord) orden_produccion_id = ord.id;
-    }
-
-    const peso_neto = Number((data.peso_bruto_kg - PESO_EJE).toFixed(2));
-
-    const { data: ins, error: insErr } = await sb
-      .from("pesajes_bobina_madre")
-      .insert({
-        numero_rollo: data.numero_rollo,
-        maquina_id: data.maquina_id,
-        maquina_codigo: maq.codigo,
-        orden_produccion_id,
-        numero_orden,
-        peso_bruto_kg: data.peso_bruto_kg,
-        peso_eje_kg: PESO_EJE,
-        peso_neto_kg: peso_neto,
-        fecha_hora_pesaje: data.fecha_hora_pesaje ?? new Date().toISOString(),
-        evidencia_path: data.evidencia_path,
-        ocr_confianza: data.ocr_confianza ?? null,
-        ocr_raw: (data.ocr_raw ?? null) as never,
-        capturado_por: context.userId,
-      })
-      .select("*")
-      .single();
-    if (insErr || !ins) throw new Error(`No se pudo guardar el pesaje: ${insErr?.message ?? "desconocido"}`);
-
-    return ins as PesajeBobina;
-  });
 
 /** Lista los últimos pesajes. */
 export const listPesajes = createServerFn({ method: "GET" })
