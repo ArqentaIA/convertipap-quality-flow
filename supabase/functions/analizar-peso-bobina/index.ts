@@ -6,7 +6,13 @@
 //   3) Aplica las validaciones estrictas (confianza ≥ 85% + 7 reglas).
 //   4) Convierte el peso a entero y resta la tara según la máquina (MP-04=560, MP-05=750, MP-06=1160, MP-07=0 kg → peso neto directo).
 
+const TARA_POR_MAQUINA: Record<string, number> = {
+  "MP-04": 560,
+  "MP-05": 750,
+  "MP-06": 1160,
+  "MP-07": 0,
 };
+
 
 function taraPorMaquina(codigo: string): number {
   return TARA_POR_MAQUINA[codigo] ?? 300;
