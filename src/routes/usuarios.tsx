@@ -48,6 +48,8 @@ const MODULO_LABEL: Record<AppModule, string> = {
   usuarios_permisos: "Usuarios y permisos",
   auditoria: "Auditoría",
   ordenes_produccion: "Órdenes de Producción",
+  pesaje_bobina_madre: "Pesaje de Bobina Madre",
+
 };
 
 function UsuariosPage() {
