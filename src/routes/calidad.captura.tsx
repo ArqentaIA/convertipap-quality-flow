@@ -46,6 +46,7 @@ import {
 import {
   buscarPesajePorRollo,
   vincularPesajeMuestra,
+  firmarEvidenciaCaptura,
   type PesajeParaCaptura,
 } from "@/lib/pesajes.functions";
 import { getCumplimientoIndicador } from "@/lib/cumplimiento.functions";
