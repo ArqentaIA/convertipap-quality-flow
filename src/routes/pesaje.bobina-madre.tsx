@@ -57,7 +57,12 @@ function PesajeBobinaPage() {
   const [evidenciaPreview, setEvidenciaPreview] = useState<string | null>(null);
   const [ocr, setOcr] = useState<OcrResult | null>(null);
   const [procesando, setProcesando] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
+  // Cámara en vivo (única forma permitida de obtener evidencia).
+  const [camaraAbierta, setCamaraAbierta] = useState(false);
+  const [camaraError, setCamaraError] = useState<string | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+
 
   // Máquinas
   const maquinasQ = useQuery({
