@@ -1388,20 +1388,58 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
                   </p>
                 )}
                 {pesajeVinculado && (
-                  <div className="flex items-center gap-2 rounded-md border border-amber-300 bg-amber-50 px-2 py-1 text-[11px] text-amber-900">
-                    <Lock className="h-3 w-3" />
-                    <span>
-                      Pesaje vinculado · <strong>{pesajeVinculado.peso_neto_kg} kg netos</strong> ·{" "}
-                      {new Date(pesajeVinculado.fecha_hora_pesaje).toLocaleTimeString("es-MX", {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                      {pesajeVinculado.numero_orden ? ` · OP ${pesajeVinculado.numero_orden}` : ""}
-                    </span>
+                  <div className="rounded-md border border-emerald-300 bg-emerald-50 p-2 space-y-1 text-[12px] text-emerald-900">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="h-4 w-4" />
+                      <span className="font-semibold">Pesaje vinculado</span>
+                    </div>
+                    <div className="grid grid-cols-1 gap-x-3 gap-y-0.5 pl-6 tabular-nums">
+                      <div>
+                        Peso neto: <strong>{pesajeVinculado.peso_neto_kg} kg</strong>
+                      </div>
+                      <div>
+                        Fecha/hora:{" "}
+                        {new Date(pesajeVinculado.fecha_hora_pesaje).toLocaleString("es-MX", {
+                          dateStyle: "short",
+                          timeStyle: "short",
+                        })}
+                      </div>
+                      {pesajeVinculado.numero_orden && (
+                        <div>
+                          OP (referencia): <strong>{pesajeVinculado.numero_orden}</strong>
+                        </div>
+                      )}
+                    </div>
+                    {pesajeVinculado.evidencia_path && (
+                      <div className="pl-6">
+                        <button
+                          type="button"
+                          onClick={handleVerEvidencia}
+                          className="text-[12px] underline underline-offset-2 hover:text-emerald-700"
+                        >
+                          Ver evidencia de pesaje
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
                 {pesajeQuery.isFetching && rolloValido && !pesajeVinculado && (
                   <p className="text-[11px] text-muted-foreground">Buscando pesaje registrado…</p>
+                )}
+                {pesajeNoEncontrado && (
+                  <Alert variant="destructive" className="py-2">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertTitle className="text-sm">Sin pesaje registrado</AlertTitle>
+                    <AlertDescription className="text-[12px] space-y-2">
+                      <div>Este Número de Rollo aún no cuenta con un Pesaje de Bobina Madre.</div>
+                      <Link
+                        to="/pesaje/bobina-madre"
+                        className="inline-flex items-center rounded-md bg-destructive px-2 py-1 text-[12px] font-semibold text-destructive-foreground"
+                      >
+                        Ir a Pesaje de Bobina Madre
+                      </Link>
+                    </AlertDescription>
+                  </Alert>
                 )}
               </div>
               <div className="space-y-1.5">
