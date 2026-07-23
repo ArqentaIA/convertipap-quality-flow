@@ -43,6 +43,11 @@ import {
   listMisMuestrasRecientes,
   dictaminarMuestra,
 } from "@/lib/qc.functions";
+import {
+  buscarPesajePorRollo,
+  vincularPesajeMuestra,
+  type PesajeParaCaptura,
+} from "@/lib/pesajes.functions";
 import { getCumplimientoIndicador } from "@/lib/cumplimiento.functions";
 import {
   Dialog,
