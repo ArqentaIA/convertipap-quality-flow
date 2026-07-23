@@ -149,8 +149,7 @@ function PesajeBobinaPage() {
     <div className="mx-auto max-w-6xl space-y-6 p-4">
       {/* Wizard */}
       <section className="rounded-lg border border-border bg-card p-5 shadow-sm">
-        <header className="mb-4 flex items-center gap-2">
-          <Scale className="h-5 w-5 text-primary" />
+        <header className="mb-4 flex items-center">
           <h2 className="text-lg font-semibold">Nuevo pesaje de bobina madre</h2>
         </header>
 
