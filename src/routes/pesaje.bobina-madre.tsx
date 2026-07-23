@@ -155,6 +155,15 @@ function PesajeBobinaPage() {
 
         <div className="grid gap-4 md:grid-cols-3">
           <div>
+            <label className="mb-1 block text-xs font-medium text-muted-foreground">Orden de producción (opcional)</label>
+            <input
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              value={numeroOrden}
+              onChange={(e) => setNumeroOrden(e.target.value.trim())}
+              placeholder="Número SAP"
+            />
+          </div>
+          <div>
             <label className="mb-1 block text-xs font-medium text-muted-foreground">Máquina *</label>
             <select
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
@@ -175,15 +184,6 @@ function PesajeBobinaPage() {
               value={numeroRollo}
               onChange={(e) => setNumeroRollo(e.target.value.toUpperCase())}
               placeholder="Ej. 2807-6"
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium text-muted-foreground">Orden de producción (opcional)</label>
-            <input
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              value={numeroOrden}
-              onChange={(e) => setNumeroOrden(e.target.value.trim())}
-              placeholder="Número SAP"
             />
           </div>
         </div>
