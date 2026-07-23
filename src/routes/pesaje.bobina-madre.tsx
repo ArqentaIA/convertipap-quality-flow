@@ -160,15 +160,36 @@ function PesajeBobinaPage() {
       return;
     }
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } },
-        audio: false,
-      });
+      let stream: MediaStream;
+      try {
+        // Forzar cámara trasera (exact) — falla si no existe, evitando cámara frontal
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { exact: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } },
+          audio: false,
+        });
+      } catch (inner) {
+        const ie = inner as DOMException;
+        if (ie.name === "OverconstrainedError" || ie.name === "NotFoundError") {
+          // Dispositivo sin cámara trasera detectable: buscar por enumeración
+          const devices = await navigator.mediaDevices.enumerateDevices();
+          const back = devices.find(
+            (d) => d.kind === "videoinput" && /back|rear|environment|trasera/i.test(d.label),
+          );
+          if (!back) throw inner;
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: { deviceId: { exact: back.deviceId }, width: { ideal: 1920 }, height: { ideal: 1080 } },
+            audio: false,
+          });
+        } else {
+          throw inner;
+        }
+      }
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         await videoRef.current.play().catch(() => {});
       }
+
     } catch (e) {
       const err = e as DOMException;
       let msg = "No fue posible iniciar la cámara.";
