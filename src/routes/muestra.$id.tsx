@@ -30,9 +30,9 @@ export const Route = createFileRoute("/muestra/$id")({
     ],
   }),
   component: MuestraTracePage,
-  pendingComponent: () => <LoadingCard />,
-  errorComponent: () => <NotFoundCard />,
-  notFoundComponent: () => <NotFoundCard />,
+  pendingComponent: LoadingCard,
+  errorComponent: NotFoundCard,
+  notFoundComponent: NotFoundCard,
 });
 
 const CANONICAL_HOST = "www.convertipap.site";
