@@ -1776,8 +1776,8 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
                         type="number"
                         step={vs.clave === "peso" ? 1 : 0.1}
                         inputMode="decimal"
-                        disabled={isBlocked || (vs.clave === "peso" && !!pesajeVinculado)}
-                        readOnly={vs.clave === "peso" && !!pesajeVinculado}
+                        disabled={isBlocked || (vs.clave === "peso" && pesoBloqueado)}
+                        readOnly={vs.clave === "peso" && pesoBloqueado}
                         value={input.valor}
                         data-capture-field
                         onFocus={(e) => scrollFieldIntoView(e.currentTarget)}
@@ -1794,16 +1794,20 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
                           }))
                         }
                         title={
-                          vs.clave === "peso" && pesajeVinculado
-                            ? `Peso neto tomado del pesaje registrado (${new Date(pesajeVinculado.fecha_hora_pesaje).toLocaleTimeString("es-MX")}).`
+                          vs.clave === "peso"
+                            ? pesajeVinculado
+                              ? `Peso neto tomado del pesaje registrado (${new Date(pesajeVinculado.fecha_hora_pesaje).toLocaleTimeString("es-MX")}).`
+                              : "El peso se toma automáticamente del Pesaje de Bobina Madre."
                             : undefined
                         }
                         className={cn(
                           "h-12 text-lg font-bold text-capture w-full",
                           vs.clave === "peso" && pesajeVinculado &&
-                            "bg-amber-50 border-amber-300 cursor-not-allowed",
+                            "bg-emerald-50 border-emerald-300 cursor-not-allowed",
+                          vs.clave === "peso" && !pesajeVinculado &&
+                            "bg-muted/40 cursor-not-allowed",
                         )}
-                        placeholder="Capturar valor"
+                        placeholder={vs.clave === "peso" ? "Requiere pesaje registrado" : "Capturar valor"}
                       />
                     )}
                   </div>
