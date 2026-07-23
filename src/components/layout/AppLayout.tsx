@@ -146,8 +146,8 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
                     isOrdenes
                       ? `mx-2 my-0.5 flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium border-l-2 transition-colors ${
                           active
-                            ? "bg-primary text-primary-foreground border-primary"
-                            : "bg-sidebar-foreground text-sidebar border-transparent hover:bg-primary hover:text-primary-foreground"
+                            ? "bg-sidebar-foreground text-sidebar border-primary shadow-sm"
+                            : "bg-sidebar-foreground/90 text-sidebar border-transparent hover:bg-primary hover:text-primary-foreground"
                         }`
                       : "cabinet-panel mx-2 my-0.5 flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-sidebar-foreground/90 hover:text-white"
                   }
