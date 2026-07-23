@@ -309,7 +309,7 @@ function PesajeBobinaPage() {
               </div>
               <div className="mt-2 grid grid-cols-3 gap-2 rounded-md bg-muted/50 p-3 text-center text-sm">
                 <div><div className="text-[11px] text-muted-foreground">Bruto</div><div className="font-semibold">{Number(ocr.registro.peso_bruto_kg)} kg</div></div>
-                <div><div className="text-[11px] text-muted-foreground">Eje</div><div className="font-semibold">{PESO_EJE} kg</div></div>
+                <div><div className="text-[11px] text-muted-foreground">Eje ({ocr.registro.maquina_codigo})</div><div className="font-semibold">{taraPorMaquina(ocr.registro.maquina_codigo)} kg</div></div>
                 <div className="rounded bg-amber-100 text-amber-900"><div className="text-[11px]">Neto</div><div className="font-bold">{Number(ocr.registro.peso_neto_kg)} kg</div></div>
               </div>
             </div>
