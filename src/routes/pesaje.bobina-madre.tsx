@@ -189,35 +189,62 @@ function PesajeBobinaPage() {
         </div>
 
         <div className="mt-5 grid gap-4 md:grid-cols-2">
-          {/* Evidencia */}
-          <div className="rounded-md border border-dashed border-border p-4">
-            <div className="mb-2 flex items-center gap-2 text-sm font-medium">
-              <Camera className="h-4 w-4" /> Fotografía del display
-            </div>
+          {/* Evidencia — zona premium táctil */}
+          <div>
             <input
               ref={fileRef}
               type="file"
               accept="image/jpeg,image/png,image/webp"
               capture="environment"
               onChange={onPickFile}
-              className="block w-full text-sm"
+              className="hidden"
             />
-            {evidenciaPreview && (
-              <div className="mt-3 overflow-hidden rounded-md border border-border bg-muted">
-                <img src={evidenciaPreview} alt="Evidencia" className="max-h-72 w-full object-contain" />
+
+            {!evidenciaPreview ? (
+              <button
+                type="button"
+                onClick={() => fileRef.current?.click()}
+                className="group relative flex min-h-[280px] w-full flex-col items-center justify-center gap-4 overflow-hidden rounded-2xl border-2 border-dashed border-primary/40 bg-gradient-to-br from-primary/5 via-background to-primary/10 p-8 text-center transition-all hover:border-primary hover:from-primary/10 hover:to-primary/20 active:scale-[0.99]"
+              >
+                <div className="flex h-24 w-24 items-center justify-center rounded-full bg-primary/15 ring-8 ring-primary/5 transition-transform group-hover:scale-110 group-active:scale-95">
+                  <Camera className="h-12 w-12 text-primary" strokeWidth={1.75} />
+                </div>
+                <div className="space-y-1">
+                  <div className="text-lg font-semibold text-foreground">Tocar para tomar la fotografía</div>
+                  <div className="text-sm text-muted-foreground">Se abrirá la cámara de la tablet</div>
+                </div>
+                <div className="text-[11px] uppercase tracking-wider text-muted-foreground/80">
+                  JPG · PNG · WEBP · máx. 10 MB
+                </div>
+              </button>
+            ) : (
+              <div className="relative overflow-hidden rounded-2xl border border-border bg-black/90 shadow-lg">
+                <img src={evidenciaPreview} alt="Evidencia" className="max-h-[320px] w-full object-contain" />
+                <button
+                  type="button"
+                  onClick={() => fileRef.current?.click()}
+                  className="absolute bottom-3 right-3 inline-flex items-center gap-2 rounded-full bg-white/95 px-4 py-2 text-xs font-medium text-foreground shadow-md backdrop-blur hover:bg-white"
+                >
+                  <Camera className="h-4 w-4" /> Reemplazar
+                </button>
+                <div className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-success/90 px-3 py-1 text-[11px] font-medium text-white">
+                  <CheckCircle2 className="h-3.5 w-3.5" /> Evidencia lista
+                </div>
               </div>
             )}
-            <div className="mt-2 text-[11px] text-muted-foreground">
-              JPG / PNG / WEBP · máx. 10 MB · toma la foto con el display completo, enfocado y sin reflejos.
-            </div>
           </div>
 
           {/* OCR result */}
-          <div className="rounded-md border border-border bg-background p-4">
+          <div className="rounded-2xl border border-border bg-background p-5">
             {!ocr && (
-              <p className="text-sm text-muted-foreground">
-                Listo para analizar. Pulsa <b>Analizar y registrar</b> cuando la evidencia esté cargada.
-              </p>
+              <div className="flex h-full flex-col items-center justify-center gap-2 text-center">
+                <ImageIcon className="h-8 w-8 text-muted-foreground/40" />
+                <p className="text-sm text-muted-foreground">
+                  {evidenciaFile
+                    ? <>Listo para analizar. Pulsa <b>Analizar y registrar</b>.</>
+                    : "Toma la fotografía del display para continuar."}
+                </p>
+              </div>
             )}
             {ocr && ocr.aceptado && (
               <div className="space-y-2">
@@ -246,6 +273,7 @@ function PesajeBobinaPage() {
             )}
           </div>
         </div>
+
 
         <div className="mt-5 flex flex-wrap gap-2">
           <button
