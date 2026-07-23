@@ -28,12 +28,25 @@ export const Route = createFileRoute("/pesaje/bobina-madre")({
 type Maquina = { id: string; codigo: string };
 
 const BUCKET = "pesajes-evidencia";
+const EDGE_FUNCTION_NAME = "analizar-peso-bobina";
+const MAX_IMAGE_SIDE = 1600;
+const IMAGE_QUALITY = 0.75;
+const MAX_COMPRESSED_BYTES = 2_500_000;
 const TARA_POR_MAQUINA: Record<string, number> = { "MP-04": 560, "MP-05": 750, "MP-06": 1160, "MP-07": 0 };
 function taraPorMaquina(codigo: string): number {
   return TARA_POR_MAQUINA[codigo] ?? 0;
 }
 
-async function comprimirImagen(file: File, maxSide = 1600, quality = 0.85): Promise<File> {
+type ImagenOptimizada = {
+  file: File;
+  originalBytes: number;
+  compressedBytes: number;
+  originalMime: string;
+  originalWidth: number;
+  originalHeight: number;
+};
+
+async function comprimirImagen(file: File, maxSide = MAX_IMAGE_SIDE, quality = IMAGE_QUALITY): Promise<ImagenOptimizada> {
   const bitmap = await createImageBitmap(file).catch(() => null);
   let w: number, h: number;
   let source: CanvasImageSource;
@@ -58,7 +71,61 @@ async function comprimirImagen(file: File, maxSide = 1600, quality = 0.85): Prom
   ctx.drawImage(source, 0, 0, outW, outH);
   const blob: Blob | null = await new Promise((res) => canvas.toBlob((b) => res(b), "image/jpeg", quality));
   if (!blob) throw new Error("No se pudo comprimir la imagen.");
-  return new File([blob], `pesaje-${Date.now()}.jpg`, { type: "image/jpeg" });
+  const optimized = new File([blob], `pesaje-${Date.now()}.jpg`, { type: "image/jpeg" });
+  return {
+    file: optimized,
+    originalBytes: file.size,
+    compressedBytes: optimized.size,
+    originalMime: file.type || "image/jpeg",
+    originalWidth: w,
+    originalHeight: h,
+  };
+}
+
+async function comprimirImagenSegura(file: File): Promise<ImagenOptimizada> {
+  const first = await comprimirImagen(file);
+  if (first.compressedBytes <= MAX_COMPRESSED_BYTES) return first;
+  const second = await comprimirImagen(file, 1280, 0.7);
+  if (second.compressedBytes <= MAX_COMPRESSED_BYTES) return second;
+  throw new Error("La fotografía sigue siendo demasiado grande. Acércate al display y toma nuevamente la evidencia.");
+}
+
+function buildEvidencePath(maquinaCodigo: string, numeroRolloValue: string): string {
+  const now = new Date();
+  const yyyy = now.getFullYear();
+  const mm = String(now.getMonth() + 1).padStart(2, "0");
+  const dd = String(now.getDate()).padStart(2, "0");
+  const rolloSanit = numeroRolloValue.trim().replace(/[^A-Za-z0-9_-]/g, "_");
+  const uuid = crypto.randomUUID();
+  return `${maquinaCodigo || "SIN-MAQ"}/${yyyy}-${mm}-${dd}/${rolloSanit}/${uuid}.jpg`;
+}
+
+function logDiagnosticoPesaje(stage: string, details: Record<string, unknown>) {
+  console.info(`[pesaje-bobina] ${stage}`, {
+    functionName: EDGE_FUNCTION_NAME,
+    projectUrl: import.meta.env.VITE_SUPABASE_URL,
+    ...details,
+  });
+}
+
+async function leerDetalleFunctionError(error: unknown): Promise<string> {
+  if (!(error instanceof Error)) return "Error desconocido al comunicarse con la función.";
+  const named = error as Error & { context?: unknown };
+  const context = named.context;
+  if (context instanceof Response) {
+    const text = await context.text().catch(() => "");
+    return text ? `${error.message}: ${text}` : error.message;
+  }
+  return error.message;
+}
+
+async function mensajeFunctionError(error: unknown): Promise<string> {
+  if (!(error instanceof Error)) return "No fue posible establecer comunicación con el servicio.";
+  const detail = await leerDetalleFunctionError(error);
+  if (error.name === "FunctionsFetchError") return `No fue posible establecer comunicación con el servicio. ${detail}`;
+  if (error.name === "FunctionsHttpError") return `La función respondió con error. ${detail}`;
+  if (error.name === "FunctionsRelayError") return `Error de infraestructura al contactar el servicio. ${detail}`;
+  return detail;
 }
 
 function PesajeBobinaPage() {
@@ -251,10 +318,18 @@ function PesajeBobinaPage() {
     const raw = new File([blob], `pesaje-${Date.now()}.jpg`, { type: "image/jpeg" });
     cerrarCamara();
     try {
-      const optim = await comprimirImagen(raw);
+      const optim = await comprimirImagenSegura(raw);
       if (evidenciaPreview) URL.revokeObjectURL(evidenciaPreview);
-      setEvidenciaFile(optim);
-      setEvidenciaPreview(URL.createObjectURL(optim));
+      setEvidenciaFile(optim.file);
+      setEvidenciaPreview(URL.createObjectURL(optim.file));
+      logDiagnosticoPesaje("fotografia-optimizada", {
+        originalBytes: optim.originalBytes,
+        compressedBytes: optim.compressedBytes,
+        originalMime: optim.originalMime,
+        originalWidth: optim.originalWidth,
+        originalHeight: optim.originalHeight,
+        finalMime: optim.file.type,
+      });
     } catch (e) { toast.error((e as Error).message); }
   }
 
@@ -263,42 +338,63 @@ function PesajeBobinaPage() {
     setProcesando(true);
     let uploadedPath: string | null = null;
     try {
-      const { data: userData, error: userErr } = await supabase.auth.getUser();
-      if (userErr || !userData.user) throw new Error("La sesión del usuario ha vencido.");
-      const uid = userData.user.id;
+      const file = evidenciaFile;
+      if (!file) throw new Error("Falta la fotografía de evidencia.");
+
+      const { data: sessionData, error: sessionErr } = await supabase.auth.getSession();
+      if (sessionErr) throw new Error(`Error de autenticación: ${sessionErr.message}`);
+      const token = sessionData.session?.access_token;
+      const uid = sessionData.session?.user.id;
+      if (!token || !uid) throw new Error("La sesión expiró. Inicie sesión nuevamente");
 
       const now = new Date();
-      const y = now.getFullYear();
-      const mo = String(now.getMonth() + 1).padStart(2, "0");
-      const d = String(now.getDate()).padStart(2, "0");
-      const hh = String(now.getHours()).padStart(2, "0");
-      const mm = String(now.getMinutes()).padStart(2, "0");
-      const ss = String(now.getSeconds()).padStart(2, "0");
-      const rolloSanit = numeroRollo.trim().replace(/[^A-Za-z0-9_-]/g, "_");
-      const path = `${uid}/${maqCodigo || "SIN-MAQ"}/${y}/${mo}/${d}/${rolloSanit}_${y}${mo}${d}-${hh}${mm}${ss}.jpg`;
+      const path = buildEvidencePath(maqCodigo, numeroRollo.trim());
+      const idempotencyKey = crypto.randomUUID();
+      logDiagnosticoPesaje("inicio-registro", {
+        session: "activa",
+        stage: "storage-upload",
+        originalOrCompressedBytes: file.size,
+        mimeType: file.type,
+        edgeInvoked: false,
+      });
 
       const up = await supabase.storage.from(BUCKET)
-        .upload(path, evidenciaFile!, { upsert: false, contentType: "image/jpeg" });
+        .upload(path, file, { upsert: false, contentType: "image/jpeg" });
       if (up.error) {
         if (/duplicate/i.test(up.error.message)) throw new Error("Ya existe un registro para este número de rollo.");
         throw new Error(`No se pudo subir la evidencia: ${up.error.message}`);
       }
       uploadedPath = path;
+      logDiagnosticoPesaje("storage-upload-ok", {
+        storagePath: path,
+        storageUploadFinished: true,
+        compressedBytes: file.size,
+        mimeType: file.type,
+      });
 
-      // Llamar Edge Function OCR
-      const { data: session } = await supabase.auth.getSession();
-      const token = session.session?.access_token;
-      if (!token) throw new Error("Sesión inválida.");
-      const resp = await supabase.functions.invoke("analizar-peso-bobina", {
+      const resp = await supabase.functions.invoke(EDGE_FUNCTION_NAME, {
+        headers: { Authorization: `Bearer ${token}` },
         body: {
           evidencia_path: path,
+          storagePath: path,
           maquina_id: maquinaId,
+          maquina: maqCodigo,
           numero_rollo: numeroRollo.trim(),
           numero_orden: numeroOrden.trim() || null,
+          ordenProduccion: numeroOrden.trim() || null,
+          taraKg: tara,
+          userId: uid,
+          idempotencyKey,
           fecha_hora_pesaje: now.toISOString(),
         },
       });
-      if (resp.error) throw new Error(resp.error.message || "Error al procesar la evidencia.");
+      logDiagnosticoPesaje("edge-invocada", {
+        edgeInvoked: true,
+        hasError: !!resp.error,
+        errorName: resp.error?.name,
+        errorMessage: resp.error?.message,
+      });
+      if (resp.error) throw new Error(await mensajeFunctionError(resp.error));
       const data = resp.data as { aceptado: boolean; motivo_rechazo?: string; registro?: PesajeBobina };
       if (!data.aceptado) {
         // limpiar evidencia rechazada
@@ -312,7 +408,15 @@ function PesajeBobinaPage() {
       resetForm(true);
     } catch (e) {
       if (uploadedPath) await supabase.storage.from(BUCKET).remove([uploadedPath]).catch(() => {});
-      console.error("[pesaje] registrar", e);
+      console.error("[pesaje] registrar", {
+        functionName: EDGE_FUNCTION_NAME,
+        projectUrl: import.meta.env.VITE_SUPABASE_URL,
+        storageUploadFinished: !!uploadedPath,
+        edgeFunction: EDGE_FUNCTION_NAME,
+        errorName: e instanceof Error ? e.name : "unknown",
+        errorMessage: e instanceof Error ? e.message : String(e),
+        stack: e instanceof Error ? e.stack : undefined,
+      });
       toast.error((e as Error).message || "No se pudo registrar el pesaje.");
     } finally {
       setProcesando(false);
