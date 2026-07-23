@@ -33,8 +33,8 @@ type Maquina = { id: string; codigo: string };
 const PESO_EJE = 300;
 
 type OcrResult =
-  | { aceptado: true; peso_kg: number; confianza: number; unidad: string; ocr: unknown }
-  | { aceptado: false; motivo_rechazo: string; confianza?: number; ocr?: unknown };
+  | { aceptado: true; registro: PesajeBobina }
+  | { aceptado: false; motivo_rechazo: string; confianza?: number };
 
 function PesajeBobinaPage() {
   const qc = useQueryClient();
@@ -45,10 +45,8 @@ function PesajeBobinaPage() {
   const [numeroOrden, setNumeroOrden] = useState("");
   const [evidenciaFile, setEvidenciaFile] = useState<File | null>(null);
   const [evidenciaPreview, setEvidenciaPreview] = useState<string | null>(null);
-  const [uploadingPath, setUploadingPath] = useState<string | null>(null);
   const [ocr, setOcr] = useState<OcrResult | null>(null);
-  const [analizando, setAnalizando] = useState(false);
-  const [guardando, setGuardando] = useState(false);
+  const [procesando, setProcesando] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   // Máquinas
@@ -74,14 +72,11 @@ function PesajeBobinaPage() {
     staleTime: 30_000,
   });
 
-  const crear = useServerFn(crearPesaje);
-
   function resetForm() {
     setNumeroRollo("");
     setNumeroOrden("");
     setEvidenciaFile(null);
     setEvidenciaPreview(null);
-    setUploadingPath(null);
     setOcr(null);
     if (fileRef.current) fileRef.current.value = "";
   }
@@ -99,16 +94,15 @@ function PesajeBobinaPage() {
     }
     setEvidenciaFile(f);
     setOcr(null);
-    setUploadingPath(null);
     const url = URL.createObjectURL(f);
     setEvidenciaPreview(url);
   }
 
-  async function analizar() {
+  async function analizarYRegistrar() {
     if (!maquinaId) return toast.error("Selecciona máquina primero.");
     if (!numeroRollo.trim()) return toast.error("Captura el número de rollo.");
     if (!evidenciaFile) return toast.error("Adjunta la foto del display.");
-    setAnalizando(true);
+    setProcesando(true);
     setOcr(null);
     try {
       // Subir al bucket privado
@@ -120,57 +114,36 @@ function PesajeBobinaPage() {
         .from("pesajes-evidencia")
         .upload(path, evidenciaFile, { upsert: false, contentType: evidenciaFile.type });
       if (up.error) throw new Error(`Subida: ${up.error.message}`);
-      setUploadingPath(path);
 
-      // Llamar Edge Function (OCR server-side con Gemini)
+      // La Edge Function ejecuta OCR + valida + inserta el registro definitivo.
       const { data: sess } = await supabase.auth.getSession();
       const token = sess.session?.access_token;
       const resp = await supabase.functions.invoke("analizar-peso-bobina", {
-        body: { evidencia_path: path },
+        body: {
+          evidencia_path: path,
+          maquina_id: maquinaId,
+          numero_rollo: numeroRollo.trim(),
+          numero_orden: numeroOrden.trim() || null,
+        },
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       });
       if (resp.error) throw new Error(resp.error.message);
       const r = resp.data as OcrResult;
       setOcr(r);
       if (r.aceptado) {
-        toast.success(`Peso detectado: ${r.peso_kg} kg (confianza ${r.confianza}%)`);
+        toast.success(`Pesaje registrado: ${r.registro.peso_neto_kg} kg netos.`);
+        qc.invalidateQueries({ queryKey: ["pesajes"] });
+        setTimeout(resetForm, 800);
       } else {
-        toast.error(`Lectura rechazada: ${r.motivo_rechazo}`);
+        toast.error(`Lectura rechazada: ${r.motivo_rechazo}. Toma una nueva fotografía.`);
       }
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
-      setAnalizando(false);
+      setProcesando(false);
     }
   }
 
-  async function guardar() {
-    if (!ocr || !ocr.aceptado || !uploadingPath) return;
-    setGuardando(true);
-    try {
-      await crear({
-        data: {
-          numero_rollo: numeroRollo.trim(),
-          maquina_id: maquinaId,
-          numero_orden: numeroOrden.trim() || null,
-          peso_bruto_kg: ocr.peso_kg,
-          evidencia_path: uploadingPath,
-          ocr_confianza: ocr.confianza,
-          ocr_raw: ocr.ocr as never,
-        },
-      });
-      toast.success("Pesaje registrado.");
-      resetForm();
-      qc.invalidateQueries({ queryKey: ["pesajes"] });
-    } catch (e) {
-      toast.error((e as Error).message);
-    } finally {
-      setGuardando(false);
-    }
-  }
-
-  const pesoNeto = ocr?.aceptado ? Number((ocr.peso_kg - PESO_EJE).toFixed(2)) : null;
-  const puedeGuardar = !!ocr && ocr.aceptado && !!uploadingPath && !guardando;
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 p-4">
