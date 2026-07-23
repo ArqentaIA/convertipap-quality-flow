@@ -43,6 +43,11 @@ import {
   listMisMuestrasRecientes,
   dictaminarMuestra,
 } from "@/lib/qc.functions";
+import {
+  buscarPesajePorRollo,
+  vincularPesajeMuestra,
+  type PesajeParaCaptura,
+} from "@/lib/pesajes.functions";
 import { getCumplimientoIndicador } from "@/lib/cumplimiento.functions";
 import {
   Dialog,
@@ -454,6 +459,39 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
     () => variables.find((v) => v.clave === "relMDCD")?.variable_id,
     [variables],
   );
+  const pesoVarId = useMemo(
+    () => variables.find((v) => v.clave === "peso")?.variable_id,
+    [variables],
+  );
+
+  // ---- Vinculación automática con Pesaje de Bobina Madre --------------------
+  // Al capturar Máquina + Número de Rollo válidos, buscamos si ya existe un
+  // pesaje registrado. Si existe: se autollena el peso neto y se bloquea el
+  // campo. Tras guardar la muestra, la vinculación se cierra en el servidor.
+  const buscarPesajeFn = useServerFn(buscarPesajePorRollo);
+  const vincularPesajeFn = useServerFn(vincularPesajeMuestra);
+  const rolloTrimmed = numeroRollo.trim();
+  const rolloValido = !!rolloTrimmed && ROLLO_REGEX.test(rolloTrimmed);
+  const pesajeQuery = useQuery({
+    queryKey: ["pesaje-por-rollo", maquina.id, rolloTrimmed],
+    queryFn: () =>
+      buscarPesajeFn({ data: { maquina_id: maquina.id, numero_rollo: rolloTrimmed } }),
+    enabled: !!maquina.id && rolloValido && !!pesoVarId,
+    staleTime: 15_000,
+    retry: false,
+  });
+  const pesajeVinculado: PesajeParaCaptura | null = pesajeQuery.data ?? null;
+
+  useEffect(() => {
+    if (!pesoVarId) return;
+    if (!pesajeVinculado) return;
+    const target = String(pesajeVinculado.peso_neto_kg);
+    setMediciones((prev) => {
+      const cur = prev[pesoVarId]?.valor ?? "";
+      if (cur === target) return prev;
+      return { ...prev, [pesoVarId]: { ...prev[pesoVarId], valor: target } };
+    });
+  }, [pesajeVinculado, pesoVarId]);
   const mdValor = mdVarId ? (mediciones[mdVarId]?.valor ?? "") : "";
   const cdValor = cdVarId ? (mediciones[cdVarId]?.valor ?? "") : "";
   useEffect(() => {
@@ -612,6 +650,19 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
   const mutation = useMutation({
     mutationFn: upsertFn,
     onSuccess: async (res: { muestra_id: string }) => {
+      // Vincula el pesaje (si existe) antes de refrescar caches.
+      const pesajeIdParaVincular = pesajeVinculado?.id ?? null;
+      if (pesajeIdParaVincular) {
+        try {
+          await vincularPesajeFn({
+            data: { muestra_id: res.muestra_id, pesaje_id: pesajeIdParaVincular },
+          });
+        } catch (e) {
+          toast.warning("Muestra guardada, pero no se pudo vincular el pesaje", {
+            description: e instanceof Error ? e.message : String(e),
+          });
+        }
+      }
       await queryClient.invalidateQueries({ queryKey: ["qc"] });
       await queryClient.invalidateQueries({ queryKey: ["produccion"] });
       await queryClient.invalidateQueries({ queryKey: ["qc", "cumplimiento"] });
@@ -1316,6 +1367,22 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
                     Usa máximo 30 caracteres: letras, números y guion.
                   </p>
                 )}
+                {pesajeVinculado && (
+                  <div className="flex items-center gap-2 rounded-md border border-amber-300 bg-amber-50 px-2 py-1 text-[11px] text-amber-900">
+                    <Lock className="h-3 w-3" />
+                    <span>
+                      Pesaje vinculado · <strong>{pesajeVinculado.peso_neto_kg} kg netos</strong> ·{" "}
+                      {new Date(pesajeVinculado.fecha_hora_pesaje).toLocaleTimeString("es-MX", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                      {pesajeVinculado.numero_orden ? ` · OP ${pesajeVinculado.numero_orden}` : ""}
+                    </span>
+                  </div>
+                )}
+                {pesajeQuery.isFetching && rolloValido && !pesajeVinculado && (
+                  <p className="text-[11px] text-muted-foreground">Buscando pesaje registrado…</p>
+                )}
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="hora" className="text-base">
@@ -1481,7 +1548,8 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
                               type="number"
                               step={vs.clave === "peso" ? 1 : 0.1}
                               inputMode="decimal"
-                              disabled={isBlocked}
+                              disabled={isBlocked || (vs.clave === "peso" && !!pesajeVinculado)}
+                              readOnly={vs.clave === "peso" && !!pesajeVinculado}
                               value={input.valor}
                               data-capture-field
                               onFocus={(e) => scrollFieldIntoView(e.currentTarget)}
@@ -1500,7 +1568,16 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
                                   },
                                 }))
                               }
-                              className="h-12 text-lg font-bold text-capture w-full"
+                              title={
+                                vs.clave === "peso" && pesajeVinculado
+                                  ? `Peso neto tomado del pesaje registrado (${new Date(pesajeVinculado.fecha_hora_pesaje).toLocaleTimeString("es-MX")}).`
+                                  : undefined
+                              }
+                              className={cn(
+                                "h-12 text-lg font-bold text-capture w-full",
+                                vs.clave === "peso" && pesajeVinculado &&
+                                  "bg-amber-50 border-amber-300 cursor-not-allowed",
+                              )}
                               placeholder="—"
                             />
                           )}
@@ -1637,7 +1714,8 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
                         type="number"
                         step={vs.clave === "peso" ? 1 : 0.1}
                         inputMode="decimal"
-                        disabled={isBlocked}
+                        disabled={isBlocked || (vs.clave === "peso" && !!pesajeVinculado)}
+                        readOnly={vs.clave === "peso" && !!pesajeVinculado}
                         value={input.valor}
                         data-capture-field
                         onFocus={(e) => scrollFieldIntoView(e.currentTarget)}
@@ -1653,7 +1731,16 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
                             [vs.variable_id]: { ...prev[vs.variable_id], valor: e.target.value },
                           }))
                         }
-                        className="h-12 text-lg font-bold text-capture w-full"
+                        title={
+                          vs.clave === "peso" && pesajeVinculado
+                            ? `Peso neto tomado del pesaje registrado (${new Date(pesajeVinculado.fecha_hora_pesaje).toLocaleTimeString("es-MX")}).`
+                            : undefined
+                        }
+                        className={cn(
+                          "h-12 text-lg font-bold text-capture w-full",
+                          vs.clave === "peso" && pesajeVinculado &&
+                            "bg-amber-50 border-amber-300 cursor-not-allowed",
+                        )}
                         placeholder="Capturar valor"
                       />
                     )}

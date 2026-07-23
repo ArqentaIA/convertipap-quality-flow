@@ -72,25 +72,28 @@ export const vincularPesajeMuestra = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const sb = context.supabase;
 
-    // Carga previa para validaciones amistosas antes del RPC
-    const [{ data: m }, { data: p }] = await Promise.all([
-      sb.from("muestras_calidad")
-        .select("id, numero_rollo, maquina_id, orden_id, pesaje_id")
-        .eq("id", data.muestra_id).maybeSingle(),
-      sb.from("pesajes_bobina_madre")
-        .select("id, numero_rollo, maquina_id, orden_produccion_id")
-        .eq("id", data.pesaje_id).maybeSingle(),
-    ]);
+    // Carga previa para validaciones amistosas antes del RPC.
+    // La muestra se lee con el cliente autenticado (RLS aplica al capturista).
+    const { data: m } = await sb.from("muestras_calidad")
+      .select("id, numero_rollo, maquina_id, orden_id, pesaje_id")
+      .eq("id", data.muestra_id).maybeSingle();
     if (!m) throw new Error("Muestra no encontrada.");
-    if (!p) throw new Error("Pesaje no encontrado.");
     if (m.pesaje_id) throw new Error("La muestra ya tiene un pesaje vinculado.");
+
+    // El pesaje se lee con service role porque el capturista de calidad no
+    // tiene permisos SELECT sobre pesajes_bobina_madre. Sólo lo usamos para
+    // validaciones amistosas antes del RPC (que también revalida en BD).
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: p } = await supabaseAdmin.from("pesajes_bobina_madre")
+      .select("id, numero_rollo, maquina_id, orden_produccion_id")
+      .eq("id", data.pesaje_id).maybeSingle();
+    if (!p) throw new Error("Pesaje no encontrado.");
     if (m.numero_rollo !== p.numero_rollo) {
       throw new Error(`No coincide el número de rollo (muestra ${m.numero_rollo} vs pesaje ${p.numero_rollo}).`);
     }
     if (m.maquina_id !== p.maquina_id) {
       throw new Error("La máquina del pesaje no coincide con la de la muestra.");
     }
-    // Órdenes: si ambas existen y difieren, bloquear
     if (m.orden_id && p.orden_produccion_id && m.orden_id !== p.orden_produccion_id) {
       throw new Error("La Orden de Producción del pesaje no coincide con la de la muestra.");
     }
@@ -101,4 +104,50 @@ export const vincularPesajeMuestra = createServerFn({ method: "POST" })
     });
     if (error) throw new Error(error.message);
     return { ok: true };
+  });
+
+/**
+ * Búsqueda mínima de pesaje para la pantalla de captura de Calidad.
+ * Devuelve sólo los campos necesarios para autollenar el peso y bloquear la
+ * edición. Se ejecuta con service role porque los capturistas no tienen
+ * SELECT sobre pesajes_bobina_madre; el gate es `requireSupabaseAuth` +
+ * validación del rol de captura.
+ */
+export type PesajeParaCaptura = {
+  id: string;
+  peso_neto_kg: number;
+  fecha_hora_pesaje: string;
+  evidencia_path: string;
+  numero_orden: string | null;
+  orden_produccion_id: string | null;
+  maquina_id: string;
+  numero_rollo: string;
+};
+
+export const buscarPesajePorRollo = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z.object({
+      maquina_id: z.string().uuid(),
+      numero_rollo: z.string().trim().min(1).max(64),
+    }).parse(d),
+  )
+  .handler(async ({ data, context }): Promise<PesajeParaCaptura | null> => {
+    // Solo roles que capturan calidad o administradores pueden hacer lookup.
+    const { data: allowed, error: rerr } = await context.supabase.rpc(
+      "can_access_module",
+      { _user_id: context.userId, _module: "control_calidad" as never },
+    );
+    if (rerr) throw new Error(rerr.message);
+    if (!allowed) throw new Error("Sin permiso para consultar pesajes desde Calidad.");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: p, error } = await supabaseAdmin
+      .from("pesajes_bobina_madre")
+      .select("id, peso_neto_kg, fecha_hora_pesaje, evidencia_path, numero_orden, orden_produccion_id, maquina_id, numero_rollo")
+      .eq("maquina_id", data.maquina_id)
+      .eq("numero_rollo", data.numero_rollo)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    return (p as PesajeParaCaptura | null) ?? null;
   });
