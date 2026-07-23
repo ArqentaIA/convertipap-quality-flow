@@ -1343,28 +1343,6 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
                 </>
               )}
             </div>
-
-
-            <div className="space-y-1.5">
-              <Label className="text-base">Máquina</Label>
-              <Select value={maquinaId} onValueChange={setMaquinaId}>
-                <SelectTrigger className="h-11 text-base">
-                  <SelectValue placeholder="Selecciona máquina" />
-                </SelectTrigger>
-                <SelectContent>
-                  {maquinas.map((m) => (
-                    <SelectItem key={m.id} value={m.id}>
-                      <span className="font-mono mr-2">{m.codigo}</span>
-                      <span className="text-muted-foreground">·</span>
-                      <span className="ml-2">{m.nombre}</span>
-                      {m.area && (
-                        <span className="ml-2 text-xs text-muted-foreground">[{m.area}]</span>
-                      )}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
             <div className="space-y-1.5">
               <Label className="text-base">Producto</Label>
               <Select value={productoId} onValueChange={setProductoId}>
