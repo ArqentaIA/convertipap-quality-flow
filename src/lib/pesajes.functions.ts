@@ -9,7 +9,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-const PESO_EJE = 300;
+// Tara por máquina: MP-04=560, MP-05=750, MP-06=1160, MP-07=1260 kg.
 
 export type PesajeBobina = {
   id: string;

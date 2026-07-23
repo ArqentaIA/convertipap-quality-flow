@@ -4,7 +4,7 @@
 //   1) Valida al usuario (bearer token).
 //   2) Ejecuta OCR con Gemini sobre la evidencia del bucket privado.
 //   3) Aplica las validaciones estrictas (confianza ≥ 85% + 7 reglas).
-//   4) Convierte el peso a entero y resta automáticamente 300 kg.
+//   4) Convierte el peso a entero y resta la tara según la máquina (MP-04=560, MP-05=750, MP-06=1160, MP-07=1260 kg).
 //   5) Inserta el registro definitivo en pesajes_bobina_madre.
 //   6) Devuelve al frontend el registro creado.
 //
@@ -21,9 +21,19 @@ const CORS = {
 };
 
 const UMBRAL = 85;
-const PESO_EJE = 300;
 const PESO_MIN = 300;
 const BUCKET = "pesajes-evidencia";
+
+const TARA_POR_MAQUINA: Record<string, number> = {
+  "MP-04": 560,
+  "MP-05": 750,
+  "MP-06": 1160,
+  "MP-07": 1260,
+};
+
+function taraPorMaquina(codigo: string): number {
+  return TARA_POR_MAQUINA[codigo] ?? 300;
+}
 
 interface Gemini {
   peso_kg: number | null;
