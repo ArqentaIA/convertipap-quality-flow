@@ -972,6 +972,48 @@ export type Database = {
           },
         ]
       }
+      ordenes_produccion: {
+        Row: {
+          archivo_origen: string | null
+          cerrada_por: string | null
+          creado_por: string | null
+          created_at: string
+          estado: string
+          fecha_cierre: string | null
+          fecha_registro: string
+          id: string
+          numero_orden: string
+          peso_registrado: number
+          updated_at: string
+        }
+        Insert: {
+          archivo_origen?: string | null
+          cerrada_por?: string | null
+          creado_por?: string | null
+          created_at?: string
+          estado?: string
+          fecha_cierre?: string | null
+          fecha_registro?: string
+          id?: string
+          numero_orden: string
+          peso_registrado: number
+          updated_at?: string
+        }
+        Update: {
+          archivo_origen?: string | null
+          cerrada_por?: string | null
+          creado_por?: string | null
+          created_at?: string
+          estado?: string
+          fecha_cierre?: string | null
+          fecha_registro?: string
+          id?: string
+          numero_orden?: string
+          peso_registrado?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       paros_maquina: {
         Row: {
           abierto_por: string | null
