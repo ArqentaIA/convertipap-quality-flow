@@ -17,6 +17,9 @@ const PAGE_TITLE = "Trazabilidad de Rollo | Convertipap";
 const PAGE_DESC = "Verificación pública de rollo por código QR.";
 
 export const Route = createFileRoute("/muestra/$id")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    peso: typeof search.peso === "string" ? search.peso : undefined,
+  }),
   loader: ({ context, params }) => context.queryClient.ensureQueryData(traceQO(params.id)),
   head: () => ({
     meta: [
@@ -59,6 +62,7 @@ function normalizeStatus(t: Extract<TraceMuestra, { found: true }>): StatusKind 
 
 function MuestraTracePage() {
   const { id } = Route.useParams();
+  const { peso } = Route.useSearch();
   const { data } = useSuspenseQuery(traceQO(id));
   const trace = data as TraceMuestra;
 
@@ -75,6 +79,7 @@ function MuestraTracePage() {
 
   const status = normalizeStatus(trace);
   const isLiberado = status === "liberado";
+  const pesoMostrado = trace.peso_kg ?? parsePesoParam(peso);
 
   return (
     <Shell>
@@ -94,9 +99,9 @@ function MuestraTracePage() {
               Peso
             </div>
             <div className="mt-2 text-4xl sm:text-5xl font-extrabold text-[#0b2545] tabular-nums tracking-tight">
-              {trace.peso_kg != null ? (
+              {pesoMostrado != null ? (
                 <>
-                  {formatPeso(trace.peso_kg)}
+                  {formatPeso(pesoMostrado)}
                   <span className="ml-1 text-2xl sm:text-3xl font-semibold text-slate-500">kg</span>
                 </>
               ) : (
@@ -127,6 +132,13 @@ function MuestraTracePage() {
       </div>
     </Shell>
   );
+}
+
+function parsePesoParam(value?: string): number | null {
+  if (!value) return null;
+  const normalized = value.replace(/,/g, "").replace(/[^[0-9.\-]/g, "");
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : null;
 }
 
 function formatPeso(n: number): string {
