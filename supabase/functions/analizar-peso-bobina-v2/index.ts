@@ -64,7 +64,7 @@ Deno.serve(async (req) => {
     // 1. session_validation
     const authHeader = req.headers.get("Authorization") ?? "";
     if (!authHeader.startsWith("Bearer ")) {
-      return json({ error: "Falta autenticación.", requestId, etapas }, 401);
+      return json({ success: false, stage: "authentication", code: "AUTH_SESSION_MISSING", message: "Falta autenticación.", requestId, etapas }, 401);
     }
     const supaUrl = Deno.env.get("SUPABASE_URL")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? Deno.env.get("SUPABASE_PUBLISHABLE_KEY")!;
@@ -73,8 +73,24 @@ Deno.serve(async (req) => {
       auth: { persistSession: false },
     });
     const { data: userData, error: userErr } = await userClient.auth.getUser();
-    if (userErr || !userData.user) return json({ error: "No autenticado.", requestId, etapas }, 401);
+    if (userErr || !userData.user) return json({ success: false, stage: "authentication", code: "AUTH_SESSION_MISSING", message: "No autenticado.", requestId, etapas }, 401);
     mark("session_validation", { uid_ok: true });
+
+    // 1b. authorization — solo administradores autorizados
+    const svcKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const admin = createClient(supaUrl, svcKey);
+    const { data: roleRows } = await admin
+      .from("user_roles").select("role").eq("user_id", userData.user.id);
+    const roles = (roleRows ?? []).map((r: { role: string }) => r.role);
+    const ADMIN_ROLES = new Set(["administrador", "gerente_general", "direccion"]);
+    const isAdmin = roles.some((r) => ADMIN_ROLES.has(r));
+    if (!isAdmin) {
+      return json({
+        success: false, stage: "authorization", code: "ADMIN_ACCESS_REQUIRED",
+        message: "No cuenta con autorización para ejecutar esta prueba.", requestId, etapas,
+      }, 403);
+    }
+    mark("authorization", { admin: true });
 
     // 2. parse multipart
     const contentType = req.headers.get("content-type") ?? "";
