@@ -1127,6 +1127,178 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
           </Alert>
         )}
 
+        {/* Contexto de captura — flujo progresivo obligatorio: OP → Máquina → Rollo */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-semibold">Contexto de captura</CardTitle>
+          </CardHeader>
+          <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            {/* 1. Orden de Producción */}
+            <div className="space-y-1.5">
+              <Label className="text-base">
+                1. Orden de Producción{" "}
+                <span className="text-muted-foreground font-normal">(opcional)</span>
+              </Label>
+              <Select value={ordenSel} onValueChange={setOrdenSel}>
+                <SelectTrigger className="h-11 text-base">
+                  <SelectValue placeholder={
+                    ordenesQuery.isLoading ? "Cargando órdenes…" : "Selecciona orden de producción"
+                  } />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__sin__">
+                    <span className="italic">Continuar sin Orden de Producción</span>
+                  </SelectItem>
+                  {ordenesActivas.map((o) => (
+                    <SelectItem key={o.id} value={o.id}>
+                      <span className="font-mono">{o.numero_orden}</span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-[11px] text-muted-foreground">
+                Primer paso obligatorio. Cambiarlo reinicia Máquina y Rollo.
+              </p>
+            </div>
+
+            {/* 2. Máquina */}
+            <div className="space-y-1.5">
+              <Label className="text-base">2. Máquina</Label>
+              <Select
+                value={maquinaId}
+                onValueChange={setMaquinaId}
+                disabled={!opResuelta}
+              >
+                <SelectTrigger className="h-11 text-base">
+                  <SelectValue placeholder={
+                    opResuelta ? "Selecciona máquina (MP-04 a MP-07)" : "Selecciona primero la Orden de Producción"
+                  } />
+                </SelectTrigger>
+                <SelectContent>
+                  {maquinas.map((m) => (
+                    <SelectItem key={m.id} value={m.id}>
+                      <span className="font-mono mr-2">{m.codigo}</span>
+                      <span className="text-muted-foreground">·</span>
+                      <span className="ml-2">{m.nombre}</span>
+                      {m.area && (
+                        <span className="ml-2 text-xs text-muted-foreground">[{m.area}]</span>
+                      )}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-[11px] text-muted-foreground">
+                {opResuelta
+                  ? "Cambiar la máquina reinicia el número de rollo."
+                  : "Se habilita al elegir Orden de Producción."}
+              </p>
+            </div>
+
+            {/* 3. Número de rollo */}
+            <div className="space-y-1.5">
+              <Label htmlFor="rollo" className="text-base">
+                3. Número de rollo{" "}
+                <span className="text-muted-foreground font-normal">
+                  (sufijo automático según máquina)
+                </span>
+              </Label>
+              <div
+                className={cn(
+                  "flex h-11 items-stretch rounded-md border border-input bg-transparent shadow-sm focus-within:ring-1 focus-within:ring-ring",
+                  !maqResuelta && "opacity-60",
+                  numeroRollo && !ROLLO_REGEX.test(numeroRollo.trim()) && "border-destructive",
+                )}
+              >
+                <Input
+                  id="rollo"
+                  type="text"
+                  inputMode="text"
+                  placeholder={maqResuelta ? `Ej. 2807-${sufijoMaq || "X"}` : "Selecciona máquina primero"}
+                  pattern="[A-Za-z0-9-]{1,28}"
+                  disabled={!maqResuelta}
+                  value={baseRollo}
+                  onChange={(e) => {
+                    const raw = e.target.value.replace(/-+$/, "");
+                    setNumeroRollo(raw ? `${raw}-${sufijoMaq}` : "");
+                  }}
+                  className="h-full flex-1 border-0 bg-transparent text-base shadow-none focus-visible:ring-0"
+                />
+                <span
+                  className="flex items-center rounded-r-md border-l border-input bg-muted px-3 text-base font-semibold text-muted-foreground select-none"
+                  title={maqResuelta ? `Sufijo fijo para ${maquina.codigo}` : "Sufijo se define al elegir máquina"}
+                  aria-label={`Sufijo fijo -${sufijoMaq || "?"}`}
+                >
+                  -{maqResuelta ? (sufijoMaq || "?") : "?"}
+                </span>
+              </div>
+              {numeroRollo && !ROLLO_REGEX.test(numeroRollo.trim()) && (
+                <p className="text-[11px] text-destructive">
+                  Usa máximo 30 caracteres: letras, números y guion.
+                </p>
+              )}
+              {!maqResuelta && (
+                <p className="text-[11px] text-muted-foreground">
+                  Se habilita al seleccionar Máquina.
+                </p>
+              )}
+              {pesajeVinculado && maqResuelta && (
+                <div className="rounded-md border border-emerald-300 bg-emerald-50 p-2 space-y-1 text-[12px] text-emerald-900">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4" />
+                    <span className="font-semibold">Pesaje vinculado</span>
+                  </div>
+                  <div className="grid grid-cols-1 gap-x-3 gap-y-0.5 pl-6 tabular-nums">
+                    <div>
+                      Peso neto: <strong>{pesajeVinculado.peso_neto_kg} kg</strong>
+                    </div>
+                    <div>
+                      Fecha/hora:{" "}
+                      {new Date(pesajeVinculado.fecha_hora_pesaje).toLocaleString("es-MX", {
+                        dateStyle: "short",
+                        timeStyle: "short",
+                      })}
+                    </div>
+                    {pesajeVinculado.numero_orden && (
+                      <div>
+                        OP (referencia): <strong>{pesajeVinculado.numero_orden}</strong>
+                      </div>
+                    )}
+                  </div>
+                  {pesajeVinculado.evidencia_path && (
+                    <div className="pl-6">
+                      <button
+                        type="button"
+                        onClick={handleVerEvidencia}
+                        className="text-[12px] underline underline-offset-2 hover:text-emerald-700"
+                      >
+                        Ver evidencia de pesaje
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+              {pesajeQuery.isFetching && rolloValido && !pesajeVinculado && maqResuelta && (
+                <p className="text-[11px] text-muted-foreground">Buscando pesaje registrado…</p>
+              )}
+              {pesajeNoEncontrado && maqResuelta && (
+                <Alert variant="destructive" className="py-2">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertTitle className="text-sm">Sin pesaje registrado</AlertTitle>
+                  <AlertDescription className="text-[12px] space-y-2">
+                    <div>Este Número de Rollo aún no cuenta con un Pesaje de Bobina Madre.</div>
+                    <Link
+                      to="/pesaje/bobina-madre"
+                      className="inline-flex items-center rounded-md bg-destructive px-2 py-1 text-[12px] font-semibold text-destructive-foreground"
+                    >
+                      Ir a Pesaje de Bobina Madre
+                    </Link>
+                  </AlertDescription>
+                </Alert>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base font-semibold">A. Turno, máquina y producto</CardTitle>
