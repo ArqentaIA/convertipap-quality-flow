@@ -136,7 +136,7 @@ function MuestraTracePage() {
 
 function parsePesoParam(value?: string): number | null {
   if (!value) return null;
-  const normalized = value.replace(/,/g, "").replace(/[^[0-9.\-]/g, "");
+  const normalized = value.replace(/,/g, "").replace(/[^0-9.-]/g, "");
   const parsed = Number(normalized);
   return Number.isFinite(parsed) ? parsed : null;
 }
