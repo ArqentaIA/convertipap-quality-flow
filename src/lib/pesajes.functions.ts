@@ -9,7 +9,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-const PESO_EJE = 300;
+// Tara por máquina: MP-04=560, MP-05=750, MP-06=1160, MP-07=1260 kg.
 
 export type PesajeBobina = {
   id: string;
@@ -31,7 +31,7 @@ export type PesajeBobina = {
 // La creación de pesajes ya no se realiza desde el cliente.
 // El registro definitivo se hace exclusivamente dentro de la Edge Function
 // `analizar-peso-bobina`, que valida al usuario, ejecuta el OCR, aplica las
-// validaciones estrictas, resta el eje (300 kg) y persiste con service role.
+// validaciones estrictas, resta la tara según la máquina (MP-04=560, MP-05=750, MP-06=1160, MP-07=1260 kg) y persiste con service role.
 // El frontend sólo sube la evidencia y llama a esa función.
 
 
