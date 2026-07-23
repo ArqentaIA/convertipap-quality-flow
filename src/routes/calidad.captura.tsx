@@ -650,6 +650,19 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
   const mutation = useMutation({
     mutationFn: upsertFn,
     onSuccess: async (res: { muestra_id: string }) => {
+      // Vincula el pesaje (si existe) antes de refrescar caches.
+      const pesajeIdParaVincular = pesajeVinculado?.id ?? null;
+      if (pesajeIdParaVincular) {
+        try {
+          await vincularPesajeFn({
+            data: { muestra_id: res.muestra_id, pesaje_id: pesajeIdParaVincular },
+          });
+        } catch (e) {
+          toast.warning("Muestra guardada, pero no se pudo vincular el pesaje", {
+            description: e instanceof Error ? e.message : String(e),
+          });
+        }
+      }
       await queryClient.invalidateQueries({ queryKey: ["qc"] });
       await queryClient.invalidateQueries({ queryKey: ["produccion"] });
       await queryClient.invalidateQueries({ queryKey: ["qc", "cumplimiento"] });
