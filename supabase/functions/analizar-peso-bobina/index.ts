@@ -6,13 +6,25 @@
 //   3) Aplica las validaciones estrictas (confianza ≥ 85% + 7 reglas).
 //   4) Convierte el peso a entero y resta la tara según la máquina (MP-04=560, MP-05=750, MP-06=1160, MP-07=0 kg → peso neto directo).
 
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
+import { encode as base64Encode } from "https://deno.land/std@0.224.0/encoding/base64.ts";
+
+const CORS: Record<string, string> = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+
+const BUCKET = "pesajes-evidencia";
+const UMBRAL = 85;      // Confianza mínima OCR (%)
+const PESO_MIN = 100;   // Peso bruto mínimo aceptable (kg)
+
 const TARA_POR_MAQUINA: Record<string, number> = {
   "MP-04": 560,
   "MP-05": 750,
   "MP-06": 1160,
   "MP-07": 0,
 };
-
 
 function taraPorMaquina(codigo: string): number {
   return TARA_POR_MAQUINA[codigo] ?? 300;
