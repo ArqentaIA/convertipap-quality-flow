@@ -30,7 +30,15 @@ export const Route = createFileRoute("/pesaje/bobina-madre")({
 });
 
 type Maquina = { id: string; codigo: string };
-const PESO_EJE = 300;
+const TARA_POR_MAQUINA: Record<string, number> = {
+  "MP-04": 560,
+  "MP-05": 750,
+  "MP-06": 1160,
+  "MP-07": 1260,
+};
+function taraPorMaquina(codigo: string): number {
+  return TARA_POR_MAQUINA[codigo] ?? 300;
+}
 
 type OcrResult =
   | { aceptado: true; registro: PesajeBobina }
