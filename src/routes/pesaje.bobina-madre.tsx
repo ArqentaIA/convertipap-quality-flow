@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
-  Camera, Scale, CheckCircle2, XCircle, Loader2, RefreshCw, Upload, Info, ImageIcon,
+  Camera, CheckCircle2, XCircle, Loader2, RefreshCw, Upload, Info, ImageIcon,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
