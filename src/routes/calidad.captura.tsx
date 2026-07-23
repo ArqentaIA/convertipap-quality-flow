@@ -459,6 +459,39 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
     () => variables.find((v) => v.clave === "relMDCD")?.variable_id,
     [variables],
   );
+  const pesoVarId = useMemo(
+    () => variables.find((v) => v.clave === "peso")?.variable_id,
+    [variables],
+  );
+
+  // ---- Vinculación automática con Pesaje de Bobina Madre --------------------
+  // Al capturar Máquina + Número de Rollo válidos, buscamos si ya existe un
+  // pesaje registrado. Si existe: se autollena el peso neto y se bloquea el
+  // campo. Tras guardar la muestra, la vinculación se cierra en el servidor.
+  const buscarPesajeFn = useServerFn(buscarPesajePorRollo);
+  const vincularPesajeFn = useServerFn(vincularPesajeMuestra);
+  const rolloTrimmed = numeroRollo.trim();
+  const rolloValido = !!rolloTrimmed && ROLLO_REGEX.test(rolloTrimmed);
+  const pesajeQuery = useQuery({
+    queryKey: ["pesaje-por-rollo", maquina.id, rolloTrimmed],
+    queryFn: () =>
+      buscarPesajeFn({ data: { maquina_id: maquina.id, numero_rollo: rolloTrimmed } }),
+    enabled: !!maquina.id && rolloValido && !!pesoVarId,
+    staleTime: 15_000,
+    retry: false,
+  });
+  const pesajeVinculado: PesajeParaCaptura | null = pesajeQuery.data ?? null;
+
+  useEffect(() => {
+    if (!pesoVarId) return;
+    if (!pesajeVinculado) return;
+    const target = String(pesajeVinculado.peso_neto_kg);
+    setMediciones((prev) => {
+      const cur = prev[pesoVarId]?.valor ?? "";
+      if (cur === target) return prev;
+      return { ...prev, [pesoVarId]: { ...prev[pesoVarId], valor: target } };
+    });
+  }, [pesajeVinculado, pesoVarId]);
   const mdValor = mdVarId ? (mediciones[mdVarId]?.valor ?? "") : "";
   const cdValor = cdVarId ? (mediciones[cdVarId]?.valor ?? "") : "";
   useEffect(() => {
