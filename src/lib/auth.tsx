@@ -10,7 +10,8 @@ export type AppRole =
   | "calidad"
   | "calidad_operativo"
   | "capturista"
-  | "reportes_consulta";
+  | "reportes_consulta"
+  | "planeacion";
 
 export type AppModule =
   | "dashboard"
@@ -20,7 +21,8 @@ export type AppModule =
   | "reportes"
   | "configuracion"
   | "usuarios_permisos"
-  | "auditoria";
+  | "auditoria"
+  | "ordenes_produccion";
 
 export interface Profile {
   id: string;
