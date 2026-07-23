@@ -43,6 +43,8 @@ function PesajeBobinaPage() {
   const [maquinaId, setMaquinaId] = useState<string>("");
   const [numeroRollo, setNumeroRollo] = useState("");
   const [numeroOrden, setNumeroOrden] = useState("");
+  const [ordenSel, setOrdenSel] = useState<string>(""); // "" | id de orden | "__otro__"
+  const [ordenOtro, setOrdenOtro] = useState("");
   const [evidenciaFile, setEvidenciaFile] = useState<File | null>(null);
   const [evidenciaPreview, setEvidenciaPreview] = useState<string | null>(null);
   const [ocr, setOcr] = useState<OcrResult | null>(null);
@@ -65,6 +67,21 @@ function PesajeBobinaPage() {
     staleTime: 5 * 60_000,
   });
 
+  // Órdenes de producción activas
+  const ordenesQ = useQuery({
+    queryKey: ["pesaje", "ordenes-activas"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("ordenes_produccion")
+        .select("id, numero_orden")
+        .eq("estado", "activa")
+        .order("numero_orden");
+      if (error) throw new Error(error.message);
+      return (data ?? []) as { id: string; numero_orden: string }[];
+    },
+    staleTime: 60_000,
+  });
+
   const listar = useServerFn(listPesajes);
   const listaQ = useQuery({
     queryKey: ["pesajes", "lista"],
@@ -75,6 +92,8 @@ function PesajeBobinaPage() {
   function resetForm() {
     setNumeroRollo("");
     setNumeroOrden("");
+    setOrdenSel("");
+    setOrdenOtro("");
     setEvidenciaFile(null);
     setEvidenciaPreview(null);
     setOcr(null);
@@ -156,12 +175,41 @@ function PesajeBobinaPage() {
         <div className="grid gap-4 md:grid-cols-3">
           <div>
             <label className="mb-1 block text-xs font-medium text-muted-foreground">Orden de producción (opcional)</label>
-            <input
+            <select
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              value={numeroOrden}
-              onChange={(e) => setNumeroOrden(e.target.value.trim())}
-              placeholder="Número SAP"
-            />
+              value={ordenSel}
+              onChange={(e) => {
+                const v = e.target.value;
+                setOrdenSel(v);
+                if (v === "__otro__") {
+                  setNumeroOrden(ordenOtro.trim());
+                } else if (v === "") {
+                  setNumeroOrden("");
+                } else {
+                  const o = ordenesQ.data?.find((x) => x.id === v);
+                  setNumeroOrden(o?.numero_orden ?? "");
+                }
+              }}
+              disabled={ordenesQ.isLoading}
+            >
+              <option value="">Selecciona…</option>
+              {ordenesQ.data?.map((o) => (
+                <option key={o.id} value={o.id}>{o.numero_orden}</option>
+              ))}
+              <option value="__otro__">Otro (capturar manualmente)</option>
+            </select>
+            {ordenSel === "__otro__" && (
+              <input
+                className="mt-2 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                value={ordenOtro}
+                onChange={(e) => {
+                  const v = e.target.value.trim();
+                  setOrdenOtro(v);
+                  setNumeroOrden(v);
+                }}
+                placeholder="Número SAP"
+              />
+            )}
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-muted-foreground">Máquina *</label>
