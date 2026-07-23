@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
-  Camera, CheckCircle2, XCircle, Loader2, RefreshCw, Upload, Info, ImageIcon,
+  Camera, CheckCircle2, XCircle, Loader2, RefreshCw, Upload, ImageIcon,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -214,13 +214,9 @@ function PesajeBobinaPage() {
 
           {/* OCR result */}
           <div className="rounded-md border border-border bg-background p-4">
-            <div className="mb-2 flex items-center gap-2 text-sm font-medium">
-              <Info className="h-4 w-4" /> Lectura OCR (Gemini · server-side)
-            </div>
             {!ocr && (
               <p className="text-sm text-muted-foreground">
-                Adjunta la fotografía y pulsa <b>Analizar y registrar</b>. El sistema aceptará y
-                registrará el pesaje sólo si la confianza es ≥ 85% y se cumplen las 7 reglas.
+                Listo para analizar. Pulsa <b>Analizar y registrar</b> cuando la evidencia esté cargada.
               </p>
             )}
             {ocr && ocr.aceptado && (
