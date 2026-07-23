@@ -24,6 +24,7 @@ const ROL_LABEL: Record<AppRole, string> = {
   calidad_operativo: "Calidad Operativo",
   capturista: "Capturista",
   reportes_consulta: "Reportes / Consulta",
+  planeacion: "Planeación",
 };
 
 const ROL_COLORS: Record<AppRole, string> = {
@@ -34,6 +35,7 @@ const ROL_COLORS: Record<AppRole, string> = {
   calidad_operativo: "bg-success/10 text-success border-success/25",
   capturista: "bg-muted text-foreground/80 border-border",
   reportes_consulta: "bg-accent text-accent-foreground border-border",
+  planeacion: "bg-primary/10 text-primary border-primary/25",
 };
 
 const MODULO_LABEL: Record<AppModule, string> = {
@@ -45,6 +47,7 @@ const MODULO_LABEL: Record<AppModule, string> = {
   configuracion: "Configuración",
   usuarios_permisos: "Usuarios y permisos",
   auditoria: "Auditoría",
+  ordenes_produccion: "Órdenes de Producción",
 };
 
 function UsuariosPage() {
