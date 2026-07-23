@@ -22,7 +22,9 @@ export type AppModule =
   | "configuracion"
   | "usuarios_permisos"
   | "auditoria"
-  | "ordenes_produccion";
+  | "ordenes_produccion"
+  | "pesaje_bobina_madre";
+
 
 export interface Profile {
   id: string;
