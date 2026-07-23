@@ -10,7 +10,8 @@ export type AppRole =
   | "calidad"
   | "calidad_operativo"
   | "capturista"
-  | "reportes_consulta";
+  | "reportes_consulta"
+  | "planeacion";
 
 export type AppModule =
   | "dashboard"
@@ -20,7 +21,8 @@ export type AppModule =
   | "reportes"
   | "configuracion"
   | "usuarios_permisos"
-  | "auditoria";
+  | "auditoria"
+  | "ordenes_produccion";
 
 export interface Profile {
   id: string;
@@ -185,6 +187,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (roles.includes("administrador")) return true;
         if (roles.includes("calidad")) return true;
         if (roles.includes("capturista") && m === "control_calidad") return true;
+        if (roles.includes("planeacion") && m === "ordenes_produccion") return true;
         // gerente_general y direccion: solo lectura
         return false;
       },

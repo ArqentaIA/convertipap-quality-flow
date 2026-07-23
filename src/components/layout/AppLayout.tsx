@@ -4,7 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import {
   LayoutDashboard, Factory, ClipboardCheck, FileBarChart2,
   Settings, ChevronLeft, ChevronRight, Bell, ChevronDown, SlidersHorizontal,
-  LogOut, Lock, Loader2, BookOpen, Users, Monitor, Tv,
+  LogOut, Lock, Loader2, BookOpen, Users, Monitor, Tv, ClipboardList,
 } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { PLANTS } from "@/lib/qc-data";
@@ -26,6 +26,7 @@ const NAV: NavItem[] = [
   // { to: "/", label: "Dashboard", icon: LayoutDashboard, module: "dashboard" },
   { to: "/pantallas-operativas", label: "Pantallas Operativas", icon: Monitor, module: "dashboard" },
   { to: "/produccion", label: "Producción", icon: Factory, module: "produccion", pathPrefixes: ["/produccion", "/historial"] },
+  { to: "/ordenes-produccion", label: "Órdenes de Producción", icon: ClipboardList, module: "ordenes_produccion" },
   { to: "/calidad/captura", label: "Control de Calidad", icon: ClipboardCheck, module: "control_calidad" },
   { to: "/calidad/captura-fuera-turno", label: "Captura fuera de turno", icon: ClipboardCheck, module: "control_calidad" },
   { to: "/variables-calidad", label: "Variables de Calidad", icon: SlidersHorizontal, module: "variables_calidad" },
@@ -42,6 +43,7 @@ const NAV: NavItem[] = [
 const ROUTE_MODULE: Array<{ prefix: string; module: AppModule }> = [
   { prefix: "/produccion", module: "produccion" },
   { prefix: "/historial", module: "produccion" },
+  { prefix: "/ordenes-produccion", module: "ordenes_produccion" },
   { prefix: "/control-calidad", module: "control_calidad" },
   { prefix: "/calidad", module: "control_calidad" },
   { prefix: "/variables-calidad", module: "variables_calidad" },
