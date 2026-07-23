@@ -445,6 +445,48 @@ function PesajeBobinaPage() {
         </div>
       </section>
 
+      {/* Modal de cámara en vivo — única fuente permitida de evidencia */}
+      {camaraAbierta && (
+        <div className="fixed inset-0 z-50 flex flex-col bg-black">
+          <div className="flex items-center justify-between px-4 py-3 text-white">
+            <div className="text-sm font-medium">Captura en vivo · display de la báscula</div>
+            <button
+              type="button"
+              onClick={cerrarCamara}
+              className="rounded-md border border-white/30 px-3 py-1.5 text-xs hover:bg-white/10"
+            >
+              Cancelar
+            </button>
+          </div>
+          <div className="relative flex-1 overflow-hidden bg-black">
+            <video
+              ref={videoRef}
+              playsInline
+              muted
+              autoPlay
+              className="h-full w-full object-contain"
+            />
+            {camaraError && (
+              <div className="absolute inset-x-4 top-4 rounded-md bg-destructive/90 px-4 py-3 text-sm text-white">
+                {camaraError}
+              </div>
+            )}
+          </div>
+          <div className="flex items-center justify-center gap-4 bg-black px-4 py-5">
+            <button
+              type="button"
+              onClick={tomarFoto}
+              disabled={!!camaraError}
+              className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-white text-black shadow-lg ring-4 ring-white/30 disabled:opacity-40"
+              aria-label="Tomar foto"
+            >
+              <Camera className="h-7 w-7" />
+            </button>
+          </div>
+        </div>
+      )}
+
+
 
       {/* Historial */}
       <ListaPesajes lista={listaQ.data ?? []} loading={listaQ.isLoading} />
