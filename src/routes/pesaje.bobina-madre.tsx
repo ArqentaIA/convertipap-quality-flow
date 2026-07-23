@@ -175,12 +175,41 @@ function PesajeBobinaPage() {
         <div className="grid gap-4 md:grid-cols-3">
           <div>
             <label className="mb-1 block text-xs font-medium text-muted-foreground">Orden de producción (opcional)</label>
-            <input
+            <select
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              value={numeroOrden}
-              onChange={(e) => setNumeroOrden(e.target.value.trim())}
-              placeholder="Número SAP"
-            />
+              value={ordenSel}
+              onChange={(e) => {
+                const v = e.target.value;
+                setOrdenSel(v);
+                if (v === "__otro__") {
+                  setNumeroOrden(ordenOtro.trim());
+                } else if (v === "") {
+                  setNumeroOrden("");
+                } else {
+                  const o = ordenesQ.data?.find((x) => x.id === v);
+                  setNumeroOrden(o?.numero_orden ?? "");
+                }
+              }}
+              disabled={ordenesQ.isLoading}
+            >
+              <option value="">Selecciona…</option>
+              {ordenesQ.data?.map((o) => (
+                <option key={o.id} value={o.id}>{o.numero_orden}</option>
+              ))}
+              <option value="__otro__">Otro (capturar manualmente)</option>
+            </select>
+            {ordenSel === "__otro__" && (
+              <input
+                className="mt-2 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                value={ordenOtro}
+                onChange={(e) => {
+                  const v = e.target.value.trim();
+                  setOrdenOtro(v);
+                  setNumeroOrden(v);
+                }}
+                placeholder="Número SAP"
+              />
+            )}
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-muted-foreground">Máquina *</label>
