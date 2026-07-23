@@ -174,7 +174,8 @@ function PesajeBobinaPage() {
     staleTime: 30_000,
   });
 
-  const ordenIdSeleccionada = ordenSel && ordenSel !== "__otro__" ? ordenSel : null;
+  const ordenIdSeleccionada =
+    ordenSel && ordenSel !== "__otro__" && ordenSel !== "__sin__" ? ordenSel : null;
   const pesoBruto = useMemo(() => {
     const clean = pesoTexto.replace(",", ".").replace(/[^\d.]/g, "");
     const n = Number(clean);
