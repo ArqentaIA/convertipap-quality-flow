@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  crearPesaje, listPesajes, firmarEvidencia, type PesajeBobina,
+  listPesajes, firmarEvidencia, type PesajeBobina,
 } from "@/lib/pesajes.functions";
 import { fechaCortoMX, horaMX } from "@/lib/format";
 
@@ -33,8 +33,8 @@ type Maquina = { id: string; codigo: string };
 const PESO_EJE = 300;
 
 type OcrResult =
-  | { aceptado: true; peso_kg: number; confianza: number; unidad: string; ocr: unknown }
-  | { aceptado: false; motivo_rechazo: string; confianza?: number; ocr?: unknown };
+  | { aceptado: true; registro: PesajeBobina }
+  | { aceptado: false; motivo_rechazo: string; confianza?: number };
 
 function PesajeBobinaPage() {
   const qc = useQueryClient();
@@ -45,10 +45,8 @@ function PesajeBobinaPage() {
   const [numeroOrden, setNumeroOrden] = useState("");
   const [evidenciaFile, setEvidenciaFile] = useState<File | null>(null);
   const [evidenciaPreview, setEvidenciaPreview] = useState<string | null>(null);
-  const [uploadingPath, setUploadingPath] = useState<string | null>(null);
   const [ocr, setOcr] = useState<OcrResult | null>(null);
-  const [analizando, setAnalizando] = useState(false);
-  const [guardando, setGuardando] = useState(false);
+  const [procesando, setProcesando] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   // Máquinas
@@ -74,14 +72,11 @@ function PesajeBobinaPage() {
     staleTime: 30_000,
   });
 
-  const crear = useServerFn(crearPesaje);
-
   function resetForm() {
     setNumeroRollo("");
     setNumeroOrden("");
     setEvidenciaFile(null);
     setEvidenciaPreview(null);
-    setUploadingPath(null);
     setOcr(null);
     if (fileRef.current) fileRef.current.value = "";
   }
@@ -99,16 +94,15 @@ function PesajeBobinaPage() {
     }
     setEvidenciaFile(f);
     setOcr(null);
-    setUploadingPath(null);
     const url = URL.createObjectURL(f);
     setEvidenciaPreview(url);
   }
 
-  async function analizar() {
+  async function analizarYRegistrar() {
     if (!maquinaId) return toast.error("Selecciona máquina primero.");
     if (!numeroRollo.trim()) return toast.error("Captura el número de rollo.");
     if (!evidenciaFile) return toast.error("Adjunta la foto del display.");
-    setAnalizando(true);
+    setProcesando(true);
     setOcr(null);
     try {
       // Subir al bucket privado
@@ -120,57 +114,36 @@ function PesajeBobinaPage() {
         .from("pesajes-evidencia")
         .upload(path, evidenciaFile, { upsert: false, contentType: evidenciaFile.type });
       if (up.error) throw new Error(`Subida: ${up.error.message}`);
-      setUploadingPath(path);
 
-      // Llamar Edge Function (OCR server-side con Gemini)
+      // La Edge Function ejecuta OCR + valida + inserta el registro definitivo.
       const { data: sess } = await supabase.auth.getSession();
       const token = sess.session?.access_token;
       const resp = await supabase.functions.invoke("analizar-peso-bobina", {
-        body: { evidencia_path: path },
+        body: {
+          evidencia_path: path,
+          maquina_id: maquinaId,
+          numero_rollo: numeroRollo.trim(),
+          numero_orden: numeroOrden.trim() || null,
+        },
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       });
       if (resp.error) throw new Error(resp.error.message);
       const r = resp.data as OcrResult;
       setOcr(r);
       if (r.aceptado) {
-        toast.success(`Peso detectado: ${r.peso_kg} kg (confianza ${r.confianza}%)`);
+        toast.success(`Pesaje registrado: ${r.registro.peso_neto_kg} kg netos.`);
+        qc.invalidateQueries({ queryKey: ["pesajes"] });
+        setTimeout(resetForm, 800);
       } else {
-        toast.error(`Lectura rechazada: ${r.motivo_rechazo}`);
+        toast.error(`Lectura rechazada: ${r.motivo_rechazo}. Toma una nueva fotografía.`);
       }
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
-      setAnalizando(false);
+      setProcesando(false);
     }
   }
 
-  async function guardar() {
-    if (!ocr || !ocr.aceptado || !uploadingPath) return;
-    setGuardando(true);
-    try {
-      await crear({
-        data: {
-          numero_rollo: numeroRollo.trim(),
-          maquina_id: maquinaId,
-          numero_orden: numeroOrden.trim() || null,
-          peso_bruto_kg: ocr.peso_kg,
-          evidencia_path: uploadingPath,
-          ocr_confianza: ocr.confianza,
-          ocr_raw: ocr.ocr as never,
-        },
-      });
-      toast.success("Pesaje registrado.");
-      resetForm();
-      qc.invalidateQueries({ queryKey: ["pesajes"] });
-    } catch (e) {
-      toast.error((e as Error).message);
-    } finally {
-      setGuardando(false);
-    }
-  }
-
-  const pesoNeto = ocr?.aceptado ? Number((ocr.peso_kg - PESO_EJE).toFixed(2)) : null;
-  const puedeGuardar = !!ocr && ocr.aceptado && !!uploadingPath && !guardando;
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 p-4">
@@ -247,20 +220,22 @@ function PesajeBobinaPage() {
             </div>
             {!ocr && (
               <p className="text-sm text-muted-foreground">
-                Adjunta la fotografía y pulsa <b>Analizar</b>. El sistema aceptará la lectura
-                solo si la confianza es ≥ 85% y se cumplen las 7 reglas de validación.
+                Adjunta la fotografía y pulsa <b>Analizar y registrar</b>. El sistema aceptará y
+                registrará el pesaje sólo si la confianza es ≥ 85% y se cumplen las 7 reglas.
               </p>
             )}
             {ocr && ocr.aceptado && (
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-success">
                   <CheckCircle2 className="h-4 w-4" />
-                  <span className="text-sm font-medium">Lectura aceptada · confianza {ocr.confianza}%</span>
+                  <span className="text-sm font-medium">
+                    Registrado · confianza {ocr.registro.ocr_confianza ?? "—"}%
+                  </span>
                 </div>
                 <div className="grid grid-cols-3 gap-2 rounded-md bg-muted/50 p-3 text-center text-sm">
-                  <div><div className="text-[11px] text-muted-foreground">Bruto</div><div className="font-semibold">{ocr.peso_kg} kg</div></div>
+                  <div><div className="text-[11px] text-muted-foreground">Bruto</div><div className="font-semibold">{Number(ocr.registro.peso_bruto_kg)} kg</div></div>
                   <div><div className="text-[11px] text-muted-foreground">Eje</div><div className="font-semibold">{PESO_EJE} kg</div></div>
-                  <div className="rounded bg-amber-100 text-amber-900"><div className="text-[11px]">Neto</div><div className="font-bold">{pesoNeto} kg</div></div>
+                  <div className="rounded bg-amber-100 text-amber-900"><div className="text-[11px]">Neto</div><div className="font-bold">{Number(ocr.registro.peso_neto_kg)} kg</div></div>
                 </div>
               </div>
             )}
@@ -268,7 +243,7 @@ function PesajeBobinaPage() {
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-destructive">
                   <XCircle className="h-4 w-4" />
-                  <span className="text-sm font-medium">Lectura rechazada</span>
+                  <span className="text-sm font-medium">Lectura rechazada · no se registró</span>
                 </div>
                 <p className="text-xs text-destructive/90">{ocr.motivo_rechazo}</p>
                 <p className="text-xs text-muted-foreground">Toma nuevamente la fotografía y vuelve a analizar.</p>
@@ -279,20 +254,12 @@ function PesajeBobinaPage() {
 
         <div className="mt-5 flex flex-wrap gap-2">
           <button
-            onClick={analizar}
-            disabled={analizando || !evidenciaFile}
+            onClick={analizarYRegistrar}
+            disabled={procesando || !evidenciaFile}
             className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
           >
-            {analizando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-            {analizando ? "Analizando…" : "Analizar fotografía"}
-          </button>
-          <button
-            onClick={guardar}
-            disabled={!puedeGuardar}
-            className="inline-flex items-center gap-2 rounded-md bg-success px-4 py-2 text-sm font-medium text-success-foreground disabled:opacity-50"
-          >
-            {guardando ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-            Guardar pesaje
+            {procesando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+            {procesando ? "Analizando y registrando…" : "Analizar y registrar"}
           </button>
           <button
             onClick={resetForm}
@@ -302,6 +269,7 @@ function PesajeBobinaPage() {
           </button>
         </div>
       </section>
+
 
       {/* Historial */}
       <ListaPesajes lista={listaQ.data ?? []} loading={listaQ.isLoading} />

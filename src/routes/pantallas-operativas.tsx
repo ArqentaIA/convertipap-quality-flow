@@ -41,13 +41,16 @@ function OperatorVisionUrls() {
 
   const { data: maquinas } = useQuery({
     queryKey: ["maquinas-access-codes-list"],
+    enabled: isAdmin,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("maquinas")
-        .select("codigo, access_code")
-        .in("codigo", MAQUINAS_OV as readonly string[] as string[]);
-      if (error) throw error;
-      return data as MaqRow[];
+      const [{ data: maqs, error: mErr }, { data: codes, error: cErr }] = await Promise.all([
+        supabase.from("maquinas").select("id, codigo").in("codigo", MAQUINAS_OV as readonly string[] as string[]),
+        supabase.from("maquina_access_codes").select("maquina_id, access_code"),
+      ]);
+      if (mErr) throw mErr;
+      if (cErr) throw cErr;
+      const byMaq = new Map((codes ?? []).map((c) => [c.maquina_id, c.access_code]));
+      return (maqs ?? []).map((m) => ({ codigo: m.codigo, access_code: byMaq.get(m.id) ?? null })) as MaqRow[];
     },
   });
 

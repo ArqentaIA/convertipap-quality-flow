@@ -439,6 +439,35 @@ export type Database = {
         }
         Relationships: []
       }
+      maquina_access_codes: {
+        Row: {
+          access_code: string
+          created_at: string
+          maquina_id: string
+          updated_at: string
+        }
+        Insert: {
+          access_code: string
+          created_at?: string
+          maquina_id: string
+          updated_at?: string
+        }
+        Update: {
+          access_code?: string
+          created_at?: string
+          maquina_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maquina_access_codes_maquina_id_fkey"
+            columns: ["maquina_id"]
+            isOneToOne: true
+            referencedRelation: "maquinas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       maquina_estado_actual: {
         Row: {
           actualizado_por: string | null

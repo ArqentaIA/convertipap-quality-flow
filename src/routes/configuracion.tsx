@@ -623,22 +623,22 @@ function MachineAccessCodesCard() {
   const { data, isLoading, error } = useQuery({
     queryKey: ["maquinas-access-codes"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("maquinas")
-        .select("id, codigo, nombre, access_code")
-        .eq("activo", true)
-        .order("codigo");
-      if (error) throw error;
-      return data as MaquinaRow[];
+      const [{ data: maqs, error: mErr }, { data: codes, error: cErr }] = await Promise.all([
+        supabase.from("maquinas").select("id, codigo, nombre").eq("activo", true).order("codigo"),
+        supabase.from("maquina_access_codes").select("maquina_id, access_code"),
+      ]);
+      if (mErr) throw mErr;
+      if (cErr) throw cErr;
+      const byMaq = new Map((codes ?? []).map((c) => [c.maquina_id, c.access_code]));
+      return (maqs ?? []).map((m) => ({ ...m, access_code: byMaq.get(m.id) ?? null })) as MaquinaRow[];
     },
   });
 
   const saveMutation = useMutation({
     mutationFn: async ({ id, code }: { id: string; code: string }) => {
       const { error } = await supabase
-        .from("maquinas")
-        .update({ access_code: code })
-        .eq("id", id);
+        .from("maquina_access_codes")
+        .upsert({ maquina_id: id, access_code: code }, { onConflict: "maquina_id" });
       if (error) throw error;
     },
     onSuccess: (_d, vars) => {
