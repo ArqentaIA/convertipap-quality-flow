@@ -187,6 +187,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (roles.includes("administrador")) return true;
         if (roles.includes("calidad")) return true;
         if (roles.includes("capturista") && m === "control_calidad") return true;
+        if (roles.includes("planeacion") && m === "ordenes_produccion") return true;
         // gerente_general y direccion: solo lectura
         return false;
       },
