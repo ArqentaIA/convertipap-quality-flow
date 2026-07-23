@@ -1301,7 +1301,7 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-base font-semibold">A. Turno, máquina y producto</CardTitle>
+            <CardTitle className="text-base font-semibold">A. Turno y producto</CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <div className="space-y-1.5">
