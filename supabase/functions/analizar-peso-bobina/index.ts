@@ -14,11 +14,11 @@ function base64Encode(bytes: Uint8Array): string {
   return btoa(bin);
 }
 
-
 const CORS: Record<string, string> = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Max-Age": "86400",
 };
 
 const BUCKET = "pesajes-evidencia";
@@ -69,16 +69,27 @@ Reglas:
 - NO agregues texto fuera del JSON.`;
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
+  const requestId = crypto.randomUUID();
+  const startedAt = Date.now();
+  console.log(`[${requestId}] Inicio ${req.method} analizar-peso-bobina`);
+
+  if (req.method === "OPTIONS") {
+    console.log(`[${requestId}] Solicitud OPTIONS atendida`);
+    return new Response("ok", { headers: CORS });
+  }
+
+  if (req.method !== "POST") {
+    return json({ error: "Método no permitido.", requestId }, 405);
+  }
 
   try {
     const authHeader = req.headers.get("Authorization") ?? "";
-    if (!authHeader) return json({ error: "Falta autenticación." }, 401);
+    if (!authHeader) return json({ error: "Falta autenticación.", requestId }, 401);
 
     const supaUrl = Deno.env.get("SUPABASE_URL")!;
     const supaKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const geminiKey = Deno.env.get("GEMINI_API_KEY");
-    if (!geminiKey) return json({ error: "GEMINI_API_KEY no configurada." }, 500);
+    if (!geminiKey) return json({ error: "GEMINI_API_KEY no configurada.", requestId }, 500);
 
     const admin = createClient(supaUrl, supaKey);
 
@@ -89,35 +100,43 @@ Deno.serve(async (req) => {
       auth: { persistSession: false },
     });
     const { data: userData, error: userErr } = await userClient.auth.getUser();
-    if (userErr || !userData.user) return json({ error: "No autenticado." }, 401);
+    if (userErr || !userData.user) return json({ error: "No autenticado.", requestId }, 401);
     const uid = userData.user.id;
+    console.log(`[${requestId}] Usuario autenticado`);
 
     const body = await req.json().catch(() => ({}));
-    const evidenciaPath: string | undefined = body?.evidencia_path;
+    if (body?.test === true) {
+      console.log(`[${requestId}] Diagnóstico ligero recibido`);
+      return json({ ok: true, requestId, function: "analizar-peso-bobina" }, 200);
+    }
+
+    const evidenciaPath: string | undefined = body?.evidencia_path ?? body?.storagePath;
     const maquinaId: string | undefined = body?.maquina_id;
     const numeroRollo: string | undefined = (body?.numero_rollo ?? "").toString().trim() || undefined;
     const numeroOrden: string | null = body?.numero_orden ? String(body.numero_orden).trim() : null;
     const fechaHora: string | undefined = body?.fecha_hora_pesaje;
 
-    if (!evidenciaPath) return json({ error: "Falta evidencia_path." }, 400);
-    if (!maquinaId) return json({ error: "Falta maquina_id." }, 400);
-    if (!numeroRollo) return json({ error: "Falta numero_rollo." }, 400);
+    if (!evidenciaPath) return json({ error: "Falta evidencia_path.", requestId }, 400);
+    if (!maquinaId) return json({ error: "Falta maquina_id.", requestId }, 400);
+    if (!numeroRollo) return json({ error: "Falta numero_rollo.", requestId }, 400);
+    console.log(`[${requestId}] storagePath recibido: ${evidenciaPath}`);
 
     // Máquina válida
     const { data: maq, error: mErr } = await admin
       .from("maquinas").select("id, codigo, activo").eq("id", maquinaId).maybeSingle();
-    if (mErr || !maq || !maq.activo) return json({ error: "Máquina no encontrada." }, 400);
+    if (mErr || !maq || !maq.activo) return json({ error: "Máquina no encontrada.", requestId }, 400);
 
     // Duplicado
     const { data: dup } = await admin
       .from("pesajes_bobina_madre").select("id")
       .eq("maquina_id", maquinaId).eq("numero_rollo", numeroRollo).maybeSingle();
-    if (dup) return json({ error: `El rollo ${numeroRollo} ya tiene un pesaje registrado en ${maq.codigo}.` }, 409);
+    if (dup) return json({ error: `El rollo ${numeroRollo} ya tiene un pesaje registrado en ${maq.codigo}.`, requestId }, 409);
 
     // Descargar evidencia
     const { data: fileData, error: dlErr } = await admin.storage.from(BUCKET).download(evidenciaPath);
-    if (dlErr || !fileData) return json({ error: `No se pudo leer la evidencia: ${dlErr?.message ?? "desconocido"}` }, 400);
+    if (dlErr || !fileData) return json({ error: `No se pudo leer la evidencia: ${dlErr?.message ?? "desconocido"}`, requestId }, 400);
     const buf = new Uint8Array(await fileData.arrayBuffer());
+    console.log(`[${requestId}] Fotografía descargada: ${buf.byteLength} bytes, mime=${fileData.type || "image/jpeg"}`);
     const b64 = base64Encode(buf);
     const mime = fileData.type || "image/jpeg";
 
@@ -141,14 +160,16 @@ Deno.serve(async (req) => {
     );
     if (!resp.ok) {
       const t = await resp.text();
-      return json({ error: `Gemini falló: ${resp.status} ${t.slice(0, 300)}` }, 502);
+      console.log(`[${requestId}] Lectura de imagen falló: ${resp.status}`);
+      return json({ error: `Gemini falló: ${resp.status} ${t.slice(0, 300)}`, requestId }, 502);
     }
+    console.log(`[${requestId}] Lectura de imagen completada`);
     const gj = await resp.json();
     const text: string = gj?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
     let parsed: Gemini;
     try { parsed = JSON.parse(text); }
     catch {
-      return json({ aceptado: false, motivo_rechazo: "No se pudo interpretar la lectura del OCR." }, 200);
+      return json({ aceptado: false, motivo_rechazo: "No se pudo interpretar la lectura del OCR.", requestId }, 200);
     }
 
     // Validaciones estrictas
@@ -163,14 +184,14 @@ Deno.serve(async (req) => {
     if (parsed.peso_kg != null && parsed.peso_kg <= PESO_MIN) rechazos.push(`El peso (${parsed.peso_kg} kg) no es mayor a ${PESO_MIN} kg`);
 
     if (rechazos.length > 0) {
-      return json({ aceptado: false, motivo_rechazo: rechazos.join(" · "), confianza: parsed.confianza }, 200);
+      return json({ aceptado: false, motivo_rechazo: rechazos.join(" · "), confianza: parsed.confianza, requestId }, 200);
     }
 
     // Convertir a entero y restar la tara correspondiente a la máquina
     const pesoBruto = Math.round(parsed.peso_kg as number);
     const pesoEje = taraPorMaquina(maq.codigo);
     if (pesoBruto <= pesoEje) {
-      return json({ aceptado: false, motivo_rechazo: `El peso bruto (${pesoBruto} kg) debe ser mayor a la tara de la máquina (${pesoEje} kg).`, confianza: parsed.confianza }, 200);
+      return json({ aceptado: false, motivo_rechazo: `El peso bruto (${pesoBruto} kg) debe ser mayor a la tara de la máquina (${pesoEje} kg).`, confianza: parsed.confianza, requestId }, 200);
     }
     const pesoNeto = pesoBruto - pesoEje;
 
@@ -199,11 +220,13 @@ Deno.serve(async (req) => {
       capturado_por: uid,
     }).select("*").single();
 
-    if (insErr || !ins) return json({ error: `No se pudo registrar el pesaje: ${insErr?.message ?? "desconocido"}` }, 500);
+    if (insErr || !ins) return json({ error: `No se pudo registrar el pesaje: ${insErr?.message ?? "desconocido"}`, requestId }, 500);
 
-    return json({ aceptado: true, registro: ins }, 200);
+    console.log(`[${requestId}] Inserción completada. Tiempo total: ${Date.now() - startedAt} ms`);
+    return json({ aceptado: true, registro: ins, requestId }, 200);
   } catch (e) {
-    return json({ error: `Error inesperado: ${(e as Error).message}` }, 500);
+    console.error(`[${requestId}] Error controlado`, e);
+    return json({ error: `Error inesperado: ${(e as Error).message}`, requestId }, 500);
   }
 });
 
@@ -212,10 +235,4 @@ function json(body: unknown, status = 200) {
     status,
     headers: { ...CORS, "Content-Type": "application/json" },
   });
-}
-
-function base64Encode(bytes: Uint8Array): string {
-  let bin = "";
-  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
-  return btoa(bin);
 }
