@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   Camera, CheckCircle2, XCircle, Loader2, RefreshCw, Upload, ImageIcon,
@@ -74,6 +74,38 @@ function PesajeBobinaPage() {
     },
     staleTime: 5 * 60_000,
   });
+
+  const maqCodigo = useMemo(
+    () => maquinasQ.data?.find((m) => m.id === maquinaId)?.codigo ?? "",
+    [maquinasQ.data, maquinaId],
+  );
+  // Sufijo automático según máquina: MP-04→"4", MP-05→"5", etc.
+  const sufijoMaq = useMemo(() => {
+    const m = /(\d)$/.exec(maqCodigo);
+    return m ? m[1] : "";
+  }, [maqCodigo]);
+  const baseRollo = useMemo(() => {
+    if (!numeroRollo) return "";
+    const m = /^(.*)-(\d)$/.exec(numeroRollo);
+    return m ? m[1] : numeroRollo;
+  }, [numeroRollo]);
+  // Auto-corrige el sufijo cuando cambia la máquina.
+  useEffect(() => {
+    if (!sufijoMaq) return;
+    setNumeroRollo((prev) => {
+      if (!prev) return prev;
+      const m = /^(.*)-(\d)$/.exec(prev);
+      if (m) {
+        if (m[2] !== sufijoMaq) {
+          toast.info(`Sufijo de rollo corregido a -${sufijoMaq} para ${maqCodigo}`);
+          return `${m[1]}-${sufijoMaq}`;
+        }
+        return prev;
+      }
+      return `${prev}-${sufijoMaq}`;
+    });
+  }, [sufijoMaq, maqCodigo]);
+
 
   // Órdenes de producción activas
   const ordenesQ = useQuery({
@@ -244,15 +276,32 @@ function PesajeBobinaPage() {
             </select>
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-muted-foreground">N.º de rollo *</label>
-            <input
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              value={numeroRollo}
-              onChange={(e) => setNumeroRollo(e.target.value.toUpperCase())}
-              placeholder="Ej. 2807-6"
-            />
+            <label className="mb-1 block text-xs font-medium text-muted-foreground">
+              N.º de rollo * <span className="text-[10px] font-normal text-muted-foreground">(sufijo automático según máquina)</span>
+            </label>
+            <div className="flex items-stretch gap-2">
+              <input
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                value={baseRollo}
+                onChange={(e) => {
+                  const raw = e.target.value.toUpperCase().replace(/-\d$/, "").trim();
+                  setNumeroRollo(raw ? (sufijoMaq ? `${raw}-${sufijoMaq}` : raw) : "");
+                }}
+                placeholder={maqCodigo ? `Ej. 2807-${sufijoMaq || "X"}` : "Selecciona máquina primero"}
+                disabled={!maquinaId}
+              />
+              <span
+                className="inline-flex min-w-[52px] items-center justify-center rounded-md border border-input bg-muted px-3 text-sm font-semibold text-foreground"
+                aria-label={`Sufijo fijo -${sufijoMaq || "?"}`}
+              >
+                -{maquinaId ? (sufijoMaq || "?") : "?"}
+              </span>
+            </div>
           </div>
         </div>
+
+
+
 
         <div className="mt-5">
           {/* Evidencia — zona premium táctil */}
