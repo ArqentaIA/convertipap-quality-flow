@@ -362,31 +362,22 @@ function PesajeBobinaPage() {
 
 
         <div className="mt-5">
-          {/* Evidencia — zona premium táctil */}
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            capture="environment"
-            onChange={onPickFile}
-            className="hidden"
-          />
-
+          {/* Evidencia — SOLO captura en vivo con cámara. Sin input de archivos. */}
           {!evidenciaPreview ? (
             <button
               type="button"
-              onClick={() => fileRef.current?.click()}
+              onClick={abrirCamara}
               className="group relative flex min-h-[280px] w-full flex-col items-center justify-center gap-4 overflow-hidden rounded-2xl border-2 border-dashed border-primary/40 bg-gradient-to-br from-primary/5 via-background to-primary/10 p-8 text-center transition-all hover:border-primary hover:from-primary/10 hover:to-primary/20 active:scale-[0.99]"
             >
               <div className="flex h-24 w-24 items-center justify-center rounded-full bg-primary/15 ring-8 ring-primary/5 transition-transform group-hover:scale-110 group-active:scale-95">
                 <Camera className="h-12 w-12 text-primary" strokeWidth={1.75} />
               </div>
               <div className="space-y-1">
-                <div className="text-lg font-semibold text-foreground">Tocar para tomar la fotografía</div>
-                <div className="text-sm text-muted-foreground">Se abrirá la cámara de la tablet</div>
+                <div className="text-lg font-semibold text-foreground">Tocar para abrir la cámara</div>
+                <div className="text-sm text-muted-foreground">La foto se toma en vivo desde la tablet</div>
               </div>
               <div className="text-[11px] uppercase tracking-wider text-muted-foreground/80">
-                Solo captura en vivo · no se aceptan archivos guardados
+                Captura en vivo obligatoria · no se aceptan archivos ni galería
               </div>
             </button>
           ) : (
@@ -394,16 +385,17 @@ function PesajeBobinaPage() {
               <img src={evidenciaPreview} alt="Evidencia" className="max-h-[320px] w-full object-contain" />
               <button
                 type="button"
-                onClick={() => fileRef.current?.click()}
+                onClick={abrirCamara}
                 className="absolute bottom-3 right-3 inline-flex items-center gap-2 rounded-full bg-white/95 px-4 py-2 text-xs font-medium text-foreground shadow-md backdrop-blur hover:bg-white"
               >
-                <Camera className="h-4 w-4" /> Reemplazar
+                <Camera className="h-4 w-4" /> Volver a tomar
               </button>
               <div className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-success/90 px-3 py-1 text-[11px] font-medium text-white">
                 <CheckCircle2 className="h-3.5 w-3.5" /> Evidencia lista
               </div>
             </div>
           )}
+
 
           {/* Resultado OCR — solo cuando existe */}
           {ocr && ocr.aceptado && (
