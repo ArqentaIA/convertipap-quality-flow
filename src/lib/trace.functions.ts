@@ -108,6 +108,7 @@ export const getMuestraTrace = createServerFn({ method: "GET" })
       id: m.id,
       folio,
       numero_rollo: m.numero_rollo,
+      peso_kg,
       hora_muestreo: m.hora_muestreo,
       capturado_at: m.capturado_at,
       turno: m.turno,
