@@ -92,6 +92,8 @@ function PesajeBobinaPage() {
   function resetForm() {
     setNumeroRollo("");
     setNumeroOrden("");
+    setOrdenSel("");
+    setOrdenOtro("");
     setEvidenciaFile(null);
     setEvidenciaPreview(null);
     setOcr(null);
