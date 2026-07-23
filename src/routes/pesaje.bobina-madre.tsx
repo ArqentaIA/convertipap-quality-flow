@@ -160,35 +160,62 @@ function PesajeBobinaPage() {
       return;
     }
     try {
-      let stream: MediaStream;
+      // 1) Solicitar permiso mínimo para desbloquear etiquetas de dispositivos
       try {
-        // Forzar cámara trasera (exact) — falla si no existe, evitando cámara frontal
+        const probe = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        probe.getTracks().forEach((t) => t.stop());
+      } catch {
+        // continuamos: puede que exact:environment funcione igualmente
+      }
+
+      // 2) Enumerar cámaras y priorizar la trasera por etiqueta
+      let backDeviceId: string | null = null;
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videos = devices.filter((d) => d.kind === "videoinput");
+        const back = videos.find((d) => /back|rear|environment|trasera|traseraprincipal|world/i.test(d.label));
+        // Fallback: si hay varias cámaras y ninguna coincide por etiqueta, tomar la última
+        // (en Android suele ser la trasera principal)
+        backDeviceId = back?.deviceId ?? (videos.length > 1 ? videos[videos.length - 1].deviceId : null);
+      } catch {
+        backDeviceId = null;
+      }
+
+      let stream: MediaStream;
+      if (backDeviceId) {
         stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { exact: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } },
+          video: {
+            deviceId: { exact: backDeviceId },
+            facingMode: { ideal: "environment" },
+            width: { ideal: 1920 },
+            height: { ideal: 1080 },
+          },
           audio: false,
         });
-      } catch (inner) {
-        const ie = inner as DOMException;
-        if (ie.name === "OverconstrainedError" || ie.name === "NotFoundError") {
-          // Dispositivo sin cámara trasera detectable: buscar por enumeración
-          const devices = await navigator.mediaDevices.enumerateDevices();
-          const back = devices.find(
-            (d) => d.kind === "videoinput" && /back|rear|environment|trasera/i.test(d.label),
-          );
-          if (!back) throw inner;
+      } else {
+        // 3) Sin ID confiable: forzar trasera vía facingMode exact
+        try {
           stream = await navigator.mediaDevices.getUserMedia({
-            video: { deviceId: { exact: back.deviceId }, width: { ideal: 1920 }, height: { ideal: 1080 } },
+            video: { facingMode: { exact: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } },
             audio: false,
           });
-        } else {
-          throw inner;
+        } catch (ie) {
+          const err = ie as DOMException;
+          if (err.name !== "OverconstrainedError" && err.name !== "NotFoundError") throw ie;
+          // Último recurso: ideal (puede caer a frontal si no hay trasera)
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } },
+            audio: false,
+          });
         }
       }
+
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         await videoRef.current.play().catch(() => {});
       }
+
 
     } catch (e) {
       const err = e as DOMException;
