@@ -188,91 +188,78 @@ function PesajeBobinaPage() {
           </div>
         </div>
 
-        <div className="mt-5 grid gap-4 md:grid-cols-2">
+        <div className="mt-5">
           {/* Evidencia — zona premium táctil */}
-          <div>
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              capture="environment"
-              onChange={onPickFile}
-              className="hidden"
-            />
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            capture="environment"
+            onChange={onPickFile}
+            className="hidden"
+          />
 
-            {!evidenciaPreview ? (
+          {!evidenciaPreview ? (
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              className="group relative flex min-h-[280px] w-full flex-col items-center justify-center gap-4 overflow-hidden rounded-2xl border-2 border-dashed border-primary/40 bg-gradient-to-br from-primary/5 via-background to-primary/10 p-8 text-center transition-all hover:border-primary hover:from-primary/10 hover:to-primary/20 active:scale-[0.99]"
+            >
+              <div className="flex h-24 w-24 items-center justify-center rounded-full bg-primary/15 ring-8 ring-primary/5 transition-transform group-hover:scale-110 group-active:scale-95">
+                <Camera className="h-12 w-12 text-primary" strokeWidth={1.75} />
+              </div>
+              <div className="space-y-1">
+                <div className="text-lg font-semibold text-foreground">Tocar para tomar la fotografía</div>
+                <div className="text-sm text-muted-foreground">Se abrirá la cámara de la tablet</div>
+              </div>
+              <div className="text-[11px] uppercase tracking-wider text-muted-foreground/80">
+                JPG · PNG · WEBP · máx. 10 MB
+              </div>
+            </button>
+          ) : (
+            <div className="relative overflow-hidden rounded-2xl border border-border bg-black/90 shadow-lg">
+              <img src={evidenciaPreview} alt="Evidencia" className="max-h-[320px] w-full object-contain" />
               <button
                 type="button"
                 onClick={() => fileRef.current?.click()}
-                className="group relative flex min-h-[280px] w-full flex-col items-center justify-center gap-4 overflow-hidden rounded-2xl border-2 border-dashed border-primary/40 bg-gradient-to-br from-primary/5 via-background to-primary/10 p-8 text-center transition-all hover:border-primary hover:from-primary/10 hover:to-primary/20 active:scale-[0.99]"
+                className="absolute bottom-3 right-3 inline-flex items-center gap-2 rounded-full bg-white/95 px-4 py-2 text-xs font-medium text-foreground shadow-md backdrop-blur hover:bg-white"
               >
-                <div className="flex h-24 w-24 items-center justify-center rounded-full bg-primary/15 ring-8 ring-primary/5 transition-transform group-hover:scale-110 group-active:scale-95">
-                  <Camera className="h-12 w-12 text-primary" strokeWidth={1.75} />
-                </div>
-                <div className="space-y-1">
-                  <div className="text-lg font-semibold text-foreground">Tocar para tomar la fotografía</div>
-                  <div className="text-sm text-muted-foreground">Se abrirá la cámara de la tablet</div>
-                </div>
-                <div className="text-[11px] uppercase tracking-wider text-muted-foreground/80">
-                  JPG · PNG · WEBP · máx. 10 MB
-                </div>
+                <Camera className="h-4 w-4" /> Reemplazar
               </button>
-            ) : (
-              <div className="relative overflow-hidden rounded-2xl border border-border bg-black/90 shadow-lg">
-                <img src={evidenciaPreview} alt="Evidencia" className="max-h-[320px] w-full object-contain" />
-                <button
-                  type="button"
-                  onClick={() => fileRef.current?.click()}
-                  className="absolute bottom-3 right-3 inline-flex items-center gap-2 rounded-full bg-white/95 px-4 py-2 text-xs font-medium text-foreground shadow-md backdrop-blur hover:bg-white"
-                >
-                  <Camera className="h-4 w-4" /> Reemplazar
-                </button>
-                <div className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-success/90 px-3 py-1 text-[11px] font-medium text-white">
-                  <CheckCircle2 className="h-3.5 w-3.5" /> Evidencia lista
-                </div>
+              <div className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-success/90 px-3 py-1 text-[11px] font-medium text-white">
+                <CheckCircle2 className="h-3.5 w-3.5" /> Evidencia lista
               </div>
-            )}
-          </div>
+            </div>
+          )}
 
-          {/* OCR result */}
-          <div className="rounded-2xl border border-border bg-background p-5">
-            {!ocr && (
-              <div className="flex h-full flex-col items-center justify-center gap-2 text-center">
-                <ImageIcon className="h-8 w-8 text-muted-foreground/40" />
-                <p className="text-sm text-muted-foreground">
-                  {evidenciaFile
-                    ? <>Listo para analizar. Pulsa <b>Analizar y registrar</b>.</>
-                    : "Toma la fotografía del display para continuar."}
-                </p>
+          {/* Resultado OCR — solo cuando existe */}
+          {ocr && ocr.aceptado && (
+            <div className="mt-4 rounded-2xl border border-border bg-background p-5">
+              <div className="flex items-center gap-2 text-success">
+                <CheckCircle2 className="h-4 w-4" />
+                <span className="text-sm font-medium">
+                  Registrado · confianza {ocr.registro.ocr_confianza ?? "—"}%
+                </span>
               </div>
-            )}
-            {ocr && ocr.aceptado && (
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-success">
-                  <CheckCircle2 className="h-4 w-4" />
-                  <span className="text-sm font-medium">
-                    Registrado · confianza {ocr.registro.ocr_confianza ?? "—"}%
-                  </span>
-                </div>
-                <div className="grid grid-cols-3 gap-2 rounded-md bg-muted/50 p-3 text-center text-sm">
-                  <div><div className="text-[11px] text-muted-foreground">Bruto</div><div className="font-semibold">{Number(ocr.registro.peso_bruto_kg)} kg</div></div>
-                  <div><div className="text-[11px] text-muted-foreground">Eje</div><div className="font-semibold">{PESO_EJE} kg</div></div>
-                  <div className="rounded bg-amber-100 text-amber-900"><div className="text-[11px]">Neto</div><div className="font-bold">{Number(ocr.registro.peso_neto_kg)} kg</div></div>
-                </div>
+              <div className="mt-2 grid grid-cols-3 gap-2 rounded-md bg-muted/50 p-3 text-center text-sm">
+                <div><div className="text-[11px] text-muted-foreground">Bruto</div><div className="font-semibold">{Number(ocr.registro.peso_bruto_kg)} kg</div></div>
+                <div><div className="text-[11px] text-muted-foreground">Eje</div><div className="font-semibold">{PESO_EJE} kg</div></div>
+                <div className="rounded bg-amber-100 text-amber-900"><div className="text-[11px]">Neto</div><div className="font-bold">{Number(ocr.registro.peso_neto_kg)} kg</div></div>
               </div>
-            )}
-            {ocr && !ocr.aceptado && (
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-destructive">
-                  <XCircle className="h-4 w-4" />
-                  <span className="text-sm font-medium">Lectura rechazada · no se registró</span>
-                </div>
-                <p className="text-xs text-destructive/90">{ocr.motivo_rechazo}</p>
-                <p className="text-xs text-muted-foreground">Toma nuevamente la fotografía y vuelve a analizar.</p>
+            </div>
+          )}
+          {ocr && !ocr.aceptado && (
+            <div className="mt-4 rounded-2xl border border-destructive/30 bg-destructive/5 p-5">
+              <div className="flex items-center gap-2 text-destructive">
+                <XCircle className="h-4 w-4" />
+                <span className="text-sm font-medium">Lectura rechazada · no se registró</span>
               </div>
-            )}
-          </div>
+              <p className="mt-1 text-xs text-destructive/90">{ocr.motivo_rechazo}</p>
+              <p className="text-xs text-muted-foreground">Toma nuevamente la fotografía y vuelve a analizar.</p>
+            </div>
+          )}
         </div>
+
 
 
         <div className="mt-5 flex flex-wrap gap-2">
