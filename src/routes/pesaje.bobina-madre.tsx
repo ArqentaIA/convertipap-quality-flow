@@ -298,6 +298,9 @@ function PesajeBobinaPage() {
               </span>
             </div>
           </div>
+        </div>
+
+
 
 
         <div className="mt-5">
