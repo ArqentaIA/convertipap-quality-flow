@@ -189,7 +189,7 @@ Deno.serve(async (req) => {
       orden_produccion_id: ordenProduccionId,
       numero_orden: numeroOrden,
       peso_bruto_kg: pesoBruto,
-      peso_eje_kg: PESO_EJE,
+      peso_eje_kg: pesoEje,
       peso_neto_kg: pesoNeto,
       fecha_hora_pesaje: fechaHora ?? new Date().toISOString(),
       evidencia_path: evidenciaPath,
