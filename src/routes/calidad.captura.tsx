@@ -302,6 +302,26 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
   const producto = productos.find((p) => p.producto_id === productoId) ?? productos[0]!;
   const hasAuthToken = auth.isAuthenticated && !!auth.session?.access_token;
 
+  const ordenesQuery = useQuery({
+    queryKey: ["ordenes-produccion", "activas"],
+    queryFn: () => listOrdenesActivas(),
+    enabled: hasAuthToken,
+    staleTime: 60_000,
+  });
+  const ordenesActivas = ordenesQuery.data ?? [];
+  const opResuelta = ordenSel !== "";
+  const maqResuelta = opResuelta && maquinaId !== "";
+
+  function setOrdenSel(v: string) {
+    setOrdenSelRaw(v);
+    setMaquinaIdRaw("");
+    setNumeroRollo("");
+  }
+  function setMaquinaId(v: string) {
+    setMaquinaIdRaw(v);
+    setNumeroRollo("");
+  }
+
   const specQuery = useQuery({
     ...specQO(producto.producto_id),
     enabled: hasAuthToken && !!producto.producto_id,
