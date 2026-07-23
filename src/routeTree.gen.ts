@@ -24,6 +24,7 @@ import { Route as CatalogosRouteImport } from './routes/catalogos'
 import { Route as AuditoriaRouteImport } from './routes/auditoria'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TFolioRouteImport } from './routes/t.$folio'
+import { Route as PesajeBobinaMadreRouteImport } from './routes/pesaje.bobina-madre'
 import { Route as MuestraIdRouteImport } from './routes/muestra.$id'
 import { Route as HistorialMaquinaRouteImport } from './routes/historial.$maquina'
 import { Route as CalidadRevisionRouteImport } from './routes/calidad.revision'
@@ -107,6 +108,11 @@ const TFolioRoute = TFolioRouteImport.update({
   path: '/t/$folio',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PesajeBobinaMadreRoute = PesajeBobinaMadreRouteImport.update({
+  id: '/pesaje/bobina-madre',
+  path: '/pesaje/bobina-madre',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MuestraIdRoute = MuestraIdRouteImport.update({
   id: '/muestra/$id',
   path: '/muestra/$id',
@@ -166,6 +172,7 @@ export interface FileRoutesByFullPath {
   '/calidad/revision': typeof CalidadRevisionRoute
   '/historial/$maquina': typeof HistorialMaquinaRoute
   '/muestra/$id': typeof MuestraIdRoute
+  '/pesaje/bobina-madre': typeof PesajeBobinaMadreRoute
   '/t/$folio': typeof TFolioRoute
 }
 export interface FileRoutesByTo {
@@ -190,6 +197,7 @@ export interface FileRoutesByTo {
   '/calidad/revision': typeof CalidadRevisionRoute
   '/historial/$maquina': typeof HistorialMaquinaRoute
   '/muestra/$id': typeof MuestraIdRoute
+  '/pesaje/bobina-madre': typeof PesajeBobinaMadreRoute
   '/t/$folio': typeof TFolioRoute
 }
 export interface FileRoutesById {
@@ -215,6 +223,7 @@ export interface FileRoutesById {
   '/calidad/revision': typeof CalidadRevisionRoute
   '/historial/$maquina': typeof HistorialMaquinaRoute
   '/muestra/$id': typeof MuestraIdRoute
+  '/pesaje/bobina-madre': typeof PesajeBobinaMadreRoute
   '/t/$folio': typeof TFolioRoute
 }
 export interface FileRouteTypes {
@@ -241,6 +250,7 @@ export interface FileRouteTypes {
     | '/calidad/revision'
     | '/historial/$maquina'
     | '/muestra/$id'
+    | '/pesaje/bobina-madre'
     | '/t/$folio'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -265,6 +275,7 @@ export interface FileRouteTypes {
     | '/calidad/revision'
     | '/historial/$maquina'
     | '/muestra/$id'
+    | '/pesaje/bobina-madre'
     | '/t/$folio'
   id:
     | '__root__'
@@ -289,6 +300,7 @@ export interface FileRouteTypes {
     | '/calidad/revision'
     | '/historial/$maquina'
     | '/muestra/$id'
+    | '/pesaje/bobina-madre'
     | '/t/$folio'
   fileRoutesById: FileRoutesById
 }
@@ -314,6 +326,7 @@ export interface RootRouteChildren {
   CalidadRevisionRoute: typeof CalidadRevisionRoute
   HistorialMaquinaRoute: typeof HistorialMaquinaRoute
   MuestraIdRoute: typeof MuestraIdRoute
+  PesajeBobinaMadreRoute: typeof PesajeBobinaMadreRoute
   TFolioRoute: typeof TFolioRoute
 }
 
@@ -424,6 +437,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TFolioRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/pesaje/bobina-madre': {
+      id: '/pesaje/bobina-madre'
+      path: '/pesaje/bobina-madre'
+      fullPath: '/pesaje/bobina-madre'
+      preLoaderRoute: typeof PesajeBobinaMadreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/muestra/$id': {
       id: '/muestra/$id'
       path: '/muestra/$id'
@@ -498,6 +518,7 @@ const rootRouteChildren: RootRouteChildren = {
   CalidadRevisionRoute: CalidadRevisionRoute,
   HistorialMaquinaRoute: HistorialMaquinaRoute,
   MuestraIdRoute: MuestraIdRoute,
+  PesajeBobinaMadreRoute: PesajeBobinaMadreRoute,
   TFolioRoute: TFolioRoute,
 }
 export const routeTree = rootRouteImport
