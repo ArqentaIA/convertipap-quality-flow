@@ -271,7 +271,7 @@ function PesajeBobinaPage() {
                 <div className="text-sm text-muted-foreground">Se abrirá la cámara de la tablet</div>
               </div>
               <div className="text-[11px] uppercase tracking-wider text-muted-foreground/80">
-                JPG · PNG · WEBP · máx. 10 MB
+                Solo captura en vivo · no se aceptan archivos guardados
               </div>
             </button>
           ) : (
