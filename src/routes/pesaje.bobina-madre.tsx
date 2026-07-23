@@ -372,7 +372,7 @@ function PesajeBobinaPage() {
                 const v = e.target.value;
                 setOrdenSel(v);
                 if (v === "__otro__") setNumeroOrden(ordenOtro.trim());
-                else if (v === "") setNumeroOrden("");
+                else if (v === "" || v === "__sin__") setNumeroOrden("");
                 else setNumeroOrden(ordenesQ.data?.find((x) => x.id === v)?.numero_orden ?? "");
                 setMaquinaId("");
                 setNumeroRollo("");
