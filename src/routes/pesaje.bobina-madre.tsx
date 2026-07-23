@@ -140,37 +140,90 @@ function PesajeBobinaPage() {
     setOrdenSel("");
     setOrdenOtro("");
     setEvidenciaFile(null);
+    if (evidenciaPreview) URL.revokeObjectURL(evidenciaPreview);
     setEvidenciaPreview(null);
     setOcr(null);
-    if (fileRef.current) fileRef.current.value = "";
   }
 
-  async function onPickFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const f = e.target.files?.[0];
-    if (fileRef.current) fileRef.current.value = "";
-    if (!f) return;
-    if (!["image/jpeg", "image/png", "image/webp"].includes(f.type)) {
-      toast.error("Solo se aceptan imágenes JPG, PNG o WEBP.");
+  // === Cámara en vivo (única fuente permitida) ===
+  async function abrirCamara() {
+    setCamaraError(null);
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setCamaraError("Este dispositivo no expone cámara. Usa una tablet o móvil con cámara.");
+      setCamaraAbierta(true);
       return;
     }
-    if (f.size > 10 * 1024 * 1024) {
-      toast.error("La imagen supera 10 MB.");
-      return;
-    }
-    // Bloqueo: solo se acepta evidencia capturada al momento con la cámara.
-    // Archivos guardados en la galería tendrán lastModified antiguo.
-    const ageMs = Date.now() - (f.lastModified || 0);
-    if (!f.lastModified || ageMs > 60_000) {
-      toast.error(
-        "Solo se permite tomar la fotografía al momento. No se aceptan archivos guardados.",
+    setCamaraAbierta(true);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } },
+        audio: false,
+      });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play().catch(() => {});
+      }
+    } catch (e) {
+      setCamaraError(
+        `No se pudo abrir la cámara: ${(e as Error).message}. Concede permiso de cámara al navegador.`,
       );
+    }
+  }
+
+  function cerrarCamara() {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+    }
+    if (videoRef.current) videoRef.current.srcObject = null;
+    setCamaraAbierta(false);
+    setCamaraError(null);
+  }
+
+  useEffect(() => {
+    return () => {
+      // Limpia recursos al desmontar.
+      if (streamRef.current) streamRef.current.getTracks().forEach((t) => t.stop());
+      if (evidenciaPreview) URL.revokeObjectURL(evidenciaPreview);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function tomarFoto() {
+    const video = videoRef.current;
+    if (!video || !streamRef.current) {
+      toast.error("La cámara aún no está lista.");
       return;
     }
-    setEvidenciaFile(f);
-    setOcr(null);
-    const url = URL.createObjectURL(f);
+    const w = video.videoWidth;
+    const h = video.videoHeight;
+    if (!w || !h) {
+      toast.error("La cámara aún no envía imagen. Espera un momento.");
+      return;
+    }
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return toast.error("No se pudo capturar la imagen.");
+    ctx.drawImage(video, 0, 0, w, h);
+    const blob: Blob | null = await new Promise((resolve) =>
+      canvas.toBlob((b) => resolve(b), "image/jpeg", 0.92),
+    );
+    if (!blob) return toast.error("No se pudo generar la imagen.");
+    const file = new File([blob], `pesaje-${Date.now()}.jpg`, {
+      type: "image/jpeg",
+      lastModified: Date.now(),
+    });
+    if (evidenciaPreview) URL.revokeObjectURL(evidenciaPreview);
+    const url = URL.createObjectURL(file);
+    setEvidenciaFile(file);
     setEvidenciaPreview(url);
+    setOcr(null);
+    cerrarCamara();
   }
+
 
   async function analizarYRegistrar() {
     if (!maquinaId) return toast.error("Selecciona máquina primero.");
