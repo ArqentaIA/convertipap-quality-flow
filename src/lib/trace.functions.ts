@@ -90,6 +90,18 @@ export const getMuestraTrace = createServerFn({ method: "GET" })
       .sort((a, b) => a.etiqueta.localeCompare(b.etiqueta));
 
     const folio = (m as { orden?: { folio?: string } | null }).orden?.folio ?? `CAL-${m.id.slice(0, 8)}`;
+    const ordenId = (m as unknown as { orden_id?: string }).orden_id;
+    const numero = Number(m.numero_rollo);
+    let peso_kg: number | null = null;
+    if (ordenId && Number.isFinite(numero)) {
+      const { data: rp } = await supabaseAdmin
+        .from("rollos_producidos")
+        .select("peso_kg")
+        .eq("orden_id", ordenId)
+        .eq("numero", numero)
+        .maybeSingle();
+      if (rp?.peso_kg != null) peso_kg = Number(rp.peso_kg);
+    }
 
     return {
       found: true,
