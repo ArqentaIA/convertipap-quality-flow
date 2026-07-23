@@ -57,7 +57,12 @@ function PesajeBobinaPage() {
   const [evidenciaPreview, setEvidenciaPreview] = useState<string | null>(null);
   const [ocr, setOcr] = useState<OcrResult | null>(null);
   const [procesando, setProcesando] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
+  // Cámara en vivo (única forma permitida de obtener evidencia).
+  const [camaraAbierta, setCamaraAbierta] = useState(false);
+  const [camaraError, setCamaraError] = useState<string | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+
 
   // Máquinas
   const maquinasQ = useQuery({
@@ -135,37 +140,90 @@ function PesajeBobinaPage() {
     setOrdenSel("");
     setOrdenOtro("");
     setEvidenciaFile(null);
+    if (evidenciaPreview) URL.revokeObjectURL(evidenciaPreview);
     setEvidenciaPreview(null);
     setOcr(null);
-    if (fileRef.current) fileRef.current.value = "";
   }
 
-  async function onPickFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const f = e.target.files?.[0];
-    if (fileRef.current) fileRef.current.value = "";
-    if (!f) return;
-    if (!["image/jpeg", "image/png", "image/webp"].includes(f.type)) {
-      toast.error("Solo se aceptan imágenes JPG, PNG o WEBP.");
+  // === Cámara en vivo (única fuente permitida) ===
+  async function abrirCamara() {
+    setCamaraError(null);
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setCamaraError("Este dispositivo no expone cámara. Usa una tablet o móvil con cámara.");
+      setCamaraAbierta(true);
       return;
     }
-    if (f.size > 10 * 1024 * 1024) {
-      toast.error("La imagen supera 10 MB.");
-      return;
-    }
-    // Bloqueo: solo se acepta evidencia capturada al momento con la cámara.
-    // Archivos guardados en la galería tendrán lastModified antiguo.
-    const ageMs = Date.now() - (f.lastModified || 0);
-    if (!f.lastModified || ageMs > 60_000) {
-      toast.error(
-        "Solo se permite tomar la fotografía al momento. No se aceptan archivos guardados.",
+    setCamaraAbierta(true);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } },
+        audio: false,
+      });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play().catch(() => {});
+      }
+    } catch (e) {
+      setCamaraError(
+        `No se pudo abrir la cámara: ${(e as Error).message}. Concede permiso de cámara al navegador.`,
       );
+    }
+  }
+
+  function cerrarCamara() {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+    }
+    if (videoRef.current) videoRef.current.srcObject = null;
+    setCamaraAbierta(false);
+    setCamaraError(null);
+  }
+
+  useEffect(() => {
+    return () => {
+      // Limpia recursos al desmontar.
+      if (streamRef.current) streamRef.current.getTracks().forEach((t) => t.stop());
+      if (evidenciaPreview) URL.revokeObjectURL(evidenciaPreview);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function tomarFoto() {
+    const video = videoRef.current;
+    if (!video || !streamRef.current) {
+      toast.error("La cámara aún no está lista.");
       return;
     }
-    setEvidenciaFile(f);
-    setOcr(null);
-    const url = URL.createObjectURL(f);
+    const w = video.videoWidth;
+    const h = video.videoHeight;
+    if (!w || !h) {
+      toast.error("La cámara aún no envía imagen. Espera un momento.");
+      return;
+    }
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return toast.error("No se pudo capturar la imagen.");
+    ctx.drawImage(video, 0, 0, w, h);
+    const blob: Blob | null = await new Promise((resolve) =>
+      canvas.toBlob((b) => resolve(b), "image/jpeg", 0.92),
+    );
+    if (!blob) return toast.error("No se pudo generar la imagen.");
+    const file = new File([blob], `pesaje-${Date.now()}.jpg`, {
+      type: "image/jpeg",
+      lastModified: Date.now(),
+    });
+    if (evidenciaPreview) URL.revokeObjectURL(evidenciaPreview);
+    const url = URL.createObjectURL(file);
+    setEvidenciaFile(file);
     setEvidenciaPreview(url);
+    setOcr(null);
+    cerrarCamara();
   }
+
 
   async function analizarYRegistrar() {
     if (!maquinaId) return toast.error("Selecciona máquina primero.");
@@ -304,31 +362,22 @@ function PesajeBobinaPage() {
 
 
         <div className="mt-5">
-          {/* Evidencia — zona premium táctil */}
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            capture="environment"
-            onChange={onPickFile}
-            className="hidden"
-          />
-
+          {/* Evidencia — SOLO captura en vivo con cámara. Sin input de archivos. */}
           {!evidenciaPreview ? (
             <button
               type="button"
-              onClick={() => fileRef.current?.click()}
+              onClick={abrirCamara}
               className="group relative flex min-h-[280px] w-full flex-col items-center justify-center gap-4 overflow-hidden rounded-2xl border-2 border-dashed border-primary/40 bg-gradient-to-br from-primary/5 via-background to-primary/10 p-8 text-center transition-all hover:border-primary hover:from-primary/10 hover:to-primary/20 active:scale-[0.99]"
             >
               <div className="flex h-24 w-24 items-center justify-center rounded-full bg-primary/15 ring-8 ring-primary/5 transition-transform group-hover:scale-110 group-active:scale-95">
                 <Camera className="h-12 w-12 text-primary" strokeWidth={1.75} />
               </div>
               <div className="space-y-1">
-                <div className="text-lg font-semibold text-foreground">Tocar para tomar la fotografía</div>
-                <div className="text-sm text-muted-foreground">Se abrirá la cámara de la tablet</div>
+                <div className="text-lg font-semibold text-foreground">Tocar para abrir la cámara</div>
+                <div className="text-sm text-muted-foreground">La foto se toma en vivo desde la tablet</div>
               </div>
               <div className="text-[11px] uppercase tracking-wider text-muted-foreground/80">
-                Solo captura en vivo · no se aceptan archivos guardados
+                Captura en vivo obligatoria · no se aceptan archivos ni galería
               </div>
             </button>
           ) : (
@@ -336,16 +385,17 @@ function PesajeBobinaPage() {
               <img src={evidenciaPreview} alt="Evidencia" className="max-h-[320px] w-full object-contain" />
               <button
                 type="button"
-                onClick={() => fileRef.current?.click()}
+                onClick={abrirCamara}
                 className="absolute bottom-3 right-3 inline-flex items-center gap-2 rounded-full bg-white/95 px-4 py-2 text-xs font-medium text-foreground shadow-md backdrop-blur hover:bg-white"
               >
-                <Camera className="h-4 w-4" /> Reemplazar
+                <Camera className="h-4 w-4" /> Volver a tomar
               </button>
               <div className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-success/90 px-3 py-1 text-[11px] font-medium text-white">
                 <CheckCircle2 className="h-3.5 w-3.5" /> Evidencia lista
               </div>
             </div>
           )}
+
 
           {/* Resultado OCR — solo cuando existe */}
           {ocr && ocr.aceptado && (
@@ -394,6 +444,48 @@ function PesajeBobinaPage() {
           </button>
         </div>
       </section>
+
+      {/* Modal de cámara en vivo — única fuente permitida de evidencia */}
+      {camaraAbierta && (
+        <div className="fixed inset-0 z-50 flex flex-col bg-black">
+          <div className="flex items-center justify-between px-4 py-3 text-white">
+            <div className="text-sm font-medium">Captura en vivo · display de la báscula</div>
+            <button
+              type="button"
+              onClick={cerrarCamara}
+              className="rounded-md border border-white/30 px-3 py-1.5 text-xs hover:bg-white/10"
+            >
+              Cancelar
+            </button>
+          </div>
+          <div className="relative flex-1 overflow-hidden bg-black">
+            <video
+              ref={videoRef}
+              playsInline
+              muted
+              autoPlay
+              className="h-full w-full object-contain"
+            />
+            {camaraError && (
+              <div className="absolute inset-x-4 top-4 rounded-md bg-destructive/90 px-4 py-3 text-sm text-white">
+                {camaraError}
+              </div>
+            )}
+          </div>
+          <div className="flex items-center justify-center gap-4 bg-black px-4 py-5">
+            <button
+              type="button"
+              onClick={tomarFoto}
+              disabled={!!camaraError}
+              className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-white text-black shadow-lg ring-4 ring-white/30 disabled:opacity-40"
+              aria-label="Tomar foto"
+            >
+              <Camera className="h-7 w-7" />
+            </button>
+          </div>
+        </div>
+      )}
+
 
 
       {/* Historial */}
