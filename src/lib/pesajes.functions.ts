@@ -60,6 +60,29 @@ export const firmarEvidencia = createServerFn({ method: "POST" })
     return { url: signed.signedUrl };
   });
 
+/**
+ * Firma URL temporal para consultar evidencia de pesaje desde el módulo
+ * Control de Calidad. Los capturistas no tienen SELECT sobre el bucket, por lo
+ * que usamos service role tras validar el permiso de módulo del caller.
+ */
+export const firmarEvidenciaCaptura = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ path: z.string().min(1) }).parse(d))
+  .handler(async ({ data, context }): Promise<{ url: string }> => {
+    const { data: allowed, error: rerr } = await context.supabase.rpc(
+      "can_access_module",
+      { _user_id: context.userId, _module: "control_calidad" as never },
+    );
+    if (rerr) throw new Error(rerr.message);
+    if (!allowed) throw new Error("Sin permiso para consultar evidencia.");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: signed, error } = await supabaseAdmin.storage
+      .from("pesajes-evidencia")
+      .createSignedUrl(data.path, 120);
+    if (error || !signed) throw new Error(error?.message ?? "No se pudo firmar la URL.");
+    return { url: signed.signedUrl };
+  });
+
 /** Vincula un pesaje a una muestra por número de rollo. */
 export const vincularPesajeMuestra = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
