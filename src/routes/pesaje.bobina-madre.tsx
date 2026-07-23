@@ -102,6 +102,7 @@ function PesajeBobinaPage() {
 
   async function onPickFile(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
+    if (fileRef.current) fileRef.current.value = "";
     if (!f) return;
     if (!["image/jpeg", "image/png", "image/webp"].includes(f.type)) {
       toast.error("Solo se aceptan imágenes JPG, PNG o WEBP.");
@@ -109,6 +110,15 @@ function PesajeBobinaPage() {
     }
     if (f.size > 10 * 1024 * 1024) {
       toast.error("La imagen supera 10 MB.");
+      return;
+    }
+    // Bloqueo: solo se acepta evidencia capturada al momento con la cámara.
+    // Archivos guardados en la galería tendrán lastModified antiguo.
+    const ageMs = Date.now() - (f.lastModified || 0);
+    if (!f.lastModified || ageMs > 60_000) {
+      toast.error(
+        "Solo se permite tomar la fotografía al momento. No se aceptan archivos guardados.",
+      );
       return;
     }
     setEvidenciaFile(f);
