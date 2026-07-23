@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  crearPesaje, listPesajes, firmarEvidencia, type PesajeBobina,
+  listPesajes, firmarEvidencia, type PesajeBobina,
 } from "@/lib/pesajes.functions";
 import { fechaCortoMX, horaMX } from "@/lib/format";
 
