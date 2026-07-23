@@ -43,6 +43,7 @@ const NAV: NavItem[] = [
 const ROUTE_MODULE: Array<{ prefix: string; module: AppModule }> = [
   { prefix: "/produccion", module: "produccion" },
   { prefix: "/historial", module: "produccion" },
+  { prefix: "/ordenes-produccion", module: "ordenes_produccion" },
   { prefix: "/control-calidad", module: "control_calidad" },
   { prefix: "/calidad", module: "control_calidad" },
   { prefix: "/variables-calidad", module: "variables_calidad" },
