@@ -1698,7 +1698,8 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
                         type="number"
                         step={vs.clave === "peso" ? 1 : 0.1}
                         inputMode="decimal"
-                        disabled={isBlocked}
+                        disabled={isBlocked || (vs.clave === "peso" && !!pesajeVinculado)}
+                        readOnly={vs.clave === "peso" && !!pesajeVinculado}
                         value={input.valor}
                         data-capture-field
                         onFocus={(e) => scrollFieldIntoView(e.currentTarget)}
@@ -1714,7 +1715,16 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
                             [vs.variable_id]: { ...prev[vs.variable_id], valor: e.target.value },
                           }))
                         }
-                        className="h-12 text-lg font-bold text-capture w-full"
+                        title={
+                          vs.clave === "peso" && pesajeVinculado
+                            ? `Peso neto tomado del pesaje registrado (${new Date(pesajeVinculado.fecha_hora_pesaje).toLocaleTimeString("es-MX")}).`
+                            : undefined
+                        }
+                        className={cn(
+                          "h-12 text-lg font-bold text-capture w-full",
+                          vs.clave === "peso" && pesajeVinculado &&
+                            "bg-amber-50 border-amber-300 cursor-not-allowed",
+                        )}
                         placeholder="Capturar valor"
                       />
                     )}
