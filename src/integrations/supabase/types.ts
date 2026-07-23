@@ -658,6 +658,7 @@ export type Database = {
           operador: string | null
           operario_id: string | null
           orden_id: string | null
+          pesaje_id: string | null
           planta_id: string
           porcentaje_rupturas_pct: number | null
           prensero: string | null
@@ -715,6 +716,7 @@ export type Database = {
           operador?: string | null
           operario_id?: string | null
           orden_id?: string | null
+          pesaje_id?: string | null
           planta_id: string
           porcentaje_rupturas_pct?: number | null
           prensero?: string | null
@@ -772,6 +774,7 @@ export type Database = {
           operador?: string | null
           operario_id?: string | null
           orden_id?: string | null
+          pesaje_id?: string | null
           planta_id?: string
           porcentaje_rupturas_pct?: number | null
           prensero?: string | null
@@ -809,6 +812,13 @@ export type Database = {
             columns: ["orden_id"]
             isOneToOne: false
             referencedRelation: "ordenes_fabricacion"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "muestras_calidad_pesaje_id_fkey"
+            columns: ["pesaje_id"]
+            isOneToOne: false
+            referencedRelation: "pesajes_bobina_madre"
             referencedColumns: ["id"]
           },
           {
@@ -1077,6 +1087,78 @@ export type Database = {
             columns: ["tipo_paro_id"]
             isOneToOne: false
             referencedRelation: "tipos_paro"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pesajes_bobina_madre: {
+        Row: {
+          capturado_por: string | null
+          created_at: string
+          evidencia_path: string
+          fecha_hora_pesaje: string
+          id: string
+          maquina_codigo: string
+          maquina_id: string
+          numero_orden: string | null
+          numero_rollo: string
+          ocr_confianza: number | null
+          ocr_raw: Json | null
+          orden_produccion_id: string | null
+          peso_bruto_kg: number
+          peso_eje_kg: number
+          peso_neto_kg: number
+          updated_at: string
+        }
+        Insert: {
+          capturado_por?: string | null
+          created_at?: string
+          evidencia_path: string
+          fecha_hora_pesaje?: string
+          id?: string
+          maquina_codigo: string
+          maquina_id: string
+          numero_orden?: string | null
+          numero_rollo: string
+          ocr_confianza?: number | null
+          ocr_raw?: Json | null
+          orden_produccion_id?: string | null
+          peso_bruto_kg: number
+          peso_eje_kg?: number
+          peso_neto_kg: number
+          updated_at?: string
+        }
+        Update: {
+          capturado_por?: string | null
+          created_at?: string
+          evidencia_path?: string
+          fecha_hora_pesaje?: string
+          id?: string
+          maquina_codigo?: string
+          maquina_id?: string
+          numero_orden?: string | null
+          numero_rollo?: string
+          ocr_confianza?: number | null
+          ocr_raw?: Json | null
+          orden_produccion_id?: string | null
+          peso_bruto_kg?: number
+          peso_eje_kg?: number
+          peso_neto_kg?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pesajes_bobina_madre_maquina_id_fkey"
+            columns: ["maquina_id"]
+            isOneToOne: false
+            referencedRelation: "maquinas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pesajes_bobina_madre_orden_produccion_id_fkey"
+            columns: ["orden_produccion_id"]
+            isOneToOne: false
+            referencedRelation: "ordenes_produccion"
             referencedColumns: ["id"]
           },
         ]
@@ -1940,6 +2022,10 @@ export type Database = {
         Args: { _codigo: string; _pin: string }
         Returns: boolean
       }
+      vincular_pesaje_a_muestra: {
+        Args: { _muestra_id: string; _pesaje_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_module:
@@ -1953,6 +2039,7 @@ export type Database = {
         | "auditoria"
         | "catalogos"
         | "ordenes_produccion"
+        | "pesaje_bobina_madre"
       app_role:
         | "administrador"
         | "gerente_general"
@@ -2157,6 +2244,7 @@ export const Constants = {
         "auditoria",
         "catalogos",
         "ordenes_produccion",
+        "pesaje_bobina_madre",
       ],
       app_role: [
         "administrador",
