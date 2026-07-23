@@ -1910,6 +1910,7 @@ export type Database = {
         | "usuarios_permisos"
         | "auditoria"
         | "catalogos"
+        | "ordenes_produccion"
       app_role:
         | "administrador"
         | "gerente_general"
@@ -1918,6 +1919,7 @@ export type Database = {
         | "capturista"
         | "reportes_consulta"
         | "calidad_operativo"
+        | "planeacion"
       maquina_estado: "libre" | "produciendo" | "paro" | "mantenimiento"
       orden_estado:
         | "borrador"
@@ -2112,6 +2114,7 @@ export const Constants = {
         "usuarios_permisos",
         "auditoria",
         "catalogos",
+        "ordenes_produccion",
       ],
       app_role: [
         "administrador",
@@ -2121,6 +2124,7 @@ export const Constants = {
         "capturista",
         "reportes_consulta",
         "calidad_operativo",
+        "planeacion",
       ],
       maquina_estado: ["libre", "produciendo", "paro", "mantenimiento"],
       orden_estado: [
