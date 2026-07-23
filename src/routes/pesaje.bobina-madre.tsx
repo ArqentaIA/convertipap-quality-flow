@@ -75,6 +75,38 @@ function PesajeBobinaPage() {
     staleTime: 5 * 60_000,
   });
 
+  const maqCodigo = useMemo(
+    () => maquinasQ.data?.find((m) => m.id === maquinaId)?.codigo ?? "",
+    [maquinasQ.data, maquinaId],
+  );
+  // Sufijo automático según máquina: MP-04→"4", MP-05→"5", etc.
+  const sufijoMaq = useMemo(() => {
+    const m = /(\d)$/.exec(maqCodigo);
+    return m ? m[1] : "";
+  }, [maqCodigo]);
+  const baseRollo = useMemo(() => {
+    if (!numeroRollo) return "";
+    const m = /^(.*)-(\d)$/.exec(numeroRollo);
+    return m ? m[1] : numeroRollo;
+  }, [numeroRollo]);
+  // Auto-corrige el sufijo cuando cambia la máquina.
+  useEffect(() => {
+    if (!sufijoMaq) return;
+    setNumeroRollo((prev) => {
+      if (!prev) return prev;
+      const m = /^(.*)-(\d)$/.exec(prev);
+      if (m) {
+        if (m[2] !== sufijoMaq) {
+          toast.info(`Sufijo de rollo corregido a -${sufijoMaq} para ${maqCodigo}`);
+          return `${m[1]}-${sufijoMaq}`;
+        }
+        return prev;
+      }
+      return `${prev}-${sufijoMaq}`;
+    });
+  }, [sufijoMaq, maqCodigo]);
+
+
   // Órdenes de producción activas
   const ordenesQ = useQuery({
     queryKey: ["pesaje", "ordenes-activas"],
