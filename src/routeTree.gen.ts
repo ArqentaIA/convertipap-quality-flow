@@ -27,6 +27,7 @@ import { Route as TFolioRouteImport } from './routes/t.$folio'
 import { Route as PesajeBobinaMadreRouteImport } from './routes/pesaje.bobina-madre'
 import { Route as MuestraIdRouteImport } from './routes/muestra.$id'
 import { Route as HistorialMaquinaRouteImport } from './routes/historial.$maquina'
+import { Route as DiagnosticoPesajeV2RouteImport } from './routes/diagnostico.pesaje-v2'
 import { Route as CalidadRevisionRouteImport } from './routes/calidad.revision'
 import { Route as CalidadDashboardRouteImport } from './routes/calidad.dashboard'
 import { Route as CalidadCapturaFueraTurnoRouteImport } from './routes/calidad.captura-fuera-turno'
@@ -123,6 +124,11 @@ const HistorialMaquinaRoute = HistorialMaquinaRouteImport.update({
   path: '/historial/$maquina',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DiagnosticoPesajeV2Route = DiagnosticoPesajeV2RouteImport.update({
+  id: '/diagnostico/pesaje-v2',
+  path: '/diagnostico/pesaje-v2',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CalidadRevisionRoute = CalidadRevisionRouteImport.update({
   id: '/calidad/revision',
   path: '/calidad/revision',
@@ -170,6 +176,7 @@ export interface FileRoutesByFullPath {
   '/calidad/captura-fuera-turno': typeof CalidadCapturaFueraTurnoRoute
   '/calidad/dashboard': typeof CalidadDashboardRoute
   '/calidad/revision': typeof CalidadRevisionRoute
+  '/diagnostico/pesaje-v2': typeof DiagnosticoPesajeV2Route
   '/historial/$maquina': typeof HistorialMaquinaRoute
   '/muestra/$id': typeof MuestraIdRoute
   '/pesaje/bobina-madre': typeof PesajeBobinaMadreRoute
@@ -195,6 +202,7 @@ export interface FileRoutesByTo {
   '/calidad/captura-fuera-turno': typeof CalidadCapturaFueraTurnoRoute
   '/calidad/dashboard': typeof CalidadDashboardRoute
   '/calidad/revision': typeof CalidadRevisionRoute
+  '/diagnostico/pesaje-v2': typeof DiagnosticoPesajeV2Route
   '/historial/$maquina': typeof HistorialMaquinaRoute
   '/muestra/$id': typeof MuestraIdRoute
   '/pesaje/bobina-madre': typeof PesajeBobinaMadreRoute
@@ -221,6 +229,7 @@ export interface FileRoutesById {
   '/calidad/captura-fuera-turno': typeof CalidadCapturaFueraTurnoRoute
   '/calidad/dashboard': typeof CalidadDashboardRoute
   '/calidad/revision': typeof CalidadRevisionRoute
+  '/diagnostico/pesaje-v2': typeof DiagnosticoPesajeV2Route
   '/historial/$maquina': typeof HistorialMaquinaRoute
   '/muestra/$id': typeof MuestraIdRoute
   '/pesaje/bobina-madre': typeof PesajeBobinaMadreRoute
@@ -248,6 +257,7 @@ export interface FileRouteTypes {
     | '/calidad/captura-fuera-turno'
     | '/calidad/dashboard'
     | '/calidad/revision'
+    | '/diagnostico/pesaje-v2'
     | '/historial/$maquina'
     | '/muestra/$id'
     | '/pesaje/bobina-madre'
@@ -273,6 +283,7 @@ export interface FileRouteTypes {
     | '/calidad/captura-fuera-turno'
     | '/calidad/dashboard'
     | '/calidad/revision'
+    | '/diagnostico/pesaje-v2'
     | '/historial/$maquina'
     | '/muestra/$id'
     | '/pesaje/bobina-madre'
@@ -298,6 +309,7 @@ export interface FileRouteTypes {
     | '/calidad/captura-fuera-turno'
     | '/calidad/dashboard'
     | '/calidad/revision'
+    | '/diagnostico/pesaje-v2'
     | '/historial/$maquina'
     | '/muestra/$id'
     | '/pesaje/bobina-madre'
@@ -324,6 +336,7 @@ export interface RootRouteChildren {
   CalidadCapturaFueraTurnoRoute: typeof CalidadCapturaFueraTurnoRoute
   CalidadDashboardRoute: typeof CalidadDashboardRoute
   CalidadRevisionRoute: typeof CalidadRevisionRoute
+  DiagnosticoPesajeV2Route: typeof DiagnosticoPesajeV2Route
   HistorialMaquinaRoute: typeof HistorialMaquinaRoute
   MuestraIdRoute: typeof MuestraIdRoute
   PesajeBobinaMadreRoute: typeof PesajeBobinaMadreRoute
@@ -458,6 +471,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof HistorialMaquinaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/diagnostico/pesaje-v2': {
+      id: '/diagnostico/pesaje-v2'
+      path: '/diagnostico/pesaje-v2'
+      fullPath: '/diagnostico/pesaje-v2'
+      preLoaderRoute: typeof DiagnosticoPesajeV2RouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/calidad/revision': {
       id: '/calidad/revision'
       path: '/calidad/revision'
@@ -516,6 +536,7 @@ const rootRouteChildren: RootRouteChildren = {
   CalidadCapturaFueraTurnoRoute: CalidadCapturaFueraTurnoRoute,
   CalidadDashboardRoute: CalidadDashboardRoute,
   CalidadRevisionRoute: CalidadRevisionRoute,
+  DiagnosticoPesajeV2Route: DiagnosticoPesajeV2Route,
   HistorialMaquinaRoute: HistorialMaquinaRoute,
   MuestraIdRoute: MuestraIdRoute,
   PesajeBobinaMadreRoute: PesajeBobinaMadreRoute,
