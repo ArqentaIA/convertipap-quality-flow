@@ -276,15 +276,29 @@ function PesajeBobinaPage() {
             </select>
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-muted-foreground">N.º de rollo *</label>
-            <input
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              value={numeroRollo}
-              onChange={(e) => setNumeroRollo(e.target.value.toUpperCase())}
-              placeholder="Ej. 2807-6"
-            />
+            <label className="mb-1 block text-xs font-medium text-muted-foreground">
+              N.º de rollo * <span className="text-[10px] font-normal text-muted-foreground">(sufijo automático según máquina)</span>
+            </label>
+            <div className="flex items-stretch gap-2">
+              <input
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                value={baseRollo}
+                onChange={(e) => {
+                  const raw = e.target.value.toUpperCase().replace(/-\d$/, "").trim();
+                  setNumeroRollo(raw ? (sufijoMaq ? `${raw}-${sufijoMaq}` : raw) : "");
+                }}
+                placeholder={maqCodigo ? `Ej. 2807-${sufijoMaq || "X"}` : "Selecciona máquina primero"}
+                disabled={!maquinaId}
+              />
+              <span
+                className="inline-flex min-w-[52px] items-center justify-center rounded-md border border-input bg-muted px-3 text-sm font-semibold text-foreground"
+                aria-label={`Sufijo fijo -${sufijoMaq || "?"}`}
+              >
+                -{maquinaId ? (sufijoMaq || "?") : "?"}
+              </span>
+            </div>
           </div>
-        </div>
+
 
         <div className="mt-5">
           {/* Evidencia — zona premium táctil */}
