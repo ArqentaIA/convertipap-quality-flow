@@ -1,20 +1,27 @@
-// OCR server-side de peso de bobina madre mediante Gemini API multimodal.
-// Recibe { evidencia_path: string } de un bucket privado y devuelve
-// { peso_kg, confianza, unidad, motivo_rechazo }.
+// Registro seguro de pesaje de bobina madre.
+// El frontend envía la evidencia y los identificadores del registro.
+// Esta Edge Function:
+//   1) Valida al usuario (bearer token).
+//   2) Ejecuta OCR con Gemini sobre la evidencia del bucket privado.
+//   3) Aplica las validaciones estrictas (confianza ≥ 85% + 7 reglas).
+//   4) Convierte el peso a entero y resta automáticamente 300 kg.
+//   5) Inserta el registro definitivo en pesajes_bobina_madre.
+//   6) Devuelve al frontend el registro creado.
 //
-// La API key de Gemini NUNCA se expone al frontend.
+// El frontend NO envía peso_bruto_kg / peso_neto_kg / ocr_confianza / ocr_raw.
+// Si la fotografía no es válida, no se crea ningún registro.
 
 // deno-lint-ignore-file no-explicit-any
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
 const UMBRAL = 85;
+const PESO_EJE = 300;
 const PESO_MIN = 300;
 const BUCKET = "pesajes-evidencia";
 
@@ -55,9 +62,8 @@ Deno.serve(async (req) => {
 
   try {
     const authHeader = req.headers.get("Authorization") ?? "";
-    if (!authHeader) {
-      return json({ error: "Falta autenticación." }, 401);
-    }
+    if (!authHeader) return json({ error: "Falta autenticación." }, 401);
+
     const supaUrl = Deno.env.get("SUPABASE_URL")!;
     const supaKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const geminiKey = Deno.env.get("GEMINI_API_KEY");
@@ -65,60 +71,63 @@ Deno.serve(async (req) => {
 
     const admin = createClient(supaUrl, supaKey);
 
-    // Validar sesión del caller (con la key publicable)
-    const anonUrl = supaUrl;
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ??
-      Deno.env.get("SUPABASE_PUBLISHABLE_KEY")!;
-    const userClient = createClient(anonUrl, anonKey, {
+    // Validar sesión del caller
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? Deno.env.get("SUPABASE_PUBLISHABLE_KEY")!;
+    const userClient = createClient(supaUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
       auth: { persistSession: false },
     });
     const { data: userData, error: userErr } = await userClient.auth.getUser();
-    if (userErr || !userData.user) {
-      return json({ error: "No autenticado." }, 401);
-    }
+    if (userErr || !userData.user) return json({ error: "No autenticado." }, 401);
+    const uid = userData.user.id;
 
     const body = await req.json().catch(() => ({}));
     const evidenciaPath: string | undefined = body?.evidencia_path;
-    if (!evidenciaPath || typeof evidenciaPath !== "string") {
-      return json({ error: "Falta evidencia_path." }, 400);
-    }
+    const maquinaId: string | undefined = body?.maquina_id;
+    const numeroRollo: string | undefined = (body?.numero_rollo ?? "").toString().trim() || undefined;
+    const numeroOrden: string | null = body?.numero_orden ? String(body.numero_orden).trim() : null;
+    const fechaHora: string | undefined = body?.fecha_hora_pesaje;
 
-    // Descargar imagen del bucket privado
-    const { data: fileData, error: dlErr } = await admin.storage
-      .from(BUCKET)
-      .download(evidenciaPath);
-    if (dlErr || !fileData) {
-      return json({ error: `No se pudo descargar la evidencia: ${dlErr?.message ?? "desconocido"}` }, 400);
-    }
+    if (!evidenciaPath) return json({ error: "Falta evidencia_path." }, 400);
+    if (!maquinaId) return json({ error: "Falta maquina_id." }, 400);
+    if (!numeroRollo) return json({ error: "Falta numero_rollo." }, 400);
+
+    // Máquina válida
+    const { data: maq, error: mErr } = await admin
+      .from("maquinas").select("id, codigo, activo").eq("id", maquinaId).maybeSingle();
+    if (mErr || !maq || !maq.activo) return json({ error: "Máquina no encontrada." }, 400);
+
+    // Duplicado
+    const { data: dup } = await admin
+      .from("pesajes_bobina_madre").select("id")
+      .eq("maquina_id", maquinaId).eq("numero_rollo", numeroRollo).maybeSingle();
+    if (dup) return json({ error: `El rollo ${numeroRollo} ya tiene un pesaje registrado en ${maq.codigo}.` }, 409);
+
+    // Descargar evidencia
+    const { data: fileData, error: dlErr } = await admin.storage.from(BUCKET).download(evidenciaPath);
+    if (dlErr || !fileData) return json({ error: `No se pudo leer la evidencia: ${dlErr?.message ?? "desconocido"}` }, 400);
     const buf = new Uint8Array(await fileData.arrayBuffer());
     const b64 = base64Encode(buf);
     const mime = fileData.type || "image/jpeg";
 
-    // Llamada a Gemini
+    // Gemini OCR
     const resp = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          contents: [
-            {
-              role: "user",
-              parts: [
-                { text: PROMPT },
-                { inline_data: { mime_type: mime, data: b64 } },
-              ],
-            },
-          ],
-          generationConfig: {
-            temperature: 0,
-            responseMimeType: "application/json",
-          },
+          contents: [{
+            role: "user",
+            parts: [
+              { text: PROMPT },
+              { inline_data: { mime_type: mime, data: b64 } },
+            ],
+          }],
+          generationConfig: { temperature: 0, responseMimeType: "application/json" },
         }),
       },
     );
-
     if (!resp.ok) {
       const t = await resp.text();
       return json({ error: `Gemini falló: ${resp.status} ${t.slice(0, 300)}` }, 502);
@@ -126,17 +135,12 @@ Deno.serve(async (req) => {
     const gj = await resp.json();
     const text: string = gj?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
     let parsed: Gemini;
-    try {
-      parsed = JSON.parse(text);
-    } catch {
-      return json({
-        aceptado: false,
-        motivo_rechazo: "No se pudo interpretar la lectura del OCR. Vuelve a tomar la fotografía.",
-        raw: text.slice(0, 500),
-      }, 200);
+    try { parsed = JSON.parse(text); }
+    catch {
+      return json({ aceptado: false, motivo_rechazo: "No se pudo interpretar la lectura del OCR." }, 200);
     }
 
-    // Validaciones estrictas (aunque confianza >= 85, se aplican TODAS)
+    // Validaciones estrictas
     const rechazos: string[] = [];
     if ((parsed.confianza ?? 0) < UMBRAL) rechazos.push(`Confianza ${parsed.confianza ?? 0}% menor a ${UMBRAL}%`);
     if (!parsed.numero_unico) rechazos.push("No se identifica un único número principal");
@@ -148,21 +152,41 @@ Deno.serve(async (req) => {
     if (parsed.peso_kg != null && parsed.peso_kg <= PESO_MIN) rechazos.push(`El peso (${parsed.peso_kg} kg) no es mayor a ${PESO_MIN} kg`);
 
     if (rechazos.length > 0) {
-      return json({
-        aceptado: false,
-        motivo_rechazo: rechazos.join(" · "),
-        confianza: parsed.confianza,
-        ocr: parsed,
-      }, 200);
+      return json({ aceptado: false, motivo_rechazo: rechazos.join(" · "), confianza: parsed.confianza }, 200);
     }
 
-    return json({
-      aceptado: true,
-      peso_kg: parsed.peso_kg,
-      confianza: parsed.confianza,
-      unidad: parsed.unidad,
-      ocr: parsed,
-    }, 200);
+    // Convertir a entero y restar eje
+    const pesoBruto = Math.round(parsed.peso_kg as number);
+    const pesoNeto = pesoBruto - PESO_EJE;
+
+    // Orden opcional
+    let ordenProduccionId: string | null = null;
+    if (numeroOrden) {
+      const { data: ord } = await admin.from("ordenes_produccion")
+        .select("id").eq("numero_orden", numeroOrden).maybeSingle();
+      if (ord) ordenProduccionId = ord.id;
+    }
+
+    // Insertar registro definitivo
+    const { data: ins, error: insErr } = await admin.from("pesajes_bobina_madre").insert({
+      numero_rollo: numeroRollo,
+      maquina_id: maquinaId,
+      maquina_codigo: maq.codigo,
+      orden_produccion_id: ordenProduccionId,
+      numero_orden: numeroOrden,
+      peso_bruto_kg: pesoBruto,
+      peso_eje_kg: PESO_EJE,
+      peso_neto_kg: pesoNeto,
+      fecha_hora_pesaje: fechaHora ?? new Date().toISOString(),
+      evidencia_path: evidenciaPath,
+      ocr_confianza: parsed.confianza,
+      ocr_raw: parsed as never,
+      capturado_por: uid,
+    }).select("*").single();
+
+    if (insErr || !ins) return json({ error: `No se pudo registrar el pesaje: ${insErr?.message ?? "desconocido"}` }, 500);
+
+    return json({ aceptado: true, registro: ins }, 200);
   } catch (e) {
     return json({ error: `Error inesperado: ${(e as Error).message}` }, 500);
   }
