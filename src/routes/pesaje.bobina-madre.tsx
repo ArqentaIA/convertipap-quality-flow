@@ -220,20 +220,22 @@ function PesajeBobinaPage() {
             </div>
             {!ocr && (
               <p className="text-sm text-muted-foreground">
-                Adjunta la fotografía y pulsa <b>Analizar</b>. El sistema aceptará la lectura
-                solo si la confianza es ≥ 85% y se cumplen las 7 reglas de validación.
+                Adjunta la fotografía y pulsa <b>Analizar y registrar</b>. El sistema aceptará y
+                registrará el pesaje sólo si la confianza es ≥ 85% y se cumplen las 7 reglas.
               </p>
             )}
             {ocr && ocr.aceptado && (
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-success">
                   <CheckCircle2 className="h-4 w-4" />
-                  <span className="text-sm font-medium">Lectura aceptada · confianza {ocr.confianza}%</span>
+                  <span className="text-sm font-medium">
+                    Registrado · confianza {ocr.registro.ocr_confianza ?? "—"}%
+                  </span>
                 </div>
                 <div className="grid grid-cols-3 gap-2 rounded-md bg-muted/50 p-3 text-center text-sm">
-                  <div><div className="text-[11px] text-muted-foreground">Bruto</div><div className="font-semibold">{ocr.peso_kg} kg</div></div>
+                  <div><div className="text-[11px] text-muted-foreground">Bruto</div><div className="font-semibold">{Number(ocr.registro.peso_bruto_kg)} kg</div></div>
                   <div><div className="text-[11px] text-muted-foreground">Eje</div><div className="font-semibold">{PESO_EJE} kg</div></div>
-                  <div className="rounded bg-amber-100 text-amber-900"><div className="text-[11px]">Neto</div><div className="font-bold">{pesoNeto} kg</div></div>
+                  <div className="rounded bg-amber-100 text-amber-900"><div className="text-[11px]">Neto</div><div className="font-bold">{Number(ocr.registro.peso_neto_kg)} kg</div></div>
                 </div>
               </div>
             )}
@@ -241,7 +243,7 @@ function PesajeBobinaPage() {
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-destructive">
                   <XCircle className="h-4 w-4" />
-                  <span className="text-sm font-medium">Lectura rechazada</span>
+                  <span className="text-sm font-medium">Lectura rechazada · no se registró</span>
                 </div>
                 <p className="text-xs text-destructive/90">{ocr.motivo_rechazo}</p>
                 <p className="text-xs text-muted-foreground">Toma nuevamente la fotografía y vuelve a analizar.</p>
@@ -252,20 +254,12 @@ function PesajeBobinaPage() {
 
         <div className="mt-5 flex flex-wrap gap-2">
           <button
-            onClick={analizar}
-            disabled={analizando || !evidenciaFile}
+            onClick={analizarYRegistrar}
+            disabled={procesando || !evidenciaFile}
             className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
           >
-            {analizando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-            {analizando ? "Analizando…" : "Analizar fotografía"}
-          </button>
-          <button
-            onClick={guardar}
-            disabled={!puedeGuardar}
-            className="inline-flex items-center gap-2 rounded-md bg-success px-4 py-2 text-sm font-medium text-success-foreground disabled:opacity-50"
-          >
-            {guardando ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-            Guardar pesaje
+            {procesando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+            {procesando ? "Analizando y registrando…" : "Analizar y registrar"}
           </button>
           <button
             onClick={resetForm}
@@ -275,6 +269,7 @@ function PesajeBobinaPage() {
           </button>
         </div>
       </section>
+
 
       {/* Historial */}
       <ListaPesajes lista={listaQ.data ?? []} loading={listaQ.isLoading} />
