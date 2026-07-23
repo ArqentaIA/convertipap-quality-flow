@@ -1367,6 +1367,22 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
                     Usa máximo 30 caracteres: letras, números y guion.
                   </p>
                 )}
+                {pesajeVinculado && (
+                  <div className="flex items-center gap-2 rounded-md border border-amber-300 bg-amber-50 px-2 py-1 text-[11px] text-amber-900">
+                    <Lock className="h-3 w-3" />
+                    <span>
+                      Pesaje vinculado · <strong>{pesajeVinculado.peso_neto_kg} kg netos</strong> ·{" "}
+                      {new Date(pesajeVinculado.fecha_hora_pesaje).toLocaleTimeString("es-MX", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                      {pesajeVinculado.numero_orden ? ` · OP ${pesajeVinculado.numero_orden}` : ""}
+                    </span>
+                  </div>
+                )}
+                {pesajeQuery.isFetching && rolloValido && !pesajeVinculado && (
+                  <p className="text-[11px] text-muted-foreground">Buscando pesaje registrado…</p>
+                )}
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="hora" className="text-base">
