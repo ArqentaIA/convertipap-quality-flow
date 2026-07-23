@@ -19,6 +19,7 @@ export type TraceMuestra = {
   id: string;
   folio: string;
   numero_rollo: string | null;
+  peso_kg: number | null;
   hora_muestreo: string;
   capturado_at: string;
   turno: string;
@@ -48,7 +49,7 @@ export const getMuestraTrace = createServerFn({ method: "GET" })
     const { data: m, error } = await supabaseAdmin
       .from("muestras_calidad")
       .select(
-        `id, hora_muestreo, capturado_at, turno, estado, dictamen, numero_rollo,
+        `id, orden_id, hora_muestreo, capturado_at, turno, estado, dictamen, numero_rollo,
          estatus_liberacion, defectos,
          liberado_con_justificacion, liberacion_justificacion,
          observaciones_generales, jefe_maquina, operador, prensero, analista,
@@ -89,12 +90,25 @@ export const getMuestraTrace = createServerFn({ method: "GET" })
       .sort((a, b) => a.etiqueta.localeCompare(b.etiqueta));
 
     const folio = (m as { orden?: { folio?: string } | null }).orden?.folio ?? `CAL-${m.id.slice(0, 8)}`;
+    const ordenId = (m as unknown as { orden_id?: string }).orden_id;
+    const numero = Number(m.numero_rollo);
+    let peso_kg: number | null = null;
+    if (ordenId && Number.isFinite(numero)) {
+      const { data: rp } = await supabaseAdmin
+        .from("rollos_producidos")
+        .select("peso_kg")
+        .eq("orden_id", ordenId)
+        .eq("numero", numero)
+        .maybeSingle();
+      if (rp?.peso_kg != null) peso_kg = Number(rp.peso_kg);
+    }
 
     return {
       found: true,
       id: m.id,
       folio,
       numero_rollo: m.numero_rollo,
+      peso_kg,
       hora_muestreo: m.hora_muestreo,
       capturado_at: m.capturado_at,
       turno: m.turno,

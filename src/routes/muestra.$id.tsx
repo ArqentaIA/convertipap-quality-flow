@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
-import { ShieldCheck, AlertTriangle, Factory, Calendar, Package, Hash } from "lucide-react";
 import logoUrl from "@/assets/logo-convertipap.png";
+import sapLogo from "@/assets/sap-hana-logo.jpg.asset.json";
 import { getMuestraTrace, type TraceMuestra } from "@/lib/trace.functions";
 import { auditAction } from "@/lib/audit";
 
@@ -13,44 +13,49 @@ const traceQO = (id: string) =>
     staleTime: 60_000,
   });
 
+const PAGE_TITLE = "Trazabilidad de Rollo | Convertipap";
+const PAGE_DESC = "Verificación pública de rollo por código QR.";
+
 export const Route = createFileRoute("/muestra/$id")({
   loader: ({ context, params }) => context.queryClient.ensureQueryData(traceQO(params.id)),
+  head: () => ({
+    meta: [
+      { title: PAGE_TITLE },
+      { name: "description", content: PAGE_DESC },
+      { property: "og:title", content: PAGE_TITLE },
+      { property: "og:description", content: PAGE_DESC },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
+    ],
+  }),
   component: MuestraTracePage,
-  errorComponent: ({ error }) => (
-    <div className="min-h-screen flex items-center justify-center p-6 text-center">
-      <div className="max-w-md">
-        <AlertTriangle className="mx-auto h-10 w-10 text-amber-600 mb-3" />
-        <h1 className="text-lg font-semibold">No se pudo cargar la muestra</h1>
-        <p className="text-sm text-muted-foreground mt-2">{error.message}</p>
-      </div>
-    </div>
-  ),
-  notFoundComponent: () => <NotFound />,
+  pendingComponent: () => <LoadingCard />,
+  errorComponent: () => <NotFoundCard />,
+  notFoundComponent: () => <NotFoundCard />,
 });
 
-function NotFound() {
-  return (
-    <div className="min-h-screen flex items-center justify-center p-6 text-center">
-      <div className="max-w-md">
-        <AlertTriangle className="mx-auto h-10 w-10 text-amber-600 mb-3" />
-        <h1 className="text-lg font-semibold">Muestra no encontrada</h1>
-        <p className="text-sm text-muted-foreground mt-2">El código QR no corresponde a una muestra registrada.</p>
-      </div>
-    </div>
-  );
-}
-
-function fmtDate(iso: string): string {
-  try { return new Date(iso).toLocaleString("es-MX"); } catch { return iso; }
-}
-
-function estadoColor(estado: string): string {
-  if (estado === "conforme") return "bg-emerald-100 text-emerald-800 border-emerald-300";
-  if (estado === "no_conforme" || estado === "fuera_rango_critico") return "bg-rose-100 text-rose-800 border-rose-300";
-  return "bg-slate-100 text-slate-700 border-slate-300";
-}
-
 const CANONICAL_HOST = "www.convertipap.site";
+
+type StatusKind = "liberado" | "no_conforme";
+
+function normalizeStatus(t: Extract<TraceMuestra, { found: true }>): StatusKind {
+  const est = (t.estatus_liberacion ?? "").toString().trim().toUpperCase();
+  const dict = (t.dictamen ?? "").toString().trim().toLowerCase();
+  const estado = (t.estado ?? "").toString().trim().toLowerCase();
+  const justificada = t.liberado_con_justificacion === true;
+
+  if (est === "NC" || dict === "rechazada" || estado === "rechazada") return "no_conforme";
+  if (est === "L" && !justificada) return "liberado";
+  if (dict === "liberada" && !justificada) return "liberado";
+  if (estado === "liberada" && !justificada) return "liberado";
+  // Cualquier medición fuera de conforme => no conforme
+  if (t.mediciones.some((m) => m.estado !== "conforme")) return "no_conforme";
+  // Liberado con justificación se muestra como NO CONFORME en la vista pública
+  // (la vista pública sólo tiene dos etiquetas oficiales).
+  if (justificada) return "no_conforme";
+  return "liberado";
+}
 
 function MuestraTracePage() {
   const { id } = Route.useParams();
@@ -58,183 +63,116 @@ function MuestraTracePage() {
   const trace = data as TraceMuestra;
 
   useEffect(() => {
-    // QRs ya impresos: si el host no es el canónico (p.ej. *.lovable.app), reenviar al dominio público.
-    if (typeof window !== "undefined" && window.location.hostname !== CANONICAL_HOST) {
+    if (typeof window !== "undefined" && window.location.hostname !== CANONICAL_HOST && !window.location.hostname.includes("localhost")) {
       const target = `https://${CANONICAL_HOST}/muestra/${id}${window.location.search}`;
       window.location.replace(target);
       return;
     }
     if (trace.found) void auditAction("qr", `Visualización QR muestra ${id.slice(0, 8)}`, id);
-  }, [id, trace.found]);
+  }, [id, trace]);
 
-  if (!trace.found) return <NotFound />;
+  if (!trace.found) return <NotFoundCard />;
 
-  const conformes = trace.mediciones.filter((m) => m.estado === "conforme").length;
-  const total = trace.mediciones.length;
-
-  // Estatus efectivo (regla de oro): el dictamen autorizado manda; si no, el
-  // estatus_liberacion derivado por BD. Liberado con justificación = amarillo.
-  const estManual = trace.estatus_liberacion;
-  const justificada = trace.liberado_con_justificacion === true;
-  const liberadaLimpia = !justificada && (estManual === "L" || trace.dictamen === "liberada" || trace.estado === "liberada");
-  const condicional = estManual === "C";
-  const noConforme = estManual === "NC" || trace.dictamen === "rechazada"
-    || (estManual == null && trace.mediciones.some((m) => m.estado !== "conforme"));
-
-  const estatusLabel = justificada
-    ? "LIBERADO C/JUSTIF"
-    : liberadaLimpia
-    ? "CONFORME"
-    : condicional
-    ? "CONDICIONAL"
-    : noConforme
-    ? "NO CONFORME"
-    : "EN REVISIÓN";
-  const estatusClass = justificada
-    ? "bg-yellow-300 text-yellow-900"
-    : liberadaLimpia
-    ? "bg-emerald-600 text-white"
-    : condicional
-    ? "bg-amber-500 text-white"
-    : noConforme
-    ? "bg-rose-600 text-white"
-    : "bg-amber-500 text-white";
+  const status = normalizeStatus(trace);
+  const isLiberado = status === "liberado";
 
   return (
-    <div className="min-h-screen bg-muted/30 py-6 px-4">
-      <div className="mx-auto max-w-2xl space-y-4">
-        {/* Header */}
-        <div className="bg-card border-2 border-foreground rounded-lg overflow-hidden shadow-sm">
-          <div className="grid grid-cols-[auto_1fr] items-center gap-4 p-4 border-b border-foreground">
-            <img src={logoUrl} alt="Convertipap" className="h-12 w-auto object-contain" />
-            <div className="text-center">
-              <div className="text-[11px] font-semibold tracking-wide">CONVERTIDOR DE PAPEL S.A. DE C.V</div>
-              <div className="text-base font-extrabold tracking-widest">TRAZABILIDAD DE ROLLO</div>
-              <div className="text-[10px] text-muted-foreground">FOR-CAL-04 · Verificación por QR</div>
+    <Shell>
+      <div className="rounded-2xl border-2 border-[#0b2545] bg-white shadow-sm overflow-hidden">
+        {/* Datos principales */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-slate-200">
+          <div className="p-6 text-center">
+            <div className="text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase">
+              N.º de rollo
+            </div>
+            <div className="mt-2 text-4xl sm:text-5xl font-extrabold text-[#0b2545] tabular-nums tracking-tight">
+              {trace.numero_rollo ?? "—"}
             </div>
           </div>
-
-          {/* Status banner */}
-          <div className={`flex items-center justify-center gap-2 py-3 font-extrabold tracking-widest text-lg ${estatusClass}`}>
-            {liberadaLimpia ? <ShieldCheck className="h-5 w-5" /> : <AlertTriangle className="h-5 w-5" />}
-            <span>{estatusLabel}</span>
-          </div>
-
-          {/* Identity */}
-          <div className="grid grid-cols-2 divide-x divide-border border-t border-border text-sm">
-            <div className="p-3 space-y-1">
-              <div className="text-[10px] uppercase text-muted-foreground tracking-wide flex items-center gap-1"><Package className="h-3 w-3" /> Producto</div>
-              <div className="font-semibold">{trace.producto.nombre}</div>
-              <div className="text-xs text-muted-foreground">{trace.producto.codigo}</div>
+          <div className="p-6 text-center">
+            <div className="text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase">
+              Peso
             </div>
-            <div className="p-3 space-y-1">
-              <div className="text-[10px] uppercase text-muted-foreground tracking-wide flex items-center gap-1"><Hash className="h-3 w-3" /> No. Rollo</div>
-              <div className="font-bold text-lg tabular-nums">{trace.numero_rollo ?? "—"}</div>
-              <div className="text-xs text-muted-foreground">Folio {trace.folio}</div>
-            </div>
-            <div className="p-3 space-y-1 border-t border-border">
-              <div className="text-[10px] uppercase text-muted-foreground tracking-wide flex items-center gap-1"><Factory className="h-3 w-3" /> Máquina</div>
-              <div className="font-medium">{trace.maquina.codigo} · {trace.maquina.nombre}</div>
-              <div className="text-xs text-muted-foreground">Planta {trace.planta.nombre}</div>
-            </div>
-            <div className="p-3 space-y-1 border-t border-border">
-              <div className="text-[10px] uppercase text-muted-foreground tracking-wide flex items-center gap-1"><Calendar className="h-3 w-3" /> Captura</div>
-              <div className="font-medium">{fmtDate(trace.capturado_at)}</div>
-              <div className="text-xs text-muted-foreground">Turno {trace.turno || "—"}</div>
+            <div className="mt-2 text-4xl sm:text-5xl font-extrabold text-[#0b2545] tabular-nums tracking-tight">
+              {trace.peso_kg != null ? (
+                <>
+                  {formatPeso(trace.peso_kg)}
+                  <span className="ml-1 text-2xl sm:text-3xl font-semibold text-slate-500">kg</span>
+                </>
+              ) : (
+                "—"
+              )}
             </div>
           </div>
-
-          {/* Personal */}
-          {(trace.jefe_maquina || trace.operador || trace.prensero || trace.analista) && (
-            <div className="grid grid-cols-2 divide-x divide-border border-t border-border text-xs">
-              <div className="p-2.5">
-                <div className="text-[10px] uppercase text-muted-foreground tracking-wide">Jefe de Máquina</div>
-                <div className="font-medium">{trace.jefe_maquina || "—"}</div>
-              </div>
-              <div className="p-2.5">
-                <div className="text-[10px] uppercase text-muted-foreground tracking-wide">Operador</div>
-                <div className="font-medium">{trace.operador || "—"}</div>
-              </div>
-              <div className="p-2.5 border-t border-border">
-                <div className="text-[10px] uppercase text-muted-foreground tracking-wide">Prensero</div>
-                <div className="font-medium">{trace.prensero || "—"}</div>
-              </div>
-              <div className="p-2.5 border-t border-border">
-                <div className="text-[10px] uppercase text-muted-foreground tracking-wide">Analista</div>
-                <div className="font-medium">{trace.analista || "—"}</div>
-              </div>
-            </div>
-          )}
         </div>
 
-        {/* Liberación con justificación (regla de oro) */}
-        {justificada && (
-          <div className="bg-yellow-50 border-2 border-yellow-400 rounded-lg p-4 text-sm shadow-sm">
-            <div className="flex items-center gap-2 text-yellow-900 font-bold mb-2">
-              <AlertTriangle className="h-4 w-4" />
-              LIBERADO CON JUSTIFICACIÓN
-            </div>
-            <div className="text-[11px] uppercase text-yellow-800/80 tracking-wide mb-1">Motivo de liberación</div>
-            <div className="whitespace-pre-wrap text-yellow-950">
-              {trace.liberacion_justificacion || "Sin motivo capturado."}
-            </div>
+        {/* Estatus */}
+        <div className="grid grid-cols-[auto_1fr] border-t-2 border-[#0b2545]">
+          <div className="bg-[#0b2545] text-white px-5 sm:px-7 py-5 flex items-center justify-center">
+            <span className="text-sm sm:text-base font-bold tracking-[0.22em] uppercase">
+              Estatus
+            </span>
           </div>
-        )}
-
-        {/* Mediciones */}
-        <div className="bg-card border border-border rounded-lg shadow-sm overflow-hidden">
-          <div className="px-4 py-3 border-b border-border flex items-center justify-between">
-            <h2 className="font-semibold text-sm">Mediciones de calidad</h2>
-            <span className="text-xs text-muted-foreground tabular-nums">{conformes}/{total} conformes</span>
+          <div
+            className={
+              "px-5 py-5 flex items-center justify-center text-center font-extrabold tracking-[0.15em] uppercase text-xl sm:text-2xl " +
+              (isLiberado
+                ? "bg-emerald-50 text-emerald-800"
+                : "bg-rose-50 text-rose-800")
+            }
+          >
+            {isLiberado ? "LIBERADO" : "NO CONFORME"}
           </div>
-          {trace.mediciones.length === 0 ? (
-            <div className="p-6 text-center text-sm text-muted-foreground">Sin mediciones registradas.</div>
-          ) : (
-            <div className="divide-y divide-border">
-              {trace.mediciones.map((m) => (
-                <div key={m.clave} className="grid grid-cols-[1fr_auto_auto] items-center gap-3 px-4 py-2.5 text-sm">
-                  <div>
-                    <div className="font-medium">{m.etiqueta}</div>
-                    <div className="text-[11px] text-muted-foreground tabular-nums">
-                      {m.min} – {m.max} {m.unidad}
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="font-bold tabular-nums">{m.valor}{m.unidad && <span className="text-xs font-normal text-muted-foreground ml-1">{m.unidad}</span>}</div>
-                  </div>
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase border ${estadoColor(m.estado)}`}>
-                    {m.estado === "conforme" ? "OK" : m.estado === "no_conforme" ? "Fuera" : m.estado === "fuera_rango_critico" ? "Crítico" : "Pend."}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
-
-        {trace.defectos.length > 0 && (
-          <div className="bg-card border border-border rounded-lg p-4 text-sm">
-            <div className="text-[10px] uppercase text-muted-foreground tracking-wide mb-2">Defectos observados</div>
-            <div className="flex flex-wrap gap-1.5">
-              {trace.defectos.map((d) => (
-                <span key={d} className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-rose-100 text-rose-800 border border-rose-300">
-                  {d}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {trace.observaciones_generales && (
-          <div className="bg-card border border-border rounded-lg p-4 text-sm">
-            <div className="text-[10px] uppercase text-muted-foreground tracking-wide mb-1">Observaciones</div>
-            <div className="whitespace-pre-wrap">{trace.observaciones_generales}</div>
-          </div>
-        )}
-
-        <p className="text-center text-[11px] text-muted-foreground">
-          Verificado contra Convertipap · FOR-CAL-04
-        </p>
       </div>
+    </Shell>
+  );
+}
+
+function formatPeso(n: number): string {
+  const rounded = Math.round(n * 100) / 100;
+  return rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toString();
+}
+
+function Shell({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="min-h-screen bg-slate-50 flex flex-col">
+      <header className="w-full border-b border-slate-200 bg-white">
+        <div className="mx-auto max-w-3xl px-4 py-4 grid grid-cols-[auto_1fr_auto] items-center gap-3">
+          <img src={logoUrl} alt="Convertipap" className="h-10 sm:h-12 w-auto object-contain" />
+          <h1 className="text-center text-[13px] sm:text-base font-bold tracking-[0.18em] uppercase text-[#0b2545]">
+            Trazabilidad de rollo
+          </h1>
+          <img src={sapLogo.url} alt="SAP" className="h-8 sm:h-10 w-auto object-contain" />
+        </div>
+      </header>
+      <main className="flex-1 flex items-center justify-center px-4 py-6">
+        <div className="w-full max-w-xl">{children}</div>
+      </main>
+      <footer className="py-3 text-center text-[11px] text-slate-400">
+        Verificación pública · Solo lectura
+      </footer>
     </div>
+  );
+}
+
+function LoadingCard() {
+  return (
+    <Shell>
+      <div className="rounded-2xl border-2 border-[#0b2545] bg-white p-10 text-center shadow-sm">
+        <div className="mx-auto h-6 w-6 rounded-full border-2 border-[#0b2545] border-t-transparent animate-spin" />
+        <p className="mt-4 text-sm text-slate-600">Consultando información del rollo…</p>
+      </div>
+    </Shell>
+  );
+}
+
+function NotFoundCard() {
+  return (
+    <Shell>
+      <div className="rounded-2xl border-2 border-[#0b2545] bg-white p-10 text-center shadow-sm">
+        <p className="text-base font-semibold text-[#0b2545]">Registro de rollo no encontrado</p>
+      </div>
+    </Shell>
   );
 }
