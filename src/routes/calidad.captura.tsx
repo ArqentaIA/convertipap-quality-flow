@@ -292,7 +292,10 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
   const auth = useAuth();
   const queryClient = useQueryClient();
 
-  const [maquinaId, setMaquinaId] = useState<string>(maquinas[0]!.id);
+  // Flujo progresivo obligatorio: OP → Máquina → Rollo.
+  // ordenSel: "" = pendiente, "__sin__" = "Continuar sin OP", "<id>" = orden elegida.
+  const [ordenSel, setOrdenSelRaw] = useState<string>("");
+  const [maquinaId, setMaquinaIdRaw] = useState<string>("");
   const [productoId, setProductoId] = useState<string>(productos[0]!.producto_id);
 
   const maquina = maquinas.find((m) => m.id === maquinaId) ?? maquinas[0]!;
