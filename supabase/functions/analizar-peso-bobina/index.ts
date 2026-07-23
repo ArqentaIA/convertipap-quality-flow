@@ -165,9 +165,13 @@ Deno.serve(async (req) => {
       return json({ aceptado: false, motivo_rechazo: rechazos.join(" · "), confianza: parsed.confianza }, 200);
     }
 
-    // Convertir a entero y restar eje
+    // Convertir a entero y restar la tara correspondiente a la máquina
     const pesoBruto = Math.round(parsed.peso_kg as number);
-    const pesoNeto = pesoBruto - PESO_EJE;
+    const pesoEje = taraPorMaquina(maq.codigo);
+    if (pesoBruto <= pesoEje) {
+      return json({ aceptado: false, motivo_rechazo: `El peso bruto (${pesoBruto} kg) debe ser mayor a la tara de la máquina (${pesoEje} kg).`, confianza: parsed.confianza }, 200);
+    }
+    const pesoNeto = pesoBruto - pesoEje;
 
     // Orden opcional
     let ordenProduccionId: string | null = null;
