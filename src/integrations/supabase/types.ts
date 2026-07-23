@@ -658,6 +658,7 @@ export type Database = {
           operador: string | null
           operario_id: string | null
           orden_id: string | null
+          pesaje_id: string | null
           planta_id: string
           porcentaje_rupturas_pct: number | null
           prensero: string | null
@@ -715,6 +716,7 @@ export type Database = {
           operador?: string | null
           operario_id?: string | null
           orden_id?: string | null
+          pesaje_id?: string | null
           planta_id: string
           porcentaje_rupturas_pct?: number | null
           prensero?: string | null
@@ -772,6 +774,7 @@ export type Database = {
           operador?: string | null
           operario_id?: string | null
           orden_id?: string | null
+          pesaje_id?: string | null
           planta_id?: string
           porcentaje_rupturas_pct?: number | null
           prensero?: string | null
@@ -809,6 +812,13 @@ export type Database = {
             columns: ["orden_id"]
             isOneToOne: false
             referencedRelation: "ordenes_fabricacion"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "muestras_calidad_pesaje_id_fkey"
+            columns: ["pesaje_id"]
+            isOneToOne: false
+            referencedRelation: "pesajes_bobina_madre"
             referencedColumns: ["id"]
           },
           {
@@ -2011,6 +2021,10 @@ export type Database = {
       validate_maquina_access: {
         Args: { _codigo: string; _pin: string }
         Returns: boolean
+      }
+      vincular_pesaje_a_muestra: {
+        Args: { _muestra_id: string; _pesaje_id: string }
+        Returns: undefined
       }
     }
     Enums: {
