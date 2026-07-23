@@ -493,6 +493,25 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
       return { ...prev, [pesoVarId]: { ...prev[pesoVarId], valor: target } };
     });
   }, [pesajeVinculado, pesoVarId]);
+
+  // Evidencia firmada bajo demanda
+  const firmarEvidenciaFn = useServerFn(firmarEvidenciaCaptura);
+  async function handleVerEvidencia() {
+    if (!pesajeVinculado?.evidencia_path) return;
+    try {
+      const { url } = await firmarEvidenciaFn({ data: { path: pesajeVinculado.evidencia_path } });
+      window.open(url, "_blank", "noopener,noreferrer");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "No se pudo abrir la evidencia.");
+    }
+  }
+
+  // Cuando el rollo es válido pero no hay pesaje registrado, bloqueamos el
+  // campo de peso y mostramos una alerta con acceso al módulo de pesaje.
+  const pesajeNoEncontrado =
+    !!maquina?.id && rolloValido && !pesajeQuery.isFetching && !pesajeVinculado;
+  // Peso siempre bloqueado en captura: sólo se autollena desde un pesaje válido.
+  const pesoBloqueado = true;
   const mdValor = mdVarId ? (mediciones[mdVarId]?.valor ?? "") : "";
   const cdValor = cdVarId ? (mediciones[cdVarId]?.valor ?? "") : "";
   useEffect(() => {
