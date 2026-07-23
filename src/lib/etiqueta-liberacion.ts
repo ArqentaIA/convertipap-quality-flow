@@ -326,21 +326,20 @@ function buildHtml(
 export async function printEtiquetaLiberacion(data: EtiquetaData): Promise<void> {
   const traceUrl = buildTraceUrl(data.muestraId);
 
-  // Payload SAP HANA: información dinámica del rollo.
+  // QR SAP HANA: debe abrir la vista pública corporativa del rollo.
+  // Antes se codificaba texto plano (rollo/peso/estatus); iOS/Google Lens lo
+  // interpreta como búsqueda web. Con URL canónica siempre abre Convertipap.
   const pesoMed = data.mediciones.find(
     (m) => m.etiqueta.trim().toLowerCase() === "peso" ||
       m.etiqueta.trim().toLowerCase() === "peso del rollo" ||
       m.etiqueta.trim().toLowerCase() === "peso rollo",
   );
   const pesoTxt = pesoMed && pesoMed.valor !== null && pesoMed.valor !== undefined ? String(pesoMed.valor) : "—";
-  const sapPayload =
-    `N.º de rollo: ${data.numeroRollo || "—"}\n` +
-    `Peso: ${pesoTxt} kg\n` +
-    `Estatus: ${data.estatus}`;
+  const sapTraceUrl = `${traceUrl}?vista=sap&rollo=${encodeURIComponent(data.numeroRollo || "")}&peso=${encodeURIComponent(pesoTxt)}&estatus=${encodeURIComponent(data.estatus)}`;
 
   const [qrDataUrl, qrSapDataUrl, logoDataUrl, sapLogoDataUrl] = await Promise.all([
     QRCode.toDataURL(traceUrl, { margin: 1, width: 240, errorCorrectionLevel: "M" }),
-    QRCode.toDataURL(sapPayload, { margin: 1, width: 240, errorCorrectionLevel: "M" }),
+    QRCode.toDataURL(sapTraceUrl, { margin: 1, width: 240, errorCorrectionLevel: "M" }),
     toDataUrl(logoUrl),
     toDataUrl(sapHanaAsset.url),
   ]);
