@@ -308,8 +308,8 @@ function buildHtml(
           <img class="qr" src="${qrSapDataUrl}" alt="QR SAP HANA" />
           <img class="logo" src="${sapLogoDataUrl}" alt="SAP HANA" />
         </div>
-        <div class="sap-cap">SAP HANA</div>
       </div>
+
     </div>
 
     <div class="estatus">
