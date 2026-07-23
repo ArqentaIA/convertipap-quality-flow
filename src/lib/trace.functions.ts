@@ -19,6 +19,7 @@ export type TraceMuestra = {
   id: string;
   folio: string;
   numero_rollo: string | null;
+  peso_kg: number | null;
   hora_muestreo: string;
   capturado_at: string;
   turno: string;
