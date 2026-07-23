@@ -90,6 +90,10 @@ export const getMuestraTrace = createServerFn({ method: "GET" })
       .sort((a, b) => a.etiqueta.localeCompare(b.etiqueta));
 
     const folio = (m as { orden?: { folio?: string } | null }).orden?.folio ?? `CAL-${m.id.slice(0, 8)}`;
+    const pesoDesdeMedicion = mediciones.find((med) => {
+      const etiqueta = med.etiqueta.trim().toLowerCase();
+      return etiqueta === "peso" || etiqueta === "peso del rollo" || etiqueta === "peso rollo";
+    });
     const ordenId = (m as unknown as { orden_id?: string }).orden_id;
     const numero = Number(m.numero_rollo);
     let peso_kg: number | null = null;
@@ -101,6 +105,9 @@ export const getMuestraTrace = createServerFn({ method: "GET" })
         .eq("numero", numero)
         .maybeSingle();
       if (rp?.peso_kg != null) peso_kg = Number(rp.peso_kg);
+    }
+    if (peso_kg == null && pesoDesdeMedicion?.valor != null && Number.isFinite(pesoDesdeMedicion.valor)) {
+      peso_kg = Number(pesoDesdeMedicion.valor);
     }
 
     return {
