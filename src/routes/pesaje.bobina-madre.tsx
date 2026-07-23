@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
-  Camera, Scale, CheckCircle2, XCircle, Loader2, RefreshCw, Upload, Info, ImageIcon,
+  Camera, CheckCircle2, XCircle, Loader2, RefreshCw, Upload, Info, ImageIcon,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -149,8 +149,7 @@ function PesajeBobinaPage() {
     <div className="mx-auto max-w-6xl space-y-6 p-4">
       {/* Wizard */}
       <section className="rounded-lg border border-border bg-card p-5 shadow-sm">
-        <header className="mb-4 flex items-center gap-2">
-          <Scale className="h-5 w-5 text-primary" />
+        <header className="mb-4 flex items-center">
           <h2 className="text-lg font-semibold">Nuevo pesaje de bobina madre</h2>
         </header>
 
