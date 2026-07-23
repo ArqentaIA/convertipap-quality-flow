@@ -49,7 +49,7 @@ export const getMuestraTrace = createServerFn({ method: "GET" })
     const { data: m, error } = await supabaseAdmin
       .from("muestras_calidad")
       .select(
-        `id, hora_muestreo, capturado_at, turno, estado, dictamen, numero_rollo,
+        `id, orden_id, hora_muestreo, capturado_at, turno, estado, dictamen, numero_rollo,
          estatus_liberacion, defectos,
          liberado_con_justificacion, liberacion_justificacion,
          observaciones_generales, jefe_maquina, operador, prensero, analista,
