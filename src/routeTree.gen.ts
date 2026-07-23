@@ -15,6 +15,7 @@ import { Route as ReportesRouteImport } from './routes/reportes'
 import { Route as ReporteMensualRouteImport } from './routes/reporte-mensual'
 import { Route as ProduccionRouteImport } from './routes/produccion'
 import { Route as PantallasOperativasRouteImport } from './routes/pantallas-operativas'
+import { Route as OrdenesProduccionRouteImport } from './routes/ordenes-produccion'
 import { Route as OperatorVisionRouteImport } from './routes/operator-vision'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ControlCalidadRouteImport } from './routes/control-calidad'
@@ -59,6 +60,11 @@ const ProduccionRoute = ProduccionRouteImport.update({
 const PantallasOperativasRoute = PantallasOperativasRouteImport.update({
   id: '/pantallas-operativas',
   path: '/pantallas-operativas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OrdenesProduccionRoute = OrdenesProduccionRouteImport.update({
+  id: '/ordenes-produccion',
+  path: '/ordenes-produccion',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OperatorVisionRoute = OperatorVisionRouteImport.update({
@@ -146,6 +152,7 @@ export interface FileRoutesByFullPath {
   '/control-calidad': typeof ControlCalidadRoute
   '/login': typeof LoginRoute
   '/operator-vision': typeof OperatorVisionRoute
+  '/ordenes-produccion': typeof OrdenesProduccionRoute
   '/pantallas-operativas': typeof PantallasOperativasRoute
   '/produccion': typeof ProduccionRoute
   '/reporte-mensual': typeof ReporteMensualRoute
@@ -169,6 +176,7 @@ export interface FileRoutesByTo {
   '/control-calidad': typeof ControlCalidadRoute
   '/login': typeof LoginRoute
   '/operator-vision': typeof OperatorVisionRoute
+  '/ordenes-produccion': typeof OrdenesProduccionRoute
   '/pantallas-operativas': typeof PantallasOperativasRoute
   '/produccion': typeof ProduccionRoute
   '/reporte-mensual': typeof ReporteMensualRoute
@@ -193,6 +201,7 @@ export interface FileRoutesById {
   '/control-calidad': typeof ControlCalidadRoute
   '/login': typeof LoginRoute
   '/operator-vision': typeof OperatorVisionRoute
+  '/ordenes-produccion': typeof OrdenesProduccionRoute
   '/pantallas-operativas': typeof PantallasOperativasRoute
   '/produccion': typeof ProduccionRoute
   '/reporte-mensual': typeof ReporteMensualRoute
@@ -218,6 +227,7 @@ export interface FileRouteTypes {
     | '/control-calidad'
     | '/login'
     | '/operator-vision'
+    | '/ordenes-produccion'
     | '/pantallas-operativas'
     | '/produccion'
     | '/reporte-mensual'
@@ -241,6 +251,7 @@ export interface FileRouteTypes {
     | '/control-calidad'
     | '/login'
     | '/operator-vision'
+    | '/ordenes-produccion'
     | '/pantallas-operativas'
     | '/produccion'
     | '/reporte-mensual'
@@ -264,6 +275,7 @@ export interface FileRouteTypes {
     | '/control-calidad'
     | '/login'
     | '/operator-vision'
+    | '/ordenes-produccion'
     | '/pantallas-operativas'
     | '/produccion'
     | '/reporte-mensual'
@@ -288,6 +300,7 @@ export interface RootRouteChildren {
   ControlCalidadRoute: typeof ControlCalidadRoute
   LoginRoute: typeof LoginRoute
   OperatorVisionRoute: typeof OperatorVisionRoute
+  OrdenesProduccionRoute: typeof OrdenesProduccionRoute
   PantallasOperativasRoute: typeof PantallasOperativasRoute
   ProduccionRoute: typeof ProduccionRoute
   ReporteMensualRoute: typeof ReporteMensualRoute
@@ -346,6 +359,13 @@ declare module '@tanstack/react-router' {
       path: '/pantallas-operativas'
       fullPath: '/pantallas-operativas'
       preLoaderRoute: typeof PantallasOperativasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ordenes-produccion': {
+      id: '/ordenes-produccion'
+      path: '/ordenes-produccion'
+      fullPath: '/ordenes-produccion'
+      preLoaderRoute: typeof OrdenesProduccionRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/operator-vision': {
@@ -464,6 +484,7 @@ const rootRouteChildren: RootRouteChildren = {
   ControlCalidadRoute: ControlCalidadRoute,
   LoginRoute: LoginRoute,
   OperatorVisionRoute: OperatorVisionRoute,
+  OrdenesProduccionRoute: OrdenesProduccionRoute,
   PantallasOperativasRoute: PantallasOperativasRoute,
   ProduccionRoute: ProduccionRoute,
   ReporteMensualRoute: ReporteMensualRoute,
