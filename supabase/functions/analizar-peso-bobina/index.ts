@@ -7,7 +7,13 @@
 //   4) Convierte el peso a entero y resta la tara según la máquina (MP-04=560, MP-05=750, MP-06=1160, MP-07=0 kg → peso neto directo).
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
-import { encode as base64Encode } from "https://deno.land/std@0.224.0/encoding/base64.ts";
+
+function base64Encode(bytes: Uint8Array): string {
+  let bin = "";
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin);
+}
+
 
 const CORS: Record<string, string> = {
   "Access-Control-Allow-Origin": "*",
