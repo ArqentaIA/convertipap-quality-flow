@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 import logoUrl from "@/assets/logo-convertipap.png";
+import sapLogo from "@/assets/sap-hana-logo.jpg.asset.json";
 import { getMuestraTrace, type TraceMuestra } from "@/lib/trace.functions";
 import { auditAction } from "@/lib/audit";
 
@@ -84,6 +85,36 @@ function MuestraTracePage() {
     : <TrazabilidadView trace={trace} status={status} pesoMostrado={pesoMostrado} />;
 }
 
+function ShellSap({ children, subtitle }: { children: React.ReactNode; subtitle?: string }) {
+  return (
+    <div className="min-h-screen bg-slate-50 flex flex-col">
+      <header className="w-full border-b border-slate-200 bg-white">
+        <div className="mx-auto max-w-3xl px-4 py-4 grid grid-cols-[auto_1fr_auto] items-center gap-3">
+          <img src={logoUrl} alt="Convertipap" className="h-10 sm:h-12 w-auto object-contain" />
+          <div className="text-center">
+            <h1 className="text-[13px] sm:text-base font-bold tracking-[0.18em] uppercase text-[#0b2545]">
+              Trazabilidad de rollo
+            </h1>
+            {subtitle && (
+              <div className="text-[10.5px] uppercase tracking-[0.14em] text-slate-500 mt-0.5">
+                {subtitle}
+              </div>
+            )}
+          </div>
+          <img src={sapLogo.url} alt="SAP" className="h-8 sm:h-10 w-auto object-contain" />
+        </div>
+      </header>
+      <main className="flex-1 flex items-center justify-center px-4 py-6">
+        <div className="w-full max-w-2xl">{children}</div>
+      </main>
+      <footer className="py-3 text-center text-[11px] text-slate-400">
+        Verificación pública · Solo lectura · Convertipap
+      </footer>
+    </div>
+  );
+}
+
+
 /* ============================================================
  * VISTA SAP: minimal (rollo, peso, OP, estado, estatus)
  * ============================================================ */
@@ -98,7 +129,7 @@ function SapView({
 }) {
   const isLiberado = status === "liberado";
   return (
-    <Shell subtitle="Vista SAP · Rollo">
+    <ShellSap subtitle="Vista SAP · Rollo">
       <div className="rounded-2xl border-2 border-[#0b2545] bg-white shadow-sm overflow-hidden">
         <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-slate-200">
           <Cell label="N.º de rollo" value={trace.numero_rollo ?? "—"} />
@@ -114,7 +145,8 @@ function SapView({
         </div>
         <StatusBar isLiberado={isLiberado} />
       </div>
-    </Shell>
+    </ShellSap>
+
   );
 }
 
