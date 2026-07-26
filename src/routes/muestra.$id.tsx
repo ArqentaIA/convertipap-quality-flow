@@ -141,7 +141,7 @@ function SapView({
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 border-t border-slate-200 divide-y sm:divide-y-0 sm:divide-x divide-slate-200">
           <Cell label="Orden de producción" value={trace.folio} small />
-          <Cell label="Estado" value={(trace.estado ?? "—").toUpperCase()} small />
+          <Cell label="Estado SAP" value={trace.estado_sap ?? "—"} small />
         </div>
         <StatusBar isLiberado={isLiberado} />
       </div>
