@@ -305,9 +305,9 @@ function buildHtml(
       </div>
       <div>
         <div class="sap-block">
-          <img class="qr" src="${qrSapDataUrl}" alt="QR SAP HANA" />
-          <img class="logo" src="${sapLogoDataUrl}" alt="SAP HANA" />
+          <img class="qr" src="${qrSapDataUrl}" alt="QR SAP" />
         </div>
+        <div class="sap-cap">Vista SAP · Rollo</div>
       </div>
 
     </div>
