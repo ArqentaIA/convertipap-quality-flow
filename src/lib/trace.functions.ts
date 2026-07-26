@@ -131,10 +131,11 @@ export const getMuestraTrace = createServerFn({ method: "GET" })
         if (pRow?.orden_produccion_id) {
           const { data: opRow } = await supabaseAdmin
             .from("ordenes_produccion")
-            .select("estado_sap")
+            .select("estado_sap, numero_orden")
             .eq("id", pRow.orden_produccion_id)
             .maybeSingle();
           estado_sap = opRow?.estado_sap ?? null;
+          numero_orden_sap = opRow?.numero_orden ?? null;
         }
       } else if (pesajeId) {
         const { data: pRow } = await supabaseAdmin
@@ -145,10 +146,11 @@ export const getMuestraTrace = createServerFn({ method: "GET" })
         if (pRow?.orden_produccion_id) {
           const { data: opRow } = await supabaseAdmin
             .from("ordenes_produccion")
-            .select("estado_sap")
+            .select("estado_sap, numero_orden")
             .eq("id", pRow.orden_produccion_id)
             .maybeSingle();
           estado_sap = opRow?.estado_sap ?? null;
+          numero_orden_sap = opRow?.numero_orden ?? null;
         }
       }
     }
