@@ -3,6 +3,7 @@ import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 import logoUrl from "@/assets/logo-convertipap.png";
 import sapLogo from "@/assets/sap-hana-logo.jpg.asset.json";
+import { getMuestraTrace, type TraceMuestra } from "@/lib/trace.functions";
 import { auditAction } from "@/lib/audit";
 
 const traceQO = (id: string) =>
@@ -83,6 +84,36 @@ function MuestraTracePage() {
     ? <SapView trace={trace} status={status} pesoMostrado={pesoMostrado} />
     : <TrazabilidadView trace={trace} status={status} pesoMostrado={pesoMostrado} />;
 }
+
+function ShellSap({ children, subtitle }: { children: React.ReactNode; subtitle?: string }) {
+  return (
+    <div className="min-h-screen bg-slate-50 flex flex-col">
+      <header className="w-full border-b border-slate-200 bg-white">
+        <div className="mx-auto max-w-3xl px-4 py-4 grid grid-cols-[auto_1fr_auto] items-center gap-3">
+          <img src={logoUrl} alt="Convertipap" className="h-10 sm:h-12 w-auto object-contain" />
+          <div className="text-center">
+            <h1 className="text-[13px] sm:text-base font-bold tracking-[0.18em] uppercase text-[#0b2545]">
+              Trazabilidad de rollo
+            </h1>
+            {subtitle && (
+              <div className="text-[10.5px] uppercase tracking-[0.14em] text-slate-500 mt-0.5">
+                {subtitle}
+              </div>
+            )}
+          </div>
+          <img src={sapLogo.url} alt="SAP" className="h-8 sm:h-10 w-auto object-contain" />
+        </div>
+      </header>
+      <main className="flex-1 flex items-center justify-center px-4 py-6">
+        <div className="w-full max-w-2xl">{children}</div>
+      </main>
+      <footer className="py-3 text-center text-[11px] text-slate-400">
+        Verificación pública · Solo lectura · Convertipap
+      </footer>
+    </div>
+  );
+}
+
 
 /* ============================================================
  * VISTA SAP: minimal (rollo, peso, OP, estado, estatus)
