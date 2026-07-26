@@ -64,7 +64,7 @@ function OrdenesProduccionContent() {
     onSuccess: (resumen) => {
       setUltimoResumen(resumen);
       qc.invalidateQueries({ queryKey: ["ordenes_produccion"] });
-      toast.success(`Importación completa: ${resumen.insertadas} nueva(s), ${resumen.duplicadas.length} duplicada(s)`);
+      toast.success(`Importación completa: ${resumen.insertadas} nueva(s), ${resumen.actualizadas} actualizada(s), ${resumen.duplicadas.length} duplicada(s)`);
     },
     onError: (err: Error) => toast.error(err.message),
   });
