@@ -201,21 +201,28 @@ function buildHtml(
   td.val{font-weight:800;text-align:left;font-variant-numeric:tabular-nums;color:#0f172a;font-size:14px}
   td.val .u{font-weight:500;color:#64748b;margin-left:3px;font-size:11px}
 
-  /* Observaciones + SAP QR */
-  .obs-block{display:grid;grid-template-columns:1fr 180px;border-bottom:2px solid #0f172a}
-  .obs-block > div{padding:10px 12px;border-right:1px solid #0f172a}
-  .obs-block > div:last-child{border-right:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#f8fafc;gap:6px}
+  /* Observaciones (solo comentarios / justificaciones) */
+  .obs-block{border-bottom:2px solid #0f172a}
+  .obs-block > div{padding:10px 12px}
   .obs-title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#475569;margin-bottom:6px}
-  .comentarios{min-height:50px;font-size:12px;line-height:1.4;color:#1e293b;white-space:pre-wrap}
-  .sap-block{display:flex;flex-direction:row;align-items:center;gap:8px}
-  .sap-block img.qr{width:96px;height:96px;display:block}
-  .sap-block img.logo{width:64px;height:auto;object-fit:contain;display:block}
-  .sap-cap{font-size:9px;color:#475569;text-align:center;letter-spacing:.08em;text-transform:uppercase;font-weight:700}
+  .comentarios{min-height:40px;font-size:12px;line-height:1.4;color:#1e293b;white-space:pre-wrap}
 
   /* Estatus */
-  .estatus{display:grid;grid-template-columns:110px 1fr;align-items:stretch;border-bottom:1px solid #0f172a;page-break-inside:avoid;break-inside:avoid}
+  .estatus{display:grid;grid-template-columns:110px 1fr;align-items:stretch;border-bottom:2px solid #0f172a;page-break-inside:avoid;break-inside:avoid}
   .estatus .lbl-e{background:#0f172a;color:#fff;font-weight:900;font-size:16px;text-align:center;padding:16px 8px;letter-spacing:.16em;display:flex;align-items:center;justify-content:center}
   .estatus .val-e{padding:16px 8px;text-align:center;font-weight:900;font-size:32px;letter-spacing:.16em;color:${estatusColor};background:${estatusBg};display:flex;align-items:center;justify-content:center}
+
+  /* Bloque SAP inferior: datos a la izquierda + QR grande + logo a la derecha */
+  .sap-footer{display:grid;grid-template-columns:1fr 200px 100px;border-bottom:2px solid #0f172a;background:#f8fafc}
+  .sap-footer .sap-datos{padding:14px;display:flex;flex-direction:column;justify-content:center;gap:12px;border-right:1px solid #0f172a}
+  .sap-footer .sap-datos .item .k{font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#64748b}
+  .sap-footer .sap-datos .item .v{font-size:22px;font-weight:900;color:#0f172a;font-variant-numeric:tabular-nums;letter-spacing:-.01em;margin-top:3px;line-height:1.1;word-break:break-word}
+  .sap-footer .sap-datos .item .v.small{font-size:14px;font-weight:800;color:#475569}
+  .sap-footer .sap-qr{padding:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;border-right:1px solid #0f172a}
+  .sap-footer .sap-qr img{width:170px;height:170px;display:block}
+  .sap-footer .sap-qr .cap{font-size:9px;color:#475569;margin-top:4px;text-align:center;letter-spacing:.1em;text-transform:uppercase;font-weight:800}
+  .sap-footer .sap-logo{padding:10px;display:flex;align-items:center;justify-content:center}
+  .sap-footer .sap-logo img{max-width:88px;max-height:88px;object-fit:contain;display:block}
 
   .foot{padding:5px 12px;font-size:9.5px;color:#64748b;text-align:right;margin-top:auto}
 
