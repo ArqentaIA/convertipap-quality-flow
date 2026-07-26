@@ -135,6 +135,7 @@ function OrdenesProduccionContent() {
         const fila = dataRows[i] ?? [];
         const a = fila[0];
         const c = fila[2];
+        const g = fila[6]; // columna G = Estado SAP
         if (a == null || String(a).trim() === "") continue; // fila vacía
 
         const numero = String(a).trim();
@@ -147,7 +148,8 @@ function OrdenesProduccionContent() {
           parseErrores.push(`Fila ${i + (tieneEncabezado ? 2 : 1)}: peso negativo`);
           continue;
         }
-        rows.push({ numero_orden: numero, peso_registrado: pesoNum });
+        const estadoSap = g == null || String(g).trim() === "" ? null : String(g).trim();
+        rows.push({ numero_orden: numero, peso_registrado: pesoNum, estado_sap: estadoSap });
       }
 
       if (rows.length === 0) {
