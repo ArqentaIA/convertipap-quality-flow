@@ -166,6 +166,7 @@ export const getMuestraTrace = createServerFn({ method: "GET" })
       turno: m.turno,
       estado: m.estado,
       estado_sap,
+      numero_orden_sap,
       dictamen: m.dictamen,
       estatus_liberacion: (m as { estatus_liberacion?: string | null }).estatus_liberacion ?? null,
       liberado_con_justificacion: !!(m as { liberado_con_justificacion?: boolean }).liberado_con_justificacion,
