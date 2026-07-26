@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 import logoUrl from "@/assets/logo-convertipap.png";
-import { getMuestraTrace, type TraceMuestra } from "@/lib/trace.functions";
+import sapLogo from "@/assets/sap-hana-logo.jpg.asset.json";
 import { auditAction } from "@/lib/audit";
 
 const traceQO = (id: string) =>
