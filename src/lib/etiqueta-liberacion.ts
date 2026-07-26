@@ -312,19 +312,31 @@ function buildHtml(
             : ""
         }
       </div>
-      <div>
-        <div class="sap-block">
-          <img class="qr" src="${qrSapDataUrl}" alt="QR SAP HANA" />
-          <img class="logo" src="${sapLogoDataUrl}" alt="SAP HANA" />
-        </div>
-        <div class="sap-cap">Vista SAP · Rollo</div>
-      </div>
-
     </div>
 
     <div class="estatus">
       <div class="lbl-e">ESTATUS</div>
       <div class="val-e">${esc(data.estatus)}</div>
+    </div>
+
+    <div class="sap-footer">
+      <div class="sap-datos">
+        <div class="item">
+          <div class="k">N.º Orden de Producción</div>
+          <div class="v ${data.numeroOrdenSap ? "" : "small"}">${esc(data.numeroOrdenSap ?? "Sin orden SAP vinculada")}</div>
+        </div>
+        <div class="item">
+          <div class="k">Estado SAP</div>
+          <div class="v ${data.estadoSap ? "" : "small"}">${esc(data.estadoSap ?? "N/A")}</div>
+        </div>
+      </div>
+      <div class="sap-qr">
+        <img src="${qrSapDataUrl}" alt="QR SAP HANA" />
+        <div class="cap">Vista SAP · Rollo</div>
+      </div>
+      <div class="sap-logo">
+        <img src="${sapLogoDataUrl}" alt="SAP HANA" />
+      </div>
     </div>
 
     <div class="foot">FOR-CAL-04 · Generado automáticamente</div>
