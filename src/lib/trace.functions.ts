@@ -98,6 +98,7 @@ export const getMuestraTrace = createServerFn({ method: "GET" })
     const ordenId = (m as unknown as { orden_id?: string }).orden_id;
     const numero = Number(m.numero_rollo);
     let peso_kg: number | null = null;
+    let estado_sap: string | null = null;
     if (ordenId && Number.isFinite(numero)) {
       const { data: rp } = await supabaseAdmin
         .from("rollos_producidos")
@@ -111,6 +112,45 @@ export const getMuestraTrace = createServerFn({ method: "GET" })
       peso_kg = Number(pesoDesdeMedicion.valor);
     }
 
+    // Estado SAP: buscar vía pesaje vinculado → orden_produccion_id → ordenes_produccion.estado_sap.
+    // Fallback: por numero_rollo + maquina_id si la muestra aún no tiene pesaje_id.
+    {
+      const muestraAny = m as unknown as { pesaje_id?: string | null; maquina_id?: string | null };
+      let pesajeId: string | null = muestraAny.pesaje_id ?? null;
+      if (!pesajeId && m.numero_rollo && muestraAny.maquina_id) {
+        const { data: pRow } = await supabaseAdmin
+          .from("pesajes_bobina_madre")
+          .select("id, orden_produccion_id")
+          .eq("numero_rollo", m.numero_rollo)
+          .eq("maquina_id", muestraAny.maquina_id)
+          .order("fecha_hora_pesaje", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (pRow?.orden_produccion_id) {
+          const { data: opRow } = await supabaseAdmin
+            .from("ordenes_produccion")
+            .select("estado_sap")
+            .eq("id", pRow.orden_produccion_id)
+            .maybeSingle();
+          estado_sap = opRow?.estado_sap ?? null;
+        }
+      } else if (pesajeId) {
+        const { data: pRow } = await supabaseAdmin
+          .from("pesajes_bobina_madre")
+          .select("orden_produccion_id")
+          .eq("id", pesajeId)
+          .maybeSingle();
+        if (pRow?.orden_produccion_id) {
+          const { data: opRow } = await supabaseAdmin
+            .from("ordenes_produccion")
+            .select("estado_sap")
+            .eq("id", pRow.orden_produccion_id)
+            .maybeSingle();
+          estado_sap = opRow?.estado_sap ?? null;
+        }
+      }
+    }
+
     return {
       found: true,
       id: m.id,
@@ -121,6 +161,7 @@ export const getMuestraTrace = createServerFn({ method: "GET" })
       capturado_at: m.capturado_at,
       turno: m.turno,
       estado: m.estado,
+      estado_sap,
       dictamen: m.dictamen,
       estatus_liberacion: (m as { estatus_liberacion?: string | null }).estatus_liberacion ?? null,
       liberado_con_justificacion: !!(m as { liberado_con_justificacion?: boolean }).liberado_con_justificacion,
