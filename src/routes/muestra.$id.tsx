@@ -129,7 +129,7 @@ function SapView({
 }) {
   const isLiberado = status === "liberado";
   return (
-    <Shell subtitle="Vista SAP · Rollo">
+    <ShellSap subtitle="Vista SAP · Rollo">
       <div className="rounded-2xl border-2 border-[#0b2545] bg-white shadow-sm overflow-hidden">
         <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-slate-200">
           <Cell label="N.º de rollo" value={trace.numero_rollo ?? "—"} />
