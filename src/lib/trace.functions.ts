@@ -100,6 +100,7 @@ export const getMuestraTrace = createServerFn({ method: "GET" })
     const numero = Number(m.numero_rollo);
     let peso_kg: number | null = null;
     let estado_sap: string | null = null;
+    let numero_orden_sap: string | null = null;
     if (ordenId && Number.isFinite(numero)) {
       const { data: rp } = await supabaseAdmin
         .from("rollos_producidos")
