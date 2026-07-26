@@ -58,6 +58,8 @@ export type EtiquetaData = {
     rolAutorizador?: string | null;
     autorizadoPor?: string | null;
   } | null;
+  numeroOrdenSap?: string | null;
+  estadoSap?: string | null;
 };
 
 
