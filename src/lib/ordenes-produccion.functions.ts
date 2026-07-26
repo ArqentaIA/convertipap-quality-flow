@@ -13,6 +13,7 @@ export type OrdenProduccion = {
   numero_orden: string;
   peso_registrado: number;
   estado: "activa" | "cerrada";
+  estado_sap: string | null;
   fecha_registro: string;
   fecha_cierre: string | null;
   cerrada_por: string | null;
@@ -20,11 +21,16 @@ export type OrdenProduccion = {
   creado_por: string | null;
 };
 
-export type ImportRow = { numero_orden: string; peso_registrado: number };
+export type ImportRow = {
+  numero_orden: string;
+  peso_registrado: number;
+  estado_sap?: string | null;
+};
 
 export type ImportSummary = {
   total: number;
   insertadas: number;
+  actualizadas: number;
   duplicadas: string[];
   errores: { numero_orden: string; motivo: string }[];
   archivo: string;
@@ -34,6 +40,7 @@ export type ImportSummary = {
 const rowSchema = z.object({
   numero_orden: z.string().trim().min(1).max(64),
   peso_registrado: z.number().finite().min(0),
+  estado_sap: z.string().trim().max(16).nullable().optional(),
 });
 
 const importSchema = z.object({
