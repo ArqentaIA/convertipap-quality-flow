@@ -13,6 +13,7 @@ export type OrdenProduccion = {
   numero_orden: string;
   peso_registrado: number;
   estado: "activa" | "cerrada";
+  estado_sap: string | null;
   fecha_registro: string;
   fecha_cierre: string | null;
   cerrada_por: string | null;
@@ -20,11 +21,16 @@ export type OrdenProduccion = {
   creado_por: string | null;
 };
 
-export type ImportRow = { numero_orden: string; peso_registrado: number };
+export type ImportRow = {
+  numero_orden: string;
+  peso_registrado: number;
+  estado_sap?: string | null;
+};
 
 export type ImportSummary = {
   total: number;
   insertadas: number;
+  actualizadas: number;
   duplicadas: string[];
   errores: { numero_orden: string; motivo: string }[];
   archivo: string;
@@ -34,6 +40,7 @@ export type ImportSummary = {
 const rowSchema = z.object({
   numero_orden: z.string().trim().min(1).max(64),
   peso_registrado: z.number().finite().min(0),
+  estado_sap: z.string().trim().max(16).nullable().optional(),
 });
 
 const importSchema = z.object({
@@ -47,7 +54,7 @@ export const listOrdenesActivas = createServerFn({ method: "GET" })
   .handler(async ({ context }): Promise<OrdenProduccion[]> => {
     const { data, error } = await context.supabase
       .from("ordenes_produccion")
-      .select("id, numero_orden, peso_registrado, estado, fecha_registro, fecha_cierre, cerrada_por, archivo_origen, creado_por")
+      .select("id, numero_orden, peso_registrado, estado, estado_sap, fecha_registro, fecha_cierre, cerrada_por, archivo_origen, creado_por")
       .eq("estado", "activa")
       .order("fecha_registro", { ascending: false });
     if (error) throw new Error(`No se pudieron cargar las órdenes: ${error.message}`);
@@ -85,11 +92,13 @@ export const importarOrdenes = createServerFn({ method: "POST" })
 
     const errores: { numero_orden: string; motivo: string }[] = [];
     let insertadas = 0;
+    let actualizadas = 0;
 
     if (nuevas.length > 0) {
       const payload = nuevas.map((r) => ({
         numero_orden: r.numero_orden,
         peso_registrado: r.peso_registrado,
+        estado_sap: r.estado_sap ?? null,
         archivo_origen: data.archivo_origen,
         creado_por: context.userId,
       }));
@@ -116,9 +125,21 @@ export const importarOrdenes = createServerFn({ method: "POST" })
       }
     }
 
+    // Actualizar estado_sap en órdenes duplicadas (ya existentes) para reflejar el estado actual de SAP.
+    for (const r of data.rows) {
+      if (!duplicadas.includes(r.numero_orden)) continue;
+      if (r.estado_sap == null || r.estado_sap === "") continue;
+      const { error: upErr } = await sb
+        .from("ordenes_produccion")
+        .update({ estado_sap: r.estado_sap })
+        .eq("numero_orden", r.numero_orden);
+      if (!upErr) actualizadas += 1;
+    }
+
     return {
       total: data.rows.length,
       insertadas,
+      actualizadas,
       duplicadas,
       errores,
       archivo: data.archivo_origen,
