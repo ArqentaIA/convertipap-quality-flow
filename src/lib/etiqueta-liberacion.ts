@@ -164,9 +164,9 @@ function buildHtml(
   .sheet{width:140mm;min-height:216mm;margin:0 auto;background:#fff;border:2px solid #0f172a;display:flex;flex-direction:column;page-break-inside:avoid;break-inside:avoid}
 
   /* Encabezado */
-  .head{display:grid;grid-template-columns:78px 1fr;border-bottom:2px solid #0f172a}
-  .head .brand{display:flex;align-items:center;justify-content:center;padding:6px;border-right:1px solid #0f172a}
-  .head .brand img{max-width:72px;max-height:72px;object-fit:contain;display:block}
+  .head{display:grid;grid-template-columns:110px 1fr;border-bottom:2px solid #0f172a}
+  .head .brand{display:flex;align-items:center;justify-content:center;padding:8px;border-right:1px solid #0f172a}
+  .head .brand img{max-width:100px;max-height:100px;object-fit:contain;display:block}
   .head .title{padding:8px 10px;display:flex;flex-direction:column;justify-content:center;text-align:center}
   .head .title b{font-size:12px;color:#475569;letter-spacing:.04em}
   .head .title .sub{font-size:18px;font-weight:900;letter-spacing:.14em;margin-top:3px}
