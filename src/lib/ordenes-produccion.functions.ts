@@ -92,11 +92,13 @@ export const importarOrdenes = createServerFn({ method: "POST" })
 
     const errores: { numero_orden: string; motivo: string }[] = [];
     let insertadas = 0;
+    let actualizadas = 0;
 
     if (nuevas.length > 0) {
       const payload = nuevas.map((r) => ({
         numero_orden: r.numero_orden,
         peso_registrado: r.peso_registrado,
+        estado_sap: r.estado_sap ?? null,
         archivo_origen: data.archivo_origen,
         creado_por: context.userId,
       }));
@@ -123,9 +125,21 @@ export const importarOrdenes = createServerFn({ method: "POST" })
       }
     }
 
+    // Actualizar estado_sap en órdenes duplicadas (ya existentes) para reflejar el estado actual de SAP.
+    for (const r of data.rows) {
+      if (!duplicadas.includes(r.numero_orden)) continue;
+      if (r.estado_sap == null || r.estado_sap === "") continue;
+      const { error: upErr } = await sb
+        .from("ordenes_produccion")
+        .update({ estado_sap: r.estado_sap })
+        .eq("numero_orden", r.numero_orden);
+      if (!upErr) actualizadas += 1;
+    }
+
     return {
       total: data.rows.length,
       insertadas,
+      actualizadas,
       duplicadas,
       errores,
       archivo: data.archivo_origen,
