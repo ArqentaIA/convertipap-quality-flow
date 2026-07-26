@@ -128,9 +128,21 @@ function SapView({
   pesoMostrado: number | null;
 }) {
   const isLiberado = status === "liberado";
+  const faltaOrdenSap = !trace.numero_orden_sap;
   return (
     <ShellSap subtitle="Vista SAP · Rollo">
       <div className="rounded-2xl border-2 border-[#0b2545] bg-white shadow-sm overflow-hidden">
+        {faltaOrdenSap && (
+          <div className="bg-amber-50 border-b border-amber-200 px-4 py-3 text-center">
+            <div className="text-amber-900 text-sm font-bold">
+              Orden de producción SAP no vinculada
+            </div>
+            <div className="text-amber-800 text-xs mt-1 leading-relaxed">
+              Este rollo no tiene una orden de producción SAP asociada. Los campos
+              <strong> Orden de producción</strong> y <strong>Estado SAP</strong> no están disponibles.
+            </div>
+          </div>
+        )}
         <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-slate-200">
           <Cell label="N.º de rollo" value={trace.numero_rollo ?? "—"} />
           <Cell
@@ -140,13 +152,16 @@ function SapView({
           />
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 border-t border-slate-200 divide-y sm:divide-y-0 sm:divide-x divide-slate-200">
-          <Cell label="Orden de producción" value={trace.numero_orden_sap ?? "—"} small />
-          <Cell label="Estado SAP" value={trace.estado_sap ?? "—"} small />
+          <Cell
+            label="Orden de producción"
+            value={trace.numero_orden_sap ?? "Sin orden SAP vinculada"}
+            small
+          />
+          <Cell label="Estado SAP" value={trace.estado_sap ?? "N/A"} small />
         </div>
         <StatusBar isLiberado={isLiberado} />
       </div>
     </ShellSap>
-
   );
 }
 
