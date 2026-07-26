@@ -25,6 +25,7 @@ export type TraceMuestra = {
   turno: string;
   estado: string;
   estado_sap: string | null;
+  numero_orden_sap: string | null;
   dictamen: string | null;
   estatus_liberacion: string | null;
   liberado_con_justificacion: boolean;
