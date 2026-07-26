@@ -145,7 +145,8 @@ function SapView({
         </div>
         <StatusBar isLiberado={isLiberado} />
       </div>
-    </Shell>
+    </ShellSap>
+
   );
 }
 
