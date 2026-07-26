@@ -54,7 +54,7 @@ export const listOrdenesActivas = createServerFn({ method: "GET" })
   .handler(async ({ context }): Promise<OrdenProduccion[]> => {
     const { data, error } = await context.supabase
       .from("ordenes_produccion")
-      .select("id, numero_orden, peso_registrado, estado, fecha_registro, fecha_cierre, cerrada_por, archivo_origen, creado_por")
+      .select("id, numero_orden, peso_registrado, estado, estado_sap, fecha_registro, fecha_cierre, cerrada_por, archivo_origen, creado_por")
       .eq("estado", "activa")
       .order("fecha_registro", { ascending: false });
     if (error) throw new Error(`No se pudieron cargar las órdenes: ${error.message}`);
