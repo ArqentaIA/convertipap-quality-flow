@@ -25,6 +25,7 @@ export type TraceMuestra = {
   turno: string;
   estado: string;
   estado_sap: string | null;
+  numero_orden_sap: string | null;
   dictamen: string | null;
   estatus_liberacion: string | null;
   liberado_con_justificacion: boolean;
@@ -99,6 +100,7 @@ export const getMuestraTrace = createServerFn({ method: "GET" })
     const numero = Number(m.numero_rollo);
     let peso_kg: number | null = null;
     let estado_sap: string | null = null;
+    let numero_orden_sap: string | null = null;
     if (ordenId && Number.isFinite(numero)) {
       const { data: rp } = await supabaseAdmin
         .from("rollos_producidos")
@@ -129,10 +131,11 @@ export const getMuestraTrace = createServerFn({ method: "GET" })
         if (pRow?.orden_produccion_id) {
           const { data: opRow } = await supabaseAdmin
             .from("ordenes_produccion")
-            .select("estado_sap")
+            .select("estado_sap, numero_orden")
             .eq("id", pRow.orden_produccion_id)
             .maybeSingle();
           estado_sap = opRow?.estado_sap ?? null;
+          numero_orden_sap = opRow?.numero_orden ?? null;
         }
       } else if (pesajeId) {
         const { data: pRow } = await supabaseAdmin
@@ -143,10 +146,11 @@ export const getMuestraTrace = createServerFn({ method: "GET" })
         if (pRow?.orden_produccion_id) {
           const { data: opRow } = await supabaseAdmin
             .from("ordenes_produccion")
-            .select("estado_sap")
+            .select("estado_sap, numero_orden")
             .eq("id", pRow.orden_produccion_id)
             .maybeSingle();
           estado_sap = opRow?.estado_sap ?? null;
+          numero_orden_sap = opRow?.numero_orden ?? null;
         }
       }
     }
@@ -162,6 +166,7 @@ export const getMuestraTrace = createServerFn({ method: "GET" })
       turno: m.turno,
       estado: m.estado,
       estado_sap,
+      numero_orden_sap,
       dictamen: m.dictamen,
       estatus_liberacion: (m as { estatus_liberacion?: string | null }).estatus_liberacion ?? null,
       liberado_con_justificacion: !!(m as { liberado_con_justificacion?: boolean }).liberado_con_justificacion,
