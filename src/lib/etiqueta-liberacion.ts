@@ -359,13 +359,29 @@ export async function printEtiquetaLiberacion(data: EtiquetaData): Promise<void>
   const pesoTxt = pesoMed && pesoMed.valor !== null && pesoMed.valor !== undefined ? String(pesoMed.valor) : "—";
   const sapTraceUrl = `${traceUrl}?vista=sap&rollo=${encodeURIComponent(data.numeroRollo || "")}&peso=${encodeURIComponent(pesoTxt)}&estatus=${encodeURIComponent(data.estatus)}`;
 
+  // Enriquecer con datos SAP (N.º de orden + estado) si no vienen ya en `data`.
+  let numeroOrdenSap: string | null = data.numeroOrdenSap ?? null;
+  let estadoSap: string | null = data.estadoSap ?? null;
+  if (numeroOrdenSap == null || estadoSap == null) {
+    try {
+      const { getMuestraTrace } = await import("@/lib/trace.functions");
+      const trace = await getMuestraTrace({ data: { id: data.muestraId } });
+      if (trace.found) {
+        numeroOrdenSap = numeroOrdenSap ?? trace.numero_orden_sap ?? null;
+        estadoSap = estadoSap ?? trace.estado_sap ?? null;
+      }
+    } catch {
+      /* no bloquear impresión si el trace falla */
+    }
+  }
+
   const [qrDataUrl, qrSapDataUrl, logoDataUrl, sapLogoDataUrl] = await Promise.all([
     QRCode.toDataURL(traceUrl, { margin: 1, width: 240, errorCorrectionLevel: "M" }),
-    QRCode.toDataURL(sapTraceUrl, { margin: 1, width: 240, errorCorrectionLevel: "M" }),
+    QRCode.toDataURL(sapTraceUrl, { margin: 1, width: 420, errorCorrectionLevel: "M" }),
     toDataUrl(logoUrl),
     toDataUrl(sapHanaAsset.url),
   ]);
-  const html = buildHtml(data, qrDataUrl, qrSapDataUrl, logoDataUrl, sapLogoDataUrl);
+  const html = buildHtml({ ...data, numeroOrdenSap, estadoSap }, qrDataUrl, qrSapDataUrl, logoDataUrl, sapLogoDataUrl);
   const w = window.open("", "_blank", "width=960,height=900");
   if (!w) {
     throw new Error("El navegador bloqueó la ventana. Permite popups para imprimir la etiqueta.");
