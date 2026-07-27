@@ -711,12 +711,25 @@ function PesajeBobinaPage() {
           </div>
           <div className="relative flex-1 overflow-hidden bg-black">
             <video ref={videoRef} playsInline muted autoPlay className="h-full w-full object-contain" />
+            {/* Marco guía */}
+            <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+              <div
+                className="rounded-lg border-2 border-white/80 shadow-[0_0_0_9999px_rgba(0,0,0,0.35)]"
+                style={{ width: "75%", height: "30%" }}
+              />
+              <div className="mt-4 rounded-md bg-black/70 px-3 py-1.5 text-center text-xs text-white">
+                Coloca únicamente el display de la báscula dentro del recuadro.
+                <br />
+                <span className="text-white/70">Evita reflejos y mantén la cámara fija.</span>
+              </div>
+            </div>
             {camaraError && (
               <div className="absolute inset-x-4 top-4 rounded-md bg-destructive/90 px-4 py-3 text-sm text-white">
                 {camaraError}
               </div>
             )}
           </div>
+
           <div className="flex items-center justify-center gap-4 bg-black px-4 py-5">
             <button
               type="button"
