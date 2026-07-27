@@ -150,44 +150,82 @@ export const listProductosConSpec = createServerFn({ method: "GET" })
     const { data, error } = await sb
       .from("producto_especificaciones")
       .select(
-        `id, version, estado, producto_id,
+        `id, version, estado, producto_id, vigente_desde,
          productos(id, codigo, nombre, activo, tipo_id)`,
       )
-      .eq("estado", "vigente");
+      .eq("estado", "vigente")
+      .order("vigente_desde", { ascending: false });
     if (error) throw new Error(error.message);
 
-    return (data ?? [])
-      .filter((row) => row.productos && row.productos.activo)
-      .map((row) => ({
+    // Un producto puede tener múltiples vigentes (perfiles por máquina).
+    // Aquí devolvemos UNA entrada por producto; la resolución fina se hace
+    // en getSpecPorProducto usando maquinaId + producto_especificacion_maquinas.
+    const byProd = new Map<
+      string,
+      { producto_id: string; codigo: string; nombre: string; especificacion_id: string; especificacion_version: string }
+    >();
+    for (const row of data ?? []) {
+      if (!row.productos || !row.productos.activo) continue;
+      if (byProd.has(row.producto_id)) continue;
+      byProd.set(row.producto_id, {
         producto_id: row.producto_id,
-        codigo: row.productos!.codigo,
-        nombre: row.productos!.nombre,
+        codigo: row.productos.codigo,
+        nombre: row.productos.nombre,
         especificacion_id: row.id,
         especificacion_version: row.version,
-      }))
-      .sort((a, b) => a.codigo.localeCompare(b.codigo));
+      });
+    }
+    return Array.from(byProd.values()).sort((a, b) => a.codigo.localeCompare(b.codigo));
   });
 
 /**
  * Devuelve la especificación vigente + variables (min/objetivo/max) de un producto.
+ * Si el producto tiene múltiples perfiles vigentes (uno por máquina) y se
+ * proporciona `maquinaId`, resuelve por `producto_especificacion_maquinas`.
+ * Si no hay match por máquina, cae al perfil vigente sin `perfil_key` (default)
+ * o al vigente más reciente.
  */
 export const getSpecPorProducto = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { productoId: string }) =>
-    z.object({ productoId: z.string().uuid() }).parse(input),
+  .inputValidator((input: { productoId: string; maquinaId?: string }) =>
+    z
+      .object({
+        productoId: z.string().uuid(),
+        maquinaId: z.string().uuid().optional(),
+      })
+      .parse(input),
   )
   .handler(async ({ data, context }) => {
     const sb = context.supabase as SB;
-    const { data: spec, error: eSpec } = await sb
+
+    const { data: vigentes, error: eSpec } = await sb
       .from("producto_especificaciones")
-      .select("id, version, estado, producto_id")
+      .select("id, version, estado, producto_id, perfil_key, vigente_desde")
       .eq("producto_id", data.productoId)
       .eq("estado", "vigente")
-      .order("vigente_desde", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .order("vigente_desde", { ascending: false });
     if (eSpec) throw new Error(eSpec.message);
-    if (!spec) throw new Error("El producto no tiene especificación vigente");
+    if (!vigentes || vigentes.length === 0) {
+      throw new Error("El producto no tiene especificación vigente");
+    }
+
+    let spec: (typeof vigentes)[number] | undefined;
+
+    if (data.maquinaId && vigentes.length > 1) {
+      const specIds = vigentes.map((s) => s.id);
+      const { data: maps, error: eMap } = await sb
+        .from("producto_especificacion_maquinas")
+        .select("especificacion_id")
+        .eq("maquina_id", data.maquinaId)
+        .in("especificacion_id", specIds);
+      if (eMap) throw new Error(eMap.message);
+      const mapId = maps?.[0]?.especificacion_id;
+      if (mapId) spec = vigentes.find((s) => s.id === mapId);
+    }
+
+    if (!spec) {
+      spec = vigentes.find((s) => s.perfil_key == null) ?? vigentes[0];
+    }
 
     const { data: vars, error: eVars } = await sb
       .from("producto_variables")
@@ -200,6 +238,7 @@ export const getSpecPorProducto = createServerFn({ method: "GET" })
 
     return { spec, variables: vars ?? [] };
   });
+
 
 export const getOrdenSpec = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
