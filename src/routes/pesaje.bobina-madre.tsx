@@ -229,13 +229,18 @@ function PesajeBobinaPage() {
     if (evidenciaPreview) URL.revokeObjectURL(evidenciaPreview);
     setEvidenciaFile(null);
     setEvidenciaPreview(null);
+    setConfirmData(null);
+    activeRequestRef.current = null;
+    registeringRequestRef.current = null;
   }
   function resetForm(keepMaquina = false) {
     limpiarFoto();
+    if (activeToastRef.current != null) { toast.dismiss(activeToastRef.current); activeToastRef.current = null; }
     if (!keepMaquina) {
       setNumeroRollo(""); setOrdenSel(""); setOrdenOtro(""); setNumeroOrden("");
     } else { setNumeroRollo(""); }
   }
+
 
   async function abrirCamara() {
     setCamaraError(null);
