@@ -141,10 +141,28 @@ function PesajeBobinaPage() {
   const [evidenciaPreview, setEvidenciaPreview] = useState<string | null>(null);
   const [procesando, setProcesando] = useState(false);
 
+  // Modal de confirmación cuando OCR devuelve status="confirm"
+  const [confirmData, setConfirmData] = useState<null | {
+    peso: number; message: string; storagePath: string; idempotencyKey: string;
+    fechaISO: string; requestId: string;
+  }>(null);
+
+  // Dedupe: un solo toast + un solo registro por captura
+  const activeRequestRef = useRef<string | null>(null);
+  const registeringRequestRef = useRef<string | null>(null);
+  const activeToastRef = useRef<string | number | null>(null);
+
   const [camaraAbierta, setCamaraAbierta] = useState(false);
   const [camaraError, setCamaraError] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+
+  function mostrarMensajeUnico(kind: "success" | "error" | "info", msg: string) {
+    if (activeToastRef.current != null) toast.dismiss(activeToastRef.current);
+    const id = kind === "success" ? toast.success(msg) : kind === "error" ? toast.error(msg) : toast(msg);
+    activeToastRef.current = id;
+  }
+
 
   const maquinasQ = useQuery({
     queryKey: ["pesaje", "maquinas"],
