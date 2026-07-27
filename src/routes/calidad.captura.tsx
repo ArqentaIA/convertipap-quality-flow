@@ -1264,7 +1264,8 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
                       </div>
                     )}
                   </div>
-                  {pesajeVinculado.evidencia_path && (
+                  {/* Botón "Ver evidencia de pesaje" oculto — lógica intacta */}
+                  {false && pesajeVinculado?.evidencia_path && (
                     <div className="pl-6">
                       <button
                         type="button"
