@@ -744,7 +744,41 @@ function PesajeBobinaPage() {
         </div>
       )}
 
+      {/* Modal de confirmación (status=confirm) */}
+      {confirmData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="w-full max-w-md rounded-xl bg-card p-6 shadow-2xl">
+            <h3 className="mb-2 text-lg font-semibold">Confirmar peso detectado</h3>
+            <p className="mb-4 text-sm text-muted-foreground">{confirmData.message}</p>
+            <div className="mb-5 rounded-lg border border-border bg-muted/40 p-4 text-center">
+              <div className="text-xs uppercase text-muted-foreground">Peso detectado</div>
+              <div className="text-4xl font-bold tabular-nums">{confirmData.peso} kg</div>
+            </div>
+            <div className="flex flex-col gap-2 sm:flex-row-reverse">
+              <button
+                type="button"
+                onClick={confirmarLectura}
+                disabled={procesando}
+                className="inline-flex min-h-[48px] flex-1 items-center justify-center gap-2 rounded-md bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow disabled:opacity-50"
+              >
+                {procesando ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                Confirmar {confirmData.peso} kg
+              </button>
+              <button
+                type="button"
+                onClick={cancelarConfirmacion}
+                disabled={procesando}
+                className="inline-flex min-h-[48px] flex-1 items-center justify-center gap-2 rounded-md border border-border px-5 py-3 text-sm"
+              >
+                <Camera className="h-4 w-4" /> Volver a tomar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <ListaPesajes lista={listaQ.data ?? []} loading={listaQ.isLoading} />
+
     </div>
   );
 }
