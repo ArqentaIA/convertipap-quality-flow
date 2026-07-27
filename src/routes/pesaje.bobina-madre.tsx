@@ -802,7 +802,8 @@ function ListaPesajes({ lista, loading }: { lista: PesajeBobina[]; loading: bool
               <th className="px-3 py-2">Orden</th>
               <th className="px-3 py-2 text-right">Bruto</th>
               <th className="px-3 py-2 text-right">Neto</th>
-              <th className="px-3 py-2">Evidencia</th>
+              {/* Columna Evidencia oculta temporalmente — lógica intacta */}
+              {false && <th className="px-3 py-2">Evidencia</th>}
             </tr>
           </thead>
           <tbody>
