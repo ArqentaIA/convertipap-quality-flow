@@ -530,12 +530,14 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
     }
   }
 
-  // Cuando el rollo es válido pero no hay pesaje registrado, bloqueamos el
-  // campo de peso y mostramos una alerta con acceso al módulo de pesaje.
+  // Cuando el rollo es válido pero no hay pesaje registrado, mostramos aviso
+  // informativo. El peso puede capturarse manualmente igual.
   const pesajeNoEncontrado =
     !!maquina?.id && rolloValido && !pesajeQuery.isFetching && !pesajeVinculado;
-  // Peso siempre bloqueado en captura: sólo se autollena desde un pesaje válido.
-  const pesoBloqueado = true;
+  // Peso editable siempre. Si existe pesaje vinculado se autollena pero el
+  // usuario puede sobrescribirlo. La vinculación al pesaje sigue siendo opcional.
+  const pesoBloqueado = false;
+
   const mdValor = mdVarId ? (mediciones[mdVarId]?.valor ?? "") : "";
   const cdValor = cdVarId ? (mediciones[cdVarId]?.valor ?? "") : "";
   useEffect(() => {
