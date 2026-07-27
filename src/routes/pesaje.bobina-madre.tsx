@@ -802,12 +802,13 @@ function ListaPesajes({ lista, loading }: { lista: PesajeBobina[]; loading: bool
               <th className="px-3 py-2">Orden</th>
               <th className="px-3 py-2 text-right">Bruto</th>
               <th className="px-3 py-2 text-right">Neto</th>
-              <th className="px-3 py-2">Evidencia</th>
+              {/* Columna Evidencia oculta temporalmente — lógica intacta */}
+              {false && <th className="px-3 py-2">Evidencia</th>}
             </tr>
           </thead>
           <tbody>
-            {loading && <tr><td colSpan={7} className="px-3 py-6 text-center text-muted-foreground">Cargando…</td></tr>}
-            {!loading && lista.length === 0 && <tr><td colSpan={7} className="px-3 py-6 text-center text-muted-foreground">Sin registros aún.</td></tr>}
+            {loading && <tr><td colSpan={6} className="px-3 py-6 text-center text-muted-foreground">Cargando…</td></tr>}
+            {!loading && lista.length === 0 && <tr><td colSpan={6} className="px-3 py-6 text-center text-muted-foreground">Sin registros aún.</td></tr>}
             {lista.map((p) => (
               <tr key={p.id} className="border-t border-border">
                 <td className="px-3 py-2 whitespace-nowrap">{fechaCortoMX(p.fecha_hora_pesaje)} {horaMX(p.fecha_hora_pesaje)}</td>
@@ -816,17 +817,20 @@ function ListaPesajes({ lista, loading }: { lista: PesajeBobina[]; loading: bool
                 <td className="px-3 py-2">{p.numero_orden ?? "—"}</td>
                 <td className="px-3 py-2 text-right">{Number(p.peso_bruto_kg).toFixed(2)}</td>
                 <td className="px-3 py-2 text-right font-semibold text-amber-700">{Number(p.peso_neto_kg).toFixed(2)}</td>
-                <td className="px-3 py-2">
-                  <button
-                    onClick={async () => {
-                      try { const { url } = await firmar({ data: { path: p.evidencia_path } }); setPreviewUrl(url); }
-                      catch (e) { toast.error((e as Error).message); }
-                    }}
-                    className="inline-flex items-center gap-1 text-primary hover:underline text-xs"
-                  >
-                    <ImageIcon className="h-3.5 w-3.5" /> Ver
-                  </button>
-                </td>
+                {/* Celda Evidencia oculta — se preserva evidencia_path en BD */}
+                {false && (
+                  <td className="px-3 py-2">
+                    <button
+                      onClick={async () => {
+                        try { const { url } = await firmar({ data: { path: p.evidencia_path } }); setPreviewUrl(url); }
+                        catch (e) { toast.error((e as Error).message); }
+                      }}
+                      className="inline-flex items-center gap-1 text-primary hover:underline text-xs"
+                    >
+                      <ImageIcon className="h-3.5 w-3.5" /> Ver
+                    </button>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
