@@ -406,6 +406,60 @@ export type Database = {
         }
         Relationships: []
       }
+      catalog_import_batches: {
+        Row: {
+          completed_at: string | null
+          conflicts: number
+          created_products: number
+          created_profiles: number
+          created_specifications: number
+          errors: number
+          executed_by: string | null
+          id: string
+          notes: string | null
+          skipped_records: number
+          source_file: string
+          source_hash: string | null
+          started_at: string
+          status: string
+          updated_products: number
+        }
+        Insert: {
+          completed_at?: string | null
+          conflicts?: number
+          created_products?: number
+          created_profiles?: number
+          created_specifications?: number
+          errors?: number
+          executed_by?: string | null
+          id?: string
+          notes?: string | null
+          skipped_records?: number
+          source_file: string
+          source_hash?: string | null
+          started_at?: string
+          status?: string
+          updated_products?: number
+        }
+        Update: {
+          completed_at?: string | null
+          conflicts?: number
+          created_products?: number
+          created_profiles?: number
+          created_specifications?: number
+          errors?: number
+          executed_by?: string | null
+          id?: string
+          notes?: string | null
+          skipped_records?: number
+          source_file?: string
+          source_hash?: string | null
+          started_at?: string
+          status?: string
+          updated_products?: number
+        }
+        Relationships: []
+      }
       familias_producto: {
         Row: {
           activo: boolean
@@ -1225,6 +1279,42 @@ export type Database = {
         }
         Relationships: []
       }
+      producto_especificacion_maquinas: {
+        Row: {
+          created_at: string
+          especificacion_id: string
+          id: string
+          maquina_id: string
+        }
+        Insert: {
+          created_at?: string
+          especificacion_id: string
+          id?: string
+          maquina_id: string
+        }
+        Update: {
+          created_at?: string
+          especificacion_id?: string
+          id?: string
+          maquina_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "producto_especificacion_maquinas_especificacion_id_fkey"
+            columns: ["especificacion_id"]
+            isOneToOne: false
+            referencedRelation: "producto_especificaciones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "producto_especificacion_maquinas_maquina_id_fkey"
+            columns: ["maquina_id"]
+            isOneToOne: false
+            referencedRelation: "maquinas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       producto_especificaciones: {
         Row: {
           aprobado_at: string | null
@@ -1442,6 +1532,59 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      quality_catalog_audit: {
+        Row: {
+          action: string
+          after_data: Json | null
+          batch_id: string | null
+          before_data: Json | null
+          changed_at: string
+          changed_by: string | null
+          entity_id: string | null
+          entity_type: string
+          id: string
+          product_key: string | null
+          reason: string | null
+          source_file: string | null
+        }
+        Insert: {
+          action: string
+          after_data?: Json | null
+          batch_id?: string | null
+          before_data?: Json | null
+          changed_at?: string
+          changed_by?: string | null
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+          product_key?: string | null
+          reason?: string | null
+          source_file?: string | null
+        }
+        Update: {
+          action?: string
+          after_data?: Json | null
+          batch_id?: string | null
+          before_data?: Json | null
+          changed_at?: string
+          changed_by?: string | null
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          product_key?: string | null
+          reason?: string | null
+          source_file?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quality_catalog_audit_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_import_batches"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       rollos_producidos: {
         Row: {
