@@ -148,8 +148,20 @@ Deno.serve(async (req) => {
     const mime = fileData.type || "image/jpeg";
 
     // Gemini OCR
+    // Selección dinámica de modelo Gemini (evita modelos retirados para nuevos proyectos).
+    const modelo = await elegirModeloGemini(geminiKey, requestId);
+    if (!modelo) {
+      return json({
+        error: "Modelo Gemini no disponible",
+        etapa: "gemini_model",
+        detalle: "No se encontró ningún modelo Flash compatible con generateContent para este proyecto.",
+        requestId,
+      }, 502);
+    }
+    console.log(`[${requestId}] Modelo Gemini seleccionado: ${modelo}`);
+
     const resp = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${geminiKey}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -167,10 +179,19 @@ Deno.serve(async (req) => {
     );
     if (!resp.ok) {
       const t = await resp.text();
-      console.log(`[${requestId}] Lectura de imagen falló: ${resp.status}`);
-      return json({ error: `Gemini falló: ${resp.status} ${t.slice(0, 300)}`, requestId }, 502);
+      console.log(`[${requestId}] Lectura de imagen falló: ${resp.status} modelo=${modelo}`);
+      if (resp.status === 404) {
+        return json({
+          error: "Modelo Gemini no disponible",
+          etapa: "gemini_model",
+          detalle: "El modelo configurado no está disponible para este proyecto",
+          modelo,
+          requestId,
+        }, 502);
+      }
+      return json({ error: `Gemini falló: ${resp.status} ${t.slice(0, 300)}`, modelo, requestId }, 502);
     }
-    console.log(`[${requestId}] Lectura de imagen completada`);
+    console.log(`[${requestId}] Lectura de imagen completada modelo=${modelo}`);
     const gj = await resp.json();
     const text: string = gj?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
     let parsed: Gemini;
