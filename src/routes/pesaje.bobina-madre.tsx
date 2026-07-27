@@ -817,7 +817,7 @@ function ListaPesajes({ lista, loading }: { lista: PesajeBobina[]; loading: bool
                 <td className="px-3 py-2 font-medium">{p.numero_rollo}</td>
                 <td className="px-3 py-2">{p.numero_orden ?? "—"}</td>
                 <td className="px-3 py-2 text-right">{Number(p.peso_bruto_kg).toFixed(2)}</td>
-                <td className="px-3 py-2 text-right text-muted-foreground">{Number(p.peso_eje_kg ?? taraKgPorMaquina(p.maquina_codigo)).toFixed(2)}</td>
+                <td className="px-3 py-2 text-right text-muted-foreground">{Number(p.peso_eje_kg ?? taraPorMaquina(p.maquina_codigo)).toFixed(2)}</td>
                 <td className="px-3 py-2 text-right font-semibold text-amber-700">{Number(p.peso_neto_kg).toFixed(2)}</td>
                 {/* Celda Evidencia oculta — se preserva evidencia_path en BD */}
                 {false && (
