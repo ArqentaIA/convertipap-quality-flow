@@ -89,12 +89,13 @@ const productosQO = queryOptions({
   queryFn: () => listProductosConSpec(),
 });
 
-const specQO = (productoId: string) =>
+const specQO = (productoId: string, maquinaId?: string) =>
   queryOptions({
-    queryKey: ["qc", "spec-por-producto", productoId],
-    queryFn: () => getSpecPorProducto({ data: { productoId } }),
+    queryKey: ["qc", "spec-por-producto", productoId, maquinaId ?? ""],
+    queryFn: () => getSpecPorProducto({ data: { productoId, maquinaId } }),
     enabled: !!productoId,
   });
+
 
 export const Route = createFileRoute("/calidad/captura")({
   component: () => <CapturaCalidadPage modoFueraTurno={false} />,
