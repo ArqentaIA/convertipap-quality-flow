@@ -1284,20 +1284,24 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
                 <p className="text-[11px] text-muted-foreground">Buscando pesaje registrado…</p>
               )}
               {pesajeNoEncontrado && maqResuelta && (
-                <Alert variant="destructive" className="py-2">
+                <Alert className="py-2">
                   <AlertTriangle className="h-4 w-4" />
                   <AlertTitle className="text-sm">Sin pesaje registrado</AlertTitle>
                   <AlertDescription className="text-[12px] space-y-2">
-                    <div>Este Número de Rollo aún no cuenta con un Pesaje de Bobina Madre.</div>
+                    <div>
+                      Este Número de Rollo no tiene Pesaje de Bobina Madre vinculado.
+                      Puedes capturar el peso manualmente o registrar primero el pesaje.
+                    </div>
                     <Link
                       to="/pesaje/bobina-madre"
-                      className="inline-flex items-center rounded-md bg-destructive px-2 py-1 text-[12px] font-semibold text-destructive-foreground"
+                      className="inline-flex items-center rounded-md border border-border bg-background px-2 py-1 text-[12px] font-semibold text-foreground hover:bg-accent"
                     >
                       Ir a Pesaje de Bobina Madre
                     </Link>
                   </AlertDescription>
                 </Alert>
               )}
+
             </div>
           </CardContent>
         </Card>
