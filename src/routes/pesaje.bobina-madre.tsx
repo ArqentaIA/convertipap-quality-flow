@@ -801,14 +801,15 @@ function ListaPesajes({ lista, loading }: { lista: PesajeBobina[]; loading: bool
               <th className="px-3 py-2">Rollo</th>
               <th className="px-3 py-2">Orden</th>
               <th className="px-3 py-2 text-right">Bruto</th>
+              <th className="px-3 py-2 text-right">Tara</th>
               <th className="px-3 py-2 text-right">Neto</th>
               {/* Columna Evidencia oculta temporalmente — lógica intacta */}
               {false && <th className="px-3 py-2">Evidencia</th>}
             </tr>
           </thead>
           <tbody>
-            {loading && <tr><td colSpan={6} className="px-3 py-6 text-center text-muted-foreground">Cargando…</td></tr>}
-            {!loading && lista.length === 0 && <tr><td colSpan={6} className="px-3 py-6 text-center text-muted-foreground">Sin registros aún.</td></tr>}
+            {loading && <tr><td colSpan={7} className="px-3 py-6 text-center text-muted-foreground">Cargando…</td></tr>}
+            {!loading && lista.length === 0 && <tr><td colSpan={7} className="px-3 py-6 text-center text-muted-foreground">Sin registros aún.</td></tr>}
             {lista.map((p) => (
               <tr key={p.id} className="border-t border-border">
                 <td className="px-3 py-2 whitespace-nowrap">{fechaCortoMX(p.fecha_hora_pesaje)} {horaMX(p.fecha_hora_pesaje)}</td>
@@ -816,6 +817,7 @@ function ListaPesajes({ lista, loading }: { lista: PesajeBobina[]; loading: bool
                 <td className="px-3 py-2 font-medium">{p.numero_rollo}</td>
                 <td className="px-3 py-2">{p.numero_orden ?? "—"}</td>
                 <td className="px-3 py-2 text-right">{Number(p.peso_bruto_kg).toFixed(2)}</td>
+                <td className="px-3 py-2 text-right text-muted-foreground">{Number(p.peso_eje_kg ?? taraPorMaquina(p.maquina_codigo)).toFixed(2)}</td>
                 <td className="px-3 py-2 text-right font-semibold text-amber-700">{Number(p.peso_neto_kg).toFixed(2)}</td>
                 {/* Celda Evidencia oculta — se preserva evidencia_path en BD */}
                 {false && (
