@@ -1,10 +1,9 @@
-// Registro seguro de pesaje de bobina madre.
-// El frontend envía la evidencia y los identificadores del registro.
-// Esta Edge Function:
-//   1) Valida al usuario (bearer token).
-//   2) Ejecuta OCR con Gemini sobre la evidencia del bucket privado.
-//   3) Aplica las validaciones estrictas (confianza ≥ 85% + 7 reglas).
-//   4) Convierte el peso a entero y resta la tara según la máquina (MP-04=560, MP-05=750, MP-06=1160, MP-07=0 kg → peso neto directo).
+// Registro seguro de pesaje de bobina madre — Refinamiento OCR v3.
+// Estados: accepted | confirm | retake | technical_error (uno solo por captura).
+// - Kilogramos asumidos por configuración de proceso (no bloquear por ausencia visual de "kg").
+// - Segunda revisión automática ante duda antes de rechazar.
+// - Solo bloquea por unidad cuando Gemini identifica explícitamente lb/oz/g/etc.
+// - Preserva: autenticación, taras, tablas, selección dinámica de modelo Gemini.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 
@@ -22,8 +21,8 @@ const CORS: Record<string, string> = {
 };
 
 const BUCKET = "pesajes-evidencia";
-const UMBRAL = 85;      // Confianza mínima OCR (%)
-const PESO_MIN = 100;   // Peso bruto mínimo aceptable (kg)
+const MIN_PESO_BRUTO_KG = 100;
+const MAX_PESO_BRUTO_KG = 5000;
 
 const TARA_POR_MAQUINA: Record<string, number> = {
   "MP-04": 560,
@@ -31,280 +30,482 @@ const TARA_POR_MAQUINA: Record<string, number> = {
   "MP-06": 1160,
   "MP-07": 0,
 };
-
 function taraPorMaquina(codigo: string): number {
   return TARA_POR_MAQUINA[codigo] ?? 300;
 }
 
-interface Gemini {
-  peso_kg: number | null;
-  confianza: number;
-  unidad: string | null;
-  display_completo: boolean;
-  numero_unico: boolean;
-  reflejos: boolean;
-  digitos_ambiguos: boolean;
-  observaciones: string;
+const UNIDADES_DIFERENTES = /^\s*(lb|lbs|libras?|oz|onzas?|t|ton|toneladas?|g|gr|gram(o|os))\s*$/i;
+
+interface GeminiCandidato { peso: number | null; confianza: number; evidencia?: string }
+interface GeminiOut {
+  displayDetectado: boolean;
+  displayCompleto: boolean;
+  textoVisible: string;
+  pesoPrincipal: number | null;
+  candidatos: GeminiCandidato[];
+  unidadVisible: string;
+  unidadConfirmada: string;
+  reflejo: boolean;
+  reflejoSevero: boolean;
+  desenfoque: boolean;
+  desenfoqueSevero: boolean;
+  decimalDudoso: boolean;
+  digitosCubiertos: boolean;
+  cantidadDigitosVisibles: number;
+  calidadImagen: number;
+  confianzaGeneral: number;
+  lecturaConfirmable: boolean;
+  requiereSegundaRevision: boolean;
 }
 
-const PROMPT = `Eres un OCR industrial para básculas. Analiza la fotografía del display de una báscula.
-Devuelve EXCLUSIVAMENTE un JSON válido con esta forma:
+const PROMPT_BASE = `Eres un OCR industrial para básculas. Analiza la fotografía del display.
+El proceso opera exclusivamente en kilogramos; la ausencia visual de "kg" NO es un error.
+Devuelve EXCLUSIVAMENTE un JSON estricto con esta estructura (sin texto fuera del JSON):
 {
- "peso_kg": <número o null>,
- "unidad": "kg" | "lb" | "g" | null,
- "confianza": <entero 0-100>,
- "display_completo": <bool>,
- "numero_unico": <bool>,
- "reflejos": <bool>,
- "digitos_ambiguos": <bool>,
- "observaciones": "<texto corto>"
+ "displayDetectado": <bool>,
+ "displayCompleto": <bool>,
+ "textoVisible": "<texto>",
+ "pesoPrincipal": <número o null>,
+ "candidatos": [{"peso": <número>, "confianza": <0-100>, "evidencia": "<texto>"}],
+ "unidadVisible": "<texto>",
+ "unidadConfirmada": "kg",
+ "reflejo": <bool>,
+ "reflejoSevero": <bool>,
+ "desenfoque": <bool>,
+ "desenfoqueSevero": <bool>,
+ "decimalDudoso": <bool>,
+ "digitosCubiertos": <bool>,
+ "cantidadDigitosVisibles": <entero>,
+ "calidadImagen": <0-100>,
+ "confianzaGeneral": <0-100>,
+ "lecturaConfirmable": <bool>,
+ "requiereSegundaRevision": <bool>
 }
-Reglas:
-- confianza = qué tan seguro estás del número principal.
-- display_completo = true si el display se ve completo y enfocado.
-- numero_unico = true si se identifica un único número principal.
-- reflejos = true si hay reflejos que cubran los dígitos.
-- digitos_ambiguos = true si algún dígito no es legible.
-- Si la unidad no es kg, aún así devuelve el número.
-- NO agregues texto fuera del JSON.`;
+Basa la decisión únicamente en evidencia visual. No inventes dígitos. No modifiques el peso solo para que entre en un rango esperado.`;
 
-Deno.serve(async (req) => {
-  const requestId = crypto.randomUUID();
-  const startedAt = Date.now();
-  console.log(`[${requestId}] Inicio ${req.method} analizar-peso-bobina`);
-
-  if (req.method === "OPTIONS") {
-    console.log(`[${requestId}] Solicitud OPTIONS atendida`);
-    return new Response("ok", { headers: CORS });
-  }
-
-  if (req.method !== "POST") {
-    return json({ error: "Método no permitido.", requestId }, 405);
-  }
-
-  try {
-    const authHeader = req.headers.get("Authorization") ?? "";
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      console.log(`[${requestId}] auth-missing existeAuthorization=${!!authHeader}`);
-      return json({ error: "No autenticado", etapa: "authorization", detalle: "Authorization Bearer ausente", requestId }, 401);
-    }
-    const token = authHeader.replace("Bearer ", "").trim();
-
-    const supaUrl = Deno.env.get("SUPABASE_URL")!;
-    const supaKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const geminiKey = Deno.env.get("GEMINI_API_KEY");
-    if (!geminiKey) return json({ error: "GEMINI_API_KEY no configurada.", requestId }, 500);
-
-    const admin = createClient(supaUrl, supaKey);
-
-    // Validar sesión del caller usando el JWT explícitamente
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? Deno.env.get("SUPABASE_PUBLISHABLE_KEY")!;
-    const userClient = createClient(supaUrl, anonKey, {
-      auth: { persistSession: false },
-    });
-    const { data: userData, error: userErr } = await userClient.auth.getUser(token);
-    if (userErr || !userData.user) {
-      console.log(`[${requestId}] auth-invalid tokenLength=${token.length} err=${userErr?.message ?? "no-user"}`);
-      return json({ error: "Sesión inválida o expirada", etapa: "authorization", detalle: userErr?.message ?? "Usuario no identificado", requestId }, 401);
-    }
-    const uid = userData.user.id;
-    console.log(`[${requestId}] auth-ok userId=${uid} tokenLength=${token.length}`);
-
-
-    const body = await req.json().catch(() => ({}));
-    if (body?.test === true) {
-      console.log(`[${requestId}] Diagnóstico ligero recibido`);
-      return json({ ok: true, requestId, function: "analizar-peso-bobina" }, 200);
-    }
-
-    const evidenciaPath: string | undefined = body?.evidencia_path ?? body?.storagePath;
-    const maquinaId: string | undefined = body?.maquina_id;
-    const numeroRollo: string | undefined = (body?.numero_rollo ?? "").toString().trim() || undefined;
-    const numeroOrden: string | null = body?.numero_orden ? String(body.numero_orden).trim() : null;
-    const fechaHora: string | undefined = body?.fecha_hora_pesaje;
-
-    if (!evidenciaPath) return json({ error: "Falta evidencia_path.", requestId }, 400);
-    if (!maquinaId) return json({ error: "Falta maquina_id.", requestId }, 400);
-    if (!numeroRollo) return json({ error: "Falta numero_rollo.", requestId }, 400);
-    console.log(`[${requestId}] storagePath recibido: ${evidenciaPath}`);
-
-    // Máquina válida
-    const { data: maq, error: mErr } = await admin
-      .from("maquinas").select("id, codigo, activo").eq("id", maquinaId).maybeSingle();
-    if (mErr || !maq || !maq.activo) return json({ error: "Máquina no encontrada.", requestId }, 400);
-
-    // Duplicado
-    const { data: dup } = await admin
-      .from("pesajes_bobina_madre").select("id")
-      .eq("maquina_id", maquinaId).eq("numero_rollo", numeroRollo).maybeSingle();
-    if (dup) return json({ error: `El rollo ${numeroRollo} ya tiene un pesaje registrado en ${maq.codigo}.`, requestId }, 409);
-
-    // Descargar evidencia
-    const { data: fileData, error: dlErr } = await admin.storage.from(BUCKET).download(evidenciaPath);
-    if (dlErr || !fileData) return json({ error: `No se pudo leer la evidencia: ${dlErr?.message ?? "desconocido"}`, requestId }, 400);
-    const buf = new Uint8Array(await fileData.arrayBuffer());
-    console.log(`[${requestId}] Fotografía descargada: ${buf.byteLength} bytes, mime=${fileData.type || "image/jpeg"}`);
-    const b64 = base64Encode(buf);
-    const mime = fileData.type || "image/jpeg";
-
-    // Gemini OCR
-    // Selección dinámica de modelo Gemini (evita modelos retirados para nuevos proyectos).
-    const modelo = await elegirModeloGemini(geminiKey, requestId);
-    if (!modelo) {
-      return json({
-        error: "Modelo Gemini no disponible",
-        etapa: "gemini_model",
-        detalle: "No se encontró ningún modelo Flash compatible con generateContent para este proyecto.",
-        requestId,
-      }, 502);
-    }
-    console.log(`[${requestId}] Modelo Gemini seleccionado: ${modelo}`);
-
-    const resp = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${geminiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{
-            role: "user",
-            parts: [
-              { text: PROMPT },
-              { inline_data: { mime_type: mime, data: b64 } },
-            ],
-          }],
-          generationConfig: { temperature: 0, responseMimeType: "application/json" },
-        }),
-      },
-    );
-    if (!resp.ok) {
-      const t = await resp.text();
-      console.log(`[${requestId}] Lectura de imagen falló: ${resp.status} modelo=${modelo}`);
-      if (resp.status === 404) {
-        return json({
-          error: "Modelo Gemini no disponible",
-          etapa: "gemini_model",
-          detalle: "El modelo configurado no está disponible para este proyecto",
-          modelo,
-          requestId,
-        }, 502);
-      }
-      return json({ error: `Gemini falló: ${resp.status} ${t.slice(0, 300)}`, modelo, requestId }, 502);
-    }
-    console.log(`[${requestId}] Lectura de imagen completada modelo=${modelo}`);
-    const gj = await resp.json();
-    const text: string = gj?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
-    let parsed: Gemini;
-    try { parsed = JSON.parse(text); }
-    catch {
-      return json({ aceptado: false, motivo_rechazo: "No se pudo interpretar la lectura del OCR.", requestId }, 200);
-    }
-
-    // Validaciones estrictas
-    const rechazos: string[] = [];
-    if ((parsed.confianza ?? 0) < UMBRAL) rechazos.push(`Confianza ${parsed.confianza ?? 0}% menor a ${UMBRAL}%`);
-    if (!parsed.numero_unico) rechazos.push("No se identifica un único número principal");
-    if (!parsed.display_completo) rechazos.push("Display incompleto o desenfocado");
-    if (parsed.reflejos) rechazos.push("Reflejos cubren los dígitos");
-    if (parsed.digitos_ambiguos) rechazos.push("Dígitos incompletos o ambiguos");
-    if ((parsed.unidad ?? "").toLowerCase() !== "kg") rechazos.push("La unidad visible no es kg");
-    if (parsed.peso_kg == null || !isFinite(parsed.peso_kg)) rechazos.push("No se detectó un peso numérico");
-    if (parsed.peso_kg != null && parsed.peso_kg <= PESO_MIN) rechazos.push(`El peso (${parsed.peso_kg} kg) no es mayor a ${PESO_MIN} kg`);
-
-    if (rechazos.length > 0) {
-      return json({ aceptado: false, motivo_rechazo: rechazos.join(" · "), confianza: parsed.confianza, requestId }, 200);
-    }
-
-    // Convertir a entero y restar la tara correspondiente a la máquina
-    const pesoBruto = Math.round(parsed.peso_kg as number);
-    const pesoEje = taraPorMaquina(maq.codigo);
-    if (pesoBruto <= pesoEje) {
-      return json({ aceptado: false, motivo_rechazo: `El peso bruto (${pesoBruto} kg) debe ser mayor a la tara de la máquina (${pesoEje} kg).`, confianza: parsed.confianza, requestId }, 200);
-    }
-    const pesoNeto = pesoBruto - pesoEje;
-
-    // Orden opcional
-    let ordenProduccionId: string | null = null;
-    if (numeroOrden) {
-      const { data: ord } = await admin.from("ordenes_produccion")
-        .select("id").eq("numero_orden", numeroOrden).maybeSingle();
-      if (ord) ordenProduccionId = ord.id;
-    }
-
-    // Insertar registro definitivo
-    const { data: ins, error: insErr } = await admin.from("pesajes_bobina_madre").insert({
-      numero_rollo: numeroRollo,
-      maquina_id: maquinaId,
-      maquina_codigo: maq.codigo,
-      orden_produccion_id: ordenProduccionId,
-      numero_orden: numeroOrden,
-      peso_bruto_kg: pesoBruto,
-      peso_eje_kg: pesoEje,
-      peso_neto_kg: pesoNeto,
-      fecha_hora_pesaje: fechaHora ?? new Date().toISOString(),
-      evidencia_path: evidenciaPath,
-      ocr_confianza: parsed.confianza,
-      ocr_raw: parsed as never,
-      capturado_por: uid,
-    }).select("*").single();
-
-    if (insErr || !ins) return json({ error: `No se pudo registrar el pesaje: ${insErr?.message ?? "desconocido"}`, requestId }, 500);
-
-    console.log(`[${requestId}] Inserción completada. Tiempo total: ${Date.now() - startedAt} ms`);
-    return json({ aceptado: true, registro: ins, requestId }, 200);
-  } catch (e) {
-    console.error(`[${requestId}] Error controlado`, e);
-    return json({ error: `Error inesperado: ${(e as Error).message}`, requestId }, 500);
-  }
-});
-
-function json(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...CORS, "Content-Type": "application/json" },
-  });
+function promptSegundaRevision(primera: GeminiOut, maquinaCodigo: string) {
+  const cands = (primera.candidatos ?? []).map((c) => `${c.peso}kg(${c.confianza}%)`).join(", ") || "—";
+  return `Analiza NUEVAMENTE el display de esta báscula industrial (bobina madre).
+Primera lectura: ${primera.pesoPrincipal} kg. Candidatos iniciales: ${cands}.
+Rango operativo habitual: ${MIN_PESO_BRUTO_KG}-${MAX_PESO_BRUTO_KG} kg. Máquina: ${maquinaCodigo}.
+Verifica: (1) todos los dígitos, (2) segmentos parcialmente encendidos, (3) segmentos cubiertos por reflejos,
+(4) posición real del punto decimal, (5) ceros omitidos, (6) si 81.5 podría ser 815, 124.5 podría ser 1245,
+150 podría ser 1500, (7) primer/último dígito faltante, (8) display completo.
+No cambies la lectura solo para colocarla en el rango. No inventes dígitos. No uses la tara para modificar el bruto.
+${PROMPT_BASE}`;
 }
 
-// --- Selección de modelo Gemini ------------------------------------------
-// Orden de preferencia (nombres oficiales de Google Generative Language API).
-// gemini-2.5-flash fue retirado para proyectos nuevos → NUNCA usar.
+// --------- Selección dinámica Gemini (preservada) ------------------
 const MODELO_PREFERENCIA = [
   "gemini-flash-latest",
   "gemini-2.0-flash",
   "gemini-2.0-flash-001",
   "gemini-2.5-flash-preview-05-20",
 ];
-
 let MODELO_CACHE: string | null = null;
-
 async function elegirModeloGemini(apiKey: string, requestId: string): Promise<string | null> {
   if (MODELO_CACHE) return MODELO_CACHE;
   try {
     const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
     if (!r.ok) {
-      console.log(`[${requestId}] /models HTTP ${r.status} — usando fallback estático`);
-      MODELO_CACHE = MODELO_PREFERENCIA[0];
-      return MODELO_CACHE;
+      console.log(`[${requestId}] /models HTTP ${r.status} — fallback estático`);
+      MODELO_CACHE = MODELO_PREFERENCIA[0]; return MODELO_CACHE;
     }
-    const body = await r.json() as { models?: Array<{ name?: string; supportedGenerationMethods?: string[]; description?: string }> };
+    const body = await r.json() as { models?: Array<{ name?: string; supportedGenerationMethods?: string[] }> };
     const disponibles = (body.models ?? [])
       .filter((m) => (m.supportedGenerationMethods ?? []).includes("generateContent"))
       .map((m) => (m.name ?? "").replace(/^models\//, ""))
       .filter((n) => n && n.includes("flash") && !n.includes("lite") && !n.includes("2.5-flash") && !n.includes("thinking"));
-
-    // Preferencia explícita primero
-    for (const pref of MODELO_PREFERENCIA) {
-      if (disponibles.includes(pref)) { MODELO_CACHE = pref; return pref; }
-    }
-    // Cualquier flash reciente compatible
-    if (disponibles.length > 0) {
-      MODELO_CACHE = disponibles.sort().reverse()[0];
-      return MODELO_CACHE;
-    }
+    for (const pref of MODELO_PREFERENCIA) if (disponibles.includes(pref)) { MODELO_CACHE = pref; return pref; }
+    if (disponibles.length > 0) { MODELO_CACHE = disponibles.sort().reverse()[0]; return MODELO_CACHE; }
     return null;
   } catch (e) {
-    console.log(`[${requestId}] /models fallo: ${(e as Error).message} — fallback estático`);
-    MODELO_CACHE = MODELO_PREFERENCIA[0];
-    return MODELO_CACHE;
+    console.log(`[${requestId}] /models fallo: ${(e as Error).message}`);
+    MODELO_CACHE = MODELO_PREFERENCIA[0]; return MODELO_CACHE;
   }
+}
+
+// --------- Parseo defensivo de JSON de Gemini ----------------------
+function parseGeminiJson(raw: string): GeminiOut | null {
+  if (!raw) return null;
+  let s = raw.trim().replace(/^```json/i, "").replace(/^```/, "").replace(/```$/, "").trim();
+  const i = s.indexOf("{"); const j = s.lastIndexOf("}");
+  if (i < 0 || j < 0) return null;
+  s = s.slice(i, j + 1);
+  try {
+    const o = JSON.parse(s);
+    const num = (v: unknown): number | null => {
+      if (v == null) return null;
+      if (typeof v === "number") return isFinite(v) ? v : null;
+      if (typeof v === "string") {
+        const cleaned = v.replace(/\s/g, "").replace(",", ".");
+        const n = Number(cleaned);
+        return isFinite(n) ? n : null;
+      }
+      return null;
+    };
+    const cands: GeminiCandidato[] = Array.isArray(o.candidatos)
+      ? o.candidatos.map((c: Record<string, unknown>) => ({
+          peso: num(c.peso), confianza: Number(c.confianza) || 0, evidencia: String(c.evidencia ?? ""),
+        })).filter((c: GeminiCandidato) => c.peso != null)
+      : [];
+    return {
+      displayDetectado: !!o.displayDetectado,
+      displayCompleto: !!o.displayCompleto,
+      textoVisible: String(o.textoVisible ?? ""),
+      pesoPrincipal: num(o.pesoPrincipal),
+      candidatos: cands,
+      unidadVisible: String(o.unidadVisible ?? ""),
+      unidadConfirmada: String(o.unidadConfirmada ?? "kg"),
+      reflejo: !!o.reflejo,
+      reflejoSevero: !!o.reflejoSevero,
+      desenfoque: !!o.desenfoque,
+      desenfoqueSevero: !!o.desenfoqueSevero,
+      decimalDudoso: !!o.decimalDudoso,
+      digitosCubiertos: !!o.digitosCubiertos,
+      cantidadDigitosVisibles: Number(o.cantidadDigitosVisibles) || 0,
+      calidadImagen: Number(o.calidadImagen) || 0,
+      confianzaGeneral: Number(o.confianzaGeneral) || 0,
+      lecturaConfirmable: !!o.lecturaConfirmable,
+      requiereSegundaRevision: !!o.requiereSegundaRevision,
+    };
+  } catch { return null; }
+}
+
+async function invocarGemini(apiKey: string, modelo: string, prompt: string, mime: string, b64: string): Promise<GeminiOut | null> {
+  const r = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${apiKey}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ role: "user", parts: [
+          { text: prompt },
+          { inline_data: { mime_type: mime, data: b64 } },
+        ]}],
+        generationConfig: { temperature: 0, responseMimeType: "application/json" },
+      }),
+    },
+  );
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  const gj = await r.json();
+  const text: string = gj?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+  return parseGeminiJson(text);
+}
+
+// --------- Evaluación y prioridad -----------------------------------
+type Status = "accepted" | "confirm" | "retake" | "technical_error";
+type ReasonCode =
+  | "WEIGHT_CONFIRMED" | "WEIGHT_REQUIRES_CONFIRMATION" | "GROSS_WEIGHT_BELOW_TARE"
+  | "DISPLAY_NOT_FOUND" | "INCOMPLETE_DISPLAY" | "BLURRY_IMAGE" | "DISPLAY_REFLECTION"
+  | "UNCERTAIN_DECIMAL" | "AMBIGUOUS_DIGITS" | "WEIGHT_OUT_OF_RANGE"
+  | "DIFFERENT_UNIT_CONFIRMED" | "TECHNICAL_ERROR" | "SESSION_EXPIRED";
+
+interface Analisis {
+  status: Status; reasonCode: ReasonCode; message: string;
+  pesoDetectado: number | null; confianza: number; calidadImagen: number;
+  requiereConfirmacion: boolean; unidadAsumidaPorConfiguracion: boolean;
+}
+
+function evaluar(g1: GeminiOut, g2: GeminiOut | null): Analisis {
+  const g = g2 ?? g1;
+  const conf = g.confianzaGeneral;
+  const cal = g.calidadImagen;
+  const peso = g.pesoPrincipal;
+  const unidadDiferente = UNIDADES_DIFERENTES.test((g.unidadVisible || "").trim()) && conf >= 85;
+
+  // Prioridad de rechazos técnicos primero
+  if (unidadDiferente) {
+    return { status: "retake", reasonCode: "DIFFERENT_UNIT_CONFIRMED",
+      message: "El display muestra una unidad diferente a kilogramos. Verifica la báscula.",
+      pesoDetectado: peso, confianza: conf, calidadImagen: cal,
+      requiereConfirmacion: false, unidadAsumidaPorConfiguracion: false };
+  }
+  if (!g.displayDetectado) {
+    return { status: "retake", reasonCode: "DISPLAY_NOT_FOUND",
+      message: "No se identificó el display de la báscula. Colócalo dentro del recuadro y toma otra fotografía.",
+      pesoDetectado: null, confianza: conf, calidadImagen: cal,
+      requiereConfirmacion: false, unidadAsumidaPorConfiguracion: true };
+  }
+  if (g.desenfoqueSevero || cal < 55) {
+    return { status: "retake", reasonCode: "BLURRY_IMAGE",
+      message: "La imagen no permite leer el peso. Acerca la cámara, mantenla fija y vuelve a tomarla.",
+      pesoDetectado: peso, confianza: conf, calidadImagen: cal,
+      requiereConfirmacion: false, unidadAsumidaPorConfiguracion: true };
+  }
+  if (!g.displayCompleto) {
+    return { status: "retake", reasonCode: "INCOMPLETE_DISPLAY",
+      message: "El display no aparece completo. Incluye todos los dígitos y toma otra fotografía.",
+      pesoDetectado: peso, confianza: conf, calidadImagen: cal,
+      requiereConfirmacion: false, unidadAsumidaPorConfiguracion: true };
+  }
+  if (g.reflejoSevero) {
+    return { status: "retake", reasonCode: "DISPLAY_REFLECTION",
+      message: "El reflejo impide confirmar los dígitos. Cambia ligeramente el ángulo y toma otra fotografía.",
+      pesoDetectado: peso, confianza: conf, calidadImagen: cal,
+      requiereConfirmacion: false, unidadAsumidaPorConfiguracion: true };
+  }
+  if (peso == null || !isFinite(peso) || peso <= 0) {
+    return { status: "retake", reasonCode: "AMBIGUOUS_DIGITS",
+      message: "No fue posible confirmar todos los dígitos. Toma nuevamente la fotografía.",
+      pesoDetectado: null, confianza: conf, calidadImagen: cal,
+      requiereConfirmacion: false, unidadAsumidaPorConfiguracion: true };
+  }
+  if (conf < 60) {
+    return { status: "retake", reasonCode: g.decimalDudoso ? "UNCERTAIN_DECIMAL" : "AMBIGUOUS_DIGITS",
+      message: g.decimalDudoso
+        ? "No fue posible confirmar la posición del decimal. Toma otra fotografía más cercana."
+        : "No fue posible confirmar todos los dígitos. Toma nuevamente la fotografía.",
+      pesoDetectado: peso, confianza: conf, calidadImagen: cal,
+      requiereConfirmacion: false, unidadAsumidaPorConfiguracion: true };
+  }
+
+  const enRango = peso >= MIN_PESO_BRUTO_KG && peso <= MAX_PESO_BRUTO_KG;
+
+  // Aceptación automática
+  if (conf >= 88 && cal >= 70 && enRango && !g.decimalDudoso && !g.digitosCubiertos && !g.reflejo) {
+    return { status: "accepted", reasonCode: "WEIGHT_CONFIRMED",
+      message: "Peso identificado correctamente.",
+      pesoDetectado: peso, confianza: conf, calidadImagen: cal,
+      requiereConfirmacion: false, unidadAsumidaPorConfiguracion: true };
+  }
+
+  // Fuera de rango pero legible → confirmar
+  if (!enRango) {
+    return { status: "confirm", reasonCode: "WEIGHT_OUT_OF_RANGE",
+      message: `El peso detectado (${peso} kg) está fuera del rango esperado. Confirma que coincida con el display.`,
+      pesoDetectado: peso, confianza: conf, calidadImagen: cal,
+      requiereConfirmacion: true, unidadAsumidaPorConfiguracion: true };
+  }
+
+  // Zona de confirmación (70-87 ó dudas moderadas)
+  return { status: "confirm", reasonCode: "WEIGHT_REQUIRES_CONFIRMATION",
+    message: `Se detectó un peso de ${peso} kg. Confirma que coincida con el display.`,
+    pesoDetectado: peso, confianza: conf, calidadImagen: cal,
+    requiereConfirmacion: true, unidadAsumidaPorConfiguracion: true };
+}
+
+function requiereSegundaRevision(g: GeminiOut): boolean {
+  if (g.requiereSegundaRevision) return true;
+  const c = g.confianzaGeneral;
+  if (c >= 60 && c < 88) return true;
+  if (g.pesoPrincipal != null && (g.pesoPrincipal < MIN_PESO_BRUTO_KG || g.pesoPrincipal > MAX_PESO_BRUTO_KG)) return true;
+  if (g.decimalDudoso || g.reflejo || g.digitosCubiertos) return true;
+  if ((g.candidatos ?? []).length > 1) return true;
+  return false;
+}
+
+// --------- Handler HTTP --------------------------------------------
+Deno.serve(async (req) => {
+  const requestId = crypto.randomUUID();
+  const t0 = Date.now();
+
+  if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
+  if (req.method !== "POST") return json({ status: "technical_error", reasonCode: "TECHNICAL_ERROR", message: "Método no permitido.", requestId }, 405);
+
+  try {
+    const authHeader = req.headers.get("Authorization") ?? "";
+    if (!authHeader.startsWith("Bearer ")) {
+      return json({ status: "technical_error", reasonCode: "SESSION_EXPIRED", message: "Tu sesión expiró. Inicia sesión nuevamente.", requestId }, 401);
+    }
+    const token = authHeader.replace("Bearer ", "").trim();
+
+    const supaUrl = Deno.env.get("SUPABASE_URL")!;
+    const svcKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const geminiKey = Deno.env.get("GEMINI_API_KEY");
+    if (!geminiKey) return json({ status: "technical_error", reasonCode: "TECHNICAL_ERROR", message: "No fue posible procesar la fotografía. Intenta nuevamente.", requestId }, 500);
+
+    const admin = createClient(supaUrl, svcKey);
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? Deno.env.get("SUPABASE_PUBLISHABLE_KEY")!;
+    const userClient = createClient(supaUrl, anonKey, { auth: { persistSession: false } });
+    const { data: userData, error: userErr } = await userClient.auth.getUser(token);
+    if (userErr || !userData.user) {
+      return json({ status: "technical_error", reasonCode: "SESSION_EXPIRED", message: "Tu sesión expiró. Inicia sesión nuevamente.", requestId }, 401);
+    }
+    const uid = userData.user.id;
+
+    const body = await req.json().catch(() => ({}));
+    if (body?.test === true) return json({ ok: true, requestId }, 200);
+
+    const evidenciaPath: string | undefined = body?.evidencia_path ?? body?.storagePath;
+    const maquinaId: string | undefined = body?.maquina_id;
+    const numeroRollo: string | undefined = (body?.numero_rollo ?? "").toString().trim() || undefined;
+    const numeroOrden: string | null = body?.numero_orden ? String(body.numero_orden).trim() : null;
+    const fechaHora: string | undefined = body?.fecha_hora_pesaje;
+    const pesoConfirmadoKg: number | null = typeof body?.pesoConfirmadoKg === "number" && isFinite(body.pesoConfirmadoKg)
+      ? body.pesoConfirmadoKg : null;
+    const idempotencyKey: string | null = body?.idempotencyKey ? String(body.idempotencyKey) : null;
+
+    if (!evidenciaPath || !maquinaId || !numeroRollo) {
+      return json({ status: "technical_error", reasonCode: "TECHNICAL_ERROR", message: "No fue posible procesar la fotografía. Intenta nuevamente.", requestId }, 400);
+    }
+
+    const { data: maq } = await admin.from("maquinas").select("id, codigo, activo").eq("id", maquinaId).maybeSingle();
+    if (!maq || !maq.activo) {
+      return json({ status: "technical_error", reasonCode: "TECHNICAL_ERROR", message: "No fue posible procesar la fotografía. Intenta nuevamente.", requestId }, 400);
+    }
+
+    // Duplicado por rollo/máquina
+    const { data: dup } = await admin.from("pesajes_bobina_madre")
+      .select("id").eq("maquina_id", maquinaId).eq("numero_rollo", numeroRollo).maybeSingle();
+    if (dup) {
+      return json({ status: "technical_error", reasonCode: "TECHNICAL_ERROR",
+        message: `El rollo ${numeroRollo} ya tiene un pesaje registrado en ${maq.codigo}.`, requestId }, 409);
+    }
+
+    // Duplicado por evidencia (misma imagen ya insertada)
+    const { data: dupEv } = await admin.from("pesajes_bobina_madre")
+      .select("id").eq("evidencia_path", evidenciaPath).maybeSingle();
+    if (dupEv) {
+      return json({ status: "technical_error", reasonCode: "TECHNICAL_ERROR",
+        message: "Esta fotografía ya fue registrada.", requestId }, 409);
+    }
+
+    // --------- Rama de CONFIRMACIÓN (usuario ya validó lectura) --------
+    if (pesoConfirmadoKg != null) {
+      const bruto = Math.round(pesoConfirmadoKg);
+      const tara = taraPorMaquina(maq.codigo);
+      const neto = bruto - tara;
+      if (neto <= 0) {
+        return json({ status: "confirm", reasonCode: "GROSS_WEIGHT_BELOW_TARE",
+          message: "El peso confirmado no permite calcular un peso neto válido. Verifica el display.",
+          pesoDetectado: bruto, requiereConfirmacion: false, requestId }, 200);
+      }
+
+      let ordenProduccionId: string | null = null;
+      if (numeroOrden) {
+        const { data: ord } = await admin.from("ordenes_produccion")
+          .select("id").eq("numero_orden", numeroOrden).maybeSingle();
+        if (ord) ordenProduccionId = ord.id;
+      }
+
+      const { data: ins, error: insErr } = await admin.from("pesajes_bobina_madre").insert({
+        numero_rollo: numeroRollo, maquina_id: maquinaId, maquina_codigo: maq.codigo,
+        orden_produccion_id: ordenProduccionId, numero_orden: numeroOrden,
+        peso_bruto_kg: bruto, peso_eje_kg: tara, peso_neto_kg: neto,
+        fecha_hora_pesaje: fechaHora ?? new Date().toISOString(),
+        evidencia_path: evidenciaPath, ocr_confianza: 100,
+        ocr_raw: { confirmadoManual: true, idempotencyKey } as never,
+        capturado_por: uid,
+      }).select("*").single();
+      if (insErr || !ins) {
+        return json({ status: "technical_error", reasonCode: "TECHNICAL_ERROR",
+          message: "No fue posible procesar la fotografía. Intenta nuevamente.", requestId }, 500);
+      }
+      console.log(`[${requestId}] insert-confirm ok ${Date.now() - t0}ms`);
+      return json({ status: "accepted", reasonCode: "WEIGHT_CONFIRMED",
+        message: "Peso confirmado y registrado correctamente.",
+        pesoDetectado: bruto, pesoConfirmado: bruto, unidad: "kg",
+        unidadAsumidaPorConfiguracion: true, requiereConfirmacion: false,
+        confianza: 100, calidadImagen: 100, requestId, registro: ins }, 200);
+    }
+
+    // --------- Rama de ANÁLISIS OCR -----------------------------------
+    const { data: fileData, error: dlErr } = await admin.storage.from(BUCKET).download(evidenciaPath);
+    if (dlErr || !fileData) {
+      return json({ status: "technical_error", reasonCode: "TECHNICAL_ERROR",
+        message: "No fue posible procesar la fotografía. Intenta nuevamente.", requestId }, 400);
+    }
+    const buf = new Uint8Array(await fileData.arrayBuffer());
+    const b64 = base64Encode(buf);
+    const mime = fileData.type || "image/jpeg";
+
+    const modelo = await elegirModeloGemini(geminiKey, requestId);
+    if (!modelo) {
+      return json({ status: "technical_error", reasonCode: "TECHNICAL_ERROR",
+        message: "No fue posible procesar la fotografía. Intenta nuevamente.", requestId }, 502);
+    }
+
+    let g1: GeminiOut | null;
+    try { g1 = await invocarGemini(geminiKey, modelo, PROMPT_BASE, mime, b64); }
+    catch (e) {
+      console.log(`[${requestId}] gemini-1 fail ${(e as Error).message}`);
+      return json({ status: "technical_error", reasonCode: "TECHNICAL_ERROR",
+        message: "No fue posible procesar la fotografía. Intenta nuevamente.", requestId, modelo }, 502);
+    }
+    if (!g1) {
+      return json({ status: "retake", reasonCode: "AMBIGUOUS_DIGITS",
+        message: "No fue posible confirmar todos los dígitos. Toma nuevamente la fotografía.",
+        pesoDetectado: null, confianza: 0, calidadImagen: 0, unidad: "kg",
+        unidadAsumidaPorConfiguracion: true, requiereConfirmacion: false, modelo, requestId }, 200);
+    }
+
+    // Segunda revisión automática si aplica
+    let g2: GeminiOut | null = null;
+    if (requiereSegundaRevision(g1)) {
+      try { g2 = await invocarGemini(geminiKey, modelo, promptSegundaRevision(g1, maq.codigo), mime, b64); }
+      catch (e) { console.log(`[${requestId}] gemini-2 fail ${(e as Error).message}`); g2 = null; }
+    }
+
+    // Si ambas revisiones difieren mucho, forzar confirmar/retake
+    let analisis = evaluar(g1, g2);
+    if (g2 && g1.pesoPrincipal != null && g2.pesoPrincipal != null && g1.pesoPrincipal !== g2.pesoPrincipal) {
+      // Discrepancia: no auto-aceptar
+      if (analisis.status === "accepted") {
+        analisis = { ...analisis, status: "confirm", reasonCode: "WEIGHT_REQUIRES_CONFIRMATION",
+          requiereConfirmacion: true,
+          message: `Se detectó un peso de ${analisis.pesoDetectado} kg. Confirma que coincida con el display.` };
+      }
+    }
+
+    console.log(`[${requestId}] analisis status=${analisis.status} code=${analisis.reasonCode} peso=${analisis.pesoDetectado} conf=${analisis.confianza} cal=${analisis.calidadImagen} rev2=${!!g2} ${Date.now() - t0}ms`);
+
+    // Validar tara vs bruto ANTES de auto-insertar
+    if (analisis.status === "accepted" && analisis.pesoDetectado != null) {
+      const tara = taraPorMaquina(maq.codigo);
+      if (analisis.pesoDetectado <= tara) {
+        return json({ status: "confirm", reasonCode: "GROSS_WEIGHT_BELOW_TARE",
+          message: `El peso detectado (${analisis.pesoDetectado} kg) requiere confirmación antes de registrarse.`,
+          pesoDetectado: analisis.pesoDetectado, confianza: analisis.confianza,
+          calidadImagen: analisis.calidadImagen, unidad: "kg", unidadAsumidaPorConfiguracion: true,
+          requiereConfirmacion: true, modelo, requestId }, 200);
+      }
+
+      const bruto = Math.round(analisis.pesoDetectado);
+      const neto = bruto - tara;
+      let ordenProduccionId: string | null = null;
+      if (numeroOrden) {
+        const { data: ord } = await admin.from("ordenes_produccion")
+          .select("id").eq("numero_orden", numeroOrden).maybeSingle();
+        if (ord) ordenProduccionId = ord.id;
+      }
+      const { data: ins, error: insErr } = await admin.from("pesajes_bobina_madre").insert({
+        numero_rollo: numeroRollo, maquina_id: maquinaId, maquina_codigo: maq.codigo,
+        orden_produccion_id: ordenProduccionId, numero_orden: numeroOrden,
+        peso_bruto_kg: bruto, peso_eje_kg: tara, peso_neto_kg: neto,
+        fecha_hora_pesaje: fechaHora ?? new Date().toISOString(),
+        evidencia_path: evidenciaPath, ocr_confianza: analisis.confianza,
+        ocr_raw: { g1, g2, idempotencyKey } as never, capturado_por: uid,
+      }).select("*").single();
+      if (insErr || !ins) {
+        return json({ status: "technical_error", reasonCode: "TECHNICAL_ERROR",
+          message: "No fue posible procesar la fotografía. Intenta nuevamente.", requestId }, 500);
+      }
+      return json({ status: "accepted", reasonCode: "WEIGHT_CONFIRMED",
+        message: "Peso identificado y registrado correctamente.",
+        pesoDetectado: bruto, pesoConfirmado: bruto, unidad: "kg",
+        unidadAsumidaPorConfiguracion: true, requiereConfirmacion: false,
+        confianza: analisis.confianza, calidadImagen: analisis.calidadImagen,
+        modelo, requestId, registro: ins }, 200);
+    }
+
+    // confirm | retake — no insertar, devolver estado único
+    return json({
+      status: analisis.status, reasonCode: analisis.reasonCode, message: analisis.message,
+      pesoDetectado: analisis.pesoDetectado, pesoConfirmado: null, unidad: "kg",
+      unidadAsumidaPorConfiguracion: analisis.unidadAsumidaPorConfiguracion,
+      requiereConfirmacion: analisis.requiereConfirmacion,
+      confianza: analisis.confianza, calidadImagen: analisis.calidadImagen, modelo, requestId,
+    }, 200);
+  } catch (e) {
+    console.error(`[${requestId}] error`, e);
+    return json({ status: "technical_error", reasonCode: "TECHNICAL_ERROR",
+      message: "No fue posible procesar la fotografía. Intenta nuevamente.", requestId }, 500);
+  }
+});
+
+function json(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status, headers: { ...CORS, "Content-Type": "application/json" },
+  });
 }
