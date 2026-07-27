@@ -84,7 +84,11 @@ Deno.serve(async (req) => {
 
   try {
     const authHeader = req.headers.get("Authorization") ?? "";
-    if (!authHeader) return json({ error: "Falta autenticación.", requestId }, 401);
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      console.log(`[${requestId}] auth-missing existeAuthorization=${!!authHeader}`);
+      return json({ error: "No autenticado", etapa: "authorization", detalle: "Authorization Bearer ausente", requestId }, 401);
+    }
+    const token = authHeader.replace("Bearer ", "").trim();
 
     const supaUrl = Deno.env.get("SUPABASE_URL")!;
     const supaKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -93,16 +97,19 @@ Deno.serve(async (req) => {
 
     const admin = createClient(supaUrl, supaKey);
 
-    // Validar sesión del caller
+    // Validar sesión del caller usando el JWT explícitamente
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? Deno.env.get("SUPABASE_PUBLISHABLE_KEY")!;
     const userClient = createClient(supaUrl, anonKey, {
-      global: { headers: { Authorization: authHeader } },
       auth: { persistSession: false },
     });
-    const { data: userData, error: userErr } = await userClient.auth.getUser();
-    if (userErr || !userData.user) return json({ error: "No autenticado.", requestId }, 401);
+    const { data: userData, error: userErr } = await userClient.auth.getUser(token);
+    if (userErr || !userData.user) {
+      console.log(`[${requestId}] auth-invalid tokenLength=${token.length} err=${userErr?.message ?? "no-user"}`);
+      return json({ error: "Sesión inválida o expirada", etapa: "authorization", detalle: userErr?.message ?? "Usuario no identificado", requestId }, 401);
+    }
     const uid = userData.user.id;
-    console.log(`[${requestId}] Usuario autenticado`);
+    console.log(`[${requestId}] auth-ok userId=${uid} tokenLength=${token.length}`);
+
 
     const body = await req.json().catch(() => ({}));
     if (body?.test === true) {
