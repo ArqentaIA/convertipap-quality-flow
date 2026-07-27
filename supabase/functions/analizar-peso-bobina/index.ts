@@ -148,8 +148,20 @@ Deno.serve(async (req) => {
     const mime = fileData.type || "image/jpeg";
 
     // Gemini OCR
+    // Selección dinámica de modelo Gemini (evita modelos retirados para nuevos proyectos).
+    const modelo = await elegirModeloGemini(geminiKey, requestId);
+    if (!modelo) {
+      return json({
+        error: "Modelo Gemini no disponible",
+        etapa: "gemini_model",
+        detalle: "No se encontró ningún modelo Flash compatible con generateContent para este proyecto.",
+        requestId,
+      }, 502);
+    }
+    console.log(`[${requestId}] Modelo Gemini seleccionado: ${modelo}`);
+
     const resp = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${geminiKey}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -167,10 +179,19 @@ Deno.serve(async (req) => {
     );
     if (!resp.ok) {
       const t = await resp.text();
-      console.log(`[${requestId}] Lectura de imagen falló: ${resp.status}`);
-      return json({ error: `Gemini falló: ${resp.status} ${t.slice(0, 300)}`, requestId }, 502);
+      console.log(`[${requestId}] Lectura de imagen falló: ${resp.status} modelo=${modelo}`);
+      if (resp.status === 404) {
+        return json({
+          error: "Modelo Gemini no disponible",
+          etapa: "gemini_model",
+          detalle: "El modelo configurado no está disponible para este proyecto",
+          modelo,
+          requestId,
+        }, 502);
+      }
+      return json({ error: `Gemini falló: ${resp.status} ${t.slice(0, 300)}`, modelo, requestId }, 502);
     }
-    console.log(`[${requestId}] Lectura de imagen completada`);
+    console.log(`[${requestId}] Lectura de imagen completada modelo=${modelo}`);
     const gj = await resp.json();
     const text: string = gj?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
     let parsed: Gemini;
@@ -242,4 +263,48 @@ function json(body: unknown, status = 200) {
     status,
     headers: { ...CORS, "Content-Type": "application/json" },
   });
+}
+
+// --- Selección de modelo Gemini ------------------------------------------
+// Orden de preferencia (nombres oficiales de Google Generative Language API).
+// gemini-2.5-flash fue retirado para proyectos nuevos → NUNCA usar.
+const MODELO_PREFERENCIA = [
+  "gemini-flash-latest",
+  "gemini-2.0-flash",
+  "gemini-2.0-flash-001",
+  "gemini-2.5-flash-preview-05-20",
+];
+
+let MODELO_CACHE: string | null = null;
+
+async function elegirModeloGemini(apiKey: string, requestId: string): Promise<string | null> {
+  if (MODELO_CACHE) return MODELO_CACHE;
+  try {
+    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+    if (!r.ok) {
+      console.log(`[${requestId}] /models HTTP ${r.status} — usando fallback estático`);
+      MODELO_CACHE = MODELO_PREFERENCIA[0];
+      return MODELO_CACHE;
+    }
+    const body = await r.json() as { models?: Array<{ name?: string; supportedGenerationMethods?: string[]; description?: string }> };
+    const disponibles = (body.models ?? [])
+      .filter((m) => (m.supportedGenerationMethods ?? []).includes("generateContent"))
+      .map((m) => (m.name ?? "").replace(/^models\//, ""))
+      .filter((n) => n && n.includes("flash") && !n.includes("lite") && !n.includes("2.5-flash") && !n.includes("thinking"));
+
+    // Preferencia explícita primero
+    for (const pref of MODELO_PREFERENCIA) {
+      if (disponibles.includes(pref)) { MODELO_CACHE = pref; return pref; }
+    }
+    // Cualquier flash reciente compatible
+    if (disponibles.length > 0) {
+      MODELO_CACHE = disponibles.sort().reverse()[0];
+      return MODELO_CACHE;
+    }
+    return null;
+  } catch (e) {
+    console.log(`[${requestId}] /models fallo: ${(e as Error).message} — fallback estático`);
+    MODELO_CACHE = MODELO_PREFERENCIA[0];
+    return MODELO_CACHE;
+  }
 }
