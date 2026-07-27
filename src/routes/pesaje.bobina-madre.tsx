@@ -333,6 +333,55 @@ function PesajeBobinaPage() {
     } catch (e) { toast.error((e as Error).message); }
   }
 
+  async function obtenerTokenValido(): Promise<{ token: string; uid: string }> {
+    const { data: sessionData, error: sessionErr } = await supabase.auth.getSession();
+    if (sessionErr) throw new Error(`Error de autenticación: ${sessionErr.message}`);
+    let token = sessionData.session?.access_token;
+    let uid = sessionData.session?.user.id;
+    const expiresAt = sessionData.session?.expires_at ?? 0;
+    const nowSec = Math.floor(Date.now() / 1000);
+    if (!token || !uid || expiresAt - nowSec < 60) {
+      const { data: refreshed, error: refErr } = await supabase.auth.refreshSession();
+      if (refErr || !refreshed.session?.access_token) {
+        await supabase.auth.signOut().catch(() => {});
+        throw new Error("La sesión expiró. Inicia sesión nuevamente.");
+      }
+      token = refreshed.session.access_token;
+      uid = refreshed.session.user.id;
+    }
+    logDiagnosticoPesaje("token-check", {
+      existeAuthorization: true,
+      tokenLength: token!.length,
+      userId: uid,
+      sessionValidated: true,
+    });
+    return { token: token!, uid: uid! };
+  }
+
+  async function invocarEdgeConAuth(payload: Record<string, unknown>) {
+    let { token, uid } = await obtenerTokenValido();
+    let resp = await supabase.functions.invoke(EDGE_FUNCTION_NAME, {
+      headers: { Authorization: `Bearer ${token}` },
+      body: { ...payload, userId: uid },
+    });
+    const errMsg = resp.error?.message ?? "";
+    if (resp.error && /401|non-2xx|autentic/i.test(errMsg)) {
+      const { data: refreshed, error: refErr } = await supabase.auth.refreshSession();
+      if (refErr || !refreshed.session?.access_token) {
+        await supabase.auth.signOut().catch(() => {});
+        throw new Error("La sesión expiró. Inicia sesión nuevamente.");
+      }
+      token = refreshed.session.access_token;
+      uid = refreshed.session.user.id;
+      logDiagnosticoPesaje("token-refresh-retry", { userId: uid, tokenLength: token.length });
+      resp = await supabase.functions.invoke(EDGE_FUNCTION_NAME, {
+        headers: { Authorization: `Bearer ${token}` },
+        body: { ...payload, userId: uid },
+      });
+    }
+    return { resp, uid };
+  }
+
   async function registrar() {
     if (!puedeRegistrar) return;
     setProcesando(true);
@@ -341,11 +390,8 @@ function PesajeBobinaPage() {
       const file = evidenciaFile;
       if (!file) throw new Error("Falta la fotografía de evidencia.");
 
-      const { data: sessionData, error: sessionErr } = await supabase.auth.getSession();
-      if (sessionErr) throw new Error(`Error de autenticación: ${sessionErr.message}`);
-      const token = sessionData.session?.access_token;
-      const uid = sessionData.session?.user.id;
-      if (!token || !uid) throw new Error("La sesión expiró. Inicie sesión nuevamente");
+      // Validar sesión ANTES de subir la evidencia
+      const { uid } = await obtenerTokenValido();
 
       const now = new Date();
       const path = buildEvidencePath(maqCodigo, numeroRollo.trim());
@@ -372,21 +418,18 @@ function PesajeBobinaPage() {
         mimeType: file.type,
       });
 
-      const resp = await supabase.functions.invoke(EDGE_FUNCTION_NAME, {
-        headers: { Authorization: `Bearer ${token}` },
-        body: {
-          evidencia_path: path,
-          storagePath: path,
-          maquina_id: maquinaId,
-          maquina: maqCodigo,
-          numero_rollo: numeroRollo.trim(),
-          numero_orden: numeroOrden.trim() || null,
-          ordenProduccion: numeroOrden.trim() || null,
-          taraKg: tara,
-          userId: uid,
-          idempotencyKey,
-          fecha_hora_pesaje: now.toISOString(),
-        },
+      const { resp } = await invocarEdgeConAuth({
+        evidencia_path: path,
+        storagePath: path,
+        maquina_id: maquinaId,
+        maquina: maqCodigo,
+        numero_rollo: numeroRollo.trim(),
+        numero_orden: numeroOrden.trim() || null,
+        ordenProduccion: numeroOrden.trim() || null,
+        taraKg: tara,
+        userId: uid,
+        idempotencyKey,
+        fecha_hora_pesaje: now.toISOString(),
       });
       logDiagnosticoPesaje("edge-invocada", {
         edgeInvoked: true,
@@ -397,7 +440,6 @@ function PesajeBobinaPage() {
       if (resp.error) throw new Error(await mensajeFunctionError(resp.error));
       const data = resp.data as { aceptado: boolean; motivo_rechazo?: string; registro?: PesajeBobina };
       if (!data.aceptado) {
-        // limpiar evidencia rechazada
         await supabase.storage.from(BUCKET).remove([path]).catch(() => {});
         uploadedPath = null;
         throw new Error(data.motivo_rechazo || "La fotografía no cumple los criterios para lectura del peso.");
@@ -417,7 +459,11 @@ function PesajeBobinaPage() {
         errorMessage: e instanceof Error ? e.message : String(e),
         stack: e instanceof Error ? e.stack : undefined,
       });
-      toast.error((e as Error).message || "No se pudo registrar el pesaje.");
+      const msg = (e as Error).message || "No se pudo registrar el pesaje.";
+      toast.error(msg);
+      if (/sesión expiró|inicia sesión/i.test(msg)) {
+        setTimeout(() => { window.location.href = "/login"; }, 1500);
+      }
     } finally {
       setProcesando(false);
     }
