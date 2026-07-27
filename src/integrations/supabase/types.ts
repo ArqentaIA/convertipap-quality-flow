@@ -1331,6 +1331,7 @@ export type Database = {
           motivo_cambio: string | null
           motivo_descarte: string | null
           notas: string | null
+          perfil_key: string | null
           producto_id: string
           publicado_at: string | null
           publicado_por: string | null
@@ -1354,6 +1355,7 @@ export type Database = {
           motivo_cambio?: string | null
           motivo_descarte?: string | null
           notas?: string | null
+          perfil_key?: string | null
           producto_id: string
           publicado_at?: string | null
           publicado_por?: string | null
@@ -1377,6 +1379,7 @@ export type Database = {
           motivo_cambio?: string | null
           motivo_descarte?: string | null
           notas?: string | null
+          perfil_key?: string | null
           producto_id?: string
           publicado_at?: string | null
           publicado_por?: string | null

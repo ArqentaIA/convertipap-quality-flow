@@ -89,12 +89,13 @@ const productosQO = queryOptions({
   queryFn: () => listProductosConSpec(),
 });
 
-const specQO = (productoId: string) =>
+const specQO = (productoId: string, maquinaId?: string) =>
   queryOptions({
-    queryKey: ["qc", "spec-por-producto", productoId],
-    queryFn: () => getSpecPorProducto({ data: { productoId } }),
+    queryKey: ["qc", "spec-por-producto", productoId, maquinaId ?? ""],
+    queryFn: () => getSpecPorProducto({ data: { productoId, maquinaId } }),
     enabled: !!productoId,
   });
+
 
 export const Route = createFileRoute("/calidad/captura")({
   component: () => <CapturaCalidadPage modoFueraTurno={false} />,
@@ -323,10 +324,11 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
   }
 
   const specQuery = useQuery({
-    ...specQO(producto.producto_id),
+    ...specQO(producto.producto_id, maquinaId || undefined),
     enabled: hasAuthToken && !!producto.producto_id,
     retry: false,
   });
+
   const spec = specQuery.data;
 
   const settingsQuery = useQuery({ ...settingsQO, enabled: hasAuthToken, retry: false });
