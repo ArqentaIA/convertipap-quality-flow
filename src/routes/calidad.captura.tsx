@@ -324,10 +324,11 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
   }
 
   const specQuery = useQuery({
-    ...specQO(producto.producto_id),
+    ...specQO(producto.producto_id, maquinaId || undefined),
     enabled: hasAuthToken && !!producto.producto_id,
     retry: false,
   });
+
   const spec = specQuery.data;
 
   const settingsQuery = useQuery({ ...settingsQO, enabled: hasAuthToken, retry: false });
