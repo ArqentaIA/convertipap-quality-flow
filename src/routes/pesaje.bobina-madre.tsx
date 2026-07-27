@@ -405,27 +405,33 @@ function PesajeBobinaPage() {
     return { resp, uid };
   }
 
+  type EdgeResponse = {
+    status: "accepted" | "confirm" | "retake" | "technical_error";
+    reasonCode?: string;
+    message?: string;
+    pesoDetectado?: number | null;
+    pesoConfirmado?: number | null;
+    requiereConfirmacion?: boolean;
+    requestId?: string;
+    registro?: PesajeBobina;
+  };
+
   async function registrar() {
     if (!puedeRegistrar) return;
+    if (confirmData) return; // ya hay uno abierto
     setProcesando(true);
     let uploadedPath: string | null = null;
+    const clientRequestId = crypto.randomUUID();
+    activeRequestRef.current = clientRequestId;
     try {
       const file = evidenciaFile;
       if (!file) throw new Error("Falta la fotografía de evidencia.");
 
-      // Validar sesión ANTES de subir la evidencia
       const { uid } = await obtenerTokenValido();
 
       const now = new Date();
       const path = buildEvidencePath(maqCodigo, numeroRollo.trim());
-      const idempotencyKey = crypto.randomUUID();
-      logDiagnosticoPesaje("inicio-registro", {
-        session: "activa",
-        stage: "storage-upload",
-        originalOrCompressedBytes: file.size,
-        mimeType: file.type,
-        edgeInvoked: false,
-      });
+      const idempotencyKey = clientRequestId;
 
       const up = await supabase.storage.from(BUCKET)
         .upload(path, file, { upsert: false, contentType: "image/jpeg" });
@@ -434,12 +440,6 @@ function PesajeBobinaPage() {
         throw new Error(`No se pudo subir la evidencia: ${up.error.message}`);
       }
       uploadedPath = path;
-      logDiagnosticoPesaje("storage-upload-ok", {
-        storagePath: path,
-        storageUploadFinished: true,
-        compressedBytes: file.size,
-        mimeType: file.type,
-      });
 
       const { resp } = await invocarEdgeConAuth({
         evidencia_path: path,
@@ -448,49 +448,114 @@ function PesajeBobinaPage() {
         maquina: maqCodigo,
         numero_rollo: numeroRollo.trim(),
         numero_orden: numeroOrden.trim() || null,
-        ordenProduccion: numeroOrden.trim() || null,
-        taraKg: tara,
-        userId: uid,
         idempotencyKey,
         fecha_hora_pesaje: now.toISOString(),
       });
-      logDiagnosticoPesaje("edge-invocada", {
-        edgeInvoked: true,
-        hasError: !!resp.error,
-        errorName: resp.error?.name,
-        errorMessage: resp.error?.message,
-      });
-      if (resp.error) throw new Error(await mensajeFunctionError(resp.error));
-      const data = resp.data as { aceptado: boolean; motivo_rechazo?: string; registro?: PesajeBobina };
-      if (!data.aceptado) {
+
+      // Ignorar respuestas tardías si ya se inició una nueva captura
+      if (activeRequestRef.current !== clientRequestId) {
         await supabase.storage.from(BUCKET).remove([path]).catch(() => {});
-        uploadedPath = null;
-        throw new Error(data.motivo_rechazo || "La fotografía no cumple los criterios para lectura del peso.");
+        return;
       }
 
-      toast.success(`Pesaje registrado: ${data.registro?.peso_neto_kg} kg neto`);
-      qc.invalidateQueries({ queryKey: ["pesajes"] });
-      resetForm(true);
+      if (resp.error && !resp.data) {
+        throw new Error(await mensajeFunctionError(resp.error));
+      }
+      const data = (resp.data ?? {}) as EdgeResponse;
+      logDiagnosticoPesaje("edge-response", {
+        status: data.status, reasonCode: data.reasonCode, requestId: data.requestId,
+      });
+
+      if (data.status === "accepted" && data.registro) {
+        registeringRequestRef.current = clientRequestId;
+        mostrarMensajeUnico("success", data.message || "Peso identificado y registrado correctamente.");
+        qc.invalidateQueries({ queryKey: ["pesajes"] });
+        resetForm(true);
+        return;
+      }
+
+      if (data.status === "confirm" && typeof data.pesoDetectado === "number") {
+        // No borramos evidencia: la reutilizaremos al confirmar
+        setConfirmData({
+          peso: data.pesoDetectado,
+          message: data.message || `Se detectó un peso de ${data.pesoDetectado} kg. Confirma que coincida con el display.`,
+          storagePath: path,
+          idempotencyKey,
+          fechaISO: now.toISOString(),
+          requestId: data.requestId || clientRequestId,
+        });
+        uploadedPath = null; // preservar hasta confirmar/cancelar
+        return;
+      }
+
+      // retake | technical_error → borrar evidencia y mostrar mensaje único
+      await supabase.storage.from(BUCKET).remove([path]).catch(() => {});
+      uploadedPath = null;
+      mostrarMensajeUnico("error", data.message || "No fue posible procesar la fotografía. Intenta nuevamente.");
+      limpiarFoto();
     } catch (e) {
       if (uploadedPath) await supabase.storage.from(BUCKET).remove([uploadedPath]).catch(() => {});
       console.error("[pesaje] registrar", {
-        functionName: EDGE_FUNCTION_NAME,
-        projectUrl: import.meta.env.VITE_SUPABASE_URL,
-        storageUploadFinished: !!uploadedPath,
-        edgeFunction: EDGE_FUNCTION_NAME,
         errorName: e instanceof Error ? e.name : "unknown",
         errorMessage: e instanceof Error ? e.message : String(e),
-        stack: e instanceof Error ? e.stack : undefined,
       });
-      const msg = (e as Error).message || "No se pudo registrar el pesaje.";
-      toast.error(msg);
+      const msg = (e as Error).message || "No fue posible procesar la fotografía. Intenta nuevamente.";
       if (/sesión expiró|inicia sesión/i.test(msg)) {
+        mostrarMensajeUnico("error", "Tu sesión expiró. Inicia sesión nuevamente.");
         setTimeout(() => { window.location.href = "/login"; }, 1500);
+      } else {
+        mostrarMensajeUnico("error", msg);
       }
     } finally {
       setProcesando(false);
     }
   }
+
+  async function confirmarLectura() {
+    if (!confirmData) return;
+    if (registeringRequestRef.current === confirmData.idempotencyKey) return; // ya insertado
+    setProcesando(true);
+    try {
+      const { uid } = await obtenerTokenValido();
+      const { resp } = await invocarEdgeConAuth({
+        evidencia_path: confirmData.storagePath,
+        storagePath: confirmData.storagePath,
+        maquina_id: maquinaId,
+        maquina: maqCodigo,
+        numero_rollo: numeroRollo.trim(),
+        numero_orden: numeroOrden.trim() || null,
+        idempotencyKey: confirmData.idempotencyKey,
+        fecha_hora_pesaje: confirmData.fechaISO,
+        pesoConfirmadoKg: confirmData.peso,
+        userId: uid,
+      });
+      if (resp.error && !resp.data) throw new Error(await mensajeFunctionError(resp.error));
+      const data = (resp.data ?? {}) as EdgeResponse;
+      if (data.status === "accepted" && data.registro) {
+        registeringRequestRef.current = confirmData.idempotencyKey;
+        mostrarMensajeUnico("success", data.message || "Peso confirmado y registrado correctamente.");
+        qc.invalidateQueries({ queryKey: ["pesajes"] });
+        setConfirmData(null);
+        resetForm(true);
+        return;
+      }
+      mostrarMensajeUnico("error", data.message || "No fue posible registrar el peso confirmado.");
+    } catch (e) {
+      mostrarMensajeUnico("error", (e as Error).message || "No fue posible registrar el peso confirmado.");
+    } finally {
+      setProcesando(false);
+    }
+  }
+
+  async function cancelarConfirmacion() {
+    if (!confirmData) return;
+    await supabase.storage.from(BUCKET).remove([confirmData.storagePath]).catch(() => {});
+    setConfirmData(null);
+    limpiarFoto();
+    abrirCamara();
+  }
+
+
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 p-4">
