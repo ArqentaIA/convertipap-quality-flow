@@ -49,6 +49,8 @@ const MODULO_LABEL: Record<AppModule, string> = {
   auditoria: "Auditoría",
   ordenes_produccion: "Órdenes de Producción",
   pesaje_bobina_madre: "Pesaje de Bobina Madre",
+  pesaje_cintas: "Pesaje de Cintas",
+
 
 };
 
