@@ -80,7 +80,7 @@ export type LoteCintas = {
   merma_kg: number | null;
   merma_porcentaje: number | null;
   estado: "abierto" | "finalizado" | "anulado";
-  datos_calidad_snapshot: unknown;
+  datos_calidad_snapshot: Json;
   fecha_produccion: string | null;
 };
 
@@ -271,7 +271,7 @@ export const prepararImpresion = createServerFn({ method: "POST" })
         fecha_produccion: string | null;
         conductor: string;
         bobinadora: string;
-        datos_calidad: unknown;
+        datos_calidad: Json;
         cintas: Array<{
           id: string;
           posicion: number;
