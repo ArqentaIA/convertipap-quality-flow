@@ -175,7 +175,7 @@ export const registrarCinta = createServerFn({ method: "POST" })
       _uniones: data.uniones,
       _peso_cinta_kg: data.peso_cinta_kg,
       _ancho_util: data.ancho_util,
-      _observaciones: data.observaciones ?? null,
+      _observaciones: (data.observaciones ?? "") as string,
       _idempotency: data.idempotency_key,
     });
     if (error) throw new Error(error.message);
@@ -205,7 +205,7 @@ export const corregirCinta = createServerFn({ method: "POST" })
       _uniones: data.uniones,
       _peso_cinta_kg: data.peso_cinta_kg,
       _ancho_util: data.ancho_util,
-      _observaciones: data.observaciones ?? null,
+      _observaciones: (data.observaciones ?? "") as string,
       _motivo: data.motivo,
       _idempotency: data.idempotency_key,
     });
@@ -254,7 +254,7 @@ export const prepararImpresion = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { data: res, error } = await context.supabase.rpc("preparar_impresion_etiquetas", {
       _lote_id: data.lote_id,
-      _motivo: data.motivo ?? null,
+      _motivo: (data.motivo ?? "") as string,
     });
     if (error) throw new Error(error.message);
     return res as unknown as {
