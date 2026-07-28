@@ -52,9 +52,20 @@ function med(snap: EtiquetaSnapshot, key: string): string {
   return String(m.valor);
 }
 
+function fmtKg(v: number): string {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return "—";
+  return n.toLocaleString("es-MX", { maximumFractionDigits: 3 });
+}
+
 function renderEtiqueta(snap: EtiquetaSnapshot, cinta: EtiquetaSnapshot["cintas"][number]): string {
   const dc = snap.datos_calidad ?? {};
   const fecha = snap.fecha_produccion ?? "";
+  // Fuente única de verdad para el PESO impreso: peso individual de esta cinta
+  // (public.pesajes_cintas.peso_cinta_kg de la versión vigente = 'registrada').
+  // No usar peso neto de bobina madre, snapshot general del lote, acumulado,
+  // pendiente ni merma. Cada etiqueta muestra el peso de SU propia cinta.
+  const pesoEtiquetaKg = cinta.peso_cinta_kg;
   return `
   <div class="print-label">
     <div class="lbl-inner">
@@ -94,7 +105,7 @@ function renderEtiqueta(snap: EtiquetaSnapshot, cinta: EtiquetaSnapshot["cintas"
       <div class="lbl-cinta">
         <div class="lbl-cinta-tit">Datos de la cinta</div>
         <div class="lbl-row">
-          <div><span class="k">Peso</span><span class="v big">${cinta.peso_cinta_kg} kg</span></div>
+          <div><span class="k">Peso</span><span class="v big">${fmtKg(pesoEtiquetaKg)} kg</span></div>
           <div><span class="k">Ancho útil</span><span class="v">${cinta.ancho_util} ${cinta.ancho_util_unidad ?? "cm"}</span></div>
           <div><span class="k">Uniones</span><span class="v">${cinta.uniones}</span></div>
         </div>
