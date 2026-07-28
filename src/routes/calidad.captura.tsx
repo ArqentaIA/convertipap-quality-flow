@@ -2480,6 +2480,13 @@ function buildEtiquetaFromMuestra(m: MuestraReciente): EtiquetaData {
       (m as { liberacion_justificacion?: string | null }).liberacion_justificacion ?? null,
     defectos,
     estatus,
+    pesoRolloKg: (m as { pesajes_bobina_madre?: { peso_neto_kg?: number | null } | null })
+      .pesajes_bobina_madre?.peso_neto_kg != null
+      ? Number(
+          (m as { pesajes_bobina_madre?: { peso_neto_kg?: number | null } | null })
+            .pesajes_bobina_madre!.peso_neto_kg,
+        )
+      : null,
     autorizacion: (m as { autorizado_por?: string | null }).autorizado_por
       ? {
           dictamen: (m as { dictamen?: string }).dictamen ?? "",
