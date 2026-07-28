@@ -376,7 +376,9 @@ export async function printEtiquetaLiberacion(data: EtiquetaData): Promise<void>
       m.etiqueta.trim().toLowerCase() === "peso del rollo" ||
       m.etiqueta.trim().toLowerCase() === "peso rollo",
   );
-  const pesoTxt = pesoMed && pesoMed.valor !== null && pesoMed.valor !== undefined ? String(pesoMed.valor) : "—";
+  const pesoTxt = data.pesoRolloKg != null && Number.isFinite(Number(data.pesoRolloKg))
+    ? fmtKg(Number(data.pesoRolloKg))
+    : (pesoMed && pesoMed.valor !== null && pesoMed.valor !== undefined ? String(pesoMed.valor) : "—");
   const sapTraceUrl = `${traceUrl}?vista=sap&rollo=${encodeURIComponent(data.numeroRollo || "")}&peso=${encodeURIComponent(pesoTxt)}&estatus=${encodeURIComponent(data.estatus)}`;
 
   // Enriquecer con datos SAP (N.º de orden + estado) si no vienen ya en `data`.
