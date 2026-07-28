@@ -787,6 +787,7 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
         estatus: fueraSpecAlguno
           ? (liberarConJustif ? "LIBERADO C/JUSTIF" : "NO CONFORME")
           : "LIBERADO",
+        pesoRolloKg: pesajeVinculado?.peso_neto_kg != null ? Number(pesajeVinculado.peso_neto_kg) : null,
       };
       setUltimaEtiqueta(etiqueta);
       setMediciones((prev) => {
