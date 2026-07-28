@@ -2218,6 +2218,7 @@ export type Database = {
         | "catalogos"
         | "ordenes_produccion"
         | "pesaje_bobina_madre"
+        | "pesaje_cintas"
       app_role:
         | "administrador"
         | "gerente_general"
@@ -2423,6 +2424,7 @@ export const Constants = {
         "catalogos",
         "ordenes_produccion",
         "pesaje_bobina_madre",
+        "pesaje_cintas",
       ],
       app_role: [
         "administrador",
