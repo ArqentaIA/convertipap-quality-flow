@@ -45,9 +45,25 @@ function PesajeCintasPage() {
   const crear = useServerFn(crearLote);
   const traer = useServerFn(obtenerLoteYCintas);
   const registrar = useServerFn(registrarCinta);
+  const corregir = useServerFn(corregirCinta);
   const anular = useServerFn(anularCinta);
   const finalizar = useServerFn(finalizarLote);
   const preparar = useServerFn(prepararImpresion);
+  const actualizarOp = useServerFn(actualizarDatosOperativos);
+
+  const [rolMe, setRolMe] = useState<string | null>(null);
+  useEffect(() => {
+    supabase.auth.getUser().then(async ({ data }) => {
+      if (!data.user) return;
+      const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", data.user.id);
+      const list = (roles ?? []).map((r) => r.role as string);
+      if (list.includes("administrador")) setRolMe("administrador");
+      else if (list.includes("calidad")) setRolMe("calidad");
+      else if (list.includes("gerente_general")) setRolMe("gerente_general");
+      else setRolMe(list[0] ?? null);
+    });
+  }, []);
+  const puedeCambiarOperativos = rolMe === "administrador" || rolMe === "calidad" || rolMe === "gerente_general";
 
   const [rolloInput, setRolloInput] = useState("");
   const [contexto, setContexto] = useState<ContextoRollo | null>(null);
