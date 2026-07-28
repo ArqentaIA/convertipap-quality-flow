@@ -52,10 +52,10 @@ function med(snap: EtiquetaSnapshot, key: string): string {
   return String(m.valor);
 }
 
-function fmtKg(v: number): string {
-  const n = Number(v);
-  if (!Number.isFinite(n)) return "—";
-  return n.toLocaleString("es-MX", { maximumFractionDigits: 3 });
+function fmtKg(value: number | string): string {
+  const numero = Number(value);
+  if (!Number.isFinite(numero)) return "—";
+  return numero.toFixed(3).replace(/\.?0+$/, "");
 }
 
 function renderEtiqueta(snap: EtiquetaSnapshot, cinta: EtiquetaSnapshot["cintas"][number]): string {
