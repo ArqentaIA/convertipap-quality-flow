@@ -427,6 +427,7 @@ function PesajeCintasPage() {
                     disponibleKg={netoBM - totalCintas}
                     onRegistrar={onRegistrar}
                     onAnular={c ? () => onAnular(c.id) : undefined}
+                    onCorregir={c && lote.estado === "abierto" ? () => onCorregir(c) : undefined}
                     saving={saving}
                   />
                 );
