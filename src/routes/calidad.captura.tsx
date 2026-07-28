@@ -1879,11 +1879,10 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
                         className={cn(
                           "h-12 text-lg font-bold text-capture w-full",
                           vs.clave === "peso" && pesajeVinculado &&
-                            "bg-emerald-50 border-emerald-300 cursor-not-allowed",
-                          vs.clave === "peso" && !pesajeVinculado &&
-                            "bg-muted/40 cursor-not-allowed",
+                            "bg-emerald-50 border-emerald-300",
                         )}
-                        placeholder={vs.clave === "peso" ? "Requiere pesaje registrado" : "Capturar valor"}
+                        placeholder={vs.clave === "peso" ? "Capturar peso manualmente" : "Capturar valor"}
+
                       />
                     )}
                   </div>
