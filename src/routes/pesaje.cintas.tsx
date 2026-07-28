@@ -492,14 +492,24 @@ function CintaCard({ pos, cinta, habilitada, disponibleKg, onRegistrar, onAnular
           <div><span className="text-muted-foreground">Uniones:</span> <b>{cinta.uniones}</b></div>
           {cinta.observaciones && <div className="text-xs text-muted-foreground">{cinta.observaciones}</div>}
         </div>
-        {onAnular && (
-          <button
-            onClick={onAnular}
-            className="mt-2 flex items-center gap-1 text-xs text-destructive hover:underline"
-          >
-            <Ban className="h-3 w-3" /> Anular
-          </button>
-        )}
+        <div className="mt-2 flex items-center gap-3">
+          {onCorregir && (
+            <button
+              onClick={onCorregir}
+              className="flex items-center gap-1 text-xs text-primary hover:underline"
+            >
+              <Pencil className="h-3 w-3" /> Corregir
+            </button>
+          )}
+          {onAnular && (
+            <button
+              onClick={onAnular}
+              className="flex items-center gap-1 text-xs text-destructive hover:underline"
+            >
+              <Ban className="h-3 w-3" /> Anular
+            </button>
+          )}
+        </div>
       </div>
     );
   }
