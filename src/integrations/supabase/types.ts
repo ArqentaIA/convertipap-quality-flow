@@ -2456,6 +2456,15 @@ export type Database = {
         }
         Returns: undefined
       }
+      actualizar_datos_operativos_lote_cintas: {
+        Args: {
+          _bobinadora_id: string
+          _conductor_id: string
+          _lote_id: string
+          _motivo: string
+        }
+        Returns: Json
+      }
       anular_cinta: {
         Args: { _cinta_id: string; _motivo: string }
         Returns: undefined
