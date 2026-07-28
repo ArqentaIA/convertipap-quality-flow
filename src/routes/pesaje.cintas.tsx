@@ -4,14 +4,15 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Loader2, Search, Printer, CheckCircle2, Ban, Lock } from "lucide-react";
+import { Loader2, Search, Printer, CheckCircle2, Ban, Lock, Pencil, UserCog } from "lucide-react";
 import {
   buscarContextoRollo, listConductores, listBobinadoras,
-  crearLote, obtenerLoteYCintas, registrarCinta, anularCinta,
-  finalizarLote, prepararImpresion,
+  crearLote, obtenerLoteYCintas, registrarCinta, corregirCinta, anularCinta,
+  finalizarLote, prepararImpresion, actualizarDatosOperativos,
   type ContextoRollo, type CintaRegistrada, type LoteCintas,
 } from "@/lib/pesaje-cintas.functions";
 import { abrirImpresionEtiquetas, type EtiquetaSnapshot } from "@/lib/etiqueta-cinta";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/pesaje/cintas")({
   head: () => ({
@@ -44,9 +45,25 @@ function PesajeCintasPage() {
   const crear = useServerFn(crearLote);
   const traer = useServerFn(obtenerLoteYCintas);
   const registrar = useServerFn(registrarCinta);
+  const corregir = useServerFn(corregirCinta);
   const anular = useServerFn(anularCinta);
   const finalizar = useServerFn(finalizarLote);
   const preparar = useServerFn(prepararImpresion);
+  const actualizarOp = useServerFn(actualizarDatosOperativos);
+
+  const [rolMe, setRolMe] = useState<string | null>(null);
+  useEffect(() => {
+    supabase.auth.getUser().then(async ({ data }) => {
+      if (!data.user) return;
+      const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", data.user.id);
+      const list = (roles ?? []).map((r) => r.role as string);
+      if (list.includes("administrador")) setRolMe("administrador");
+      else if (list.includes("calidad")) setRolMe("calidad");
+      else if (list.includes("gerente_general")) setRolMe("gerente_general");
+      else setRolMe(list[0] ?? null);
+    });
+  }, []);
+  const puedeCambiarOperativos = rolMe === "administrador" || rolMe === "calidad" || rolMe === "gerente_general";
 
   const [rolloInput, setRolloInput] = useState("");
   const [contexto, setContexto] = useState<ContextoRollo | null>(null);
@@ -172,6 +189,64 @@ function PesajeCintasPage() {
       toast.success("Cinta anulada.");
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "Error al anular.");
+    }
+  }
+
+  async function onCorregir(c: CintaRegistrada) {
+    if (!lote) return;
+    const pesoStr = window.prompt(`Corregir posición ${c.posicion}\nNuevo peso (kg) [actual ${c.peso_cinta_kg}]:`, String(c.peso_cinta_kg));
+    if (pesoStr == null) return;
+    const anchoStr = window.prompt(`Nuevo ancho útil [actual ${c.ancho_util}]:`, String(c.ancho_util));
+    if (anchoStr == null) return;
+    const unionesStr = window.prompt(`Nuevas uniones [actual ${c.uniones}]:`, String(c.uniones));
+    if (unionesStr == null) return;
+    const obs = window.prompt(`Observaciones (opcional):`, c.observaciones ?? "") ?? "";
+    const motivo = window.prompt("Motivo de la corrección (mínimo 5 caracteres):") ?? "";
+    if (motivo.trim().length < 5) { toast.error("Motivo requerido."); return; }
+    const peso = Number(pesoStr), ancho = Number(anchoStr), uniones = Number(unionesStr);
+    if (!(peso > 0) || !(ancho > 0) || !(uniones >= 0)) { toast.error("Valores inválidos."); return; }
+    try {
+      await corregir({ data: {
+        cinta_id: c.id, peso_cinta_kg: peso, ancho_util: ancho, uniones,
+        observaciones: obs.trim() || null, motivo: motivo.trim(), idempotency_key: uuid(),
+      }});
+      await qc.invalidateQueries({ queryKey: ["cintas-lote", lote.id] });
+      toast.success(`Posición ${c.posicion} corregida.`);
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Error al corregir la cinta.");
+    }
+  }
+
+  async function onCambiarOperativos() {
+    if (!lote) return;
+    const conductores = conductoresQ.data ?? [];
+    const bobinadoras = bobinadorasQ.data ?? [];
+    if (conductores.length === 0 || bobinadoras.length === 0) {
+      toast.error("Catálogos no disponibles."); return;
+    }
+    const listaC = conductores.map((c, i) => `${i + 1}. ${c.nombre}`).join("\n");
+    const idxCStr = window.prompt(`Nuevo conductor (actual: ${lote.conductor_nombre_snapshot})\n${listaC}\n\nIngrese número:`);
+    if (idxCStr == null) return;
+    const idxC = Number(idxCStr) - 1;
+    if (!conductores[idxC]) { toast.error("Selección inválida."); return; }
+    const listaB = bobinadoras.map((b, i) => `${i + 1}. ${b.nombre}`).join("\n");
+    const idxBStr = window.prompt(`Nueva bobinadora (actual: ${lote.bobinadora_nombre_snapshot})\n${listaB}\n\nIngrese número:`);
+    if (idxBStr == null) return;
+    const idxB = Number(idxBStr) - 1;
+    if (!bobinadoras[idxB]) { toast.error("Selección inválida."); return; }
+    const motivo = window.prompt("Motivo del cambio (mínimo 5 caracteres):") ?? "";
+    if (motivo.trim().length < 5) { toast.error("Motivo requerido."); return; }
+    try {
+      await actualizarOp({ data: {
+        lote_id: lote.id,
+        conductor_id: conductores[idxC].id,
+        bobinadora_id: bobinadoras[idxB].id,
+        motivo: motivo.trim(),
+      }});
+      await qc.invalidateQueries({ queryKey: ["cintas-lote", lote.id] });
+      toast.success("Datos operativos actualizados. Las impresiones futuras usarán los nuevos datos.");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Error al actualizar datos operativos.");
     }
   }
 
@@ -306,6 +381,14 @@ function PesajeCintasPage() {
                 <div className="font-medium">Conductor: <span className="text-foreground">{lote.conductor_nombre_snapshot}</span> · Bobinadora: <span className="text-foreground">{lote.bobinadora_nombre_snapshot}</span></div>
               </div>
               <div className="flex flex-wrap gap-2">
+                {puedeCambiarOperativos && lote.estado === "abierto" && (
+                  <button
+                    onClick={onCambiarOperativos}
+                    className="flex items-center gap-2 rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-sm font-medium text-warning hover:bg-warning/20"
+                  >
+                    <UserCog className="h-4 w-4" /> Cambiar conductor/bobinadora
+                  </button>
+                )}
                 <button
                   onClick={onImprimir}
                   disabled={cintas.length === 0}
@@ -344,6 +427,7 @@ function PesajeCintasPage() {
                     disponibleKg={netoBM - totalCintas}
                     onRegistrar={onRegistrar}
                     onAnular={c ? () => onAnular(c.id) : undefined}
+                    onCorregir={c && lote.estado === "abierto" ? () => onCorregir(c) : undefined}
                     saving={saving}
                   />
                 );
@@ -381,10 +465,11 @@ type CintaCardProps = {
   disponibleKg: number;
   onRegistrar: (peso: number, uniones: number, ancho: number, obs: string) => Promise<void>;
   onAnular?: () => void;
+  onCorregir?: () => void;
   saving: boolean;
 };
 
-function CintaCard({ pos, cinta, habilitada, disponibleKg, onRegistrar, onAnular, saving }: CintaCardProps) {
+function CintaCard({ pos, cinta, habilitada, disponibleKg, onRegistrar, onAnular, onCorregir, saving }: CintaCardProps) {
   const [peso, setPeso] = useState("");
   const [uniones, setUniones] = useState("0");
   const [ancho, setAncho] = useState("");
@@ -407,14 +492,24 @@ function CintaCard({ pos, cinta, habilitada, disponibleKg, onRegistrar, onAnular
           <div><span className="text-muted-foreground">Uniones:</span> <b>{cinta.uniones}</b></div>
           {cinta.observaciones && <div className="text-xs text-muted-foreground">{cinta.observaciones}</div>}
         </div>
-        {onAnular && (
-          <button
-            onClick={onAnular}
-            className="mt-2 flex items-center gap-1 text-xs text-destructive hover:underline"
-          >
-            <Ban className="h-3 w-3" /> Anular
-          </button>
-        )}
+        <div className="mt-2 flex items-center gap-3">
+          {onCorregir && (
+            <button
+              onClick={onCorregir}
+              className="flex items-center gap-1 text-xs text-primary hover:underline"
+            >
+              <Pencil className="h-3 w-3" /> Corregir
+            </button>
+          )}
+          {onAnular && (
+            <button
+              onClick={onAnular}
+              className="flex items-center gap-1 text-xs text-destructive hover:underline"
+            >
+              <Ban className="h-3 w-3" /> Anular
+            </button>
+          )}
+        </div>
       </div>
     );
   }

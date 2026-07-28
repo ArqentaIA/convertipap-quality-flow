@@ -225,6 +225,25 @@ export const anularCinta = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+export const actualizarDatosOperativos = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({
+    lote_id: z.string().uuid(),
+    conductor_id: z.string().uuid(),
+    bobinadora_id: z.string().uuid(),
+    motivo: z.string().min(5).max(500),
+  }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { data: res, error } = await context.supabase.rpc("actualizar_datos_operativos_lote_cintas", {
+      _lote_id: data.lote_id,
+      _conductor_id: data.conductor_id,
+      _bobinadora_id: data.bobinadora_id,
+      _motivo: data.motivo,
+    });
+    if (error) throw new Error(error.message);
+    return res as unknown as { ok: boolean; lote_id: string };
+  });
+
 // ------------------------------- Finalizar -------------------------------- //
 
 export const finalizarLote = createServerFn({ method: "POST" })
