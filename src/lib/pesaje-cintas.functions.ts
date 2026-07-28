@@ -7,6 +7,8 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 // ---------------------------- Tipos de dominio ---------------------------- //
 
+export type Json = string | number | boolean | null | { [k: string]: Json } | Json[];
+
 export type ContextoRollo = {
   muestra: {
     id: string;
