@@ -23,7 +23,8 @@ export type AppModule =
   | "usuarios_permisos"
   | "auditoria"
   | "ordenes_produccion"
-  | "pesaje_bobina_madre";
+  | "pesaje_bobina_madre"
+  | "pesaje_cintas";
 
 
 export interface Profile {

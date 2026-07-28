@@ -460,6 +460,39 @@ export type Database = {
         }
         Relationships: []
       }
+      catalogo_bobinadoras: {
+        Row: {
+          activo: boolean
+          actualizado_por: string | null
+          codigo: string
+          creado_por: string | null
+          created_at: string
+          id: string
+          nombre: string
+          updated_at: string
+        }
+        Insert: {
+          activo?: boolean
+          actualizado_por?: string | null
+          codigo: string
+          creado_por?: string | null
+          created_at?: string
+          id?: string
+          nombre: string
+          updated_at?: string
+        }
+        Update: {
+          activo?: boolean
+          actualizado_por?: string | null
+          codigo?: string
+          creado_por?: string | null
+          created_at?: string
+          id?: string
+          nombre?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       familias_producto: {
         Row: {
           activo: boolean
@@ -492,6 +525,53 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      impresiones_etiquetas_cintas: {
+        Row: {
+          cantidad_etiquetas: number
+          datos_impresion_snapshot: Json
+          folio_impresion: string
+          id: string
+          impreso_en: string
+          impreso_por: string
+          lote_id: string
+          motivo_reimpresion: string | null
+          posiciones_impresas: number[]
+          tipo: Database["public"]["Enums"]["impresion_cinta_tipo"]
+        }
+        Insert: {
+          cantidad_etiquetas: number
+          datos_impresion_snapshot: Json
+          folio_impresion: string
+          id?: string
+          impreso_en?: string
+          impreso_por: string
+          lote_id: string
+          motivo_reimpresion?: string | null
+          posiciones_impresas: number[]
+          tipo: Database["public"]["Enums"]["impresion_cinta_tipo"]
+        }
+        Update: {
+          cantidad_etiquetas?: number
+          datos_impresion_snapshot?: Json
+          folio_impresion?: string
+          id?: string
+          impreso_en?: string
+          impreso_por?: string
+          lote_id?: string
+          motivo_reimpresion?: string | null
+          posiciones_impresas?: number[]
+          tipo?: Database["public"]["Enums"]["impresion_cinta_tipo"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "impresiones_etiquetas_cintas_lote_id_fkey"
+            columns: ["lote_id"]
+            isOneToOne: false
+            referencedRelation: "pesajes_cintas_lotes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       maquina_access_codes: {
         Row: {
@@ -1245,6 +1325,296 @@ export type Database = {
             columns: ["orden_produccion_id"]
             isOneToOne: false
             referencedRelation: "ordenes_produccion"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pesajes_cintas: {
+        Row: {
+          actualizado_por: string | null
+          ancho_util: number
+          ancho_util_unidad: string | null
+          anulado_at: string | null
+          anulado_por: string | null
+          creado_por: string
+          created_at: string
+          estado: Database["public"]["Enums"]["pesaje_cinta_estado"]
+          id: string
+          idempotency_key: string
+          lote_id: string
+          motivo_anulacion: string | null
+          observaciones: string | null
+          peso_cinta_kg: number
+          posicion: number
+          sustituye_a_cinta_id: string | null
+          uniones: number
+          updated_at: string
+        }
+        Insert: {
+          actualizado_por?: string | null
+          ancho_util: number
+          ancho_util_unidad?: string | null
+          anulado_at?: string | null
+          anulado_por?: string | null
+          creado_por: string
+          created_at?: string
+          estado?: Database["public"]["Enums"]["pesaje_cinta_estado"]
+          id?: string
+          idempotency_key: string
+          lote_id: string
+          motivo_anulacion?: string | null
+          observaciones?: string | null
+          peso_cinta_kg: number
+          posicion: number
+          sustituye_a_cinta_id?: string | null
+          uniones?: number
+          updated_at?: string
+        }
+        Update: {
+          actualizado_por?: string | null
+          ancho_util?: number
+          ancho_util_unidad?: string | null
+          anulado_at?: string | null
+          anulado_por?: string | null
+          creado_por?: string
+          created_at?: string
+          estado?: Database["public"]["Enums"]["pesaje_cinta_estado"]
+          id?: string
+          idempotency_key?: string
+          lote_id?: string
+          motivo_anulacion?: string | null
+          observaciones?: string | null
+          peso_cinta_kg?: number
+          posicion?: number
+          sustituye_a_cinta_id?: string | null
+          uniones?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pesajes_cintas_lote_id_fkey"
+            columns: ["lote_id"]
+            isOneToOne: false
+            referencedRelation: "pesajes_cintas_lotes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pesajes_cintas_sustituye_a_cinta_id_fkey"
+            columns: ["sustituye_a_cinta_id"]
+            isOneToOne: false
+            referencedRelation: "pesajes_cintas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pesajes_cintas_auditoria: {
+        Row: {
+          accion: string
+          cinta_id: string | null
+          contexto: Json | null
+          id: string
+          lote_id: string | null
+          motivo: string | null
+          realizado_en: string
+          realizado_por: string | null
+          valores_anteriores: Json | null
+          valores_nuevos: Json | null
+        }
+        Insert: {
+          accion: string
+          cinta_id?: string | null
+          contexto?: Json | null
+          id?: string
+          lote_id?: string | null
+          motivo?: string | null
+          realizado_en?: string
+          realizado_por?: string | null
+          valores_anteriores?: Json | null
+          valores_nuevos?: Json | null
+        }
+        Update: {
+          accion?: string
+          cinta_id?: string | null
+          contexto?: Json | null
+          id?: string
+          lote_id?: string | null
+          motivo?: string | null
+          realizado_en?: string
+          realizado_por?: string | null
+          valores_anteriores?: Json | null
+          valores_nuevos?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pesajes_cintas_auditoria_cinta_id_fkey"
+            columns: ["cinta_id"]
+            isOneToOne: false
+            referencedRelation: "pesajes_cintas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pesajes_cintas_auditoria_lote_id_fkey"
+            columns: ["lote_id"]
+            isOneToOne: false
+            referencedRelation: "pesajes_cintas_lotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pesajes_cintas_lotes: {
+        Row: {
+          actualizado_por: string | null
+          anulado_at: string | null
+          anulado_por: string | null
+          bobinadora_id: string
+          bobinadora_nombre_snapshot: string
+          cantidad_cintas: number
+          conductor_id: string | null
+          conductor_nombre_snapshot: string
+          creado_por: string
+          created_at: string
+          datos_calidad_snapshot: Json
+          estado: Database["public"]["Enums"]["pesaje_cintas_lote_estado"]
+          fabricacion: string
+          fecha_produccion: string | null
+          finalizado_at: string | null
+          finalizado_por: string | null
+          id: string
+          idempotency_key: string
+          merma_kg: number | null
+          merma_porcentaje: number | null
+          motivo_anulacion: string | null
+          muestra_calidad_id: string
+          numero_orden: string | null
+          numero_rollo: string
+          orden_produccion_id: string | null
+          pesaje_bobina_madre_id: string
+          peso_bobina_madre_neto_kg: number
+          peso_pendiente_kg: number
+          peso_total_cintas_kg: number
+          producto_codigo: string | null
+          producto_id: string | null
+          producto_nombre: string | null
+          updated_at: string
+        }
+        Insert: {
+          actualizado_por?: string | null
+          anulado_at?: string | null
+          anulado_por?: string | null
+          bobinadora_id: string
+          bobinadora_nombre_snapshot: string
+          cantidad_cintas?: number
+          conductor_id?: string | null
+          conductor_nombre_snapshot: string
+          creado_por: string
+          created_at?: string
+          datos_calidad_snapshot?: Json
+          estado?: Database["public"]["Enums"]["pesaje_cintas_lote_estado"]
+          fabricacion: string
+          fecha_produccion?: string | null
+          finalizado_at?: string | null
+          finalizado_por?: string | null
+          id?: string
+          idempotency_key: string
+          merma_kg?: number | null
+          merma_porcentaje?: number | null
+          motivo_anulacion?: string | null
+          muestra_calidad_id: string
+          numero_orden?: string | null
+          numero_rollo: string
+          orden_produccion_id?: string | null
+          pesaje_bobina_madre_id: string
+          peso_bobina_madre_neto_kg: number
+          peso_pendiente_kg: number
+          peso_total_cintas_kg?: number
+          producto_codigo?: string | null
+          producto_id?: string | null
+          producto_nombre?: string | null
+          updated_at?: string
+        }
+        Update: {
+          actualizado_por?: string | null
+          anulado_at?: string | null
+          anulado_por?: string | null
+          bobinadora_id?: string
+          bobinadora_nombre_snapshot?: string
+          cantidad_cintas?: number
+          conductor_id?: string | null
+          conductor_nombre_snapshot?: string
+          creado_por?: string
+          created_at?: string
+          datos_calidad_snapshot?: Json
+          estado?: Database["public"]["Enums"]["pesaje_cintas_lote_estado"]
+          fabricacion?: string
+          fecha_produccion?: string | null
+          finalizado_at?: string | null
+          finalizado_por?: string | null
+          id?: string
+          idempotency_key?: string
+          merma_kg?: number | null
+          merma_porcentaje?: number | null
+          motivo_anulacion?: string | null
+          muestra_calidad_id?: string
+          numero_orden?: string | null
+          numero_rollo?: string
+          orden_produccion_id?: string | null
+          pesaje_bobina_madre_id?: string
+          peso_bobina_madre_neto_kg?: number
+          peso_pendiente_kg?: number
+          peso_total_cintas_kg?: number
+          producto_codigo?: string | null
+          producto_id?: string | null
+          producto_nombre?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pesajes_cintas_lotes_bobinadora_id_fkey"
+            columns: ["bobinadora_id"]
+            isOneToOne: false
+            referencedRelation: "catalogo_bobinadoras"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pesajes_cintas_lotes_conductor_id_fkey"
+            columns: ["conductor_id"]
+            isOneToOne: false
+            referencedRelation: "operarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pesajes_cintas_lotes_muestra_calidad_id_fkey"
+            columns: ["muestra_calidad_id"]
+            isOneToOne: false
+            referencedRelation: "muestras_calidad"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pesajes_cintas_lotes_muestra_calidad_id_fkey"
+            columns: ["muestra_calidad_id"]
+            isOneToOne: false
+            referencedRelation: "v_muestra_kpis_v2"
+            referencedColumns: ["muestra_id"]
+          },
+          {
+            foreignKeyName: "pesajes_cintas_lotes_orden_produccion_id_fkey"
+            columns: ["orden_produccion_id"]
+            isOneToOne: false
+            referencedRelation: "ordenes_produccion"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pesajes_cintas_lotes_pesaje_bobina_madre_id_fkey"
+            columns: ["pesaje_bobina_madre_id"]
+            isOneToOne: false
+            referencedRelation: "pesajes_bobina_madre"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pesajes_cintas_lotes_producto_id_fkey"
+            columns: ["producto_id"]
+            isOneToOne: false
+            referencedRelation: "productos"
             referencedColumns: ["id"]
           },
         ]
@@ -2073,6 +2443,7 @@ export type Database = {
       }
     }
     Functions: {
+      _pc_require_access: { Args: { _uid: string }; Returns: undefined }
       _spec_audit_estado: {
         Args: {
           _campo: Database["public"]["Enums"]["qc_spec_audit_field"]
@@ -2085,6 +2456,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      anular_cinta: {
+        Args: { _cinta_id: string; _motivo: string }
+        Returns: undefined
+      }
       audit_action: {
         Args: {
           p_datos?: Json
@@ -2093,6 +2468,10 @@ export type Database = {
           p_registro_id?: string
         }
         Returns: string
+      }
+      buscar_contexto_rollo_cintas: {
+        Args: { _numero_rollo: string }
+        Returns: Json
       }
       can_access_module: {
         Args: {
@@ -2120,8 +2499,29 @@ export type Database = {
         }
         Returns: string
       }
+      corregir_cinta: {
+        Args: {
+          _ancho_util: number
+          _cinta_id: string
+          _idempotency: string
+          _motivo: string
+          _observaciones: string
+          _peso_cinta_kg: number
+          _uniones: number
+        }
+        Returns: Json
+      }
       crear_borrador_especificacion: {
         Args: { _motivo: string; _producto_id: string }
+        Returns: string
+      }
+      crear_lote_pesaje_cintas: {
+        Args: {
+          _bobinadora_id: string
+          _conductor_id: string
+          _idempotency: string
+          _numero_rollo: string
+        }
         Returns: string
       }
       descartar_borrador: {
@@ -2143,6 +2543,7 @@ export type Database = {
         Args: { _motivo: string; _spec_id: string }
         Returns: undefined
       }
+      finalizar_lote_cintas: { Args: { _lote_id: string }; Returns: Json }
       fn_cumplimiento_turno_v2: {
         Args: { _maquina_id: string; _op_date: string; _turno: string }
         Returns: {
@@ -2174,6 +2575,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      preparar_impresion_etiquetas: {
+        Args: { _lote_id: string; _motivo?: string }
+        Returns: Json
+      }
       publicar_especificacion: {
         Args: { _motivo: string; _spec_id: string }
         Returns: undefined
@@ -2182,6 +2587,17 @@ export type Database = {
       qc_recalc_estatus_muestra: {
         Args: { _muestra_id: string }
         Returns: undefined
+      }
+      registrar_cinta: {
+        Args: {
+          _ancho_util: number
+          _idempotency: string
+          _lote_id: string
+          _observaciones: string
+          _peso_cinta_kg: number
+          _uniones: number
+        }
+        Returns: Json
       }
       shift_op_date: { Args: { _ts: string; _turno: string }; Returns: string }
       spec_tiene_evidencia_vigente: {
@@ -2218,6 +2634,7 @@ export type Database = {
         | "catalogos"
         | "ordenes_produccion"
         | "pesaje_bobina_madre"
+        | "pesaje_cintas"
       app_role:
         | "administrador"
         | "gerente_general"
@@ -2227,6 +2644,7 @@ export type Database = {
         | "reportes_consulta"
         | "calidad_operativo"
         | "planeacion"
+      impresion_cinta_tipo: "ORIGINAL" | "REIMPRESION"
       maquina_estado: "libre" | "produciendo" | "paro" | "mantenimiento"
       orden_estado:
         | "borrador"
@@ -2246,6 +2664,8 @@ export type Database = {
         | "servicios"
         | "planeado"
         | "otro"
+      pesaje_cinta_estado: "registrada" | "sustituida" | "anulada"
+      pesaje_cintas_lote_estado: "abierto" | "finalizado" | "anulado"
       qc_ajuste_flujo:
         | "solicitado"
         | "autorizado"
@@ -2423,6 +2843,7 @@ export const Constants = {
         "catalogos",
         "ordenes_produccion",
         "pesaje_bobina_madre",
+        "pesaje_cintas",
       ],
       app_role: [
         "administrador",
@@ -2434,6 +2855,7 @@ export const Constants = {
         "calidad_operativo",
         "planeacion",
       ],
+      impresion_cinta_tipo: ["ORIGINAL", "REIMPRESION"],
       maquina_estado: ["libre", "produciendo", "paro", "mantenimiento"],
       orden_estado: [
         "borrador",
@@ -2455,6 +2877,8 @@ export const Constants = {
         "planeado",
         "otro",
       ],
+      pesaje_cinta_estado: ["registrada", "sustituida", "anulada"],
+      pesaje_cintas_lote_estado: ["abierto", "finalizado", "anulado"],
       qc_ajuste_flujo: [
         "solicitado",
         "autorizado",

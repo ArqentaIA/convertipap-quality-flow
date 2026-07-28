@@ -24,6 +24,7 @@ import { Route as CatalogosRouteImport } from './routes/catalogos'
 import { Route as AuditoriaRouteImport } from './routes/auditoria'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TFolioRouteImport } from './routes/t.$folio'
+import { Route as PesajeCintasRouteImport } from './routes/pesaje.cintas'
 import { Route as PesajeBobinaMadreRouteImport } from './routes/pesaje.bobina-madre'
 import { Route as MuestraIdRouteImport } from './routes/muestra.$id'
 import { Route as HistorialMaquinaRouteImport } from './routes/historial.$maquina'
@@ -109,6 +110,11 @@ const TFolioRoute = TFolioRouteImport.update({
   path: '/t/$folio',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PesajeCintasRoute = PesajeCintasRouteImport.update({
+  id: '/pesaje/cintas',
+  path: '/pesaje/cintas',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PesajeBobinaMadreRoute = PesajeBobinaMadreRouteImport.update({
   id: '/pesaje/bobina-madre',
   path: '/pesaje/bobina-madre',
@@ -180,6 +186,7 @@ export interface FileRoutesByFullPath {
   '/historial/$maquina': typeof HistorialMaquinaRoute
   '/muestra/$id': typeof MuestraIdRoute
   '/pesaje/bobina-madre': typeof PesajeBobinaMadreRoute
+  '/pesaje/cintas': typeof PesajeCintasRoute
   '/t/$folio': typeof TFolioRoute
 }
 export interface FileRoutesByTo {
@@ -206,6 +213,7 @@ export interface FileRoutesByTo {
   '/historial/$maquina': typeof HistorialMaquinaRoute
   '/muestra/$id': typeof MuestraIdRoute
   '/pesaje/bobina-madre': typeof PesajeBobinaMadreRoute
+  '/pesaje/cintas': typeof PesajeCintasRoute
   '/t/$folio': typeof TFolioRoute
 }
 export interface FileRoutesById {
@@ -233,6 +241,7 @@ export interface FileRoutesById {
   '/historial/$maquina': typeof HistorialMaquinaRoute
   '/muestra/$id': typeof MuestraIdRoute
   '/pesaje/bobina-madre': typeof PesajeBobinaMadreRoute
+  '/pesaje/cintas': typeof PesajeCintasRoute
   '/t/$folio': typeof TFolioRoute
 }
 export interface FileRouteTypes {
@@ -261,6 +270,7 @@ export interface FileRouteTypes {
     | '/historial/$maquina'
     | '/muestra/$id'
     | '/pesaje/bobina-madre'
+    | '/pesaje/cintas'
     | '/t/$folio'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -287,6 +297,7 @@ export interface FileRouteTypes {
     | '/historial/$maquina'
     | '/muestra/$id'
     | '/pesaje/bobina-madre'
+    | '/pesaje/cintas'
     | '/t/$folio'
   id:
     | '__root__'
@@ -313,6 +324,7 @@ export interface FileRouteTypes {
     | '/historial/$maquina'
     | '/muestra/$id'
     | '/pesaje/bobina-madre'
+    | '/pesaje/cintas'
     | '/t/$folio'
   fileRoutesById: FileRoutesById
 }
@@ -340,6 +352,7 @@ export interface RootRouteChildren {
   HistorialMaquinaRoute: typeof HistorialMaquinaRoute
   MuestraIdRoute: typeof MuestraIdRoute
   PesajeBobinaMadreRoute: typeof PesajeBobinaMadreRoute
+  PesajeCintasRoute: typeof PesajeCintasRoute
   TFolioRoute: typeof TFolioRoute
 }
 
@@ -450,6 +463,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TFolioRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/pesaje/cintas': {
+      id: '/pesaje/cintas'
+      path: '/pesaje/cintas'
+      fullPath: '/pesaje/cintas'
+      preLoaderRoute: typeof PesajeCintasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/pesaje/bobina-madre': {
       id: '/pesaje/bobina-madre'
       path: '/pesaje/bobina-madre'
@@ -540,18 +560,9 @@ const rootRouteChildren: RootRouteChildren = {
   HistorialMaquinaRoute: HistorialMaquinaRoute,
   MuestraIdRoute: MuestraIdRoute,
   PesajeBobinaMadreRoute: PesajeBobinaMadreRoute,
+  PesajeCintasRoute: PesajeCintasRoute,
   TFolioRoute: TFolioRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
