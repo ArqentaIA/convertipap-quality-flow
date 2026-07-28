@@ -152,13 +152,20 @@ function buildHtml(
     (o) => `<label class="ck"><input type="checkbox" ${defectosSet.has(o.toLowerCase()) ? "checked" : ""} /> ${esc(o)}</label>`,
   ).join("");
 
-  const pesoValor = pesoMed && pesoMed.valor !== null && pesoMed.valor !== undefined ? pesoMed.valor : "—";
-  const pesoUnidad = pesoMed?.unidad || "kg";
+  // PESO impreso: si el pesaje del rollo está vinculado se usa peso_neto_kg
+  // (pesajes_bobina_madre); si no, se degrada a la medición "peso" capturada.
+  const pesoDelRollo = data.pesoRolloKg != null && Number.isFinite(Number(data.pesoRolloKg))
+    ? Number(data.pesoRolloKg)
+    : null;
+  const pesoValor = pesoDelRollo != null
+    ? fmtKg(pesoDelRollo)
+    : (pesoMed && pesoMed.valor !== null && pesoMed.valor !== undefined ? String(pesoMed.valor) : "—");
+  const pesoUnidad = pesoDelRollo != null ? "kg" : (pesoMed?.unidad || "kg");
 
   const pesoBlock = `
     <div class="peso-highlight">
       <div class="peso-label">Peso</div>
-      <div class="peso-value">${esc(String(pesoValor))}<span class="peso-unit">${esc(pesoUnidad)}</span></div>
+      <div class="peso-value">${esc(pesoValor)}<span class="peso-unit">${esc(pesoUnidad)}</span></div>
     </div>`;
 
   return `<!doctype html>
