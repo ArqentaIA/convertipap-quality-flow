@@ -1,0 +1,1 @@
+DELETE FROM public.module_permissions WHERE module='pesaje_cintas' AND role <> 'administrador';
