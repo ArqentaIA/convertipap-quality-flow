@@ -332,7 +332,8 @@ export const listMisMuestrasRecientes = createServerFn({ method: "GET" })
          autorizado_por, autorizado_at, rol_autorizador,
          productos(id, codigo, nombre),
          maquinas(id, codigo, nombre, planta_id, plantas(codigo, nombre)),
-         mediciones_calidad(variable_id, variable_clave, valor, min_snapshot, objetivo_snapshot, max_snapshot, estado, variables_calidad(clave, etiqueta, unidad))`,
+         mediciones_calidad(variable_id, variable_clave, valor, min_snapshot, objetivo_snapshot, max_snapshot, estado, variables_calidad(clave, etiqueta, unidad)),
+         pesajes_bobina_madre!muestras_calidad_pesaje_id_fkey(peso_neto_kg)`,
       )
       .order("secuencia_captura", { ascending: false })
       .limit(seesAll ? 50 : isCapturista ? 30 : 20);

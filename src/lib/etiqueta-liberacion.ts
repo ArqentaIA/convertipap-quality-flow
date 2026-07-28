@@ -60,7 +60,20 @@ export type EtiquetaData = {
   } | null;
   numeroOrdenSap?: string | null;
   estadoSap?: string | null;
+  /**
+   * Peso neto del rollo tomado del pesaje de bobina madre
+   * (public.pesajes_bobina_madre.peso_neto_kg) vinculado a la muestra.
+   * Es la ÚNICA fuente de verdad para el bloque PESO impreso; cuando
+   * está presente reemplaza cualquier medición etiquetada como "Peso".
+   */
+  pesoRolloKg?: number | null;
 };
+
+function fmtKg(value: number | string): string {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "—";
+  return n.toFixed(3).replace(/\.?0+$/, "");
+}
 
 
 function esc(s: string): string {
@@ -139,13 +152,20 @@ function buildHtml(
     (o) => `<label class="ck"><input type="checkbox" ${defectosSet.has(o.toLowerCase()) ? "checked" : ""} /> ${esc(o)}</label>`,
   ).join("");
 
-  const pesoValor = pesoMed && pesoMed.valor !== null && pesoMed.valor !== undefined ? pesoMed.valor : "—";
-  const pesoUnidad = pesoMed?.unidad || "kg";
+  // PESO impreso: si el pesaje del rollo está vinculado se usa peso_neto_kg
+  // (pesajes_bobina_madre); si no, se degrada a la medición "peso" capturada.
+  const pesoDelRollo = data.pesoRolloKg != null && Number.isFinite(Number(data.pesoRolloKg))
+    ? Number(data.pesoRolloKg)
+    : null;
+  const pesoValor = pesoDelRollo != null
+    ? fmtKg(pesoDelRollo)
+    : (pesoMed && pesoMed.valor !== null && pesoMed.valor !== undefined ? String(pesoMed.valor) : "—");
+  const pesoUnidad = pesoDelRollo != null ? "kg" : (pesoMed?.unidad || "kg");
 
   const pesoBlock = `
     <div class="peso-highlight">
       <div class="peso-label">Peso</div>
-      <div class="peso-value">${esc(String(pesoValor))}<span class="peso-unit">${esc(pesoUnidad)}</span></div>
+      <div class="peso-value">${esc(pesoValor)}<span class="peso-unit">${esc(pesoUnidad)}</span></div>
     </div>`;
 
   return `<!doctype html>
@@ -356,7 +376,9 @@ export async function printEtiquetaLiberacion(data: EtiquetaData): Promise<void>
       m.etiqueta.trim().toLowerCase() === "peso del rollo" ||
       m.etiqueta.trim().toLowerCase() === "peso rollo",
   );
-  const pesoTxt = pesoMed && pesoMed.valor !== null && pesoMed.valor !== undefined ? String(pesoMed.valor) : "—";
+  const pesoTxt = data.pesoRolloKg != null && Number.isFinite(Number(data.pesoRolloKg))
+    ? fmtKg(Number(data.pesoRolloKg))
+    : (pesoMed && pesoMed.valor !== null && pesoMed.valor !== undefined ? String(pesoMed.valor) : "—");
   const sapTraceUrl = `${traceUrl}?vista=sap&rollo=${encodeURIComponent(data.numeroRollo || "")}&peso=${encodeURIComponent(pesoTxt)}&estatus=${encodeURIComponent(data.estatus)}`;
 
   // Enriquecer con datos SAP (N.º de orden + estado) si no vienen ya en `data`.
