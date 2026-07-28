@@ -381,6 +381,14 @@ function PesajeCintasPage() {
                 <div className="font-medium">Conductor: <span className="text-foreground">{lote.conductor_nombre_snapshot}</span> · Bobinadora: <span className="text-foreground">{lote.bobinadora_nombre_snapshot}</span></div>
               </div>
               <div className="flex flex-wrap gap-2">
+                {puedeCambiarOperativos && lote.estado === "abierto" && (
+                  <button
+                    onClick={onCambiarOperativos}
+                    className="flex items-center gap-2 rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-sm font-medium text-warning hover:bg-warning/20"
+                  >
+                    <UserCog className="h-4 w-4" /> Cambiar conductor/bobinadora
+                  </button>
+                )}
                 <button
                   onClick={onImprimir}
                   disabled={cintas.length === 0}
