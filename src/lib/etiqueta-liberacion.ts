@@ -60,7 +60,20 @@ export type EtiquetaData = {
   } | null;
   numeroOrdenSap?: string | null;
   estadoSap?: string | null;
+  /**
+   * Peso neto del rollo tomado del pesaje de bobina madre
+   * (public.pesajes_bobina_madre.peso_neto_kg) vinculado a la muestra.
+   * Es la ÚNICA fuente de verdad para el bloque PESO impreso; cuando
+   * está presente reemplaza cualquier medición etiquetada como "Peso".
+   */
+  pesoRolloKg?: number | null;
 };
+
+function fmtKg(value: number | string): string {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "—";
+  return n.toFixed(3).replace(/\.?0+$/, "");
+}
 
 
 function esc(s: string): string {
