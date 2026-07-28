@@ -194,12 +194,35 @@ export function abrirImpresionEtiquetas(snap: EtiquetaSnapshot): void {
 </body>
 </html>`;
 
-  const w = window.open("", "_blank", "noopener,noreferrer,width=900,height=1100");
-  if (!w) {
-    alert("Habilita las ventanas emergentes para imprimir las etiquetas.");
+  // Preferimos iframe oculto (no lo bloquean los navegadores). Fallback a window.open.
+  try {
+    const iframe = document.createElement("iframe");
+    iframe.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:0;";
+    document.body.appendChild(iframe);
+    const doc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (!doc) throw new Error("iframe sin documento");
+    doc.open();
+    doc.write(html);
+    doc.close();
+    const cleanup = () => setTimeout(() => iframe.remove(), 1000);
+    iframe.contentWindow?.addEventListener("afterprint", cleanup);
+    setTimeout(() => {
+      try {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+      } catch {
+        cleanup();
+      }
+    }, 400);
     return;
+  } catch {
+    const w = window.open("", "_blank", "width=900,height=1100");
+    if (!w) {
+      alert("Habilita las ventanas emergentes para imprimir las etiquetas.");
+      return;
+    }
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
   }
-  w.document.open();
-  w.document.write(html);
-  w.document.close();
 }
