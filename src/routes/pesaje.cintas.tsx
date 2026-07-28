@@ -192,6 +192,64 @@ function PesajeCintasPage() {
     }
   }
 
+  async function onCorregir(c: CintaRegistrada) {
+    if (!lote) return;
+    const pesoStr = window.prompt(`Corregir posición ${c.posicion}\nNuevo peso (kg) [actual ${c.peso_cinta_kg}]:`, String(c.peso_cinta_kg));
+    if (pesoStr == null) return;
+    const anchoStr = window.prompt(`Nuevo ancho útil [actual ${c.ancho_util}]:`, String(c.ancho_util));
+    if (anchoStr == null) return;
+    const unionesStr = window.prompt(`Nuevas uniones [actual ${c.uniones}]:`, String(c.uniones));
+    if (unionesStr == null) return;
+    const obs = window.prompt(`Observaciones (opcional):`, c.observaciones ?? "") ?? "";
+    const motivo = window.prompt("Motivo de la corrección (mínimo 5 caracteres):") ?? "";
+    if (motivo.trim().length < 5) { toast.error("Motivo requerido."); return; }
+    const peso = Number(pesoStr), ancho = Number(anchoStr), uniones = Number(unionesStr);
+    if (!(peso > 0) || !(ancho > 0) || !(uniones >= 0)) { toast.error("Valores inválidos."); return; }
+    try {
+      await corregir({ data: {
+        cinta_id: c.id, peso_cinta_kg: peso, ancho_util: ancho, uniones,
+        observaciones: obs.trim() || null, motivo: motivo.trim(), idempotency_key: uuid(),
+      }});
+      await qc.invalidateQueries({ queryKey: ["cintas-lote", lote.id] });
+      toast.success(`Posición ${c.posicion} corregida.`);
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Error al corregir la cinta.");
+    }
+  }
+
+  async function onCambiarOperativos() {
+    if (!lote) return;
+    const conductores = conductoresQ.data ?? [];
+    const bobinadoras = bobinadorasQ.data ?? [];
+    if (conductores.length === 0 || bobinadoras.length === 0) {
+      toast.error("Catálogos no disponibles."); return;
+    }
+    const listaC = conductores.map((c, i) => `${i + 1}. ${c.nombre}`).join("\n");
+    const idxCStr = window.prompt(`Nuevo conductor (actual: ${lote.conductor_nombre_snapshot})\n${listaC}\n\nIngrese número:`);
+    if (idxCStr == null) return;
+    const idxC = Number(idxCStr) - 1;
+    if (!conductores[idxC]) { toast.error("Selección inválida."); return; }
+    const listaB = bobinadoras.map((b, i) => `${i + 1}. ${b.nombre}`).join("\n");
+    const idxBStr = window.prompt(`Nueva bobinadora (actual: ${lote.bobinadora_nombre_snapshot})\n${listaB}\n\nIngrese número:`);
+    if (idxBStr == null) return;
+    const idxB = Number(idxBStr) - 1;
+    if (!bobinadoras[idxB]) { toast.error("Selección inválida."); return; }
+    const motivo = window.prompt("Motivo del cambio (mínimo 5 caracteres):") ?? "";
+    if (motivo.trim().length < 5) { toast.error("Motivo requerido."); return; }
+    try {
+      await actualizarOp({ data: {
+        lote_id: lote.id,
+        conductor_id: conductores[idxC].id,
+        bobinadora_id: bobinadoras[idxB].id,
+        motivo: motivo.trim(),
+      }});
+      await qc.invalidateQueries({ queryKey: ["cintas-lote", lote.id] });
+      toast.success("Datos operativos actualizados. Las impresiones futuras usarán los nuevos datos.");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Error al actualizar datos operativos.");
+    }
+  }
+
   async function onFinalizar() {
     if (!lote) return;
     if (!window.confirm(`¿Finalizar rollo? El peso pendiente (${n(pendiente)} kg) se registrará como merma final.`)) return;
