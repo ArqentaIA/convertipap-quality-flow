@@ -1488,7 +1488,7 @@ export type Database = {
           numero_orden: string | null
           numero_rollo: string
           orden_produccion_id: string | null
-          pesaje_bobina_madre_id: string
+          pesaje_bobina_madre_id: string | null
           peso_bobina_madre_neto_kg: number
           peso_pendiente_kg: number
           peso_total_cintas_kg: number
@@ -1523,7 +1523,7 @@ export type Database = {
           numero_orden?: string | null
           numero_rollo: string
           orden_produccion_id?: string | null
-          pesaje_bobina_madre_id: string
+          pesaje_bobina_madre_id?: string | null
           peso_bobina_madre_neto_kg: number
           peso_pendiente_kg: number
           peso_total_cintas_kg?: number
@@ -1558,7 +1558,7 @@ export type Database = {
           numero_orden?: string | null
           numero_rollo?: string
           orden_produccion_id?: string | null
-          pesaje_bobina_madre_id?: string
+          pesaje_bobina_madre_id?: string | null
           peso_bobina_madre_neto_kg?: number
           peso_pendiente_kg?: number
           peso_total_cintas_kg?: number
