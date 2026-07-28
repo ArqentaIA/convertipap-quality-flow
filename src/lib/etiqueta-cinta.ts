@@ -105,7 +105,7 @@ function renderEtiqueta(snap: EtiquetaSnapshot, cinta: EtiquetaSnapshot["cintas"
       <div class="lbl-cinta">
         <div class="lbl-cinta-tit">Datos de la cinta</div>
         <div class="lbl-row">
-          <div><span class="k">Peso</span><span class="v big">${cinta.peso_cinta_kg} kg</span></div>
+          <div><span class="k">Peso</span><span class="v big">${fmtKg(pesoEtiquetaKg)} kg</span></div>
           <div><span class="k">Ancho útil</span><span class="v">${cinta.ancho_util} ${cinta.ancho_util_unidad ?? "cm"}</span></div>
           <div><span class="k">Uniones</span><span class="v">${cinta.uniones}</span></div>
         </div>
