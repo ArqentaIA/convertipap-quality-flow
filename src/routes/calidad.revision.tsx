@@ -613,12 +613,14 @@ function RevisionPage() {
               {accion === "liberar" && "Liberar muestra"}
               {accion === "rechazar" && "Rechazar muestra"}
               {accion === "concesion" && "Liberar con concesión"}
+              {accion === "correccion" && "Solicitar corrección"}
               {accion === "ajuste" && "Solicitar ajuste / reproceso"}
             </DialogTitle>
             <DialogDescription>
               {accion === "liberar" && "Confirma que la muestra cumple con la especificación. Observación opcional."}
               {accion === "rechazar" && "Registra el motivo del rechazo. Este dictamen es inmutable."}
               {accion === "concesion" && "Justifica por qué se libera la muestra fuera de especificación."}
+              {accion === "correccion" && "Devuelve el rollo a Producción con instrucciones para corregir. El rollo queda pendiente hasta nuevo dictamen."}
               {accion === "ajuste" && "Selecciona el tipo de intervención y describe el motivo."}
             </DialogDescription>
           </DialogHeader>
