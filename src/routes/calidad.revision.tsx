@@ -194,7 +194,7 @@ function RevisionPage() {
   const dictaminarMut = useMutation({
     mutationFn: async (vars: {
       muestra_id: string;
-      dictamen: "liberada" | "rechazada" | "concesion";
+      dictamen: "liberada" | "rechazada" | "concesion" | "correccion_solicitada";
       motivo: string;
       observaciones: string;
     }) => {
