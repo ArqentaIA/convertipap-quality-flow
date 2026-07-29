@@ -793,7 +793,7 @@ export const dictaminarMuestra = createServerFn({ method: "POST" })
     z
       .object({
         muestra_id: z.string().uuid(),
-        dictamen: z.enum(["liberada", "rechazada", "concesion"]),
+        dictamen: z.enum(["liberada", "rechazada", "concesion", "correccion_solicitada"]),
         motivo: z.string().min(1),
         observaciones: z
           .string()
