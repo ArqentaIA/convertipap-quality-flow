@@ -2089,7 +2089,7 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
                         </p>
                       </div>
                       <p className="mt-2 text-[11px] text-amber-800 dark:text-amber-200">
-                        Al enviar con motivo válido, el rollo quedará <strong>Liberado con justificación</strong> y pasará a revisión de Calidad para dictamen final.
+                        El rollo quedará en <strong>Pendiente de dictamen</strong>. Solo el área de Calidad puede liberar, rechazar o solicitar corrección desde la ficha del rollo.
                       </p>
                     </div>
                   </AlertDescription>
