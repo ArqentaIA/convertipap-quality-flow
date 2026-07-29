@@ -2681,7 +2681,11 @@ export type Database = {
         | "en_ejecucion"
         | "cerrado"
         | "rechazado"
-      qc_dictamen: "liberada" | "rechazada" | "concesion"
+      qc_dictamen:
+        | "liberada"
+        | "rechazada"
+        | "concesion"
+        | "correccion_solicitada"
       qc_medicion_estado:
         | "pendiente"
         | "conforme"
@@ -2695,6 +2699,7 @@ export type Database = {
         | "liberada"
         | "rechazada"
         | "concesion"
+        | "pendiente_dictamen"
       qc_resultado_ajuste: "pendiente" | "exitoso" | "parcial" | "fallido"
       qc_spec_audit_field: "min" | "objetivo" | "max" | "caracteristicas"
       qc_tipo_ajuste:
@@ -2895,7 +2900,12 @@ export const Constants = {
         "cerrado",
         "rechazado",
       ],
-      qc_dictamen: ["liberada", "rechazada", "concesion"],
+      qc_dictamen: [
+        "liberada",
+        "rechazada",
+        "concesion",
+        "correccion_solicitada",
+      ],
       qc_medicion_estado: [
         "pendiente",
         "conforme",
@@ -2910,6 +2920,7 @@ export const Constants = {
         "liberada",
         "rechazada",
         "concesion",
+        "pendiente_dictamen",
       ],
       qc_resultado_ajuste: ["pendiente", "exitoso", "parcial", "fallido"],
       qc_spec_audit_field: ["min", "objetivo", "max", "caracteristicas"],
