@@ -816,11 +816,25 @@ export const dictaminarMuestra = createServerFn({ method: "POST" })
 
     const now = new Date().toISOString();
     const estatusLiberacion =
-      data.dictamen === "liberada" ? "L" : data.dictamen === "concesion" ? "C" : "NC";
+      data.dictamen === "liberada"
+        ? "L"
+        : data.dictamen === "concesion"
+          ? "C"
+          : data.dictamen === "rechazada"
+            ? "NC"
+            : null; // correccion_solicitada: sin estatus mientras Producción corrige
+    const nuevoEstado =
+      data.dictamen === "liberada"
+        ? "liberada"
+        : data.dictamen === "rechazada"
+          ? "rechazada"
+          : data.dictamen === "concesion"
+            ? "concesion"
+            : ("pendiente_dictamen" as Database["public"]["Enums"]["qc_muestra_estado"]);
     const { error } = await sb
       .from("muestras_calidad")
       .update({
-        dictamen: data.dictamen,
+        dictamen: data.dictamen as Database["public"]["Enums"]["qc_dictamen"],
         dictamen_motivo: data.motivo,
         dictamen_observaciones: data.observaciones,
         dictamen_at: now,
@@ -830,12 +844,7 @@ export const dictaminarMuestra = createServerFn({ method: "POST" })
         autorizado_at: now,
         rol_autorizador: "calidad",
         estatus_liberacion: estatusLiberacion,
-        estado:
-          data.dictamen === "liberada"
-            ? "liberada"
-            : data.dictamen === "rechazada"
-              ? "rechazada"
-              : "concesion",
+        estado: nuevoEstado,
       })
       .eq("id", data.muestra_id);
     if (error) throw new Error(error.message);
