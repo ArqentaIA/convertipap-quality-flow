@@ -725,6 +725,7 @@ function EstadoBadge({ estado }: { estado: EstadoMuestra }) {
   const cfg: Record<EstadoMuestra, { label: string; cls: string }> = {
     borrador: { label: "Borrador", cls: "bg-muted text-muted-foreground" },
     pendiente_revision: { label: "Pendiente", cls: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200" },
+    pendiente_dictamen: { label: "Pendiente de dictamen", cls: "bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-100" },
     liberada: { label: "Liberada", cls: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200" },
     rechazada: { label: "Rechazada", cls: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200" },
     concesion: { label: "Concesión", cls: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200" },
