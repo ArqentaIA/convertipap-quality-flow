@@ -32,7 +32,7 @@ type SB = SupabaseClient<Database>;
 
 const ROLES_CAPTURA = ["capturista", "calidad", "gerente_general", "administrador"] as const;
 // Solo Calidad y Administrador pueden dictaminar / autorizar / cambiar estatus.
-const ROLES_DICTAMEN = ["calidad", "administrador"] as const;
+const ROLES_DICTAMEN = ["administrador", "gerente_general", "calidad"] as const;
 const ROLES_ADMIN = ["gerente_general", "administrador"] as const;
 
 const ACCESO_DENEGADO_ROLLO =
@@ -515,12 +515,14 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
     }
 
     // -------------------------------------------------------------------------
-    // REGLA DE ORO (cutover 18-Jun-2026) — Fuente única de verdad: backend.
-    // El estatus_liberacion se DERIVA: si las 3 variables críticas (Peso Base,
-    // Tensión MD, Tensión CD) están dentro de [min, max] → 'L'. Si alguna sale,
-    // por defecto 'NC'. El capturista puede liberar marcando
-    // `liberado_con_justificacion = true` con motivo ≥10 chars → 'L' con flag.
-    // El trigger BD `qc_recalc_estatus_muestra` aplica la misma regla al final.
+    // POLÍTICA VIGENTE (29-Jul-2026) — Fuente única de verdad: backend.
+    // - Si TODAS las variables cumplen [min,max]: estatus_liberacion='L', estado
+    //   'borrador' (o 'pendiente_revision' si el capturista envía a revisión).
+    // - Si CUALQUIER variable está fuera de spec: se exige motivo ≥10 chars y
+    //   la muestra queda en estado 'pendiente_dictamen' con estatus_liberacion
+    //   NULL. La captura NUNCA libera — solo Calidad vía change_roll_status
+    //   (dictámenes: liberada / rechazada / correccion_solicitada).
+    // La captura ignora `liberado_con_justificacion` del cliente (siempre false).
     // -------------------------------------------------------------------------
     const criticalEval = evaluateCriticalRule(
       data.mediciones.map((m) => ({
@@ -531,37 +533,46 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
       })),
     );
 
+    // Todas las variables fuera de spec (no solo críticas)
+    const fueraSpecCapturista = data.mediciones
+      .map((m) => {
+        const est = calcularEstadoMedicion(
+          m.valor,
+          m.min_snapshot,
+          m.max_snapshot,
+          m.variable_clave,
+        );
+        return { m, est };
+      })
+      .filter(({ est }) => est === "no_conforme" || est === "fuera_rango_critico");
+
+    const hayFueraSpec = fueraSpecCapturista.length > 0;
     const justifTrim = (data.liberacion_justificacion ?? "").trim();
-    const wantLiberarJustif = data.liberado_con_justificacion === true;
 
-    if (criticalEval.forzarNC && wantLiberarJustif && justifTrim.length < 10) {
-      throw new Error(
-        "Para liberar un rollo NO CUMPLE se requiere una justificación de al menos 10 caracteres.",
-      );
-    }
-    if (wantLiberarJustif && justifTrim.length > 240) {
-      throw new Error(
-        "La justificación de liberación no puede exceder 240 caracteres.",
-      );
+    if (hayFueraSpec) {
+      if (justifTrim.length < 10) {
+        throw new Error(
+          "Hay variables fuera de especificación. Escribe el motivo (mínimo 10 caracteres) para que Calidad emita dictamen.",
+        );
+      }
+      if (justifTrim.length > 240) {
+        throw new Error("El motivo no puede exceder 240 caracteres.");
+      }
     }
 
+    // La captura nunca produce liberación; el dictamen es potestad de Calidad.
     let estatusLiberacionEfectivo: "L" | "NC" | "C" | null;
-    if (!criticalEval.forzarNC) {
-      estatusLiberacionEfectivo = "L";
-    } else if (wantLiberarJustif && justifTrim.length >= 10) {
-      estatusLiberacionEfectivo = "L";
-    } else {
-      estatusLiberacionEfectivo = "NC";
-    }
+    let estadoMuestra: Database["public"]["Enums"]["qc_muestra_estado"];
 
-    // NC capturado se envía automáticamente a Bandeja de Revisión de Calidad,
-    // ya que solo el Gerente de Calidad puede liberarlo. Esto evita que rollos
-    // No Conformes queden "ocultos" en estado borrador sin posibilidad de
-    // dictamen autorizado.
-    const estadoMuestra: Database["public"]["Enums"]["qc_muestra_estado"] =
-      data.enviar_a_revision || estatusLiberacionEfectivo === "NC"
-        ? "pendiente_revision"
-        : "borrador";
+    if (!hayFueraSpec) {
+      estatusLiberacionEfectivo = "L";
+      estadoMuestra = data.enviar_a_revision ? "pendiente_revision" : "borrador";
+    } else {
+      estatusLiberacionEfectivo = null;
+      // Nuevo estado — enum añadido en migración 29-Jul-2026.
+      estadoMuestra =
+        "pendiente_dictamen" as Database["public"]["Enums"]["qc_muestra_estado"];
+    }
 
     const muestraPayload = {
       orden_id: data.orden_id ?? null,
@@ -584,23 +595,20 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
       porcentaje_rupturas_pct: data.porcentaje_rupturas_pct ?? null,
       destino: data.destino?.trim() ? data.destino.trim() : null,
       estatus_liberacion: estatusLiberacionEfectivo,
-      // Regla de oro: persistir flags de liberación con justificación.
-      liberado_con_justificacion: wantLiberarJustif && criticalEval.forzarNC && justifTrim.length >= 10,
-      liberacion_justificacion:
-        wantLiberarJustif && criticalEval.forzarNC && justifTrim.length >= 10 ? justifTrim : null,
-      liberado_por:
-        wantLiberarJustif && criticalEval.forzarNC && justifTrim.length >= 10 ? userId : null,
-      liberado_at:
-        wantLiberarJustif && criticalEval.forzarNC && justifTrim.length >= 10
-          ? new Date().toISOString()
-          : null,
-      variables_fuera_spec: criticalEval.fallas.map((f) => ({
-        variable: f.variable_clave,
-        etiqueta: f.etiqueta,
-        valor: f.valor,
-        min: f.min,
-        max: f.max,
-        tipo: f.tipo,
+      // La captura NUNCA libera (política 29-Jul-2026). El motivo del capturista
+      // se persiste para dictamen posterior de Calidad; nunca se marca liberado.
+      liberado_con_justificacion: false,
+      liberacion_justificacion: hayFueraSpec ? justifTrim : null,
+      liberado_por: null,
+      liberado_at: null,
+      // Snapshot completo de variables fuera de spec (todas, no sólo las críticas).
+      variables_fuera_spec: fueraSpecCapturista.map(({ m, est }) => ({
+        variable: m.variable_clave,
+        valor: m.valor,
+        min: m.min_snapshot,
+        max: m.max_snapshot,
+        objetivo: m.objetivo_snapshot,
+        tipo: est,
       })) as never,
       defectos: data.defectos ?? [],
       tipo_muestreo: data.tipo_muestreo,
@@ -785,7 +793,7 @@ export const dictaminarMuestra = createServerFn({ method: "POST" })
     z
       .object({
         muestra_id: z.string().uuid(),
-        dictamen: z.enum(["liberada", "rechazada", "concesion"]),
+        dictamen: z.enum(["liberada", "rechazada", "concesion", "correccion_solicitada"]),
         motivo: z.string().min(1),
         observaciones: z
           .string()
@@ -808,11 +816,25 @@ export const dictaminarMuestra = createServerFn({ method: "POST" })
 
     const now = new Date().toISOString();
     const estatusLiberacion =
-      data.dictamen === "liberada" ? "L" : data.dictamen === "concesion" ? "C" : "NC";
+      data.dictamen === "liberada"
+        ? "L"
+        : data.dictamen === "concesion"
+          ? "C"
+          : data.dictamen === "rechazada"
+            ? "NC"
+            : null; // correccion_solicitada: sin estatus mientras Producción corrige
+    const nuevoEstado =
+      data.dictamen === "liberada"
+        ? "liberada"
+        : data.dictamen === "rechazada"
+          ? "rechazada"
+          : data.dictamen === "concesion"
+            ? "concesion"
+            : ("pendiente_dictamen" as Database["public"]["Enums"]["qc_muestra_estado"]);
     const { error } = await sb
       .from("muestras_calidad")
       .update({
-        dictamen: data.dictamen,
+        dictamen: data.dictamen as Database["public"]["Enums"]["qc_dictamen"],
         dictamen_motivo: data.motivo,
         dictamen_observaciones: data.observaciones,
         dictamen_at: now,
@@ -822,12 +844,7 @@ export const dictaminarMuestra = createServerFn({ method: "POST" })
         autorizado_at: now,
         rol_autorizador: "calidad",
         estatus_liberacion: estatusLiberacion,
-        estado:
-          data.dictamen === "liberada"
-            ? "liberada"
-            : data.dictamen === "rechazada"
-              ? "rechazada"
-              : "concesion",
+        estado: nuevoEstado,
       })
       .eq("id", data.muestra_id);
     if (error) throw new Error(error.message);

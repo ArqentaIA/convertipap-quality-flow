@@ -50,14 +50,14 @@ export const Route = createFileRoute("/calidad/revision")({
 });
 
 type EstadoMuestra =
-  | "borrador" | "pendiente_revision" | "liberada" | "rechazada"
+  | "borrador" | "pendiente_revision" | "pendiente_dictamen" | "liberada" | "rechazada"
   | "concesion" | "en_ajuste" | "reproceso";
 
 type TipoAjuste =
   | "ajuste_calidad" | "ajuste_maquina" | "ajuste_parametros"
   | "cambio_materia_prima" | "reproceso" | "otro";
 
-type AccionDialog = "liberar" | "rechazar" | "concesion" | "ajuste" | null;
+type AccionDialog = "liberar" | "rechazar" | "concesion" | "correccion" | "ajuste" | null;
 
 const ESTADO_FILTROS = [
   { value: "pendientes", label: "Pendientes" },
@@ -194,7 +194,7 @@ function RevisionPage() {
   const dictaminarMut = useMutation({
     mutationFn: async (vars: {
       muestra_id: string;
-      dictamen: "liberada" | "rechazada" | "concesion";
+      dictamen: "liberada" | "rechazada" | "concesion" | "correccion_solicitada";
       motivo: string;
       observaciones: string;
     }) => {
@@ -245,7 +245,8 @@ function RevisionPage() {
     const dictamen =
       accion === "liberar" ? "liberada" :
       accion === "rechazar" ? "rechazada" :
-      accion === "concesion" ? "concesion" : null;
+      accion === "concesion" ? "concesion" :
+      accion === "correccion" ? "correccion_solicitada" : null;
     if (!dictamen) return;
     const obsParts = [observaciones];
     if (evidenciaUrl) obsParts.push(`Evidencia: ${evidenciaUrl}`);
@@ -531,7 +532,7 @@ function RevisionPage() {
                 )}
 
                 {/* Acciones */}
-                {selected.estado === "pendiente_revision" ? (
+                {selected.estado === "pendiente_revision" || selected.estado === "pendiente_dictamen" ? (
                   <div className="flex flex-wrap gap-2 border-t pt-3">
                     <Button onClick={() => openDialog("liberar")} disabled={!canReview || isPending}
                       className="bg-emerald-600 hover:bg-emerald-700 text-white">
@@ -540,6 +541,10 @@ function RevisionPage() {
                     <Button onClick={() => openDialog("concesion")} disabled={!canReview || isPending} variant="outline"
                       className="border-amber-500 text-amber-700 hover:bg-amber-50">
                       <AlertTriangle className="mr-1.5 h-4 w-4" /> Liberar con concesión
+                    </Button>
+                    <Button onClick={() => openDialog("correccion")} disabled={!canReview || isPending} variant="outline"
+                      className="border-orange-500 text-orange-700 hover:bg-orange-50">
+                      <Wrench className="mr-1.5 h-4 w-4" /> Solicitar corrección
                     </Button>
                     <Button onClick={() => openDialog("ajuste")} disabled={!canReview || isPending} variant="outline">
                       <Wrench className="mr-1.5 h-4 w-4" /> Solicitar ajuste
@@ -608,12 +613,14 @@ function RevisionPage() {
               {accion === "liberar" && "Liberar muestra"}
               {accion === "rechazar" && "Rechazar muestra"}
               {accion === "concesion" && "Liberar con concesión"}
+              {accion === "correccion" && "Solicitar corrección"}
               {accion === "ajuste" && "Solicitar ajuste / reproceso"}
             </DialogTitle>
             <DialogDescription>
               {accion === "liberar" && "Confirma que la muestra cumple con la especificación. Observación opcional."}
               {accion === "rechazar" && "Registra el motivo del rechazo. Este dictamen es inmutable."}
               {accion === "concesion" && "Justifica por qué se libera la muestra fuera de especificación."}
+              {accion === "correccion" && "Devuelve el rollo a Producción con instrucciones para corregir. El rollo queda pendiente hasta nuevo dictamen."}
               {accion === "ajuste" && "Selecciona el tipo de intervención y describe el motivo."}
             </DialogDescription>
           </DialogHeader>
@@ -725,6 +732,7 @@ function EstadoBadge({ estado }: { estado: EstadoMuestra }) {
   const cfg: Record<EstadoMuestra, { label: string; cls: string }> = {
     borrador: { label: "Borrador", cls: "bg-muted text-muted-foreground" },
     pendiente_revision: { label: "Pendiente", cls: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200" },
+    pendiente_dictamen: { label: "Pendiente de dictamen", cls: "bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-100" },
     liberada: { label: "Liberada", cls: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200" },
     rechazada: { label: "Rechazada", cls: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200" },
     concesion: { label: "Concesión", cls: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200" },
