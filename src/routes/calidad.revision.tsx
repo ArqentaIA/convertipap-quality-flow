@@ -50,14 +50,14 @@ export const Route = createFileRoute("/calidad/revision")({
 });
 
 type EstadoMuestra =
-  | "borrador" | "pendiente_revision" | "liberada" | "rechazada"
+  | "borrador" | "pendiente_revision" | "pendiente_dictamen" | "liberada" | "rechazada"
   | "concesion" | "en_ajuste" | "reproceso";
 
 type TipoAjuste =
   | "ajuste_calidad" | "ajuste_maquina" | "ajuste_parametros"
   | "cambio_materia_prima" | "reproceso" | "otro";
 
-type AccionDialog = "liberar" | "rechazar" | "concesion" | "ajuste" | null;
+type AccionDialog = "liberar" | "rechazar" | "concesion" | "correccion" | "ajuste" | null;
 
 const ESTADO_FILTROS = [
   { value: "pendientes", label: "Pendientes" },
