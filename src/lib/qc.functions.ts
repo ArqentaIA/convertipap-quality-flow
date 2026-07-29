@@ -595,23 +595,20 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
       porcentaje_rupturas_pct: data.porcentaje_rupturas_pct ?? null,
       destino: data.destino?.trim() ? data.destino.trim() : null,
       estatus_liberacion: estatusLiberacionEfectivo,
-      // Regla de oro: persistir flags de liberación con justificación.
-      liberado_con_justificacion: wantLiberarJustif && criticalEval.forzarNC && justifTrim.length >= 10,
-      liberacion_justificacion:
-        wantLiberarJustif && criticalEval.forzarNC && justifTrim.length >= 10 ? justifTrim : null,
-      liberado_por:
-        wantLiberarJustif && criticalEval.forzarNC && justifTrim.length >= 10 ? userId : null,
-      liberado_at:
-        wantLiberarJustif && criticalEval.forzarNC && justifTrim.length >= 10
-          ? new Date().toISOString()
-          : null,
-      variables_fuera_spec: criticalEval.fallas.map((f) => ({
-        variable: f.variable_clave,
-        etiqueta: f.etiqueta,
-        valor: f.valor,
-        min: f.min,
-        max: f.max,
-        tipo: f.tipo,
+      // La captura NUNCA libera (política 29-Jul-2026). El motivo del capturista
+      // se persiste para dictamen posterior de Calidad; nunca se marca liberado.
+      liberado_con_justificacion: false,
+      liberacion_justificacion: hayFueraSpec ? justifTrim : null,
+      liberado_por: null,
+      liberado_at: null,
+      // Snapshot completo de variables fuera de spec (todas, no sólo las críticas).
+      variables_fuera_spec: fueraSpecCapturista.map(({ m, est }) => ({
+        variable: m.variable_clave,
+        valor: m.valor,
+        min: m.min_snapshot,
+        max: m.max_snapshot,
+        objetivo: m.objetivo_snapshot,
+        tipo: est,
       })) as never,
       defectos: data.defectos ?? [],
       tipo_muestreo: data.tipo_muestreo,
