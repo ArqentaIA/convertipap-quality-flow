@@ -32,7 +32,7 @@ type SB = SupabaseClient<Database>;
 
 const ROLES_CAPTURA = ["capturista", "calidad", "gerente_general", "administrador"] as const;
 // Solo Calidad y Administrador pueden dictaminar / autorizar / cambiar estatus.
-const ROLES_DICTAMEN = ["calidad", "administrador"] as const;
+const ROLES_DICTAMEN = ["administrador", "gerente_general", "calidad"] as const;
 const ROLES_ADMIN = ["gerente_general", "administrador"] as const;
 
 const ACCESO_DENEGADO_ROLLO =
