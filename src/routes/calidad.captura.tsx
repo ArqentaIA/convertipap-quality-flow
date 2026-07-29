@@ -2016,103 +2016,77 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {!fuerzaNCPorReglaCritica ? (
+              {variablesFueraDeSpec.length === 0 && !fuerzaNCPorReglaCritica ? (
                 <Alert className="border-emerald-500 bg-emerald-50 text-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-100">
                   <CheckCircle2 className="h-4 w-4" />
                   <AlertTitle>CUMPLE — Liberado automático</AlertTitle>
                   <AlertDescription className="text-xs">
-                    El rollo cumple con la regla de oro (Peso Base, Tensión MD y Tensión CD
-                    dentro de [min, max]). Se guardará como <strong>Liberado</strong>.
+                    Todas las variables están dentro de especificación. Se guardará como <strong>Liberado</strong>.
                   </AlertDescription>
                 </Alert>
               ) : (
-                <Alert variant="destructive">
+                <Alert className="border-amber-500 bg-amber-50 text-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
                   <AlertTriangle className="h-4 w-4" />
-                  <AlertTitle>NO CUMPLE la regla de oro</AlertTitle>
+                  <AlertTitle>
+                    {fuerzaNCPorReglaCritica
+                      ? "Variables críticas fuera de rango — motivo requerido"
+                      : "Variables fuera de especificación — motivo requerido"}
+                  </AlertTitle>
                   <AlertDescription>
                     <p className="mb-2 text-xs">
-                      Variables fuera de límites permitidos:
+                      El sistema NO bloquea la captura. Escribe un motivo (mín. 10 caracteres) y Calidad dictaminará al revisar.
                     </p>
-                    <ul className="ml-4 list-disc text-xs">
-                      {criticalRuleEval.fallas.map((f) => (
-                        <li key={f.variable_clave}>
-                          <strong>{f.etiqueta}</strong>: valor {f.valor} — rango permitido
-                          [{f.min}, {f.max}]
-                        </li>
-                      ))}
+                    <ul className="ml-4 list-disc text-xs mb-3">
+                      {fuerzaNCPorReglaCritica &&
+                        criticalRuleEval.fallas.map((f) => (
+                          <li key={`c-${f.variable_clave}`}>
+                            <strong>{f.etiqueta}</strong> (crítica): valor {f.valor} — rango [{f.min}, {f.max}]
+                          </li>
+                        ))}
+                      {variablesFueraDeSpec
+                        .filter(
+                          (m) =>
+                            !criticalRuleEval.fallas.some(
+                              (f) => f.variable_clave === m.spec.clave,
+                            ),
+                        )
+                        .map((m) => (
+                          <li key={`nc-${m.spec.variable_id}`}>
+                            <strong>{m.spec.etiqueta}</strong>: valor {m.input.valor} — rango [{m.spec.min_valor}, {m.spec.max_valor}]
+                          </li>
+                        ))}
                     </ul>
-                    <div className="mt-3 rounded-md border border-yellow-400 bg-yellow-50 p-3 text-yellow-900 dark:bg-yellow-950/30 dark:text-yellow-100">
-                      <div className="flex items-start gap-2">
-                        <Checkbox
-                          id="liberar-justif"
-                          checked={liberarConJustif}
-                          onCheckedChange={(c) => setLiberarConJustif(c === true)}
-                        />
-                        <div className="space-y-2 flex-1">
-                          <Label
-                            htmlFor="liberar-justif"
-                            className="font-semibold cursor-pointer"
-                          >
-                            Liberar este rollo con justificación del capturista
-                          </Label>
-                          <p className="text-[11px] text-yellow-800 dark:text-yellow-200">
-                            Al marcar y guardar, el rollo aparecerá como{" "}
-                            <strong>Liberado con justificación</strong> (amarillo) en visores,
-                            reportes y etiqueta. Quedará registrado tu usuario, fecha/hora y el
-                            motivo en la auditoría.
-                          </p>
-                          {liberarConJustif && (
-                            <>
-                              <Textarea
-                                value={justificacionLib}
-                                onChange={(e) =>
-                                  setJustificacionLib(e.target.value.slice(0, 240))
-                                }
-                                maxLength={240}
-                                placeholder="Motivo de la liberación (mín. 10, máx. 240 caracteres). Ej.: Cliente acepta variación, lote demostrativo, etc."
-                                rows={3}
-                                className="text-sm"
-                              />
-                              <div className="flex items-center justify-between gap-2">
-                                <p
-                                  className={cn(
-                                    "text-[11px]",
-                                    justifValida
-                                      ? "text-emerald-700 dark:text-emerald-300"
-                                      : "text-red-700 dark:text-red-300",
-                                  )}
-                                >
-                                  Mínimo 10 caracteres
-                                  {justifValida ? " ✓" : ""}
-                                </p>
-                                <p
-                                  className={cn(
-                                    "text-[11px] tabular-nums",
-                                    justificacionLib.length >= 240
-                                      ? "text-amber-700 dark:text-amber-300 font-semibold"
-                                      : "text-muted-foreground",
-                                  )}
-                                >
-                                  {justificacionLib.length}/240 caracteres
-                                </p>
-                              </div>
-                              {justificacionLib.length >= 240 && (
-                                <p className="text-[11px] text-amber-700 dark:text-amber-300">
-                                  Máximo 240 caracteres para garantizar la correcta
-                                  impresión de la etiqueta.
-                                </p>
-                              )}
-                            </>
+                    <div className="rounded-md border border-amber-400 bg-white/60 p-3">
+                      <Label htmlFor="motivo-fuera-spec" className="text-xs font-semibold">
+                        Motivo / observación del capturista (obligatorio)
+                      </Label>
+                      <Textarea
+                        id="motivo-fuera-spec"
+                        value={justificacionLib}
+                        onChange={(e) => setJustificacionLib(e.target.value.slice(0, 240))}
+                        maxLength={240}
+                        placeholder="Ej.: Cliente acepta variación; ancho real 230 cm en formato especial; pendiente ajuste de máquina, etc."
+                        rows={3}
+                        className="mt-2 text-sm"
+                      />
+                      <div className="mt-2 flex items-center justify-between gap-2">
+                        <p
+                          className={cn(
+                            "text-[11px]",
+                            justifValida
+                              ? "text-emerald-700 dark:text-emerald-300"
+                              : "text-red-700 dark:text-red-300",
                           )}
-                          {!liberarConJustif && (
-                            <p className="text-[11px] text-yellow-800 dark:text-yellow-200">
-                              Si NO marcas esta casilla, el rollo se guardará como{" "}
-                              <strong>No Conforme</strong> y solo Gerencia de Calidad podrá
-                              liberarlo mediante dictamen autorizado.
-                            </p>
-                          )}
-                        </div>
+                        >
+                          Mínimo 10 caracteres{justifValida ? " ✓" : ""}
+                        </p>
+                        <p className="text-[11px] tabular-nums text-muted-foreground">
+                          {justificacionLib.length}/240
+                        </p>
                       </div>
+                      <p className="mt-2 text-[11px] text-amber-800 dark:text-amber-200">
+                        Al enviar con motivo válido, el rollo quedará <strong>Liberado con justificación</strong> y pasará a revisión de Calidad para dictamen final.
+                      </p>
                     </div>
                   </AlertDescription>
                 </Alert>
