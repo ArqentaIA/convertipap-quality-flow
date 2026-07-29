@@ -1049,8 +1049,8 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
           porcentajeRupturasPct.trim() === "" ? null : Number(porcentajeRupturasPct),
         destino: destino.trim() === "" ? null : destino.trim(),
         // estatus_liberacion ya NO viene del cliente: lo deriva la BD por la regla de oro.
-        liberado_con_justificacion: liberarConJustif,
-        liberacion_justificacion: liberarConJustif ? justifTrimmed : null,
+        liberado_con_justificacion: liberarConJustif || (variablesFueraDeSpec.length > 0 && justifValida),
+        liberacion_justificacion: (liberarConJustif || variablesFueraDeSpec.length > 0) && justifValida ? justifTrimmed : null,
         defectos,
         tipo_muestreo: "por_rollo" as const,
         hora_muestreo: horaMuestreo ? new Date(horaMuestreo).toISOString() : undefined,
