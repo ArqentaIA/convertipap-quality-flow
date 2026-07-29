@@ -995,20 +995,19 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
     //   liberado_con_justificacion. El backend y el trigger en BD validan
     //   igualmente para defensa en profundidad.
     // ---------------------------------------------------------------------
-    if (modo === "envio" && criticalRuleEval.forzarNC) {
-      if (!liberarConJustif) {
-        toast.error(
-          "Este rollo NO CUMPLE la regla de oro. Para continuar: marque 'Liberar este rollo con justificación del capturista' y escriba el motivo (mínimo 10 caracteres), o corrija el valor fuera de rango.",
-          { duration: 8000, description: criticalRuleEval.resumen },
+    // Política vigente: NINGUNA variable bloquea el envío. Cuando hay valores
+    // fuera de spec (regla de oro o no) exigimos motivo del capturista y la
+    // muestra queda en revisión para dictamen de Calidad. Nunca se bloquea.
+    if (modo === "envio" && (criticalRuleEval.forzarNC || variablesFueraDeSpec.length > 0)) {
+      if (!justifValida) {
+        toast.warning(
+          "Hay variables fuera de especificación. Escribe el motivo/observación (mínimo 10 caracteres) para que Calidad dictamine.",
+          { duration: 7000, description: criticalRuleEval.resumen },
         );
         return;
       }
-      if (!justifValida) {
-        toast.error("La justificación de liberación debe tener al menos 10 caracteres.", {
-          duration: 6000,
-        });
-        return;
-      }
+      // Con motivo válido continuamos: se marca como liberado con justificación
+      // aunque el capturista no haya tocado el checkbox — Calidad dictamina.
     }
 
 
