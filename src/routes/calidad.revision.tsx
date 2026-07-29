@@ -245,7 +245,8 @@ function RevisionPage() {
     const dictamen =
       accion === "liberar" ? "liberada" :
       accion === "rechazar" ? "rechazada" :
-      accion === "concesion" ? "concesion" : null;
+      accion === "concesion" ? "concesion" :
+      accion === "correccion" ? "correccion_solicitada" : null;
     if (!dictamen) return;
     const obsParts = [observaciones];
     if (evidenciaUrl) obsParts.push(`Evidencia: ${evidenciaUrl}`);
