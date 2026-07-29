@@ -515,12 +515,14 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
     }
 
     // -------------------------------------------------------------------------
-    // REGLA DE ORO (cutover 18-Jun-2026) — Fuente única de verdad: backend.
-    // El estatus_liberacion se DERIVA: si las 3 variables críticas (Peso Base,
-    // Tensión MD, Tensión CD) están dentro de [min, max] → 'L'. Si alguna sale,
-    // por defecto 'NC'. El capturista puede liberar marcando
-    // `liberado_con_justificacion = true` con motivo ≥10 chars → 'L' con flag.
-    // El trigger BD `qc_recalc_estatus_muestra` aplica la misma regla al final.
+    // POLÍTICA VIGENTE (29-Jul-2026) — Fuente única de verdad: backend.
+    // - Si TODAS las variables cumplen [min,max]: estatus_liberacion='L', estado
+    //   'borrador' (o 'pendiente_revision' si el capturista envía a revisión).
+    // - Si CUALQUIER variable está fuera de spec: se exige motivo ≥10 chars y
+    //   la muestra queda en estado 'pendiente_dictamen' con estatus_liberacion
+    //   NULL. La captura NUNCA libera — solo Calidad vía change_roll_status
+    //   (dictámenes: liberada / rechazada / correccion_solicitada).
+    // La captura ignora `liberado_con_justificacion` del cliente (siempre false).
     // -------------------------------------------------------------------------
     const criticalEval = evaluateCriticalRule(
       data.mediciones.map((m) => ({
@@ -531,37 +533,46 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
       })),
     );
 
+    // Todas las variables fuera de spec (no solo críticas)
+    const fueraSpecCapturista = data.mediciones
+      .map((m) => {
+        const est = calcularEstadoMedicion(
+          m.valor,
+          m.min_snapshot,
+          m.max_snapshot,
+          m.variable_clave,
+        );
+        return { m, est };
+      })
+      .filter(({ est }) => est === "no_conforme" || est === "fuera_rango_critico");
+
+    const hayFueraSpec = fueraSpecCapturista.length > 0;
     const justifTrim = (data.liberacion_justificacion ?? "").trim();
-    const wantLiberarJustif = data.liberado_con_justificacion === true;
 
-    if (criticalEval.forzarNC && wantLiberarJustif && justifTrim.length < 10) {
-      throw new Error(
-        "Para liberar un rollo NO CUMPLE se requiere una justificación de al menos 10 caracteres.",
-      );
-    }
-    if (wantLiberarJustif && justifTrim.length > 240) {
-      throw new Error(
-        "La justificación de liberación no puede exceder 240 caracteres.",
-      );
+    if (hayFueraSpec) {
+      if (justifTrim.length < 10) {
+        throw new Error(
+          "Hay variables fuera de especificación. Escribe el motivo (mínimo 10 caracteres) para que Calidad emita dictamen.",
+        );
+      }
+      if (justifTrim.length > 240) {
+        throw new Error("El motivo no puede exceder 240 caracteres.");
+      }
     }
 
+    // La captura nunca produce liberación; el dictamen es potestad de Calidad.
     let estatusLiberacionEfectivo: "L" | "NC" | "C" | null;
-    if (!criticalEval.forzarNC) {
-      estatusLiberacionEfectivo = "L";
-    } else if (wantLiberarJustif && justifTrim.length >= 10) {
-      estatusLiberacionEfectivo = "L";
-    } else {
-      estatusLiberacionEfectivo = "NC";
-    }
+    let estadoMuestra: Database["public"]["Enums"]["qc_muestra_estado"];
 
-    // NC capturado se envía automáticamente a Bandeja de Revisión de Calidad,
-    // ya que solo el Gerente de Calidad puede liberarlo. Esto evita que rollos
-    // No Conformes queden "ocultos" en estado borrador sin posibilidad de
-    // dictamen autorizado.
-    const estadoMuestra: Database["public"]["Enums"]["qc_muestra_estado"] =
-      data.enviar_a_revision || estatusLiberacionEfectivo === "NC"
-        ? "pendiente_revision"
-        : "borrador";
+    if (!hayFueraSpec) {
+      estatusLiberacionEfectivo = "L";
+      estadoMuestra = data.enviar_a_revision ? "pendiente_revision" : "borrador";
+    } else {
+      estatusLiberacionEfectivo = null;
+      // Nuevo estado — enum añadido en migración 29-Jul-2026.
+      estadoMuestra =
+        "pendiente_dictamen" as Database["public"]["Enums"]["qc_muestra_estado"];
+    }
 
     const muestraPayload = {
       orden_id: data.orden_id ?? null,
