@@ -1049,8 +1049,12 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
           porcentajeRupturasPct.trim() === "" ? null : Number(porcentajeRupturasPct),
         destino: destino.trim() === "" ? null : destino.trim(),
         // estatus_liberacion ya NO viene del cliente: lo deriva la BD por la regla de oro.
-        liberado_con_justificacion: liberarConJustif || (variablesFueraDeSpec.length > 0 && justifValida),
-        liberacion_justificacion: (liberarConJustif || variablesFueraDeSpec.length > 0) && justifValida ? justifTrimmed : null,
+        // Política 29-Jul-2026: la captura nunca libera. Solo Calidad dictamina
+        // desde la ficha del rollo. Se envía siempre false; el motivo del
+        // capturista viaja como `liberacion_justificacion` para el dictamen.
+        liberado_con_justificacion: false,
+        liberacion_justificacion:
+          variablesFueraDeSpec.length > 0 && justifValida ? justifTrimmed : null,
         defectos,
         tipo_muestreo: "por_rollo" as const,
         hora_muestreo: horaMuestreo ? new Date(horaMuestreo).toISOString() : undefined,
