@@ -532,7 +532,7 @@ function RevisionPage() {
                 )}
 
                 {/* Acciones */}
-                {selected.estado === "pendiente_revision" ? (
+                {selected.estado === "pendiente_revision" || selected.estado === "pendiente_dictamen" ? (
                   <div className="flex flex-wrap gap-2 border-t pt-3">
                     <Button onClick={() => openDialog("liberar")} disabled={!canReview || isPending}
                       className="bg-emerald-600 hover:bg-emerald-700 text-white">
@@ -541,6 +541,10 @@ function RevisionPage() {
                     <Button onClick={() => openDialog("concesion")} disabled={!canReview || isPending} variant="outline"
                       className="border-amber-500 text-amber-700 hover:bg-amber-50">
                       <AlertTriangle className="mr-1.5 h-4 w-4" /> Liberar con concesión
+                    </Button>
+                    <Button onClick={() => openDialog("correccion")} disabled={!canReview || isPending} variant="outline"
+                      className="border-orange-500 text-orange-700 hover:bg-orange-50">
+                      <Wrench className="mr-1.5 h-4 w-4" /> Solicitar corrección
                     </Button>
                     <Button onClick={() => openDialog("ajuste")} disabled={!canReview || isPending} variant="outline">
                       <Wrench className="mr-1.5 h-4 w-4" /> Solicitar ajuste
