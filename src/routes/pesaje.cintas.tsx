@@ -156,7 +156,7 @@ function PesajeCintasPage() {
     if (requestGuard.current) return;
     if (peso <= 0 || ancho <= 0 || uniones < 0) { toast.error("Valores inválidos."); return; }
     if (totalCintas + peso > netoBM + 0.001) {
-      toast.error("El peso acumulado supera el peso disponible de la bobina madre.");
+      toast.error("El peso acumulado de las cintas supera el peso neto de la bobina madre. Revise los pesos capturados.");
       return;
     }
     requestGuard.current = true;
@@ -194,7 +194,7 @@ function PesajeCintasPage() {
 
   async function onCorregir(c: CintaRegistrada) {
     if (!lote) return;
-    const pesoStr = window.prompt(`Corregir posición ${c.posicion}\nNuevo peso (kg) [actual ${c.peso_cinta_kg}]:`, String(c.peso_cinta_kg));
+    const pesoStr = window.prompt(`Corregir posición ${c.posicion}\nNuevo peso real de la cinta en kg (báscula) [actual ${c.peso_cinta_kg}]:`, String(c.peso_cinta_kg));
     if (pesoStr == null) return;
     const anchoStr = window.prompt(`Nuevo ancho útil [actual ${c.ancho_util}]:`, String(c.ancho_util));
     if (anchoStr == null) return;
@@ -205,6 +205,7 @@ function PesajeCintasPage() {
     if (motivo.trim().length < 5) { toast.error("Motivo requerido."); return; }
     const peso = Number(pesoStr), ancho = Number(anchoStr), uniones = Number(unionesStr);
     if (!(peso > 0) || !(ancho > 0) || !(uniones >= 0)) { toast.error("Valores inválidos."); return; }
+    if (!window.confirm(`Confirme el peso registrado: ${peso} kg`)) return;
     try {
       await corregir({ data: {
         cinta_id: c.id, peso_cinta_kg: peso, ancho_util: ancho, uniones,
@@ -252,7 +253,7 @@ function PesajeCintasPage() {
 
   async function onFinalizar() {
     if (!lote) return;
-    if (!window.confirm(`¿Finalizar rollo? El peso pendiente (${n(pendiente)} kg) se registrará como merma final.`)) return;
+    if (!window.confirm(`¿Finalizar rollo? El peso pendiente (${n(pendiente)} kg) se registrará como merma real.`)) return;
     try {
       await finalizar({ data: { lote_id: lote.id } });
       await qc.invalidateQueries({ queryKey: ["cintas-lote", lote.id] });
@@ -370,8 +371,8 @@ function PesajeCintasPage() {
             <Card k="Neto bobina madre" v={`${n(netoBM)} kg`} />
             <Card k="Cintas registradas" v={`${cintas.length} / 12`} />
             <Card k="Peso acumulado" v={`${n(totalCintas)} kg`} />
-            <Card k={merma == null ? "Peso pendiente" : "Merma final"} v={`${n(merma == null ? pendiente : merma)} kg`} highlight={merma != null} />
-            <Card k="% merma" v={mermaPct == null ? "—" : `${n(mermaPct, 2)} %`} />
+            <Card k={merma == null ? "Peso pendiente" : "Merma real"} v={`${n(merma == null ? pendiente : merma)} kg`} highlight={merma != null} />
+            <Card k="% merma real" v={mermaPct == null ? "—" : `${n(mermaPct, 2)} %`} />
           </div>
 
           <div className="rounded-lg border border-border bg-card p-4">
@@ -534,13 +535,14 @@ function CintaCard({ pos, cinta, habilitada, disponibleKg, onRegistrar, onAnular
       </div>
       <div className="space-y-2 text-sm">
         <div>
-          <label className="mb-0.5 block text-[11px] text-muted-foreground">Peso (kg) · disp. {n(disponibleKg)}</label>
+          <label className="mb-0.5 block text-[11px] text-muted-foreground">Peso real de la cinta (kg) · disp. {n(disponibleKg)}</label>
           <input
-            type="number" inputMode="decimal" step="0.01"
+            type="number" inputMode="decimal" step="0.001"
             value={peso}
             onChange={(e) => setPeso(e.target.value)}
             className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm"
           />
+          <p className="mt-0.5 text-[10px] text-muted-foreground">Capture el peso indicado por la báscula.</p>
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div>
@@ -572,7 +574,12 @@ function CintaCard({ pos, cinta, habilitada, disponibleKg, onRegistrar, onAnular
           />
         </div>
         <button
-          onClick={() => onRegistrar(Number(peso), Number(uniones || 0), Number(ancho), obs.trim())}
+          onClick={() => {
+            const p = Number(peso);
+            if (!(p > 0)) return;
+            if (!window.confirm(`Confirme el peso registrado: ${p} kg\n\nAceptar para guardar · Cancelar para corregir.`)) return;
+            void onRegistrar(p, Number(uniones || 0), Number(ancho), obs.trim());
+          }}
           disabled={saving || !peso || !ancho}
           className="w-full rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
         >
