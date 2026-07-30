@@ -12,14 +12,14 @@ import { fechaCortoMX, horaMX } from "@/lib/format";
 export const Route = createFileRoute("/pesaje/bobina-madre")({
   head: () => ({
     meta: [
-      { title: "Pesaje de Bobina Madre · Convertipap" },
-      { name: "description", content: "Registro de pesaje de bobina madre con lectura OCR de la báscula" },
-      { property: "og:title", content: "Pesaje de Bobina Madre · Convertipap" },
-      { property: "og:description", content: "Registro de pesaje de bobina madre con lectura OCR de la báscula" },
+      { title: "Pesaje de Rollo · Convertipap" },
+      { name: "description", content: "Registro de pesaje de rollo de producción con lectura OCR de la báscula" },
+      { property: "og:title", content: "Pesaje de Rollo · Convertipap" },
+      { property: "og:description", content: "Registro de pesaje de rollo de producción con lectura OCR de la báscula" },
     ],
   }),
   component: () => (
-    <AppLayout title="Control de Pesaje · Bobina Madre">
+    <AppLayout title="Control de Pesaje · Pesaje de Rollo">
       <PesajeBobinaPage />
     </AppLayout>
   ),
@@ -561,7 +561,7 @@ function PesajeBobinaPage() {
     <div className="mx-auto max-w-6xl space-y-6 p-4">
       <section className="rounded-lg border border-border bg-card p-5 shadow-sm">
         <header className="mb-4 flex items-center">
-          <h2 className="text-lg font-semibold">Nuevo pesaje de bobina madre</h2>
+          <h2 className="text-lg font-semibold">Nuevo pesaje de rollo</h2>
         </header>
 
         <div className="grid gap-4 md:grid-cols-3">
