@@ -18,9 +18,9 @@ export const Route = createFileRoute("/pesaje/cintas")({
   head: () => ({
     meta: [
       { title: "Pesaje de Cintas · Convertipap" },
-      { name: "description", content: "Registro y etiquetado de cintas obtenidas de la bobina madre" },
+      { name: "description", content: "Registro y etiquetado de cintas obtenidas del rollo de origen" },
       { property: "og:title", content: "Pesaje de Cintas · Convertipap" },
-      { property: "og:description", content: "Registro y etiquetado de cintas obtenidas de la bobina madre" },
+      { property: "og:description", content: "Registro y etiquetado de cintas obtenidas del rollo de origen" },
     ],
   }),
   component: () => (
@@ -156,7 +156,7 @@ function PesajeCintasPage() {
     if (requestGuard.current) return;
     if (peso <= 0 || ancho <= 0 || uniones < 0) { toast.error("Valores inválidos."); return; }
     if (totalCintas + peso > netoBM + 0.001) {
-      toast.error("El peso acumulado de las cintas supera el peso neto de la bobina madre. Revise los pesos capturados.");
+      toast.error("El peso acumulado de las cintas supera el peso neto del rollo de origen. Revise los pesos capturados.");
       return;
     }
     requestGuard.current = true;
@@ -282,7 +282,7 @@ function PesajeCintasPage() {
     <div className="mx-auto max-w-6xl space-y-4 p-4">
       {/* Buscador */}
       <div className="rounded-lg border border-border bg-card p-4">
-        <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">1 · Número de rollo</div>
+        <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">1 · Rollo de origen</div>
         <div className="flex flex-wrap gap-2">
           <input
             className="flex-1 min-w-[200px] rounded-md border border-input bg-background px-3 py-2 font-mono text-lg"
@@ -312,7 +312,7 @@ function PesajeCintasPage() {
             <Field label="Fabricación" value={contexto.muestra.fabricacion || "—"} />
             <Field label="Producto" value={contexto.muestra.producto_nombre ?? contexto.muestra.producto_codigo ?? "—"} />
             <Field label="Turno" value={contexto.muestra.turno} />
-            <Field label="Peso neto bobina madre" value={`${n(contexto.pesaje.peso_neto_kg)} kg`} highlight />
+            <Field label="Peso neto del rollo de origen" value={`${n(contexto.pesaje.peso_neto_kg)} kg`} highlight />
             <Field label="Analista" value={contexto.muestra.analista ?? "—"} />
             <Field label="Supervisor" value={contexto.muestra.jefe_maquina ?? "—"} />
             <Field label="Operador" value={contexto.muestra.operador ?? "—"} />
@@ -368,7 +368,7 @@ function PesajeCintasPage() {
       {lote && (
         <>
           <div className="grid gap-3 md:grid-cols-5">
-            <Card k="Neto bobina madre" v={`${n(netoBM)} kg`} />
+            <Card k="Neto rollo de origen" v={`${n(netoBM)} kg`} />
             <Card k="Cintas registradas" v={`${cintas.length} / 12`} />
             <Card k="Peso acumulado" v={`${n(totalCintas)} kg`} />
             <Card k={merma == null ? "Peso pendiente" : "Merma real"} v={`${n(merma == null ? pendiente : merma)} kg`} highlight={merma != null} />
