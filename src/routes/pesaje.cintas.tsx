@@ -263,8 +263,6 @@ function PesajeCintasPage() {
     }
   }
 
-  const [reimpOpen, setReimpOpen] = useState(false);
-  const [reimpMotivo, setReimpMotivo] = useState("");
   const [imprimiendo, setImprimiendo] = useState(false);
 
   async function ejecutarImpresion(motivo: string | null) {
@@ -273,8 +271,6 @@ function PesajeCintasPage() {
     try {
       const res = await preparar({ data: { lote_id: lote.id, motivo } });
       abrirImpresionEtiquetas(res.snapshot as EtiquetaSnapshot);
-      setReimpOpen(false);
-      setReimpMotivo("");
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "Error al preparar impresión.");
     } finally {
@@ -283,14 +279,10 @@ function PesajeCintasPage() {
   }
 
   function onImprimir() {
-    if (!lote || cintas.length === 0) return;
-    if (lote.estado === "finalizado") {
-      setReimpMotivo("");
-      setReimpOpen(true);
-      return;
-    }
-    void ejecutarImpresion(null);
+    if (!lote || cintas.length === 0 || imprimiendo) return;
+    void ejecutarImpresion(lote.estado === "finalizado" ? "Reimpresión de etiquetas desde módulo de cintas" : null);
   }
+
 
 
   return (
@@ -453,40 +445,6 @@ function PesajeCintasPage() {
         </>
       )}
 
-      {reimpOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-md rounded-lg border border-border bg-card p-4 shadow-lg">
-            <div className="mb-1 text-base font-semibold text-foreground">Reimpresión de etiquetas</div>
-            <p className="mb-3 text-sm text-muted-foreground">
-              El lote está finalizado. Indique el motivo de la reimpresión (mínimo 5 caracteres).
-            </p>
-            <input
-              autoFocus
-              type="text"
-              maxLength={200}
-              value={reimpMotivo}
-              onChange={(e) => setReimpMotivo(e.target.value)}
-              placeholder="Ej. etiqueta dañada en almacén"
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-            />
-            <div className="mt-4 flex justify-end gap-2">
-              <button
-                onClick={() => setReimpOpen(false)}
-                className="rounded-md border border-border px-3 py-2 text-sm hover:bg-accent"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={() => void ejecutarImpresion(reimpMotivo.trim())}
-                disabled={imprimiendo || reimpMotivo.trim().length < 5}
-                className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
-              >
-                {imprimiendo ? "Preparando…" : "Imprimir"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
