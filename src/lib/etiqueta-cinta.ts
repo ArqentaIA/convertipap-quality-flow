@@ -239,7 +239,12 @@ export async function abrirImpresionEtiquetas(snap: EtiquetaSnapshot): Promise<v
   .lbl-grid > div { display: flex; flex-direction: column; }
   .lbl-cinta { background: #d4e8d6; padding: 1.5mm 2mm; border-radius: 1mm; }
   .lbl-cinta-tit { font-size: 6.5pt; text-transform: uppercase; color: #08221a; font-weight: 700; margin-bottom: 1mm; }
-  .lbl-obs { font-size: 7pt; margin-top: auto; padding-top: 1mm; border-top: 0.2mm dotted #0a3d1f88; }
+  .lbl-obs { font-size: 7pt; padding-top: 1mm; border-top: 0.2mm dotted #0a3d1f88; }
+  .lbl-qr-zone { margin-top: auto; padding-top: 1.5mm; border-top: 0.3mm solid #0a3d1f; display: flex; justify-content: space-around; align-items: flex-end; gap: 4mm; }
+  .lbl-qr-zone .qr-box { display: flex; flex-direction: column; align-items: center; gap: 0.8mm; }
+  .lbl-qr-zone .qr-box img { width: 20mm; height: 20mm; display: block; }
+  .lbl-qr-zone .qr-cap { font-size: 6.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: #08221a; display: flex; align-items: center; justify-content: center; height: 4mm; }
+  .lbl-qr-zone .qr-saplogo { width: auto !important; height: 4mm !important; max-width: 22mm; object-fit: contain; }
   @media screen {
     body { background: #eee; padding: 20px; }
     .print-page { margin: 0 auto 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.15); background: #fff; }
