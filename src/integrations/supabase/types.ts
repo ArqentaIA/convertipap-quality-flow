@@ -2443,6 +2443,10 @@ export type Database = {
       }
     }
     Functions: {
+      _pc_pesaje_desde_calidad: {
+        Args: { _muestra_id: string }
+        Returns: string
+      }
       _pc_require_access: { Args: { _uid: string }; Returns: undefined }
       _spec_audit_estado: {
         Args: {
