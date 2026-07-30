@@ -263,20 +263,35 @@ function PesajeCintasPage() {
     }
   }
 
-  async function onImprimir() {
-    if (!lote || cintas.length === 0) return;
+  const [reimpOpen, setReimpOpen] = useState(false);
+  const [reimpMotivo, setReimpMotivo] = useState("");
+  const [imprimiendo, setImprimiendo] = useState(false);
+
+  async function ejecutarImpresion(motivo: string | null) {
+    if (!lote) return;
+    setImprimiendo(true);
     try {
-      let motivo: string | null = null;
-      if (lote.estado === "finalizado") {
-        motivo = window.prompt("Motivo de reimpresión (mínimo 5 caracteres):") || null;
-        if (!motivo || motivo.length < 5) { toast.error("Motivo requerido."); return; }
-      }
       const res = await preparar({ data: { lote_id: lote.id, motivo } });
       abrirImpresionEtiquetas(res.snapshot as EtiquetaSnapshot);
+      setReimpOpen(false);
+      setReimpMotivo("");
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "Error al preparar impresión.");
+    } finally {
+      setImprimiendo(false);
     }
   }
+
+  function onImprimir() {
+    if (!lote || cintas.length === 0) return;
+    if (lote.estado === "finalizado") {
+      setReimpMotivo("");
+      setReimpOpen(true);
+      return;
+    }
+    void ejecutarImpresion(null);
+  }
+
 
   return (
     <div className="mx-auto max-w-6xl space-y-4 p-4">
