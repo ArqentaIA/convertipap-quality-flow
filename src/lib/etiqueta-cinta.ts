@@ -75,7 +75,7 @@ function fmtKg(value: number | string): string {
   return numero.toFixed(3).replace(/\.?0+$/, "");
 }
 
-function renderEtiqueta(snap: EtiquetaSnapshot, cinta: EtiquetaSnapshot["cintas"][number]): string {
+function renderEtiqueta(snap: EtiquetaSnapshot, cinta: EtiquetaSnapshot["cintas"][number], logoDataUrl: string): string {
   const dc = snap.datos_calidad ?? {};
   const fecha = snap.fecha_produccion ?? "";
   // Fuente única de verdad para el PESO impreso: peso individual de esta cinta
@@ -88,11 +88,12 @@ function renderEtiqueta(snap: EtiquetaSnapshot, cinta: EtiquetaSnapshot["cintas"
     <div class="lbl-inner">
       <div class="lbl-header">
         <div class="lbl-title">
-          <div class="lbl-brand">CONVERTIPAP</div>
+          <img class="lbl-logo" src="${logoDataUrl}" alt="Convertipap" />
           <div class="lbl-sub">Etiqueta de Cinta · Producción</div>
         </div>
         <div class="lbl-pos">${cinta.posicion}</div>
       </div>
+
 
       <div class="lbl-row">
         <div><span class="k">N.º Rollo</span><span class="v">${snap.numero_rollo}</span></div>
