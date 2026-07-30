@@ -263,8 +263,6 @@ function PesajeCintasPage() {
     }
   }
 
-  const [reimpOpen, setReimpOpen] = useState(false);
-  const [reimpMotivo, setReimpMotivo] = useState("");
   const [imprimiendo, setImprimiendo] = useState(false);
 
   async function ejecutarImpresion(motivo: string | null) {
@@ -273,8 +271,6 @@ function PesajeCintasPage() {
     try {
       const res = await preparar({ data: { lote_id: lote.id, motivo } });
       abrirImpresionEtiquetas(res.snapshot as EtiquetaSnapshot);
-      setReimpOpen(false);
-      setReimpMotivo("");
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "Error al preparar impresión.");
     } finally {
@@ -283,14 +279,10 @@ function PesajeCintasPage() {
   }
 
   function onImprimir() {
-    if (!lote || cintas.length === 0) return;
-    if (lote.estado === "finalizado") {
-      setReimpMotivo("");
-      setReimpOpen(true);
-      return;
-    }
-    void ejecutarImpresion(null);
+    if (!lote || cintas.length === 0 || imprimiendo) return;
+    void ejecutarImpresion(lote.estado === "finalizado" ? "Reimpresión de etiquetas desde módulo de cintas" : null);
   }
+
 
 
   return (
