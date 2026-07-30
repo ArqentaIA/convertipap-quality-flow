@@ -6,6 +6,11 @@
 // es la POSICIÓN de la cinta.
 
 import logoUrl from "@/assets/logo-convertipap.png";
+import sapHanaAsset from "@/assets/sap-hana-logo.jpg.asset.json";
+import QRCode from "qrcode";
+
+// Dominio público canónico (mismo que la etiqueta de rollo).
+const TRACE_BASE_URL = "https://www.convertipap.site";
 
 async function toDataUrl(url: string): Promise<string> {
   try {
