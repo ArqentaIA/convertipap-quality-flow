@@ -171,7 +171,7 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
                       data-active={pathname === "/pesaje/bobina-madre"}
                     >
                       <Scale className="h-3.5 w-3.5 shrink-0" />
-                      <span className="truncate">Pesaje de Bobina Madre</span>
+                      <span className="truncate">Pesaje de Rollo</span>
                     </Link>
                     {auth.canAccess("pesaje_cintas") && (
                       <Link

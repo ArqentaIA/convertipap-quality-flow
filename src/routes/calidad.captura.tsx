@@ -1711,7 +1711,7 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
                                 vs.clave === "peso"
                                   ? pesajeVinculado
                                     ? `Peso neto tomado del pesaje registrado (${new Date(pesajeVinculado.fecha_hora_pesaje).toLocaleTimeString("es-MX")}).`
-                                    : "El peso se toma automáticamente del Pesaje de Bobina Madre."
+                                    : "El peso se toma automáticamente del Pesaje de Rollo."
                                   : undefined
                               }
                               className={cn(
@@ -1877,7 +1877,7 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
                           vs.clave === "peso"
                             ? pesajeVinculado
                               ? `Peso neto tomado del pesaje registrado (${new Date(pesajeVinculado.fecha_hora_pesaje).toLocaleTimeString("es-MX")}).`
-                              : "El peso se toma automáticamente del Pesaje de Bobina Madre."
+                              : "El peso se toma automáticamente del Pesaje de Rollo."
                             : undefined
                         }
                         className={cn(
