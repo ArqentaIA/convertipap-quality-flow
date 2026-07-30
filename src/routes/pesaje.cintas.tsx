@@ -573,7 +573,12 @@ function CintaCard({ pos, cinta, habilitada, disponibleKg, onRegistrar, onAnular
           />
         </div>
         <button
-          onClick={() => onRegistrar(Number(peso), Number(uniones || 0), Number(ancho), obs.trim())}
+          onClick={() => {
+            const p = Number(peso);
+            if (!(p > 0)) return;
+            if (!window.confirm(`Confirme el peso registrado: ${p} kg\n\nAceptar para guardar · Cancelar para corregir.`)) return;
+            void onRegistrar(p, Number(uniones || 0), Number(ancho), obs.trim());
+          }}
           disabled={saving || !peso || !ancho}
           className="w-full rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
         >
