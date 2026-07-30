@@ -184,7 +184,7 @@ export async function abrirImpresionEtiquetas(snap: EtiquetaSnapshot): Promise<v
   .print-label.empty { border-style: dashed; border-color: #cbd5cb; background: transparent; }
   .lbl-inner { padding: 3mm 3.2mm; height: 100%; display: flex; flex-direction: column; gap: 1.2mm; font-size: 8.5pt; line-height: 1.15; }
   .lbl-header { display: flex; align-items: flex-start; justify-content: space-between; border-bottom: 0.3mm solid #0a3d1f; padding-bottom: 1.5mm; }
-  .lbl-brand { font-weight: 800; font-size: 10.5pt; letter-spacing: 0.5px; color: #0a3d1f; }
+  .lbl-logo { display: block; height: 11mm; max-width: 52mm; object-fit: contain; }
   .lbl-sub { font-size: 7pt; color: #244; }
   .lbl-pos { font-size: 30pt; font-weight: 900; color: #0a3d1f; line-height: 0.9; padding: 0 2mm; }
   .lbl-row { display: flex; gap: 3mm; }
