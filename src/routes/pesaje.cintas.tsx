@@ -194,7 +194,7 @@ function PesajeCintasPage() {
 
   async function onCorregir(c: CintaRegistrada) {
     if (!lote) return;
-    const pesoStr = window.prompt(`Corregir posición ${c.posicion}\nNuevo peso (kg) [actual ${c.peso_cinta_kg}]:`, String(c.peso_cinta_kg));
+    const pesoStr = window.prompt(`Corregir posición ${c.posicion}\nNuevo peso real de la cinta en kg (báscula) [actual ${c.peso_cinta_kg}]:`, String(c.peso_cinta_kg));
     if (pesoStr == null) return;
     const anchoStr = window.prompt(`Nuevo ancho útil [actual ${c.ancho_util}]:`, String(c.ancho_util));
     if (anchoStr == null) return;
@@ -205,6 +205,7 @@ function PesajeCintasPage() {
     if (motivo.trim().length < 5) { toast.error("Motivo requerido."); return; }
     const peso = Number(pesoStr), ancho = Number(anchoStr), uniones = Number(unionesStr);
     if (!(peso > 0) || !(ancho > 0) || !(uniones >= 0)) { toast.error("Valores inválidos."); return; }
+    if (!window.confirm(`Confirme el peso registrado: ${peso} kg`)) return;
     try {
       await corregir({ data: {
         cinta_id: c.id, peso_cinta_kg: peso, ancho_util: ancho, uniones,
@@ -252,7 +253,7 @@ function PesajeCintasPage() {
 
   async function onFinalizar() {
     if (!lote) return;
-    if (!window.confirm(`¿Finalizar rollo? El peso pendiente (${n(pendiente)} kg) se registrará como merma final.`)) return;
+    if (!window.confirm(`¿Finalizar rollo? El peso pendiente (${n(pendiente)} kg) se registrará como merma real.`)) return;
     try {
       await finalizar({ data: { lote_id: lote.id } });
       await qc.invalidateQueries({ queryKey: ["cintas-lote", lote.id] });
