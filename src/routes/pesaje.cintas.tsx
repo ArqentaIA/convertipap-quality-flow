@@ -156,7 +156,7 @@ function PesajeCintasPage() {
     if (requestGuard.current) return;
     if (peso <= 0 || ancho <= 0 || uniones < 0) { toast.error("Valores inválidos."); return; }
     if (totalCintas + peso > netoBM + 0.001) {
-      toast.error("El peso acumulado supera el peso disponible de la bobina madre.");
+      toast.error("El peso acumulado de las cintas supera el peso neto de la bobina madre. Revise los pesos capturados.");
       return;
     }
     requestGuard.current = true;
