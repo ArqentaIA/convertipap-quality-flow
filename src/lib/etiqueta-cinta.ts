@@ -82,7 +82,15 @@ function fmtKg(value: number | string): string {
   return numero.toFixed(3).replace(/\.?0+$/, "");
 }
 
-function renderEtiqueta(snap: EtiquetaSnapshot, cinta: EtiquetaSnapshot["cintas"][number], logoDataUrl: string): string {
+type Assets = {
+  logo: string;
+  sapLogo: string;
+  qrTrace: string | null;
+  qrSap: string | null;
+};
+
+function renderEtiqueta(snap: EtiquetaSnapshot, cinta: EtiquetaSnapshot["cintas"][number], assets: Assets): string {
+  const logoDataUrl = assets.logo;
   const dc = snap.datos_calidad ?? {};
   const fecha = snap.fecha_produccion ?? "";
   // Fuente única de verdad para el PESO impreso: peso individual de esta cinta
