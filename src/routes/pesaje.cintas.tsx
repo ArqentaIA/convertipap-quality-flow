@@ -370,8 +370,8 @@ function PesajeCintasPage() {
             <Card k="Neto bobina madre" v={`${n(netoBM)} kg`} />
             <Card k="Cintas registradas" v={`${cintas.length} / 12`} />
             <Card k="Peso acumulado" v={`${n(totalCintas)} kg`} />
-            <Card k={merma == null ? "Peso pendiente" : "Merma final"} v={`${n(merma == null ? pendiente : merma)} kg`} highlight={merma != null} />
-            <Card k="% merma" v={mermaPct == null ? "—" : `${n(mermaPct, 2)} %`} />
+            <Card k={merma == null ? "Peso pendiente" : "Merma real"} v={`${n(merma == null ? pendiente : merma)} kg`} highlight={merma != null} />
+            <Card k="% merma real" v={mermaPct == null ? "—" : `${n(mermaPct, 2)} %`} />
           </div>
 
           <div className="rounded-lg border border-border bg-card p-4">
