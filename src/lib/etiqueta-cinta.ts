@@ -144,12 +144,14 @@ function renderEtiqueta(snap: EtiquetaSnapshot, cinta: EtiquetaSnapshot["cintas"
   </div>`;
 }
 
-export function abrirImpresionEtiquetas(snap: EtiquetaSnapshot): void {
+export async function abrirImpresionEtiquetas(snap: EtiquetaSnapshot): Promise<void> {
+  const logoDataUrl = await toDataUrl(logoUrl);
   const cintas = [...snap.cintas].sort((a, b) => a.posicion - b.posicion);
   const paginas: string[] = [];
   for (let i = 0; i < cintas.length; i += 4) {
     const bloque = cintas.slice(i, i + 4);
-    const celdas = [0, 1, 2, 3].map((j) => bloque[j] ? renderEtiqueta(snap, bloque[j]) : `<div class="print-label empty"></div>`).join("");
+    const celdas = [0, 1, 2, 3].map((j) => bloque[j] ? renderEtiqueta(snap, bloque[j], logoDataUrl) : `<div class="print-label empty"></div>`).join("");
+
     paginas.push(`<section class="print-page">${celdas}</section>`);
   }
 
