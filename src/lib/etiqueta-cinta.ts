@@ -155,17 +155,44 @@ function renderEtiqueta(snap: EtiquetaSnapshot, cinta: EtiquetaSnapshot["cintas"
       </div>
 
       ${cinta.observaciones ? `<div class="lbl-obs"><span class="k">Obs.</span> ${cinta.observaciones}</div>` : ""}
+
+      ${assets.qrTrace || assets.qrSap ? `
+      <div class="lbl-qr-zone">
+        ${assets.qrTrace ? `
+        <div class="qr-box">
+          <img src="${assets.qrTrace}" alt="QR trazabilidad" />
+          <div class="qr-cap">Trazabilidad</div>
+        </div>` : ""}
+        ${assets.qrSap ? `
+        <div class="qr-box">
+          <img src="${assets.qrSap}" alt="QR SAP HANA" />
+          <div class="qr-cap"><img class="qr-saplogo" src="${assets.sapLogo}" alt="SAP HANA" /></div>
+        </div>` : ""}
+      </div>` : ""}
     </div>
   </div>`;
 }
 
 export async function abrirImpresionEtiquetas(snap: EtiquetaSnapshot): Promise<void> {
-  const logoDataUrl = await toDataUrl(logoUrl);
+  const muestraId = snap.muestra_calidad_id ?? null;
+  const traceUrl = muestraId ? `${TRACE_BASE_URL}/muestra/${muestraId}` : null;
+  const sapUrl = traceUrl
+    ? `${traceUrl}?vista=sap&rollo=${encodeURIComponent(snap.numero_rollo || "")}`
+    : null;
+
+  const [logoDataUrl, sapLogoDataUrl, qrTrace, qrSap] = await Promise.all([
+    toDataUrl(logoUrl),
+    toDataUrl(sapHanaAsset.url),
+    traceUrl ? QRCode.toDataURL(traceUrl, { margin: 1, width: 220, errorCorrectionLevel: "M" }) : Promise.resolve(null),
+    sapUrl ? QRCode.toDataURL(sapUrl, { margin: 1, width: 220, errorCorrectionLevel: "M" }) : Promise.resolve(null),
+  ]);
+  const assets: Assets = { logo: logoDataUrl, sapLogo: sapLogoDataUrl, qrTrace, qrSap };
+
   const cintas = [...snap.cintas].sort((a, b) => a.posicion - b.posicion);
   const paginas: string[] = [];
   for (let i = 0; i < cintas.length; i += 4) {
     const bloque = cintas.slice(i, i + 4);
-    const celdas = [0, 1, 2, 3].map((j) => bloque[j] ? renderEtiqueta(snap, bloque[j], logoDataUrl) : `<div class="print-label empty"></div>`).join("");
+    const celdas = [0, 1, 2, 3].map((j) => bloque[j] ? renderEtiqueta(snap, bloque[j], assets) : `<div class="print-label empty"></div>`).join("");
 
     paginas.push(`<section class="print-page">${celdas}</section>`);
   }
