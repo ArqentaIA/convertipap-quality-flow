@@ -5,6 +5,23 @@
 // Muestra "Fabricación", nunca "Máquina". El número grande superior derecho
 // es la POSICIÓN de la cinta.
 
+import logoUrl from "@/assets/logo-convertipap.png";
+
+async function toDataUrl(url: string): Promise<string> {
+  try {
+    const res = await fetch(url);
+    const blob = await res.blob();
+    return await new Promise<string>((resolve, reject) => {
+      const r = new FileReader();
+      r.onloadend = () => resolve(r.result as string);
+      r.onerror = reject;
+      r.readAsDataURL(blob);
+    });
+  } catch {
+    return url;
+  }
+}
+
 type Medicion = { valor: number; min: number; obj: number; max: number };
 
 export type EtiquetaSnapshot = {
@@ -58,7 +75,7 @@ function fmtKg(value: number | string): string {
   return numero.toFixed(3).replace(/\.?0+$/, "");
 }
 
-function renderEtiqueta(snap: EtiquetaSnapshot, cinta: EtiquetaSnapshot["cintas"][number]): string {
+function renderEtiqueta(snap: EtiquetaSnapshot, cinta: EtiquetaSnapshot["cintas"][number], logoDataUrl: string): string {
   const dc = snap.datos_calidad ?? {};
   const fecha = snap.fecha_produccion ?? "";
   // Fuente única de verdad para el PESO impreso: peso individual de esta cinta
@@ -71,11 +88,12 @@ function renderEtiqueta(snap: EtiquetaSnapshot, cinta: EtiquetaSnapshot["cintas"
     <div class="lbl-inner">
       <div class="lbl-header">
         <div class="lbl-title">
-          <div class="lbl-brand">CONVERTIPAP</div>
+          <img class="lbl-logo" src="${logoDataUrl}" alt="Convertipap" />
           <div class="lbl-sub">Etiqueta de Cinta · Producción</div>
         </div>
         <div class="lbl-pos">${cinta.posicion}</div>
       </div>
+
 
       <div class="lbl-row">
         <div><span class="k">N.º Rollo</span><span class="v">${snap.numero_rollo}</span></div>
@@ -126,12 +144,14 @@ function renderEtiqueta(snap: EtiquetaSnapshot, cinta: EtiquetaSnapshot["cintas"
   </div>`;
 }
 
-export function abrirImpresionEtiquetas(snap: EtiquetaSnapshot): void {
+export async function abrirImpresionEtiquetas(snap: EtiquetaSnapshot): Promise<void> {
+  const logoDataUrl = await toDataUrl(logoUrl);
   const cintas = [...snap.cintas].sort((a, b) => a.posicion - b.posicion);
   const paginas: string[] = [];
   for (let i = 0; i < cintas.length; i += 4) {
     const bloque = cintas.slice(i, i + 4);
-    const celdas = [0, 1, 2, 3].map((j) => bloque[j] ? renderEtiqueta(snap, bloque[j]) : `<div class="print-label empty"></div>`).join("");
+    const celdas = [0, 1, 2, 3].map((j) => bloque[j] ? renderEtiqueta(snap, bloque[j], logoDataUrl) : `<div class="print-label empty"></div>`).join("");
+
     paginas.push(`<section class="print-page">${celdas}</section>`);
   }
 
@@ -164,7 +184,7 @@ export function abrirImpresionEtiquetas(snap: EtiquetaSnapshot): void {
   .print-label.empty { border-style: dashed; border-color: #cbd5cb; background: transparent; }
   .lbl-inner { padding: 3mm 3.2mm; height: 100%; display: flex; flex-direction: column; gap: 1.2mm; font-size: 8.5pt; line-height: 1.15; }
   .lbl-header { display: flex; align-items: flex-start; justify-content: space-between; border-bottom: 0.3mm solid #0a3d1f; padding-bottom: 1.5mm; }
-  .lbl-brand { font-weight: 800; font-size: 10.5pt; letter-spacing: 0.5px; color: #0a3d1f; }
+  .lbl-logo { display: block; height: 11mm; max-width: 52mm; object-fit: contain; }
   .lbl-sub { font-size: 7pt; color: #244; }
   .lbl-pos { font-size: 30pt; font-weight: 900; color: #0a3d1f; line-height: 0.9; padding: 0 2mm; }
   .lbl-row { display: flex; gap: 3mm; }
