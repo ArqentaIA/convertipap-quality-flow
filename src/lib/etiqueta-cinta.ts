@@ -6,6 +6,11 @@
 // es la POSICIÓN de la cinta.
 
 import logoUrl from "@/assets/logo-convertipap.png";
+import sapHanaAsset from "@/assets/sap-hana-logo.jpg.asset.json";
+import QRCode from "qrcode";
+
+// Dominio público canónico (mismo que la etiqueta de rollo).
+const TRACE_BASE_URL = "https://www.convertipap.site";
 
 async function toDataUrl(url: string): Promise<string> {
   try {
@@ -26,6 +31,8 @@ type Medicion = { valor: number; min: number; obj: number; max: number };
 
 export type EtiquetaSnapshot = {
   lote_id: string;
+  muestra_calidad_id?: string | null;
+  numero_orden?: string | null;
   numero_rollo: string;
   fabricacion: string;
   producto_codigo: string | null;
@@ -75,7 +82,15 @@ function fmtKg(value: number | string): string {
   return numero.toFixed(3).replace(/\.?0+$/, "");
 }
 
-function renderEtiqueta(snap: EtiquetaSnapshot, cinta: EtiquetaSnapshot["cintas"][number], logoDataUrl: string): string {
+type Assets = {
+  logo: string;
+  sapLogo: string;
+  qrTrace: string | null;
+  qrSap: string | null;
+};
+
+function renderEtiqueta(snap: EtiquetaSnapshot, cinta: EtiquetaSnapshot["cintas"][number], assets: Assets): string {
+  const logoDataUrl = assets.logo;
   const dc = snap.datos_calidad ?? {};
   const fecha = snap.fecha_produccion ?? "";
   // Fuente única de verdad para el PESO impreso: peso individual de esta cinta
@@ -140,17 +155,44 @@ function renderEtiqueta(snap: EtiquetaSnapshot, cinta: EtiquetaSnapshot["cintas"
       </div>
 
       ${cinta.observaciones ? `<div class="lbl-obs"><span class="k">Obs.</span> ${cinta.observaciones}</div>` : ""}
+
+      ${assets.qrTrace || assets.qrSap ? `
+      <div class="lbl-qr-zone">
+        ${assets.qrTrace ? `
+        <div class="qr-box">
+          <img src="${assets.qrTrace}" alt="QR trazabilidad" />
+          <div class="qr-cap">Trazabilidad</div>
+        </div>` : ""}
+        ${assets.qrSap ? `
+        <div class="qr-box">
+          <img src="${assets.qrSap}" alt="QR SAP HANA" />
+          <div class="qr-cap"><img class="qr-saplogo" src="${assets.sapLogo}" alt="SAP HANA" /></div>
+        </div>` : ""}
+      </div>` : ""}
     </div>
   </div>`;
 }
 
 export async function abrirImpresionEtiquetas(snap: EtiquetaSnapshot): Promise<void> {
-  const logoDataUrl = await toDataUrl(logoUrl);
+  const muestraId = snap.muestra_calidad_id ?? null;
+  const traceUrl = muestraId ? `${TRACE_BASE_URL}/muestra/${muestraId}` : null;
+  const sapUrl = traceUrl
+    ? `${traceUrl}?vista=sap&rollo=${encodeURIComponent(snap.numero_rollo || "")}`
+    : null;
+
+  const [logoDataUrl, sapLogoDataUrl, qrTrace, qrSap] = await Promise.all([
+    toDataUrl(logoUrl),
+    toDataUrl(sapHanaAsset.url),
+    traceUrl ? QRCode.toDataURL(traceUrl, { margin: 1, width: 220, errorCorrectionLevel: "M" }) : Promise.resolve(null),
+    sapUrl ? QRCode.toDataURL(sapUrl, { margin: 1, width: 220, errorCorrectionLevel: "M" }) : Promise.resolve(null),
+  ]);
+  const assets: Assets = { logo: logoDataUrl, sapLogo: sapLogoDataUrl, qrTrace, qrSap };
+
   const cintas = [...snap.cintas].sort((a, b) => a.posicion - b.posicion);
   const paginas: string[] = [];
   for (let i = 0; i < cintas.length; i += 4) {
     const bloque = cintas.slice(i, i + 4);
-    const celdas = [0, 1, 2, 3].map((j) => bloque[j] ? renderEtiqueta(snap, bloque[j], logoDataUrl) : `<div class="print-label empty"></div>`).join("");
+    const celdas = [0, 1, 2, 3].map((j) => bloque[j] ? renderEtiqueta(snap, bloque[j], assets) : `<div class="print-label empty"></div>`).join("");
 
     paginas.push(`<section class="print-page">${celdas}</section>`);
   }
@@ -197,7 +239,12 @@ export async function abrirImpresionEtiquetas(snap: EtiquetaSnapshot): Promise<v
   .lbl-grid > div { display: flex; flex-direction: column; }
   .lbl-cinta { background: #d4e8d6; padding: 1.5mm 2mm; border-radius: 1mm; }
   .lbl-cinta-tit { font-size: 6.5pt; text-transform: uppercase; color: #08221a; font-weight: 700; margin-bottom: 1mm; }
-  .lbl-obs { font-size: 7pt; margin-top: auto; padding-top: 1mm; border-top: 0.2mm dotted #0a3d1f88; }
+  .lbl-obs { font-size: 7pt; padding-top: 1mm; border-top: 0.2mm dotted #0a3d1f88; }
+  .lbl-qr-zone { margin-top: auto; padding-top: 1.5mm; border-top: 0.3mm solid #0a3d1f; display: flex; justify-content: space-around; align-items: flex-end; gap: 4mm; }
+  .lbl-qr-zone .qr-box { display: flex; flex-direction: column; align-items: center; gap: 0.8mm; }
+  .lbl-qr-zone .qr-box img { width: 20mm; height: 20mm; display: block; }
+  .lbl-qr-zone .qr-cap { font-size: 6.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: #08221a; display: flex; align-items: center; justify-content: center; height: 4mm; }
+  .lbl-qr-zone .qr-saplogo { width: auto !important; height: 4mm !important; max-width: 22mm; object-fit: contain; }
   @media screen {
     body { background: #eee; padding: 20px; }
     .print-page { margin: 0 auto 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.15); background: #fff; }
