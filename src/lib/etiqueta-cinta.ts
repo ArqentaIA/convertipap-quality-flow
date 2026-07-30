@@ -5,6 +5,23 @@
 // Muestra "Fabricación", nunca "Máquina". El número grande superior derecho
 // es la POSICIÓN de la cinta.
 
+import logoUrl from "@/assets/logo-convertipap.png";
+
+async function toDataUrl(url: string): Promise<string> {
+  try {
+    const res = await fetch(url);
+    const blob = await res.blob();
+    return await new Promise<string>((resolve, reject) => {
+      const r = new FileReader();
+      r.onloadend = () => resolve(r.result as string);
+      r.onerror = reject;
+      r.readAsDataURL(blob);
+    });
+  } catch {
+    return url;
+  }
+}
+
 type Medicion = { valor: number; min: number; obj: number; max: number };
 
 export type EtiquetaSnapshot = {
