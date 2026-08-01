@@ -42,14 +42,17 @@ function ProduccionPage() {
   const listFn = useServerFn(listMaquinasConEstado);
   const labFilter = useLabFilter();
   const rtStatus = useProduccionRealtime();
+  const auth = useAuth();
   const { data: all = [], isFetching } = useQuery({
     queryKey: ["produccion", "maquinas", rango],
     queryFn: () => listFn({ data: { rango } }),
-    refetchInterval: 15_000,
+    enabled: auth.isAuthenticated,
+    refetchInterval: auth.isAuthenticated ? 15_000 : false,
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
     staleTime: 0,
   });
+
 
   // Todos los roles ven las estadísticas de todas las máquinas.
   // El acceso al detalle de rollos se restringe por máquina en MaquinaCard.
