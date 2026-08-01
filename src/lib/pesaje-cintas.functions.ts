@@ -136,8 +136,8 @@ export const crearLote = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { data: id, error } = await context.supabase.rpc("crear_lote_pesaje_cintas", {
       _numero_rollo: data.numero_rollo,
-      _conductor_id: data.conductor_id,
-      _bobinadora_id: data.bobinadora_id,
+      _conductor_id: (data.conductor_id ?? null) as unknown as string,
+      _bobinadora_id: (data.bobinadora_id ?? null) as unknown as string,
       _idempotency: data.idempotency_key,
     });
     if (error) throw new Error(error.message);
@@ -149,16 +149,16 @@ export const crearLoteManual = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({
     numero_rollo: z.string().trim().min(1).max(64),
     peso_neto_kg: z.number().positive().max(3000),
-    conductor_id: z.string().uuid(),
-    bobinadora_id: z.string().uuid(),
+    conductor_id: z.string().uuid().nullable().optional(),
+    bobinadora_id: z.string().uuid().nullable().optional(),
     idempotency_key: z.string().uuid(),
   }).parse(d))
   .handler(async ({ data, context }) => {
     const { data: id, error } = await context.supabase.rpc("crear_lote_pesaje_cintas_manual", {
       _numero_rollo: data.numero_rollo,
       _peso_neto_kg: data.peso_neto_kg,
-      _conductor_id: data.conductor_id,
-      _bobinadora_id: data.bobinadora_id,
+      _conductor_id: (data.conductor_id ?? null) as unknown as string,
+      _bobinadora_id: (data.bobinadora_id ?? null) as unknown as string,
       _idempotency: data.idempotency_key,
     });
     if (error) throw new Error(error.message);

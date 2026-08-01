@@ -131,7 +131,7 @@ function PesajeCintasPage() {
 
   async function onCrearLote() {
     if (!contexto && !manual) return;
-    if (!conductorId || !bobinadoraId) { toast.error("Seleccione conductor y bobinadora."); return; }
+    if (!manual && (!conductorId || !bobinadoraId)) { toast.error("Seleccione conductor y bobinadora."); return; }
     if (requestGuard.current) return;
     requestGuard.current = true;
     setSaving(true);
@@ -141,8 +141,8 @@ function PesajeCintasPage() {
             data: {
               numero_rollo: manual.rollo,
               peso_neto_kg: manual.peso,
-              conductor_id: conductorId,
-              bobinadora_id: bobinadoraId,
+              conductor_id: null,
+              bobinadora_id: null,
               idempotency_key: uuid(),
             },
           })
@@ -428,7 +428,26 @@ function PesajeCintasPage() {
       )}
 
       {/* Conductor / bobinadora */}
-      {(contexto || manual) && !lote && (
+      {manual && !lote && (
+        <div className="rounded-lg border border-border bg-card p-4">
+          <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">3 · Conductor y bobinadora</div>
+          <div className="grid gap-3 md:grid-cols-3">
+            <Field label="Conductor" value="" />
+            <Field label="Bobinadora" value="" />
+            <div className="flex items-end">
+              <button
+                onClick={onCrearLote}
+                disabled={saving}
+                className="w-full rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground disabled:opacity-50"
+              >
+                {saving ? "Iniciando…" : "Iniciar lote"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {contexto && !lote && (
         <div className="rounded-lg border border-border bg-card p-4">
           <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">3 · Conductor y bobinadora</div>
           <div className="grid gap-3 md:grid-cols-3">
@@ -470,6 +489,7 @@ function PesajeCintasPage() {
           </div>
         </div>
       )}
+
 
       {/* Lote activo */}
       {lote && (
