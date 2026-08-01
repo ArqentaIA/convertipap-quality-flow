@@ -154,6 +154,10 @@ function PesajeBobinaPage() {
     fechaISO: string; requestId: string;
   }>(null);
 
+  // Pantalla previa de confirmación de datos antes de registrar
+  const [preConfirm, setPreConfirm] = useState(false);
+
+
   // Dedupe: un solo toast + un solo registro por captura
   const activeRequestRef = useRef<string | null>(null);
   const registeringRequestRef = useRef<string | null>(null);
@@ -227,7 +231,9 @@ function PesajeBobinaPage() {
   const pesoManualValido =
     pesoManualNum !== null && Number.isFinite(pesoManualNum) && pesoManualNum > 0 && pesoManualNum <= 2500;
   const pesoManualError = pesoManualNum !== null && !pesoManualValido;
-  const puedeRegistrar = puedeFoto && !!evidenciaFile && !procesando && !pesoManualError;
+  const puedeRegistrar =
+    puedeFoto && !procesando && !pesoManualError && (!!evidenciaFile || pesoManualValido);
+
   const tara = taraPorMaquina(maqCodigo);
 
   function limpiarFoto() {
@@ -501,30 +507,42 @@ function PesajeBobinaPage() {
     registro?: PesajeBobina;
   };
 
-  async function registrar() {
+  function registrar() {
     if (!puedeRegistrar) return;
     if (confirmData) return; // ya hay uno abierto
+    setPreConfirm(true);
+  }
+
+  async function ejecutarRegistro() {
+    if (!puedeRegistrar) return;
+    if (confirmData) return;
+    setPreConfirm(false);
     setProcesando(true);
     let uploadedPath: string | null = null;
     const clientRequestId = crypto.randomUUID();
     activeRequestRef.current = clientRequestId;
     try {
       const file = evidenciaFile;
-      if (!file) throw new Error("Falta la fotografía de evidencia.");
+      if (!file && !pesoManualValido) throw new Error("Falta la fotografía de evidencia o el peso manual.");
 
       const { uid } = await obtenerTokenValido();
 
       const now = new Date();
-      const path = buildEvidencePath(maqCodigo, numeroRollo.trim());
+      const path = file
+        ? buildEvidencePath(maqCodigo, numeroRollo.trim())
+        : `manual/${maqCodigo}/${numeroRollo.trim()}-${clientRequestId}`;
       const idempotencyKey = clientRequestId;
 
-      const up = await supabase.storage.from(BUCKET)
-        .upload(path, file, { upsert: false, contentType: "image/jpeg" });
-      if (up.error) {
-        if (/duplicate/i.test(up.error.message)) throw new Error("Ya existe un registro para este número de rollo.");
-        throw new Error(`No se pudo subir la evidencia: ${up.error.message}`);
+      if (file) {
+        const up = await supabase.storage.from(BUCKET)
+          .upload(path, file, { upsert: false, contentType: "image/jpeg" });
+        if (up.error) {
+          if (/duplicate/i.test(up.error.message)) throw new Error("Ya existe un registro para este número de rollo.");
+          throw new Error(`No se pudo subir la evidencia: ${up.error.message}`);
+        }
+        uploadedPath = path;
       }
-      uploadedPath = path;
+
 
       const { resp } = await invocarEdgeConAuth({
         evidencia_path: path,
@@ -821,7 +839,48 @@ function PesajeBobinaPage() {
         </div>
       </section>
 
+      {/* Pantalla de confirmación previa */}
+      {preConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="w-full max-w-md rounded-xl border border-border bg-background p-5 shadow-xl">
+            <h3 className="text-lg font-semibold">Confirma los datos a registrar</h3>
+            <dl className="mt-4 space-y-2 text-sm">
+              <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Orden de producción</dt><dd className="font-medium">{numeroOrden.trim() || "—"}</dd></div>
+              <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Máquina</dt><dd className="font-medium">{maqCodigo || "—"}</dd></div>
+              <div className="flex justify-between gap-4"><dt className="text-muted-foreground">N.º de rollo</dt><dd className="font-medium">{numeroRollo}</dd></div>
+              <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Tara</dt><dd className="font-medium">{tara} kg</dd></div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-muted-foreground">Peso bruto</dt>
+                <dd className="text-lg font-bold tabular-nums">
+                  {pesoManualValido ? `${Math.trunc(pesoManualNum as number)} kg (manual)` : "Lectura automática de la foto"}
+                </dd>
+              </div>
+              {pesoManualValido && (
+                <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Peso neto estimado</dt><dd className="font-semibold tabular-nums">{Math.trunc(pesoManualNum as number) - tara} kg</dd></div>
+              )}
+            </dl>
+            <div className="mt-5 flex gap-3">
+              <button
+                type="button"
+                onClick={ejecutarRegistro}
+                className="inline-flex min-h-[48px] flex-1 items-center justify-center gap-2 rounded-md bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow"
+              >
+                <CheckCircle2 className="h-4 w-4" /> Aceptar
+              </button>
+              <button
+                type="button"
+                onClick={() => setPreConfirm(false)}
+                className="inline-flex min-h-[48px] flex-1 items-center justify-center rounded-md border border-border px-5 py-3 text-sm font-medium"
+              >
+                Verificar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal cámara */}
+
       {camaraAbierta && (
         <div className="fixed inset-0 z-50 flex flex-col bg-black">
           <div className="flex items-center justify-between px-4 py-3 text-white">
