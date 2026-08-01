@@ -223,7 +223,11 @@ function PesajeBobinaPage() {
   const puedeMaquina = ordenSel !== "";
   const puedeRollo = !!maquinaId;
   const puedeFoto = !!numeroRollo.trim() && !!baseRollo;
-  const puedeRegistrar = puedeFoto && !!evidenciaFile && !procesando;
+  const pesoManualNum = pesoManual.trim() === "" ? null : Number(pesoManual.replace(",", "."));
+  const pesoManualValido =
+    pesoManualNum !== null && Number.isFinite(pesoManualNum) && pesoManualNum > 0 && pesoManualNum <= 2500;
+  const pesoManualError = pesoManualNum !== null && !pesoManualValido;
+  const puedeRegistrar = puedeFoto && !!evidenciaFile && !procesando && !pesoManualError;
   const tara = taraPorMaquina(maqCodigo);
 
   function limpiarFoto() {
@@ -236,11 +240,13 @@ function PesajeBobinaPage() {
   }
   function resetForm(keepMaquina = false) {
     limpiarFoto();
+    setPesoManual("");
     if (activeToastRef.current != null) { toast.dismiss(activeToastRef.current); activeToastRef.current = null; }
     if (!keepMaquina) {
       setNumeroRollo(""); setOrdenSel(""); setOrdenOtro(""); setNumeroOrden("");
     } else { setNumeroRollo(""); }
   }
+
 
 
   async function abrirCamara() {
