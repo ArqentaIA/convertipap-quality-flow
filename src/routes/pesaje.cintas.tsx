@@ -74,6 +74,10 @@ function PesajeCintasPage() {
   const [conductorId, setConductorId] = useState<string>("");
   const [bobinadoraId, setBobinadoraId] = useState<string>("");
   const [saving, setSaving] = useState(false);
+  const [manualOpen, setManualOpen] = useState(false);
+  const [manualRollo, setManualRollo] = useState("");
+  const [manualPeso, setManualPeso] = useState("");
+  const [manual, setManual] = useState<{ rollo: string; peso: number } | null>(null);
   const requestGuard = useRef(false);
 
   const conductoresQ = useQuery({
