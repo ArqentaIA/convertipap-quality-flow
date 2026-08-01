@@ -154,6 +154,10 @@ function PesajeBobinaPage() {
     fechaISO: string; requestId: string;
   }>(null);
 
+  // Pantalla previa de confirmación de datos antes de registrar
+  const [preConfirm, setPreConfirm] = useState(false);
+
+
   // Dedupe: un solo toast + un solo registro por captura
   const activeRequestRef = useRef<string | null>(null);
   const registeringRequestRef = useRef<string | null>(null);
