@@ -637,7 +637,7 @@ export async function generarReporteMensualBobinadoras(
   }
 
   tz.addTable({
-    name: "Trazabilidad",
+    name: "TablaTrazabilidad",
     ref: "A1",
     headerRow: true,
     style: { theme: "TableStyleMedium2", showRowStripes: true },
