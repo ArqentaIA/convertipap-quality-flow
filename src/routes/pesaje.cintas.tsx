@@ -4,13 +4,15 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Loader2, Search, Printer, CheckCircle2, Ban, Lock, Unlock, Pencil, UserCog } from "lucide-react";
+import { Loader2, Search, Printer, CheckCircle2, Ban, Lock, Unlock, Pencil, UserCog, FileSpreadsheet } from "lucide-react";
 import {
   buscarContextoRollo, listConductores, listBobinadoras,
   crearLote, crearLoteManual, obtenerLoteYCintas, registrarCinta, corregirCinta, anularCinta,
   finalizarLote, reabrirLote, prepararImpresion, actualizarDatosOperativos,
+  obtenerReporteMensualCintas,
   type ContextoRollo, type CintaRegistrada, type LoteCintas,
 } from "@/lib/pesaje-cintas.functions";
+
 import { abrirImpresionEtiquetas, type EtiquetaSnapshot } from "@/lib/etiqueta-cinta";
 import { supabase } from "@/integrations/supabase/client";
 
