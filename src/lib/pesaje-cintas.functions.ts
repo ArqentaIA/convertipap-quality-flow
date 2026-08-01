@@ -119,7 +119,13 @@ export const buscarContextoRollo = createServerFn({ method: "POST" })
     const { data: res, error } = await context.supabase.rpc("buscar_contexto_rollo_cintas", {
       _numero_rollo: data.numero_rollo,
     });
-    if (error) throw new Error(error.message);
+    if (error) {
+      const m = (error.message ?? "").toLowerCase();
+      if (m.includes("no se encontró") || m.includes("no se encontro") || m.includes("not found")) {
+        throw new Error("Rollo no encontrado");
+      }
+      throw new Error(error.message);
+    }
     const ctx = res as unknown as ContextoRollo | null;
     if (!ctx || !ctx.muestra?.id) throw new Error("Rollo no encontrado");
     return ctx;
