@@ -404,7 +404,6 @@ export async function generarReporteMensualBobinadoras(
         fitToHeight: 0,
         horizontalCentered: true,
         margins: { left: 0.25, right: 0.25, top: 0.35, bottom: 0.35, header: 0.2, footer: 0.2 },
-        printTitlesRow: "1:9",
       },
       views: [{ state: "frozen", xSplit: 3, ySplit: 9, showGridLines: false }],
     });
@@ -571,7 +570,8 @@ export async function generarReporteMensualBobinadoras(
       rr++;
     }
 
-    // Sin printArea explícito: fitToPage/printTitlesRow definen el área impresa.
+    // Sin nombres definidos de impresión: ExcelJS puede serializarlos de forma
+    // incompatible. fitToPage conserva el ajuste A3 sin crear definedNames.
   }
 
   // ───────────────────── Hoja Trazabilidad ─────────────────────
@@ -625,14 +625,34 @@ export async function generarReporteMensualBobinadoras(
     }
   }
 
-  tz.addTable({
-    name: "TablaTrazabilidad",
-    ref: "A1",
-    headerRow: true,
-    style: { theme: "TableStyleMedium2", showRowStripes: true },
-    columns: cols.map((c) => ({ name: c, filterButton: true })),
-    rows: filasTz as never[],
-  });
+  // Se usan filas y autofiltro nativos en vez de addTable(). ExcelJS 4.4
+  // genera totalsRowShown="1" aunque no exista fila de totales, estructura que
+  // Microsoft Excel intenta reparar al abrir el libro.
+  tz.addRow(cols);
+  for (const fila of filasTz) tz.addRow(fila as never[]);
+  tz.autoFilter = {
+    from: { row: 1, column: 1 },
+    to: { row: filasTz.length + 1, column: cols.length },
+  };
+  const encabezadoTz = tz.getRow(1);
+  encabezadoTz.height = 30;
+  for (let i = 1; i <= cols.length; i++) {
+    const cell = encabezadoTz.getCell(i);
+    cell.font = { bold: true, size: 10, color: { argb: COLOR.blanco } };
+    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: COLOR.azulOscuro } };
+    cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+    cell.border = thin();
+  }
+  for (let i = 2; i <= filasTz.length + 1; i++) {
+    const rowTz = tz.getRow(i);
+    for (let col = 1; col <= cols.length; col++) {
+      const cell = rowTz.getCell(col);
+      cell.border = thin();
+      if (i % 2 === 0) {
+        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF8FAFC" } };
+      }
+    }
+  }
   cols.forEach((c, i) => { tz.getColumn(i + 1).width = Math.min(30, Math.max(12, c.length + 3)); });
   for (let i = 2; i <= filasTz.length + 1; i++) {
     tz.getCell(i, 34).numFmt = "0.00%";
