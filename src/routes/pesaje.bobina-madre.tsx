@@ -839,7 +839,48 @@ function PesajeBobinaPage() {
         </div>
       </section>
 
+      {/* Pantalla de confirmación previa */}
+      {preConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="w-full max-w-md rounded-xl border border-border bg-background p-5 shadow-xl">
+            <h3 className="text-lg font-semibold">Confirma los datos a registrar</h3>
+            <dl className="mt-4 space-y-2 text-sm">
+              <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Orden de producción</dt><dd className="font-medium">{numeroOrden.trim() || "—"}</dd></div>
+              <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Máquina</dt><dd className="font-medium">{maqCodigo || "—"}</dd></div>
+              <div className="flex justify-between gap-4"><dt className="text-muted-foreground">N.º de rollo</dt><dd className="font-medium">{numeroRollo}</dd></div>
+              <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Tara</dt><dd className="font-medium">{tara} kg</dd></div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-muted-foreground">Peso bruto</dt>
+                <dd className="text-lg font-bold tabular-nums">
+                  {pesoManualValido ? `${Math.trunc(pesoManualNum as number)} kg (manual)` : "Lectura automática de la foto"}
+                </dd>
+              </div>
+              {pesoManualValido && (
+                <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Peso neto estimado</dt><dd className="font-semibold tabular-nums">{Math.trunc(pesoManualNum as number) - tara} kg</dd></div>
+              )}
+            </dl>
+            <div className="mt-5 flex gap-3">
+              <button
+                type="button"
+                onClick={ejecutarRegistro}
+                className="inline-flex min-h-[48px] flex-1 items-center justify-center gap-2 rounded-md bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow"
+              >
+                <CheckCircle2 className="h-4 w-4" /> Aceptar
+              </button>
+              <button
+                type="button"
+                onClick={() => setPreConfirm(false)}
+                className="inline-flex min-h-[48px] flex-1 items-center justify-center rounded-md border border-border px-5 py-3 text-sm font-medium"
+              >
+                Verificar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal cámara */}
+
       {camaraAbierta && (
         <div className="fixed inset-0 z-50 flex flex-col bg-black">
           <div className="flex items-center justify-between px-4 py-3 text-white">
