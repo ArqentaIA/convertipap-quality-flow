@@ -81,7 +81,8 @@ Devuelve EXCLUSIVAMENTE un JSON estricto con esta estructura (sin texto fuera de
  "lecturaConfirmable": <bool>,
  "requiereSegundaRevision": <bool>
 }
-Basa la decisión únicamente en evidencia visual. No inventes dígitos. No modifiques el peso solo para que entre en un rango esperado.`;
+Basa la decisión únicamente en evidencia visual. No inventes dígitos. No modifiques el peso solo para que entre en un rango esperado.
+DECIMALES: si el display muestra punto o coma decimal, repórtalo tal cual en "pesoPrincipal" con sus decimales (ej. 812.5, 1234.75). NUNCA redondees a entero ni elimines la parte decimal. Usa punto como separador decimal. Responde de forma breve: "textoVisible" y "evidencia" de máximo 40 caracteres y como máximo 2 candidatos.`;
 
 function promptSegundaRevision(primera: GeminiOut, maquinaCodigo: string) {
   const cands = (primera.candidatos ?? []).map((c) => `${c.peso}kg(${c.confianza}%)`).join(", ") || "—";
