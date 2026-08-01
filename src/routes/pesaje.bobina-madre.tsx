@@ -201,16 +201,8 @@ function PesajeBobinaPage() {
     });
   }, [sufijoMaq]);
 
-  const ordenesQ = useQuery({
-    queryKey: ["pesaje", "ordenes-activas"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("ordenes_produccion")
-        .select("id, numero_orden").eq("estado", "activa").order("numero_orden");
-      if (error) throw new Error(error.message);
-      return (data ?? []) as { id: string; numero_orden: string }[];
-    },
-    staleTime: 60_000,
-  });
+
+
 
   const listar = useServerFn(listPesajes);
   const listaQ = useQuery({
