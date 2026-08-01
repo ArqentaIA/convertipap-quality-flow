@@ -392,7 +392,7 @@ export async function generarReporteMensualBobinadoras(
   const usados = new Set<string>(["Resumen Mensual", "Trazabilidad"]);
   const grupos = new Map<string, RolloNorm[]>();
   for (const r of rollos) {
-    const key = `${r.fecha}|${r.bobinadora}|${r.turno}|${r.productoCodigo}|${r.patron}`;
+    const key = `${r.fecha}|${r.bobinadora}|${r.turno}|${r.productoCodigo}`;
     const arr = grupos.get(key) ?? [];
     arr.push(r);
     grupos.set(key, arr);
