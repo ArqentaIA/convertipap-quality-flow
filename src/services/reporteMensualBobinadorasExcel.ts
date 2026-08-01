@@ -228,7 +228,7 @@ export async function generarReporteMensualBobinadoras(
   const periodo = `${MESES[data.month - 1]} ${data.year}`;
 
   // ─────────────────── Hoja 1: Resumen Mensual ───────────────────
-  const ws = wb.addWorksheet("Resumen Mensual", { views: [{ state: "frozen", ySplit: 0 }] });
+  const ws = wb.addWorksheet("Resumen Mensual");
   ws.getColumn(1).width = 34;
   for (let i = 2; i <= 16; i++) ws.getColumn(i).width = 16;
 
@@ -399,9 +399,6 @@ export async function generarReporteMensualBobinadoras(
       pageSetup: {
         paperSize: 8 as unknown as undefined, // A3
         orientation: "landscape",
-        fitToPage: true,
-        fitToWidth: 1,
-        fitToHeight: 0,
         horizontalCentered: true,
         margins: { left: 0.25, right: 0.25, top: 0.35, bottom: 0.35, header: 0.2, footer: 0.2 },
       },
@@ -570,8 +567,8 @@ export async function generarReporteMensualBobinadoras(
       rr++;
     }
 
-    // Sin nombres definidos de impresión: ExcelJS puede serializarlos de forma
-    // incompatible. fitToPage conserva el ajuste A3 sin crear definedNames.
+    // Sin nombres definidos ni escalado fitToPage: ExcelJS 4.4 puede
+    // serializarlos de forma incompatible con Microsoft Excel.
   }
 
   // ───────────────────── Hoja Trazabilidad ─────────────────────
@@ -625,15 +622,10 @@ export async function generarReporteMensualBobinadoras(
     }
   }
 
-  // Se usan filas y autofiltro nativos en vez de addTable(). ExcelJS 4.4
-  // genera totalsRowShown="1" aunque no exista fila de totales, estructura que
-  // Microsoft Excel intenta reparar al abrir el libro.
+  // Se usan filas simples en vez de addTable() o autoFilter. ExcelJS 4.4 puede
+  // generar estructuras OOXML que Microsoft Excel intenta reparar al abrir.
   tz.addRow(cols);
   for (const fila of filasTz) tz.addRow(fila as never[]);
-  tz.autoFilter = {
-    from: { row: 1, column: 1 },
-    to: { row: filasTz.length + 1, column: cols.length },
-  };
   const encabezadoTz = tz.getRow(1);
   encabezadoTz.height = 30;
   for (let i = 1; i <= cols.length; i++) {
