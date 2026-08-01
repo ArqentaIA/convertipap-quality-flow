@@ -15,6 +15,8 @@ import {
 import { AppLayout } from "@/components/layout/AppLayout";
 import { listMaquinasConEstado } from "@/lib/produccion.functions";
 import { useProduccionRealtime } from "@/hooks/use-produccion-realtime";
+import { useAuth } from "@/lib/auth";
+
 
 import { BuscadorRollo } from "@/components/qc/BuscadorRollo";
 import { useLabFilter } from "@/lib/lab";
