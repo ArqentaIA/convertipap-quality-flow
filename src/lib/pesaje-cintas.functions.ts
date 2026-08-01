@@ -280,10 +280,14 @@ export const actualizarDatosOperativos = createServerFn({ method: "POST" })
 
 export const finalizarLote = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({ lote_id: z.string().uuid() }).parse(d))
+  .inputValidator((d) => z.object({
+    lote_id: z.string().uuid(),
+    merma_real_kg: z.number().min(0).max(3000),
+  }).parse(d))
   .handler(async ({ data, context }) => {
     const { data: res, error } = await context.supabase.rpc("finalizar_lote_cintas", {
       _lote_id: data.lote_id,
+      _merma_real_kg: data.merma_real_kg,
     });
     if (error) throw new Error(error.message);
     return res as unknown as {
@@ -291,6 +295,7 @@ export const finalizarLote = createServerFn({ method: "POST" })
       peso_total_cintas_kg: number;
       merma_kg: number;
       merma_porcentaje: number;
+      merma_real_kg: number;
     };
   });
 
