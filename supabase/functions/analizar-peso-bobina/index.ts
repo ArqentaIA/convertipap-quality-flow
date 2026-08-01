@@ -174,25 +174,63 @@ function parseGeminiJson(raw: string): GeminiOut | null {
   } catch { return null; }
 }
 
+/** Redondeo a 2 decimales — el display puede mostrar fracciones (ej. 812.5 kg). */
+function round2(n: number): number {
+  return Math.round(n * 100) / 100;
+}
+
+const GEMINI_TIMEOUT_MS = 45_000;
+
 async function invocarGemini(apiKey: string, modelo: string, prompt: string, mime: string, b64: string): Promise<GeminiOut | null> {
-  const r = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${apiKey}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ role: "user", parts: [
-          { text: prompt },
-          { inline_data: { mime_type: mime, data: b64 } },
-        ]}],
-        generationConfig: { temperature: 0, responseMimeType: "application/json" },
-      }),
-    },
-  );
-  if (!r.ok) throw new Error(`HTTP ${r.status}`);
-  const gj = await r.json();
-  const text: string = gj?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
-  return parseGeminiJson(text);
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), GEMINI_TIMEOUT_MS);
+  try {
+    const r = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        signal: ctrl.signal,
+        body: JSON.stringify({
+          contents: [{ role: "user", parts: [
+            { text: prompt },
+            { inline_data: { mime_type: mime, data: b64 } },
+          ]}],
+          // maxOutputTokens acota la generación (el JSON es corto) y recorta latencia.
+          generationConfig: {
+            temperature: 0,
+            responseMimeType: "application/json",
+            maxOutputTokens: 700,
+            candidateCount: 1,
+          },
+        }),
+      },
+    );
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const gj = await r.json();
+    const text: string = gj?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+    return parseGeminiJson(text);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** Invoca con el modelo cacheado; si el modelo ya no existe, descubre y reintenta una vez. */
+async function invocarGeminiConFallback(
+  apiKey: string, prompt: string, mime: string, b64: string, requestId: string,
+): Promise<{ out: GeminiOut | null; modelo: string }> {
+  const modelo = MODELO_CACHE ?? MODELO_PREFERENCIA[0];
+  try {
+    return { out: await invocarGemini(apiKey, modelo, prompt, mime, b64), modelo };
+  } catch (e) {
+    const msg = (e as Error).message;
+    if (!/HTTP (400|403|404)/.test(msg)) throw e;
+    const nuevo = await descubrirModeloGemini(apiKey, requestId);
+    if (!nuevo) throw e;
+    MODELO_CACHE = nuevo;
+    console.log(`[${requestId}] modelo re-descubierto: ${nuevo}`);
+    return { out: await invocarGemini(apiKey, nuevo, prompt, mime, b64), modelo: nuevo };
+  }
 }
 
 // --------- Evaluación y prioridad -----------------------------------
