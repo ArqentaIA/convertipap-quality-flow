@@ -456,7 +456,7 @@ Deno.serve(async (req) => {
     const b64 = base64Encode(buf);
     const mime = fileData.type || "image/jpeg";
 
-    const modelo = await elegirModeloGemini(geminiKey, requestId);
+    
     let g1: GeminiOut | null;
     let modelo = MODELO_CACHE ?? MODELO_PREFERENCIA[0];
     try {
