@@ -82,7 +82,7 @@ Devuelve EXCLUSIVAMENTE un JSON estricto con esta estructura (sin texto fuera de
  "requiereSegundaRevision": <bool>
 }
 Basa la decisión únicamente en evidencia visual. No inventes dígitos. No modifiques el peso solo para que entre en un rango esperado.
-DECIMALES: si el display muestra punto o coma decimal, repórtalo tal cual en "pesoPrincipal" con sus decimales (ej. 812.5, 1234.75). NUNCA redondees a entero ni elimines la parte decimal. Usa punto como separador decimal. Responde de forma breve: "textoVisible" y "evidencia" de máximo 40 caracteres y como máximo 2 candidatos.`;
+DECIMALES: ignora la parte decimal. Si el display muestra punto o coma decimal (ej. 812.5 o 812,5), reporta en "pesoPrincipal" SOLO la parte entera (812). Nunca redondees hacia arriba: trunca. La duda sobre decimales no es motivo de rechazo; marca "decimalDudoso": false. Responde de forma breve: "textoVisible" y "evidencia" de máximo 40 caracteres y como máximo 2 candidatos.`;
 
 function promptSegundaRevision(primera: GeminiOut, maquinaCodigo: string) {
   const cands = (primera.candidatos ?? []).map((c) => `${c.peso}kg(${c.confianza}%)`).join(", ") || "—";
@@ -90,7 +90,7 @@ function promptSegundaRevision(primera: GeminiOut, maquinaCodigo: string) {
 Primera lectura: ${primera.pesoPrincipal} kg. Candidatos iniciales: ${cands}.
 Rango operativo habitual: ${MIN_PESO_BRUTO_KG}-${MAX_PESO_BRUTO_KG} kg. Máquina: ${maquinaCodigo}.
 Verifica: (1) todos los dígitos, (2) segmentos parcialmente encendidos, (3) segmentos cubiertos por reflejos,
-(4) posición real del punto decimal, (5) ceros omitidos, (6) si 81.5 podría ser 815, 124.5 podría ser 1245,
+(4) los dígitos de la parte entera (los decimales se ignoran), (5) ceros omitidos, (6) si 81.5 podría ser 815, 124.5 podría ser 1245,
 150 podría ser 1500, (7) primer/último dígito faltante, (8) display completo.
 No cambies la lectura solo para colocarla en el rango. No inventes dígitos. No uses la tara para modificar el bruto.
 ${PROMPT_BASE}`;
@@ -137,6 +137,7 @@ function parseGeminiJson(raw: string): GeminiOut | null {
   s = s.slice(i, j + 1);
   try {
     const o = JSON.parse(s);
+    const truncInt = (n: number | null): number | null => (n == null ? null : Math.trunc(n));
     const num = (v: unknown): number | null => {
       if (v == null) return null;
       if (typeof v === "number") return isFinite(v) ? v : null;
@@ -149,14 +150,16 @@ function parseGeminiJson(raw: string): GeminiOut | null {
     };
     const cands: GeminiCandidato[] = Array.isArray(o.candidatos)
       ? o.candidatos.map((c: Record<string, unknown>) => ({
-          peso: num(c.peso), confianza: Number(c.confianza) || 0, evidencia: String(c.evidencia ?? ""),
+          peso: truncInt(num(c.peso)), confianza: Number(c.confianza) || 0, evidencia: String(c.evidencia ?? ""),
         })).filter((c: GeminiCandidato) => c.peso != null)
       : [];
     return {
       displayDetectado: !!o.displayDetectado,
       displayCompleto: !!o.displayCompleto,
       textoVisible: String(o.textoVisible ?? ""),
-      pesoPrincipal: num(o.pesoPrincipal),
+      // Política operativa: se registra SÓLO la parte entera del display.
+      // Si el display muestra 812.5 o 812,5 → se toma 812.
+      pesoPrincipal: truncInt(num(o.pesoPrincipal)),
       candidatos: cands,
       unidadVisible: String(o.unidadVisible ?? ""),
       unidadConfirmada: String(o.unidadConfirmada ?? "kg"),
@@ -164,7 +167,9 @@ function parseGeminiJson(raw: string): GeminiOut | null {
       reflejoSevero: !!o.reflejoSevero,
       desenfoque: !!o.desenfoque,
       desenfoqueSevero: !!o.desenfoqueSevero,
-      decimalDudoso: !!o.decimalDudoso,
+      // Los decimales se descartan por diseño: nunca bloquean ni disparan
+      // una segunda revisión.
+      decimalDudoso: false,
       digitosCubiertos: !!o.digitosCubiertos,
       cantidadDigitosVisibles: Number(o.cantidadDigitosVisibles) || 0,
       calidadImagen: Number(o.calidadImagen) || 0,
@@ -175,9 +180,9 @@ function parseGeminiJson(raw: string): GeminiOut | null {
   } catch { return null; }
 }
 
-/** Redondeo a 2 decimales — el display puede mostrar fracciones (ej. 812.5 kg). */
+/** Sólo parte entera: los decimales del display se descartan (812.5 → 812). */
 function round2(n: number): number {
-  return Math.round(n * 100) / 100;
+  return Math.trunc(n);
 }
 
 const GEMINI_TIMEOUT_MS = 45_000;
