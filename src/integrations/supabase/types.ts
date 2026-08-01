@@ -1484,6 +1484,7 @@ export type Database = {
           idempotency_key: string
           merma_kg: number | null
           merma_porcentaje: number | null
+          merma_real_kg: number | null
           motivo_anulacion: string | null
           muestra_calidad_id: string | null
           numero_orden: string | null
@@ -1520,6 +1521,7 @@ export type Database = {
           idempotency_key: string
           merma_kg?: number | null
           merma_porcentaje?: number | null
+          merma_real_kg?: number | null
           motivo_anulacion?: string | null
           muestra_calidad_id?: string | null
           numero_orden?: string | null
@@ -1556,6 +1558,7 @@ export type Database = {
           idempotency_key?: string
           merma_kg?: number | null
           merma_porcentaje?: number | null
+          merma_real_kg?: number | null
           motivo_anulacion?: string | null
           muestra_calidad_id?: string | null
           numero_orden?: string | null
@@ -2569,7 +2572,9 @@ export type Database = {
         Args: { _motivo: string; _spec_id: string }
         Returns: undefined
       }
-      finalizar_lote_cintas: { Args: { _lote_id: string }; Returns: Json }
+      finalizar_lote_cintas:
+        | { Args: { _lote_id: string }; Returns: Json }
+        | { Args: { _lote_id: string; _merma_real_kg?: number }; Returns: Json }
       fn_cumplimiento_turno_v2: {
         Args: { _maquina_id: string; _op_date: string; _turno: string }
         Returns: {
