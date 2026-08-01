@@ -477,7 +477,12 @@ function PesajeBobinaPage() {
       uid = refreshed.session.user.id;
       logDiagnosticoPesaje("token-refresh-retry", { userId: uid, tokenLength: token.length });
       out = await postEdge(token, uid, payload);
+      if (out.httpStatus === 401) {
+        await supabase.auth.signOut().catch(() => {});
+        throw new Error("La sesión expiró. Inicia sesión nuevamente.");
+      }
     }
+
 
     logDiagnosticoPesaje("edge-http", { httpStatus: out.httpStatus, hasJson: !!out.data });
 
