@@ -79,6 +79,7 @@ export type LoteCintas = {
   peso_pendiente_kg: number;
   merma_kg: number | null;
   merma_porcentaje: number | null;
+  merma_real_kg: number | null;
   estado: "abierto" | "finalizado" | "anulado";
   datos_calidad_snapshot: Json;
   fecha_produccion: string | null;
