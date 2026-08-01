@@ -161,6 +161,8 @@ function PesajeBobinaPage() {
   const [camaraError, setCamaraError] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const [videoAspect, setVideoAspect] = useState(16 / 9);
+
 
   function mostrarMensajeUnico(kind: "success" | "error" | "info", msg: string) {
     if (activeToastRef.current != null) toast.dismiss(activeToastRef.current);
