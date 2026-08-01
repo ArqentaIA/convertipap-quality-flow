@@ -394,7 +394,7 @@ export async function generarReporteMensualBobinadoras(
     arr.push(r);
     grupos.set(key, arr);
   }
-  const keysOrdenadas = [...grupos.keys()].sort();
+  const keysOrdenadas = [...grupos.keys()].sort().slice(0, 1);
 
   for (const key of keysOrdenadas) {
     const items = grupos.get(key)!;
