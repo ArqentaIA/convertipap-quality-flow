@@ -937,8 +937,8 @@ function ListaPesajes({ lista, loading }: { lista: PesajeBobina[]; loading: bool
           </thead>
           <tbody>
             {loading && <tr><td colSpan={7} className="px-3 py-6 text-center text-muted-foreground">Cargando…</td></tr>}
-            {!loading && lista.length === 0 && <tr><td colSpan={7} className="px-3 py-6 text-center text-muted-foreground">Sin registros aún.</td></tr>}
-            {lista.map((p) => (
+            {!loading && filtrada.length === 0 && <tr><td colSpan={7} className="px-3 py-6 text-center text-muted-foreground">{q ? `Sin coincidencias para "${busqueda.trim()}".` : "Sin registros aún."}</td></tr>}
+            {filtrada.map((p) => (
               <tr key={p.id} className="border-t border-border">
                 <td className="px-3 py-2 whitespace-nowrap">{fechaCortoMX(p.fecha_hora_pesaje)} {horaMX(p.fecha_hora_pesaje)}</td>
                 <td className="px-3 py-2">{p.maquina_codigo}</td>
