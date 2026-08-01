@@ -103,7 +103,7 @@ function PesajeCintasPage() {
     const rollo = rolloInput.trim();
     if (!rollo) { toast.error("Ingrese un número de rollo."); return; }
     setBuscando(true);
-    setContexto(null); setLoteId(null); setManual(null);
+    setContexto(null); setLoteId(null); setManual(null); setManualOpen(false);
     try {
       const ctx = await buscar({ data: { numero_rollo: rollo } });
       setContexto(ctx);
@@ -113,7 +113,14 @@ function PesajeCintasPage() {
         setBobinadoraId(ctx.lote.bobinadora_id);
       }
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Error al buscar el rollo.");
+      const msg = e instanceof Error ? e.message : "Error al buscar el rollo.";
+      if (msg.toLowerCase().includes("rollo no encontrado") || msg.toLowerCase().includes("not found") || msg.toLowerCase().includes("no encontrado")) {
+        setManualRollo(rollo);
+        setManualOpen(true);
+        toast.info("Rollo no encontrado. Se activó la captura manual.");
+      } else {
+        toast.error(msg);
+      }
     } finally {
       setBuscando(false);
     }

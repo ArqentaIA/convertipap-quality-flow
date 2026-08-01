@@ -120,7 +120,9 @@ export const buscarContextoRollo = createServerFn({ method: "POST" })
       _numero_rollo: data.numero_rollo,
     });
     if (error) throw new Error(error.message);
-    return res as unknown as ContextoRollo;
+    const ctx = res as unknown as ContextoRollo | null;
+    if (!ctx || !ctx.muestra?.id) throw new Error("Rollo no encontrado");
+    return ctx;
   });
 
 // ---------------------------------- Lote ---------------------------------- //
