@@ -1,0 +1,2 @@
+DELETE FROM public.module_permissions WHERE role='capturista' AND module NOT IN ('produccion','control_calidad','pesaje_bobina_madre');
+INSERT INTO public.module_permissions (role, module) VALUES ('capturista','produccion'),('capturista','control_calidad'),('capturista','pesaje_bobina_madre') ON CONFLICT DO NOTHING;
