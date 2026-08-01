@@ -879,15 +879,47 @@ function PesajeBobinaPage() {
   );
 }
 
+const MAX_VISIBLE = 60;
+
 function ListaPesajes({ lista, loading }: { lista: PesajeBobina[]; loading: boolean }) {
   const firmar = useServerFn(firmarEvidencia);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [busqueda, setBusqueda] = useState("");
+  const q = busqueda.trim().toLowerCase();
+  const filtrada = q
+    ? lista.filter((p) => p.numero_rollo.toLowerCase().includes(q))
+    : lista.slice(0, MAX_VISIBLE);
   return (
     <section className="rounded-lg border border-border bg-card p-5 shadow-sm">
-      <header className="mb-3 flex items-center justify-between">
+      <header className="mb-3 flex flex-wrap items-center justify-between gap-3">
         <h3 className="text-base font-semibold">Últimos pesajes</h3>
-        <span className="text-xs text-muted-foreground">{lista.length} registros</span>
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <input
+              type="text"
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              placeholder="Buscar N.º de rollo…"
+              maxLength={32}
+              aria-label="Buscar por número de rollo"
+              className="w-56 rounded-md border border-border bg-background py-1.5 pl-3 pr-7 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+            />
+            {busqueda && (
+              <button
+                onClick={() => setBusqueda("")}
+                aria-label="Limpiar búsqueda"
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:text-foreground"
+              >
+                ×
+              </button>
+            )}
+          </div>
+          <span className="text-xs text-muted-foreground">
+            {q ? `${filtrada.length} coincidencias` : `${filtrada.length} de ${lista.length} registros`}
+          </span>
+        </div>
       </header>
+
       <div className="overflow-x-auto">
         <table className="w-full min-w-[900px] text-sm">
           <thead className="bg-muted/50 text-left text-xs uppercase text-muted-foreground">
@@ -905,8 +937,8 @@ function ListaPesajes({ lista, loading }: { lista: PesajeBobina[]; loading: bool
           </thead>
           <tbody>
             {loading && <tr><td colSpan={7} className="px-3 py-6 text-center text-muted-foreground">Cargando…</td></tr>}
-            {!loading && lista.length === 0 && <tr><td colSpan={7} className="px-3 py-6 text-center text-muted-foreground">Sin registros aún.</td></tr>}
-            {lista.map((p) => (
+            {!loading && filtrada.length === 0 && <tr><td colSpan={7} className="px-3 py-6 text-center text-muted-foreground">{q ? `Sin coincidencias para "${busqueda.trim()}".` : "Sin registros aún."}</td></tr>}
+            {filtrada.map((p) => (
               <tr key={p.id} className="border-t border-border">
                 <td className="px-3 py-2 whitespace-nowrap">{fechaCortoMX(p.fecha_hora_pesaje)} {horaMX(p.fecha_hora_pesaje)}</td>
                 <td className="px-3 py-2">{p.maquina_codigo}</td>
