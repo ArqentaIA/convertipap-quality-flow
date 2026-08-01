@@ -575,16 +575,14 @@ function PesajeBobinaPage() {
                 const v = e.target.value;
                 setOrdenSel(v);
                 if (v === "__otro__") setNumeroOrden(ordenOtro.trim());
-                else if (v === "" || v === "__sin__") setNumeroOrden("");
-                else setNumeroOrden(ordenesQ.data?.find((x) => x.id === v)?.numero_orden ?? "");
+                else setNumeroOrden("");
                 setMaquinaId(""); setNumeroRollo(""); limpiarFoto();
               }}
-              disabled={ordenesQ.isLoading}
             >
               <option value="">Selecciona…</option>
-              {ordenesQ.data?.map((o) => <option key={o.id} value={o.id}>{o.numero_orden}</option>)}
               <option value="__otro__">Otro (capturar manualmente)</option>
               <option value="__sin__">Sin orden (temporal)</option>
+
             </select>
             {ordenSel === "__otro__" && (
               <input
