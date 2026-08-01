@@ -9,7 +9,6 @@ import type {
   CintaRegistrada,
   Json,
 } from "@/lib/pesaje-cintas.functions";
-import logoUrl from "@/assets/logo-convertipap.png";
 import { fechaHoraLargaMX } from "@/lib/format";
 
 const MESES = [
