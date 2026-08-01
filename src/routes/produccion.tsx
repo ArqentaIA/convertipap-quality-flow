@@ -15,6 +15,8 @@ import {
 import { AppLayout } from "@/components/layout/AppLayout";
 import { listMaquinasConEstado } from "@/lib/produccion.functions";
 import { useProduccionRealtime } from "@/hooks/use-produccion-realtime";
+import { useAuth } from "@/lib/auth";
+
 
 import { BuscadorRollo } from "@/components/qc/BuscadorRollo";
 import { useLabFilter } from "@/lib/lab";
@@ -42,14 +44,17 @@ function ProduccionPage() {
   const listFn = useServerFn(listMaquinasConEstado);
   const labFilter = useLabFilter();
   const rtStatus = useProduccionRealtime();
+  const auth = useAuth();
   const { data: all = [], isFetching } = useQuery({
     queryKey: ["produccion", "maquinas", rango],
     queryFn: () => listFn({ data: { rango } }),
-    refetchInterval: 15_000,
+    enabled: auth.isAuthenticated,
+    refetchInterval: auth.isAuthenticated ? 15_000 : false,
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
     staleTime: 0,
   });
+
 
   // Todos los roles ven las estadísticas de todas las máquinas.
   // El acceso al detalle de rollos se restringe por máquina en MaquinaCard.
