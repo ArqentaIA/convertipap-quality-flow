@@ -141,6 +141,8 @@ function PesajeBobinaPage() {
   const [numeroOrden, setNumeroOrden] = useState("");
   const [maquinaId, setMaquinaId] = useState<string>("");
   const [numeroRollo, setNumeroRollo] = useState("");
+  const [pesoManual, setPesoManual] = useState("");
+
 
   const [evidenciaFile, setEvidenciaFile] = useState<File | null>(null);
   const [evidenciaPreview, setEvidenciaPreview] = useState<string | null>(null);
@@ -221,7 +223,11 @@ function PesajeBobinaPage() {
   const puedeMaquina = ordenSel !== "";
   const puedeRollo = !!maquinaId;
   const puedeFoto = !!numeroRollo.trim() && !!baseRollo;
-  const puedeRegistrar = puedeFoto && !!evidenciaFile && !procesando;
+  const pesoManualNum = pesoManual.trim() === "" ? null : Number(pesoManual.replace(",", "."));
+  const pesoManualValido =
+    pesoManualNum !== null && Number.isFinite(pesoManualNum) && pesoManualNum > 0 && pesoManualNum <= 2500;
+  const pesoManualError = pesoManualNum !== null && !pesoManualValido;
+  const puedeRegistrar = puedeFoto && !!evidenciaFile && !procesando && !pesoManualError;
   const tara = taraPorMaquina(maqCodigo);
 
   function limpiarFoto() {
@@ -234,11 +240,13 @@ function PesajeBobinaPage() {
   }
   function resetForm(keepMaquina = false) {
     limpiarFoto();
+    setPesoManual("");
     if (activeToastRef.current != null) { toast.dismiss(activeToastRef.current); activeToastRef.current = null; }
     if (!keepMaquina) {
       setNumeroRollo(""); setOrdenSel(""); setOrdenOtro(""); setNumeroOrden("");
     } else { setNumeroRollo(""); }
   }
+
 
 
   async function abrirCamara() {
@@ -527,7 +535,9 @@ function PesajeBobinaPage() {
         numero_orden: numeroOrden.trim() || null,
         idempotencyKey,
         fecha_hora_pesaje: now.toISOString(),
+        ...(pesoManualValido ? { pesoConfirmadoKg: Math.trunc(pesoManualNum as number), userId: uid } : {}),
       });
+
 
       // Ignorar respuestas tardías si ya se inició una nueva captura
       if (activeRequestRef.current !== clientRequestId) {
@@ -758,7 +768,38 @@ function PesajeBobinaPage() {
             )}
           </div>
 
+          {/* Captura manual del peso (opcional, sustituye la lectura automática) */}
+          <div className="mt-4 rounded-xl border-2 border-amber-400/70 bg-amber-50/70 p-4 shadow-sm dark:bg-amber-950/20">
+            <label className="mb-1 block text-sm font-semibold text-amber-900 dark:text-amber-200">
+              Captura manual del peso (opcional)
+            </label>
+            <p className="mb-3 text-[11px] text-amber-800/80 dark:text-amber-200/70">
+              Si el display no se lee correctamente, escribe aquí el peso bruto. Máximo 2500 kg. Si lo capturas, se
+              usará este valor en lugar de la lectura automática.
+            </p>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min={1}
+                max={2500}
+                step={1}
+                inputMode="numeric"
+                value={pesoManual}
+                onChange={(e) => setPesoManual(e.target.value)}
+                placeholder="Ej. 1250"
+                className="min-h-[52px] w-full max-w-[220px] rounded-md border-2 border-amber-400 bg-background px-3 py-2 text-2xl font-bold tabular-nums"
+              />
+              <span className="text-lg font-semibold text-amber-900 dark:text-amber-200">kg</span>
+            </div>
+            {pesoManualError && (
+              <p className="mt-2 text-xs font-medium text-destructive">
+                El peso debe ser mayor a 0 y menor o igual a 2500 kg.
+              </p>
+            )}
+          </div>
+
         </div>
+
 
         {/* Botones */}
         <div className="mt-6 flex flex-wrap gap-3">
