@@ -131,7 +131,7 @@ function PesajeCintasPage() {
 
   async function onCrearLote() {
     if (!contexto && !manual) return;
-    if (!conductorId || !bobinadoraId) { toast.error("Seleccione conductor y bobinadora."); return; }
+    if (!manual && (!conductorId || !bobinadoraId)) { toast.error("Seleccione conductor y bobinadora."); return; }
     if (requestGuard.current) return;
     requestGuard.current = true;
     setSaving(true);
@@ -141,8 +141,8 @@ function PesajeCintasPage() {
             data: {
               numero_rollo: manual.rollo,
               peso_neto_kg: manual.peso,
-              conductor_id: conductorId,
-              bobinadora_id: bobinadoraId,
+              conductor_id: null,
+              bobinadora_id: null,
               idempotency_key: uuid(),
             },
           })
