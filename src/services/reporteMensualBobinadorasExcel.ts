@@ -9,7 +9,6 @@ import type {
   CintaRegistrada,
   Json,
 } from "@/lib/pesaje-cintas.functions";
-import logoUrl from "@/assets/logo-convertipap.png";
 import { fechaHoraLargaMX } from "@/lib/format";
 
 const MESES = [
@@ -205,14 +204,8 @@ function sanitizeSheetName(base: string, usados: Set<string>): string {
   return fin;
 }
 
-async function logoBase64(): Promise<string> {
-  const res = await fetch(logoUrl);
-  const buf = await res.arrayBuffer();
-  let bin = "";
-  const bytes = new Uint8Array(buf);
-  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
-  return btoa(bin);
-}
+
+
 
 // ------------------------------ Generación --------------------------------- //
 
@@ -229,10 +222,8 @@ export async function generarReporteMensualBobinadoras(
   wb.calcProperties.fullCalcOnLoad = true;
   (wb.calcProperties as unknown as { forceFullCalc?: boolean }).forceFullCalc = true;
 
-  let logoId: number | null = null;
-  try {
-    logoId = wb.addImage({ base64: await logoBase64(), extension: "png" });
-  } catch { logoId = null; }
+
+
 
   const periodo = `${MESES[data.month - 1]} ${data.year}`;
 
@@ -425,13 +416,11 @@ export async function generarReporteMensualBobinadoras(
     hoja.getColumn(3).width = 12;
     for (let i = 4; i <= nCols; i++) hoja.getColumn(i).width = 11;
 
-    if (logoId != null) {
-      hoja.addImage(logoId, { tl: { col: 0.1, row: 0.1 }, ext: { width: 150, height: 42 } });
-    }
     hoja.getRow(1).height = 38;
-    hoja.mergeCells(`B1:${lastCol}1`);
-    const h1 = hoja.getCell("B1");
+    hoja.mergeCells(`A1:${lastCol}1`);
+    const h1 = hoja.getCell("A1");
     h1.value = `CONVERTIDOR DE PAPEL S.A. DE C.V. — ${data.planta}`;
+
     h1.font = { bold: true, size: 14, color: { argb: COLOR.blanco } };
     h1.alignment = { horizontal: "center", vertical: "middle" };
     h1.fill = { type: "pattern", pattern: "solid", fgColor: { argb: COLOR.azulOscuro } };
