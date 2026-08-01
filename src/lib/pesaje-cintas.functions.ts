@@ -144,6 +144,29 @@ export const crearLote = createServerFn({ method: "POST" })
     return { lote_id: id as unknown as string };
   });
 
+export const crearLoteManual = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({
+    numero_rollo: z.string().trim().min(1).max(64),
+    peso_neto_kg: z.number().positive().max(3000),
+    conductor_id: z.string().uuid(),
+    bobinadora_id: z.string().uuid(),
+    idempotency_key: z.string().uuid(),
+  }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { data: id, error } = await context.supabase.rpc("crear_lote_pesaje_cintas_manual", {
+      _numero_rollo: data.numero_rollo,
+      _peso_neto_kg: data.peso_neto_kg,
+      _conductor_id: data.conductor_id,
+      _bobinadora_id: data.bobinadora_id,
+      _idempotency: data.idempotency_key,
+    });
+    if (error) throw new Error(error.message);
+    return { lote_id: id as unknown as string };
+  });
+
+
+
 export const obtenerLoteYCintas = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ lote_id: z.string().uuid() }).parse(d))
