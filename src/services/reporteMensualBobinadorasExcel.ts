@@ -528,7 +528,7 @@ export async function generarReporteMensualBobinadoras(
           if (c?.estado === "anulada") {
             cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: COLOR.grisAnulada } };
             cell.numFmt = "General";
-            cell.note = `Anulada: ${c.observaciones ?? "sin motivo registrado"}`;
+            // El motivo de anulación se documenta en la hoja Trazabilidad.
           } else if (!c) {
             if (it.lote.estado === "abierto") {
               cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: COLOR.amarillo } };
