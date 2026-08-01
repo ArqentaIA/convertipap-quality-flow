@@ -4,13 +4,15 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Loader2, Search, Printer, CheckCircle2, Ban, Lock, Unlock, Pencil, UserCog } from "lucide-react";
+import { Loader2, Search, Printer, CheckCircle2, Ban, Lock, Unlock, Pencil, UserCog, FileSpreadsheet } from "lucide-react";
 import {
   buscarContextoRollo, listConductores, listBobinadoras,
   crearLote, crearLoteManual, obtenerLoteYCintas, registrarCinta, corregirCinta, anularCinta,
   finalizarLote, reabrirLote, prepararImpresion, actualizarDatosOperativos,
+  obtenerReporteMensualCintas,
   type ContextoRollo, type CintaRegistrada, type LoteCintas,
 } from "@/lib/pesaje-cintas.functions";
+
 import { abrirImpresionEtiquetas, type EtiquetaSnapshot } from "@/lib/etiqueta-cinta";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -343,11 +345,77 @@ function PesajeCintasPage() {
     void ejecutarImpresion(lote.estado === "finalizado" ? "Reimpresión de etiquetas desde módulo de cintas" : null);
   }
 
+  // ── Reporte mensual de bobinadoras ─────────────────────────────
+  const traerReporte = useServerFn(obtenerReporteMensualCintas);
+  const [reportMonth, setReportMonth] = useState(() => new Date().toISOString().slice(0, 7));
+  const [generandoReporte, setGenerandoReporte] = useState(false);
+
+  async function onGenerarReporte() {
+    if (generandoReporte || !reportMonth) return;
+    const [y, m] = reportMonth.split("-").map((x) => parseInt(x, 10));
+    if (!y || !m) { toast.error("Seleccione un mes válido."); return; }
+    setGenerandoReporte(true);
+    const tid = toast.loading("Generando reporte mensual…");
+    try {
+      const data = await traerReporte({ data: { year: y, month: m } });
+      const { generarReporteMensualBobinadoras, ReporteError } =
+        await import("@/services/reporteMensualBobinadorasExcel");
+      try {
+        const res = await generarReporteMensualBobinadoras(data);
+        toast.success(
+          `Reporte generado: ${res.rollos} rollos · ${res.cintas} cintas · ${res.produccionKg.toLocaleString("es-MX")} kg`,
+          { id: tid },
+        );
+      } catch (e: unknown) {
+        if (e instanceof ReporteError) {
+          toast.error(
+            e.message === "SIN_REGISTROS"
+              ? "No existe información registrada para el mes seleccionado."
+              : e.message,
+            { id: tid },
+          );
+          return;
+        }
+        throw e;
+      }
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Error al generar el reporte.", { id: tid });
+    } finally {
+      setGenerandoReporte(false);
+    }
+  }
 
 
   return (
     <div className="w-full space-y-4 p-4">
+      {/* Reporte mensual */}
+      <div className="flex flex-wrap items-end justify-between gap-3 rounded-lg border border-border bg-card p-4">
+        <div>
+          <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Reporte mensual de bobinadoras
+          </div>
+          <label className="mb-1 block text-[11px] text-muted-foreground">Mes del reporte</label>
+          <input
+            type="month"
+            className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+            value={reportMonth}
+            max={new Date().toISOString().slice(0, 7)}
+            onChange={(e) => setReportMonth(e.target.value)}
+            disabled={generandoReporte}
+          />
+        </div>
+        <button
+          onClick={onGenerarReporte}
+          disabled={generandoReporte || !reportMonth}
+          className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+        >
+          {generandoReporte ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileSpreadsheet className="h-4 w-4" />}
+          {generandoReporte ? "Generando…" : "Generar Reporte"}
+        </button>
+      </div>
+
       {/* Buscador */}
+
       <div className="rounded-lg border border-border bg-card p-4">
         <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">1 · Rollo de origen</div>
         <div className="flex flex-wrap gap-2">
