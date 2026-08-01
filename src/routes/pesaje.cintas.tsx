@@ -106,6 +106,12 @@ function PesajeCintasPage() {
     setContexto(null); setLoteId(null); setManual(null); setManualOpen(false);
     try {
       const ctx = await buscar({ data: { numero_rollo: rollo } });
+      if (!ctx) {
+        setManualRollo(rollo);
+        setManualOpen(true);
+        toast.info("Rollo no encontrado. Se activó la captura manual.");
+        return;
+      }
       setContexto(ctx);
       if (ctx.lote) {
         setLoteId(ctx.lote.id);

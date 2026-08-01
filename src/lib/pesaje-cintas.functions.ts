@@ -115,19 +115,19 @@ export const listBobinadoras = createServerFn({ method: "GET" })
 export const buscarContextoRollo = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ numero_rollo: z.string().trim().min(1).max(64) }).parse(d))
-  .handler(async ({ data, context }): Promise<ContextoRollo> => {
+  .handler(async ({ data, context }): Promise<ContextoRollo | null> => {
     const { data: res, error } = await context.supabase.rpc("buscar_contexto_rollo_cintas", {
       _numero_rollo: data.numero_rollo,
     });
     if (error) {
       const m = (error.message ?? "").toLowerCase();
       if (m.includes("no se encontró") || m.includes("no se encontro") || m.includes("not found")) {
-        throw new Error("Rollo no encontrado");
+        return null;
       }
       throw new Error(error.message);
     }
     const ctx = res as unknown as ContextoRollo | null;
-    if (!ctx || !ctx.muestra?.id) throw new Error("Rollo no encontrado");
+    if (!ctx || !ctx.muestra?.id) return null;
     return ctx;
   });
 
