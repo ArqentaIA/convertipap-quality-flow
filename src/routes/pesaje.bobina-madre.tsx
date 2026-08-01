@@ -783,19 +783,35 @@ function PesajeBobinaPage() {
             </button>
           </div>
           <div className="relative flex-1 overflow-hidden bg-black">
-            <video ref={videoRef} playsInline muted autoPlay className="h-full w-full object-contain" />
-            {/* Marco guía */}
-            <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+            <video
+              ref={videoRef}
+              playsInline
+              muted
+              autoPlay
+              className="h-full w-full object-contain"
+              onLoadedMetadata={(e) => {
+                const v = e.currentTarget;
+                if (v.videoWidth && v.videoHeight) setVideoAspect(v.videoWidth / v.videoHeight);
+              }}
+            />
+            {/* Marco guía: define EXACTAMENTE el área que se captura */}
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
               <div
-                className="rounded-lg border-2 border-white/80 shadow-[0_0_0_9999px_rgba(0,0,0,0.35)]"
-                style={{ width: "75%", height: "30%" }}
-              />
-              <div className="mt-4 rounded-md bg-black/70 px-3 py-1.5 text-center text-xs text-white">
-                Coloca únicamente el display de la báscula dentro del recuadro.
-                <br />
-                <span className="text-white/70">Evita reflejos y mantén la cámara fija.</span>
+                className="relative flex items-center justify-center"
+                style={{ aspectRatio: String(videoAspect), maxWidth: "100%", maxHeight: "100%", width: "100%", height: "100%" }}
+              >
+                <div
+                  className="rounded-lg border-2 border-white/90 shadow-[0_0_0_9999px_rgba(0,0,0,0.55)]"
+                  style={{ width: `${FRAME_W_RATIO * 100}%`, height: `${FRAME_H_RATIO * 100}%` }}
+                />
+                <div className="absolute left-1/2 top-[68%] w-[80%] -translate-x-1/2 rounded-md bg-black/70 px-3 py-1.5 text-center text-xs text-white">
+                  Sólo se guardará lo que quede dentro del recuadro.
+                  <br />
+                  <span className="text-white/70">Encuadra únicamente los dígitos del display. Evita reflejos.</span>
+                </div>
               </div>
             </div>
+
             {camaraError && (
               <div className="absolute inset-x-4 top-4 rounded-md bg-destructive/90 px-4 py-3 text-sm text-white">
                 {camaraError}
