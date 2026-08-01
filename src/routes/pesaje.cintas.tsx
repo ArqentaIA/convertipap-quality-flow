@@ -345,6 +345,45 @@ function PesajeCintasPage() {
     void ejecutarImpresion(lote.estado === "finalizado" ? "Reimpresión de etiquetas desde módulo de cintas" : null);
   }
 
+  // ── Reporte mensual de bobinadoras ─────────────────────────────
+  const traerReporte = useServerFn(obtenerReporteMensualCintas);
+  const [reportMonth, setReportMonth] = useState(() => new Date().toISOString().slice(0, 7));
+  const [generandoReporte, setGenerandoReporte] = useState(false);
+
+  async function onGenerarReporte() {
+    if (generandoReporte || !reportMonth) return;
+    const [y, m] = reportMonth.split("-").map((x) => parseInt(x, 10));
+    if (!y || !m) { toast.error("Seleccione un mes válido."); return; }
+    setGenerandoReporte(true);
+    const tid = toast.loading("Generando reporte mensual…");
+    try {
+      const data = await traerReporte({ data: { year: y, month: m } });
+      const { generarReporteMensualBobinadoras, ReporteError } =
+        await import("@/services/reporteMensualBobinadorasExcel");
+      try {
+        const res = await generarReporteMensualBobinadoras(data);
+        toast.success(
+          `Reporte generado: ${res.rollos} rollos · ${res.cintas} cintas · ${res.produccionKg.toLocaleString("es-MX")} kg`,
+          { id: tid },
+        );
+      } catch (e: unknown) {
+        if (e instanceof ReporteError) {
+          toast.error(
+            e.message === "SIN_REGISTROS"
+              ? "No existe información registrada para el mes seleccionado."
+              : e.message,
+            { id: tid },
+          );
+          return;
+        }
+        throw e;
+      }
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Error al generar el reporte.", { id: tid });
+    } finally {
+      setGenerandoReporte(false);
+    }
+  }
 
 
   return (
