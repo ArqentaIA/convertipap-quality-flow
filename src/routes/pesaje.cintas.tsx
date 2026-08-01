@@ -43,6 +43,7 @@ function PesajeCintasPage() {
   const qc = useQueryClient();
   const buscar = useServerFn(buscarContextoRollo);
   const crear = useServerFn(crearLote);
+  const crearManual = useServerFn(crearLoteManual);
   const traer = useServerFn(obtenerLoteYCintas);
   const registrar = useServerFn(registrarCinta);
   const corregir = useServerFn(corregirCinta);
