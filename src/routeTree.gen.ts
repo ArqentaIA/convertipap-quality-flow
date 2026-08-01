@@ -27,6 +27,7 @@ import { Route as TFolioRouteImport } from './routes/t.$folio'
 import { Route as PesajeCintasRouteImport } from './routes/pesaje.cintas'
 import { Route as PesajeBobinaMadreRouteImport } from './routes/pesaje.bobina-madre'
 import { Route as MuestraIdRouteImport } from './routes/muestra.$id'
+import { Route as LoteCintasIdRouteImport } from './routes/lote-cintas.$id'
 import { Route as HistorialMaquinaRouteImport } from './routes/historial.$maquina'
 import { Route as DiagnosticoPesajeV2RouteImport } from './routes/diagnostico.pesaje-v2'
 import { Route as CalidadRevisionRouteImport } from './routes/calidad.revision'
@@ -125,6 +126,11 @@ const MuestraIdRoute = MuestraIdRouteImport.update({
   path: '/muestra/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LoteCintasIdRoute = LoteCintasIdRouteImport.update({
+  id: '/lote-cintas/$id',
+  path: '/lote-cintas/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const HistorialMaquinaRoute = HistorialMaquinaRouteImport.update({
   id: '/historial/$maquina',
   path: '/historial/$maquina',
@@ -184,6 +190,7 @@ export interface FileRoutesByFullPath {
   '/calidad/revision': typeof CalidadRevisionRoute
   '/diagnostico/pesaje-v2': typeof DiagnosticoPesajeV2Route
   '/historial/$maquina': typeof HistorialMaquinaRoute
+  '/lote-cintas/$id': typeof LoteCintasIdRoute
   '/muestra/$id': typeof MuestraIdRoute
   '/pesaje/bobina-madre': typeof PesajeBobinaMadreRoute
   '/pesaje/cintas': typeof PesajeCintasRoute
@@ -211,6 +218,7 @@ export interface FileRoutesByTo {
   '/calidad/revision': typeof CalidadRevisionRoute
   '/diagnostico/pesaje-v2': typeof DiagnosticoPesajeV2Route
   '/historial/$maquina': typeof HistorialMaquinaRoute
+  '/lote-cintas/$id': typeof LoteCintasIdRoute
   '/muestra/$id': typeof MuestraIdRoute
   '/pesaje/bobina-madre': typeof PesajeBobinaMadreRoute
   '/pesaje/cintas': typeof PesajeCintasRoute
@@ -239,6 +247,7 @@ export interface FileRoutesById {
   '/calidad/revision': typeof CalidadRevisionRoute
   '/diagnostico/pesaje-v2': typeof DiagnosticoPesajeV2Route
   '/historial/$maquina': typeof HistorialMaquinaRoute
+  '/lote-cintas/$id': typeof LoteCintasIdRoute
   '/muestra/$id': typeof MuestraIdRoute
   '/pesaje/bobina-madre': typeof PesajeBobinaMadreRoute
   '/pesaje/cintas': typeof PesajeCintasRoute
@@ -268,6 +277,7 @@ export interface FileRouteTypes {
     | '/calidad/revision'
     | '/diagnostico/pesaje-v2'
     | '/historial/$maquina'
+    | '/lote-cintas/$id'
     | '/muestra/$id'
     | '/pesaje/bobina-madre'
     | '/pesaje/cintas'
@@ -295,6 +305,7 @@ export interface FileRouteTypes {
     | '/calidad/revision'
     | '/diagnostico/pesaje-v2'
     | '/historial/$maquina'
+    | '/lote-cintas/$id'
     | '/muestra/$id'
     | '/pesaje/bobina-madre'
     | '/pesaje/cintas'
@@ -322,6 +333,7 @@ export interface FileRouteTypes {
     | '/calidad/revision'
     | '/diagnostico/pesaje-v2'
     | '/historial/$maquina'
+    | '/lote-cintas/$id'
     | '/muestra/$id'
     | '/pesaje/bobina-madre'
     | '/pesaje/cintas'
@@ -350,6 +362,7 @@ export interface RootRouteChildren {
   CalidadRevisionRoute: typeof CalidadRevisionRoute
   DiagnosticoPesajeV2Route: typeof DiagnosticoPesajeV2Route
   HistorialMaquinaRoute: typeof HistorialMaquinaRoute
+  LoteCintasIdRoute: typeof LoteCintasIdRoute
   MuestraIdRoute: typeof MuestraIdRoute
   PesajeBobinaMadreRoute: typeof PesajeBobinaMadreRoute
   PesajeCintasRoute: typeof PesajeCintasRoute
@@ -484,6 +497,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MuestraIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/lote-cintas/$id': {
+      id: '/lote-cintas/$id'
+      path: '/lote-cintas/$id'
+      fullPath: '/lote-cintas/$id'
+      preLoaderRoute: typeof LoteCintasIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/historial/$maquina': {
       id: '/historial/$maquina'
       path: '/historial/$maquina'
@@ -558,6 +578,7 @@ const rootRouteChildren: RootRouteChildren = {
   CalidadRevisionRoute: CalidadRevisionRoute,
   DiagnosticoPesajeV2Route: DiagnosticoPesajeV2Route,
   HistorialMaquinaRoute: HistorialMaquinaRoute,
+  LoteCintasIdRoute: LoteCintasIdRoute,
   MuestraIdRoute: MuestraIdRoute,
   PesajeBobinaMadreRoute: PesajeBobinaMadreRoute,
   PesajeCintasRoute: PesajeCintasRoute,

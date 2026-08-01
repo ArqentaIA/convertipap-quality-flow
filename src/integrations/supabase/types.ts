@@ -2634,6 +2634,7 @@ export type Database = {
         Args: { _spec_id: string }
         Returns: boolean
       }
+      trazabilidad_lote_cintas: { Args: { _lote_id: string }; Returns: Json }
       user_allowed_machine_codes: {
         Args: { _user_id: string }
         Returns: string[]

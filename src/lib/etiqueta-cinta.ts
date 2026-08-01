@@ -175,10 +175,16 @@ function renderEtiqueta(snap: EtiquetaSnapshot, cinta: EtiquetaSnapshot["cintas"
 
 export async function abrirImpresionEtiquetas(snap: EtiquetaSnapshot): Promise<void> {
   const muestraId = snap.muestra_calidad_id ?? null;
-  const traceUrl = muestraId ? `${TRACE_BASE_URL}/muestra/${muestraId}` : null;
-  const sapUrl = traceUrl
-    ? `${traceUrl}?vista=sap&rollo=${encodeURIComponent(snap.numero_rollo || "")}`
+  // Trazabilidad: si el lote proviene de Calidad se apunta a la muestra;
+  // si es captura manual (sin muestra) se apunta al propio lote de cintas,
+  // que expone el mismo N.º de rollo y el mismo peso registrado (fuente única).
+  const traceUrl = muestraId
+    ? `${TRACE_BASE_URL}/muestra/${muestraId}`
+    : (snap.lote_id ? `${TRACE_BASE_URL}/lote-cintas/${snap.lote_id}` : null);
+  const sapUrl = muestraId
+    ? `${TRACE_BASE_URL}/muestra/${muestraId}?vista=sap&rollo=${encodeURIComponent(snap.numero_rollo || "")}`
     : null;
+
 
   const [logoDataUrl, sapLogoDataUrl, qrTrace, qrSap] = await Promise.all([
     toDataUrl(logoUrl),
