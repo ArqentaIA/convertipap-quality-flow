@@ -326,7 +326,7 @@ function PesajeCintasPage() {
 
 
   return (
-    <div className="mx-auto max-w-3xl space-y-4 p-4">
+    <div className="w-full space-y-4 p-4">
       {/* Buscador */}
       <div className="rounded-lg border border-border bg-card p-4">
         <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">1 · Rollo de origen</div>
