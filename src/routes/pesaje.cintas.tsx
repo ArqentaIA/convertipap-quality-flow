@@ -354,13 +354,7 @@ function PesajeCintasPage() {
             {buscando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
             Buscar
           </button>
-          <button
-            onClick={() => setManualOpen((v) => !v)}
-            className="rounded-md border border-input bg-background px-4 py-2 text-sm font-medium"
-          >
-            Capturar manual
-          </button>
-        </div>
+          </div>
 
         {manualOpen && (
           <div className="mt-3 rounded-lg border-2 border-primary bg-primary/5 p-3">
