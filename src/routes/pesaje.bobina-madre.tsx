@@ -231,7 +231,9 @@ function PesajeBobinaPage() {
   const pesoManualValido =
     pesoManualNum !== null && Number.isFinite(pesoManualNum) && pesoManualNum > 0 && pesoManualNum <= 2500;
   const pesoManualError = pesoManualNum !== null && !pesoManualValido;
-  const puedeRegistrar = puedeFoto && !!evidenciaFile && !procesando && !pesoManualError;
+  const puedeRegistrar =
+    puedeFoto && !procesando && !pesoManualError && (!!evidenciaFile || pesoManualValido);
+
   const tara = taraPorMaquina(maqCodigo);
 
   function limpiarFoto() {
