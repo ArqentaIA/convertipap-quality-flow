@@ -408,9 +408,10 @@ Deno.serve(async (req) => {
 
     // --------- Rama de CONFIRMACIÓN (usuario ya validó lectura) --------
     if (pesoConfirmadoKg != null) {
-      const bruto = Math.round(pesoConfirmadoKg);
+      // Se conservan los decimales del display (columnas numeric(10,2)).
+      const bruto = round2(pesoConfirmadoKg);
       const tara = taraPorMaquina(maq.codigo);
-      const neto = bruto - tara;
+      const neto = round2(bruto - tara);
       if (neto <= 0) {
         return json({ status: "confirm", reasonCode: "GROSS_WEIGHT_BELOW_TARE",
           message: "El peso confirmado no permite calcular un peso neto válido. Verifica el display.",
