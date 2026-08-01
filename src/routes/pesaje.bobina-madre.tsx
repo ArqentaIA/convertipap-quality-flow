@@ -323,15 +323,24 @@ function PesajeBobinaPage() {
     if (!video || !streamRef.current) return toast.error("La cámara aún no está lista.");
     const w = video.videoWidth, h = video.videoHeight;
     if (!w || !h) return toast.error("La cámara aún no envía imagen. Espera un momento.");
+
+    // Se captura EXCLUSIVAMENTE el interior del marco guía (recorte centrado),
+    // con el ancho reducido al 50% del marco anterior para mayor precisión del OCR.
+    const cropW = Math.max(64, Math.round(w * FRAME_W_RATIO));
+    const cropH = Math.max(64, Math.round(h * FRAME_H_RATIO));
+    const cropX = Math.round((w - cropW) / 2);
+    const cropY = Math.round((h - cropH) / 2);
+
     const canvas = document.createElement("canvas");
-    canvas.width = w; canvas.height = h;
+    canvas.width = cropW; canvas.height = cropH;
     const ctx = canvas.getContext("2d");
     if (!ctx) return toast.error("No se pudo capturar la imagen.");
-    ctx.drawImage(video, 0, 0, w, h);
+    ctx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
     const blob: Blob | null = await new Promise((r) => canvas.toBlob((b) => r(b), "image/jpeg", 0.92));
     if (!blob) return toast.error("No se pudo generar la imagen.");
     const raw = new File([blob], `pesaje-${Date.now()}.jpg`, { type: "image/jpeg" });
     cerrarCamara();
+
     try {
       const optim = await comprimirImagenSegura(raw);
       if (evidenciaPreview) URL.revokeObjectURL(evidenciaPreview);
