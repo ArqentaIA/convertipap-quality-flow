@@ -183,6 +183,7 @@ function PesajeCintasPage() {
   const pendiente = lote ? lote.peso_pendiente_kg : netoBM;
   const merma = lote?.estado === "finalizado" ? lote.merma_kg : null;
   const mermaPct = lote?.estado === "finalizado" ? lote.merma_porcentaje : null;
+  const [mermaRealInput, setMermaRealInput] = useState("");
 
   const siguientePos = useMemo(() => {
     if (!lote) return 0;
