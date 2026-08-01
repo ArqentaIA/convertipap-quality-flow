@@ -2601,6 +2601,10 @@ export type Database = {
         Args: { _muestra_id: string }
         Returns: undefined
       }
+      reabrir_lote_cintas: {
+        Args: { _lote_id: string; _motivo: string }
+        Returns: Json
+      }
       registrar_cinta: {
         Args: {
           _ancho_util: number
