@@ -721,38 +721,43 @@ function PesajeBobinaPage() {
           <label className="mb-2 block text-xs font-medium text-muted-foreground">
             4. Evidencia fotográfica del display * <span className="text-[10px] font-normal">(el peso se lee automáticamente)</span>
           </label>
-          {!evidenciaPreview ? (
+          <div className="grid gap-4 md:grid-cols-2">
+            {/* Izquierda: botón de captura (1/4 del tamaño original) */}
             <button
               type="button"
-              onClick={abrirCamara}
+              onClick={() => { if (evidenciaPreview) limpiarFoto(); abrirCamara(); }}
               disabled={!puedeFoto}
-              className="group flex min-h-[240px] w-full flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-primary/40 bg-gradient-to-br from-primary/5 to-primary/10 p-6 text-center transition hover:border-primary hover:from-primary/10 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="group flex min-h-[120px] w-full max-w-[320px] flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-primary/40 bg-gradient-to-br from-primary/5 to-primary/10 p-3 text-center transition hover:border-primary hover:from-primary/10 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <div className="flex h-24 w-24 items-center justify-center rounded-full bg-primary/15 ring-8 ring-primary/5 group-hover:scale-110">
-                <Camera className="h-12 w-12 text-primary" strokeWidth={1.75} />
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/15 ring-4 ring-primary/5 group-hover:scale-110">
+                <Camera className="h-6 w-6 text-primary" strokeWidth={1.75} />
               </div>
-              <div className="text-lg font-semibold">Tomar fotografía del display</div>
-              <div className="text-xs text-muted-foreground">
-                {puedeFoto ? "Cámara trasera de la tablet · lectura automática del peso" : "Completa los pasos anteriores"}
+              <div className="text-sm font-semibold">
+                {evidenciaPreview ? "Volver a tomar" : "Tomar fotografía del display"}
+              </div>
+              <div className="text-[10px] text-muted-foreground">
+                {puedeFoto ? "Cámara trasera · lectura automática" : "Completa los pasos anteriores"}
               </div>
             </button>
-          ) : (
-            <div className="relative overflow-hidden rounded-2xl border border-border bg-black/90 shadow-lg">
-              <img src={evidenciaPreview} alt="Evidencia" className="max-h-[360px] w-full object-contain" />
-              <div className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-success/90 px-3 py-1 text-[11px] font-medium text-white">
-                <CheckCircle2 className="h-3.5 w-3.5" /> Fotografía lista para lectura
+
+            {/* Derecha: evidencia capturada */}
+            {evidenciaPreview ? (
+              <div className="relative overflow-hidden rounded-xl border border-border bg-black/90 shadow-lg">
+                <img src={evidenciaPreview} alt="Evidencia del display" className="max-h-[200px] w-full object-contain" />
+                <div className="absolute left-2 top-2 inline-flex items-center gap-1.5 rounded-full bg-success/90 px-2.5 py-1 text-[10px] font-medium text-white">
+                  <CheckCircle2 className="h-3 w-3" /> Lista para lectura
+                </div>
               </div>
-              <div className="absolute bottom-3 right-3">
-                <button
-                  type="button"
-                  onClick={() => { limpiarFoto(); abrirCamara(); }}
-                  className="inline-flex min-h-[44px] items-center gap-2 rounded-full bg-white/95 px-4 py-2 text-xs font-medium text-foreground shadow-md hover:bg-white"
-                >
-                  <Camera className="h-4 w-4" /> Volver a tomar
-                </button>
+            ) : (
+              <div className="flex min-h-[120px] items-center justify-center rounded-xl border border-dashed border-border bg-muted/30 p-3 text-center">
+                <div className="flex flex-col items-center gap-1.5 text-muted-foreground">
+                  <ImageIcon className="h-6 w-6" />
+                  <span className="text-[11px]">Aquí se mostrará la evidencia capturada</span>
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
+
         </div>
 
         {/* Botones */}
