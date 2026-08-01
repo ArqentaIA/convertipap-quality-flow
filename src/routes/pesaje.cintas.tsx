@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { Loader2, Search, Printer, CheckCircle2, Ban, Lock, Unlock, Pencil, UserCog } from "lucide-react";
 import {
   buscarContextoRollo, listConductores, listBobinadoras,
-  crearLote, obtenerLoteYCintas, registrarCinta, corregirCinta, anularCinta,
+  crearLote, crearLoteManual, obtenerLoteYCintas, registrarCinta, corregirCinta, anularCinta,
   finalizarLote, reabrirLote, prepararImpresion, actualizarDatosOperativos,
   type ContextoRollo, type CintaRegistrada, type LoteCintas,
 } from "@/lib/pesaje-cintas.functions";
