@@ -406,7 +406,7 @@ export async function generarReporteMensualBobinadoras(
     const base = `${dd}_${g.bobinadora.replace(/\s+/g, "")}_T${g.turno}_${g.productoCodigo}`;
     const hoja = wb.addWorksheet(sanitizeSheetName(base, usados), {
       pageSetup: {
-        paperSize: 8, // A3
+        paperSize: 8 as unknown as undefined, // A3
         orientation: "landscape",
         fitToPage: true,
         fitToWidth: 1,
