@@ -506,7 +506,7 @@ function PesajeCintasPage() {
             <Card k="Cintas registradas" v={`${cintas.length} / 20`} />
             <Card k="Peso acumulado" v={`${n(totalCintas)} kg`} />
             <Card k={merma == null ? "Peso pendiente" : "Merma real"} v={`${n(merma == null ? pendiente : merma)} kg`} highlight={merma != null} />
-            <Card k="% merma real" v={mermaPct == null ? "—" : `${n(mermaPct, 2)} %`} />
+            <Card k="MERMA CALCULA SISTEMA" v={mermaPct == null ? "—" : `${n(mermaPct, 2)} %`} />
           </div>
 
           <div className="rounded-lg border border-border bg-card p-4">
