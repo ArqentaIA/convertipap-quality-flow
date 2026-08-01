@@ -425,13 +425,11 @@ export async function generarReporteMensualBobinadoras(
     hoja.getColumn(3).width = 12;
     for (let i = 4; i <= nCols; i++) hoja.getColumn(i).width = 11;
 
-    if (logoId != null) {
-      hoja.addImage(logoId, { tl: { col: 0.1, row: 0.1 }, ext: { width: 150, height: 42 } });
-    }
     hoja.getRow(1).height = 38;
-    hoja.mergeCells(`B1:${lastCol}1`);
-    const h1 = hoja.getCell("B1");
+    hoja.mergeCells(`A1:${lastCol}1`);
+    const h1 = hoja.getCell("A1");
     h1.value = `CONVERTIDOR DE PAPEL S.A. DE C.V. — ${data.planta}`;
+
     h1.font = { bold: true, size: 14, color: { argb: COLOR.blanco } };
     h1.alignment = { horizontal: "center", vertical: "middle" };
     h1.fill = { type: "pattern", pattern: "solid", fgColor: { argb: COLOR.azulOscuro } };
