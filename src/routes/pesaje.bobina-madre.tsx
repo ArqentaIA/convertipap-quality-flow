@@ -32,6 +32,11 @@ const EDGE_FUNCTION_NAME = "analizar-peso-bobina";
 const MAX_IMAGE_SIDE = 1600;
 const IMAGE_QUALITY = 0.75;
 const MAX_COMPRESSED_BYTES = 2_500_000;
+// Marco guía de captura: sólo se conserva lo que queda dentro del recuadro.
+// El ancho se redujo al 50% del marco anterior (75% → 37.5%) para mayor precisión.
+const FRAME_W_RATIO = 0.375;
+const FRAME_H_RATIO = 0.30;
+
 const TARA_POR_MAQUINA: Record<string, number> = { "MP-04": 560, "MP-05": 750, "MP-06": 1160, "MP-07": 0 };
 function taraPorMaquina(codigo: string): number {
   return TARA_POR_MAQUINA[codigo] ?? 0;
@@ -156,6 +161,8 @@ function PesajeBobinaPage() {
   const [camaraError, setCamaraError] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const [videoAspect, setVideoAspect] = useState(16 / 9);
+
 
   function mostrarMensajeUnico(kind: "success" | "error" | "info", msg: string) {
     if (activeToastRef.current != null) toast.dismiss(activeToastRef.current);
@@ -323,15 +330,24 @@ function PesajeBobinaPage() {
     if (!video || !streamRef.current) return toast.error("La cámara aún no está lista.");
     const w = video.videoWidth, h = video.videoHeight;
     if (!w || !h) return toast.error("La cámara aún no envía imagen. Espera un momento.");
+
+    // Se captura EXCLUSIVAMENTE el interior del marco guía (recorte centrado),
+    // con el ancho reducido al 50% del marco anterior para mayor precisión del OCR.
+    const cropW = Math.max(64, Math.round(w * FRAME_W_RATIO));
+    const cropH = Math.max(64, Math.round(h * FRAME_H_RATIO));
+    const cropX = Math.round((w - cropW) / 2);
+    const cropY = Math.round((h - cropH) / 2);
+
     const canvas = document.createElement("canvas");
-    canvas.width = w; canvas.height = h;
+    canvas.width = cropW; canvas.height = cropH;
     const ctx = canvas.getContext("2d");
     if (!ctx) return toast.error("No se pudo capturar la imagen.");
-    ctx.drawImage(video, 0, 0, w, h);
+    ctx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
     const blob: Blob | null = await new Promise((r) => canvas.toBlob((b) => r(b), "image/jpeg", 0.92));
     if (!blob) return toast.error("No se pudo generar la imagen.");
     const raw = new File([blob], `pesaje-${Date.now()}.jpg`, { type: "image/jpeg" });
     cerrarCamara();
+
     try {
       const optim = await comprimirImagenSegura(raw);
       if (evidenciaPreview) URL.revokeObjectURL(evidenciaPreview);
@@ -373,14 +389,71 @@ function PesajeBobinaPage() {
     return { token: token!, uid: uid! };
   }
 
+  /**
+   * Llamada DIRECTA por fetch al endpoint de la función (sin supabase.functions.invoke).
+   * Motivo: invoke oculta el cuerpo de error y cualquier corte de red se reporta como
+   * "Failed to send a request to the Edge Function". Aquí:
+   *  - timeout explícito de 150s (el OCR puede tardar en tablet con red lenta),
+   *  - reintento automático ante fallo de red,
+   *  - reintento con token refrescado ante 401,
+   *  - se lee SIEMPRE el cuerpo JSON aunque el status no sea 2xx.
+   */
+  async function postEdge(token: string, uid: string, payload: Record<string, unknown>, timeoutMs = 150_000) {
+    const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${EDGE_FUNCTION_NAME}`;
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+    try {
+      const r = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string,
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ ...payload, userId: uid }),
+        signal: ctrl.signal,
+        keepalive: false,
+      });
+      const text = await r.text();
+      let parsed: unknown = null;
+      try { parsed = text ? JSON.parse(text) : null; } catch { parsed = null; }
+      return { httpStatus: r.status, data: parsed as EdgeResponse | null, raw: text };
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
   async function invocarEdgeConAuth(payload: Record<string, unknown>) {
     let { token, uid } = await obtenerTokenValido();
-    let resp = await supabase.functions.invoke(EDGE_FUNCTION_NAME, {
-      headers: { Authorization: `Bearer ${token}` },
-      body: { ...payload, userId: uid },
-    });
-    const errMsg = resp.error?.message ?? "";
-    if (resp.error && /401|non-2xx|autentic/i.test(errMsg)) {
+
+    let out: Awaited<ReturnType<typeof postEdge>> | null = null;
+    let netErr: unknown = null;
+
+    for (let intento = 1; intento <= 2; intento++) {
+      try {
+        out = await postEdge(token, uid, payload);
+        netErr = null;
+        break;
+      } catch (e) {
+        netErr = e;
+        logDiagnosticoPesaje("edge-network-retry", {
+          intento,
+          error: e instanceof Error ? `${e.name}: ${e.message}` : String(e),
+        });
+        if (intento < 2) await new Promise((r) => setTimeout(r, 1200));
+      }
+    }
+
+    if (!out) {
+      const isAbort = netErr instanceof Error && netErr.name === "AbortError";
+      throw new Error(
+        isAbort
+          ? "La lectura tardó demasiado. Verifica la conexión Wi-Fi de la tablet y vuelve a intentar."
+          : "Sin conexión con el servicio de lectura. Revisa la red de la tablet y vuelve a intentar.",
+      );
+    }
+
+    if (out.httpStatus === 401) {
       const { data: refreshed, error: refErr } = await supabase.auth.refreshSession();
       if (refErr || !refreshed.session?.access_token) {
         await supabase.auth.signOut().catch(() => {});
@@ -389,13 +462,25 @@ function PesajeBobinaPage() {
       token = refreshed.session.access_token;
       uid = refreshed.session.user.id;
       logDiagnosticoPesaje("token-refresh-retry", { userId: uid, tokenLength: token.length });
-      resp = await supabase.functions.invoke(EDGE_FUNCTION_NAME, {
-        headers: { Authorization: `Bearer ${token}` },
-        body: { ...payload, userId: uid },
-      });
+      out = await postEdge(token, uid, payload);
     }
+
+    logDiagnosticoPesaje("edge-http", { httpStatus: out.httpStatus, hasJson: !!out.data });
+
+    // Se conserva la forma { data, error } que esperan los llamadores.
+    const resp = {
+      data: out.data,
+      error: out.data
+        ? null
+        : new Error(
+            out.httpStatus >= 500
+              ? "El servicio de lectura no respondió correctamente. Intenta nuevamente."
+              : `Respuesta inválida del servicio (HTTP ${out.httpStatus}).`,
+          ),
+    };
     return { resp, uid };
   }
+
 
   type EdgeResponse = {
     status: "accepted" | "confirm" | "retake" | "technical_error";
@@ -636,38 +721,43 @@ function PesajeBobinaPage() {
           <label className="mb-2 block text-xs font-medium text-muted-foreground">
             4. Evidencia fotográfica del display * <span className="text-[10px] font-normal">(el peso se lee automáticamente)</span>
           </label>
-          {!evidenciaPreview ? (
+          <div className="grid gap-4 md:grid-cols-2">
+            {/* Izquierda: botón de captura (1/4 del tamaño original) */}
             <button
               type="button"
-              onClick={abrirCamara}
+              onClick={() => { if (evidenciaPreview) limpiarFoto(); abrirCamara(); }}
               disabled={!puedeFoto}
-              className="group flex min-h-[240px] w-full flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-primary/40 bg-gradient-to-br from-primary/5 to-primary/10 p-6 text-center transition hover:border-primary hover:from-primary/10 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="group flex min-h-[120px] w-full max-w-[320px] flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-primary/40 bg-gradient-to-br from-primary/5 to-primary/10 p-3 text-center transition hover:border-primary hover:from-primary/10 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <div className="flex h-24 w-24 items-center justify-center rounded-full bg-primary/15 ring-8 ring-primary/5 group-hover:scale-110">
-                <Camera className="h-12 w-12 text-primary" strokeWidth={1.75} />
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/15 ring-4 ring-primary/5 group-hover:scale-110">
+                <Camera className="h-6 w-6 text-primary" strokeWidth={1.75} />
               </div>
-              <div className="text-lg font-semibold">Tomar fotografía del display</div>
-              <div className="text-xs text-muted-foreground">
-                {puedeFoto ? "Cámara trasera de la tablet · lectura automática del peso" : "Completa los pasos anteriores"}
+              <div className="text-sm font-semibold">
+                {evidenciaPreview ? "Volver a tomar" : "Tomar fotografía del display"}
+              </div>
+              <div className="text-[10px] text-muted-foreground">
+                {puedeFoto ? "Cámara trasera · lectura automática" : "Completa los pasos anteriores"}
               </div>
             </button>
-          ) : (
-            <div className="relative overflow-hidden rounded-2xl border border-border bg-black/90 shadow-lg">
-              <img src={evidenciaPreview} alt="Evidencia" className="max-h-[360px] w-full object-contain" />
-              <div className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-success/90 px-3 py-1 text-[11px] font-medium text-white">
-                <CheckCircle2 className="h-3.5 w-3.5" /> Fotografía lista para lectura
+
+            {/* Derecha: evidencia capturada */}
+            {evidenciaPreview ? (
+              <div className="relative overflow-hidden rounded-xl border border-border bg-black/90 shadow-lg">
+                <img src={evidenciaPreview} alt="Evidencia del display" className="max-h-[200px] w-full object-contain" />
+                <div className="absolute left-2 top-2 inline-flex items-center gap-1.5 rounded-full bg-success/90 px-2.5 py-1 text-[10px] font-medium text-white">
+                  <CheckCircle2 className="h-3 w-3" /> Lista para lectura
+                </div>
               </div>
-              <div className="absolute bottom-3 right-3">
-                <button
-                  type="button"
-                  onClick={() => { limpiarFoto(); abrirCamara(); }}
-                  className="inline-flex min-h-[44px] items-center gap-2 rounded-full bg-white/95 px-4 py-2 text-xs font-medium text-foreground shadow-md hover:bg-white"
-                >
-                  <Camera className="h-4 w-4" /> Volver a tomar
-                </button>
+            ) : (
+              <div className="flex min-h-[120px] items-center justify-center rounded-xl border border-dashed border-border bg-muted/30 p-3 text-center">
+                <div className="flex flex-col items-center gap-1.5 text-muted-foreground">
+                  <ImageIcon className="h-6 w-6" />
+                  <span className="text-[11px]">Aquí se mostrará la evidencia capturada</span>
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
+
         </div>
 
         {/* Botones */}
@@ -700,19 +790,35 @@ function PesajeBobinaPage() {
             </button>
           </div>
           <div className="relative flex-1 overflow-hidden bg-black">
-            <video ref={videoRef} playsInline muted autoPlay className="h-full w-full object-contain" />
-            {/* Marco guía */}
-            <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+            <video
+              ref={videoRef}
+              playsInline
+              muted
+              autoPlay
+              className="h-full w-full object-contain"
+              onLoadedMetadata={(e) => {
+                const v = e.currentTarget;
+                if (v.videoWidth && v.videoHeight) setVideoAspect(v.videoWidth / v.videoHeight);
+              }}
+            />
+            {/* Marco guía: define EXACTAMENTE el área que se captura */}
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
               <div
-                className="rounded-lg border-2 border-white/80 shadow-[0_0_0_9999px_rgba(0,0,0,0.35)]"
-                style={{ width: "75%", height: "30%" }}
-              />
-              <div className="mt-4 rounded-md bg-black/70 px-3 py-1.5 text-center text-xs text-white">
-                Coloca únicamente el display de la báscula dentro del recuadro.
-                <br />
-                <span className="text-white/70">Evita reflejos y mantén la cámara fija.</span>
+                className="relative flex items-center justify-center"
+                style={{ aspectRatio: String(videoAspect), maxWidth: "100%", maxHeight: "100%", width: "100%", height: "100%" }}
+              >
+                <div
+                  className="rounded-lg border-2 border-white/90 shadow-[0_0_0_9999px_rgba(0,0,0,0.55)]"
+                  style={{ width: `${FRAME_W_RATIO * 100}%`, height: `${FRAME_H_RATIO * 100}%` }}
+                />
+                <div className="absolute left-1/2 top-[68%] w-[80%] -translate-x-1/2 rounded-md bg-black/70 px-3 py-1.5 text-center text-xs text-white">
+                  Sólo se guardará lo que quede dentro del recuadro.
+                  <br />
+                  <span className="text-white/70">Encuadra únicamente los dígitos del display. Evita reflejos.</span>
+                </div>
               </div>
             </div>
+
             {camaraError && (
               <div className="absolute inset-x-4 top-4 rounded-md bg-destructive/90 px-4 py-3 text-sm text-white">
                 {camaraError}
