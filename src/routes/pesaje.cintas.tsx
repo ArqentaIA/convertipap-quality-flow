@@ -565,7 +565,7 @@ function Field({ label, value, highlight }: { label: string; value: string; high
   return (
     <div>
       <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</div>
-      <div className={`text-sm ${highlight ? "text-base font-bold text-primary" : "font-medium text-foreground"}`}>{value}</div>
+      <div className={`min-h-5 text-sm ${highlight ? "text-base font-bold text-primary" : "font-medium text-foreground"}`}>{value}</div>
     </div>
   );
 }
