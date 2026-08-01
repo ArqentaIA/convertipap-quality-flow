@@ -95,33 +95,35 @@ No cambies la lectura solo para colocarla en el rango. No inventes dígitos. No 
 ${PROMPT_BASE}`;
 }
 
-// --------- Selección dinámica Gemini (preservada) ------------------
+// --------- Selección de modelo Gemini (rápida) ---------------------
+// Se usa un modelo fijo por defecto para EVITAR la llamada previa a /models
+// (ahorra ~300-900 ms por captura). El descubrimiento dinámico sólo se ejecuta
+// si el modelo por defecto deja de existir (404/400) y se cachea en memoria.
 const MODELO_PREFERENCIA = [
-  "gemini-flash-latest",
   "gemini-2.0-flash",
+  "gemini-flash-latest",
   "gemini-2.0-flash-001",
   "gemini-2.5-flash-preview-05-20",
 ];
-let MODELO_CACHE: string | null = null;
-async function elegirModeloGemini(apiKey: string, requestId: string): Promise<string | null> {
-  if (MODELO_CACHE) return MODELO_CACHE;
+let MODELO_CACHE: string | null = MODELO_PREFERENCIA[0];
+async function descubrirModeloGemini(apiKey: string, requestId: string): Promise<string | null> {
   try {
     const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
     if (!r.ok) {
       console.log(`[${requestId}] /models HTTP ${r.status} — fallback estático`);
-      MODELO_CACHE = MODELO_PREFERENCIA[0]; return MODELO_CACHE;
+      return MODELO_PREFERENCIA[1];
     }
     const body = await r.json() as { models?: Array<{ name?: string; supportedGenerationMethods?: string[] }> };
     const disponibles = (body.models ?? [])
       .filter((m) => (m.supportedGenerationMethods ?? []).includes("generateContent"))
       .map((m) => (m.name ?? "").replace(/^models\//, ""))
-      .filter((n) => n && n.includes("flash") && !n.includes("lite") && !n.includes("2.5-flash") && !n.includes("thinking"));
-    for (const pref of MODELO_PREFERENCIA) if (disponibles.includes(pref)) { MODELO_CACHE = pref; return pref; }
-    if (disponibles.length > 0) { MODELO_CACHE = disponibles.sort().reverse()[0]; return MODELO_CACHE; }
+      .filter((n) => n && n.includes("flash") && !n.includes("lite") && !n.includes("thinking"));
+    for (const pref of MODELO_PREFERENCIA) if (disponibles.includes(pref)) return pref;
+    if (disponibles.length > 0) return disponibles.sort().reverse()[0];
     return null;
   } catch (e) {
     console.log(`[${requestId}] /models fallo: ${(e as Error).message}`);
-    MODELO_CACHE = MODELO_PREFERENCIA[0]; return MODELO_CACHE;
+    return MODELO_PREFERENCIA[1];
   }
 }
 
