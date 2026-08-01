@@ -359,3 +359,88 @@ export const prepararImpresion = createServerFn({ method: "POST" })
       };
     };
   });
+
+// --------------------- Reporte mensual de bobinadoras ---------------------- //
+// Campo oficial de periodo: pesajes_cintas_lotes.fecha_produccion (fecha
+// operativa del lote). Solo lectura; RLS del usuario autenticado.
+
+export type ReporteMensualCintasData = {
+  year: number;
+  month: number;
+  rangoInicio: string;
+  rangoFinExclusivo: string;
+  planta: string;
+  usuario: string;
+  generadoAt: string;
+  lotes: LoteCintas[];
+  cintas: CintaRegistrada[];
+  snapshots: Record<string, Json>;
+};
+
+export const obtenerReporteMensualCintas = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z.object({ year: z.number().int().min(2000).max(2100), month: z.number().int().min(1).max(12) }).parse(d),
+  )
+  .handler(async ({ data, context }): Promise<ReporteMensualCintasData> => {
+    const pad = (v: number) => String(v).padStart(2, "0");
+    const inicio = `${data.year}-${pad(data.month)}-01`;
+    const finY = data.month === 12 ? data.year + 1 : data.year;
+    const finM = data.month === 12 ? 1 : data.month + 1;
+    const finExcl = `${finY}-${pad(finM)}-01`;
+
+    const { data: lotes, error } = await context.supabase
+      .from("pesajes_cintas_lotes")
+      .select("*")
+      .gte("fecha_produccion", inicio)
+      .lt("fecha_produccion", finExcl)
+      .neq("estado", "anulado")
+      .order("fecha_produccion")
+      .order("numero_rollo");
+    if (error) throw new Error(error.message);
+
+    const filas = (lotes ?? []) as unknown as (LoteCintas & { datos_calidad_snapshot: Json })[];
+    const ids = filas.map((l) => l.id);
+
+    let cintas: CintaRegistrada[] = [];
+    if (ids.length > 0) {
+      const chunks: string[][] = [];
+      for (let i = 0; i < ids.length; i += 200) chunks.push(ids.slice(i, i + 200));
+      const res = await Promise.all(
+        chunks.map((c) =>
+          context.supabase
+            .from("pesajes_cintas")
+            .select("*")
+            .in("lote_id", c)
+            .order("posicion"),
+        ),
+      );
+      for (const r of res) {
+        if (r.error) throw new Error(r.error.message);
+        cintas = cintas.concat((r.data ?? []) as unknown as CintaRegistrada[]);
+      }
+    }
+
+    const { data: plantas } = await context.supabase
+      .from("plantas")
+      .select("nombre")
+      .eq("activo", true)
+      .order("nombre")
+      .limit(1);
+
+    const snapshots: Record<string, Json> = {};
+    for (const l of filas) snapshots[l.id] = l.datos_calidad_snapshot;
+
+    return {
+      year: data.year,
+      month: data.month,
+      rangoInicio: inicio,
+      rangoFinExclusivo: finExcl,
+      planta: plantas?.[0]?.nombre ?? "PLANTA TLAXCALA",
+      usuario: (context.claims?.["email"] as string | undefined) ?? "—",
+      generadoAt: new Date().toISOString(),
+      lotes: filas as unknown as LoteCintas[],
+      cintas,
+      snapshots,
+    };
+  });
