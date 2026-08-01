@@ -535,7 +535,9 @@ function PesajeBobinaPage() {
         numero_orden: numeroOrden.trim() || null,
         idempotencyKey,
         fecha_hora_pesaje: now.toISOString(),
+        ...(pesoManualValido ? { pesoConfirmadoKg: Math.trunc(pesoManualNum as number), userId: uid } : {}),
       });
+
 
       // Ignorar respuestas tardías si ya se inició una nueva captura
       if (activeRequestRef.current !== clientRequestId) {
