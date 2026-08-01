@@ -392,7 +392,7 @@ export async function generarReporteMensualBobinadoras(
   const usados = new Set<string>(["Resumen Mensual", "Trazabilidad"]);
   const grupos = new Map<string, RolloNorm[]>();
   for (const r of rollos) {
-    const key = `${r.fecha}|${r.bobinadora}|${r.turno}|${r.productoCodigo}|${r.patron}`;
+    const key = `${r.fecha}|${r.bobinadora}|${r.turno}|${r.productoCodigo}`;
     const arr = grupos.get(key) ?? [];
     arr.push(r);
     grupos.set(key, arr);
@@ -445,12 +445,15 @@ export async function generarReporteMensualBobinadoras(
     h2.fill = { type: "pattern", pattern: "solid", fgColor: { argb: COLOR.azulClaro } };
 
     const bobinadores = [...new Set(items.map((i) => i.bobinador))];
+    const patrones = [...new Set(items.map((i) => i.patron))];
     hoja.mergeCells(`A3:${lastCol}3`);
     const h3 = hoja.getCell("A3");
     h3.value =
       `Fecha operativa: ${g.fecha}   ·   Turno: ${g.turno}   ·   Bobinadora: ${g.bobinadora}   ·   ` +
       `Bobinador: ${bobinadores.length > 1 ? "VARIOS" : bobinadores[0]}   ·   ` +
-      `Producto: ${g.productoCodigo} — ${g.productoNombre}   ·   Patrón de corte: ${g.patron}`;
+      `Producto: ${g.productoCodigo} — ${g.productoNombre}   ·   ` +
+      `Patrón de corte: ${patrones.length > 1 ? `VARIOS (${patrones.join(" / ")})` : patrones[0]}`;
+
     h3.font = { size: 10, italic: true, color: { argb: "FF334155" } };
     h3.alignment = { horizontal: "center", vertical: "middle" };
     hoja.getRow(3).height = 18;
