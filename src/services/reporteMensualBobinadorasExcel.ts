@@ -229,10 +229,8 @@ export async function generarReporteMensualBobinadoras(
   wb.calcProperties.fullCalcOnLoad = true;
   (wb.calcProperties as unknown as { forceFullCalc?: boolean }).forceFullCalc = true;
 
-  let logoId: number | null = null;
-  try {
-    logoId = wb.addImage({ base64: await logoBase64(), extension: "png" });
-  } catch { logoId = null; }
+
+
 
   const periodo = `${MESES[data.month - 1]} ${data.year}`;
 
