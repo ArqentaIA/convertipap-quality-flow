@@ -292,9 +292,15 @@ function PesajeCintasPage() {
 
   async function onFinalizar() {
     if (!lote) return;
-    if (!window.confirm(`¿Finalizar rollo? El peso pendiente (${n(pendiente)} kg) se registrará como merma real.`)) return;
+    const real = Number(mermaRealInput.replace(",", "."));
+    if (!mermaRealInput.trim() || !Number.isFinite(real) || real < 0) {
+      toast.error("Capture la merma real (kg) para poder finalizar.");
+      return;
+    }
+    if (real > netoBM) { toast.error("La merma real no puede superar el peso neto del rollo de origen."); return; }
+    if (!window.confirm(`¿Finalizar rollo?\nMerma calculada sistema: ${n(pendiente)} kg\nMerma real capturada: ${n(real)} kg`)) return;
     try {
-      await finalizar({ data: { lote_id: lote.id } });
+      await finalizar({ data: { lote_id: lote.id, merma_real_kg: real } });
       await qc.invalidateQueries({ queryKey: ["cintas-lote", lote.id] });
       toast.success("Rollo finalizado.");
     } catch (e: unknown) {
