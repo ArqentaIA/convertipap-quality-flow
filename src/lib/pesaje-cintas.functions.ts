@@ -262,6 +262,23 @@ export const finalizarLote = createServerFn({ method: "POST" })
     };
   });
 
+export const reabrirLote = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({
+    lote_id: z.string().uuid(),
+    motivo: z.string().min(5).max(500),
+  }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { data: res, error } = await context.supabase.rpc("reabrir_lote_cintas", {
+      _lote_id: data.lote_id,
+      _motivo: data.motivo,
+    });
+    if (error) throw new Error(error.message);
+    return res as unknown as { estado: string; cintas_vigentes: number };
+  });
+
+
+
 // -------------------------------- Impresión ------------------------------- //
 
 export const prepararImpresion = createServerFn({ method: "POST" })
