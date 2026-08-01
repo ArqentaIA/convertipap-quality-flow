@@ -563,7 +563,8 @@ function PesajeCintasPage() {
                 {lote.estado === "abierto" && (
                   <button
                     onClick={onFinalizar}
-                    disabled={cintas.length === 0}
+                    disabled={cintas.length === 0 || !mermaRealInput.trim()}
+                    title={!mermaRealInput.trim() ? "Capture la merma real (kg)" : undefined}
                     className="flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
                   >
                     <CheckCircle2 className="h-4 w-4" /> Finalizar rollo
