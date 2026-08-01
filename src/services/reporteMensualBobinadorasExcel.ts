@@ -582,7 +582,7 @@ export async function generarReporteMensualBobinadoras(
       rr++;
     }
 
-    hoja.pageSetup.printArea = `A1:${lastCol}${rr - 1}`;
+    hoja.pageSetup.printArea = `$A$1:$${lastCol}$${rr - 1}`;
   }
 
   // ───────────────────── Hoja Trazabilidad ─────────────────────
