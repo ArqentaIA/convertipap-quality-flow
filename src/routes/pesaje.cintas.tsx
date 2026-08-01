@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { Loader2, Search, Printer, CheckCircle2, Ban, Lock, Unlock, Pencil, UserCog } from "lucide-react";
 import {
   buscarContextoRollo, listConductores, listBobinadoras,
-  crearLote, obtenerLoteYCintas, registrarCinta, corregirCinta, anularCinta,
+  crearLote, crearLoteManual, obtenerLoteYCintas, registrarCinta, corregirCinta, anularCinta,
   finalizarLote, reabrirLote, prepararImpresion, actualizarDatosOperativos,
   type ContextoRollo, type CintaRegistrada, type LoteCintas,
 } from "@/lib/pesaje-cintas.functions";
@@ -43,6 +43,7 @@ function PesajeCintasPage() {
   const qc = useQueryClient();
   const buscar = useServerFn(buscarContextoRollo);
   const crear = useServerFn(crearLote);
+  const crearManual = useServerFn(crearLoteManual);
   const traer = useServerFn(obtenerLoteYCintas);
   const registrar = useServerFn(registrarCinta);
   const corregir = useServerFn(corregirCinta);
@@ -73,6 +74,10 @@ function PesajeCintasPage() {
   const [conductorId, setConductorId] = useState<string>("");
   const [bobinadoraId, setBobinadoraId] = useState<string>("");
   const [saving, setSaving] = useState(false);
+  const [manualOpen, setManualOpen] = useState(false);
+  const [manualRollo, setManualRollo] = useState("");
+  const [manualPeso, setManualPeso] = useState("");
+  const [manual, setManual] = useState<{ rollo: string; peso: number } | null>(null);
   const requestGuard = useRef(false);
 
   const conductoresQ = useQuery({
@@ -98,7 +103,7 @@ function PesajeCintasPage() {
     const rollo = rolloInput.trim();
     if (!rollo) { toast.error("Ingrese un número de rollo."); return; }
     setBuscando(true);
-    setContexto(null); setLoteId(null);
+    setContexto(null); setLoteId(null); setManual(null);
     try {
       const ctx = await buscar({ data: { numero_rollo: rollo } });
       setContexto(ctx);
@@ -114,21 +119,41 @@ function PesajeCintasPage() {
     }
   }
 
+  function onUsarManual() {
+    const rollo = manualRollo.trim();
+    const peso = Number(manualPeso);
+    if (!rollo) { toast.error("Ingrese el número de rollo."); return; }
+    if (!(peso > 0) || peso > 3000) { toast.error("El peso debe ser mayor a 0 y no rebasar 3000 kg."); return; }
+    setContexto(null); setLoteId(null);
+    setManual({ rollo, peso });
+    setManualOpen(false);
+  }
+
   async function onCrearLote() {
-    if (!contexto) return;
+    if (!contexto && !manual) return;
     if (!conductorId || !bobinadoraId) { toast.error("Seleccione conductor y bobinadora."); return; }
     if (requestGuard.current) return;
     requestGuard.current = true;
     setSaving(true);
     try {
-      const { lote_id } = await crear({
-        data: {
-          numero_rollo: contexto.muestra.numero_rollo,
-          conductor_id: conductorId,
-          bobinadora_id: bobinadoraId,
-          idempotency_key: uuid(),
-        },
-      });
+      const { lote_id } = manual
+        ? await crearManual({
+            data: {
+              numero_rollo: manual.rollo,
+              peso_neto_kg: manual.peso,
+              conductor_id: conductorId,
+              bobinadora_id: bobinadoraId,
+              idempotency_key: uuid(),
+            },
+          })
+        : await crear({
+            data: {
+              numero_rollo: contexto!.muestra.numero_rollo,
+              conductor_id: conductorId,
+              bobinadora_id: bobinadoraId,
+              idempotency_key: uuid(),
+            },
+          });
       setLoteId(lote_id);
       await qc.invalidateQueries({ queryKey: ["cintas-lote", lote_id] });
       toast.success("Lote iniciado.");
@@ -140,7 +165,7 @@ function PesajeCintasPage() {
     }
   }
 
-  const netoBM = lote?.peso_bobina_madre_neto_kg ?? contexto?.pesaje.peso_neto_kg ?? 0;
+  const netoBM = lote?.peso_bobina_madre_neto_kg ?? contexto?.pesaje.peso_neto_kg ?? manual?.peso ?? 0;
   const totalCintas = lote?.peso_total_cintas_kg ?? 0;
   const pendiente = lote ? lote.peso_pendiente_kg : netoBM;
   const merma = lote?.estado === "finalizado" ? lote.merma_kg : null;
@@ -301,13 +326,13 @@ function PesajeCintasPage() {
 
 
   return (
-    <div className="mx-auto max-w-6xl space-y-4 p-4">
+    <div className="mx-auto max-w-3xl space-y-4 p-4">
       {/* Buscador */}
       <div className="rounded-lg border border-border bg-card p-4">
         <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">1 · Rollo de origen</div>
         <div className="flex flex-wrap gap-2">
           <input
-            className="flex-1 min-w-[200px] rounded-md border border-input bg-background px-3 py-2 font-mono text-lg"
+            className="flex-1 min-w-[160px] rounded-md border border-input bg-background px-3 py-2 font-mono text-lg"
             placeholder="Ej. 10057-4"
             value={rolloInput}
             onChange={(e) => setRolloInput(e.target.value)}
@@ -322,7 +347,50 @@ function PesajeCintasPage() {
             {buscando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
             Buscar
           </button>
+          <button
+            onClick={() => setManualOpen((v) => !v)}
+            className="rounded-md border border-input bg-background px-4 py-2 text-sm font-medium"
+          >
+            Capturar manual
+          </button>
         </div>
+
+        {manualOpen && (
+          <div className="mt-3 rounded-lg border-2 border-primary bg-primary/5 p-3">
+            <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-primary">
+              Captura manual · rollo no encontrado
+            </div>
+            <div className="grid gap-2 sm:grid-cols-3">
+              <div>
+                <label className="mb-1 block text-[11px] text-muted-foreground">N.º de rollo</label>
+                <input
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 font-mono text-sm"
+                  placeholder="Ej. 10057-4"
+                  maxLength={64}
+                  value={manualRollo}
+                  onChange={(e) => setManualRollo(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-[11px] text-muted-foreground">Peso del rollo (kg) · máx. 3000</label>
+                <input
+                  type="number" inputMode="decimal" step="0.01" min="0" max="3000"
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  value={manualPeso}
+                  onChange={(e) => setManualPeso(e.target.value)}
+                />
+              </div>
+              <div className="flex items-end">
+                <button
+                  onClick={onUsarManual}
+                  className="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
+                >
+                  Continuar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Contexto */}
@@ -342,8 +410,25 @@ function PesajeCintasPage() {
         </div>
       )}
 
+      {/* Contexto manual: solo etiquetas, sin datos no disponibles */}
+      {manual && !contexto && (
+        <div className="rounded-lg border border-border bg-card p-4">
+          <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">2 · Datos capturados manualmente</div>
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4 text-sm">
+            <Field label="N.º Rollo" value={manual.rollo} />
+            <Field label="Fabricación" value="" />
+            <Field label="Producto" value="" />
+            <Field label="Turno" value="" />
+            <Field label="Peso del rollo de origen" value={`${n(manual.peso)} kg`} highlight />
+            <Field label="Analista" value="" />
+            <Field label="Supervisor" value="" />
+            <Field label="Operador" value="" />
+          </div>
+        </div>
+      )}
+
       {/* Conductor / bobinadora */}
-      {contexto && !lote && (
+      {(contexto || manual) && !lote && (
         <div className="rounded-lg border border-border bg-card p-4">
           <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">3 · Conductor y bobinadora</div>
           <div className="grid gap-3 md:grid-cols-3">
@@ -480,7 +565,7 @@ function Field({ label, value, highlight }: { label: string; value: string; high
   return (
     <div>
       <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</div>
-      <div className={`text-sm ${highlight ? "text-base font-bold text-primary" : "font-medium text-foreground"}`}>{value}</div>
+      <div className={`min-h-5 text-sm ${highlight ? "text-base font-bold text-primary" : "font-medium text-foreground"}`}>{value}</div>
     </div>
   );
 }

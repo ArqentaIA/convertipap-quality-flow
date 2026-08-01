@@ -1474,6 +1474,7 @@ export type Database = {
           creado_por: string
           created_at: string
           datos_calidad_snapshot: Json
+          es_manual: boolean
           estado: Database["public"]["Enums"]["pesaje_cintas_lote_estado"]
           fabricacion: string
           fecha_produccion: string | null
@@ -1484,7 +1485,7 @@ export type Database = {
           merma_kg: number | null
           merma_porcentaje: number | null
           motivo_anulacion: string | null
-          muestra_calidad_id: string
+          muestra_calidad_id: string | null
           numero_orden: string | null
           numero_rollo: string
           orden_produccion_id: string | null
@@ -1509,6 +1510,7 @@ export type Database = {
           creado_por: string
           created_at?: string
           datos_calidad_snapshot?: Json
+          es_manual?: boolean
           estado?: Database["public"]["Enums"]["pesaje_cintas_lote_estado"]
           fabricacion: string
           fecha_produccion?: string | null
@@ -1519,7 +1521,7 @@ export type Database = {
           merma_kg?: number | null
           merma_porcentaje?: number | null
           motivo_anulacion?: string | null
-          muestra_calidad_id: string
+          muestra_calidad_id?: string | null
           numero_orden?: string | null
           numero_rollo: string
           orden_produccion_id?: string | null
@@ -1544,6 +1546,7 @@ export type Database = {
           creado_por?: string
           created_at?: string
           datos_calidad_snapshot?: Json
+          es_manual?: boolean
           estado?: Database["public"]["Enums"]["pesaje_cintas_lote_estado"]
           fabricacion?: string
           fecha_produccion?: string | null
@@ -1554,7 +1557,7 @@ export type Database = {
           merma_kg?: number | null
           merma_porcentaje?: number | null
           motivo_anulacion?: string | null
-          muestra_calidad_id?: string
+          muestra_calidad_id?: string | null
           numero_orden?: string | null
           numero_rollo?: string
           orden_produccion_id?: string | null
@@ -2534,6 +2537,16 @@ export type Database = {
           _conductor_id: string
           _idempotency: string
           _numero_rollo: string
+        }
+        Returns: string
+      }
+      crear_lote_pesaje_cintas_manual: {
+        Args: {
+          _bobinadora_id: string
+          _conductor_id: string
+          _idempotency: string
+          _numero_rollo: string
+          _peso_neto_kg: number
         }
         Returns: string
       }
