@@ -1466,7 +1466,7 @@ export type Database = {
           actualizado_por: string | null
           anulado_at: string | null
           anulado_por: string | null
-          bobinadora_id: string
+          bobinadora_id: string | null
           bobinadora_nombre_snapshot: string
           cantidad_cintas: number
           conductor_id: string | null
@@ -1502,7 +1502,7 @@ export type Database = {
           actualizado_por?: string | null
           anulado_at?: string | null
           anulado_por?: string | null
-          bobinadora_id: string
+          bobinadora_id?: string | null
           bobinadora_nombre_snapshot: string
           cantidad_cintas?: number
           conductor_id?: string | null
@@ -1538,7 +1538,7 @@ export type Database = {
           actualizado_por?: string | null
           anulado_at?: string | null
           anulado_por?: string | null
-          bobinadora_id?: string
+          bobinadora_id?: string | null
           bobinadora_nombre_snapshot?: string
           cantidad_cintas?: number
           conductor_id?: string | null
