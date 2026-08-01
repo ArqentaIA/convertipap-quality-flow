@@ -507,30 +507,42 @@ function PesajeBobinaPage() {
     registro?: PesajeBobina;
   };
 
-  async function registrar() {
+  function registrar() {
     if (!puedeRegistrar) return;
     if (confirmData) return; // ya hay uno abierto
+    setPreConfirm(true);
+  }
+
+  async function ejecutarRegistro() {
+    if (!puedeRegistrar) return;
+    if (confirmData) return;
+    setPreConfirm(false);
     setProcesando(true);
     let uploadedPath: string | null = null;
     const clientRequestId = crypto.randomUUID();
     activeRequestRef.current = clientRequestId;
     try {
       const file = evidenciaFile;
-      if (!file) throw new Error("Falta la fotografía de evidencia.");
+      if (!file && !pesoManualValido) throw new Error("Falta la fotografía de evidencia o el peso manual.");
 
       const { uid } = await obtenerTokenValido();
 
       const now = new Date();
-      const path = buildEvidencePath(maqCodigo, numeroRollo.trim());
+      const path = file
+        ? buildEvidencePath(maqCodigo, numeroRollo.trim())
+        : `manual/${maqCodigo}/${numeroRollo.trim()}-${clientRequestId}`;
       const idempotencyKey = clientRequestId;
 
-      const up = await supabase.storage.from(BUCKET)
-        .upload(path, file, { upsert: false, contentType: "image/jpeg" });
-      if (up.error) {
-        if (/duplicate/i.test(up.error.message)) throw new Error("Ya existe un registro para este número de rollo.");
-        throw new Error(`No se pudo subir la evidencia: ${up.error.message}`);
+      if (file) {
+        const up = await supabase.storage.from(BUCKET)
+          .upload(path, file, { upsert: false, contentType: "image/jpeg" });
+        if (up.error) {
+          if (/duplicate/i.test(up.error.message)) throw new Error("Ya existe un registro para este número de rollo.");
+          throw new Error(`No se pudo subir la evidencia: ${up.error.message}`);
+        }
+        uploadedPath = path;
       }
-      uploadedPath = path;
+
 
       const { resp } = await invocarEdgeConAuth({
         evidencia_path: path,
