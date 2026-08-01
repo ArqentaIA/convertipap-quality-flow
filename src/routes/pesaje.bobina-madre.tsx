@@ -32,6 +32,11 @@ const EDGE_FUNCTION_NAME = "analizar-peso-bobina";
 const MAX_IMAGE_SIDE = 1600;
 const IMAGE_QUALITY = 0.75;
 const MAX_COMPRESSED_BYTES = 2_500_000;
+// Marco guía de captura: sólo se conserva lo que queda dentro del recuadro.
+// El ancho se redujo al 50% del marco anterior (75% → 37.5%) para mayor precisión.
+const FRAME_W_RATIO = 0.375;
+const FRAME_H_RATIO = 0.30;
+
 const TARA_POR_MAQUINA: Record<string, number> = { "MP-04": 560, "MP-05": 750, "MP-06": 1160, "MP-07": 0 };
 function taraPorMaquina(codigo: string): number {
   return TARA_POR_MAQUINA[codigo] ?? 0;
