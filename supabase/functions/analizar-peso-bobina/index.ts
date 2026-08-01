@@ -457,13 +457,12 @@ Deno.serve(async (req) => {
     const mime = fileData.type || "image/jpeg";
 
     const modelo = await elegirModeloGemini(geminiKey, requestId);
-    if (!modelo) {
-      return json({ status: "technical_error", reasonCode: "TECHNICAL_ERROR",
-        message: "No fue posible procesar la fotografía. Intenta nuevamente.", requestId }, 502);
-    }
-
     let g1: GeminiOut | null;
-    try { g1 = await invocarGemini(geminiKey, modelo, PROMPT_BASE, mime, b64); }
+    let modelo = MODELO_CACHE ?? MODELO_PREFERENCIA[0];
+    try {
+      const r1 = await invocarGeminiConFallback(geminiKey, PROMPT_BASE, mime, b64, requestId);
+      g1 = r1.out; modelo = r1.modelo;
+    }
     catch (e) {
       console.log(`[${requestId}] gemini-1 fail ${(e as Error).message}`);
       return json({ status: "technical_error", reasonCode: "TECHNICAL_ERROR",
@@ -476,7 +475,7 @@ Deno.serve(async (req) => {
         unidadAsumidaPorConfiguracion: true, requiereConfirmacion: false, modelo, requestId }, 200);
     }
 
-    // Segunda revisión automática si aplica
+    // Segunda revisión automática sólo cuando aporta valor (ver requiereSegundaRevision)
     let g2: GeminiOut | null = null;
     if (requiereSegundaRevision(g1)) {
       try { g2 = await invocarGemini(geminiKey, modelo, promptSegundaRevision(g1, maq.codigo), mime, b64); }
