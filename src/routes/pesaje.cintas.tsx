@@ -512,9 +512,31 @@ function PesajeCintasPage() {
             <Card k="Neto rollo de origen" v={`${n(netoBM)} kg`} />
             <Card k="Cintas registradas" v={`${cintas.length} / 20`} />
             <Card k="Peso acumulado" v={`${n(totalCintas)} kg`} />
-            <Card k={merma == null ? "Peso pendiente" : "Merma real"} v={`${n(merma == null ? pendiente : merma)} kg`} highlight={merma != null} />
-            <Card k="MERMA CALCULA SISTEMA" v={mermaPct == null ? "—" : `${n(mermaPct, 2)} %`} />
+            <Card
+              k="MERMA CALCULA SISTEMA"
+              v={`${n(merma == null ? pendiente : merma)} kg${mermaPct == null ? "" : ` · ${n(mermaPct, 2)} %`}`}
+            />
+            {lote.estado === "finalizado" ? (
+              <Card k="MERMA REAL (operador)" v={lote.merma_real_kg == null ? "—" : `${n(lote.merma_real_kg)} kg`} highlight />
+            ) : (
+              <div className="rounded-lg border border-primary/40 bg-primary/5 p-3">
+                <div className="mb-1 text-xs uppercase tracking-wide text-muted-foreground">Merma real (kg) *</div>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  step="0.01"
+                  min={0}
+                  max={netoBM || undefined}
+                  value={mermaRealInput}
+                  onChange={(e) => setMermaRealInput(e.target.value)}
+                  placeholder="0.00"
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-lg font-semibold"
+                />
+                <div className="mt-1 text-[11px] text-muted-foreground">Obligatoria para finalizar</div>
+              </div>
+            )}
           </div>
+
 
           <div className="rounded-lg border border-border bg-card p-4">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
