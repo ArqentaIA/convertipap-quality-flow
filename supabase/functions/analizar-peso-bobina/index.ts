@@ -506,8 +506,8 @@ Deno.serve(async (req) => {
           requiereConfirmacion: true, modelo, requestId }, 200);
       }
 
-      const bruto = Math.round(analisis.pesoDetectado);
-      const neto = bruto - tara;
+      const bruto = round2(analisis.pesoDetectado);
+      const neto = round2(bruto - tara);
       let ordenProduccionId: string | null = null;
       if (numeroOrden) {
         const { data: ord } = await admin.from("ordenes_produccion")
