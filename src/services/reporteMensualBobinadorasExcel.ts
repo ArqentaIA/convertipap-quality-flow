@@ -276,15 +276,21 @@ export async function generarReporteMensualBobinadoras(
   ];
   let row = 4;
   for (const [k, v] of kpis) {
-    ws.getCell(`A${row}`).value = k;
-    ws.getCell(`A${row}`).font = { bold: true, size: 10 };
-    const c = ws.getCell(`B${row}`);
+    ws.mergeCells(`A${row}:C${row}`);
+    const lab = ws.getCell(`A${row}`);
+    lab.value = k;
+    lab.font = { bold: true, size: 10 };
+    lab.alignment = { horizontal: "left", vertical: "middle" };
+    ws.mergeCells(`D${row}:F${row}`);
+    const c = ws.getCell(`D${row}`);
     c.value = v;
     if (k === "Merma calculada (%)") c.numFmt = "0.00%";
     else if (typeof v === "number" && k.includes("kg")) c.numFmt = "#,##0.00";
     c.font = { size: 10 };
+    c.alignment = { horizontal: "left", vertical: "middle" };
     row++;
   }
+
 
   // Tabla de resumen agrupada
   row += 2;
@@ -388,7 +394,7 @@ export async function generarReporteMensualBobinadoras(
     arr.push(r);
     grupos.set(key, arr);
   }
-  const keysOrdenadas = [...grupos.keys()].sort();
+  const keysOrdenadas = [...grupos.keys()].sort().slice(0, 1);
 
   for (const key of keysOrdenadas) {
     const items = grupos.get(key)!;
