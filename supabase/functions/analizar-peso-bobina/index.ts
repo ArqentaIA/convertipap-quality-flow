@@ -325,13 +325,18 @@ function evaluar(g1: GeminiOut, g2: GeminiOut | null): Analisis {
     requiereConfirmacion: true, unidadAsumidaPorConfiguracion: true };
 }
 
+// La segunda revisión duplica el tiempo de respuesta: se reserva SÓLO para los
+// casos en que realmente aporta (duda de decimal, dígitos tapados, lectura
+// pobre o fuera de rango). Un reflejo leve o varios candidatos con una lectura
+// de alta confianza ya no disparan una segunda llamada.
 function requiereSegundaRevision(g: GeminiOut): boolean {
-  if (g.requiereSegundaRevision) return true;
   const c = g.confianzaGeneral;
-  if (c >= 60 && c < 88) return true;
+  if (g.decimalDudoso || g.digitosCubiertos) return true;
+  if (c < 82) return true;
   if (g.pesoPrincipal != null && (g.pesoPrincipal < MIN_PESO_BRUTO_KG || g.pesoPrincipal > MAX_PESO_BRUTO_KG)) return true;
-  if (g.decimalDudoso || g.reflejo || g.digitosCubiertos) return true;
-  if ((g.candidatos ?? []).length > 1) return true;
+  // Candidatos discrepantes con la lectura principal.
+  const disc = (g.candidatos ?? []).some((k) => k.peso != null && g.pesoPrincipal != null && Math.abs(k.peso - g.pesoPrincipal) > 0.5);
+  if (disc && c < 92) return true;
   return false;
 }
 
