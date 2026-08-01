@@ -81,7 +81,8 @@ Devuelve EXCLUSIVAMENTE un JSON estricto con esta estructura (sin texto fuera de
  "lecturaConfirmable": <bool>,
  "requiereSegundaRevision": <bool>
 }
-Basa la decisión únicamente en evidencia visual. No inventes dígitos. No modifiques el peso solo para que entre en un rango esperado.`;
+Basa la decisión únicamente en evidencia visual. No inventes dígitos. No modifiques el peso solo para que entre en un rango esperado.
+DECIMALES: si el display muestra punto o coma decimal, repórtalo tal cual en "pesoPrincipal" con sus decimales (ej. 812.5, 1234.75). NUNCA redondees a entero ni elimines la parte decimal. Usa punto como separador decimal. Responde de forma breve: "textoVisible" y "evidencia" de máximo 40 caracteres y como máximo 2 candidatos.`;
 
 function promptSegundaRevision(primera: GeminiOut, maquinaCodigo: string) {
   const cands = (primera.candidatos ?? []).map((c) => `${c.peso}kg(${c.confianza}%)`).join(", ") || "—";
@@ -95,33 +96,35 @@ No cambies la lectura solo para colocarla en el rango. No inventes dígitos. No 
 ${PROMPT_BASE}`;
 }
 
-// --------- Selección dinámica Gemini (preservada) ------------------
+// --------- Selección de modelo Gemini (rápida) ---------------------
+// Se usa un modelo fijo por defecto para EVITAR la llamada previa a /models
+// (ahorra ~300-900 ms por captura). El descubrimiento dinámico sólo se ejecuta
+// si el modelo por defecto deja de existir (404/400) y se cachea en memoria.
 const MODELO_PREFERENCIA = [
-  "gemini-flash-latest",
   "gemini-2.0-flash",
+  "gemini-flash-latest",
   "gemini-2.0-flash-001",
   "gemini-2.5-flash-preview-05-20",
 ];
-let MODELO_CACHE: string | null = null;
-async function elegirModeloGemini(apiKey: string, requestId: string): Promise<string | null> {
-  if (MODELO_CACHE) return MODELO_CACHE;
+let MODELO_CACHE: string | null = MODELO_PREFERENCIA[0];
+async function descubrirModeloGemini(apiKey: string, requestId: string): Promise<string | null> {
   try {
     const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
     if (!r.ok) {
       console.log(`[${requestId}] /models HTTP ${r.status} — fallback estático`);
-      MODELO_CACHE = MODELO_PREFERENCIA[0]; return MODELO_CACHE;
+      return MODELO_PREFERENCIA[1];
     }
     const body = await r.json() as { models?: Array<{ name?: string; supportedGenerationMethods?: string[] }> };
     const disponibles = (body.models ?? [])
       .filter((m) => (m.supportedGenerationMethods ?? []).includes("generateContent"))
       .map((m) => (m.name ?? "").replace(/^models\//, ""))
-      .filter((n) => n && n.includes("flash") && !n.includes("lite") && !n.includes("2.5-flash") && !n.includes("thinking"));
-    for (const pref of MODELO_PREFERENCIA) if (disponibles.includes(pref)) { MODELO_CACHE = pref; return pref; }
-    if (disponibles.length > 0) { MODELO_CACHE = disponibles.sort().reverse()[0]; return MODELO_CACHE; }
+      .filter((n) => n && n.includes("flash") && !n.includes("lite") && !n.includes("thinking"));
+    for (const pref of MODELO_PREFERENCIA) if (disponibles.includes(pref)) return pref;
+    if (disponibles.length > 0) return disponibles.sort().reverse()[0];
     return null;
   } catch (e) {
     console.log(`[${requestId}] /models fallo: ${(e as Error).message}`);
-    MODELO_CACHE = MODELO_PREFERENCIA[0]; return MODELO_CACHE;
+    return MODELO_PREFERENCIA[1];
   }
 }
 
@@ -172,25 +175,63 @@ function parseGeminiJson(raw: string): GeminiOut | null {
   } catch { return null; }
 }
 
+/** Redondeo a 2 decimales — el display puede mostrar fracciones (ej. 812.5 kg). */
+function round2(n: number): number {
+  return Math.round(n * 100) / 100;
+}
+
+const GEMINI_TIMEOUT_MS = 45_000;
+
 async function invocarGemini(apiKey: string, modelo: string, prompt: string, mime: string, b64: string): Promise<GeminiOut | null> {
-  const r = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${apiKey}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ role: "user", parts: [
-          { text: prompt },
-          { inline_data: { mime_type: mime, data: b64 } },
-        ]}],
-        generationConfig: { temperature: 0, responseMimeType: "application/json" },
-      }),
-    },
-  );
-  if (!r.ok) throw new Error(`HTTP ${r.status}`);
-  const gj = await r.json();
-  const text: string = gj?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
-  return parseGeminiJson(text);
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), GEMINI_TIMEOUT_MS);
+  try {
+    const r = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        signal: ctrl.signal,
+        body: JSON.stringify({
+          contents: [{ role: "user", parts: [
+            { text: prompt },
+            { inline_data: { mime_type: mime, data: b64 } },
+          ]}],
+          // maxOutputTokens acota la generación (el JSON es corto) y recorta latencia.
+          generationConfig: {
+            temperature: 0,
+            responseMimeType: "application/json",
+            maxOutputTokens: 700,
+            candidateCount: 1,
+          },
+        }),
+      },
+    );
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const gj = await r.json();
+    const text: string = gj?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+    return parseGeminiJson(text);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** Invoca con el modelo cacheado; si el modelo ya no existe, descubre y reintenta una vez. */
+async function invocarGeminiConFallback(
+  apiKey: string, prompt: string, mime: string, b64: string, requestId: string,
+): Promise<{ out: GeminiOut | null; modelo: string }> {
+  const modelo = MODELO_CACHE ?? MODELO_PREFERENCIA[0];
+  try {
+    return { out: await invocarGemini(apiKey, modelo, prompt, mime, b64), modelo };
+  } catch (e) {
+    const msg = (e as Error).message;
+    if (!/HTTP (400|403|404)/.test(msg)) throw e;
+    const nuevo = await descubrirModeloGemini(apiKey, requestId);
+    if (!nuevo) throw e;
+    MODELO_CACHE = nuevo;
+    console.log(`[${requestId}] modelo re-descubierto: ${nuevo}`);
+    return { out: await invocarGemini(apiKey, nuevo, prompt, mime, b64), modelo: nuevo };
+  }
 }
 
 // --------- Evaluación y prioridad -----------------------------------
@@ -285,13 +326,18 @@ function evaluar(g1: GeminiOut, g2: GeminiOut | null): Analisis {
     requiereConfirmacion: true, unidadAsumidaPorConfiguracion: true };
 }
 
+// La segunda revisión duplica el tiempo de respuesta: se reserva SÓLO para los
+// casos en que realmente aporta (duda de decimal, dígitos tapados, lectura
+// pobre o fuera de rango). Un reflejo leve o varios candidatos con una lectura
+// de alta confianza ya no disparan una segunda llamada.
 function requiereSegundaRevision(g: GeminiOut): boolean {
-  if (g.requiereSegundaRevision) return true;
   const c = g.confianzaGeneral;
-  if (c >= 60 && c < 88) return true;
+  if (g.decimalDudoso || g.digitosCubiertos) return true;
+  if (c < 82) return true;
   if (g.pesoPrincipal != null && (g.pesoPrincipal < MIN_PESO_BRUTO_KG || g.pesoPrincipal > MAX_PESO_BRUTO_KG)) return true;
-  if (g.decimalDudoso || g.reflejo || g.digitosCubiertos) return true;
-  if ((g.candidatos ?? []).length > 1) return true;
+  // Candidatos discrepantes con la lectura principal.
+  const disc = (g.candidatos ?? []).some((k) => k.peso != null && g.pesoPrincipal != null && Math.abs(k.peso - g.pesoPrincipal) > 0.5);
+  if (disc && c < 92) return true;
   return false;
 }
 
@@ -363,9 +409,10 @@ Deno.serve(async (req) => {
 
     // --------- Rama de CONFIRMACIÓN (usuario ya validó lectura) --------
     if (pesoConfirmadoKg != null) {
-      const bruto = Math.round(pesoConfirmadoKg);
+      // Se conservan los decimales del display (columnas numeric(10,2)).
+      const bruto = round2(pesoConfirmadoKg);
       const tara = taraPorMaquina(maq.codigo);
-      const neto = bruto - tara;
+      const neto = round2(bruto - tara);
       if (neto <= 0) {
         return json({ status: "confirm", reasonCode: "GROSS_WEIGHT_BELOW_TARE",
           message: "El peso confirmado no permite calcular un peso neto válido. Verifica el display.",
@@ -410,14 +457,13 @@ Deno.serve(async (req) => {
     const b64 = base64Encode(buf);
     const mime = fileData.type || "image/jpeg";
 
-    const modelo = await elegirModeloGemini(geminiKey, requestId);
-    if (!modelo) {
-      return json({ status: "technical_error", reasonCode: "TECHNICAL_ERROR",
-        message: "No fue posible procesar la fotografía. Intenta nuevamente.", requestId }, 502);
-    }
-
+    
     let g1: GeminiOut | null;
-    try { g1 = await invocarGemini(geminiKey, modelo, PROMPT_BASE, mime, b64); }
+    let modelo = MODELO_CACHE ?? MODELO_PREFERENCIA[0];
+    try {
+      const r1 = await invocarGeminiConFallback(geminiKey, PROMPT_BASE, mime, b64, requestId);
+      g1 = r1.out; modelo = r1.modelo;
+    }
     catch (e) {
       console.log(`[${requestId}] gemini-1 fail ${(e as Error).message}`);
       return json({ status: "technical_error", reasonCode: "TECHNICAL_ERROR",
@@ -430,7 +476,7 @@ Deno.serve(async (req) => {
         unidadAsumidaPorConfiguracion: true, requiereConfirmacion: false, modelo, requestId }, 200);
     }
 
-    // Segunda revisión automática si aplica
+    // Segunda revisión automática sólo cuando aporta valor (ver requiereSegundaRevision)
     let g2: GeminiOut | null = null;
     if (requiereSegundaRevision(g1)) {
       try { g2 = await invocarGemini(geminiKey, modelo, promptSegundaRevision(g1, maq.codigo), mime, b64); }
@@ -461,8 +507,8 @@ Deno.serve(async (req) => {
           requiereConfirmacion: true, modelo, requestId }, 200);
       }
 
-      const bruto = Math.round(analisis.pesoDetectado);
-      const neto = bruto - tara;
+      const bruto = round2(analisis.pesoDetectado);
+      const neto = round2(bruto - tara);
       let ordenProduccionId: string | null = null;
       if (numeroOrden) {
         const { data: ord } = await admin.from("ordenes_produccion")
