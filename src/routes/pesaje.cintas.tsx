@@ -147,7 +147,7 @@ function PesajeCintasPage() {
 
   const siguientePos = useMemo(() => {
     if (!lote) return 0;
-    if (cintas.length >= 12) return 0;
+    if (cintas.length >= 20) return 0;
     return cintas.length + 1;
   }, [lote, cintas.length]);
 
@@ -376,7 +376,7 @@ function PesajeCintasPage() {
         <>
           <div className="grid gap-3 md:grid-cols-5">
             <Card k="Neto rollo de origen" v={`${n(netoBM)} kg`} />
-            <Card k="Cintas registradas" v={`${cintas.length} / 12`} />
+            <Card k="Cintas registradas" v={`${cintas.length} / 20`} />
             <Card k="Peso acumulado" v={`${n(totalCintas)} kg`} />
             <Card k={merma == null ? "Peso pendiente" : "Merma real"} v={`${n(merma == null ? pendiente : merma)} kg`} highlight={merma != null} />
             <Card k="% merma real" v={mermaPct == null ? "—" : `${n(mermaPct, 2)} %`} />
@@ -421,9 +421,9 @@ function PesajeCintasPage() {
               </div>
             </div>
 
-            {/* Grid de 12 posiciones */}
+            {/* Grid de 20 posiciones */}
             <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-4">
-              {Array.from({ length: 12 }, (_, i) => i + 1).map((pos) => {
+              {Array.from({ length: 20 }, (_, i) => i + 1).map((pos) => {
                 const c = cintas.find((x) => x.posicion === pos);
                 const habilitada = !c && pos === siguientePos && lote.estado === "abierto";
                 return (
