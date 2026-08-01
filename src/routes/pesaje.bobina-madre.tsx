@@ -373,14 +373,71 @@ function PesajeBobinaPage() {
     return { token: token!, uid: uid! };
   }
 
+  /**
+   * Llamada DIRECTA por fetch al endpoint de la función (sin supabase.functions.invoke).
+   * Motivo: invoke oculta el cuerpo de error y cualquier corte de red se reporta como
+   * "Failed to send a request to the Edge Function". Aquí:
+   *  - timeout explícito de 150s (el OCR puede tardar en tablet con red lenta),
+   *  - reintento automático ante fallo de red,
+   *  - reintento con token refrescado ante 401,
+   *  - se lee SIEMPRE el cuerpo JSON aunque el status no sea 2xx.
+   */
+  async function postEdge(token: string, uid: string, payload: Record<string, unknown>, timeoutMs = 150_000) {
+    const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${EDGE_FUNCTION_NAME}`;
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+    try {
+      const r = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string,
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ ...payload, userId: uid }),
+        signal: ctrl.signal,
+        keepalive: false,
+      });
+      const text = await r.text();
+      let parsed: unknown = null;
+      try { parsed = text ? JSON.parse(text) : null; } catch { parsed = null; }
+      return { httpStatus: r.status, data: parsed as EdgeResponse | null, raw: text };
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
   async function invocarEdgeConAuth(payload: Record<string, unknown>) {
     let { token, uid } = await obtenerTokenValido();
-    let resp = await supabase.functions.invoke(EDGE_FUNCTION_NAME, {
-      headers: { Authorization: `Bearer ${token}` },
-      body: { ...payload, userId: uid },
-    });
-    const errMsg = resp.error?.message ?? "";
-    if (resp.error && /401|non-2xx|autentic/i.test(errMsg)) {
+
+    let out: Awaited<ReturnType<typeof postEdge>> | null = null;
+    let netErr: unknown = null;
+
+    for (let intento = 1; intento <= 2; intento++) {
+      try {
+        out = await postEdge(token, uid, payload);
+        netErr = null;
+        break;
+      } catch (e) {
+        netErr = e;
+        logDiagnosticoPesaje("edge-network-retry", {
+          intento,
+          error: e instanceof Error ? `${e.name}: ${e.message}` : String(e),
+        });
+        if (intento < 2) await new Promise((r) => setTimeout(r, 1200));
+      }
+    }
+
+    if (!out) {
+      const isAbort = netErr instanceof Error && netErr.name === "AbortError";
+      throw new Error(
+        isAbort
+          ? "La lectura tardó demasiado. Verifica la conexión Wi-Fi de la tablet y vuelve a intentar."
+          : "Sin conexión con el servicio de lectura. Revisa la red de la tablet y vuelve a intentar.",
+      );
+    }
+
+    if (out.httpStatus === 401) {
       const { data: refreshed, error: refErr } = await supabase.auth.refreshSession();
       if (refErr || !refreshed.session?.access_token) {
         await supabase.auth.signOut().catch(() => {});
@@ -389,13 +446,25 @@ function PesajeBobinaPage() {
       token = refreshed.session.access_token;
       uid = refreshed.session.user.id;
       logDiagnosticoPesaje("token-refresh-retry", { userId: uid, tokenLength: token.length });
-      resp = await supabase.functions.invoke(EDGE_FUNCTION_NAME, {
-        headers: { Authorization: `Bearer ${token}` },
-        body: { ...payload, userId: uid },
-      });
+      out = await postEdge(token, uid, payload);
     }
+
+    logDiagnosticoPesaje("edge-http", { httpStatus: out.httpStatus, hasJson: !!out.data });
+
+    // Se conserva la forma { data, error } que esperan los llamadores.
+    const resp = {
+      data: out.data,
+      error: out.data
+        ? null
+        : new Error(
+            out.httpStatus >= 500
+              ? "El servicio de lectura no respondió correctamente. Intenta nuevamente."
+              : `Respuesta inválida del servicio (HTTP ${out.httpStatus}).`,
+          ),
+    };
     return { resp, uid };
   }
+
 
   type EdgeResponse = {
     status: "accepted" | "confirm" | "retake" | "technical_error";
