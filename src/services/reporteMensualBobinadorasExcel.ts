@@ -528,7 +528,7 @@ export async function generarReporteMensualBobinadoras(
           if (c?.estado === "anulada") {
             cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: COLOR.grisAnulada } };
             cell.numFmt = "General";
-            cell.note = `Anulada: ${c.observaciones ?? "sin motivo registrado"}`;
+            // El motivo de anulación se documenta en la hoja Trazabilidad.
           } else if (!c) {
             if (it.lote.estado === "abierto") {
               cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: COLOR.amarillo } };
@@ -582,7 +582,7 @@ export async function generarReporteMensualBobinadoras(
       rr++;
     }
 
-    hoja.pageSetup.printArea = `A1:${lastCol}${rr - 1}`;
+    // Sin printArea explícito: fitToPage/printTitlesRow definen el área impresa.
   }
 
   // ───────────────────── Hoja Trazabilidad ─────────────────────
@@ -637,7 +637,7 @@ export async function generarReporteMensualBobinadoras(
   }
 
   tz.addTable({
-    name: "Trazabilidad",
+    name: "TablaTrazabilidad",
     ref: "A1",
     headerRow: true,
     style: { theme: "TableStyleMedium2", showRowStripes: true },
