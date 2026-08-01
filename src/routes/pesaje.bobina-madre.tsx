@@ -141,6 +141,8 @@ function PesajeBobinaPage() {
   const [numeroOrden, setNumeroOrden] = useState("");
   const [maquinaId, setMaquinaId] = useState<string>("");
   const [numeroRollo, setNumeroRollo] = useState("");
+  const [pesoManual, setPesoManual] = useState("");
+
 
   const [evidenciaFile, setEvidenciaFile] = useState<File | null>(null);
   const [evidenciaPreview, setEvidenciaPreview] = useState<string | null>(null);
