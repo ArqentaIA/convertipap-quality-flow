@@ -582,7 +582,7 @@ export async function generarReporteMensualBobinadoras(
       rr++;
     }
 
-    hoja.pageSetup.printArea = `$A$1:$${lastCol}$${rr - 1}`;
+    // Sin printArea explícito: fitToPage/printTitlesRow definen el área impresa.
   }
 
   // ───────────────────── Hoja Trazabilidad ─────────────────────
