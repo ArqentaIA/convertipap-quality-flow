@@ -347,7 +347,34 @@ function PesajeCintasPage() {
 
   return (
     <div className="w-full space-y-4 p-4">
+      {/* Reporte mensual */}
+      <div className="flex flex-wrap items-end justify-between gap-3 rounded-lg border border-border bg-card p-4">
+        <div>
+          <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Reporte mensual de bobinadoras
+          </div>
+          <label className="mb-1 block text-[11px] text-muted-foreground">Mes del reporte</label>
+          <input
+            type="month"
+            className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+            value={reportMonth}
+            max={new Date().toISOString().slice(0, 7)}
+            onChange={(e) => setReportMonth(e.target.value)}
+            disabled={generandoReporte}
+          />
+        </div>
+        <button
+          onClick={onGenerarReporte}
+          disabled={generandoReporte || !reportMonth}
+          className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+        >
+          {generandoReporte ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileSpreadsheet className="h-4 w-4" />}
+          {generandoReporte ? "Generando…" : "Generar Reporte"}
+        </button>
+      </div>
+
       {/* Buscador */}
+
       <div className="rounded-lg border border-border bg-card p-4">
         <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">1 · Rollo de origen</div>
         <div className="flex flex-wrap gap-2">
