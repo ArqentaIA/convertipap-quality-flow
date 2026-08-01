@@ -205,14 +205,8 @@ function sanitizeSheetName(base: string, usados: Set<string>): string {
   return fin;
 }
 
-async function logoBase64(): Promise<string> {
-  const res = await fetch(logoUrl);
-  const buf = await res.arrayBuffer();
-  let bin = "";
-  const bytes = new Uint8Array(buf);
-  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
-  return btoa(bin);
-}
+
+
 
 // ------------------------------ Generación --------------------------------- //
 
