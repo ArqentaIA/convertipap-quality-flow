@@ -1043,6 +1043,7 @@ function CintaCard({ pos, cinta, habilitada, disponibleKg, onRegistrar, onAnular
         <div>
           <label className="mb-0.5 block text-[11px] text-muted-foreground">Ancho útil (cm) *</label>
           <input
+            ref={anchoRef}
             type="number" inputMode="decimal" step="0.01"
             value={ancho}
             onChange={(e) => setAncho(e.target.value)}
