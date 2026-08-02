@@ -911,10 +911,11 @@ type CintaCardProps = {
   onRegistrar: (peso: number, uniones: number, ancho: number, obs: string) => Promise<void>;
   onAnular?: () => void;
   onCorregir?: () => void;
+  onReimprimir?: () => void;
   saving: boolean;
 };
 
-function CintaCard({ pos, cinta, habilitada, disponibleKg, onRegistrar, onAnular, onCorregir, saving }: CintaCardProps) {
+function CintaCard({ pos, cinta, habilitada, disponibleKg, onRegistrar, onAnular, onCorregir, onReimprimir, saving }: CintaCardProps) {
   const [peso, setPeso] = useState("");
   const [uniones, setUniones] = useState("0");
   const [ancho, setAncho] = useState("");
