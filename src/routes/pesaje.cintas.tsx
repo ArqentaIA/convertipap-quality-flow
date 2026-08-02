@@ -778,12 +778,10 @@ function PesajeCintasPage() {
       {/* Lote activo */}
       {lote && (
         <>
-          <div className="grid gap-3 md:grid-cols-6">
+          <div className="grid gap-3 md:grid-cols-5">
             <Card k="Neto rollo de origen" v={`${n(netoBM)} kg`} />
             <Card k="Cintas registradas" v={`${cintas.length} / 20`} />
             <Card k="Peso acumulado" v={`${n(totalCintas)} kg`} />
-            <Card k="TOTAL DE UNIONES DE CINTAS" v={String(totalUnionesCintas)} highlight />
-
             <Card
               k="MERMA POR SISTEMA"
               v={`${n(merma == null ? pendiente : merma)} kg${mermaPct == null ? "" : ` · ${n(mermaPct, 2)} %`}`}
