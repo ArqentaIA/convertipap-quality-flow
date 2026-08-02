@@ -1,0 +1,1 @@
+ALTER FUNCTION public.buscar_contexto_rollo_cintas(text) VOLATILE;
