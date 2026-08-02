@@ -116,6 +116,23 @@ function limpio(v: string | null | undefined): string | null {
   return SIN_DATOS.test(v) ? null : v;
 }
 
+/** Número visible de la etiqueta: <rollo original>-C<posición de la cinta>. */
+export function buildNumeroRolloEtiqueta(numeroRollo: string, posicion: number): string {
+  return `${numeroRollo}-C${posicion}`;
+}
+
+/**
+ * Total de uniones del lote: suma de `uniones` de todas las cintas vigentes
+ * (estado `registrada`); excluye anuladas y sustituidas e incluye la cinta que
+ * se está imprimiendo.
+ */
+export function calcularTotalUniones(cintas: EtiquetaCinta[]): number {
+  return cintas
+    .filter((c) => (c.estado ?? "registrada") === "registrada")
+    .reduce((acc, c) => acc + (Number(c.uniones) || 0), 0);
+}
+
+
 export function buildCintaLabelData(snap: EtiquetaSnapshot, cinta: EtiquetaCinta): CintaLabelData {
   const dc = snap.datos_calidad ?? {};
   const origen: "sistema" | "captura_manual" =
