@@ -265,10 +265,10 @@ export async function generarReporteMensualBobinadoras(
     ["Total de cintas registradas", cintasTotal],
     ["Peso total de rollos de origen (kg)", Number(netoTotal.toFixed(2))],
     ["Producción total de cintas (kg)", Number(prodTotal.toFixed(2))],
-    ["Merma calculada total (kg)", Number(mermaCalcTotal.toFixed(2))],
-    ["Merma calculada (%)", netoTotal > 0 ? mermaCalcTotal / netoTotal : 0],
-    ["Merma real total (kg)", Number(mermaRealTotal.toFixed(2))],
-    ["Diferencia merma real - calculada (kg)", Number((mermaRealTotal - mermaCalcTotal).toFixed(2))],
+    ["Merma por Sistema total (kg)", Number(mermaCalcTotal.toFixed(2))],
+    ["Merma por Sistema (%)", netoTotal > 0 ? mermaCalcTotal / netoTotal : 0],
+    ["Merma por Peso total (kg)", Number(mermaRealTotal.toFixed(2))],
+    ["Diferencia Merma por Peso - Sistema (kg)", Number((mermaRealTotal - mermaCalcTotal).toFixed(2))],
     ["Total de uniones", unionesTotal],
     ["Lotes finalizados", rollos.filter((r) => r.estadoInfo === "FINALIZADO").length],
     ["Lotes en proceso", rollos.filter((r) => r.estadoInfo === "MERMA PROVISIONAL").length],
@@ -284,7 +284,7 @@ export async function generarReporteMensualBobinadoras(
     ws.mergeCells(`D${row}:F${row}`);
     const c = ws.getCell(`D${row}`);
     c.value = v;
-    if (k === "Merma calculada (%)") c.numFmt = "0.00%";
+    if (k === "Merma por Sistema (%)") c.numFmt = "0.00%";
     else if (typeof v === "number" && k.includes("kg")) c.numFmt = "#,##0.00";
     c.font = { size: 10 };
     c.alignment = { horizontal: "left", vertical: "middle" };
@@ -298,7 +298,7 @@ export async function generarReporteMensualBobinadoras(
   const heads = [
     "Fecha operativa", "Planta", "Bobinadora", "Turno", "Clave producto", "Nombre producto",
     "Rollos", "Cintas", "Peso rollos (kg)", "Producción (kg)", "Merma calc. (kg)", "Merma calc. (%)",
-    "Merma real (kg)", "Dif. merma (kg)", "Uniones", "Estado información",
+    "Merma por Peso (kg)", "Dif. merma (kg)", "Uniones", "Estado información",
   ];
   ws.getRow(headRow).values = heads;
   for (let i = 1; i <= heads.length; i++) {
@@ -550,9 +550,9 @@ export async function generarReporteMensualBobinadoras(
       ["Subtotal posiciones 16–20 (kg)", { formula: `SUM(S${firstData}:W${lastData})`, result: Number(sub(16, 20).toFixed(2)) }, "#,##0.00"],
       ["Producción acumulada (kg)", Number(prod.toFixed(2)), "#,##0.00"],
       ["Peso total de rollos de origen (kg)", { formula: `SUM(B${firstData}:B${lastData})`, result: Number(neto.toFixed(2)) }, "#,##0.00"],
-      ["Merma calculada (kg)", Number((neto - prod).toFixed(2)), "#,##0.00"],
-      ["Merma calculada (%)", neto > 0 ? (neto - prod) / neto : 0, "0.00%"],
-      ["Merma real (kg)", Number(real.toFixed(2)), "#,##0.00"],
+      ["Merma por Sistema (kg)", Number((neto - prod).toFixed(2)), "#,##0.00"],
+      ["Merma por Sistema (%)", neto > 0 ? (neto - prod) / neto : 0, "0.00%"],
+      ["Merma por Peso (kg)", Number(real.toFixed(2)), "#,##0.00"],
       ["Diferencia de merma (kg)", Number((real - (neto - prod)).toFixed(2)), "#,##0.00"],
       ["Total de uniones", items.reduce((a, i) => a + i.uniones, 0)],
       ["Estado de la información", [...new Set(items.map((i) => i.estadoInfo))].join(" / ")],
@@ -585,7 +585,7 @@ export async function generarReporteMensualBobinadoras(
     "Operador", "Analista", "Supervisor", "Fabricación", "Clave producto", "Nombre producto",
     "ID cinta", "Posición", "Ancho", "Peso (kg)", "Uniones", "Estado cinta", "Motivo anulación",
     "Registro (fecha/hora)", "Usuario registró", "Estado lote", "Finalización",
-    "Peso producido rollo (kg)", "Merma calculada (kg)", "Merma calculada (%)", "Merma real (kg)",
+    "Peso producido rollo (kg)", "Merma por Sistema (kg)", "Merma por Sistema (%)", "Merma por Peso (kg)",
     "Diferencia merma (kg)", "Observación", "Generado", "Usuario que generó",
   ];
   const filasTz: unknown[][] = [];
