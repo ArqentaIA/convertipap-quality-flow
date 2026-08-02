@@ -966,9 +966,14 @@ function CintaCard({ pos, cinta, habilitada, disponibleKg, onRegistrar, onAnular
   const [uniones, setUniones] = useState("0");
   const [ancho, setAncho] = useState("");
   const [obs, setObs] = useState("");
+  const anchoRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (habilitada) { setPeso(""); setUniones("0"); setAncho(""); setObs(""); }
+    if (habilitada) {
+      setPeso(""); setUniones("0"); setAncho(""); setObs("");
+      // Posicionar el cursor en Ancho útil para la siguiente captura.
+      anchoRef.current?.focus();
+    }
   }, [habilitada]);
 
   if (cinta) {
@@ -1038,6 +1043,7 @@ function CintaCard({ pos, cinta, habilitada, disponibleKg, onRegistrar, onAnular
         <div>
           <label className="mb-0.5 block text-[11px] text-muted-foreground">Ancho útil (cm) *</label>
           <input
+            ref={anchoRef}
             type="number" inputMode="decimal" step="0.01"
             value={ancho}
             onChange={(e) => setAncho(e.target.value)}
