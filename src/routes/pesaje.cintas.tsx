@@ -784,29 +784,67 @@ function PesajeCintasPage() {
             <Card k="TOTAL DE UNIONES DE CINTAS" v={String(totalUnionesCintas)} highlight />
 
             <Card
-              k="MERMA CALCULA SISTEMA"
+              k="MERMA POR SISTEMA"
               v={`${n(merma == null ? pendiente : merma)} kg${mermaPct == null ? "" : ` · ${n(mermaPct, 2)} %`}`}
             />
             {lote.estado === "finalizado" ? (
-              <Card k="MERMA REAL (operador)" v={lote.merma_real_kg == null ? "—" : `${n(lote.merma_real_kg)} kg`} highlight />
+              <Card
+                k="MERMA POR PESO"
+                v={
+                  lote.merma_real_kg == null
+                    ? "No registrada"
+                    : `${n(lote.merma_real_kg)} kg${netoBM > 0 ? ` · ${n((lote.merma_real_kg / netoBM) * 100, 2)} %` : ""}`
+                }
+                highlight
+              />
             ) : (
-              <div className="rounded-lg border border-primary/40 bg-primary/5 p-3">
-                <div className="mb-1 text-xs uppercase tracking-wide text-muted-foreground">Merma real (kg) *</div>
-                <input
-                  type="number"
-                  inputMode="decimal"
-                  step="0.01"
-                  min={0}
-                  max={netoBM || undefined}
-                  value={mermaRealInput}
-                  onChange={(e) => setMermaRealInput(e.target.value)}
-                  placeholder="0.00"
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-lg font-semibold"
-                />
-                <div className="mt-1 text-[11px] text-muted-foreground">Obligatoria para finalizar</div>
-              </div>
+              <Card
+                k="MERMA POR PESO"
+                v={
+                  hayCaptura && compsValidos
+                    ? `${n(mermaPorPesoKg)} kg${mermaPorPesoPct == null ? "" : ` · ${n(mermaPorPesoPct, 2)} %`}`
+                    : lote.merma_real_kg == null
+                      ? "No registrada"
+                      : `${n(lote.merma_real_kg)} kg (guardada)`
+                }
+                highlight
+              />
             )}
           </div>
+
+          {lote.estado === "abierto" && (
+            <div className="rounded-lg border border-primary/40 bg-primary/5 p-4">
+              <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Captura de Merma por Peso (componentes temporales, no se guardan por separado)
+              </div>
+              <div className="grid gap-3 sm:grid-cols-3">
+                {([
+                  ["Merma Capa (kg)", mermaCapa, setMermaCapa],
+                  ["Merma Proceso (kg)", mermaProceso, setMermaProceso],
+                  ["Merma Gallo (kg)", mermaGallo, setMermaGallo],
+                ] as const).map(([label, val, set]) => (
+                  <div key={label}>
+                    <div className="mb-1 text-xs text-muted-foreground">{label}</div>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      step="0.01"
+                      min={0}
+                      value={val}
+                      onChange={(e) => set(e.target.value)}
+                      placeholder="0.00"
+                      className="w-full rounded-md border border-input bg-background px-3 py-2 font-semibold"
+                    />
+                  </div>
+                ))}
+              </div>
+              <div className="mt-2 text-sm font-semibold">
+                Merma por Peso:{" "}
+                {compsValidos ? `${n(mermaPorPesoKg)} kg` : <span className="text-destructive">valores inválidos</span>}
+              </div>
+              <div className="mt-1 text-[11px] text-muted-foreground">Obligatoria para finalizar el lote.</div>
+            </div>
+          )}
 
 
           <div className="rounded-lg border border-border bg-card p-4">
