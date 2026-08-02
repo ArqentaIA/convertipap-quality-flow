@@ -4,11 +4,11 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Loader2, Search, Printer, CheckCircle2, Ban, Lock, Unlock, Pencil, UserCog, FileSpreadsheet } from "lucide-react";
+import { Loader2, Search, Printer, CheckCircle2, Ban, Lock, Pencil, UserCog, FileSpreadsheet } from "lucide-react";
 import {
   buscarContextoRollo, listConductores, listBobinadoras,
   crearLote, crearLoteManualV2, guardarOrdenManual, obtenerLoteYCintas, registrarCinta, corregirCinta, anularCinta,
-  finalizarLote, reabrirLote, prepararImpresion, actualizarDatosOperativos,
+  finalizarLote, prepararImpresion, actualizarDatosOperativos,
   obtenerReporteMensualCintas,
   type ContextoRollo, type CintaRegistrada, type LoteCintas,
 } from "@/lib/pesaje-cintas.functions";
@@ -52,7 +52,6 @@ function PesajeCintasPage() {
   const corregir = useServerFn(corregirCinta);
   const anular = useServerFn(anularCinta);
   const finalizar = useServerFn(finalizarLote);
-  const reabrir = useServerFn(reabrirLote);
   const preparar = useServerFn(prepararImpresion);
   const actualizarOp = useServerFn(actualizarDatosOperativos);
 
@@ -419,21 +418,6 @@ function PesajeCintasPage() {
       toast.success("Rollo finalizado.");
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "Error al finalizar.");
-    }
-  }
-
-  async function onReabrir() {
-    if (!lote) return;
-    if (cintas.length >= 20) { toast.error("El lote ya tiene el máximo de 20 cintas."); return; }
-    const motivo = window.prompt("Motivo para agregar cintas al rollo finalizado (mínimo 5 caracteres):") ?? "";
-    if (motivo.trim().length < 5) { toast.error("Motivo requerido."); return; }
-    try {
-      await reabrir({ data: { lote_id: lote.id, motivo: motivo.trim() } });
-      setMermaCapa(""); setMermaProceso(""); setMermaGallo("");
-      await qc.invalidateQueries({ queryKey: ["cintas-lote", lote.id] });
-      toast.success("Rollo reabierto. Puede registrar cintas adicionales.");
-    } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Error al reabrir el rollo.");
     }
   }
 
@@ -878,28 +862,21 @@ function PesajeCintasPage() {
                   </button>
                 )}
                 {lote.estado === "finalizado" && (
-                  <>
-                    {cintas.length < 20 && (
-                      <button
-                        onClick={onReabrir}
-                        className="flex items-center gap-2 rounded-md border border-primary/40 bg-primary/10 px-3 py-2 text-sm font-medium text-primary hover:bg-primary/20"
-                      >
-                        <Unlock className="h-4 w-4" /> Agregar cintas
-                      </button>
-                    )}
-                    <span className="flex items-center gap-1 rounded-md bg-success/15 px-3 py-2 text-sm font-medium text-success">
-                      <Lock className="h-4 w-4" /> Finalizado
-                    </span>
-                  </>
+                  <span className="flex items-center gap-1 rounded-md bg-success/15 px-3 py-2 text-sm font-medium text-success">
+                    <Lock className="h-4 w-4" /> Finalizado · solo consulta e impresión
+                  </span>
                 )}
+
 
               </div>
             </div>
 
 
-            {/* Grid de 20 posiciones */}
+            {/* Grid de 20 posiciones (en lote finalizado solo se muestran las registradas) */}
             <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-4">
-              {Array.from({ length: 20 }, (_, i) => i + 1).map((pos) => {
+              {Array.from({ length: 20 }, (_, i) => i + 1)
+                .filter((pos) => lote.estado === "abierto" || cintas.some((x) => x.posicion === pos))
+                .map((pos) => {
                 const c = cintas.find((x) => x.posicion === pos);
                 const habilitada = !c && pos === siguientePos && lote.estado === "abierto";
                 return (
@@ -910,7 +887,8 @@ function PesajeCintasPage() {
                     habilitada={habilitada}
                     disponibleKg={netoBM - totalCintas}
                     onRegistrar={onRegistrar}
-                    onAnular={c ? () => onAnular(c.id) : undefined}
+                    onAnular={c && lote.estado === "abierto" ? () => onAnular(c.id) : undefined}
+
                     onCorregir={c && lote.estado === "abierto" ? () => onCorregir(c) : undefined}
                     onReimprimir={c ? () => onReimprimirCinta(c) : undefined}
                     saving={saving || imprimiendo}
