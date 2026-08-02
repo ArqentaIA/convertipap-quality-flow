@@ -76,8 +76,10 @@ export type CintaRegistrada = {
   ancho_util_unidad: string | null;
   observaciones: string | null;
   estado: "registrada" | "sustituida" | "anulada";
+  version_etiqueta: number | null;
   created_at: string;
 };
+
 
 export type LoteCintas = {
   id: string;
