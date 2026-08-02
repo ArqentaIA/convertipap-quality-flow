@@ -79,6 +79,7 @@ export type CintaLabelData = {
   origen_rollo: "sistema" | "captura_manual";
   es_manual: boolean;
   numero_rollo: string;
+  numero_rollo_etiqueta: string;
   orden_produccion: string | null;
   peso_neto_rollo_kg: number | null;
   diametro_rollo_cm: number | null;
