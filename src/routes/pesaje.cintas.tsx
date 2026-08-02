@@ -947,6 +947,15 @@ function CintaCard({ pos, cinta, habilitada, disponibleKg, onRegistrar, onAnular
               <Pencil className="h-3 w-3" /> Corregir
             </button>
           )}
+          {onReimprimir && (
+            <button
+              onClick={onReimprimir}
+              disabled={saving}
+              className="flex items-center gap-1 text-xs text-foreground hover:underline disabled:opacity-50"
+            >
+              <Printer className="h-3 w-3" /> Reimprimir
+            </button>
+          )}
           {onAnular && (
             <button
               onClick={onAnular}
@@ -956,6 +965,7 @@ function CintaCard({ pos, cinta, habilitada, disponibleKg, onRegistrar, onAnular
             </button>
           )}
         </div>
+
       </div>
     );
   }
