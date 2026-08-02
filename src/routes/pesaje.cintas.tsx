@@ -106,11 +106,20 @@ function PesajeCintasPage() {
   const lote: LoteCintas | null = loteQ.data?.lote ?? null;
   const cintas: CintaRegistrada[] = (loteQ.data?.cintas ?? []).filter((c) => c.estado === "registrada");
 
+  const origenManual = (() => {
+    const snap = lote?.datos_calidad_snapshot as
+      | { datos_origen?: { diametro_cm?: number | null; uniones?: number | null } }
+      | null
+      | undefined;
+    const o = snap && typeof snap === "object" ? snap.datos_origen : null;
+    return { diametro: o?.diametro_cm ?? null, uniones: o?.uniones ?? null };
+  })();
+
   async function onBuscar() {
     const rollo = rolloInput.trim();
     if (!rollo) { toast.error("Ingrese un número de rollo."); return; }
     setBuscando(true);
-    setContexto(null); setLoteId(null); setManual(null); setManualOpen(false);
+    setContexto(null); setLoteId(null); setManualOpen(false);
     try {
       const ctx = await buscar({ data: { numero_rollo: rollo } });
       if (!ctx) {
@@ -819,11 +828,12 @@ function PesajeCintasPage() {
 }
 
 
-function Field({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
+function Field({ label, value, highlight, hint }: { label: string; value: string; highlight?: boolean; hint?: string }) {
   return (
     <div>
       <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</div>
       <div className={`min-h-5 text-sm ${highlight ? "text-base font-bold text-primary" : "font-medium text-foreground"}`}>{value}</div>
+      {hint && <div className="text-[10px] text-muted-foreground">{hint}</div>}
     </div>
   );
 }
