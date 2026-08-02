@@ -878,20 +878,11 @@ function PesajeCintasPage() {
                   </button>
                 )}
                 {lote.estado === "finalizado" && (
-                  <>
-                    {cintas.length < 20 && (
-                      <button
-                        onClick={onReabrir}
-                        className="flex items-center gap-2 rounded-md border border-primary/40 bg-primary/10 px-3 py-2 text-sm font-medium text-primary hover:bg-primary/20"
-                      >
-                        <Unlock className="h-4 w-4" /> Agregar cintas
-                      </button>
-                    )}
-                    <span className="flex items-center gap-1 rounded-md bg-success/15 px-3 py-2 text-sm font-medium text-success">
-                      <Lock className="h-4 w-4" /> Finalizado
-                    </span>
-                  </>
+                  <span className="flex items-center gap-1 rounded-md bg-success/15 px-3 py-2 text-sm font-medium text-success">
+                    <Lock className="h-4 w-4" /> Finalizado · solo consulta e impresión
+                  </span>
                 )}
+
 
               </div>
             </div>
