@@ -900,20 +900,6 @@ function PesajeCintasPage() {
               </div>
             </div>
 
-            {/* Área de impresión */}
-            <div className="mb-4 rounded-md border border-border bg-muted/30 p-3 text-xs">
-              <div className="grid gap-1 sm:grid-cols-2 lg:grid-cols-4">
-                <div>Cintas vigentes: <b className="text-foreground">{cintas.length}</b></div>
-                <div>Etiquetas a generar: <b className="text-foreground">{cintas.length}</b></div>
-                <div>Total de uniones de cintas: <b className="text-foreground">{totalUnionesCintas}</b></div>
-                <div>Origen del rollo: <b className="text-foreground">{origenManual.origen === "sistema" ? "Sistema" : "Captura manual"}</b></div>
-              </div>
-              {cintasExcluidas > 0 && (
-                <div className="mt-2 text-warning">
-                  {cintasExcluidas} cinta(s) anulada(s)/sustituida(s) excluidas de la impresión.
-                </div>
-              )}
-            </div>
 
             {/* Grid de 20 posiciones */}
             <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-4">
