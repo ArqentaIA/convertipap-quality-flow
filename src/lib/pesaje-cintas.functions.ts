@@ -190,6 +190,43 @@ export const crearLoteManual = createServerFn({ method: "POST" })
     return { lote_id: id as unknown as string };
   });
 
+export const crearLoteManualV2 = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({
+    numero_rollo: z.string().trim().min(1).max(64),
+    peso_neto_kg: z.number().positive().max(3000),
+    diametro_cm: z.number().positive().max(1000),
+    uniones: z.number().int().min(0).max(999),
+    orden_manual: z.string().trim().max(64).optional().nullable(),
+    idempotency_key: z.string().uuid(),
+  }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { data: id, error } = await context.supabase.rpc("crear_lote_pesaje_cintas_manual_v2", {
+      _numero_rollo: data.numero_rollo,
+      _peso_neto_kg: data.peso_neto_kg,
+      _diametro_cm: data.diametro_cm,
+      _uniones: data.uniones,
+      _orden_manual: (data.orden_manual ?? "") as string,
+      _idempotency: data.idempotency_key,
+    });
+    if (error) throw new Error(error.message);
+    return { lote_id: id as unknown as string };
+  });
+
+export const guardarOrdenManual = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({
+    lote_id: z.string().uuid(),
+    orden: z.string().trim().max(64),
+  }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase.rpc("pc_set_orden_manual", {
+      _lote_id: data.lote_id,
+      _orden: data.orden,
+    });
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
 
 
 export const obtenerLoteYCintas = createServerFn({ method: "POST" })
