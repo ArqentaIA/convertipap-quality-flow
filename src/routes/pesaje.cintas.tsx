@@ -394,13 +394,18 @@ function PesajeCintasPage() {
 
   async function onFinalizar() {
     if (!lote) return;
-    const real = Number(mermaRealInput.replace(",", "."));
-    if (!mermaRealInput.trim() || !Number.isFinite(real) || real < 0) {
-      toast.error("Capture la merma real (kg) para poder finalizar.");
+    if (!hayCaptura || !compsValidos || !Number.isFinite(mermaPorPesoKg) || mermaPorPesoKg < 0) {
+      toast.error("Capture Merma Capa, Merma Proceso y Merma Gallo (valores numéricos ≥ 0).");
       return;
     }
-    if (real > netoBM) { toast.error("La merma real no puede superar el peso neto del rollo de origen."); return; }
-    if (!window.confirm(`¿Finalizar rollo?\nMerma calculada sistema: ${n(pendiente)} kg\nMerma real capturada: ${n(real)} kg`)) return;
+    const real = mermaPorPesoKg;
+    if (real > netoBM) { toast.error("La Merma por Peso no puede superar el peso neto del rollo de origen."); return; }
+    if (!window.confirm(
+      `Merma por Peso calculada: ${n(real)} kg.\n\n` +
+      `Este total corresponde a la suma de Merma Capa, Merma Proceso y Merma Gallo. ` +
+      `En el sistema se guardará únicamente el total.\n\n` +
+      `Merma por Sistema: ${n(pendiente)} kg`,
+    )) return;
     try {
       await finalizar({ data: { lote_id: lote.id, merma_real_kg: real } });
       await qc.invalidateQueries({ queryKey: ["cintas-lote", lote.id] });
