@@ -380,11 +380,13 @@ export const prepararImpresion = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({
     lote_id: z.string().uuid(),
     motivo: z.string().max(500).optional().nullable(),
+    cinta_id: z.string().uuid().optional().nullable(),
   }).parse(d))
   .handler(async ({ data, context }) => {
     const { data: res, error } = await context.supabase.rpc("preparar_impresion_etiquetas", {
       _lote_id: data.lote_id,
       _motivo: (data.motivo ?? "") as string,
+      _cinta_id: (data.cinta_id ?? null) as unknown as string,
     });
     if (error) throw new Error(error.message);
     return res as unknown as {
@@ -392,6 +394,10 @@ export const prepararImpresion = createServerFn({ method: "POST" })
       folio: string;
       tipo: "ORIGINAL" | "REIMPRESION";
       cantidad_etiquetas: number;
+      numero_impresion: number;
+      version_etiqueta: number;
+      total_uniones_cintas: number;
+      cintas_excluidas: number;
       snapshot: {
         lote_id: string;
         muestra_calidad_id: string | null;
@@ -403,6 +409,15 @@ export const prepararImpresion = createServerFn({ method: "POST" })
         fecha_produccion: string | null;
         conductor: string;
         bobinadora: string;
+        origen_rollo: "sistema" | "captura_manual";
+        peso_neto_rollo_kg: number | null;
+        diametro_rollo_cm: number | null;
+        uniones_rollo: number | null;
+        total_uniones_cintas: number;
+        cintas_excluidas: number;
+        folio: string;
+        version_etiqueta: number;
+        generado_at: string;
         datos_calidad: Json;
         cintas: Array<{
           id: string;
@@ -412,10 +427,14 @@ export const prepararImpresion = createServerFn({ method: "POST" })
           ancho_util: number;
           ancho_util_unidad: string | null;
           observaciones: string | null;
+          estado: string;
+          version_etiqueta: number;
+          created_at: string;
         }>;
       };
     };
   });
+
 
 // --------------------- Reporte mensual de bobinadoras ---------------------- //
 // Campo oficial de periodo: pesajes_cintas_lotes.fecha_produccion (fecha
