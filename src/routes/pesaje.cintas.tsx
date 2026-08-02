@@ -106,7 +106,7 @@ function PesajeCintasPage() {
   const lote: LoteCintas | null = loteQ.data?.lote ?? null;
   const todasCintas: CintaRegistrada[] = loteQ.data?.cintas ?? [];
   const cintas: CintaRegistrada[] = todasCintas.filter((c) => c.estado === "registrada");
-  const cintasExcluidas = todasCintas.length - cintas.length;
+  
   // Total de uniones = suma de uniones de las cintas vigentes ('registrada').
   const totalUnionesCintas = cintas.reduce((acc, c) => acc + (c.uniones ?? 0), 0);
 
@@ -778,12 +778,10 @@ function PesajeCintasPage() {
       {/* Lote activo */}
       {lote && (
         <>
-          <div className="grid gap-3 md:grid-cols-6">
+          <div className="grid gap-3 md:grid-cols-5">
             <Card k="Neto rollo de origen" v={`${n(netoBM)} kg`} />
             <Card k="Cintas registradas" v={`${cintas.length} / 20`} />
             <Card k="Peso acumulado" v={`${n(totalCintas)} kg`} />
-            <Card k="TOTAL DE UNIONES DE CINTAS" v={String(totalUnionesCintas)} highlight />
-
             <Card
               k="MERMA POR SISTEMA"
               v={`${n(merma == null ? pendiente : merma)} kg${mermaPct == null ? "" : ` · ${n(mermaPct, 2)} %`}`}
@@ -900,20 +898,6 @@ function PesajeCintasPage() {
               </div>
             </div>
 
-            {/* Área de impresión */}
-            <div className="mb-4 rounded-md border border-border bg-muted/30 p-3 text-xs">
-              <div className="grid gap-1 sm:grid-cols-2 lg:grid-cols-4">
-                <div>Cintas vigentes: <b className="text-foreground">{cintas.length}</b></div>
-                <div>Etiquetas a generar: <b className="text-foreground">{cintas.length}</b></div>
-                <div>Total de uniones de cintas: <b className="text-foreground">{totalUnionesCintas}</b></div>
-                <div>Origen del rollo: <b className="text-foreground">{origenManual.origen === "sistema" ? "Sistema" : "Captura manual"}</b></div>
-              </div>
-              {cintasExcluidas > 0 && (
-                <div className="mt-2 text-warning">
-                  {cintasExcluidas} cinta(s) anulada(s)/sustituida(s) excluidas de la impresión.
-                </div>
-              )}
-            </div>
 
             {/* Grid de 20 posiciones */}
             <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-4">
@@ -1061,25 +1045,23 @@ function CintaCard({ pos, cinta, habilitada, disponibleKg, onRegistrar, onAnular
           />
           <p className="mt-0.5 text-[10px] text-muted-foreground">Capture el peso indicado por la báscula.</p>
         </div>
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <label className="mb-0.5 block text-[11px] text-muted-foreground">Ancho útil</label>
-            <input
-              type="number" inputMode="decimal" step="0.01"
-              value={ancho}
-              onChange={(e) => setAncho(e.target.value)}
-              className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm"
-            />
-          </div>
-          <div>
-            <label className="mb-0.5 block text-[11px] text-muted-foreground">Uniones</label>
-            <input
-              type="number" inputMode="numeric" min="0" step="1"
-              value={uniones}
-              onChange={(e) => setUniones(e.target.value)}
-              className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm"
-            />
-          </div>
+        <div>
+          <label className="mb-0.5 block text-[11px] text-muted-foreground">Ancho útil (cm)</label>
+          <input
+            type="number" inputMode="decimal" step="0.01"
+            value={ancho}
+            onChange={(e) => setAncho(e.target.value)}
+            className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm"
+          />
+        </div>
+        <div>
+          <label className="mb-0.5 block text-[11px] text-muted-foreground">Uniones</label>
+          <input
+            type="number" inputMode="numeric" min="0" step="1"
+            value={uniones}
+            onChange={(e) => setUniones(e.target.value)}
+            className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm"
+          />
         </div>
         <div>
           <label className="mb-0.5 block text-[11px] text-muted-foreground">Observaciones (opcional)</label>
