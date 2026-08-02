@@ -266,7 +266,25 @@ function PesajeCintasPage() {
   const pendiente = lote ? lote.peso_pendiente_kg : netoBM;
   const merma = lote?.estado === "finalizado" ? lote.merma_kg : null;
   const mermaPct = lote?.estado === "finalizado" ? lote.merma_porcentaje : null;
-  const [mermaRealInput, setMermaRealInput] = useState("");
+  // Componentes auxiliares de captura (SOLO estado local, nunca se persisten)
+  const [mermaCapa, setMermaCapa] = useState("");
+  const [mermaProceso, setMermaProceso] = useState("");
+  const [mermaGallo, setMermaGallo] = useState("");
+
+  const parseComp = (v: string) => {
+    if (!v.trim()) return 0;
+    const x = Number(v.replace(",", "."));
+    return Number.isFinite(x) ? x : NaN;
+  };
+  const compCapa = parseComp(mermaCapa);
+  const compProceso = parseComp(mermaProceso);
+  const compGallo = parseComp(mermaGallo);
+  const compsValidos =
+    Number.isFinite(compCapa) && Number.isFinite(compProceso) && Number.isFinite(compGallo) &&
+    compCapa >= 0 && compProceso >= 0 && compGallo >= 0;
+  const hayCaptura = Boolean(mermaCapa.trim() || mermaProceso.trim() || mermaGallo.trim());
+  const mermaPorPesoKg = compsValidos ? Math.round((compCapa + compProceso + compGallo) * 100) / 100 : NaN;
+  const mermaPorPesoPct = netoBM > 0 && Number.isFinite(mermaPorPesoKg) ? (mermaPorPesoKg / netoBM) * 100 : null;
 
   const siguientePos = useMemo(() => {
     if (!lote) return 0;
