@@ -382,41 +382,41 @@ export async function abrirImpresionEtiquetas(snap: EtiquetaSnapshot): Promise<v
   .print-page:last-child { page-break-after: auto; break-after: auto; }
   .print-label {
     width: 97.95mm; height: 129.70mm;
-    border: 0.4mm solid #0a3d1f;
-    background: #e9f4ea;
+    border: 0;
+    background: #fff;
     overflow: hidden;
     break-inside: avoid; page-break-inside: avoid;
     -webkit-print-color-adjust: exact; print-color-adjust: exact;
   }
-  .print-label.empty { border-style: dashed; border-color: #cbd5cb; background: transparent; }
+  .print-label.empty { background: transparent; }
   .lbl-inner { padding: 3mm 3.2mm; height: 100%; display: flex; flex-direction: column; gap: 1.2mm; font-size: 8.5pt; line-height: 1.15; }
-  .lbl-header { display: flex; align-items: flex-start; justify-content: space-between; border-bottom: 0.3mm solid #0a3d1f; padding-bottom: 1.5mm; }
+  .lbl-header { display: flex; align-items: flex-start; justify-content: space-between; border-bottom: 0.3mm solid #555; padding-bottom: 1.5mm; }
   .lbl-logo { display: block; height: 11mm; max-width: 52mm; object-fit: contain; }
-  .lbl-sub { font-size: 7pt; color: #244; }
-  .lbl-pos { font-size: 30pt; font-weight: 900; color: #0a3d1f; line-height: 0.9; padding: 0 2mm; }
+  .lbl-sub { font-size: 7pt; color: #444; }
+  .lbl-pos { font-size: 30pt; font-weight: 900; color: #111; line-height: 0.9; padding: 0 2mm; }
   .lbl-row { display: flex; gap: 3mm; }
   .lbl-row > div { flex: 1; display: flex; flex-direction: column; }
   .lbl-row > div.wide { flex: 2; }
-  .k { font-size: 6.5pt; text-transform: uppercase; color: #476; letter-spacing: 0.3px; }
-  .v { font-size: 9pt; font-weight: 700; color: #08221a; }
+  .k { font-size: 6.5pt; text-transform: uppercase; color: #555; letter-spacing: 0.3px; }
+  .v { font-size: 9pt; font-weight: 700; color: #111; }
   .v.big { font-size: 13pt; }
-  .lbl-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5mm 3mm; border-top: 0.2mm dashed #0a3d1f66; border-bottom: 0.2mm dashed #0a3d1f66; padding: 1.5mm 0; }
+  .lbl-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5mm 3mm; border-top: 0.2mm dashed #999; border-bottom: 0.2mm dashed #999; padding: 1.5mm 0; }
   .lbl-grid > div { display: flex; flex-direction: column; }
-  .lbl-cinta { background: #d4e8d6; padding: 1.5mm 2mm; border-radius: 1mm; }
-  .lbl-cinta-tit { font-size: 6.5pt; text-transform: uppercase; color: #08221a; font-weight: 700; margin-bottom: 1mm; }
-  .lbl-obs { font-size: 7pt; padding-top: 1mm; border-top: 0.2mm dotted #0a3d1f88; }
-  .lbl-ver { font-size: 6pt; color: #476; text-align: right; }
+  .lbl-cinta { background: transparent; padding: 1.5mm 0; border-top: 0.2mm solid #999; border-bottom: 0.2mm solid #999; }
+  .lbl-cinta-tit { font-size: 6.5pt; text-transform: uppercase; color: #111; font-weight: 700; margin-bottom: 1mm; }
+  .lbl-obs { font-size: 7pt; padding-top: 1mm; border-top: 0.2mm dotted #999; }
+  .lbl-ver { font-size: 6pt; color: #555; text-align: right; }
 
-  .lbl-qr-zone { margin-top: auto; padding-top: 1.5mm; border-top: 0.3mm solid #0a3d1f; display: flex; justify-content: space-around; align-items: flex-end; gap: 4mm; }
+  .lbl-qr-zone { margin-top: auto; padding-top: 1.5mm; border-top: 0.3mm solid #555; display: flex; justify-content: space-around; align-items: flex-end; gap: 4mm; }
   .lbl-qr-zone .qr-box { display: flex; flex-direction: column; align-items: center; gap: 0.8mm; }
   .lbl-qr-zone .qr-box img { width: 20mm; height: 20mm; display: block; }
-  .lbl-qr-zone .qr-cap { font-size: 6.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: #08221a; display: flex; align-items: center; justify-content: center; height: 4mm; }
+  .lbl-qr-zone .qr-cap { font-size: 6.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: #111; display: flex; align-items: center; justify-content: center; height: 4mm; }
   .lbl-qr-zone .qr-saplogo { width: auto !important; height: 4mm !important; max-width: 22mm; object-fit: contain; }
   @media screen {
     body { background: #eee; padding: 20px; }
     .print-page { margin: 0 auto 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.15); background: #fff; }
     .print-toolbar { max-width: 215.9mm; margin: 0 auto 12px; display: flex; justify-content: flex-end; gap: 8px; }
-    .print-toolbar button { padding: 8px 14px; border: 0; background: #0a3d1f; color: #fff; border-radius: 6px; cursor: pointer; font-weight: 600; }
+    .print-toolbar button { padding: 8px 14px; border: 0; background: #333; color: #fff; border-radius: 6px; cursor: pointer; font-weight: 600; }
   }
   @media print { .print-toolbar { display: none; } }
 </style>
