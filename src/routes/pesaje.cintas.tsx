@@ -4,11 +4,11 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Loader2, Search, Printer, CheckCircle2, Ban, Lock, Unlock, Pencil, UserCog, FileSpreadsheet } from "lucide-react";
+import { Loader2, Search, Printer, CheckCircle2, Ban, Lock, Pencil, UserCog, FileSpreadsheet } from "lucide-react";
 import {
   buscarContextoRollo, listConductores, listBobinadoras,
   crearLote, crearLoteManualV2, guardarOrdenManual, obtenerLoteYCintas, registrarCinta, corregirCinta, anularCinta,
-  finalizarLote, reabrirLote, prepararImpresion, actualizarDatosOperativos,
+  finalizarLote, prepararImpresion, actualizarDatosOperativos,
   obtenerReporteMensualCintas,
   type ContextoRollo, type CintaRegistrada, type LoteCintas,
 } from "@/lib/pesaje-cintas.functions";
@@ -52,7 +52,6 @@ function PesajeCintasPage() {
   const corregir = useServerFn(corregirCinta);
   const anular = useServerFn(anularCinta);
   const finalizar = useServerFn(finalizarLote);
-  const reabrir = useServerFn(reabrirLote);
   const preparar = useServerFn(prepararImpresion);
   const actualizarOp = useServerFn(actualizarDatosOperativos);
 
@@ -419,21 +418,6 @@ function PesajeCintasPage() {
       toast.success("Rollo finalizado.");
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "Error al finalizar.");
-    }
-  }
-
-  async function onReabrir() {
-    if (!lote) return;
-    if (cintas.length >= 20) { toast.error("El lote ya tiene el máximo de 20 cintas."); return; }
-    const motivo = window.prompt("Motivo para agregar cintas al rollo finalizado (mínimo 5 caracteres):") ?? "";
-    if (motivo.trim().length < 5) { toast.error("Motivo requerido."); return; }
-    try {
-      await reabrir({ data: { lote_id: lote.id, motivo: motivo.trim() } });
-      setMermaCapa(""); setMermaProceso(""); setMermaGallo("");
-      await qc.invalidateQueries({ queryKey: ["cintas-lote", lote.id] });
-      toast.success("Rollo reabierto. Puede registrar cintas adicionales.");
-    } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Error al reabrir el rollo.");
     }
   }
 
