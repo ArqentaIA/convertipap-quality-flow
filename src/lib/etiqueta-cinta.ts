@@ -181,7 +181,7 @@ export function buildCintaLabelData(snap: EtiquetaSnapshot, cinta: EtiquetaCinta
     observaciones: limpio(cinta.observaciones),
     registrado_at: cinta.created_at ?? null,
     version_etiqueta: version,
-    total_uniones_cintas: snap.total_uniones_cintas ?? 0,
+    total_uniones_cintas: snap.total_uniones_cintas ?? calcularTotalUniones(snap.cintas ?? []),
     generado_at: generadoAt,
     qr_payload: {},
     trace_url: traceUrl,
@@ -192,6 +192,8 @@ export function buildCintaLabelData(snap: EtiquetaSnapshot, cinta: EtiquetaCinta
     version_esquema_qr: 1,
     origen_rollo: data.origen_rollo,
     numero_rollo: data.numero_rollo,
+    numero_rollo_original: data.numero_rollo,
+    numero_rollo_etiqueta: data.numero_rollo_etiqueta,
     orden_produccion: data.orden_produccion,
     peso_neto_rollo_kg: data.peso_neto_rollo_kg,
     diametro_rollo_cm: data.diametro_rollo_cm,
@@ -199,14 +201,17 @@ export function buildCintaLabelData(snap: EtiquetaSnapshot, cinta: EtiquetaCinta
     lote_id: data.lote_id,
     cinta_id: data.cinta_id,
     posicion: data.posicion,
+    posicion_cinta: data.posicion,
     peso_cinta_kg: data.peso_cinta_kg,
     ancho_cinta_cm: data.ancho_cinta,
     uniones_cinta: data.uniones_cinta,
+    total_uniones_cintas: data.total_uniones_cintas,
     estado_cinta: data.estado_cinta,
     version_etiqueta: data.version_etiqueta,
     generado_at: data.generado_at,
     url: data.trace_url,
   };
+
 
   return data;
 }
