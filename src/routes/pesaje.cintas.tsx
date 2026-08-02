@@ -266,7 +266,25 @@ function PesajeCintasPage() {
   const pendiente = lote ? lote.peso_pendiente_kg : netoBM;
   const merma = lote?.estado === "finalizado" ? lote.merma_kg : null;
   const mermaPct = lote?.estado === "finalizado" ? lote.merma_porcentaje : null;
-  const [mermaRealInput, setMermaRealInput] = useState("");
+  // Componentes auxiliares de captura (SOLO estado local, nunca se persisten)
+  const [mermaCapa, setMermaCapa] = useState("");
+  const [mermaProceso, setMermaProceso] = useState("");
+  const [mermaGallo, setMermaGallo] = useState("");
+
+  const parseComp = (v: string) => {
+    if (!v.trim()) return 0;
+    const x = Number(v.replace(",", "."));
+    return Number.isFinite(x) ? x : NaN;
+  };
+  const compCapa = parseComp(mermaCapa);
+  const compProceso = parseComp(mermaProceso);
+  const compGallo = parseComp(mermaGallo);
+  const compsValidos =
+    Number.isFinite(compCapa) && Number.isFinite(compProceso) && Number.isFinite(compGallo) &&
+    compCapa >= 0 && compProceso >= 0 && compGallo >= 0;
+  const hayCaptura = Boolean(mermaCapa.trim() || mermaProceso.trim() || mermaGallo.trim());
+  const mermaPorPesoKg = compsValidos ? Math.round((compCapa + compProceso + compGallo) * 100) / 100 : NaN;
+  const mermaPorPesoPct = netoBM > 0 && Number.isFinite(mermaPorPesoKg) ? (mermaPorPesoKg / netoBM) * 100 : null;
 
   const siguientePos = useMemo(() => {
     if (!lote) return 0;
@@ -376,13 +394,18 @@ function PesajeCintasPage() {
 
   async function onFinalizar() {
     if (!lote) return;
-    const real = Number(mermaRealInput.replace(",", "."));
-    if (!mermaRealInput.trim() || !Number.isFinite(real) || real < 0) {
-      toast.error("Capture la merma real (kg) para poder finalizar.");
+    if (!hayCaptura || !compsValidos || !Number.isFinite(mermaPorPesoKg) || mermaPorPesoKg < 0) {
+      toast.error("Capture Merma Capa, Merma Proceso y Merma Gallo (valores numéricos ≥ 0).");
       return;
     }
-    if (real > netoBM) { toast.error("La merma real no puede superar el peso neto del rollo de origen."); return; }
-    if (!window.confirm(`¿Finalizar rollo?\nMerma calculada sistema: ${n(pendiente)} kg\nMerma real capturada: ${n(real)} kg`)) return;
+    const real = mermaPorPesoKg;
+    if (real > netoBM) { toast.error("La Merma por Peso no puede superar el peso neto del rollo de origen."); return; }
+    if (!window.confirm(
+      `Merma por Peso calculada: ${n(real)} kg.\n\n` +
+      `Este total corresponde a la suma de Merma Capa, Merma Proceso y Merma Gallo. ` +
+      `En el sistema se guardará únicamente el total.\n\n` +
+      `Merma por Sistema: ${n(pendiente)} kg`,
+    )) return;
     try {
       await finalizar({ data: { lote_id: lote.id, merma_real_kg: real } });
       await qc.invalidateQueries({ queryKey: ["cintas-lote", lote.id] });
@@ -399,6 +422,7 @@ function PesajeCintasPage() {
     if (motivo.trim().length < 5) { toast.error("Motivo requerido."); return; }
     try {
       await reabrir({ data: { lote_id: lote.id, motivo: motivo.trim() } });
+      setMermaCapa(""); setMermaProceso(""); setMermaGallo("");
       await qc.invalidateQueries({ queryKey: ["cintas-lote", lote.id] });
       toast.success("Rollo reabierto. Puede registrar cintas adicionales.");
     } catch (e: unknown) {
@@ -761,29 +785,67 @@ function PesajeCintasPage() {
             <Card k="TOTAL DE UNIONES DE CINTAS" v={String(totalUnionesCintas)} highlight />
 
             <Card
-              k="MERMA CALCULA SISTEMA"
+              k="MERMA POR SISTEMA"
               v={`${n(merma == null ? pendiente : merma)} kg${mermaPct == null ? "" : ` · ${n(mermaPct, 2)} %`}`}
             />
             {lote.estado === "finalizado" ? (
-              <Card k="MERMA REAL (operador)" v={lote.merma_real_kg == null ? "—" : `${n(lote.merma_real_kg)} kg`} highlight />
+              <Card
+                k="MERMA POR PESO"
+                v={
+                  lote.merma_real_kg == null
+                    ? "No registrada"
+                    : `${n(lote.merma_real_kg)} kg${netoBM > 0 ? ` · ${n((lote.merma_real_kg / netoBM) * 100, 2)} %` : ""}`
+                }
+                highlight
+              />
             ) : (
-              <div className="rounded-lg border border-primary/40 bg-primary/5 p-3">
-                <div className="mb-1 text-xs uppercase tracking-wide text-muted-foreground">Merma real (kg) *</div>
-                <input
-                  type="number"
-                  inputMode="decimal"
-                  step="0.01"
-                  min={0}
-                  max={netoBM || undefined}
-                  value={mermaRealInput}
-                  onChange={(e) => setMermaRealInput(e.target.value)}
-                  placeholder="0.00"
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-lg font-semibold"
-                />
-                <div className="mt-1 text-[11px] text-muted-foreground">Obligatoria para finalizar</div>
-              </div>
+              <Card
+                k="MERMA POR PESO"
+                v={
+                  hayCaptura && compsValidos
+                    ? `${n(mermaPorPesoKg)} kg${mermaPorPesoPct == null ? "" : ` · ${n(mermaPorPesoPct, 2)} %`}`
+                    : lote.merma_real_kg == null
+                      ? "No registrada"
+                      : `${n(lote.merma_real_kg)} kg (guardada)`
+                }
+                highlight
+              />
             )}
           </div>
+
+          {lote.estado === "abierto" && (
+            <div className="rounded-lg border border-primary/40 bg-primary/5 p-4">
+              <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Captura de Merma por Peso (componentes temporales, no se guardan por separado)
+              </div>
+              <div className="grid gap-3 sm:grid-cols-3">
+                {([
+                  ["Merma Capa (kg)", mermaCapa, setMermaCapa],
+                  ["Merma Proceso (kg)", mermaProceso, setMermaProceso],
+                  ["Merma Gallo (kg)", mermaGallo, setMermaGallo],
+                ] as const).map(([label, val, set]) => (
+                  <div key={label}>
+                    <div className="mb-1 text-xs text-muted-foreground">{label}</div>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      step="0.01"
+                      min={0}
+                      value={val}
+                      onChange={(e) => set(e.target.value)}
+                      placeholder="0.00"
+                      className="w-full rounded-md border border-input bg-background px-3 py-2 font-semibold"
+                    />
+                  </div>
+                ))}
+              </div>
+              <div className="mt-2 text-sm font-semibold">
+                Merma por Peso:{" "}
+                {compsValidos ? `${n(mermaPorPesoKg)} kg` : <span className="text-destructive">valores inválidos</span>}
+              </div>
+              <div className="mt-1 text-[11px] text-muted-foreground">Obligatoria para finalizar el lote.</div>
+            </div>
+          )}
 
 
           <div className="rounded-lg border border-border bg-card p-4">
@@ -812,8 +874,8 @@ function PesajeCintasPage() {
                 {lote.estado === "abierto" && (
                   <button
                     onClick={onFinalizar}
-                    disabled={cintas.length === 0 || !mermaRealInput.trim()}
-                    title={!mermaRealInput.trim() ? "Capture la merma real (kg)" : undefined}
+                    disabled={cintas.length === 0 || !hayCaptura || !compsValidos}
+                    title={!hayCaptura || !compsValidos ? "Capture Merma Capa, Proceso y Gallo" : undefined}
                     className="flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
                   >
                     <CheckCircle2 className="h-4 w-4" /> Finalizar rollo
