@@ -888,9 +888,11 @@ function PesajeCintasPage() {
             </div>
 
 
-            {/* Grid de 20 posiciones */}
+            {/* Grid de 20 posiciones (en lote finalizado solo se muestran las registradas) */}
             <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-4">
-              {Array.from({ length: 20 }, (_, i) => i + 1).map((pos) => {
+              {Array.from({ length: 20 }, (_, i) => i + 1)
+                .filter((pos) => lote.estado === "abierto" || cintas.some((x) => x.posicion === pos))
+                .map((pos) => {
                 const c = cintas.find((x) => x.posicion === pos);
                 const habilitada = !c && pos === siguientePos && lote.estado === "abierto";
                 return (
@@ -901,7 +903,8 @@ function PesajeCintasPage() {
                     habilitada={habilitada}
                     disponibleKg={netoBM - totalCintas}
                     onRegistrar={onRegistrar}
-                    onAnular={c ? () => onAnular(c.id) : undefined}
+                    onAnular={c && lote.estado === "abierto" ? () => onAnular(c.id) : undefined}
+
                     onCorregir={c && lote.estado === "abierto" ? () => onCorregir(c) : undefined}
                     onReimprimir={c ? () => onReimprimirCinta(c) : undefined}
                     saving={saving || imprimiendo}
