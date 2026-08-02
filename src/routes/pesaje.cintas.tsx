@@ -104,16 +104,25 @@ function PesajeCintasPage() {
   });
 
   const lote: LoteCintas | null = loteQ.data?.lote ?? null;
-  const cintas: CintaRegistrada[] = (loteQ.data?.cintas ?? []).filter((c) => c.estado === "registrada");
+  const todasCintas: CintaRegistrada[] = loteQ.data?.cintas ?? [];
+  const cintas: CintaRegistrada[] = todasCintas.filter((c) => c.estado === "registrada");
+  const cintasExcluidas = todasCintas.length - cintas.length;
+  // Total de uniones = suma de uniones de las cintas vigentes ('registrada').
+  const totalUnionesCintas = cintas.reduce((acc, c) => acc + (c.uniones ?? 0), 0);
 
   const origenManual = (() => {
     const snap = lote?.datos_calidad_snapshot as
-      | { datos_origen?: { diametro_cm?: number | null; uniones?: number | null } }
+      | { datos_origen?: { origen?: string; diametro_origen_cm?: number | null; uniones_origen?: number | null; diametro_cm?: number | null; uniones?: number | null } }
       | null
       | undefined;
     const o = snap && typeof snap === "object" ? snap.datos_origen : null;
-    return { diametro: o?.diametro_cm ?? null, uniones: o?.uniones ?? null };
+    return {
+      diametro: o?.diametro_origen_cm ?? o?.diametro_cm ?? null,
+      uniones: o?.uniones_origen ?? o?.uniones ?? null,
+      origen: (o?.origen as string | undefined) ?? (lote?.es_manual ? "captura_manual" : "sistema"),
+    };
   })();
+
 
   async function onBuscar() {
     const rollo = rolloInput.trim();
