@@ -1036,6 +1036,15 @@ function CintaCard({ pos, cinta, habilitada, disponibleKg, onRegistrar, onAnular
       </div>
       <div className="space-y-2 text-sm">
         <div>
+          <label className="mb-0.5 block text-[11px] text-muted-foreground">Ancho útil (cm) *</label>
+          <input
+            type="number" inputMode="decimal" step="0.01"
+            value={ancho}
+            onChange={(e) => setAncho(e.target.value)}
+            className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm"
+          />
+        </div>
+        <div>
           <label className="mb-0.5 block text-[11px] text-muted-foreground">Peso real de la cinta (kg) · disp. {n(disponibleKg)}</label>
           <input
             type="number" inputMode="decimal" step="0.001"
@@ -1044,15 +1053,6 @@ function CintaCard({ pos, cinta, habilitada, disponibleKg, onRegistrar, onAnular
             className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm"
           />
           <p className="mt-0.5 text-[10px] text-muted-foreground">Capture el peso indicado por la báscula.</p>
-        </div>
-        <div>
-          <label className="mb-0.5 block text-[11px] text-muted-foreground">Ancho útil (cm)</label>
-          <input
-            type="number" inputMode="decimal" step="0.01"
-            value={ancho}
-            onChange={(e) => setAncho(e.target.value)}
-            className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm"
-          />
         </div>
         <div>
           <label className="mb-0.5 block text-[11px] text-muted-foreground">Uniones</label>
