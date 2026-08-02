@@ -399,12 +399,27 @@ function PesajeCintasPage() {
 
   const [imprimiendo, setImprimiendo] = useState(false);
 
-  async function ejecutarImpresion(motivo: string | null) {
+  async function ejecutarImpresion(motivo: string | null, cintaId: string | null) {
     if (!lote) return;
     setImprimiendo(true);
     try {
-      const res = await preparar({ data: { lote_id: lote.id, motivo } });
-      abrirImpresionEtiquetas(res.snapshot as EtiquetaSnapshot);
+      // Los datos de pesaje no viajan por Realtime: refrescamos antes de imprimir.
+      await qc.invalidateQueries({ queryKey: ["cintas-lote", lote.id] });
+      await loteQ.refetch();
+      let res;
+      try {
+        res = await preparar({ data: { lote_id: lote.id, motivo, cinta_id: cintaId } });
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : "";
+        if (!msg.toLowerCase().includes("motivo obligatorio")) throw err;
+        const m = window.prompt("Motivo de reimpresión (mínimo 5 caracteres):") ?? "";
+        if (m.trim().length < 5) { toast.error("Motivo requerido para reimprimir."); return; }
+        res = await preparar({ data: { lote_id: lote.id, motivo: m.trim(), cinta_id: cintaId } });
+      }
+      await abrirImpresionEtiquetas(res.snapshot as unknown as EtiquetaSnapshot);
+      toast.success(
+        `${res.tipo === "REIMPRESION" ? "Reimpresión" : "Impresión"} ${res.folio} · ${res.cantidad_etiquetas} etiqueta(s) · versión ${res.version_etiqueta}`,
+      );
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "Error al preparar impresión.");
     } finally {
@@ -414,8 +429,20 @@ function PesajeCintasPage() {
 
   function onImprimir() {
     if (!lote || cintas.length === 0 || imprimiendo) return;
-    void ejecutarImpresion(lote.estado === "finalizado" ? "Reimpresión de etiquetas desde módulo de cintas" : null);
+    void ejecutarImpresion(null, null);
   }
+
+  function onReimprimirCinta(c: CintaRegistrada) {
+    if (!lote || imprimiendo) return;
+    if (c.estado !== "registrada") {
+      toast.error("La cinta no está vigente: no puede reimprimirse.");
+      return;
+    }
+    const motivo = window.prompt("Motivo de reimpresión (mínimo 5 caracteres):") ?? "";
+    if (motivo.trim().length < 5) { toast.error("Motivo requerido para reimprimir."); return; }
+    void ejecutarImpresion(motivo.trim(), c.id);
+  }
+
 
   // ── Reporte mensual de bobinadoras ─────────────────────────────
   const traerReporte = useServerFn(obtenerReporteMensualCintas);
