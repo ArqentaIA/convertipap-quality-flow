@@ -378,6 +378,8 @@ export async function abrirImpresionEtiquetas(snap: EtiquetaSnapshot): Promise<v
   .lbl-cinta { background: #d4e8d6; padding: 1.5mm 2mm; border-radius: 1mm; }
   .lbl-cinta-tit { font-size: 6.5pt; text-transform: uppercase; color: #08221a; font-weight: 700; margin-bottom: 1mm; }
   .lbl-obs { font-size: 7pt; padding-top: 1mm; border-top: 0.2mm dotted #0a3d1f88; }
+  .lbl-ver { font-size: 6pt; color: #476; text-align: right; }
+
   .lbl-qr-zone { margin-top: auto; padding-top: 1.5mm; border-top: 0.3mm solid #0a3d1f; display: flex; justify-content: space-around; align-items: flex-end; gap: 4mm; }
   .lbl-qr-zone .qr-box { display: flex; flex-direction: column; align-items: center; gap: 0.8mm; }
   .lbl-qr-zone .qr-box img { width: 20mm; height: 20mm; display: block; }
