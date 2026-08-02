@@ -79,6 +79,7 @@ export type CintaLabelData = {
   origen_rollo: "sistema" | "captura_manual";
   es_manual: boolean;
   numero_rollo: string;
+  numero_rollo_etiqueta: string;
   orden_produccion: string | null;
   peso_neto_rollo_kg: number | null;
   diametro_rollo_cm: number | null;
@@ -115,6 +116,23 @@ function limpio(v: string | null | undefined): string | null {
   return SIN_DATOS.test(v) ? null : v;
 }
 
+/** Número visible de la etiqueta: <rollo original>-C<posición de la cinta>. */
+export function buildNumeroRolloEtiqueta(numeroRollo: string, posicion: number): string {
+  return `${numeroRollo}-C${posicion}`;
+}
+
+/**
+ * Total de uniones del lote: suma de `uniones` de todas las cintas vigentes
+ * (estado `registrada`); excluye anuladas y sustituidas e incluye la cinta que
+ * se está imprimiendo.
+ */
+export function calcularTotalUniones(cintas: EtiquetaCinta[]): number {
+  return cintas
+    .filter((c) => (c.estado ?? "registrada") === "registrada")
+    .reduce((acc, c) => acc + (Number(c.uniones) || 0), 0);
+}
+
+
 export function buildCintaLabelData(snap: EtiquetaSnapshot, cinta: EtiquetaCinta): CintaLabelData {
   const dc = snap.datos_calidad ?? {};
   const origen: "sistema" | "captura_manual" =
@@ -137,6 +155,9 @@ export function buildCintaLabelData(snap: EtiquetaSnapshot, cinta: EtiquetaCinta
     origen_rollo: origen,
     es_manual: esManual,
     numero_rollo: snap.numero_rollo,
+    // Identificador derivado SOLO para etiqueta/QR/snapshot. Nunca se persiste
+    // como numero_rollo del lote.
+    numero_rollo_etiqueta: buildNumeroRolloEtiqueta(snap.numero_rollo, cinta.posicion),
     orden_produccion: limpio(snap.numero_orden ?? null),
     peso_neto_rollo_kg: snap.peso_neto_rollo_kg ?? null,
     diametro_rollo_cm: snap.diametro_rollo_cm ?? null,
@@ -160,7 +181,7 @@ export function buildCintaLabelData(snap: EtiquetaSnapshot, cinta: EtiquetaCinta
     observaciones: limpio(cinta.observaciones),
     registrado_at: cinta.created_at ?? null,
     version_etiqueta: version,
-    total_uniones_cintas: snap.total_uniones_cintas ?? 0,
+    total_uniones_cintas: snap.total_uniones_cintas ?? calcularTotalUniones(snap.cintas ?? []),
     generado_at: generadoAt,
     qr_payload: {},
     trace_url: traceUrl,
@@ -171,6 +192,8 @@ export function buildCintaLabelData(snap: EtiquetaSnapshot, cinta: EtiquetaCinta
     version_esquema_qr: 1,
     origen_rollo: data.origen_rollo,
     numero_rollo: data.numero_rollo,
+    numero_rollo_original: data.numero_rollo,
+    numero_rollo_etiqueta: data.numero_rollo_etiqueta,
     orden_produccion: data.orden_produccion,
     peso_neto_rollo_kg: data.peso_neto_rollo_kg,
     diametro_rollo_cm: data.diametro_rollo_cm,
@@ -178,14 +201,17 @@ export function buildCintaLabelData(snap: EtiquetaSnapshot, cinta: EtiquetaCinta
     lote_id: data.lote_id,
     cinta_id: data.cinta_id,
     posicion: data.posicion,
+    posicion_cinta: data.posicion,
     peso_cinta_kg: data.peso_cinta_kg,
     ancho_cinta_cm: data.ancho_cinta,
     uniones_cinta: data.uniones_cinta,
+    total_uniones_cintas: data.total_uniones_cintas,
     estado_cinta: data.estado_cinta,
     version_etiqueta: data.version_etiqueta,
     generado_at: data.generado_at,
     url: data.trace_url,
   };
+
 
   return data;
 }
@@ -235,7 +261,7 @@ function renderEtiqueta(d: CintaLabelData, snap: EtiquetaSnapshot, assets: Asset
     .join("");
 
   const filaRollo = [
-    fila("N.º Rollo", d.numero_rollo),
+    fila("N.º Rollo / Cinta", d.numero_rollo_etiqueta),
     fila("Fecha", d.fecha_produccion),
     fila("O. Producción", d.orden_produccion),
   ].filter(Boolean).join("");
@@ -248,9 +274,10 @@ function renderEtiqueta(d: CintaLabelData, snap: EtiquetaSnapshot, assets: Asset
 
   const filaOrigen = [
     fila("Diámetro del rollo", d.diametro_rollo_cm == null ? null : `${d.diametro_rollo_cm} cm`),
-    fila("Uniones del rollo", d.uniones_rollo == null ? null : String(d.uniones_rollo)),
+    fila("Total de uniones", String(d.total_uniones_cintas)),
     fila("Origen", d.origen_rollo === "sistema" ? "Sistema" : "Captura manual"),
   ].filter(Boolean).join("");
+
 
   const filaPersonal = [
     fila("Conductor", d.conductor),
@@ -355,41 +382,41 @@ export async function abrirImpresionEtiquetas(snap: EtiquetaSnapshot): Promise<v
   .print-page:last-child { page-break-after: auto; break-after: auto; }
   .print-label {
     width: 97.95mm; height: 129.70mm;
-    border: 0.4mm solid #0a3d1f;
-    background: #e9f4ea;
+    border: 0;
+    background: #fff;
     overflow: hidden;
     break-inside: avoid; page-break-inside: avoid;
     -webkit-print-color-adjust: exact; print-color-adjust: exact;
   }
-  .print-label.empty { border-style: dashed; border-color: #cbd5cb; background: transparent; }
+  .print-label.empty { background: transparent; }
   .lbl-inner { padding: 3mm 3.2mm; height: 100%; display: flex; flex-direction: column; gap: 1.2mm; font-size: 8.5pt; line-height: 1.15; }
-  .lbl-header { display: flex; align-items: flex-start; justify-content: space-between; border-bottom: 0.3mm solid #0a3d1f; padding-bottom: 1.5mm; }
+  .lbl-header { display: flex; align-items: flex-start; justify-content: space-between; border-bottom: 0.3mm solid #555; padding-bottom: 1.5mm; }
   .lbl-logo { display: block; height: 11mm; max-width: 52mm; object-fit: contain; }
-  .lbl-sub { font-size: 7pt; color: #244; }
-  .lbl-pos { font-size: 30pt; font-weight: 900; color: #0a3d1f; line-height: 0.9; padding: 0 2mm; }
+  .lbl-sub { font-size: 7pt; color: #444; }
+  .lbl-pos { font-size: 30pt; font-weight: 900; color: #111; line-height: 0.9; padding: 0 2mm; }
   .lbl-row { display: flex; gap: 3mm; }
   .lbl-row > div { flex: 1; display: flex; flex-direction: column; }
   .lbl-row > div.wide { flex: 2; }
-  .k { font-size: 6.5pt; text-transform: uppercase; color: #476; letter-spacing: 0.3px; }
-  .v { font-size: 9pt; font-weight: 700; color: #08221a; }
+  .k { font-size: 6.5pt; text-transform: uppercase; color: #555; letter-spacing: 0.3px; }
+  .v { font-size: 9pt; font-weight: 700; color: #111; }
   .v.big { font-size: 13pt; }
-  .lbl-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5mm 3mm; border-top: 0.2mm dashed #0a3d1f66; border-bottom: 0.2mm dashed #0a3d1f66; padding: 1.5mm 0; }
+  .lbl-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5mm 3mm; border-top: 0.2mm dashed #999; border-bottom: 0.2mm dashed #999; padding: 1.5mm 0; }
   .lbl-grid > div { display: flex; flex-direction: column; }
-  .lbl-cinta { background: #d4e8d6; padding: 1.5mm 2mm; border-radius: 1mm; }
-  .lbl-cinta-tit { font-size: 6.5pt; text-transform: uppercase; color: #08221a; font-weight: 700; margin-bottom: 1mm; }
-  .lbl-obs { font-size: 7pt; padding-top: 1mm; border-top: 0.2mm dotted #0a3d1f88; }
-  .lbl-ver { font-size: 6pt; color: #476; text-align: right; }
+  .lbl-cinta { background: transparent; padding: 1.5mm 0; border-top: 0.2mm solid #999; border-bottom: 0.2mm solid #999; }
+  .lbl-cinta-tit { font-size: 6.5pt; text-transform: uppercase; color: #111; font-weight: 700; margin-bottom: 1mm; }
+  .lbl-obs { font-size: 7pt; padding-top: 1mm; border-top: 0.2mm dotted #999; }
+  .lbl-ver { font-size: 6pt; color: #555; text-align: right; }
 
-  .lbl-qr-zone { margin-top: auto; padding-top: 1.5mm; border-top: 0.3mm solid #0a3d1f; display: flex; justify-content: space-around; align-items: flex-end; gap: 4mm; }
+  .lbl-qr-zone { margin-top: auto; padding-top: 1.5mm; border-top: 0.3mm solid #555; display: flex; justify-content: space-around; align-items: flex-end; gap: 4mm; }
   .lbl-qr-zone .qr-box { display: flex; flex-direction: column; align-items: center; gap: 0.8mm; }
   .lbl-qr-zone .qr-box img { width: 20mm; height: 20mm; display: block; }
-  .lbl-qr-zone .qr-cap { font-size: 6.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: #08221a; display: flex; align-items: center; justify-content: center; height: 4mm; }
+  .lbl-qr-zone .qr-cap { font-size: 6.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: #111; display: flex; align-items: center; justify-content: center; height: 4mm; }
   .lbl-qr-zone .qr-saplogo { width: auto !important; height: 4mm !important; max-width: 22mm; object-fit: contain; }
   @media screen {
     body { background: #eee; padding: 20px; }
     .print-page { margin: 0 auto 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.15); background: #fff; }
     .print-toolbar { max-width: 215.9mm; margin: 0 auto 12px; display: flex; justify-content: flex-end; gap: 8px; }
-    .print-toolbar button { padding: 8px 14px; border: 0; background: #0a3d1f; color: #fff; border-radius: 6px; cursor: pointer; font-weight: 600; }
+    .print-toolbar button { padding: 8px 14px; border: 0; background: #333; color: #fff; border-radius: 6px; cursor: pointer; font-weight: 600; }
   }
   @media print { .print-toolbar { display: none; } }
 </style>
