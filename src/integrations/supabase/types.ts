@@ -2553,6 +2553,17 @@ export type Database = {
         }
         Returns: string
       }
+      crear_lote_pesaje_cintas_manual_v2: {
+        Args: {
+          _diametro_cm: number
+          _idempotency: string
+          _numero_rollo: string
+          _orden_manual: string
+          _peso_neto_kg: number
+          _uniones: number
+        }
+        Returns: string
+      }
       descartar_borrador: {
         Args: { _motivo: string; _spec_id: string }
         Returns: undefined
@@ -2605,6 +2616,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      pc_set_orden_manual: {
+        Args: { _lote_id: string; _orden: string }
+        Returns: undefined
       }
       preparar_impresion_etiquetas: {
         Args: { _lote_id: string; _motivo?: string }

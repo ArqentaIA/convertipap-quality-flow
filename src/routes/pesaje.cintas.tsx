@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { Loader2, Search, Printer, CheckCircle2, Ban, Lock, Unlock, Pencil, UserCog, FileSpreadsheet } from "lucide-react";
 import {
   buscarContextoRollo, listConductores, listBobinadoras,
-  crearLote, crearLoteManual, obtenerLoteYCintas, registrarCinta, corregirCinta, anularCinta,
+  crearLote, crearLoteManualV2, guardarOrdenManual, obtenerLoteYCintas, registrarCinta, corregirCinta, anularCinta,
   finalizarLote, reabrirLote, prepararImpresion, actualizarDatosOperativos,
   obtenerReporteMensualCintas,
   type ContextoRollo, type CintaRegistrada, type LoteCintas,
@@ -45,7 +45,8 @@ function PesajeCintasPage() {
   const qc = useQueryClient();
   const buscar = useServerFn(buscarContextoRollo);
   const crear = useServerFn(crearLote);
-  const crearManual = useServerFn(crearLoteManual);
+  const crearManualV2 = useServerFn(crearLoteManualV2);
+  const guardarOrden = useServerFn(guardarOrdenManual);
   const traer = useServerFn(obtenerLoteYCintas);
   const registrar = useServerFn(registrarCinta);
   const corregir = useServerFn(corregirCinta);
@@ -79,7 +80,11 @@ function PesajeCintasPage() {
   const [manualOpen, setManualOpen] = useState(false);
   const [manualRollo, setManualRollo] = useState("");
   const [manualPeso, setManualPeso] = useState("");
-  const [manual, setManual] = useState<{ rollo: string; peso: number } | null>(null);
+  const [manualDiametro, setManualDiametro] = useState("");
+  const [manualUniones, setManualUniones] = useState("0");
+  const [manualOrden, setManualOrden] = useState("");
+  const [ordenSistema, setOrdenSistema] = useState("");
+  const [confirmManual, setConfirmManual] = useState(false);
   const requestGuard = useRef(false);
 
   const conductoresQ = useQuery({
@@ -101,20 +106,36 @@ function PesajeCintasPage() {
   const lote: LoteCintas | null = loteQ.data?.lote ?? null;
   const cintas: CintaRegistrada[] = (loteQ.data?.cintas ?? []).filter((c) => c.estado === "registrada");
 
+  const origenManual = (() => {
+    const snap = lote?.datos_calidad_snapshot as
+      | { datos_origen?: { diametro_cm?: number | null; uniones?: number | null } }
+      | null
+      | undefined;
+    const o = snap && typeof snap === "object" ? snap.datos_origen : null;
+    return { diametro: o?.diametro_cm ?? null, uniones: o?.uniones ?? null };
+  })();
+
   async function onBuscar() {
     const rollo = rolloInput.trim();
     if (!rollo) { toast.error("Ingrese un número de rollo."); return; }
     setBuscando(true);
-    setContexto(null); setLoteId(null); setManual(null); setManualOpen(false);
+    setContexto(null); setLoteId(null); setManualOpen(false);
     try {
       const ctx = await buscar({ data: { numero_rollo: rollo } });
       if (!ctx) {
-        setManualRollo(rollo);
-        setManualOpen(true);
-        toast.info("Rollo no encontrado. Se activó la captura manual.");
+        activarManual(rollo);
         return;
       }
       setContexto(ctx);
+      const dup = ctx.datos_origen;
+      if (dup && (dup.diametro_duplicados > 1 || dup.uniones_duplicados > 1)) {
+        console.warn("[pesaje-cintas] Mediciones duplicadas para el rollo", rollo, {
+          diametro_duplicados: dup.diametro_duplicados,
+          uniones_duplicados: dup.uniones_duplicados,
+          diametro_medicion_id: dup.diametro_medicion_id,
+          uniones_medicion_id: dup.uniones_medicion_id,
+        });
+      }
       if (ctx.lote) {
         setLoteId(ctx.lote.id);
         setConductorId(ctx.lote.conductor_id ?? "");
@@ -123,9 +144,7 @@ function PesajeCintasPage() {
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Error al buscar el rollo.";
       if (msg.toLowerCase().includes("rollo no encontrado") || msg.toLowerCase().includes("not found") || msg.toLowerCase().includes("no encontrado")) {
-        setManualRollo(rollo);
-        setManualOpen(true);
-        toast.info("Rollo no encontrado. Se activó la captura manual.");
+        activarManual(rollo);
       } else {
         toast.error(msg);
       }
@@ -134,41 +153,94 @@ function PesajeCintasPage() {
     }
   }
 
-  function onUsarManual() {
-    const rollo = manualRollo.trim();
-    const peso = Number(manualPeso);
-    if (!rollo) { toast.error("Ingrese el número de rollo."); return; }
-    if (!(peso > 0) || peso > 3000) { toast.error("El peso debe ser mayor a 0 y no rebasar 3000 kg."); return; }
-    setContexto(null); setLoteId(null);
-    setManual({ rollo, peso });
-    setManualOpen(false);
+  function activarManual(rollo: string) {
+    setContexto(null);
+    setLoteId(null);
+    setManualRollo(rollo);
+    setManualPeso("");
+    setManualDiametro("");
+    setManualUniones("0");
+    setManualOrden("");
+    setManualOpen(true);
+    toast.info("Rollo no encontrado en la base de datos. Capture los datos mínimos del rollo de origen para continuar.");
   }
 
-  async function onCrearLote() {
-    if (!contexto && !manual) return;
-    if (!manual && (!conductorId || !bobinadoraId)) { toast.error("Seleccione conductor y bobinadora."); return; }
+  function validarManual(): { peso: number; diametro: number; uniones: number } | null {
+    const peso = Number(manualPeso);
+    const diametro = Number(manualDiametro);
+    const uniones = Number(manualUniones);
+    if (!manualRollo.trim()) { toast.error("Capture el número de rollo."); return null; }
+    if (!(peso > 0) || peso > 3000) { toast.error("Capture el peso neto del rollo."); return null; }
+    if (!(diametro > 0)) { toast.error("Capture el diámetro del rollo."); return null; }
+    if (!Number.isInteger(uniones) || uniones < 0) {
+      toast.error("Las uniones deben ser un número entero igual o mayor que cero.");
+      return null;
+    }
+    return { peso, diametro, uniones };
+  }
+
+  function onSolicitarLoteManual() {
+    if (!validarManual()) return;
+    setConfirmManual(true);
+  }
+
+  async function onCrearLoteManual() {
+    const v = validarManual();
+    if (!v) return;
     if (requestGuard.current) return;
     requestGuard.current = true;
     setSaving(true);
     try {
-      const { lote_id } = manual
-        ? await crearManual({
-            data: {
-              numero_rollo: manual.rollo,
-              peso_neto_kg: manual.peso,
-              conductor_id: null,
-              bobinadora_id: null,
-              idempotency_key: uuid(),
-            },
-          })
-        : await crear({
-            data: {
-              numero_rollo: contexto!.muestra.numero_rollo,
-              conductor_id: conductorId,
-              bobinadora_id: bobinadoraId,
-              idempotency_key: uuid(),
-            },
-          });
+      // Segunda verificación: el rollo pudo darse de alta durante la captura
+      const ctx = await buscar({ data: { numero_rollo: manualRollo.trim() } }).catch(() => null);
+      if (ctx) {
+        setConfirmManual(false);
+        setManualOpen(false);
+        setContexto(ctx);
+        if (ctx.lote) setLoteId(ctx.lote.id);
+        toast.info("El rollo fue localizado durante la validación. Se utilizarán los datos del sistema.");
+        return;
+      }
+      const { lote_id } = await crearManualV2({
+        data: {
+          numero_rollo: manualRollo.trim(),
+          peso_neto_kg: v.peso,
+          diametro_cm: v.diametro,
+          uniones: v.uniones,
+          orden_manual: manualOrden.trim() || null,
+          idempotency_key: uuid(),
+        },
+      });
+      setConfirmManual(false);
+      setLoteId(lote_id);
+      await qc.invalidateQueries({ queryKey: ["cintas-lote", lote_id] });
+      toast.success("Lote manual creado.");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Error al crear el lote manual.");
+    } finally {
+      requestGuard.current = false;
+      setSaving(false);
+    }
+  }
+
+  async function onCrearLote() {
+    if (!contexto) return;
+    if (!conductorId || !bobinadoraId) { toast.error("Seleccione conductor y bobinadora."); return; }
+    if (requestGuard.current) return;
+    requestGuard.current = true;
+    setSaving(true);
+    try {
+      const { lote_id } = await crear({
+        data: {
+          numero_rollo: contexto.muestra.numero_rollo,
+          conductor_id: conductorId,
+          bobinadora_id: bobinadoraId,
+          idempotency_key: uuid(),
+        },
+      });
+      if (ordenSistema.trim()) {
+        await guardarOrden({ data: { lote_id, orden: ordenSistema.trim() } }).catch(() => null);
+      }
       setLoteId(lote_id);
       await qc.invalidateQueries({ queryKey: ["cintas-lote", lote_id] });
       toast.success("Lote iniciado.");
@@ -180,7 +252,7 @@ function PesajeCintasPage() {
     }
   }
 
-  const netoBM = lote?.peso_bobina_madre_neto_kg ?? contexto?.pesaje.peso_neto_kg ?? manual?.peso ?? 0;
+  const netoBM = lote?.peso_bobina_madre_neto_kg ?? contexto?.pesaje.peso_neto_kg ?? 0;
   const totalCintas = lote?.peso_total_cintas_kg ?? 0;
   const pendiente = lote ? lote.peso_pendiente_kg : netoBM;
   const merma = lote?.estado === "finalizado" ? lote.merma_kg : null;
@@ -438,96 +510,166 @@ function PesajeCintasPage() {
           </div>
 
         {manualOpen && (
-          <div className="mt-3 rounded-lg border-2 border-primary bg-primary/5 p-3">
-            <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-primary">
-              Captura manual · rollo no encontrado
-            </div>
-            <div className="grid gap-2 sm:grid-cols-3">
-              <div>
-                <label className="mb-1 block text-[11px] text-muted-foreground">N.º de rollo</label>
-                <input
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 font-mono text-sm"
-                  placeholder="Ej. 10057-4"
-                  maxLength={64}
-                  value={manualRollo}
-                  onChange={(e) => setManualRollo(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-[11px] text-muted-foreground">Peso del rollo (kg) · máx. 3000</label>
-                <input
-                  type="number" inputMode="decimal" step="0.01" min="0" max="3000"
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  value={manualPeso}
-                  onChange={(e) => setManualPeso(e.target.value)}
-                />
-              </div>
-              <div className="flex items-end">
-                <button
-                  onClick={onUsarManual}
-                  className="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
-                >
-                  Continuar
-                </button>
-              </div>
-            </div>
+          <div className="mt-3 rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-sm text-warning">
+            Rollo no encontrado en la base de datos. Capture los datos mínimos del rollo de origen para continuar.
           </div>
         )}
       </div>
 
-      {/* Contexto */}
+      {/* Contexto recuperado del sistema */}
       {contexto && (
         <div className="rounded-lg border border-border bg-card p-4">
-          <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">2 · Datos recuperados</div>
+          <div className="mb-2 flex flex-wrap items-center gap-2">
+            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">2 · Datos recuperados del sistema</span>
+            <span className="rounded-full bg-success/15 px-2 py-0.5 text-[10px] font-semibold uppercase text-success">Recuperado del sistema</span>
+          </div>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4 text-sm">
             <Field label="N.º Rollo" value={contexto.muestra.numero_rollo} />
             <Field label="Fabricación" value={contexto.muestra.fabricacion || "—"} />
             <Field label="Producto" value={contexto.muestra.producto_nombre ?? contexto.muestra.producto_codigo ?? "—"} />
             <Field label="Turno" value={contexto.muestra.turno} />
-            <Field label="Peso neto del rollo de origen" value={`${n(contexto.pesaje.peso_neto_kg)} kg`} highlight />
+            <Field
+              label="Peso neto del rollo de origen"
+              value={`${n(contexto.pesaje.peso_neto_kg)} kg`}
+              hint="Origen: Pesaje de Rollo"
+              highlight
+            />
+            <Field
+              label="Diámetro del rollo de origen"
+              value={contexto.datos_origen?.diametro_cm == null ? "—" : `${n(contexto.datos_origen.diametro_cm)} cm`}
+              hint={contexto.datos_origen?.diametro_cm == null ? undefined : "Origen: Control de Calidad"}
+            />
+            <Field
+              label="Uniones del rollo de origen"
+              value={contexto.datos_origen?.uniones == null ? "—" : String(contexto.datos_origen.uniones)}
+              hint={contexto.datos_origen?.uniones == null ? undefined : "Origen: Control de Calidad"}
+            />
             <Field label="Analista" value={contexto.muestra.analista ?? "—"} />
             <Field label="Supervisor" value={contexto.muestra.jefe_maquina ?? "—"} />
             <Field label="Operador" value={contexto.muestra.operador ?? "—"} />
+            {lote ? (
+              <Field label="Orden de Producción" value={lote.numero_orden || "—"} />
+            ) : (
+              <div>
+                <label className="mb-1 block text-[11px] uppercase tracking-wide text-muted-foreground">Orden de Producción (opcional)</label>
+                <input
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  maxLength={64}
+                  value={ordenSistema}
+                  onChange={(e) => setOrdenSistema(e.target.value)}
+                  placeholder="Captura manual"
+                />
+              </div>
+            )}
           </div>
         </div>
       )}
 
-      {/* Contexto manual: solo etiquetas, sin datos no disponibles */}
-      {manual && !contexto && (
+      {/* Captura manual del rollo de origen */}
+      {manualOpen && !contexto && (
         <div className="rounded-lg border border-border bg-card p-4">
-          <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">2 · Datos capturados manualmente</div>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4 text-sm">
-            <Field label="N.º Rollo" value={manual.rollo} />
-            <Field label="Fabricación" value="" />
-            <Field label="Producto" value="" />
-            <Field label="Turno" value="" />
-            <Field label="Peso del rollo de origen" value={`${n(manual.peso)} kg`} highlight />
-            <Field label="Analista" value="" />
-            <Field label="Supervisor" value="" />
-            <Field label="Operador" value="" />
+          <div className="mb-2 flex flex-wrap items-center gap-2">
+            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">2 · Datos capturados manualmente</span>
+            <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-semibold uppercase text-primary">Captura manual</span>
           </div>
-        </div>
-      )}
 
-      {/* Conductor / bobinadora */}
-      {manual && !lote && (
-        <div className="rounded-lg border border-border bg-card p-4">
-          <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">3 · Conductor y bobinadora</div>
-          <div className="grid gap-3 md:grid-cols-3">
-            <Field label="Conductor" value="" />
-            <Field label="Bobinadora" value="" />
-            <div className="flex items-end">
+          {lote ? (
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4 text-sm">
+              <Field label="N.º Rollo" value={lote.numero_rollo} />
+              <Field label="Orden de Producción" value={lote.numero_orden || "—"} />
+              <Field label="Peso neto del rollo de origen" value={`${n(lote.peso_bobina_madre_neto_kg)} kg`} highlight />
+              <Field label="Diámetro del rollo de origen" value={origenManual.diametro == null ? "—" : `${n(origenManual.diametro)} cm`} />
+              <Field label="Uniones del rollo de origen" value={origenManual.uniones == null ? "—" : String(origenManual.uniones)} />
+            </div>
+          ) : (
+            <>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                <div>
+                  <label className="mb-1 block text-[11px] uppercase tracking-wide text-muted-foreground">N.º de rollo</label>
+                  <input
+                    readOnly
+                    className="w-full rounded-md border border-input bg-muted px-3 py-2 font-mono text-sm"
+                    value={manualRollo}
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-[11px] uppercase tracking-wide text-muted-foreground">Orden de Producción (opcional)</label>
+                  <input
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    maxLength={64}
+                    value={manualOrden}
+                    onChange={(e) => setManualOrden(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-[11px] uppercase tracking-wide text-muted-foreground">Peso neto (kg) *</label>
+                  <input
+                    type="number" inputMode="decimal" step="0.01" min="0" max="3000"
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    value={manualPeso}
+                    onChange={(e) => setManualPeso(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-[11px] uppercase tracking-wide text-muted-foreground">Diámetro (cm) *</label>
+                  <input
+                    type="number" inputMode="decimal" step="0.01" min="0"
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    value={manualDiametro}
+                    onChange={(e) => setManualDiametro(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-[11px] uppercase tracking-wide text-muted-foreground">Uniones *</label>
+                  <input
+                    type="number" inputMode="numeric" step="1" min="0"
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    value={manualUniones}
+                    onChange={(e) => setManualUniones(e.target.value)}
+                  />
+                </div>
+              </div>
               <button
-                onClick={onCrearLote}
+                onClick={onSolicitarLoteManual}
                 disabled={saving}
-                className="w-full rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground disabled:opacity-50"
+                className="mt-3 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
               >
-                {saving ? "Iniciando…" : "Iniciar lote"}
+                {saving ? "Creando…" : "Crear lote manual y continuar"}
+              </button>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Confirmación de lote manual */}
+      {confirmManual && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-lg border border-border bg-card p-5 shadow-lg">
+            <div className="mb-2 text-sm font-semibold text-foreground">Confirmar lote manual</div>
+            <p className="text-sm text-muted-foreground">
+              El rollo no fue localizado en la base de datos. Se creará un lote manual con el peso, diámetro y uniones
+              capturados. Verifique que la información sea correcta.
+            </p>
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                onClick={() => setConfirmManual(false)}
+                disabled={saving}
+                className="rounded-md border border-border bg-background px-4 py-2 text-sm"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={onCrearLoteManual}
+                disabled={saving}
+                className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+              >
+                {saving ? "Creando…" : "Confirmar y continuar"}
               </button>
             </div>
           </div>
         </div>
       )}
+
 
       {contexto && !lote && (
         <div className="rounded-lg border border-border bg-card p-4">
@@ -686,11 +828,12 @@ function PesajeCintasPage() {
 }
 
 
-function Field({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
+function Field({ label, value, highlight, hint }: { label: string; value: string; highlight?: boolean; hint?: string }) {
   return (
     <div>
       <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</div>
       <div className={`min-h-5 text-sm ${highlight ? "text-base font-bold text-primary" : "font-medium text-foreground"}`}>{value}</div>
+      {hint && <div className="text-[10px] text-muted-foreground">{hint}</div>}
     </div>
   );
 }
