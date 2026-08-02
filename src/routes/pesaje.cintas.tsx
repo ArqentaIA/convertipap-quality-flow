@@ -57,9 +57,11 @@ function PesajeCintasPage() {
   const actualizarOp = useServerFn(actualizarDatosOperativos);
 
   const [rolMe, setRolMe] = useState<string | null>(null);
+  const [authReady, setAuthReady] = useState(false);
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
       if (!data.user) return;
+      setAuthReady(true);
       const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", data.user.id);
       const list = (roles ?? []).map((r) => r.role as string);
       if (list.includes("administrador")) setRolMe("administrador");
@@ -87,13 +89,18 @@ function PesajeCintasPage() {
   const [confirmManual, setConfirmManual] = useState(false);
   const requestGuard = useRef(false);
 
+  const traerConductores = useServerFn(listConductores);
+  const traerBobinadoras = useServerFn(listBobinadoras);
+
   const conductoresQ = useQuery({
     queryKey: ["cintas-conductores"],
-    queryFn: () => listConductores(),
+    queryFn: () => traerConductores(),
+    enabled: authReady,
   });
   const bobinadorasQ = useQuery({
     queryKey: ["cintas-bobinadoras"],
-    queryFn: () => listBobinadoras(),
+    queryFn: () => traerBobinadoras(),
+    enabled: authReady,
   });
 
   const loteQ = useQuery({
