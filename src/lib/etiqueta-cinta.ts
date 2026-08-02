@@ -29,6 +29,19 @@ async function toDataUrl(url: string): Promise<string> {
 
 type Medicion = { valor: number; min: number; obj: number; max: number };
 
+export type EtiquetaCinta = {
+  id: string;
+  posicion: number;
+  uniones: number;
+  peso_cinta_kg: number;
+  ancho_util: number;
+  ancho_util_unidad: string | null;
+  observaciones: string | null;
+  estado?: string;
+  version_etiqueta?: number;
+  created_at?: string;
+};
+
 export type EtiquetaSnapshot = {
   lote_id: string;
   muestra_calidad_id?: string | null;
@@ -40,6 +53,15 @@ export type EtiquetaSnapshot = {
   fecha_produccion: string | null;
   conductor: string;
   bobinadora: string;
+  origen_rollo?: "sistema" | "captura_manual";
+  peso_neto_rollo_kg?: number | null;
+  diametro_rollo_cm?: number | null;
+  uniones_rollo?: number | null;
+  total_uniones_cintas?: number;
+  cintas_excluidas?: number;
+  folio?: string;
+  version_etiqueta?: number;
+  generado_at?: string;
   datos_calidad: {
     turno?: string;
     jefe_maquina?: string | null;
@@ -48,16 +70,126 @@ export type EtiquetaSnapshot = {
     analista?: string | null;
     mediciones?: Record<string, Medicion>;
   } & Record<string, unknown>;
-  cintas: Array<{
-    id: string;
-    posicion: number;
-    uniones: number;
-    peso_cinta_kg: number;
-    ancho_util: number;
-    ancho_util_unidad: string | null;
-    observaciones: string | null;
-  }>;
+  cintas: EtiquetaCinta[];
 };
+
+// Fuente única de datos de etiqueta: vista previa, impresión, reimpresión,
+// contenido del QR y snapshot de auditoría usan SIEMPRE esta función.
+export type CintaLabelData = {
+  origen_rollo: "sistema" | "captura_manual";
+  es_manual: boolean;
+  numero_rollo: string;
+  orden_produccion: string | null;
+  peso_neto_rollo_kg: number | null;
+  diametro_rollo_cm: number | null;
+  uniones_rollo: number | null;
+  fabricacion: string | null;
+  producto: string | null;
+  turno: string | null;
+  conductor: string | null;
+  bobinadora: string | null;
+  supervisor: string | null;
+  analista: string | null;
+  fecha_produccion: string | null;
+  lote_id: string;
+  cinta_id: string;
+  posicion: number;
+  peso_cinta_kg: number;
+  ancho_cinta: number;
+  ancho_unidad: string;
+  uniones_cinta: number;
+  estado_cinta: string;
+  observaciones: string | null;
+  registrado_at: string | null;
+  version_etiqueta: number;
+  total_uniones_cintas: number;
+  generado_at: string;
+  qr_payload: Record<string, unknown>;
+  trace_url: string | null;
+  sap_url: string | null;
+};
+
+const SIN_DATOS = /^\s*(sin datos registrados|—|-)?\s*$/i;
+function limpio(v: string | null | undefined): string | null {
+  if (v == null) return null;
+  return SIN_DATOS.test(v) ? null : v;
+}
+
+export function buildCintaLabelData(snap: EtiquetaSnapshot, cinta: EtiquetaCinta): CintaLabelData {
+  const dc = snap.datos_calidad ?? {};
+  const origen: "sistema" | "captura_manual" =
+    snap.origen_rollo ?? (snap.muestra_calidad_id ? "sistema" : "captura_manual");
+  const esManual = origen === "captura_manual";
+  const muestraId = snap.muestra_calidad_id ?? null;
+  const traceBase = muestraId
+    ? `${TRACE_BASE_URL}/muestra/${muestraId}`
+    : (snap.lote_id ? `${TRACE_BASE_URL}/lote-cintas/${snap.lote_id}` : null);
+  const version = cinta.version_etiqueta ?? snap.version_etiqueta ?? 1;
+  const traceUrl = traceBase
+    ? `${traceBase}${traceBase.includes("?") ? "&" : "?"}cinta=${cinta.id}&v=${version}`
+    : null;
+  const sapUrl = muestraId
+    ? `${TRACE_BASE_URL}/muestra/${muestraId}?vista=sap&rollo=${encodeURIComponent(snap.numero_rollo || "")}`
+    : null;
+
+  const generadoAt = snap.generado_at ?? new Date().toISOString();
+  const data: CintaLabelData = {
+    origen_rollo: origen,
+    es_manual: esManual,
+    numero_rollo: snap.numero_rollo,
+    orden_produccion: limpio(snap.numero_orden ?? null),
+    peso_neto_rollo_kg: snap.peso_neto_rollo_kg ?? null,
+    diametro_rollo_cm: snap.diametro_rollo_cm ?? null,
+    uniones_rollo: snap.uniones_rollo ?? null,
+    fabricacion: limpio(snap.fabricacion),
+    producto: limpio(snap.producto_nombre ?? snap.producto_codigo ?? null),
+    turno: limpio(dc.turno ?? null),
+    conductor: limpio(snap.conductor),
+    bobinadora: limpio(snap.bobinadora),
+    supervisor: limpio(dc.jefe_maquina ?? null),
+    analista: limpio(dc.analista ?? null),
+    fecha_produccion: snap.fecha_produccion,
+    lote_id: snap.lote_id,
+    cinta_id: cinta.id,
+    posicion: cinta.posicion,
+    peso_cinta_kg: cinta.peso_cinta_kg,
+    ancho_cinta: cinta.ancho_util,
+    ancho_unidad: cinta.ancho_util_unidad ?? "cm",
+    uniones_cinta: cinta.uniones,
+    estado_cinta: cinta.estado ?? "registrada",
+    observaciones: limpio(cinta.observaciones),
+    registrado_at: cinta.created_at ?? null,
+    version_etiqueta: version,
+    total_uniones_cintas: snap.total_uniones_cintas ?? 0,
+    generado_at: generadoAt,
+    qr_payload: {},
+    trace_url: traceUrl,
+    sap_url: sapUrl,
+  };
+
+  data.qr_payload = {
+    version_esquema_qr: 1,
+    origen_rollo: data.origen_rollo,
+    numero_rollo: data.numero_rollo,
+    orden_produccion: data.orden_produccion,
+    peso_neto_rollo_kg: data.peso_neto_rollo_kg,
+    diametro_rollo_cm: data.diametro_rollo_cm,
+    uniones_rollo: data.uniones_rollo,
+    lote_id: data.lote_id,
+    cinta_id: data.cinta_id,
+    posicion: data.posicion,
+    peso_cinta_kg: data.peso_cinta_kg,
+    ancho_cinta_cm: data.ancho_cinta,
+    uniones_cinta: data.uniones_cinta,
+    estado_cinta: data.estado_cinta,
+    version_etiqueta: data.version_etiqueta,
+    generado_at: data.generado_at,
+    url: data.trace_url,
+  };
+
+  return data;
+}
+
 
 const VAR_LABEL: Record<string, string> = {
   pesoBase: "Peso base",
