@@ -138,6 +138,9 @@ export function buildCintaLabelData(snap: EtiquetaSnapshot, cinta: EtiquetaCinta
     origen_rollo: origen,
     es_manual: esManual,
     numero_rollo: snap.numero_rollo,
+    // Identificador derivado SOLO para etiqueta/QR/snapshot. Nunca se persiste
+    // como numero_rollo del lote.
+    numero_rollo_etiqueta: buildNumeroRolloEtiqueta(snap.numero_rollo, cinta.posicion),
     orden_produccion: limpio(snap.numero_orden ?? null),
     peso_neto_rollo_kg: snap.peso_neto_rollo_kg ?? null,
     diametro_rollo_cm: snap.diametro_rollo_cm ?? null,
