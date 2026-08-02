@@ -803,11 +803,12 @@ function PesajeCintasPage() {
                 )}
                 <button
                   onClick={onImprimir}
-                  disabled={cintas.length === 0}
+                  disabled={cintas.length === 0 || imprimiendo}
                   className="flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm hover:bg-accent disabled:opacity-50"
                 >
                   <Printer className="h-4 w-4" /> Imprimir etiquetas ({cintas.length})
                 </button>
+
                 {lote.estado === "abierto" && (
                   <button
                     onClick={onFinalizar}
