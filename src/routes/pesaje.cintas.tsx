@@ -439,16 +439,7 @@ function PesajeCintasPage() {
       // Los datos de pesaje no viajan por Realtime: refrescamos antes de imprimir.
       await qc.invalidateQueries({ queryKey: ["cintas-lote", lote.id] });
       await loteQ.refetch();
-      let res;
-      try {
-        res = await preparar({ data: { lote_id: lote.id, motivo, cinta_id: cintaId } });
-      } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : "";
-        if (!msg.toLowerCase().includes("motivo obligatorio")) throw err;
-        const m = window.prompt("Motivo de reimpresión (mínimo 5 caracteres):") ?? "";
-        if (m.trim().length < 5) { toast.error("Motivo requerido para reimprimir."); return; }
-        res = await preparar({ data: { lote_id: lote.id, motivo: m.trim(), cinta_id: cintaId } });
-      }
+      const res = await preparar({ data: { lote_id: lote.id, motivo, cinta_id: cintaId } });
       await abrirImpresionEtiquetas(res.snapshot as unknown as EtiquetaSnapshot);
       toast.success(
         `${res.tipo === "REIMPRESION" ? "Reimpresión" : "Impresión"} ${res.folio} · ${res.cantidad_etiquetas} etiqueta(s) · versión ${res.version_etiqueta}`,
@@ -471,9 +462,7 @@ function PesajeCintasPage() {
       toast.error("La cinta no está vigente: no puede reimprimirse.");
       return;
     }
-    const motivo = window.prompt("Motivo de reimpresión (mínimo 5 caracteres):") ?? "";
-    if (motivo.trim().length < 5) { toast.error("Motivo requerido para reimprimir."); return; }
-    void ejecutarImpresion(motivo.trim(), c.id);
+    void ejecutarImpresion(null, c.id);
   }
 
 
