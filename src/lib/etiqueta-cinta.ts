@@ -261,7 +261,7 @@ function renderEtiqueta(d: CintaLabelData, snap: EtiquetaSnapshot, assets: Asset
     .join("");
 
   const filaRollo = [
-    fila("N.º Rollo", d.numero_rollo),
+    fila("N.º Rollo / Cinta", d.numero_rollo_etiqueta),
     fila("Fecha", d.fecha_produccion),
     fila("O. Producción", d.orden_produccion),
   ].filter(Boolean).join("");
@@ -274,9 +274,10 @@ function renderEtiqueta(d: CintaLabelData, snap: EtiquetaSnapshot, assets: Asset
 
   const filaOrigen = [
     fila("Diámetro del rollo", d.diametro_rollo_cm == null ? null : `${d.diametro_rollo_cm} cm`),
-    fila("Uniones del rollo", d.uniones_rollo == null ? null : String(d.uniones_rollo)),
+    fila("Total de uniones", String(d.total_uniones_cintas)),
     fila("Origen", d.origen_rollo === "sistema" ? "Sistema" : "Captura manual"),
   ].filter(Boolean).join("");
+
 
   const filaPersonal = [
     fila("Conductor", d.conductor),
