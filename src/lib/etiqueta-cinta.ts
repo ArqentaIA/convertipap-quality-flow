@@ -221,72 +221,73 @@ type Assets = {
   qrSap: string | null;
 };
 
-function renderEtiqueta(snap: EtiquetaSnapshot, cinta: EtiquetaSnapshot["cintas"][number], assets: Assets): string {
-  const logoDataUrl = assets.logo;
-  const dc = snap.datos_calidad ?? {};
-  const fecha = snap.fecha_produccion ?? "";
-  // Fuente única de verdad para el PESO impreso: peso individual de esta cinta
-  // (public.pesajes_cintas.peso_cinta_kg de la versión vigente = 'registrada').
-  // No usar peso neto de bobina madre, snapshot general del lote, acumulado,
-  // pendiente ni merma. Cada etiqueta muestra el peso de SU propia cinta.
-  const pesoEtiquetaKg = cinta.peso_cinta_kg;
+function fila(k: string, v: string | null): string {
+  // No se imprimen campos sin dato (flujo manual): se omiten por completo.
+  if (v == null || v === "") return "";
+  return `<div><span class="k">${k}</span><span class="v">${v}</span></div>`;
+}
+
+function renderEtiqueta(d: CintaLabelData, snap: EtiquetaSnapshot, assets: Assets): string {
+  const mediciones = snap.datos_calidad?.mediciones ?? {};
+  const gridVars = Object.keys(VAR_LABEL)
+    .filter((k) => mediciones[k]?.valor != null)
+    .map((k) => `<div><span class="k">${VAR_LABEL[k]}</span><span class="v">${med(snap, k)}</span></div>`)
+    .join("");
+
+  const filaRollo = [
+    fila("N.º Rollo", d.numero_rollo),
+    fila("Fecha", d.fecha_produccion),
+    fila("O. Producción", d.orden_produccion),
+  ].filter(Boolean).join("");
+
+  const filaProd = [
+    fila("Fabricación", d.fabricacion),
+    fila("Turno", d.turno),
+    fila("Producto", d.producto),
+  ].filter(Boolean).join("");
+
+  const filaOrigen = [
+    fila("Diámetro del rollo", d.diametro_rollo_cm == null ? null : `${d.diametro_rollo_cm} cm`),
+    fila("Uniones del rollo", d.uniones_rollo == null ? null : String(d.uniones_rollo)),
+    fila("Origen", d.origen_rollo === "sistema" ? "Sistema" : "Captura manual"),
+  ].filter(Boolean).join("");
+
+  const filaPersonal = [
+    fila("Conductor", d.conductor),
+    fila("Bobinadora", d.bobinadora),
+    fila("Supervisor", d.supervisor),
+    fila("Analista", d.analista),
+  ].filter(Boolean).join("");
+
   return `
   <div class="print-label">
     <div class="lbl-inner">
       <div class="lbl-header">
         <div class="lbl-title">
-          <img class="lbl-logo" src="${logoDataUrl}" alt="Convertipap" />
+          <img class="lbl-logo" src="${assets.logo}" alt="Convertipap" />
           <div class="lbl-sub">Etiqueta de Cinta · Producción</div>
         </div>
-        <div class="lbl-pos">${cinta.posicion}</div>
+        <div class="lbl-pos">${d.posicion}</div>
       </div>
 
+      ${filaRollo ? `<div class="lbl-row">${filaRollo}</div>` : ""}
+      ${filaProd ? `<div class="lbl-row">${filaProd}</div>` : ""}
+      ${filaOrigen ? `<div class="lbl-row">${filaOrigen}</div>` : ""}
 
-      <div class="lbl-row">
-        <div><span class="k">N.º Rollo</span><span class="v">${snap.numero_rollo}</span></div>
-        <div><span class="k">Fecha</span><span class="v">${fecha}</span></div>
-      </div>
-
-      <div class="lbl-row">
-        <div><span class="k">Fabricación</span><span class="v">${snap.fabricacion || "—"}</span></div>
-        <div><span class="k">Turno</span><span class="v">${dc.turno ?? "—"}</span></div>
-      </div>
-
-      <div class="lbl-row">
-        <div class="wide"><span class="k">Producto</span><span class="v">${snap.producto_nombre ?? snap.producto_codigo ?? "—"}</span></div>
-      </div>
-
-      <div class="lbl-grid">
-        <div><span class="k">${VAR_LABEL.pesoBase}</span><span class="v">${med(snap,"pesoBase")}</span></div>
-        <div><span class="k">${VAR_LABEL.calibre}</span><span class="v">${med(snap,"calibre")}</span></div>
-        <div><span class="k">${VAR_LABEL.tensionMD}</span><span class="v">${med(snap,"tensionMD")}</span></div>
-        <div><span class="k">${VAR_LABEL.tensionCD}</span><span class="v">${med(snap,"tensionCD")}</span></div>
-        <div><span class="k">${VAR_LABEL.tensionRH}</span><span class="v">${med(snap,"tensionRH")}</span></div>
-        <div><span class="k">${VAR_LABEL.humedad}</span><span class="v">${med(snap,"humedad")}</span></div>
-        <div><span class="k">${VAR_LABEL.blancuraR457}</span><span class="v">${med(snap,"blancuraR457")}</span></div>
-        <div><span class="k">${VAR_LABEL.elongMD}</span><span class="v">${med(snap,"elongMD")}</span></div>
-      </div>
+      ${gridVars ? `<div class="lbl-grid">${gridVars}</div>` : ""}
 
       <div class="lbl-cinta">
-        <div class="lbl-cinta-tit">Datos de la cinta</div>
+        <div class="lbl-cinta-tit">Datos de esta cinta</div>
         <div class="lbl-row">
-          <div><span class="k">Peso</span><span class="v big">${fmtKg(pesoEtiquetaKg)} kg</span></div>
-          <div><span class="k">Ancho útil</span><span class="v">${cinta.ancho_util} ${cinta.ancho_util_unidad ?? "cm"}</span></div>
-          <div><span class="k">Uniones</span><span class="v">${cinta.uniones}</span></div>
+          <div><span class="k">Peso</span><span class="v big">${fmtKg(d.peso_cinta_kg)} kg</span></div>
+          <div><span class="k">Ancho de la cinta</span><span class="v">${d.ancho_cinta} ${d.ancho_unidad}</span></div>
+          <div><span class="k">Uniones de esta cinta</span><span class="v">${d.uniones_cinta}</span></div>
         </div>
       </div>
 
-      <div class="lbl-row">
-        <div><span class="k">Conductor</span><span class="v">${snap.conductor}</span></div>
-        <div><span class="k">Bobinadora</span><span class="v">${snap.bobinadora}</span></div>
-      </div>
+      ${filaPersonal ? `<div class="lbl-row">${filaPersonal}</div>` : ""}
 
-      <div class="lbl-row">
-        <div><span class="k">Supervisor</span><span class="v">${dc.jefe_maquina ?? "—"}</span></div>
-        <div><span class="k">Analista</span><span class="v">${dc.analista ?? "—"}</span></div>
-      </div>
-
-      ${cinta.observaciones ? `<div class="lbl-obs"><span class="k">Obs.</span> ${cinta.observaciones}</div>` : ""}
+      ${d.observaciones ? `<div class="lbl-obs"><span class="k">Obs.</span> ${d.observaciones}</div>` : ""}
 
       ${assets.qrTrace || assets.qrSap ? `
       <div class="lbl-qr-zone">
@@ -301,39 +302,38 @@ function renderEtiqueta(snap: EtiquetaSnapshot, cinta: EtiquetaSnapshot["cintas"
           <div class="qr-cap"><img class="qr-saplogo" src="${assets.sapLogo}" alt="SAP HANA" /></div>
         </div>` : ""}
       </div>` : ""}
+      <div class="lbl-ver">Versión de etiqueta ${d.version_etiqueta}${snap.folio ? ` · ${snap.folio}` : ""}</div>
     </div>
   </div>`;
 }
 
 export async function abrirImpresionEtiquetas(snap: EtiquetaSnapshot): Promise<void> {
-  const muestraId = snap.muestra_calidad_id ?? null;
-  // Trazabilidad: si el lote proviene de Calidad se apunta a la muestra;
-  // si es captura manual (sin muestra) se apunta al propio lote de cintas,
-  // que expone el mismo N.º de rollo y el mismo peso registrado (fuente única).
-  const traceUrl = muestraId
-    ? `${TRACE_BASE_URL}/muestra/${muestraId}`
-    : (snap.lote_id ? `${TRACE_BASE_URL}/lote-cintas/${snap.lote_id}` : null);
-  const sapUrl = muestraId
-    ? `${TRACE_BASE_URL}/muestra/${muestraId}?vista=sap&rollo=${encodeURIComponent(snap.numero_rollo || "")}`
-    : null;
+  const cintas = [...snap.cintas].sort((a, b) => a.posicion - b.posicion);
+  const datos = cintas.map((c) => buildCintaLabelData(snap, c));
 
-
-  const [logoDataUrl, sapLogoDataUrl, qrTrace, qrSap] = await Promise.all([
+  const [logoDataUrl, sapLogoDataUrl] = await Promise.all([
     toDataUrl(logoUrl),
     toDataUrl(sapHanaAsset.url),
-    traceUrl ? QRCode.toDataURL(traceUrl, { margin: 1, width: 220, errorCorrectionLevel: "M" }) : Promise.resolve(null),
-    sapUrl ? QRCode.toDataURL(sapUrl, { margin: 1, width: 220, errorCorrectionLevel: "M" }) : Promise.resolve(null),
   ]);
-  const assets: Assets = { logo: logoDataUrl, sapLogo: sapLogoDataUrl, qrTrace, qrSap };
 
-  const cintas = [...snap.cintas].sort((a, b) => a.posicion - b.posicion);
+  // El QR se regenera SIEMPRE con los datos vigentes de cada cinta.
+  const etiquetas = await Promise.all(
+    datos.map(async (d) => {
+      const [qrTrace, qrSap] = await Promise.all([
+        d.trace_url ? QRCode.toDataURL(d.trace_url, { margin: 1, width: 220, errorCorrectionLevel: "M" }) : Promise.resolve(null),
+        d.sap_url ? QRCode.toDataURL(d.sap_url, { margin: 1, width: 220, errorCorrectionLevel: "M" }) : Promise.resolve(null),
+      ]);
+      return renderEtiqueta(d, snap, { logo: logoDataUrl, sapLogo: sapLogoDataUrl, qrTrace, qrSap });
+    }),
+  );
+
   const paginas: string[] = [];
-  for (let i = 0; i < cintas.length; i += 4) {
-    const bloque = cintas.slice(i, i + 4);
-    const celdas = [0, 1, 2, 3].map((j) => bloque[j] ? renderEtiqueta(snap, bloque[j], assets) : `<div class="print-label empty"></div>`).join("");
-
+  for (let i = 0; i < etiquetas.length; i += 4) {
+    const bloque = etiquetas.slice(i, i + 4);
+    const celdas = [0, 1, 2, 3].map((j) => bloque[j] ?? `<div class="print-label empty"></div>`).join("");
     paginas.push(`<section class="print-page">${celdas}</section>`);
   }
+
 
   const html = `<!doctype html>
 <html lang="es">
