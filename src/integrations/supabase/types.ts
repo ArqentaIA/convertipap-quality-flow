@@ -2646,12 +2646,10 @@ export type Database = {
         Args: { _lote_id: string; _orden: string }
         Returns: undefined
       }
-      preparar_impresion_etiquetas:
-        | { Args: { _lote_id: string; _motivo?: string }; Returns: Json }
-        | {
-            Args: { _cinta_id?: string; _lote_id: string; _motivo?: string }
-            Returns: Json
-          }
+      preparar_impresion_etiquetas: {
+        Args: { _cinta_id?: string; _lote_id: string; _motivo?: string }
+        Returns: Json
+      }
       publicar_especificacion: {
         Args: { _motivo: string; _spec_id: string }
         Returns: undefined
