@@ -106,7 +106,7 @@ function PesajeCintasPage() {
   const lote: LoteCintas | null = loteQ.data?.lote ?? null;
   const todasCintas: CintaRegistrada[] = loteQ.data?.cintas ?? [];
   const cintas: CintaRegistrada[] = todasCintas.filter((c) => c.estado === "registrada");
-  const cintasExcluidas = todasCintas.length - cintas.length;
+  
   // Total de uniones = suma de uniones de las cintas vigentes ('registrada').
   const totalUnionesCintas = cintas.reduce((acc, c) => acc + (c.uniones ?? 0), 0);
 
