@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { Loader2, Search, Printer, CheckCircle2, Ban, Lock, Unlock, Pencil, UserCog, FileSpreadsheet } from "lucide-react";
 import {
   buscarContextoRollo, listConductores, listBobinadoras,
-  crearLote, crearLoteManual, obtenerLoteYCintas, registrarCinta, corregirCinta, anularCinta,
+  crearLote, crearLoteManualV2, guardarOrdenManual, obtenerLoteYCintas, registrarCinta, corregirCinta, anularCinta,
   finalizarLote, reabrirLote, prepararImpresion, actualizarDatosOperativos,
   obtenerReporteMensualCintas,
   type ContextoRollo, type CintaRegistrada, type LoteCintas,
@@ -45,7 +45,8 @@ function PesajeCintasPage() {
   const qc = useQueryClient();
   const buscar = useServerFn(buscarContextoRollo);
   const crear = useServerFn(crearLote);
-  const crearManual = useServerFn(crearLoteManual);
+  const crearManualV2 = useServerFn(crearLoteManualV2);
+  const guardarOrden = useServerFn(guardarOrdenManual);
   const traer = useServerFn(obtenerLoteYCintas);
   const registrar = useServerFn(registrarCinta);
   const corregir = useServerFn(corregirCinta);
@@ -79,7 +80,11 @@ function PesajeCintasPage() {
   const [manualOpen, setManualOpen] = useState(false);
   const [manualRollo, setManualRollo] = useState("");
   const [manualPeso, setManualPeso] = useState("");
-  const [manual, setManual] = useState<{ rollo: string; peso: number } | null>(null);
+  const [manualDiametro, setManualDiametro] = useState("");
+  const [manualUniones, setManualUniones] = useState("0");
+  const [manualOrden, setManualOrden] = useState("");
+  const [ordenSistema, setOrdenSistema] = useState("");
+  const [confirmManual, setConfirmManual] = useState(false);
   const requestGuard = useRef(false);
 
   const conductoresQ = useQuery({
@@ -109,12 +114,19 @@ function PesajeCintasPage() {
     try {
       const ctx = await buscar({ data: { numero_rollo: rollo } });
       if (!ctx) {
-        setManualRollo(rollo);
-        setManualOpen(true);
-        toast.info("Rollo no encontrado. Se activó la captura manual.");
+        activarManual(rollo);
         return;
       }
       setContexto(ctx);
+      const dup = ctx.datos_origen;
+      if (dup && (dup.diametro_duplicados > 1 || dup.uniones_duplicados > 1)) {
+        console.warn("[pesaje-cintas] Mediciones duplicadas para el rollo", rollo, {
+          diametro_duplicados: dup.diametro_duplicados,
+          uniones_duplicados: dup.uniones_duplicados,
+          diametro_medicion_id: dup.diametro_medicion_id,
+          uniones_medicion_id: dup.uniones_medicion_id,
+        });
+      }
       if (ctx.lote) {
         setLoteId(ctx.lote.id);
         setConductorId(ctx.lote.conductor_id ?? "");
@@ -123,9 +135,7 @@ function PesajeCintasPage() {
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Error al buscar el rollo.";
       if (msg.toLowerCase().includes("rollo no encontrado") || msg.toLowerCase().includes("not found") || msg.toLowerCase().includes("no encontrado")) {
-        setManualRollo(rollo);
-        setManualOpen(true);
-        toast.info("Rollo no encontrado. Se activó la captura manual.");
+        activarManual(rollo);
       } else {
         toast.error(msg);
       }
@@ -134,41 +144,94 @@ function PesajeCintasPage() {
     }
   }
 
-  function onUsarManual() {
-    const rollo = manualRollo.trim();
-    const peso = Number(manualPeso);
-    if (!rollo) { toast.error("Ingrese el número de rollo."); return; }
-    if (!(peso > 0) || peso > 3000) { toast.error("El peso debe ser mayor a 0 y no rebasar 3000 kg."); return; }
-    setContexto(null); setLoteId(null);
-    setManual({ rollo, peso });
-    setManualOpen(false);
+  function activarManual(rollo: string) {
+    setContexto(null);
+    setLoteId(null);
+    setManualRollo(rollo);
+    setManualPeso("");
+    setManualDiametro("");
+    setManualUniones("0");
+    setManualOrden("");
+    setManualOpen(true);
+    toast.info("Rollo no encontrado en la base de datos. Capture los datos mínimos del rollo de origen para continuar.");
   }
 
-  async function onCrearLote() {
-    if (!contexto && !manual) return;
-    if (!manual && (!conductorId || !bobinadoraId)) { toast.error("Seleccione conductor y bobinadora."); return; }
+  function validarManual(): { peso: number; diametro: number; uniones: number } | null {
+    const peso = Number(manualPeso);
+    const diametro = Number(manualDiametro);
+    const uniones = Number(manualUniones);
+    if (!manualRollo.trim()) { toast.error("Capture el número de rollo."); return null; }
+    if (!(peso > 0) || peso > 3000) { toast.error("Capture el peso neto del rollo."); return null; }
+    if (!(diametro > 0)) { toast.error("Capture el diámetro del rollo."); return null; }
+    if (!Number.isInteger(uniones) || uniones < 0) {
+      toast.error("Las uniones deben ser un número entero igual o mayor que cero.");
+      return null;
+    }
+    return { peso, diametro, uniones };
+  }
+
+  function onSolicitarLoteManual() {
+    if (!validarManual()) return;
+    setConfirmManual(true);
+  }
+
+  async function onCrearLoteManual() {
+    const v = validarManual();
+    if (!v) return;
     if (requestGuard.current) return;
     requestGuard.current = true;
     setSaving(true);
     try {
-      const { lote_id } = manual
-        ? await crearManual({
-            data: {
-              numero_rollo: manual.rollo,
-              peso_neto_kg: manual.peso,
-              conductor_id: null,
-              bobinadora_id: null,
-              idempotency_key: uuid(),
-            },
-          })
-        : await crear({
-            data: {
-              numero_rollo: contexto!.muestra.numero_rollo,
-              conductor_id: conductorId,
-              bobinadora_id: bobinadoraId,
-              idempotency_key: uuid(),
-            },
-          });
+      // Segunda verificación: el rollo pudo darse de alta durante la captura
+      const ctx = await buscar({ data: { numero_rollo: manualRollo.trim() } }).catch(() => null);
+      if (ctx) {
+        setConfirmManual(false);
+        setManualOpen(false);
+        setContexto(ctx);
+        if (ctx.lote) setLoteId(ctx.lote.id);
+        toast.info("El rollo fue localizado durante la validación. Se utilizarán los datos del sistema.");
+        return;
+      }
+      const { lote_id } = await crearManualV2({
+        data: {
+          numero_rollo: manualRollo.trim(),
+          peso_neto_kg: v.peso,
+          diametro_cm: v.diametro,
+          uniones: v.uniones,
+          orden_manual: manualOrden.trim() || null,
+          idempotency_key: uuid(),
+        },
+      });
+      setConfirmManual(false);
+      setLoteId(lote_id);
+      await qc.invalidateQueries({ queryKey: ["cintas-lote", lote_id] });
+      toast.success("Lote manual creado.");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Error al crear el lote manual.");
+    } finally {
+      requestGuard.current = false;
+      setSaving(false);
+    }
+  }
+
+  async function onCrearLote() {
+    if (!contexto) return;
+    if (!conductorId || !bobinadoraId) { toast.error("Seleccione conductor y bobinadora."); return; }
+    if (requestGuard.current) return;
+    requestGuard.current = true;
+    setSaving(true);
+    try {
+      const { lote_id } = await crear({
+        data: {
+          numero_rollo: contexto.muestra.numero_rollo,
+          conductor_id: conductorId,
+          bobinadora_id: bobinadoraId,
+          idempotency_key: uuid(),
+        },
+      });
+      if (ordenSistema.trim()) {
+        await guardarOrden({ data: { lote_id, orden: ordenSistema.trim() } }).catch(() => null);
+      }
       setLoteId(lote_id);
       await qc.invalidateQueries({ queryKey: ["cintas-lote", lote_id] });
       toast.success("Lote iniciado.");
@@ -180,7 +243,7 @@ function PesajeCintasPage() {
     }
   }
 
-  const netoBM = lote?.peso_bobina_madre_neto_kg ?? contexto?.pesaje.peso_neto_kg ?? manual?.peso ?? 0;
+  const netoBM = lote?.peso_bobina_madre_neto_kg ?? contexto?.pesaje.peso_neto_kg ?? 0;
   const totalCintas = lote?.peso_total_cintas_kg ?? 0;
   const pendiente = lote ? lote.peso_pendiente_kg : netoBM;
   const merma = lote?.estado === "finalizado" ? lote.merma_kg : null;
