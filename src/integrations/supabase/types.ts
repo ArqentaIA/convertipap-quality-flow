@@ -529,6 +529,7 @@ export type Database = {
       impresiones_etiquetas_cintas: {
         Row: {
           cantidad_etiquetas: number
+          cinta_id: string | null
           datos_impresion_snapshot: Json
           folio_impresion: string
           id: string
@@ -536,11 +537,16 @@ export type Database = {
           impreso_por: string
           lote_id: string
           motivo_reimpresion: string | null
+          numero_impresion: number
           posiciones_impresas: number[]
+          qr_contenido: Json | null
           tipo: Database["public"]["Enums"]["impresion_cinta_tipo"]
+          total_uniones_cintas: number | null
+          version_etiqueta: number | null
         }
         Insert: {
           cantidad_etiquetas: number
+          cinta_id?: string | null
           datos_impresion_snapshot: Json
           folio_impresion: string
           id?: string
@@ -548,11 +554,16 @@ export type Database = {
           impreso_por: string
           lote_id: string
           motivo_reimpresion?: string | null
+          numero_impresion?: number
           posiciones_impresas: number[]
+          qr_contenido?: Json | null
           tipo: Database["public"]["Enums"]["impresion_cinta_tipo"]
+          total_uniones_cintas?: number | null
+          version_etiqueta?: number | null
         }
         Update: {
           cantidad_etiquetas?: number
+          cinta_id?: string | null
           datos_impresion_snapshot?: Json
           folio_impresion?: string
           id?: string
@@ -560,10 +571,21 @@ export type Database = {
           impreso_por?: string
           lote_id?: string
           motivo_reimpresion?: string | null
+          numero_impresion?: number
           posiciones_impresas?: number[]
+          qr_contenido?: Json | null
           tipo?: Database["public"]["Enums"]["impresion_cinta_tipo"]
+          total_uniones_cintas?: number | null
+          version_etiqueta?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "impresiones_etiquetas_cintas_cinta_id_fkey"
+            columns: ["cinta_id"]
+            isOneToOne: false
+            referencedRelation: "pesajes_cintas"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "impresiones_etiquetas_cintas_lote_id_fkey"
             columns: ["lote_id"]
@@ -1349,6 +1371,7 @@ export type Database = {
           sustituye_a_cinta_id: string | null
           uniones: number
           updated_at: string
+          version_etiqueta: number
         }
         Insert: {
           actualizado_por?: string | null
@@ -1369,6 +1392,7 @@ export type Database = {
           sustituye_a_cinta_id?: string | null
           uniones?: number
           updated_at?: string
+          version_etiqueta?: number
         }
         Update: {
           actualizado_por?: string | null
@@ -1389,6 +1413,7 @@ export type Database = {
           sustituye_a_cinta_id?: string | null
           uniones?: number
           updated_at?: string
+          version_etiqueta?: number
         }
         Relationships: [
           {
@@ -2622,7 +2647,7 @@ export type Database = {
         Returns: undefined
       }
       preparar_impresion_etiquetas: {
-        Args: { _lote_id: string; _motivo?: string }
+        Args: { _cinta_id?: string; _lote_id: string; _motivo?: string }
         Returns: Json
       }
       publicar_especificacion: {

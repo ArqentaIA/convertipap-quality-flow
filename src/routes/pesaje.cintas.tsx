@@ -104,16 +104,25 @@ function PesajeCintasPage() {
   });
 
   const lote: LoteCintas | null = loteQ.data?.lote ?? null;
-  const cintas: CintaRegistrada[] = (loteQ.data?.cintas ?? []).filter((c) => c.estado === "registrada");
+  const todasCintas: CintaRegistrada[] = loteQ.data?.cintas ?? [];
+  const cintas: CintaRegistrada[] = todasCintas.filter((c) => c.estado === "registrada");
+  const cintasExcluidas = todasCintas.length - cintas.length;
+  // Total de uniones = suma de uniones de las cintas vigentes ('registrada').
+  const totalUnionesCintas = cintas.reduce((acc, c) => acc + (c.uniones ?? 0), 0);
 
   const origenManual = (() => {
     const snap = lote?.datos_calidad_snapshot as
-      | { datos_origen?: { diametro_cm?: number | null; uniones?: number | null } }
+      | { datos_origen?: { origen?: string; diametro_origen_cm?: number | null; uniones_origen?: number | null; diametro_cm?: number | null; uniones?: number | null } }
       | null
       | undefined;
     const o = snap && typeof snap === "object" ? snap.datos_origen : null;
-    return { diametro: o?.diametro_cm ?? null, uniones: o?.uniones ?? null };
+    return {
+      diametro: o?.diametro_origen_cm ?? o?.diametro_cm ?? null,
+      uniones: o?.uniones_origen ?? o?.uniones ?? null,
+      origen: (o?.origen as string | undefined) ?? (lote?.es_manual ? "captura_manual" : "sistema"),
+    };
   })();
+
 
   async function onBuscar() {
     const rollo = rolloInput.trim();
@@ -399,12 +408,27 @@ function PesajeCintasPage() {
 
   const [imprimiendo, setImprimiendo] = useState(false);
 
-  async function ejecutarImpresion(motivo: string | null) {
+  async function ejecutarImpresion(motivo: string | null, cintaId: string | null) {
     if (!lote) return;
     setImprimiendo(true);
     try {
-      const res = await preparar({ data: { lote_id: lote.id, motivo } });
-      abrirImpresionEtiquetas(res.snapshot as EtiquetaSnapshot);
+      // Los datos de pesaje no viajan por Realtime: refrescamos antes de imprimir.
+      await qc.invalidateQueries({ queryKey: ["cintas-lote", lote.id] });
+      await loteQ.refetch();
+      let res;
+      try {
+        res = await preparar({ data: { lote_id: lote.id, motivo, cinta_id: cintaId } });
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : "";
+        if (!msg.toLowerCase().includes("motivo obligatorio")) throw err;
+        const m = window.prompt("Motivo de reimpresión (mínimo 5 caracteres):") ?? "";
+        if (m.trim().length < 5) { toast.error("Motivo requerido para reimprimir."); return; }
+        res = await preparar({ data: { lote_id: lote.id, motivo: m.trim(), cinta_id: cintaId } });
+      }
+      await abrirImpresionEtiquetas(res.snapshot as unknown as EtiquetaSnapshot);
+      toast.success(
+        `${res.tipo === "REIMPRESION" ? "Reimpresión" : "Impresión"} ${res.folio} · ${res.cantidad_etiquetas} etiqueta(s) · versión ${res.version_etiqueta}`,
+      );
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "Error al preparar impresión.");
     } finally {
@@ -414,8 +438,20 @@ function PesajeCintasPage() {
 
   function onImprimir() {
     if (!lote || cintas.length === 0 || imprimiendo) return;
-    void ejecutarImpresion(lote.estado === "finalizado" ? "Reimpresión de etiquetas desde módulo de cintas" : null);
+    void ejecutarImpresion(null, null);
   }
+
+  function onReimprimirCinta(c: CintaRegistrada) {
+    if (!lote || imprimiendo) return;
+    if (c.estado !== "registrada") {
+      toast.error("La cinta no está vigente: no puede reimprimirse.");
+      return;
+    }
+    const motivo = window.prompt("Motivo de reimpresión (mínimo 5 caracteres):") ?? "";
+    if (motivo.trim().length < 5) { toast.error("Motivo requerido para reimprimir."); return; }
+    void ejecutarImpresion(motivo.trim(), c.id);
+  }
+
 
   // ── Reporte mensual de bobinadoras ─────────────────────────────
   const traerReporte = useServerFn(obtenerReporteMensualCintas);
@@ -718,10 +754,12 @@ function PesajeCintasPage() {
       {/* Lote activo */}
       {lote && (
         <>
-          <div className="grid gap-3 md:grid-cols-5">
+          <div className="grid gap-3 md:grid-cols-6">
             <Card k="Neto rollo de origen" v={`${n(netoBM)} kg`} />
             <Card k="Cintas registradas" v={`${cintas.length} / 20`} />
             <Card k="Peso acumulado" v={`${n(totalCintas)} kg`} />
+            <Card k="TOTAL DE UNIONES DE CINTAS" v={String(totalUnionesCintas)} highlight />
+
             <Card
               k="MERMA CALCULA SISTEMA"
               v={`${n(merma == null ? pendiente : merma)} kg${mermaPct == null ? "" : ` · ${n(mermaPct, 2)} %`}`}
@@ -765,11 +803,12 @@ function PesajeCintasPage() {
                 )}
                 <button
                   onClick={onImprimir}
-                  disabled={cintas.length === 0}
+                  disabled={cintas.length === 0 || imprimiendo}
                   className="flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm hover:bg-accent disabled:opacity-50"
                 >
                   <Printer className="h-4 w-4" /> Imprimir etiquetas ({cintas.length})
                 </button>
+
                 {lote.estado === "abierto" && (
                   <button
                     onClick={onFinalizar}
@@ -799,6 +838,21 @@ function PesajeCintasPage() {
               </div>
             </div>
 
+            {/* Área de impresión */}
+            <div className="mb-4 rounded-md border border-border bg-muted/30 p-3 text-xs">
+              <div className="grid gap-1 sm:grid-cols-2 lg:grid-cols-4">
+                <div>Cintas vigentes: <b className="text-foreground">{cintas.length}</b></div>
+                <div>Etiquetas a generar: <b className="text-foreground">{cintas.length}</b></div>
+                <div>Total de uniones de cintas: <b className="text-foreground">{totalUnionesCintas}</b></div>
+                <div>Origen del rollo: <b className="text-foreground">{origenManual.origen === "sistema" ? "Sistema" : "Captura manual"}</b></div>
+              </div>
+              {cintasExcluidas > 0 && (
+                <div className="mt-2 text-warning">
+                  {cintasExcluidas} cinta(s) anulada(s)/sustituida(s) excluidas de la impresión.
+                </div>
+              )}
+            </div>
+
             {/* Grid de 20 posiciones */}
             <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-4">
               {Array.from({ length: 20 }, (_, i) => i + 1).map((pos) => {
@@ -814,10 +868,12 @@ function PesajeCintasPage() {
                     onRegistrar={onRegistrar}
                     onAnular={c ? () => onAnular(c.id) : undefined}
                     onCorregir={c && lote.estado === "abierto" ? () => onCorregir(c) : undefined}
-                    saving={saving}
+                    onReimprimir={c ? () => onReimprimirCinta(c) : undefined}
+                    saving={saving || imprimiendo}
                   />
                 );
               })}
+
             </div>
           </div>
         </>
@@ -855,10 +911,11 @@ type CintaCardProps = {
   onRegistrar: (peso: number, uniones: number, ancho: number, obs: string) => Promise<void>;
   onAnular?: () => void;
   onCorregir?: () => void;
+  onReimprimir?: () => void;
   saving: boolean;
 };
 
-function CintaCard({ pos, cinta, habilitada, disponibleKg, onRegistrar, onAnular, onCorregir, saving }: CintaCardProps) {
+function CintaCard({ pos, cinta, habilitada, disponibleKg, onRegistrar, onAnular, onCorregir, onReimprimir, saving }: CintaCardProps) {
   const [peso, setPeso] = useState("");
   const [uniones, setUniones] = useState("0");
   const [ancho, setAncho] = useState("");
@@ -890,6 +947,15 @@ function CintaCard({ pos, cinta, habilitada, disponibleKg, onRegistrar, onAnular
               <Pencil className="h-3 w-3" /> Corregir
             </button>
           )}
+          {onReimprimir && (
+            <button
+              onClick={onReimprimir}
+              disabled={saving}
+              className="flex items-center gap-1 text-xs text-foreground hover:underline disabled:opacity-50"
+            >
+              <Printer className="h-3 w-3" /> Reimprimir
+            </button>
+          )}
           {onAnular && (
             <button
               onClick={onAnular}
@@ -899,6 +965,7 @@ function CintaCard({ pos, cinta, habilitada, disponibleKg, onRegistrar, onAnular
             </button>
           )}
         </div>
+
       </div>
     );
   }

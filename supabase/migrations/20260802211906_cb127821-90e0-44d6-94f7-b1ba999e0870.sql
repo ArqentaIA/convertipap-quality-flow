@@ -1,0 +1,1 @@
+DROP FUNCTION IF EXISTS public.preparar_impresion_etiquetas(uuid, text);
