@@ -422,6 +422,7 @@ function PesajeCintasPage() {
     if (motivo.trim().length < 5) { toast.error("Motivo requerido."); return; }
     try {
       await reabrir({ data: { lote_id: lote.id, motivo: motivo.trim() } });
+      setMermaCapa(""); setMermaProceso(""); setMermaGallo("");
       await qc.invalidateQueries({ queryKey: ["cintas-lote", lote.id] });
       toast.success("Rollo reabierto. Puede registrar cintas adicionales.");
     } catch (e: unknown) {

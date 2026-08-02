@@ -297,7 +297,7 @@ export async function generarReporteMensualBobinadoras(
   const headRow = row;
   const heads = [
     "Fecha operativa", "Planta", "Bobinadora", "Turno", "Clave producto", "Nombre producto",
-    "Rollos", "Cintas", "Peso rollos (kg)", "Producción (kg)", "Merma calc. (kg)", "Merma calc. (%)",
+    "Rollos", "Cintas", "Peso rollos (kg)", "Producción (kg)", "Merma Sistema (kg)", "Merma Sistema (%)",
     "Merma por Peso (kg)", "Dif. merma (kg)", "Uniones", "Estado información",
   ];
   ws.getRow(headRow).values = heads;
