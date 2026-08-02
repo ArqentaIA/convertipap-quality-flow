@@ -1045,25 +1045,23 @@ function CintaCard({ pos, cinta, habilitada, disponibleKg, onRegistrar, onAnular
           />
           <p className="mt-0.5 text-[10px] text-muted-foreground">Capture el peso indicado por la báscula.</p>
         </div>
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <label className="mb-0.5 block text-[11px] text-muted-foreground">Ancho útil</label>
-            <input
-              type="number" inputMode="decimal" step="0.01"
-              value={ancho}
-              onChange={(e) => setAncho(e.target.value)}
-              className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm"
-            />
-          </div>
-          <div>
-            <label className="mb-0.5 block text-[11px] text-muted-foreground">Uniones</label>
-            <input
-              type="number" inputMode="numeric" min="0" step="1"
-              value={uniones}
-              onChange={(e) => setUniones(e.target.value)}
-              className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm"
-            />
-          </div>
+        <div>
+          <label className="mb-0.5 block text-[11px] text-muted-foreground">Ancho útil (cm)</label>
+          <input
+            type="number" inputMode="decimal" step="0.01"
+            value={ancho}
+            onChange={(e) => setAncho(e.target.value)}
+            className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm"
+          />
+        </div>
+        <div>
+          <label className="mb-0.5 block text-[11px] text-muted-foreground">Uniones</label>
+          <input
+            type="number" inputMode="numeric" min="0" step="1"
+            value={uniones}
+            onChange={(e) => setUniones(e.target.value)}
+            className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm"
+          />
         </div>
         <div>
           <label className="mb-0.5 block text-[11px] text-muted-foreground">Observaciones (opcional)</label>
