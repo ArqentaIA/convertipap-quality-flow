@@ -35,6 +35,21 @@ export type ContextoRollo = {
     maquina_id: string;
     maquina_codigo: string;
   };
+  datos_origen?: {
+    peso_neto_kg: number | null;
+    peso_origen: string | null;
+    peso_pesaje_id: string | null;
+    diametro_cm: number | null;
+    diametro_medicion_id: string | null;
+    diametro_origen: string | null;
+    diametro_duplicados: number;
+    uniones: number | null;
+    uniones_medicion_id: string | null;
+    uniones_origen: string | null;
+    uniones_duplicados: number;
+    muestra_id: string;
+    recuperado_at: string;
+  } | null;
   lote: null | {
     id: string;
     estado: "abierto" | "finalizado" | "anulado";
@@ -49,6 +64,7 @@ export type ContextoRollo = {
     bobinadora_nombre_snapshot: string;
   };
 };
+
 
 export type CintaRegistrada = {
   id: string;
