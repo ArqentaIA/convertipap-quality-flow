@@ -130,6 +130,7 @@ export function clonarHoja(
   model: SheetModel,
   nombre: string,
   mapCol: (c: number) => number | null = (c) => c,
+  mapRow: (r: number) => number = (r) => r,
 ): Worksheet {
   const ws = wb.addWorksheet(nombre, {
     pageSetup: model.pageSetup as never,
@@ -141,12 +142,12 @@ export function clonarHoja(
     if (t && w) ws.getColumn(t).width = w;
   }
   for (const [r, h] of model.rowHeights) {
-    if (h) ws.getRow(r).height = h;
+    if (h) ws.getRow(mapRow(r)).height = h;
   }
   for (const cell of model.cells) {
     const t = mapCol(cell.c);
     if (!t) continue;
-    const dst = ws.getCell(cell.r, t);
+    const dst = ws.getCell(mapRow(cell.r), t);
     dst.value = cell.value as never;
     dst.style = JSON.parse(JSON.stringify(cell.style)) as never;
   }
@@ -155,7 +156,7 @@ export function clonarHoja(
     const r = mapCol(m.right);
     if (!l || !r || r < l) continue;
     try {
-      ws.mergeCells(m.top, l, m.bottom, r);
+      ws.mergeCells(mapRow(m.top), l, mapRow(m.bottom), r);
     } catch {
       /* combinación no aplicable tras el remapeo */
     }
