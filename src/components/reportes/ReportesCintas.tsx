@@ -86,14 +86,23 @@ function TarjetaReporte(props: {
     retry: false,
   });
 
+  const bobinadorasQ = useQuery({
+    queryKey: ["reportes-cintas-bobinadoras"],
+    queryFn: () => bobinadorasFn(),
+    enabled: !!auth.session?.access_token,
+    staleTime: 300_000,
+  });
+
   const bobinadoras = useMemo(() => {
-    const set = new Set(
-      (conteo.data?.lotes ?? [])
-        .map((l) => (l.bobinadora_nombre_snapshot ?? "").trim())
-        .filter((n) => n && n !== "SIN DATOS REGISTRADOS"),
+    const set = new Set<string>(
+      (bobinadorasQ.data ?? []).map((b) => (b.nombre ?? "").trim()).filter(Boolean),
     );
+    for (const l of conteo.data?.lotes ?? []) {
+      const n = (l.bobinadora_nombre_snapshot ?? "").trim();
+      if (n && n !== "SIN DATOS REGISTRADOS" && n !== "No disponible") set.add(n);
+    }
     return Array.from(set).sort((a, b) => a.localeCompare(b, "es", { numeric: true }));
-  }, [conteo.data]);
+  }, [bobinadorasQ.data, conteo.data]);
 
   const resumen = useMemo(() => {
     const d = conteo.data;
