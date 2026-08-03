@@ -137,11 +137,11 @@ function TarjetaReporte(props: {
     try {
       let lotes = 0, cintas = 0;
       if (props.tipo === "integral") {
-        const data = await integralFn({ data: input });
+        const data = filtrarPorBobinadora(await integralFn({ data: input }));
         const r = await generarBaseIntegralCintas(data, fileName);
         lotes = r.lotes; cintas = r.cintas;
       } else {
-        const data = await datosFn({ data: input });
+        const data = filtrarPorBobinadora(await datosFn({ data: input }));
         const r = await generarReporteMejoradoCintas(data, fileName);
         lotes = r.lotes; cintas = r.cintas;
       }
