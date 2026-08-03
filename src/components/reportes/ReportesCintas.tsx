@@ -8,6 +8,7 @@ import { FileSpreadsheet, Loader2, Layers, Database } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { getDatosReporteCintas, getBaseIntegralCintas } from "@/lib/reportes-cintas.functions";
+import { listBobinadoras } from "@/lib/pesaje-cintas.functions";
 import { generarReporteMejoradoCintas } from "@/services/reporteMejoradoBobinadorasCintas";
 import { generarBaseIntegralCintas } from "@/services/baseIntegralPesajeCintas";
 import { ReporteCintasError } from "@/services/cintas-plantilla-base";
