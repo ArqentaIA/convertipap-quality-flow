@@ -24,6 +24,8 @@ import { getReporteNoConforme, type NoConformeRow } from "@/lib/reporte-no-confo
 import {
   exportReporteNoConformeXLSX,
 } from "@/lib/reporte-no-conforme-export";
+import { ReportesCintasSection } from "@/components/reportes/ReportesCintas";
+
 
 
 export const Route = createFileRoute("/reportes")({
@@ -194,6 +196,10 @@ function ReportesPage() {
         <ReporteNoConformeItem enabled={!!auth.session?.access_token} />
 
         <ReporteGeneralItem enabled={!!auth.session?.access_token} />
+
+        {auth.canAccess("pesaje_cintas") && <ReportesCintasSection />}
+
+
 
 
 
