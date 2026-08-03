@@ -95,9 +95,8 @@ function TarjetaReporte(props: {
   const nombreArchivo = () => {
     const t = turno ? `T${turno}` : "TODOS";
     const base =
-      props.tipo === "diario" ? "Reporte_Diario_Bobinadoras_Cintas"
-        : props.tipo === "mejorado" ? "Reporte_Mejorado_Bobinadoras_Cintas"
-          : "Base_Integral_Pesaje_Cintas";
+      props.tipo === "mejorado" ? "Reporte_Mejorado_Bobinadoras_Cintas"
+        : "Base_Integral_Pesaje_Cintas";
     return `${base}_${inicio}_${fechaFin}_${t}.xlsx`;
   };
 
