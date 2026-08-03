@@ -215,6 +215,13 @@ function TarjetaReporte(props: {
             {TURNOS.map((t) => <option key={t} value={t}>Turno {t}</option>)}
           </select>
         </div>
+        <div className="flex flex-col gap-1">
+          <label className={LABEL_CLS}>Bobinadora</label>
+          <select className={INPUT_CLS} value={bobinadora} onChange={(e) => setBobinadora(e.target.value)}>
+            <option value="">Todas</option>
+            {bobinadoras.map((b) => <option key={b} value={b}>{b}</option>)}
+          </select>
+        </div>
       </div>
 
       <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
