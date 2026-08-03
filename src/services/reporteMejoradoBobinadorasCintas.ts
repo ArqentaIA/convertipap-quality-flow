@@ -124,7 +124,13 @@ export async function generarReporteMejoradoCintas(
         ? fmtFechaLegible(fechas[0]!)
         : `Del ${fmtFechaLegible(fechas[0]!)} al ${fmtFechaLegible(fechas[fechas.length - 1]!)} (${fechas.length} días)`;
 
-  const turnos = [...new Set(ordenados.map((l) => String(l.turno ?? "").trim()).filter(Boolean))].sort();
+  const turnos = [
+    ...new Set(
+      ordenados
+        .map((l) => String(l.turno ?? "").trim())
+        .filter((t) => t && t.toLowerCase() !== "no disponible" && t !== "SIN DATOS REGISTRADOS"),
+    ),
+  ].sort();
   const etiquetaTurno = turnos.length > 1 ? "Turnos:" : "Turno:";
   const valorTurno =
     turnos.length === 0 ? "—" : turnos.length >= 3 ? `Todos (${turnos.join(", ")})` : turnos.join(", ");
@@ -240,12 +246,10 @@ export async function generarReporteMejoradoCintas(
   // ------------------------------- Totales --------------------------------- //
   const totalCintas = ordenados.reduce((a, l) => a + l.activas.length, 0);
   const totalPeso = ordenados.reduce((a, l) => a + l.produccionKg, 0);
-  const totalTurno = grupos.reduce((a, g) => a + g.produccionKg, 0);
   const mermaPeso = ordenados.reduce((a, l) => a + (l.mermaRealKg ?? 0), 0);
   const rollos = new Set(ordenados.map((l) => l.loteId)).size;
 
   const filasTot: [string, number, string][] = [
-    ["TOTAL TURNO", round2(totalTurno), "Kg"],
     ["MERMA POR REVENTADORAS", round2(mermaPeso), "Kg"],
     ["ROLLOS DE ORIGEN", rollos, "rollos"],
     ["CINTAS PRODUCIDAS", totalCintas, "cintas"],

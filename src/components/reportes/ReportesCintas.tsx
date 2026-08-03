@@ -67,6 +67,7 @@ function TarjetaReporte(props: {
   const [inicio, setInicio] = useState(hoyISO());
   const [fin, setFin] = useState(hoyISO());
   const [turno, setTurno] = useState("");
+  const [bobinadora, setBobinadora] = useState("");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -85,20 +86,43 @@ function TarjetaReporte(props: {
     retry: false,
   });
 
+  const bobinadoras = useMemo(() => {
+    const set = new Set(
+      (conteo.data?.lotes ?? [])
+        .map((l) => (l.bobinadora_nombre_snapshot ?? "").trim())
+        .filter((n) => n && n !== "SIN DATOS REGISTRADOS"),
+    );
+    return Array.from(set).sort((a, b) => a.localeCompare(b, "es", { numeric: true }));
+  }, [conteo.data]);
+
   const resumen = useMemo(() => {
     const d = conteo.data;
     if (!d) return null;
-    const registradas = d.cintas.filter((c) => c.estado === "registrada").length;
-    return { lotes: d.lotes.length, cintas: registradas };
-  }, [conteo.data]);
+    const lotes = bobinadora
+      ? d.lotes.filter((l) => (l.bobinadora_nombre_snapshot ?? "").trim() === bobinadora)
+      : d.lotes;
+    const ids = new Set(lotes.map((l) => l.id));
+    const registradas = d.cintas.filter((c) => c.estado === "registrada" && ids.has(c.lote_id)).length;
+    return { lotes: lotes.length, cintas: registradas };
+  }, [conteo.data, bobinadora]);
 
   const nombreArchivo = () => {
     const t = turno ? `T${turno}` : "TODOS";
+    const b = bobinadora ? ` ${bobinadora}` : "";
     if (props.tipo === "mejorado") {
       const fecha = inicio === fechaFin ? inicio : `${inicio}_al_${fechaFin}`;
-      return `Reporte de Bobinadoras — Cintas ${fecha} ${t}.xlsx`;
+      return `Reporte de Bobinadoras — Cintas ${fecha} ${t}${b}.xlsx`;
     }
-    return `Base_Integral_Pesaje_Cintas_${inicio}_${fechaFin}_${t}.xlsx`;
+    return `Base_Integral_Pesaje_Cintas_${inicio}_${fechaFin}_${t}${b.replace(/\s+/g, "_")}.xlsx`;
+  };
+
+  const filtrarPorBobinadora = <T extends { lotes: { id: string; bobinadora_nombre_snapshot: string }[]; cintas: { lote_id: string }[] }>(
+    d: T,
+  ): T => {
+    if (!bobinadora) return d;
+    const lotes = d.lotes.filter((l) => (l.bobinadora_nombre_snapshot ?? "").trim() === bobinadora);
+    const ids = new Set(lotes.map((l) => l.id));
+    return { ...d, lotes, cintas: d.cintas.filter((c) => ids.has(c.lote_id)) };
   };
 
   const generar = async () => {
@@ -113,11 +137,11 @@ function TarjetaReporte(props: {
     try {
       let lotes = 0, cintas = 0;
       if (props.tipo === "integral") {
-        const data = await integralFn({ data: input });
+        const data = filtrarPorBobinadora(await integralFn({ data: input }));
         const r = await generarBaseIntegralCintas(data, fileName);
         lotes = r.lotes; cintas = r.cintas;
       } else {
-        const data = await datosFn({ data: input });
+        const data = filtrarPorBobinadora(await datosFn({ data: input }));
         const r = await generarReporteMejoradoCintas(data, fileName);
         lotes = r.lotes; cintas = r.cintas;
       }
@@ -189,6 +213,13 @@ function TarjetaReporte(props: {
           <select className={INPUT_CLS} value={turno} onChange={(e) => setTurno(e.target.value)}>
             <option value="">Todos</option>
             {TURNOS.map((t) => <option key={t} value={t}>Turno {t}</option>)}
+          </select>
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className={LABEL_CLS}>Bobinadora</label>
+          <select className={INPUT_CLS} value={bobinadora} onChange={(e) => setBobinadora(e.target.value)}>
+            <option value="">Todas</option>
+            {bobinadoras.map((b) => <option key={b} value={b}>{b}</option>)}
           </select>
         </div>
       </div>
