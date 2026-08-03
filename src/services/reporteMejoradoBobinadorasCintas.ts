@@ -169,7 +169,11 @@ export async function generarReporteMejoradoCintas(
   for (let c = 1; c <= colObs; c++) {
     const cell = ws.getCell(FILA_ENCABEZADO, c);
     cell.value =
-      c <= 3 ? heads[c - 1] : c === colObs ? "Observaciones" : "Peso (Kg)";
+      c <= 3
+        ? heads[c - 1]
+        : c === colObs
+          ? "Observaciones"
+          : `Cinta ${c - COL_POS_INI + 1}\nPeso (Kg)`;
     cell.font = { bold: true };
     cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: GRIS } };
     cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
