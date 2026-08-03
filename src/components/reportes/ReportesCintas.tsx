@@ -43,7 +43,7 @@ export function ReportesCintasSection() {
       <TarjetaReporte
         tipo="mejorado"
         icono={<FileSpreadsheet className="h-4 w-4 text-emerald-600" />}
-        titulo="Reporte Mejorado de Bobinadoras — Cintas"
+        titulo="Reporte de Bobinadoras — Cintas"
         descripcion="Formato mejorado con medidas dinámicas, pesos por cinta, observaciones y totales operativos."
       />
       <TarjetaReporte
