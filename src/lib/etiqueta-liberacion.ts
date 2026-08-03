@@ -248,11 +248,15 @@ function buildHtml(
 
   .foot{padding:5px 12px;font-size:9.5px;color:#64748b;text-align:right;margin-top:auto}
 
+  /* Contenedor de ajuste a media carta */
+  .fit{width:139.7mm;margin:0 auto;transform-origin:top center}
+
   @page{size:5.5in 8.5in;margin:0}
   @media print{
-    html,body{background:#fff;padding:0;margin:0}
+    html,body{background:#fff;padding:0;margin:0;width:139.7mm;height:215.9mm;overflow:hidden}
     .toolbar{display:none}
-    .sheet{border:2px solid #0f172a;width:auto;min-height:auto;box-shadow:none;margin:0;page-break-inside:avoid;break-inside:avoid}
+    .fit{width:135mm;margin:0;transform:scale(var(--fit-scale,1));transform-origin:top left}
+    .sheet{width:135mm;min-height:auto;border:2px solid #0f172a;box-shadow:none;margin:0;page-break-inside:avoid;break-inside:avoid;page-break-after:avoid}
   }
 </style>
 </head>
@@ -261,6 +265,7 @@ function buildHtml(
     <button class="secondary" onclick="window.close()">Cerrar</button>
     <button onclick="window.print()">Imprimir</button>
   </div>
+  <div class="fit">
   <div class="sheet">
     <div class="head">
       <div class="brand"><img src="${logoDataUrl}" alt="Convertipap" /></div>
@@ -361,6 +366,27 @@ function buildHtml(
 
     <div class="foot">FOR-CAL-04 · Generado automáticamente</div>
   </div>
+  </div>
+<script>
+(function(){
+  var MM = 96/25.4;
+  function fit(){
+    var el = document.querySelector('.fit');
+    var sheet = document.querySelector('.sheet');
+    if(!el||!sheet) return;
+    el.style.setProperty('--fit-scale','1');
+    var availH = 215.9*MM - 4;      // alto media carta
+    var availW = 139.7*MM - 4;      // ancho media carta
+    var h = sheet.getBoundingClientRect().height;
+    var w = sheet.getBoundingClientRect().width;
+    var s = Math.min(1, availH/h, availW/w);
+    el.style.setProperty('--fit-scale', String(s));
+  }
+  window.addEventListener('load', fit);
+  window.addEventListener('beforeprint', fit);
+  setTimeout(fit, 400);
+})();
+</script>
 </body>
 </html>`;
 }
