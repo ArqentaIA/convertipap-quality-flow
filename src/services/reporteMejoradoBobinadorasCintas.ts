@@ -96,9 +96,24 @@ export async function generarReporteMejoradoCintas(
     c.alignment = { horizontal: "center", vertical: "middle" };
   });
 
+  // Fecha / periodo y turno(s) reales cubiertos por el reporte.
+  const fechas = [...new Set(ordenados.map((l) => l.fecha).filter(Boolean))].sort();
+  const etiquetaFecha = fechas.length > 1 ? "Periodo:" : "Fecha:";
+  const valorFecha =
+    fechas.length === 0
+      ? "—"
+      : fechas.length === 1
+        ? fmtFechaLegible(fechas[0]!)
+        : `Del ${fmtFechaLegible(fechas[0]!)} al ${fmtFechaLegible(fechas[fechas.length - 1]!)} (${fechas.length} días)`;
+
+  const turnos = [...new Set(ordenados.map((l) => String(l.turno ?? "").trim()).filter(Boolean))].sort();
+  const etiquetaTurno = turnos.length > 1 ? "Turnos:" : "Turno:";
+  const valorTurno =
+    turnos.length === 0 ? "—" : turnos.length >= 3 ? `Todos (${turnos.join(", ")})` : turnos.join(", ");
+
   const meta: [string, string, string?, string?][] = [
-    ["Nombre de Bobinador:", g0.bobinador, "Fecha:", fmtFechaLegible(g0.fecha)],
-    ["Nombre de Bobinadora:", g0.bobinadora, "Turno:", g0.turno],
+    ["Nombre de Bobinador:", g0.bobinador, etiquetaFecha, valorFecha],
+    ["Nombre de Bobinadora:", g0.bobinadora, etiquetaTurno, valorTurno],
     ["Tipo de Papel:", g0.producto],
   ];
   meta.forEach(([et, val, et2, val2], i) => {
@@ -208,12 +223,10 @@ export async function generarReporteMejoradoCintas(
   const rollos = new Set(ordenados.map((l) => l.loteId)).size;
 
   const filasTot: [string, number, string][] = [
-    ["PRODUCCIÓN TOTAL", round2(totalPeso), "Kg"],
     ["TOTAL TURNO", round2(totalTurno), "Kg"],
     ["MERMA POR REVENTADORAS", round2(mermaPeso), "Kg"],
     ["ROLLOS DE ORIGEN", rollos, "rollos"],
     ["CINTAS PRODUCIDAS", totalCintas, "cintas"],
-    ["TOTAL DE CINTAS", totalCintas, "cintas"],
     ["TOTAL DE PESO", round2(totalPeso), "Kg"],
   ];
 
