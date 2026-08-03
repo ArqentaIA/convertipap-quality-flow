@@ -87,7 +87,7 @@ const rangoSchema = z.object({
 });
 
 async function assertAcceso(supabase: {
-  rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }>;
+  rpc: (fn: string, args: JsonRow) => Promise<{ data: unknown; error: { message: string } | null }>;
 }, userId: string) {
   const { data, error } = await supabase.rpc("can_access_module", {
     _user_id: userId,
@@ -96,13 +96,6 @@ async function assertAcceso(supabase: {
   if (error) throw new Error(error.message);
   if (data !== true) throw new Error("No autorizado para Reportes de Cintas.");
 }
-
-async function cargarLotesYCintas(
-  supabase: NonNullable<Parameters<typeof Object.keys>[0]> & Record<string, never>,
-): Promise<never> {
-  throw new Error("unused");
-}
-void cargarLotesYCintas;
 
 export const getDatosReporteCintas = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -143,6 +136,8 @@ export const getDatosReporteCintas = createServerFn({ method: "POST" })
     };
   });
 
+export type JsonRow = Record<string, Json>;
+
 type SB = { from: (t: string) => any }; // eslint-disable-line @typescript-eslint/no-explicit-any
 
 async function cintasDeLotes(supabase: SB, ids: string[]): Promise<CintaRow[]> {
@@ -159,28 +154,28 @@ async function cintasDeLotes(supabase: SB, ids: string[]): Promise<CintaRow[]> {
 }
 
 async function porLotes(supabase: SB, tabla: string, columna: string, ids: string[], select = "*") {
-  if (ids.length === 0) return [] as Record<string, unknown>[];
-  const out: Record<string, unknown>[] = [];
+  if (ids.length === 0) return [] as JsonRow[];
+  const out: JsonRow[] = [];
   for (let i = 0; i < ids.length; i += 200) {
     const chunk = ids.slice(i, i + 200);
     const { data, error } = await supabase.from(tabla).select(select).in(columna, chunk);
     if (error) throw new Error(error.message);
-    out.push(...((data ?? []) as Record<string, unknown>[]));
+    out.push(...((data ?? []) as JsonRow[]));
   }
   return out;
 }
 
 export type BaseIntegralCintas = DatosReporteCintas & {
-  impresiones: Record<string, unknown>[];
-  auditoria: Record<string, unknown>[];
-  bobinaMadre: Record<string, unknown>[];
-  muestras: Record<string, unknown>[];
-  mediciones: Record<string, unknown>[];
-  bobinadoras: Record<string, unknown>[];
-  operarios: Record<string, unknown>[];
-  productos: Record<string, unknown>[];
-  maquinas: Record<string, unknown>[];
-  perfiles: Record<string, unknown>[];
+  impresiones: JsonRow[];
+  auditoria: JsonRow[];
+  bobinaMadre: JsonRow[];
+  muestras: JsonRow[];
+  mediciones: JsonRow[];
+  bobinadoras: JsonRow[];
+  operarios: JsonRow[];
+  productos: JsonRow[];
+  maquinas: JsonRow[];
+  perfiles: JsonRow[];
 };
 
 export const getBaseIntegralCintas = createServerFn({ method: "POST" })
