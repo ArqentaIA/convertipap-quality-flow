@@ -195,48 +195,51 @@ export async function generarBaseIntegralCintas(
   }));
 
   // ------------------------------- CINTAS ---------------------------------- //
+  const cintasOrdenadas = [...data.cintas].sort((a, b) => {
+    const ra = loteById.get(a.lote_id)?.numero_rollo ?? "";
+    const rb = loteById.get(b.lote_id)?.numero_rollo ?? "";
+    const cmp = ra.localeCompare(rb, "es", { numeric: true, sensitivity: "base" });
+    if (cmp !== 0) return cmp;
+    if (a.lote_id !== b.lote_id) return a.lote_id.localeCompare(b.lote_id);
+    return a.posicion - b.posicion;
+  });
   hoja(wb, "CINTAS", [
-    { header: "ID de cinta", width: 38, key: "id", tipo: "texto" },
-    { header: "ID de lote", width: 38, key: "lote", tipo: "texto" },
     { header: "No. rollo original", width: 16, key: "rollo", tipo: "texto" },
     { header: "No. derivado", width: 18, key: "derivado", tipo: "texto" },
     { header: "Posición", width: 9, key: "pos" },
+    { header: "Turno", width: 8, key: "turno", tipo: "texto" },
     { header: "Peso real (kg)", width: 14, key: "peso", tipo: "num" },
     { header: "Ancho útil (cm)", width: 14, key: "ancho", tipo: "num" },
     { header: "Uniones", width: 10, key: "uniones" },
     { header: "Observaciones", width: 34, key: "obs", tipo: "texto" },
     { header: "Estado", width: 13, key: "estado", tipo: "texto" },
-    { header: "Sustituye a cinta", width: 38, key: "sust", tipo: "texto" },
     { header: "Bobinadora", width: 18, key: "bobinadora", tipo: "texto" },
     { header: "Conductor / operador", width: 24, key: "conductor", tipo: "texto" },
     { header: "Fecha y hora de registro", width: 19, key: "creado", tipo: "fecha" },
     { header: "Usuario que registró", width: 24, key: "creador", tipo: "texto" },
     { header: "Fecha de actualización", width: 19, key: "upd", tipo: "fecha" },
     { header: "Usuario que actualizó", width: 24, key: "updBy", tipo: "texto" },
-    { header: "Motivo anulación/sustitución", width: 34, key: "motivo", tipo: "texto" },
-  ], data.cintas.map((c) => {
+  ], cintasOrdenadas.map((c) => {
     const l = loteById.get(c.lote_id);
     return {
-      id: c.id,
-      lote: c.lote_id,
       rollo: l?.numero_rollo ?? "",
       derivado: l ? `${l.numero_rollo}-C${c.posicion}` : "",
       pos: c.posicion,
+      turno: String(snap(l?.datos_calidad_snapshot)["turno"] ?? ""),
       peso: round2(Number(c.peso_cinta_kg) || 0),
       ancho: round2(Number(c.ancho_util) || 0),
       uniones: c.uniones,
       obs: c.observaciones ?? "",
       estado: c.estado,
-      sust: c.sustituye_a_cinta_id ?? "",
       bobinadora: l?.bobinadora_nombre_snapshot ?? "",
       conductor: l?.conductor_nombre_snapshot ?? "",
       creado: d(c.created_at),
       creador: perfiles.get(String(c.creado_por)) ?? c.creado_por ?? "",
       upd: d(c.updated_at),
       updBy: perfiles.get(String(c.actualizado_por)) ?? c.actualizado_por ?? "",
-      motivo: c.motivo_anulacion ?? "",
     };
   }));
+
 
   // ---------------------------- IMPRESIONES_QR ----------------------------- //
   const cintaById = new Map(data.cintas.map((c) => [c.id, c]));
