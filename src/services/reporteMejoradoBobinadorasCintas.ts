@@ -246,12 +246,10 @@ export async function generarReporteMejoradoCintas(
   // ------------------------------- Totales --------------------------------- //
   const totalCintas = ordenados.reduce((a, l) => a + l.activas.length, 0);
   const totalPeso = ordenados.reduce((a, l) => a + l.produccionKg, 0);
-  const totalTurno = grupos.reduce((a, g) => a + g.produccionKg, 0);
   const mermaPeso = ordenados.reduce((a, l) => a + (l.mermaRealKg ?? 0), 0);
   const rollos = new Set(ordenados.map((l) => l.loteId)).size;
 
   const filasTot: [string, number, string][] = [
-    ["TOTAL TURNO", round2(totalTurno), "Kg"],
     ["MERMA POR REVENTADORAS", round2(mermaPeso), "Kg"],
     ["ROLLOS DE ORIGEN", rollos, "rollos"],
     ["CINTAS PRODUCIDAS", totalCintas, "cintas"],
