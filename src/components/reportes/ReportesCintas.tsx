@@ -41,12 +41,6 @@ export function ReportesCintasSection() {
         <h2 className="text-sm font-bold uppercase tracking-[0.14em] text-emerald-700">Reportes de Cintas</h2>
       </div>
       <TarjetaReporte
-        tipo="diario"
-        icono={<ClipboardList className="h-4 w-4 text-emerald-600" />}
-        titulo="Reporte Diario de Bobinadoras — Cintas"
-        descripcion="Formato operativo basado en la plantilla diaria de bobinadoras, con medida y peso por cada cinta registrada."
-      />
-      <TarjetaReporte
         tipo="mejorado"
         icono={<FileSpreadsheet className="h-4 w-4 text-emerald-600" />}
         titulo="Reporte Mejorado de Bobinadoras — Cintas"
