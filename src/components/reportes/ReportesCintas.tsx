@@ -94,10 +94,11 @@ function TarjetaReporte(props: {
 
   const nombreArchivo = () => {
     const t = turno ? `T${turno}` : "TODOS";
-    const base =
-      props.tipo === "mejorado" ? "Reporte_Mejorado_Bobinadoras_Cintas"
-        : "Base_Integral_Pesaje_Cintas";
-    return `${base}_${inicio}_${fechaFin}_${t}.xlsx`;
+    if (props.tipo === "mejorado") {
+      const fecha = inicio === fechaFin ? inicio : `${inicio}_al_${fechaFin}`;
+      return `Reporte de Bobinadoras — Cintas ${fecha} ${t}.xlsx`;
+    }
+    return `Base_Integral_Pesaje_Cintas_${inicio}_${fechaFin}_${t}.xlsx`;
   };
 
   const generar = async () => {
