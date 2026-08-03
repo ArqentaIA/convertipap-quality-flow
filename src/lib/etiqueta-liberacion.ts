@@ -265,6 +265,7 @@ function buildHtml(
     <button class="secondary" onclick="window.close()">Cerrar</button>
     <button onclick="window.print()">Imprimir</button>
   </div>
+  <div class="fit">
   <div class="sheet">
     <div class="head">
       <div class="brand"><img src="${logoDataUrl}" alt="Convertipap" /></div>
