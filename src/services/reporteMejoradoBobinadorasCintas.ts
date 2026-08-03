@@ -82,6 +82,23 @@ export async function generarReporteMejoradoCintas(
   ws.getColumn(colObs).width = 38;
 
   // ------------------------------ Encabezado ------------------------------ //
+  // Logotipo institucional flotante (no invasivo: no altera celdas ni el layout)
+  try {
+    const res = await fetch(logoUrl);
+    if (res.ok) {
+      const buf = await res.arrayBuffer();
+      const imgId = wb.addImage({ buffer: buf as ArrayBuffer, extension: "png" });
+      ws.addImage(imgId, {
+        tl: { col: 0.15, row: 0.15 },
+        ext: { width: 140, height: 60 }, // proporción original 700x300
+        editAs: "oneCell",
+      });
+    }
+  } catch {
+    /* sin logo si falla la carga */
+  }
+  for (let r = 1; r <= 3; r++) ws.getRow(r).height = Math.max(ws.getRow(r).height ?? 0, 22);
+
   const titulos = [
     "CONVERTIDOR DE PAPEL S.A. DE C.V.",
     (data.planta || "PLANTA TLAXCALA").toUpperCase(),
