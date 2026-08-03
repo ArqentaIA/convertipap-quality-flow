@@ -117,9 +117,7 @@ function TarjetaReporte(props: {
         lotes = r.lotes; cintas = r.cintas;
       } else {
         const data = await datosFn({ data: input });
-        const r = props.tipo === "diario"
-          ? await generarReporteDiarioCintas(data, fileName)
-          : await generarReporteMejoradoCintas(data, fileName);
+        const r = await generarReporteMejoradoCintas(data, fileName);
         lotes = r.lotes; cintas = r.cintas;
       }
       setMsg(`Generado: ${fileName} · ${lotes} lotes · ${cintas} cintas`);
