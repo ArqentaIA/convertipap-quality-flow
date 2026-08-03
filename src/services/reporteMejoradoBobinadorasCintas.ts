@@ -124,7 +124,13 @@ export async function generarReporteMejoradoCintas(
         ? fmtFechaLegible(fechas[0]!)
         : `Del ${fmtFechaLegible(fechas[0]!)} al ${fmtFechaLegible(fechas[fechas.length - 1]!)} (${fechas.length} días)`;
 
-  const turnos = [...new Set(ordenados.map((l) => String(l.turno ?? "").trim()).filter(Boolean))].sort();
+  const turnos = [
+    ...new Set(
+      ordenados
+        .map((l) => String(l.turno ?? "").trim())
+        .filter((t) => t && t.toLowerCase() !== "no disponible" && t !== "SIN DATOS REGISTRADOS"),
+    ),
+  ].sort();
   const etiquetaTurno = turnos.length > 1 ? "Turnos:" : "Turno:";
   const valorTurno =
     turnos.length === 0 ? "—" : turnos.length >= 3 ? `Todos (${turnos.join(", ")})` : turnos.join(", ");
