@@ -18,6 +18,7 @@ import {
 } from "./cintas-plantilla-base";
 import type { DatosReporteCintas } from "@/lib/reportes-cintas.functions";
 import type { ResultadoReporte } from "./reporteDiarioBobinadorasCintas";
+import logoUrl from "@/assets/logo-convertipap.png";
 
 const COL_POS_INI = 4; // D
 const FILA_TITULO_TABLA = 9;
