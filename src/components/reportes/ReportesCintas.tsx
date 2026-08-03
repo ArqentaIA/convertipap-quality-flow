@@ -21,7 +21,7 @@ const BTN_CLS =
 const INPUT_CLS = "rounded-md border border-input bg-background px-2 py-1.5 text-xs";
 const LABEL_CLS = "text-[10px] font-semibold uppercase tracking-[0.12em] text-emerald-700/80";
 
-type Tipo = "diario" | "mejorado" | "integral";
+type Tipo = "mejorado" | "integral";
 
 const TURNOS = ["1", "2", "3"];
 
