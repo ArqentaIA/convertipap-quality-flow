@@ -24,6 +24,8 @@ import { getReporteNoConforme, type NoConformeRow } from "@/lib/reporte-no-confo
 import {
   exportReporteNoConformeXLSX,
 } from "@/lib/reporte-no-conforme-export";
+import { ReportesCintasSection } from "@/components/reportes/ReportesCintas";
+
 
 
 export const Route = createFileRoute("/reportes")({
