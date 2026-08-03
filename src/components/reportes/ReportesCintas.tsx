@@ -4,11 +4,10 @@
 // consulta y server function).
 // =============================================================================
 import { useMemo, useState } from "react";
-import { FileSpreadsheet, Loader2, Layers, ClipboardList, Database } from "lucide-react";
+import { FileSpreadsheet, Loader2, Layers, Database } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { getDatosReporteCintas, getBaseIntegralCintas } from "@/lib/reportes-cintas.functions";
-import { generarReporteDiarioCintas } from "@/services/reporteDiarioBobinadorasCintas";
 import { generarReporteMejoradoCintas } from "@/services/reporteMejoradoBobinadorasCintas";
 import { generarBaseIntegralCintas } from "@/services/baseIntegralPesajeCintas";
 import { ReporteCintasError } from "@/services/cintas-plantilla-base";
@@ -22,7 +21,7 @@ const BTN_CLS =
 const INPUT_CLS = "rounded-md border border-input bg-background px-2 py-1.5 text-xs";
 const LABEL_CLS = "text-[10px] font-semibold uppercase tracking-[0.12em] text-emerald-700/80";
 
-type Tipo = "diario" | "mejorado" | "integral";
+type Tipo = "mejorado" | "integral";
 
 const TURNOS = ["1", "2", "3"];
 
@@ -41,12 +40,6 @@ export function ReportesCintasSection() {
         <Layers className="h-4 w-4 text-emerald-600" />
         <h2 className="text-sm font-bold uppercase tracking-[0.14em] text-emerald-700">Reportes de Cintas</h2>
       </div>
-      <TarjetaReporte
-        tipo="diario"
-        icono={<ClipboardList className="h-4 w-4 text-emerald-600" />}
-        titulo="Reporte Diario de Bobinadoras — Cintas"
-        descripcion="Formato operativo basado en la plantilla diaria de bobinadoras, con medida y peso por cada cinta registrada."
-      />
       <TarjetaReporte
         tipo="mejorado"
         icono={<FileSpreadsheet className="h-4 w-4 text-emerald-600" />}
@@ -102,9 +95,8 @@ function TarjetaReporte(props: {
   const nombreArchivo = () => {
     const t = turno ? `T${turno}` : "TODOS";
     const base =
-      props.tipo === "diario" ? "Reporte_Diario_Bobinadoras_Cintas"
-        : props.tipo === "mejorado" ? "Reporte_Mejorado_Bobinadoras_Cintas"
-          : "Base_Integral_Pesaje_Cintas";
+      props.tipo === "mejorado" ? "Reporte_Mejorado_Bobinadoras_Cintas"
+        : "Base_Integral_Pesaje_Cintas";
     return `${base}_${inicio}_${fechaFin}_${t}.xlsx`;
   };
 
@@ -125,9 +117,7 @@ function TarjetaReporte(props: {
         lotes = r.lotes; cintas = r.cintas;
       } else {
         const data = await datosFn({ data: input });
-        const r = props.tipo === "diario"
-          ? await generarReporteDiarioCintas(data, fileName)
-          : await generarReporteMejoradoCintas(data, fileName);
+        const r = await generarReporteMejoradoCintas(data, fileName);
         lotes = r.lotes; cintas = r.cintas;
       }
       setMsg(`Generado: ${fileName} · ${lotes} lotes · ${cintas} cintas`);
