@@ -223,12 +223,10 @@ export async function generarReporteMejoradoCintas(
   const rollos = new Set(ordenados.map((l) => l.loteId)).size;
 
   const filasTot: [string, number, string][] = [
-    ["PRODUCCIÓN TOTAL", round2(totalPeso), "Kg"],
     ["TOTAL TURNO", round2(totalTurno), "Kg"],
     ["MERMA POR REVENTADORAS", round2(mermaPeso), "Kg"],
     ["ROLLOS DE ORIGEN", rollos, "rollos"],
     ["CINTAS PRODUCIDAS", totalCintas, "cintas"],
-    ["TOTAL DE CINTAS", totalCintas, "cintas"],
     ["TOTAL DE PESO", round2(totalPeso), "Kg"],
   ];
 
