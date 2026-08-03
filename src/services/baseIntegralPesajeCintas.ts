@@ -373,6 +373,11 @@ export async function generarBaseIntegralCintas(
     { header: "Detalle", width: 22, key: "extra", tipo: "texto" },
   ], catalogos);
 
+  // Solo se entrega la hoja CINTAS: se descartan las demás hojas del libro.
+  for (const ws of [...wb.worksheets]) {
+    if (ws.name !== "CINTAS") wb.removeWorksheet(ws.id);
+  }
+
   await descargarLibro(wb, fileName);
   return { fileName, lotes: data.lotes.length, cintas: data.cintas.length };
 }
