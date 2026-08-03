@@ -4,11 +4,10 @@
 // consulta y server function).
 // =============================================================================
 import { useMemo, useState } from "react";
-import { FileSpreadsheet, Loader2, Layers, ClipboardList, Database } from "lucide-react";
+import { FileSpreadsheet, Loader2, Layers, Database } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { getDatosReporteCintas, getBaseIntegralCintas } from "@/lib/reportes-cintas.functions";
-import { generarReporteDiarioCintas } from "@/services/reporteDiarioBobinadorasCintas";
 import { generarReporteMejoradoCintas } from "@/services/reporteMejoradoBobinadorasCintas";
 import { generarBaseIntegralCintas } from "@/services/baseIntegralPesajeCintas";
 import { ReporteCintasError } from "@/services/cintas-plantilla-base";
