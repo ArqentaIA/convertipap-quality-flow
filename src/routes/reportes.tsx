@@ -195,6 +195,10 @@ function ReportesPage() {
 
         <ReporteGeneralItem enabled={!!auth.session?.access_token} />
 
+        {auth.canAccess("pesaje_cintas") && <ReportesCintasSection />}
+
+
+
 
 
       </div>
