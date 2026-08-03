@@ -77,6 +77,7 @@ function TarjetaReporte(props: {
 
   const datosFn = useServerFn(getDatosReporteCintas);
   const integralFn = useServerFn(getBaseIntegralCintas);
+  const bobinadorasFn = useServerFn(listBobinadoras);
 
   const conteo = useQuery({
     queryKey: ["reportes-cintas-conteo", inicio, fechaFin, turno],
