@@ -8,6 +8,7 @@ import { FileSpreadsheet, Loader2, Layers, Database } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { getDatosReporteCintas, getBaseIntegralCintas } from "@/lib/reportes-cintas.functions";
+import { listBobinadoras } from "@/lib/pesaje-cintas.functions";
 import { generarReporteMejoradoCintas } from "@/services/reporteMejoradoBobinadorasCintas";
 import { generarBaseIntegralCintas } from "@/services/baseIntegralPesajeCintas";
 import { ReporteCintasError } from "@/services/cintas-plantilla-base";
@@ -77,6 +78,7 @@ function TarjetaReporte(props: {
 
   const datosFn = useServerFn(getDatosReporteCintas);
   const integralFn = useServerFn(getBaseIntegralCintas);
+  const bobinadorasFn = useServerFn(listBobinadoras);
 
   const conteo = useQuery({
     queryKey: ["reportes-cintas-conteo", inicio, fechaFin, turno],
@@ -86,14 +88,23 @@ function TarjetaReporte(props: {
     retry: false,
   });
 
+  const bobinadorasQ = useQuery({
+    queryKey: ["reportes-cintas-bobinadoras"],
+    queryFn: () => bobinadorasFn(),
+    enabled: !!auth.session?.access_token,
+    staleTime: 300_000,
+  });
+
   const bobinadoras = useMemo(() => {
-    const set = new Set(
-      (conteo.data?.lotes ?? [])
-        .map((l) => (l.bobinadora_nombre_snapshot ?? "").trim())
-        .filter((n) => n && n !== "SIN DATOS REGISTRADOS"),
+    const set = new Set<string>(
+      (bobinadorasQ.data ?? []).map((b) => (b.nombre ?? "").trim()).filter(Boolean),
     );
+    for (const l of conteo.data?.lotes ?? []) {
+      const n = (l.bobinadora_nombre_snapshot ?? "").trim();
+      if (n && n !== "SIN DATOS REGISTRADOS" && n !== "No disponible") set.add(n);
+    }
     return Array.from(set).sort((a, b) => a.localeCompare(b, "es", { numeric: true }));
-  }, [conteo.data]);
+  }, [bobinadorasQ.data, conteo.data]);
 
   const resumen = useMemo(() => {
     const d = conteo.data;
