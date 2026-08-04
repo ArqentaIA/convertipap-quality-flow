@@ -894,8 +894,8 @@ function CintaCard({ pos, cinta, habilitada, disponibleKg, onRegistrar, onAnular
           <div className="text-2xl font-black text-success">{pos}</div>
         </div>
         <div className="space-y-1 text-sm">
+          <div><span className="text-muted-foreground">Ancho útil:</span> <b>{n(cinta.ancho_util, 3)} {cinta.ancho_util_unidad ?? "cm"}</b></div>
           <div><span className="text-muted-foreground">Peso:</span> <b>{n(cinta.peso_cinta_kg)} kg</b></div>
-          <div><span className="text-muted-foreground">Ancho:</span> <b>{n(cinta.ancho_util, 3)} {cinta.ancho_util_unidad ?? "cm"}</b></div>
           <div><span className="text-muted-foreground">Uniones:</span> <b>{cinta.uniones}</b></div>
           {cinta.observaciones && <div className="text-xs text-muted-foreground">{cinta.observaciones}</div>}
         </div>
