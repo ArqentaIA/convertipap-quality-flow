@@ -58,6 +58,8 @@ export type EtiquetaSnapshot = {
   diametro_rollo_cm?: number | null;
   uniones_rollo?: number | null;
   total_uniones_cintas?: number;
+  peso_mermas_kg?: number | null;
+  porcentaje_peso_mermas?: number | null;
   cintas_excluidas?: number;
   folio?: string;
   version_etiqueta?: number;
@@ -84,6 +86,8 @@ export type CintaLabelData = {
   peso_neto_rollo_kg: number | null;
   diametro_rollo_cm: number | null;
   uniones_rollo: number | null;
+  peso_mermas_kg: number | null;
+  porcentaje_peso_mermas: number | null;
   fabricacion: string | null;
   producto: string | null;
   turno: string | null;
@@ -162,6 +166,8 @@ export function buildCintaLabelData(snap: EtiquetaSnapshot, cinta: EtiquetaCinta
     peso_neto_rollo_kg: snap.peso_neto_rollo_kg ?? null,
     diametro_rollo_cm: snap.diametro_rollo_cm ?? null,
     uniones_rollo: snap.uniones_rollo ?? null,
+    peso_mermas_kg: snap.peso_mermas_kg ?? null,
+    porcentaje_peso_mermas: snap.porcentaje_peso_mermas ?? null,
     fabricacion: limpio(snap.fabricacion),
     producto: limpio(snap.producto_nombre ?? snap.producto_codigo ?? null),
     turno: limpio(dc.turno ?? null),
@@ -198,6 +204,8 @@ export function buildCintaLabelData(snap: EtiquetaSnapshot, cinta: EtiquetaCinta
     peso_neto_rollo_kg: data.peso_neto_rollo_kg,
     diametro_rollo_cm: data.diametro_rollo_cm,
     uniones_rollo: data.uniones_rollo,
+    peso_mermas_kg: data.peso_mermas_kg,
+    porcentaje_peso_mermas: data.porcentaje_peso_mermas,
     lote_id: data.lote_id,
     cinta_id: data.cinta_id,
     posicion: data.posicion,
