@@ -268,7 +268,6 @@ function PesajeCintasPage() {
 
   const netoBM = lote?.peso_bobina_madre_neto_kg ?? contexto?.pesaje.peso_neto_kg ?? 0;
   const totalCintas = lote?.peso_total_cintas_kg ?? 0;
-  const pendiente = lote ? lote.peso_pendiente_kg : netoBM;
   const pesoMermasGuardado = lote?.peso_mermas_kg ?? lote?.merma_real_kg ?? null;
   // Componentes auxiliares de captura (SOLO estado local, nunca se persisten)
   const [mermaCapa, setMermaCapa] = useState("");
