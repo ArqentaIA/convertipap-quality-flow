@@ -1517,6 +1517,7 @@ export type Database = {
           orden_produccion_id: string | null
           pesaje_bobina_madre_id: string | null
           peso_bobina_madre_neto_kg: number
+          peso_mermas_kg: number | null
           peso_pendiente_kg: number
           peso_total_cintas_kg: number
           producto_codigo: string | null
@@ -1554,6 +1555,7 @@ export type Database = {
           orden_produccion_id?: string | null
           pesaje_bobina_madre_id?: string | null
           peso_bobina_madre_neto_kg: number
+          peso_mermas_kg?: number | null
           peso_pendiente_kg: number
           peso_total_cintas_kg?: number
           producto_codigo?: string | null
@@ -1591,6 +1593,7 @@ export type Database = {
           orden_produccion_id?: string | null
           pesaje_bobina_madre_id?: string | null
           peso_bobina_madre_neto_kg?: number
+          peso_mermas_kg?: number | null
           peso_pendiente_kg?: number
           peso_total_cintas_kg?: number
           producto_codigo?: string | null
@@ -2610,7 +2613,7 @@ export type Database = {
       }
       finalizar_lote_cintas:
         | { Args: { _lote_id: string }; Returns: Json }
-        | { Args: { _lote_id: string; _merma_real_kg?: number }; Returns: Json }
+        | { Args: { _lote_id: string; _peso_mermas_kg: number }; Returns: Json }
       fn_cumplimiento_turno_v2: {
         Args: { _maquina_id: string; _op_date: string; _turno: string }
         Returns: {
