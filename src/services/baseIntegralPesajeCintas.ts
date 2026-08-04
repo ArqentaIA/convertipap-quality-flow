@@ -87,7 +87,7 @@ export async function generarBaseIntegralCintas(
   const sustituidas = data.cintas.filter((c) => c.estado === "sustituida");
   const pesoNeto = data.lotes.reduce((a, l) => a + (Number(l.peso_bobina_madre_neto_kg) || 0), 0);
   const pesoCintas = registradas.reduce((a, c) => a + (Number(c.peso_cinta_kg) || 0), 0);
-  const mermaPeso = data.lotes.reduce((a, l) => a + (Number(l.merma_real_kg) || 0), 0);
+  const mermaPeso = data.lotes.reduce((a, l) => a + (Number(l.peso_mermas_kg ?? l.merma_real_kg) || 0), 0);
   const uniones = registradas.reduce((a, c) => a + (Number(c.uniones) || 0), 0);
   const impresionesOrig = data.impresiones.filter((i) => i["tipo"] === "ORIGINAL").length;
   const reimpresiones = data.impresiones.filter((i) => i["tipo"] === "REIMPRESION").length;
@@ -113,7 +113,7 @@ export async function generarBaseIntegralCintas(
     ["Peso neto total (kg)", round2(pesoNeto)],
     ["Peso real total de cintas (kg)", round2(pesoCintas)],
     ["Merma por Sistema total (kg)", round2(pesoNeto - pesoCintas)],
-    ["Merma por Peso total (kg)", round2(mermaPeso)],
+    ["Peso de Mermas total (kg)", round2(mermaPeso)],
     ["Total de uniones", uniones],
     ["Total de impresiones", impresionesOrig],
     ["Total de reimpresiones", reimpresiones],
@@ -147,9 +147,8 @@ export async function generarBaseIntegralCintas(
     { header: "Estado del lote", width: 14, key: "estado", tipo: "texto" },
     { header: "Cintas vigentes", width: 13, key: "cantidad", tipo: "num" },
     { header: "Peso acumulado real (kg)", width: 18, key: "acum", tipo: "num" },
-    { header: "Merma por Sistema (kg)", width: 18, key: "mermaSis", tipo: "num" },
-    { header: "% Merma por Sistema", width: 16, key: "mermaPct", tipo: "num" },
-    { header: "Merma por Peso (kg)", width: 16, key: "mermaPeso", tipo: "num" },
+    { header: "Peso de Mermas (kg)", width: 18, key: "mermaPeso", tipo: "num" },
+    { header: "% Peso de Mermas", width: 16, key: "mermaPct", tipo: "num" },
     { header: "Fecha operativa", width: 14, key: "fechaOp", tipo: "texto" },
     { header: "Fecha de creación", width: 18, key: "creado", tipo: "fecha" },
     { header: "Usuario creador", width: 24, key: "creador", tipo: "texto" },
@@ -162,6 +161,8 @@ export async function generarBaseIntegralCintas(
     const dcm = med(sn, "diametro");
     const neto = Number(l.peso_bobina_madre_neto_kg) || 0;
     const acum = Number(l.peso_total_cintas_kg) || 0;
+    const rawMermas = l.peso_mermas_kg ?? l.merma_real_kg;
+    const pesoMermas = rawMermas == null ? null : Number(rawMermas);
     return {
       id: l.id,
       rollo: l.numero_rollo,
@@ -181,9 +182,8 @@ export async function generarBaseIntegralCintas(
       estado: l.estado,
       cantidad: l.cantidad_cintas,
       acum: round2(acum),
-      mermaSis: round2(neto - acum),
-      mermaPct: l.merma_porcentaje == null ? null : round2(Number(l.merma_porcentaje)),
-      mermaPeso: l.merma_real_kg == null ? null : round2(Number(l.merma_real_kg)),
+      mermaPeso: pesoMermas == null ? null : round2(pesoMermas),
+      mermaPct: pesoMermas == null || !(neto > 0) ? null : round2((pesoMermas / neto) * 100),
       fechaOp: l.fecha_produccion ?? "",
       creado: d(l.created_at),
       creador: perfiles.get(String(l.creado_por)) ?? l.creado_por ?? "",

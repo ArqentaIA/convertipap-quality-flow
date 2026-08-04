@@ -98,6 +98,8 @@ export type LoteCintas = {
   merma_kg: number | null;
   merma_porcentaje: number | null;
   merma_real_kg: number | null;
+  /** Campo canónico vigente: Peso de Mermas (kg). */
+  peso_mermas_kg: number | null;
   estado: "abierto" | "finalizado" | "anulado";
   es_manual: boolean;
   numero_orden: string | null;
@@ -339,20 +341,19 @@ export const finalizarLote = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({
     lote_id: z.string().uuid(),
-    merma_real_kg: z.number().min(0).max(3000),
+    peso_mermas_kg: z.number().min(0).max(3000),
   }).parse(d))
   .handler(async ({ data, context }) => {
     const { data: res, error } = await context.supabase.rpc("finalizar_lote_cintas", {
       _lote_id: data.lote_id,
-      _merma_real_kg: data.merma_real_kg,
+      _peso_mermas_kg: data.peso_mermas_kg,
     });
     if (error) throw new Error(error.message);
     return res as unknown as {
       cantidad_cintas: number;
       peso_total_cintas_kg: number;
-      merma_kg: number;
-      merma_porcentaje: number;
-      merma_real_kg: number;
+      peso_mermas_kg: number;
+      porcentaje_peso_mermas: number | null;
     };
   });
 

@@ -268,9 +268,7 @@ function PesajeCintasPage() {
 
   const netoBM = lote?.peso_bobina_madre_neto_kg ?? contexto?.pesaje.peso_neto_kg ?? 0;
   const totalCintas = lote?.peso_total_cintas_kg ?? 0;
-  const pendiente = lote ? lote.peso_pendiente_kg : netoBM;
-  const merma = lote?.estado === "finalizado" ? lote.merma_kg : null;
-  const mermaPct = lote?.estado === "finalizado" ? lote.merma_porcentaje : null;
+  const pesoMermasGuardado = lote?.peso_mermas_kg ?? lote?.merma_real_kg ?? null;
   // Componentes auxiliares de captura (SOLO estado local, nunca se persisten)
   const [mermaCapa, setMermaCapa] = useState("");
   const [mermaProceso, setMermaProceso] = useState("");
@@ -404,15 +402,14 @@ function PesajeCintasPage() {
       return;
     }
     const real = mermaPorPesoKg;
-    if (real > netoBM) { toast.error("La Merma por Peso no puede superar el peso neto del rollo de origen."); return; }
+    if (real > netoBM) { toast.error("El Peso de Mermas no puede superar el peso neto del rollo de origen."); return; }
     if (!window.confirm(
-      `Merma por Peso calculada: ${n(real)} kg.\n\n` +
+      `Peso de Mermas calculado: ${n(real)} kg.\n\n` +
       `Este total corresponde a la suma de Merma Capa, Merma Proceso y Merma Gallo. ` +
-      `En el sistema se guardará únicamente el total.\n\n` +
-      `Merma por Sistema: ${n(pendiente)} kg`,
+      `En el sistema se guardará únicamente el total.`,
     )) return;
     try {
-      await finalizar({ data: { lote_id: lote.id, merma_real_kg: real } });
+      await finalizar({ data: { lote_id: lote.id, peso_mermas_kg: real } });
       await qc.invalidateQueries({ queryKey: ["cintas-lote", lote.id] });
       toast.success("Rollo finalizado.");
     } catch (e: unknown) {
@@ -692,33 +689,29 @@ function PesajeCintasPage() {
       {/* Lote activo */}
       {lote && (
         <>
-          <div className="grid gap-3 md:grid-cols-5">
+          <div className="grid gap-3 md:grid-cols-4">
             <Card k="Neto rollo de origen" v={`${n(netoBM)} kg`} />
             <Card k="Cintas registradas" v={`${cintas.length} / 20`} />
             <Card k="Peso acumulado" v={`${n(totalCintas)} kg`} />
-            <Card
-              k="MERMA POR SISTEMA"
-              v={`${n(merma == null ? pendiente : merma)} kg${mermaPct == null ? "" : ` · ${n(mermaPct, 2)} %`}`}
-            />
             {lote.estado === "finalizado" ? (
               <Card
-                k="MERMA POR PESO"
+                k="PESO DE MERMAS"
                 v={
-                  lote.merma_real_kg == null
-                    ? "No registrada"
-                    : `${n(lote.merma_real_kg)} kg${netoBM > 0 ? ` · ${n((lote.merma_real_kg / netoBM) * 100, 2)} %` : ""}`
+                  pesoMermasGuardado == null
+                    ? "No registrado"
+                    : `${n(pesoMermasGuardado)} kg${netoBM > 0 ? ` · ${n((pesoMermasGuardado / netoBM) * 100, 2)} %` : ""}`
                 }
                 highlight
               />
             ) : (
               <Card
-                k="MERMA POR PESO"
+                k="PESO DE MERMAS"
                 v={
                   hayCaptura && compsValidos
                     ? `${n(mermaPorPesoKg)} kg${mermaPorPesoPct == null ? "" : ` · ${n(mermaPorPesoPct, 2)} %`}`
-                    : lote.merma_real_kg == null
-                      ? "No registrada"
-                      : `${n(lote.merma_real_kg)} kg (guardada)`
+                    : pesoMermasGuardado == null
+                      ? "No registrado"
+                      : `${n(pesoMermasGuardado)} kg (guardado)`
                 }
                 highlight
               />
@@ -728,7 +721,7 @@ function PesajeCintasPage() {
           {lote.estado === "abierto" && (
             <div className="rounded-lg border border-primary/40 bg-primary/5 p-4">
               <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Captura de Merma por Peso (componentes temporales, no se guardan por separado)
+                Captura del Peso de Mermas (componentes temporales, no se guardan por separado)
               </div>
               <div className="grid gap-3 sm:grid-cols-3">
                 {([
@@ -752,10 +745,10 @@ function PesajeCintasPage() {
                 ))}
               </div>
               <div className="mt-2 text-sm font-semibold">
-                Merma por Peso:{" "}
+                Peso de Mermas:{" "}
                 {compsValidos ? `${n(mermaPorPesoKg)} kg` : <span className="text-destructive">valores inválidos</span>}
               </div>
-              <div className="mt-1 text-[11px] text-muted-foreground">Obligatoria para finalizar el lote.</div>
+              <div className="mt-1 text-[11px] text-muted-foreground">Obligatorio para finalizar el lote.</div>
             </div>
           )}
 

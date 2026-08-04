@@ -137,7 +137,7 @@ export function normalizar(data: ReporteMensualCintasData): RolloNorm[] {
     const neto = Number(lote.peso_bobina_madre_neto_kg) || 0;
     const produccion = activas.reduce((a, c) => a + c.peso, 0);
     const mermaCalc = neto - produccion;
-    const mermaReal = lote.merma_real_kg == null ? null : Number(lote.merma_real_kg);
+    const mermaReal = lote.peso_mermas_kg != null ? Number(lote.peso_mermas_kg) : lote.merma_real_kg == null ? null : Number(lote.merma_real_kg);
     const patron = activas.map((c) => c.ancho).join("|") || "SIN CINTAS";
 
     const estadoInfo =
@@ -267,7 +267,7 @@ export async function generarReporteMensualBobinadoras(
     ["Producción total de cintas (kg)", Number(prodTotal.toFixed(2))],
     ["Merma por Sistema total (kg)", Number(mermaCalcTotal.toFixed(2))],
     ["Merma por Sistema (%)", netoTotal > 0 ? mermaCalcTotal / netoTotal : 0],
-    ["Merma por Peso total (kg)", Number(mermaRealTotal.toFixed(2))],
+    ["Peso de Mermas total (kg)", Number(mermaRealTotal.toFixed(2))],
     ["Diferencia Merma por Peso - Sistema (kg)", Number((mermaRealTotal - mermaCalcTotal).toFixed(2))],
     ["Total de uniones", unionesTotal],
     ["Lotes finalizados", rollos.filter((r) => r.estadoInfo === "FINALIZADO").length],
@@ -298,7 +298,7 @@ export async function generarReporteMensualBobinadoras(
   const heads = [
     "Fecha operativa", "Planta", "Bobinadora", "Turno", "Clave producto", "Nombre producto",
     "Rollos", "Cintas", "Peso rollos (kg)", "Producción (kg)", "Merma Sistema (kg)", "Merma Sistema (%)",
-    "Merma por Peso (kg)", "Dif. merma (kg)", "Uniones", "Estado información",
+    "Peso de Mermas (kg)", "Dif. merma (kg)", "Uniones", "Estado información",
   ];
   ws.getRow(headRow).values = heads;
   for (let i = 1; i <= heads.length; i++) {
