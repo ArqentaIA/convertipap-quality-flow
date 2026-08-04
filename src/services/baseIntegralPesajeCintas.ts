@@ -161,6 +161,8 @@ export async function generarBaseIntegralCintas(
     const dcm = med(sn, "diametro");
     const neto = Number(l.peso_bobina_madre_neto_kg) || 0;
     const acum = Number(l.peso_total_cintas_kg) || 0;
+    const rawMermas = l.peso_mermas_kg ?? l.merma_real_kg;
+    const pesoMermas = rawMermas == null ? null : Number(rawMermas);
     return {
       id: l.id,
       rollo: l.numero_rollo,
