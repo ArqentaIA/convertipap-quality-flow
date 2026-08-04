@@ -278,7 +278,7 @@ export function normalizarLotes(data: DatosReporteCintas): LoteNorm[] {
       todas,
       patron: activas.map((c) => c.ancho).join("|") || "SIN CINTAS",
       produccionKg: activas.reduce((a, c) => a + c.peso, 0),
-      mermaRealKg: lote.merma_real_kg == null ? null : Number(lote.merma_real_kg),
+      mermaRealKg: lote.peso_mermas_kg != null ? Number(lote.peso_mermas_kg) : lote.merma_real_kg == null ? null : Number(lote.merma_real_kg),
       observaciones: Array.from(new Set(obsLote)).join(" · "),
       esManual: !!lote.es_manual,
     });
