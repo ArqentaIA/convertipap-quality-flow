@@ -189,6 +189,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       canEdit: (m) => {
         if (!modules.includes(m)) return false;
         if (roles.includes("administrador")) return true;
+        if (roles.includes("direccion_general")) return true;
         if (roles.includes("calidad")) return true;
         if (roles.includes("capturista") && m === "control_calidad") return true;
         if (roles.includes("planeacion") && m === "ordenes_produccion") return true;
