@@ -5,6 +5,7 @@
 // =====================================================================
 import { formatCaptura, fechaHoraMX } from "@/lib/format";
 import type { CentroProduccionPayload, TablaRow } from "@/lib/produccion-centro.functions";
+import { getEstadoOficial, esLiberadoOficial, esNoConformeOficial } from "@/lib/qc-estado-oficial";
 
 const DASH = "—";
 const SIN_DATOS = "Sin datos disponibles";
@@ -41,8 +42,8 @@ export function filtrarTabla(rows: TablaRow[], f: ReporteProdFiltros): TablaRow[
     if (f.producto && r.producto !== f.producto) return false;
     if (f.estado) {
       const justif = !!r.liberado_con_justificacion;
-      const lib = !justif && (r.dictamen === "liberada" || r.estatus_liberacion === "L");
-      const rech = r.dictamen === "rechazada" || r.estatus_liberacion === "NC";
+      const lib = !justif && esLiberadoOficial(r);
+      const rech = esNoConformeOficial(r);
       const pend = !lib && !rech && !justif;
       if (f.estado === "liberado" && !lib) return false;
       if (f.estado === "rechazado" && !rech) return false;
@@ -59,11 +60,10 @@ export function hayFiltros(f: ReporteProdFiltros): boolean {
 
 /** Etiqueta humana del estatus oficial del rollo (regla de oro). */
 export function rowEstatusLabel(r: TablaRow): string {
-  if (r.liberado_con_justificacion) return "Liberado c/justif";
-  if (r.dictamen === "liberada" || r.estatus_liberacion === "L") return "Liberado";
-  if (r.dictamen === "rechazada" || r.estatus_liberacion === "NC") return "No conforme";
-  if (r.estatus_liberacion === "C" || r.dictamen === "concesion") return "Concesión";
-  return r.dictamen ?? r.estatus_liberacion ?? r.estado ?? "Pendiente";
+  const eo = getEstadoOficial(r);
+  if (r.liberado_con_justificacion && eo.es_liberado_normal) return "Liberado c/justif";
+  if (eo.es_concesion) return "Concesión";
+  return eo.estado_nombre;
 }
 
 export function metricsFromRows(rows: TablaRow[]) {
@@ -73,8 +73,8 @@ export function metricsFromRows(rows: TablaRow[]) {
     const peso = r.peso_kg ?? 0;
     kgTotal += peso;
     const isJustif = !!r.liberado_con_justificacion;
-    const isLib = !isJustif && (r.dictamen === "liberada" || r.estatus_liberacion === "L");
-    const isRech = r.dictamen === "rechazada" || r.estatus_liberacion === "NC";
+    const isLib = !isJustif && esLiberadoOficial(r);
+    const isRech = esNoConformeOficial(r);
     if (isJustif) { kgJustif += peso; justif++; }
     else if (isLib) { kgLib += peso; lib++; }
     else if (isRech) { kgNoLib += peso; rech++; }
