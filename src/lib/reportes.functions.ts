@@ -369,7 +369,9 @@ export const getReportes = createServerFn({ method: "POST" })
           muestras_ok: 0,
         };
       e.muestras_total++;
-      if (m.dictamen === "liberada") e.muestras_ok++;
+      // Componente Calidad del OEE: liberado oficial = L + C (incluye concesión).
+      if (_esLiberadoOficial(m)) e.muestras_ok++;
+
       oeeMap.set(key, e);
     }
     const parosPorMaq = new Map<string, number>();
