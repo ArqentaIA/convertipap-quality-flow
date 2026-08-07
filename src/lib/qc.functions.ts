@@ -560,19 +560,16 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
       }
     }
 
-    // La captura nunca produce liberación; el dictamen es potestad de Calidad.
-    let estatusLiberacionEfectivo: "L" | "NC" | "C" | null;
-    let estadoMuestra: Database["public"]["Enums"]["qc_muestra_estado"];
+    // La evaluación canónica de liberación vive EXCLUSIVAMENTE en BD
+    // (`qc_eval_liberacion` + `qc_recalc_estatus_muestra`). Aquí sólo se envía
+    // un estado provisional; los triggers fijan estatus_liberacion/estado.
+    const estatusLiberacionEfectivo: "L" | "NC" | "C" | null = null;
+    const estadoMuestra: Database["public"]["Enums"]["qc_muestra_estado"] = hayFueraSpec
+      ? ("pendiente_dictamen" as Database["public"]["Enums"]["qc_muestra_estado"])
+      : data.enviar_a_revision
+        ? "pendiente_revision"
+        : "borrador";
 
-    if (!hayFueraSpec) {
-      estatusLiberacionEfectivo = "L";
-      estadoMuestra = data.enviar_a_revision ? "pendiente_revision" : "borrador";
-    } else {
-      estatusLiberacionEfectivo = null;
-      // Nuevo estado — enum añadido en migración 29-Jul-2026.
-      estadoMuestra =
-        "pendiente_dictamen" as Database["public"]["Enums"]["qc_muestra_estado"];
-    }
 
     const muestraPayload = {
       orden_id: data.orden_id ?? null,
@@ -719,6 +716,19 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
       const { error } = await sb.from("mediciones_calidad").insert(medsPayload);
       if (error) throw new Error(error.message);
     }
+
+    // Evaluación canónica única (BD): decide estatus_liberacion y estado.
+    // Ambos módulos (captura normal y fuera de turno) consumen esta misma regla.
+    try {
+      await (sb as unknown as { rpc: (n: string, a: unknown) => Promise<unknown> }).rpc(
+        "qc_recalc_estatus_muestra",
+        { _muestra_id: muestraId },
+      );
+    } catch {
+      // Los triggers de BD ya aplican la regla; el RPC es refuerzo idempotente.
+    }
+
+
 
     // Auditoría explícita de los hallazgos del rollo (creación o edición).
     if (

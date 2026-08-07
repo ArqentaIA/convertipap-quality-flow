@@ -2729,11 +2729,13 @@ export type Database = {
         Args: { _motivo: string; _spec_id: string }
         Returns: undefined
       }
+      qc_eval_liberacion: { Args: { _muestra_id: string }; Returns: Json }
       qc_eval_regla_oro: { Args: { _muestra_id: string }; Returns: Json }
       qc_recalc_estatus_muestra: {
         Args: { _muestra_id: string }
         Returns: undefined
       }
+      qc_tiene_defecto: { Args: { _muestra_id: string }; Returns: boolean }
       reabrir_lote_cintas: {
         Args: { _lote_id: string; _motivo: string }
         Returns: Json
