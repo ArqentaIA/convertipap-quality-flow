@@ -5,6 +5,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { fetchAllPaged } from "@/lib/paginate";
+import { esLiberadoOficial, esNoConformeOficial, esConcesionOficial } from "@/lib/qc-estado-oficial";
 
 const inputSchema = z.object({
   rango: z.enum(["dia", "semana", "mes", "año", "custom"]),
@@ -162,14 +163,15 @@ export const getDashboard = createServerFn({ method: "POST" })
       estatus_liberacion: string | null;
       defectos: string[] | null;
     }) => {
-      if (m.dictamen === "liberada" || m.estatus_liberacion === "L") return true;
-      if (m.dictamen === "rechazada" || m.estatus_liberacion === "NC") return false;
+      // Canónico: liberado = L + C (concesión cuenta como liberado).
+      if (esLiberadoOficial(m)) return true;
+      if (esNoConformeOficial(m)) return false;
       const nc = ncPorMuestra.get(m.id) ?? 0;
       const def = (m.defectos ?? []).filter(Boolean).length;
       return nc === 0 && def === 0;
     };
-    const isRechazada = (m: { dictamen: string | null; estatus_liberacion: string | null }) =>
-      m.dictamen === "rechazada" || m.estatus_liberacion === "NC";
+    const isRechazada = (m: { estatus_liberacion: string | null }) =>
+      esNoConformeOficial(m);
 
     console.log("[getDashboard]", {
       rango: data.rango,

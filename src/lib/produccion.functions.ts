@@ -9,6 +9,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
+import { esLiberadoOficial, esNoConformeOficial, esConcesionOficial } from "@/lib/qc-estado-oficial";
 
 type SB = SupabaseClient<Database>;
 
@@ -797,10 +798,8 @@ export const listHistorialMaquina = createServerFn({ method: "GET" })
         acc[k] ??= { total: 0, liberadas: 0, rechazadas: 0, nc_oficial: 0 };
         acc[k].total++;
         // Fase 1 v2 · reglas A/B — estatus oficial proviene de estatus_liberacion
-        if (m.estatus_liberacion === "L" || m.estatus_liberacion === "C") acc[k].liberadas++;
-        else if (m.estatus_liberacion === "NC") acc[k].nc_oficial++;
-        else if (m.dictamen === "liberada") acc[k].liberadas++;
-        else if (m.dictamen === "rechazada") acc[k].rechazadas++;
+        if (esLiberadoOficial(m)) acc[k].liberadas++;
+        else if (esNoConformeOficial(m)) acc[k].nc_oficial++;
         return acc;
       }, {});
     }

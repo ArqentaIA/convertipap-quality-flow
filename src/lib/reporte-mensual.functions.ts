@@ -12,6 +12,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { esLiberadoOficial, esNoConformeOficial, esConcesionOficial } from "@/lib/qc-estado-oficial";
 
 const inputSchema = z.object({
   year: z.number().int().min(2000).max(2100),
@@ -222,10 +223,9 @@ export const getReporteMensual = createServerFn({ method: "POST" })
     }
 
     // 5) Helpers conformidad
-    const isConforme = (m: { dictamen: string | null; estatus_liberacion: string | null }) =>
-      m.dictamen === "liberada" || m.estatus_liberacion === "L";
-    const isNoConforme = (m: { dictamen: string | null; estatus_liberacion: string | null }) =>
-      m.dictamen === "rechazada" || m.estatus_liberacion === "NC";
+    // Canónico: conforme/liberado = L + C; no conforme = NC; resto pendiente.
+    const isConforme = (m: { estatus_liberacion: string | null }) => esLiberadoOficial(m);
+    const isNoConforme = (m: { estatus_liberacion: string | null }) => esNoConformeOficial(m);
 
     // 6) Resumen ejecutivo
     let rollosTotal = 0, kgTotal = 0, confTotal = 0, ncTotal = 0, pendTotal = 0;
