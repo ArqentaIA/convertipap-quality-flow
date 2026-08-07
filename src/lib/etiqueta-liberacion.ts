@@ -67,12 +67,6 @@ export type EtiquetaData = {
   } | null;
   numeroOrdenSap?: string | null;
   estadoSap?: string | null;
-  /**
-   * Peso de respaldo (kg) SOLO para casos donde la muestra no tiene la
-   * variable "Peso" capturada en Control de Calidad. El Peso oficial del
-   * rollo es siempre la medición "peso" de mediciones_calidad.
-   */
-  pesoRolloKg?: number | null;
 };
 
 function fmtKg(value: number | string): string {
