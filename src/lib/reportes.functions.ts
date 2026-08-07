@@ -599,8 +599,9 @@ export const getReportes = createServerFn({ method: "POST" })
         if (!Number.isNaN(v)) pesoPorMuestra.set(med.muestra_id, v);
       }
     }
-    const esNoLiberado = (m: any) =>
-      !(m.dictamen === "liberada" || m.estatus_liberacion === "L");
+    // Costo de no calidad: la concesión (C) NO se considera rechazo.
+    const esNoLiberado = (m: any) => !_esLiberadoOficial(m);
+
 
     const noLibBase: Array<{ m: any; pesoKg: number; costoMxn: number }> = [];
     let totalKg = 0;
