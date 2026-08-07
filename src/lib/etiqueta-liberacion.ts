@@ -411,11 +411,11 @@ export async function printEtiquetaLiberacion(data: EtiquetaData): Promise<void>
       m.etiqueta.trim().toLowerCase() === "peso del rollo" ||
       m.etiqueta.trim().toLowerCase() === "peso rollo",
   );
-  // Peso oficial = medición "Peso" de Control de Calidad; pesoRolloKg es sólo respaldo.
+  // Peso oficial = medición "Peso" de Control de Calidad. Sin fallback a báscula.
   const pesoTxt = pesoMed && pesoMed.valor !== null && pesoMed.valor !== undefined
     ? String(pesoMed.valor)
-    : (data.pesoRolloKg != null && Number.isFinite(Number(data.pesoRolloKg)) ? fmtKg(Number(data.pesoRolloKg)) : "—");
-  const sapTraceUrl = `${traceUrl}?vista=sap&rollo=${encodeURIComponent(data.numeroRollo || "")}&peso=${encodeURIComponent(pesoTxt)}&estatus=${encodeURIComponent(data.estatus)}`;
+    : "";
+  const sapTraceUrl = `${traceUrl}?vista=sap&rollo=${encodeURIComponent(data.numeroRollo || "")}${pesoTxt ? `&peso=${encodeURIComponent(pesoTxt)}` : ""}&estatus=${encodeURIComponent(data.estatus)}`;
 
   // Enriquecer con datos SAP (N.º de orden + estado) si no vienen ya en `data`.
   let numeroOrdenSap: string | null = data.numeroOrdenSap ?? null;
