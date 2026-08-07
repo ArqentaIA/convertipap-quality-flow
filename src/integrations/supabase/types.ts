@@ -47,6 +47,42 @@ export type Database = {
         }
         Relationships: []
       }
+      _backup_normalizacion_estado_qc: {
+        Row: {
+          autorizado_por: string | null
+          capturado_at: string | null
+          dictamen: string | null
+          estado: string | null
+          estado_nuevo: string | null
+          estatus_liberacion: string | null
+          id: string
+          numero_rollo: string | null
+          respaldado_at: string
+        }
+        Insert: {
+          autorizado_por?: string | null
+          capturado_at?: string | null
+          dictamen?: string | null
+          estado?: string | null
+          estado_nuevo?: string | null
+          estatus_liberacion?: string | null
+          id: string
+          numero_rollo?: string | null
+          respaldado_at?: string
+        }
+        Update: {
+          autorizado_por?: string | null
+          capturado_at?: string | null
+          dictamen?: string | null
+          estado?: string | null
+          estado_nuevo?: string | null
+          estatus_liberacion?: string | null
+          id?: string
+          numero_rollo?: string | null
+          respaldado_at?: string
+        }
+        Relationships: []
+      }
       _backup_sufijo_numero_rollo: {
         Row: {
           capturado_at: string | null
@@ -74,6 +110,42 @@ export type Database = {
           numero_rollo_anterior?: string
           numero_rollo_nuevo?: string
           operador?: string | null
+        }
+        Relationships: []
+      }
+      _excepciones_normalizacion_estado_qc: {
+        Row: {
+          autorizado_por: string | null
+          capturado_at: string | null
+          detectado_at: string
+          dictamen: string | null
+          estado: string | null
+          estatus_liberacion: string | null
+          id: string
+          motivo_excepcion: string
+          numero_rollo: string | null
+        }
+        Insert: {
+          autorizado_por?: string | null
+          capturado_at?: string | null
+          detectado_at?: string
+          dictamen?: string | null
+          estado?: string | null
+          estatus_liberacion?: string | null
+          id: string
+          motivo_excepcion: string
+          numero_rollo?: string | null
+        }
+        Update: {
+          autorizado_por?: string | null
+          capturado_at?: string | null
+          detectado_at?: string
+          dictamen?: string | null
+          estado?: string | null
+          estatus_liberacion?: string | null
+          id?: string
+          motivo_excepcion?: string
+          numero_rollo?: string | null
         }
         Relationships: []
       }
