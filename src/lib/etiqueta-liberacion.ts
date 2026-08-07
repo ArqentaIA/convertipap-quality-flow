@@ -67,12 +67,6 @@ export type EtiquetaData = {
   } | null;
   numeroOrdenSap?: string | null;
   estadoSap?: string | null;
-  /**
-   * Peso de respaldo (kg) SOLO para casos donde la muestra no tiene la
-   * variable "Peso" capturada en Control de Calidad. El Peso oficial del
-   * rollo es siempre la medición "peso" de mediciones_calidad.
-   */
-  pesoRolloKg?: number | null;
 };
 
 function fmtKg(value: number | string): string {
@@ -162,17 +156,14 @@ function buildHtml(
     (o) => `<label class="ck"><input type="checkbox" ${defectosSet.has(o.toLowerCase()) ? "checked" : ""} /> ${esc(o)}</label>`,
   ).join("");
 
-  // PESO OFICIAL: la variable "Peso" capturada en Control de Calidad.
-  // pesoRolloKg sólo se imprime si la muestra no tiene esa medición.
+  // PESO OFICIAL: exclusivamente la variable "Peso" capturada en Control de
+  // Calidad. Sin fallback a báscula (pesajes_bobina_madre.peso_neto_kg).
   const pesoMedValor =
     pesoMed && pesoMed.valor !== null && pesoMed.valor !== undefined
       ? String(pesoMed.valor)
       : null;
-  const pesoFallback = data.pesoRolloKg != null && Number.isFinite(Number(data.pesoRolloKg))
-    ? fmtKg(Number(data.pesoRolloKg))
-    : null;
-  const pesoValor = pesoMedValor ?? pesoFallback ?? "—";
-  const pesoUnidad = pesoMedValor != null ? (pesoMed?.unidad || "kg") : "kg";
+  const pesoValor = pesoMedValor ?? "No disponible";
+  const pesoUnidad = pesoMedValor != null ? (pesoMed?.unidad || "kg") : "";
 
   const pesoBlock = `
     <div class="peso-highlight">
@@ -414,11 +405,11 @@ export async function printEtiquetaLiberacion(data: EtiquetaData): Promise<void>
       m.etiqueta.trim().toLowerCase() === "peso del rollo" ||
       m.etiqueta.trim().toLowerCase() === "peso rollo",
   );
-  // Peso oficial = medición "Peso" de Control de Calidad; pesoRolloKg es sólo respaldo.
+  // Peso oficial = medición "Peso" de Control de Calidad. Sin fallback a báscula.
   const pesoTxt = pesoMed && pesoMed.valor !== null && pesoMed.valor !== undefined
     ? String(pesoMed.valor)
-    : (data.pesoRolloKg != null && Number.isFinite(Number(data.pesoRolloKg)) ? fmtKg(Number(data.pesoRolloKg)) : "—");
-  const sapTraceUrl = `${traceUrl}?vista=sap&rollo=${encodeURIComponent(data.numeroRollo || "")}&peso=${encodeURIComponent(pesoTxt)}&estatus=${encodeURIComponent(data.estatus)}`;
+    : "";
+  const sapTraceUrl = `${traceUrl}?vista=sap&rollo=${encodeURIComponent(data.numeroRollo || "")}${pesoTxt ? `&peso=${encodeURIComponent(pesoTxt)}` : ""}&estatus=${encodeURIComponent(data.estatus)}`;
 
   // Enriquecer con datos SAP (N.º de orden + estado) si no vienen ya en `data`.
   let numeroOrdenSap: string | null = data.numeroOrdenSap ?? null;
