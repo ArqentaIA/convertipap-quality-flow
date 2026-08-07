@@ -9,7 +9,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
-import { esLiberadoOficial, esNoConformeOficial, esConcesionOficial } from "@/lib/qc-estado-oficial";
+import { esLiberadoOficial, esNoConformeOficial, getEstadoOficial } from "@/lib/qc-estado-oficial";
 
 type SB = SupabaseClient<Database>;
 
@@ -1156,13 +1156,9 @@ export const listRollosMaquina = createServerFn({ method: "GET" })
       //   'L'  → Liberado (incluye liberado con justificación)
       //   'NC' → Rechazado (no conforme)
       //   resto (C/null) → Pendiente
-      const est = r.estatus_liberacion as string | null;
+      const eo = getEstadoOficial(r as { estatus_liberacion?: string | null });
       const estatus: "L" | "NC" | "C" =
-        est === "L" || r.dictamen === "liberada"
-          ? "L"
-          : est === "NC" || r.dictamen === "rechazada"
-          ? "NC"
-          : "C";
+        eo.es_liberado_normal ? "L" : eo.es_no_conforme ? "NC" : "C";
       return {
         muestraId: r.id as string,
         ordenId: r.orden_id as string,
