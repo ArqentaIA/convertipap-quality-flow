@@ -18,6 +18,7 @@ type UsuarioFila = {
 
 const ROL_LABEL: Record<AppRole, string> = {
   administrador: "Administrador",
+  direccion_general: "Dirección General",
   gerente_general: "Gerente General",
   direccion: "Dirección",
   calidad: "Calidad",
@@ -29,6 +30,7 @@ const ROL_LABEL: Record<AppRole, string> = {
 
 const ROL_COLORS: Record<AppRole, string> = {
   administrador: "bg-primary/15 text-primary border-primary/30",
+  direccion_general: "bg-primary/20 text-primary border-primary/40",
   gerente_general: "bg-primary/10 text-primary border-primary/25",
   direccion: "bg-accent text-accent-foreground border-border",
   calidad: "bg-success/15 text-success border-success/30",

@@ -5,6 +5,7 @@ import type { Session, User } from "@supabase/supabase-js";
 
 export type AppRole =
   | "administrador"
+  | "direccion_general"
   | "gerente_general"
   | "direccion"
   | "calidad"
