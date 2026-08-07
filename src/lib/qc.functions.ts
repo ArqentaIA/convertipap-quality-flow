@@ -717,6 +717,19 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
       if (error) throw new Error(error.message);
     }
 
+    // Evaluación canónica única (BD): decide estatus_liberacion y estado.
+    // Ambos módulos (captura normal y fuera de turno) consumen esta misma regla.
+    try {
+      await (sb as unknown as { rpc: (n: string, a: unknown) => Promise<unknown> }).rpc(
+        "qc_recalc_estatus_muestra",
+        { _muestra_id: muestraId },
+      );
+    } catch {
+      // Los triggers de BD ya aplican la regla; el RPC es refuerzo idempotente.
+    }
+
+
+
     // Auditoría explícita de los hallazgos del rollo (creación o edición).
     if (
       data.defecto_visual_conversion ||
