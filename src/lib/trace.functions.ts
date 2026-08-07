@@ -98,10 +98,17 @@ export const getMuestraTrace = createServerFn({ method: "GET" })
     });
     const ordenId = (m as unknown as { orden_id?: string }).orden_id;
     const numero = Number(m.numero_rollo);
+    // PESO OFICIAL DEL ROLLO: exclusivamente la variable "Peso" capturada en
+    // Control de Calidad (mediciones_calidad.variable_clave = 'peso').
+    // rollos_producidos.peso_kg sólo se usa como espejo cuando la medición no
+    // existe (se sincroniza desde la misma medición vía trigger).
     let peso_kg: number | null = null;
     let estado_sap: string | null = null;
     let numero_orden_sap: string | null = null;
-    if (ordenId && Number.isFinite(numero)) {
+    if (pesoDesdeMedicion?.valor != null && Number.isFinite(pesoDesdeMedicion.valor)) {
+      peso_kg = Number(pesoDesdeMedicion.valor);
+    }
+    if (peso_kg == null && ordenId && Number.isFinite(numero)) {
       const { data: rp } = await supabaseAdmin
         .from("rollos_producidos")
         .select("peso_kg")
@@ -109,9 +116,6 @@ export const getMuestraTrace = createServerFn({ method: "GET" })
         .eq("numero", numero)
         .maybeSingle();
       if (rp?.peso_kg != null) peso_kg = Number(rp.peso_kg);
-    }
-    if (peso_kg == null && pesoDesdeMedicion?.valor != null && Number.isFinite(pesoDesdeMedicion.valor)) {
-      peso_kg = Number(pesoDesdeMedicion.valor);
     }
 
     // Estado SAP: buscar vía pesaje vinculado → orden_produccion_id → ordenes_produccion.estado_sap.
