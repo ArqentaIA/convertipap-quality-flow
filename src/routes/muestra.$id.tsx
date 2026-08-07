@@ -57,7 +57,7 @@ function normalizeStatus(t: Extract<TraceMuestra, { found: true }>): StatusKind 
 
 function MuestraTracePage() {
   const { id } = Route.useParams();
-  const { peso, vista } = Route.useSearch();
+  const { vista } = Route.useSearch();
   const { data } = useSuspenseQuery(traceQO(id));
   const trace = data as TraceMuestra;
 
@@ -73,7 +73,8 @@ function MuestraTracePage() {
   if (!trace.found) return <NotFoundCard />;
 
   const status = normalizeStatus(trace);
-  const pesoMostrado = trace.peso_kg ?? parsePesoParam(peso);
+  // Peso oficial: sólo la medición "Peso" de Control de Calidad (nunca báscula).
+  const pesoMostrado = trace.peso_kg;
 
   return vista === "sap"
     ? <SapView trace={trace} status={status} pesoMostrado={pesoMostrado} />
@@ -141,7 +142,7 @@ function SapView({
           <Cell label="N.º de rollo" value={trace.numero_rollo ?? "—"} />
           <Cell
             label="Peso"
-            value={pesoMostrado != null ? formatPeso(pesoMostrado) : "—"}
+            value={pesoMostrado != null ? formatPeso(pesoMostrado) : "No disponible"}
             unit={pesoMostrado != null ? "kg" : undefined}
           />
         </div>
@@ -181,7 +182,7 @@ function TrazabilidadView({
           <Cell label="N.º de rollo" value={trace.numero_rollo ?? "—"} />
           <Cell
             label="Peso"
-            value={pesoMostrado != null ? formatPeso(pesoMostrado) : "—"}
+            value={pesoMostrado != null ? formatPeso(pesoMostrado) : "No disponible"}
             unit={pesoMostrado != null ? "kg" : undefined}
           />
         </div>
@@ -339,13 +340,6 @@ function StatusBar({ estado }: { estado: StatusKind }) {
       </div>
     </div>
   );
-}
-
-function parsePesoParam(value?: string): number | null {
-  if (!value) return null;
-  const normalized = value.replace(/,/g, "").replace(/[^0-9.-]/g, "");
-  const parsed = Number(normalized);
-  return Number.isFinite(parsed) ? parsed : null;
 }
 
 function formatPeso(n: number): string {
