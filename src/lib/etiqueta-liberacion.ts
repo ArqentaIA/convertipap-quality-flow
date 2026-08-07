@@ -162,15 +162,17 @@ function buildHtml(
     (o) => `<label class="ck"><input type="checkbox" ${defectosSet.has(o.toLowerCase()) ? "checked" : ""} /> ${esc(o)}</label>`,
   ).join("");
 
-  // PESO impreso: si el pesaje del rollo está vinculado se usa peso_neto_kg
-  // (pesajes_bobina_madre); si no, se degrada a la medición "peso" capturada.
-  const pesoDelRollo = data.pesoRolloKg != null && Number.isFinite(Number(data.pesoRolloKg))
-    ? Number(data.pesoRolloKg)
+  // PESO OFICIAL: la variable "Peso" capturada en Control de Calidad.
+  // pesoRolloKg sólo se imprime si la muestra no tiene esa medición.
+  const pesoMedValor =
+    pesoMed && pesoMed.valor !== null && pesoMed.valor !== undefined
+      ? String(pesoMed.valor)
+      : null;
+  const pesoFallback = data.pesoRolloKg != null && Number.isFinite(Number(data.pesoRolloKg))
+    ? fmtKg(Number(data.pesoRolloKg))
     : null;
-  const pesoValor = pesoDelRollo != null
-    ? fmtKg(pesoDelRollo)
-    : (pesoMed && pesoMed.valor !== null && pesoMed.valor !== undefined ? String(pesoMed.valor) : "—");
-  const pesoUnidad = pesoDelRollo != null ? "kg" : (pesoMed?.unidad || "kg");
+  const pesoValor = pesoMedValor ?? pesoFallback ?? "—";
+  const pesoUnidad = pesoMedValor != null ? (pesoMed?.unidad || "kg") : "kg";
 
   const pesoBlock = `
     <div class="peso-highlight">
