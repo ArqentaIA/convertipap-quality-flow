@@ -5,6 +5,7 @@ import logoUrl from "@/assets/logo-convertipap.png";
 import sapLogo from "@/assets/sap-hana-logo.jpg.asset.json";
 import { getMuestraTrace, type TraceMuestra } from "@/lib/trace.functions";
 import { auditAction } from "@/lib/audit";
+import { getEstadoOficial } from "@/lib/qc-estado-oficial";
 
 const traceQO = (id: string) =>
   queryOptions({
@@ -43,21 +44,15 @@ export const Route = createFileRoute("/muestra/$id")({
 
 const CANONICAL_HOST = "www.convertipap.site";
 
-type StatusKind = "liberado" | "no_conforme";
+/**
+ * Estatus oficial del rollo para QR (trazabilidad y SAP).
+ * Fuente canónica ÚNICA: muestras_calidad.estatus_liberacion (L / C / NC / NULL).
+ * `dictamen` y `estado` son informativos y NO deciden la liberación.
+ */
+type StatusKind = ReturnType<typeof getEstadoOficial>;
 
 function normalizeStatus(t: Extract<TraceMuestra, { found: true }>): StatusKind {
-  const est = (t.estatus_liberacion ?? "").toString().trim().toUpperCase();
-  const dict = (t.dictamen ?? "").toString().trim().toLowerCase();
-  const estado = (t.estado ?? "").toString().trim().toLowerCase();
-  const justificada = t.liberado_con_justificacion === true;
-
-  if (est === "NC" || dict === "rechazada" || estado === "rechazada") return "no_conforme";
-  if (est === "L" && !justificada) return "liberado";
-  if (dict === "liberada" && !justificada) return "liberado";
-  if (estado === "liberada" && !justificada) return "liberado";
-  if (t.mediciones.some((m) => m.estado !== "conforme")) return "no_conforme";
-  if (justificada) return "no_conforme";
-  return "liberado";
+  return getEstadoOficial({ estatus_liberacion: t.estatus_liberacion });
 }
 
 function MuestraTracePage() {
@@ -127,7 +122,6 @@ function SapView({
   status: StatusKind;
   pesoMostrado: number | null;
 }) {
-  const isLiberado = status === "liberado";
   const faltaOrdenSap = !trace.numero_orden_sap;
   return (
     <ShellSap subtitle="Vista SAP · Rollo">
@@ -159,7 +153,7 @@ function SapView({
           />
           <Cell label="Estado SAP" value={trace.estado_sap ?? "N/A"} small />
         </div>
-        <StatusBar isLiberado={isLiberado} />
+        <StatusBar estado={status} />
       </div>
     </ShellSap>
   );
@@ -177,7 +171,6 @@ function TrazabilidadView({
   status: StatusKind;
   pesoMostrado: number | null;
 }) {
-  const isLiberado = status === "liberado";
   const fecha = new Date(trace.capturado_at || trace.hora_muestreo).toLocaleString("es-MX");
 
   return (
@@ -282,7 +275,7 @@ function TrazabilidadView({
           </div>
         )}
 
-        <StatusBar isLiberado={isLiberado} />
+        <StatusBar estado={status} />
       </div>
     </Shell>
   );
@@ -323,7 +316,14 @@ function Info({ label, value, colSpan, mono }: { label: string; value: string; c
   );
 }
 
-function StatusBar({ isLiberado }: { isLiberado: boolean }) {
+function StatusBar({ estado }: { estado: StatusKind }) {
+  const tone = estado.es_liberado_normal
+    ? "bg-emerald-50 text-emerald-800"
+    : estado.es_concesion
+      ? "bg-amber-50 text-amber-900"
+      : estado.es_no_conforme
+        ? "bg-rose-50 text-rose-800"
+        : "bg-sky-50 text-sky-800";
   return (
     <div className="grid grid-cols-[auto_1fr] border-t-2 border-[#0b2545]">
       <div className="bg-[#0b2545] text-white px-5 sm:px-7 py-5 flex items-center justify-center">
@@ -332,10 +332,10 @@ function StatusBar({ isLiberado }: { isLiberado: boolean }) {
       <div
         className={
           "px-5 py-5 flex items-center justify-center text-center font-extrabold tracking-[0.15em] uppercase text-xl sm:text-2xl " +
-          (isLiberado ? "bg-emerald-50 text-emerald-800" : "bg-rose-50 text-rose-800")
+          tone
         }
       >
-        {isLiberado ? "LIBERADO" : "NO CONFORME"}
+        {estado.estado_corto}
       </div>
     </div>
   );
