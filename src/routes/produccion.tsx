@@ -16,6 +16,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { listMaquinasConEstado } from "@/lib/produccion.functions";
 import { useProduccionRealtime } from "@/hooks/use-produccion-realtime";
 import { useAuth } from "@/lib/auth";
+import { supabase } from "@/integrations/supabase/client";
 
 
 import { BuscadorRollo } from "@/components/qc/BuscadorRollo";
@@ -47,11 +48,17 @@ function ProduccionPage() {
   const auth = useAuth();
   const { data: all = [], isFetching } = useQuery({
     queryKey: ["produccion", "maquinas", rango],
-    queryFn: () => listFn({ data: { rango } }),
+    queryFn: async () => {
+      // Evita disparar la llamada si la sesión ya se cerró (sin token => 401)
+      const { data } = await supabase.auth.getSession();
+      if (!data.session) return [] as Awaited<ReturnType<typeof listMaquinasConEstado>>;
+      return listFn({ data: { rango } });
+    },
     enabled: auth.isAuthenticated,
+    retry: false,
     refetchInterval: auth.isAuthenticated ? 15_000 : false,
-    refetchOnWindowFocus: true,
-    refetchOnReconnect: true,
+    refetchOnWindowFocus: auth.isAuthenticated,
+    refetchOnReconnect: auth.isAuthenticated,
     staleTime: 0,
   });
 
