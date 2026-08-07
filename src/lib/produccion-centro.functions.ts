@@ -7,6 +7,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { esLiberadoOficial, esNoConformeOficial, esConcesionOficial } from "@/lib/qc-estado-oficial";
 
 const inputSchema = z.object({
   rango: z.enum(["dia", "semana", "mes", "año", "custom"]),
@@ -268,10 +269,8 @@ export const getProduccionCentro = createServerFn({ method: "POST" })
       }
     }
 
-    const isLiberada = (m: { dictamen: string | null; estatus_liberacion: string | null }) =>
-      m.dictamen === "liberada" || m.estatus_liberacion === "L";
-    const isRechazada = (m: { dictamen: string | null; estatus_liberacion: string | null }) =>
-      m.dictamen === "rechazada" || m.estatus_liberacion === "NC";
+    const isLiberada = (m: { estatus_liberacion: string | null }) => esLiberadoOficial(m);
+    const isRechazada = (m: { estatus_liberacion: string | null }) => esNoConformeOficial(m);
     const isJustificada = (m: { liberado_con_justificacion?: boolean | null; autorizado_por?: string | null }) =>
       !!m.liberado_con_justificacion && !m.autorizado_por;
     const isConforme = (m: {
@@ -510,10 +509,10 @@ export const getProduccionCentro = createServerFn({ method: "POST" })
       if (v != null && !Number.isNaN(v)) pesoPrevMap.set(m.muestra_id, v);
     }
     const kgLibPrev = (muestrasPrev ?? [])
-      .filter((m) => m.dictamen === "liberada" || m.estatus_liberacion === "L")
+      .filter((m) => esLiberadoOficial(m))
       .reduce((a, m) => a + (pesoPrevMap.get(m.id) ?? 0), 0);
     const kgNoLibPrev = (muestrasPrev ?? [])
-      .filter((m) => !(m.dictamen === "liberada" || m.estatus_liberacion === "L"))
+      .filter((m) => !esLiberadoOficial(m))
       .reduce((a, m) => a + (pesoPrevMap.get(m.id) ?? 0), 0);
     const tendLib = kgLibPrev > 0 ? Math.round(((kgLib - kgLibPrev) / kgLibPrev) * 1000) / 10 : 0;
     const tendNoLib = kgNoLibPrev > 0 ? Math.round(((kgNoLib - kgNoLibPrev) / kgNoLibPrev) * 1000) / 10 : 0;

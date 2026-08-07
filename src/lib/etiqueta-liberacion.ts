@@ -40,7 +40,14 @@ export type EtiquetaData = {
   productoNombre: string;
   observacionesGenerales: string;
   mediciones: EtiquetaMedicion[];
-  estatus: "CONFORME" | "NO CONFORME" | "LIBERADO" | "CONDICIONAL" | "LIBERADO C/JUSTIF";
+  estatus:
+    | "CONFORME"
+    | "NO CONFORME"
+    | "LIBERADO"
+    | "LIBERADO CON CONCESIÓN"
+    | "CONDICIONAL"
+    | "LIBERADO C/JUSTIF"
+    | "PENDIENTE";
   estatusLiberacion?: "L" | "NC" | "C" | null;
   /** Cuando estatus = 'LIBERADO C/JUSTIF', motivo capturado por el operario. */
   justificacionLiberacion?: string | null;
@@ -124,16 +131,20 @@ function buildHtml(
       ? "#15803d"
       : data.estatus === "LIBERADO C/JUSTIF"
       ? "#854d0e"
-      : data.estatus === "CONDICIONAL"
+      : data.estatus === "CONDICIONAL" || data.estatus === "LIBERADO CON CONCESIÓN"
       ? "#b45309"
+      : data.estatus === "PENDIENTE"
+      ? "#0369a1"
       : "#b91c1c";
   const estatusBg =
     data.estatus === "CONFORME" || data.estatus === "LIBERADO"
       ? "#dcfce7"
       : data.estatus === "LIBERADO C/JUSTIF"
       ? "#fef08a"
-      : data.estatus === "CONDICIONAL"
+      : data.estatus === "CONDICIONAL" || data.estatus === "LIBERADO CON CONCESIÓN"
       ? "#fef3c7"
+      : data.estatus === "PENDIENTE"
+      ? "#e0f2fe"
       : "#fee2e2";
 
   // Peso primero (destacado) y luego el resto en dos columnas
@@ -271,7 +282,7 @@ function buildHtml(
       <div class="brand"><img src="${logoDataUrl}" alt="Convertipap" /></div>
       <div class="title">
         <b>CONVERTIDOR DE PAPEL S.A. DE C.V</b>
-        <span class="sub">ETIQUETA DE LIBERACIÓN</span>
+        <span class="sub">${data.estatus === "NO CONFORME" ? "ETIQUETA DE CONTROL DE CALIDAD" : "ETIQUETA DE LIBERACIÓN"}</span>
       </div>
       <div class="meta-bar">
         <span>FOR-CAL-04 · Rev. 0</span>

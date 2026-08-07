@@ -20,6 +20,7 @@ import { calcularSla } from "@/lib/qc-sla";
 import { useLabFilter } from "@/lib/lab";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { getEstadoOficial } from "@/lib/qc-estado-oficial";
 
 export const Route = createFileRoute("/calidad/dashboard")({
   component: DashboardPage,
@@ -90,12 +91,12 @@ function DashboardPage() {
   const puedeVer = auth.roles.some((r) => ROLES_DASHBOARD.includes(r));
 
   // Dictamen efectivo: combina dictamen del autorizador con estatus_liberacion del capturista
+  // Fuente canónica: estatus_liberacion (L/C/NC/NULL). El dictamen es informativo.
   const dictEfectivo = (m: MuestraRow): "liberada" | "rechazada" | "concesion" | null => {
-    if (m.dictamen) return m.dictamen as "liberada" | "rechazada" | "concesion";
-    const est = (m as { estatus_liberacion?: string | null }).estatus_liberacion ?? null;
-    if (est === "L") return "liberada";
-    if (est === "NC") return "rechazada";
-    if (est === "C") return "concesion";
+    const eo = getEstadoOficial(m as { estatus_liberacion?: string | null });
+    if (eo.es_liberado_normal) return "liberada";
+    if (eo.es_concesion) return "concesion";
+    if (eo.es_no_conforme) return "rechazada";
     return null;
   };
 

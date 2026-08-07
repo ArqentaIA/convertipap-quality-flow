@@ -4,6 +4,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { fetchAllPaged } from "@/lib/paginate";
+import { esLiberadoOficial, esNoConformeOficial, esConcesionOficial } from "@/lib/qc-estado-oficial";
 
 export type CEOReportMaquina = {
   codigo: string;
@@ -25,7 +26,13 @@ export type CEOReportRollo = {
   anchoUtil: number | null;
   blancuraR457: number | null;
   diametro: number | null;
-  estatus: "Liberado" | "Liberado c/justif" | "Retenido" | "Rechazado" | "Pendiente";
+  estatus:
+    | "Liberado"
+    | "Liberado con concesión"
+    | "Liberado c/justif"
+    | "Retenido"
+    | "Rechazado"
+    | "Pendiente";
   defectos: string[];
 };
 
@@ -137,14 +144,16 @@ export const getCEOReport = createServerFn({ method: "GET" })
 
     const estatusDe = (m: any): CEOReportRollo["estatus"] => {
       if (m.liberado_con_justificacion === true) return "Liberado c/justif";
-      if (m.dictamen === "liberada" || m.estatus_liberacion === "L") return "Liberado";
-      if (m.dictamen === "rechazada" || m.estatus_liberacion === "NC") return "Rechazado";
+      if (esConcesionOficial(m)) return "Liberado con concesión";
+      if (esLiberadoOficial(m)) return "Liberado";
+      if (esNoConformeOficial(m)) return "Rechazado";
       if (m.dictamen === "retenida" || m.estatus_liberacion === "R") return "Retenido";
       return "Pendiente";
     };
     const esConforme = (m: any): boolean => {
       const st = estatusDe(m);
-      if (st === "Liberado" || st === "Liberado c/justif") return true;
+      if (st === "Liberado" || st === "Liberado con concesión" || st === "Liberado c/justif")
+        return true;
       if (st === "Rechazado" || st === "Retenido") return false;
       const nc = ncPorMuestra.get(m.id) ?? 0;
       const def = ((m.defectos ?? []) as string[]).filter(Boolean).length;

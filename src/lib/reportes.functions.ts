@@ -9,6 +9,11 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import {
+  esLiberadoOficial as _esLiberadoOficial,
+  esNoConformeOficial as _esNoConformeOficial,
+} from "@/lib/qc-estado-oficial";
+
 
 const rangoInput = z.object({
   start: z.string(), // ISO
@@ -156,12 +161,13 @@ export const getReportes = createServerFn({ method: "POST" })
     // NC oficial = estatus_liberacion = 'NC' (o dictamen rechazada cuando
     // no hay estatus oficial). NO se degrada por mediciones fuera de spec.
     // ====================================================
-    const esLiberadoOficial = (m: { estatus_liberacion?: string | null; dictamen?: string | null }) =>
-      m.estatus_liberacion === "L" || m.estatus_liberacion === "C" ||
-      (m.estatus_liberacion == null && m.dictamen === "liberada");
-    const esNcOficial = (m: { estatus_liberacion?: string | null; dictamen?: string | null }) =>
-      m.estatus_liberacion === "NC" ||
-      (m.estatus_liberacion == null && m.dictamen === "rechazada");
+    // Fuente canónica única: qc-estado-oficial (estatus_liberacion L/C/NC/NULL).
+    const esLiberadoOficial = (m: { estatus_liberacion?: string | null }) =>
+      _esLiberadoOficial(m);
+    const esNcOficial = (m: { estatus_liberacion?: string | null }) =>
+      _esNoConformeOficial(m);
+
+
 
     const desempenoMap = new Map<
       string,
@@ -363,7 +369,9 @@ export const getReportes = createServerFn({ method: "POST" })
           muestras_ok: 0,
         };
       e.muestras_total++;
-      if (m.dictamen === "liberada") e.muestras_ok++;
+      // Componente Calidad del OEE: liberado oficial = L + C (incluye concesión).
+      if (_esLiberadoOficial(m)) e.muestras_ok++;
+
       oeeMap.set(key, e);
     }
     const parosPorMaq = new Map<string, number>();
@@ -591,8 +599,9 @@ export const getReportes = createServerFn({ method: "POST" })
         if (!Number.isNaN(v)) pesoPorMuestra.set(med.muestra_id, v);
       }
     }
-    const esNoLiberado = (m: any) =>
-      !(m.dictamen === "liberada" || m.estatus_liberacion === "L");
+    // Costo de no calidad: la concesión (C) NO se considera rechazo.
+    const esNoLiberado = (m: any) => !_esLiberadoOficial(m);
+
 
     const noLibBase: Array<{ m: any; pesoKg: number; costoMxn: number }> = [];
     let totalKg = 0;

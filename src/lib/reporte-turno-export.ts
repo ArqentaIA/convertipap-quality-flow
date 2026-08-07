@@ -4,6 +4,7 @@
 // =====================================================================
 import type { CentroProduccionPayload, TablaRow } from "./produccion-centro.functions";
 import { fechaHoraMX } from "./format";
+import { getEstadoOficial, esLiberadoOficial, esNoConformeOficial } from "@/lib/qc-estado-oficial";
 
 
 
@@ -30,17 +31,17 @@ function isJustificada(r: TablaRow) {
   return !!r.liberado_con_justificacion;
 }
 function isLiberada(r: TablaRow) {
-  return !isJustificada(r) && (r.dictamen === "liberada" || r.estatus_liberacion === "L");
+  // Liberado oficial = L + C; se muestra aparte cuando hay justificación.
+  return !isJustificada(r) && esLiberadoOficial(r);
 }
 function isRechazada(r: TablaRow) {
-  return r.dictamen === "rechazada" || r.estatus_liberacion === "NC";
+  return esNoConformeOficial(r);
 }
 function estatusLabel(r: TablaRow): string {
-  if (isJustificada(r)) return "Liberado c/justif";
-  if (isLiberada(r)) return "Liberado";
-  if (isRechazada(r)) return "No conforme";
-  if (r.estatus_liberacion === "C" || r.dictamen === "concesion") return "Concesión";
-  return r.dictamen ?? r.estatus_liberacion ?? r.estado ?? "Pendiente";
+  const eo = getEstadoOficial(r);
+  if (isJustificada(r) && eo.es_liberado_normal) return "Liberado c/justif";
+  if (eo.es_concesion) return "Concesión";
+  return eo.estado_nombre;
 }
 
 export function buildResumen(rows: TablaRow[]) {

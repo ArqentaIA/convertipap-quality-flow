@@ -23,6 +23,7 @@ import logoConvertipap from "@/assets/logo-convertipap.png";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { Lock } from "lucide-react";
+import { getEstadoOficial } from "@/lib/qc-estado-oficial";
 
 // Convierte "HH:MM" en minutos desde 00:00 (hora local).
 function hhmmToMin(s: string | undefined | null): number | null {
@@ -408,6 +409,7 @@ function KpiCard({
 function RolloActualCard({
   rollo,
   status,
+  estatusOficial,
   producto,
   hora,
   hallazgo,
@@ -415,6 +417,8 @@ function RolloActualCard({
 }: {
   rollo: string;
   status: VarStatus;
+  /** Estatus oficial de Calidad (L / C / NC / null). Fuente canónica. */
+  estatusOficial?: string | null;
   producto: string;
   hora: string;
   hallazgo: string | null;
@@ -458,7 +462,9 @@ function RolloActualCard({
         <span
           className={`rounded px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider ${c.chip}`}
         >
-          {labelLiberacion(status)}
+          {estatusOficial === undefined
+            ? labelLiberacion(status)
+            : getEstadoOficial({ estatus_liberacion: estatusOficial }).estado_corto}
         </span>
       </div>
       <div className="font-mono text-[34px] font-black leading-none tabular-nums truncate">
@@ -1044,6 +1050,7 @@ function OperatorVisionPage() {
                   <RolloActualCard
                     rollo={current?.rollo ? String(current.rollo) : "—"}
                     status={currentStatus}
+                    estatusOficial={(current as { estatus?: string | null } | undefined)?.estatus ?? null}
                     producto={orden?.producto ?? ""}
                     hora={horaRolloActual}
                     hallazgo={(() => {
