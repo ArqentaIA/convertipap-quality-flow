@@ -19,7 +19,8 @@ export type EffectiveStatusKey =
   | "CONFORME"
   | "CONCESION"
   | "LIBERADO_CON_JUSTIFICACION"
-  | "NO_CONFORME";
+  | "NO_CONFORME"
+  | "PENDIENTE";
 
 export interface EffectiveStatusInfo {
   key: EffectiveStatusKey;
@@ -59,36 +60,15 @@ export function getEffectiveStatus(m: EffectiveStatusInput): EffectiveStatusInfo
     ) ||
     (Array.isArray(m.variables_fuera_spec) && m.variables_fuera_spec.length > 0);
 
-  // 1) Dictamen autorizado por Gerencia de Calidad.
-  if (m.autorizado_por && m.dictamen) {
-    if (m.dictamen === "liberada")
-      return {
-        key: "LIBERADO",
-        label: "Liberado",
-        source: "dictamen_autorizado",
-        lockedNoConforme: false,
-        tieneVariablesFueraSpec: tieneFuera,
-      };
-    if (m.dictamen === "concesion")
-      return {
-        key: "CONCESION",
-        label: "Concesión",
-        source: "dictamen_autorizado",
-        lockedNoConforme: false,
-        tieneVariablesFueraSpec: tieneFuera,
-      };
-    if (m.dictamen === "rechazada")
-      return {
-        key: "NO_CONFORME",
-        label: "No conforme",
-        source: "dictamen_autorizado",
-        lockedNoConforme: true,
-        tieneVariablesFueraSpec: tieneFuera,
-      };
-  }
+  // 1) Fuente canónica ÚNICA: estatus_liberacion (escrito por la BD y por
+  //    change_roll_status a partir del dictamen autorizado). El dictamen es
+  //    información complementaria y NO decide si el rollo está liberado.
+  const est =
+    typeof m.estatus_liberacion === "string"
+      ? m.estatus_liberacion.trim().toUpperCase()
+      : null;
 
-  // 2) Liberación con justificación del capturista (regla de oro).
-  if (m.estatus_liberacion === "L" && m.liberado_con_justificacion) {
+  if (est === "L" && m.liberado_con_justificacion) {
     return {
       key: "LIBERADO_CON_JUSTIFICACION",
       label: "Liberado con justificación",
@@ -98,57 +78,45 @@ export function getEffectiveStatus(m: EffectiveStatusInput): EffectiveStatusInfo
       justificacion: m.liberacion_justificacion ?? null,
     };
   }
-
-  // 3) Estatus oficial capturado/derivado.
-  if (m.estatus_liberacion === "L")
+  if (est === "L")
     return {
       key: "LIBERADO",
       label: "Liberado",
-      source: "estatus_capturado",
+      source: m.autorizado_por && m.dictamen ? "dictamen_autorizado" : "estatus_capturado",
       lockedNoConforme: false,
       tieneVariablesFueraSpec: tieneFuera,
     };
-  if (m.estatus_liberacion === "C")
+  if (est === "C")
     return {
       key: "CONCESION",
-      label: "Concesión",
-      source: "estatus_capturado",
+      label: "Liberado con concesión",
+      source: m.autorizado_por && m.dictamen ? "dictamen_autorizado" : "estatus_capturado",
       lockedNoConforme: false,
       tieneVariablesFueraSpec: tieneFuera,
     };
-  if (m.estatus_liberacion === "NC")
+  if (est === "NC")
     return {
       key: "NO_CONFORME",
       label: "No conforme",
-      source: "estatus_capturado",
+      source: m.autorizado_por && m.dictamen ? "dictamen_autorizado" : "estatus_capturado",
       lockedNoConforme: true,
       tieneVariablesFueraSpec: tieneFuera,
     };
 
-  // 4) Sin estatus oficial: las mediciones determinan NC tentativo.
-  if (tieneFuera) {
-    return {
-      key: "NO_CONFORME",
-      label: "No conforme",
-      source: "mediciones",
-      lockedNoConforme: true,
-      tieneVariablesFueraSpec: true,
-    };
-  }
-
+  // 2) Sin estatus oficial → PENDIENTE (nunca "conforme" implícito).
   return {
-    key: "CONFORME",
-    label: "Conforme",
+    key: "PENDIENTE",
+    label: "Pendiente de dictamen",
     source: "default",
     lockedNoConforme: false,
-    tieneVariablesFueraSpec: false,
+    tieneVariablesFueraSpec: tieneFuera,
   };
 }
 
 /** Convierte el estatus efectivo al string usado por la etiqueta impresa. */
 export function toEtiquetaEstatus(
   k: EffectiveStatusKey,
-): "CONFORME" | "NO CONFORME" | "LIBERADO" | "CONDICIONAL" | "LIBERADO C/JUSTIF" {
+): "CONFORME" | "NO CONFORME" | "LIBERADO" | "LIBERADO CON CONCESIÓN" | "CONDICIONAL" | "LIBERADO C/JUSTIF" | "PENDIENTE" {
   switch (k) {
     case "LIBERADO":
       return "LIBERADO";
@@ -157,7 +125,9 @@ export function toEtiquetaEstatus(
     case "NO_CONFORME":
       return "NO CONFORME";
     case "CONCESION":
-      return "CONDICIONAL";
+      return "LIBERADO CON CONCESIÓN";
+    case "PENDIENTE":
+      return "PENDIENTE";
     case "CONFORME":
     default:
       return "CONFORME";
@@ -193,6 +163,12 @@ export function getEffectiveStatusPalette(k: EffectiveStatusKey) {
         colorClass: "bg-red-100 text-red-800 border-red-300",
         hex: "#b91c1c",
         bgHex: "#fee2e2",
+      };
+    case "PENDIENTE":
+      return {
+        colorClass: "bg-sky-100 text-sky-800 border-sky-300",
+        hex: "#0369a1",
+        bgHex: "#e0f2fe",
       };
     case "CONFORME":
     default:
