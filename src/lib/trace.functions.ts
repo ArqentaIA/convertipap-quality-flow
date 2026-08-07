@@ -96,8 +96,6 @@ export const getMuestraTrace = createServerFn({ method: "GET" })
       const etiqueta = med.etiqueta.trim().toLowerCase();
       return etiqueta === "peso" || etiqueta === "peso del rollo" || etiqueta === "peso rollo";
     });
-    const ordenId = (m as unknown as { orden_id?: string }).orden_id;
-    const numero = Number(m.numero_rollo);
     // PESO OFICIAL DEL ROLLO: exclusivamente la variable "Peso" capturada en
     // Control de Calidad (mediciones_calidad.variable_clave = 'peso').
     // Sin fallback a báscula ni a rollos_producidos: si no existe → null.
