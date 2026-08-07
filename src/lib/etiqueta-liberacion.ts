@@ -68,10 +68,9 @@ export type EtiquetaData = {
   numeroOrdenSap?: string | null;
   estadoSap?: string | null;
   /**
-   * Peso neto del rollo tomado del pesaje de bobina madre
-   * (public.pesajes_bobina_madre.peso_neto_kg) vinculado a la muestra.
-   * Es la ÚNICA fuente de verdad para el bloque PESO impreso; cuando
-   * está presente reemplaza cualquier medición etiquetada como "Peso".
+   * Peso de respaldo (kg) SOLO para casos donde la muestra no tiene la
+   * variable "Peso" capturada en Control de Calidad. El Peso oficial del
+   * rollo es siempre la medición "peso" de mediciones_calidad.
    */
   pesoRolloKg?: number | null;
 };
