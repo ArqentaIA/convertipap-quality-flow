@@ -178,7 +178,8 @@ export const getOperatorVisionData = createServerFn({ method: "GET" })
       crepadoPct: m.crepado_pct === null || m.crepado_pct === undefined ? null : Number(m.crepado_pct),
       velocidadMaquina: m.velocidad_maquina === null || m.velocidad_maquina === undefined ? null : Number(m.velocidad_maquina),
       velocidadEnrollador: m.velocidad_enrollador === null || m.velocidad_enrollador === undefined ? null : Number(m.velocidad_enrollador),
-      estatus: (m.estatus_liberacion ?? m.dictamen ?? "pendiente") as string,
+      // Fuente canónica: estatus_liberacion (L/C/NC/NULL). El dictamen no decide.
+      estatus: (m.estatus_liberacion ?? null) as string | null,
       liberadoConJustificacion: !!m.liberado_con_justificacion,
       justificacionLiberacion: (m.liberacion_justificacion as string | null) ?? null,
       defectoVisualConversion: (m.defecto_visual_conversion as string | null) ?? null,
