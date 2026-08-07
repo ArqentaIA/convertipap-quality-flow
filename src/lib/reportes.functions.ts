@@ -9,6 +9,11 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import {
+  esLiberadoOficial as _esLiberadoOficial,
+  esNoConformeOficial as _esNoConformeOficial,
+} from "@/lib/qc-estado-oficial";
+
 
 const rangoInput = z.object({
   start: z.string(), // ISO
