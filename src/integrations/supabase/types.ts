@@ -302,6 +302,13 @@ export type Database = {
             referencedColumns: ["muestra_id"]
           },
           {
+            foreignKeyName: "ajustes_calidad_muestra_id_fkey"
+            columns: ["muestra_id"]
+            isOneToOne: false
+            referencedRelation: "vw_muestras_calidad_estado_oficial"
+            referencedColumns: ["muestra_id"]
+          },
+          {
             foreignKeyName: "ajustes_calidad_muestra_verificacion_id_fkey"
             columns: ["muestra_verificacion_id"]
             isOneToOne: false
@@ -313,6 +320,13 @@ export type Database = {
             columns: ["muestra_verificacion_id"]
             isOneToOne: false
             referencedRelation: "v_muestra_kpis_v2"
+            referencedColumns: ["muestra_id"]
+          },
+          {
+            foreignKeyName: "ajustes_calidad_muestra_verificacion_id_fkey"
+            columns: ["muestra_verificacion_id"]
+            isOneToOne: false
+            referencedRelation: "vw_muestras_calidad_estado_oficial"
             referencedColumns: ["muestra_id"]
           },
           {
@@ -848,6 +862,13 @@ export type Database = {
             columns: ["muestra_id"]
             isOneToOne: false
             referencedRelation: "v_muestra_kpis_v2"
+            referencedColumns: ["muestra_id"]
+          },
+          {
+            foreignKeyName: "mediciones_calidad_muestra_id_fkey"
+            columns: ["muestra_id"]
+            isOneToOne: false
+            referencedRelation: "vw_muestras_calidad_estado_oficial"
             referencedColumns: ["muestra_id"]
           },
           {
@@ -1703,6 +1724,13 @@ export type Database = {
             referencedColumns: ["muestra_id"]
           },
           {
+            foreignKeyName: "pesajes_cintas_lotes_muestra_calidad_id_fkey"
+            columns: ["muestra_calidad_id"]
+            isOneToOne: false
+            referencedRelation: "vw_muestras_calidad_estado_oficial"
+            referencedColumns: ["muestra_id"]
+          },
+          {
             foreignKeyName: "pesajes_cintas_lotes_orden_produccion_id_fkey"
             columns: ["orden_produccion_id"]
             isOneToOne: false
@@ -2543,6 +2571,104 @@ export type Database = {
             columns: ["maquina_id"]
             isOneToOne: false
             referencedRelation: "maquinas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vw_muestras_calidad_estado_oficial: {
+        Row: {
+          capturado_at: string | null
+          dictamen: Database["public"]["Enums"]["qc_dictamen"] | null
+          es_concesion: boolean | null
+          es_liberado: boolean | null
+          es_liberado_normal: boolean | null
+          es_no_conforme: boolean | null
+          esta_pendiente: boolean | null
+          estado_nombre: string | null
+          estado_workflow:
+            | Database["public"]["Enums"]["qc_muestra_estado"]
+            | null
+          estatus_liberacion: string | null
+          hora_muestreo: string | null
+          maquina_id: string | null
+          muestra_id: string | null
+          numero_rollo: string | null
+          orden_id: string | null
+          planta_id: string | null
+          producto_id: string | null
+          turno: string | null
+        }
+        Insert: {
+          capturado_at?: string | null
+          dictamen?: Database["public"]["Enums"]["qc_dictamen"] | null
+          es_concesion?: never
+          es_liberado?: never
+          es_liberado_normal?: never
+          es_no_conforme?: never
+          esta_pendiente?: never
+          estado_nombre?: never
+          estado_workflow?:
+            | Database["public"]["Enums"]["qc_muestra_estado"]
+            | null
+          estatus_liberacion?: string | null
+          hora_muestreo?: string | null
+          maquina_id?: string | null
+          muestra_id?: string | null
+          numero_rollo?: string | null
+          orden_id?: string | null
+          planta_id?: string | null
+          producto_id?: string | null
+          turno?: string | null
+        }
+        Update: {
+          capturado_at?: string | null
+          dictamen?: Database["public"]["Enums"]["qc_dictamen"] | null
+          es_concesion?: never
+          es_liberado?: never
+          es_liberado_normal?: never
+          es_no_conforme?: never
+          esta_pendiente?: never
+          estado_nombre?: never
+          estado_workflow?:
+            | Database["public"]["Enums"]["qc_muestra_estado"]
+            | null
+          estatus_liberacion?: string | null
+          hora_muestreo?: string | null
+          maquina_id?: string | null
+          muestra_id?: string | null
+          numero_rollo?: string | null
+          orden_id?: string | null
+          planta_id?: string | null
+          producto_id?: string | null
+          turno?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "muestras_calidad_maquina_id_fkey"
+            columns: ["maquina_id"]
+            isOneToOne: false
+            referencedRelation: "maquinas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "muestras_calidad_orden_id_fkey"
+            columns: ["orden_id"]
+            isOneToOne: false
+            referencedRelation: "ordenes_fabricacion"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "muestras_calidad_planta_id_fkey"
+            columns: ["planta_id"]
+            isOneToOne: false
+            referencedRelation: "plantas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "muestras_calidad_producto_id_fkey"
+            columns: ["producto_id"]
+            isOneToOne: false
+            referencedRelation: "productos"
             referencedColumns: ["id"]
           },
         ]
