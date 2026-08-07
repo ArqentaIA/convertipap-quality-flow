@@ -156,12 +156,12 @@ export const getReportes = createServerFn({ method: "POST" })
     // NC oficial = estatus_liberacion = 'NC' (o dictamen rechazada cuando
     // no hay estatus oficial). NO se degrada por mediciones fuera de spec.
     // ====================================================
-    const esLiberadoOficial = (m: { estatus_liberacion?: string | null; dictamen?: string | null }) =>
-      m.estatus_liberacion === "L" || m.estatus_liberacion === "C" ||
-      (m.estatus_liberacion == null && m.dictamen === "liberada");
-    const esNcOficial = (m: { estatus_liberacion?: string | null; dictamen?: string | null }) =>
-      m.estatus_liberacion === "NC" ||
-      (m.estatus_liberacion == null && m.dictamen === "rechazada");
+    // Fuente canónica única: `getEstadoOficial` (estatus_liberacion L/C/NC/NULL).
+    const esLiberadoOficialFn = (m: { estatus_liberacion?: string | null }) =>
+      esLiberadoOficial(m);
+    const esNcOficial = (m: { estatus_liberacion?: string | null }) =>
+      esNoConformeOficial(m);
+
 
     const desempenoMap = new Map<
       string,
