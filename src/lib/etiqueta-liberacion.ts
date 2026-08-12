@@ -394,19 +394,10 @@ function buildHtml(
 export async function printEtiquetaLiberacion(data: EtiquetaData): Promise<void> {
   const traceUrl = buildTraceUrl(data.muestraId);
 
-  // QR SAP HANA: debe abrir la vista pública corporativa del rollo.
-  // Antes se codificaba texto plano (rollo/peso/estatus); iOS/Google Lens lo
-  // interpreta como búsqueda web. Con URL canónica siempre abre Convertipap.
-  const pesoMed = data.mediciones.find(
-    (m) => m.etiqueta.trim().toLowerCase() === "peso" ||
-      m.etiqueta.trim().toLowerCase() === "peso del rollo" ||
-      m.etiqueta.trim().toLowerCase() === "peso rollo",
-  );
-  // Peso oficial = medición "Peso" de Control de Calidad. Sin fallback a báscula.
-  const pesoTxt = pesoMed && pesoMed.valor !== null && pesoMed.valor !== undefined
-    ? String(pesoMed.valor)
-    : "";
-  const sapTraceUrl = `${traceUrl}?vista=sap&rollo=${encodeURIComponent(data.numeroRollo || "")}${pesoTxt ? `&peso=${encodeURIComponent(pesoTxt)}` : ""}&estatus=${encodeURIComponent(data.estatus)}`;
+  // Tres QR inferiores: mismo muestra_id canónico, una URL por dato.
+  const qrRolloUrl = `${traceUrl}?vista=sap&campo=rollo`;
+  const qrPesoUrl = `${traceUrl}?vista=sap&campo=peso`;
+  const qrOrdenUrl = `${traceUrl}?vista=sap&campo=orden`;
 
   // Enriquecer con datos SAP (N.º de orden + estado) si no vienen ya en `data`.
   let numeroOrdenSap: string | null = data.numeroOrdenSap ?? null;
@@ -424,13 +415,25 @@ export async function printEtiquetaLiberacion(data: EtiquetaData): Promise<void>
     }
   }
 
-  const [qrDataUrl, qrSapDataUrl, logoDataUrl, sapLogoDataUrl] = await Promise.all([
-    QRCode.toDataURL(traceUrl, { margin: 1, width: 240, errorCorrectionLevel: "M" }),
-    QRCode.toDataURL(sapTraceUrl, { margin: 1, width: 420, errorCorrectionLevel: "M" }),
-    toDataUrl(logoUrl),
-    toDataUrl(sapHanaAsset.url),
-  ]);
-  const html = buildHtml({ ...data, numeroOrdenSap, estadoSap }, qrDataUrl, qrSapDataUrl, logoDataUrl, sapLogoDataUrl);
+  const [qrDataUrl, qrRolloDataUrl, qrPesoDataUrl, qrOrdenDataUrl, logoDataUrl, sapLogoDataUrl] =
+    await Promise.all([
+      QRCode.toDataURL(traceUrl, { margin: 1, width: 240, errorCorrectionLevel: "M" }),
+      QRCode.toDataURL(qrRolloUrl, { margin: 2, width: 400, errorCorrectionLevel: "M" }),
+      QRCode.toDataURL(qrPesoUrl, { margin: 2, width: 400, errorCorrectionLevel: "M" }),
+      QRCode.toDataURL(qrOrdenUrl, { margin: 2, width: 400, errorCorrectionLevel: "M" }),
+      toDataUrl(logoUrl),
+      toDataUrl(sapHanaAsset.url),
+    ]);
+  const html = buildHtml(
+    { ...data, numeroOrdenSap, estadoSap },
+    qrDataUrl,
+    qrRolloDataUrl,
+    qrPesoDataUrl,
+    qrOrdenDataUrl,
+    logoDataUrl,
+    sapLogoDataUrl,
+  );
+
   const w = window.open("", "_blank", "width=960,height=900");
   if (!w) {
     throw new Error("El navegador bloqueó la ventana. Permite popups para imprimir la etiqueta.");
