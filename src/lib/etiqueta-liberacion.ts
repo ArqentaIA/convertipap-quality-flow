@@ -114,7 +114,9 @@ const OBS_OPCIONES = ["Arruga", "Picado", "Porosidad", "Hoyos por gomas", "Otro"
 function buildHtml(
   data: EtiquetaData,
   qrDataUrl: string,
-  qrSapDataUrl: string,
+  qrRolloDataUrl: string,
+  qrPesoDataUrl: string,
+  qrOrdenDataUrl: string,
   logoDataUrl: string,
   sapLogoDataUrl: string,
 ): string {
