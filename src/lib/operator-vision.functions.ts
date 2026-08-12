@@ -152,7 +152,7 @@ export const getOperatorVisionData = createServerFn({ method: "GET" })
          operador, analista, estatus_liberacion, dictamen, producto_id, orden_id, crepado_pct,
          liberado_con_justificacion, liberacion_justificacion, autorizado_por,
          velocidad_maquina, velocidad_enrollador,
-         defecto_visual_conversion, variable_tecnica_dimensional, criterio_defecto,
+         defecto_visual_conversion, defectos, variable_tecnica_dimensional, criterio_defecto,
          mediciones_calidad(variable_clave, valor, min_snapshot, objetivo_snapshot, max_snapshot, estado)`,
       )
       .eq("maquina_id", maquina.id)
@@ -183,6 +183,7 @@ export const getOperatorVisionData = createServerFn({ method: "GET" })
       liberadoConJustificacion: !!m.liberado_con_justificacion,
       justificacionLiberacion: (m.liberacion_justificacion as string | null) ?? null,
       defectoVisualConversion: (m.defecto_visual_conversion as string | null) ?? null,
+      defectos: Array.isArray(m.defectos) ? (m.defectos as string[]) : [],
       variableTecnicaDimensional: (m.variable_tecnica_dimensional as string | null) ?? null,
       criterioDefecto: (m.criterio_defecto as string | null) ?? null,
       mediciones: (m.mediciones_calidad ?? []).map((x: any) => ({
