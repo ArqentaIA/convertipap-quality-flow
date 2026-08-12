@@ -121,7 +121,7 @@ function CampoUnicoView({
   small?: boolean;
 }) {
   return (
-    <ShellSap subtitle="Vista SAP · Rollo">
+    <ShellSap subtitle="Vista SAP · Rollo" footer="irm">
       <div className="rounded-2xl border-2 border-[#0b2545] bg-white shadow-sm overflow-hidden">
         <Cell label={label} value={value} unit={unit} small={small} />
       </div>
@@ -130,7 +130,15 @@ function CampoUnicoView({
 }
 
 
-function ShellSap({ children, subtitle }: { children: React.ReactNode; subtitle?: string }) {
+function ShellSap({
+  children,
+  subtitle,
+  footer,
+}: {
+  children: React.ReactNode;
+  subtitle?: string;
+  footer?: "irm";
+}) {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
       <header className="w-full border-b border-slate-200 bg-white">
