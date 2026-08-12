@@ -21,6 +21,10 @@ export const Route = createFileRoute("/muestra/$id")({
   validateSearch: (search: Record<string, unknown>) => ({
     peso: typeof search.peso === "string" ? search.peso : undefined,
     vista: search.vista === "sap" ? ("sap" as const) : undefined,
+    campo:
+      search.campo === "rollo" || search.campo === "peso" || search.campo === "orden"
+        ? (search.campo as "rollo" | "peso" | "orden")
+        : undefined,
     rollo: typeof search.rollo === "string" ? search.rollo : undefined,
     estatus: typeof search.estatus === "string" ? search.estatus : undefined,
   }),
