@@ -3,6 +3,7 @@ import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 import logoUrl from "@/assets/logo-convertipap.png";
 import sapLogo from "@/assets/sap-hana-logo.jpg.asset.json";
+import irmLogo from "@/assets/logo-irm.jpeg.asset.json";
 import { getMuestraTrace, type TraceMuestra } from "@/lib/trace.functions";
 import { auditAction } from "@/lib/audit";
 import { getEstadoOficial } from "@/lib/qc-estado-oficial";
@@ -160,9 +161,15 @@ function ShellSap({
       <main className="flex-1 flex items-center justify-center px-4 py-6">
         <div className="w-full max-w-2xl">{children}</div>
       </main>
-      <footer className="py-3 text-center text-[11px] text-slate-400">
-        Verificación pública · Solo lectura · Convertipap
-      </footer>
+      {footer === "irm" ? (
+        <footer className="py-6 flex items-center justify-center">
+          <img src={irmLogo.url} alt="IRM" className="h-10 w-auto object-contain" />
+        </footer>
+      ) : (
+        <footer className="py-3 text-center text-[11px] text-slate-400">
+          Verificación pública · Solo lectura · Convertipap
+        </footer>
+      )}
     </div>
   );
 }
