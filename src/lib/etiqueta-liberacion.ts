@@ -344,24 +344,23 @@ function buildHtml(
     </div>
 
     <div class="sap-footer">
-      <div class="sap-datos">
-        <div class="item">
-          <div class="k">N.º Orden de Producción</div>
-          <div class="v ${data.numeroOrdenSap ? "" : "small"}">${esc(data.numeroOrdenSap ?? "Sin orden SAP vinculada")}</div>
-        </div>
-        <div class="item">
-          <div class="k">Estado SAP</div>
-          <div class="v ${data.estadoSap ? "" : "small"}">${esc(data.estadoSap ?? "N/A")}</div>
-        </div>
+      <div class="sap-qr">
+        <img src="${qrRolloDataUrl}" alt="QR N.º de rollo" />
+        <div class="cap">N.º de rollo</div>
       </div>
       <div class="sap-qr">
-        <img src="${qrSapDataUrl}" alt="QR SAP HANA" />
-        <div class="cap">Vista SAP · Rollo</div>
+        <img src="${qrPesoDataUrl}" alt="QR Peso" />
+        <div class="cap">Peso</div>
+      </div>
+      <div class="sap-qr">
+        <img src="${qrOrdenDataUrl}" alt="QR Orden de producción" />
+        <div class="cap">Orden de producción</div>
       </div>
       <div class="sap-logo">
         <img src="${sapLogoDataUrl}" alt="SAP HANA" />
       </div>
     </div>
+
 
     <div class="foot">FOR-CAL-04 · Generado automáticamente</div>
   </div>
