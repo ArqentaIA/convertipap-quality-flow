@@ -461,7 +461,9 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
     setDefectos((prev) => (prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]));
 
   // Sección E — Hallazgos del rollo (3 selects opcionales)
-  const [defectoVisual, setDefectoVisual] = useState<string>("");
+  // Compatibilidad: campo legado de un solo defecto. Se deriva del arreglo canónico.
+  const defectoVisual = defectos[0] ?? "";
+  const setDefectoVisual = (_v: string) => setDefectos([]);
   const [variableTecnica, setVariableTecnica] = useState<string>("");
   const [criterioDefecto, setCriterioDefecto] = useState<"" | "MENOR" | "MAYOR" | "CRÍTICO">("");
 
