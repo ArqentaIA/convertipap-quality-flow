@@ -102,7 +102,7 @@ export function DefectosMultiSelect({
                 );
               })}
             </div>
-          </ScrollArea>
+          </div>
         </PopoverContent>
       </Popover>
 
