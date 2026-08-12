@@ -61,7 +61,7 @@ function normalizeStatus(t: Extract<TraceMuestra, { found: true }>): StatusKind 
 
 function MuestraTracePage() {
   const { id } = Route.useParams();
-  const { vista } = Route.useSearch();
+  const { vista, campo } = Route.useSearch();
   const { data } = useSuspenseQuery(traceQO(id));
   const trace = data as TraceMuestra;
 
@@ -80,10 +80,55 @@ function MuestraTracePage() {
   // Peso oficial: sólo la medición "Peso" de Control de Calidad (nunca báscula).
   const pesoMostrado = trace.peso_kg;
 
+  // Vistas de dato único (QR inferiores de la etiqueta de liberación).
+  if (campo === "rollo") {
+    return <CampoUnicoView label="N.º de rollo" value={trace.numero_rollo ?? "—"} />;
+  }
+  if (campo === "peso") {
+    return (
+      <CampoUnicoView
+        label="Peso"
+        value={pesoMostrado != null ? formatPeso(pesoMostrado) : "No disponible"}
+        unit={pesoMostrado != null ? "kg" : undefined}
+      />
+    );
+  }
+  if (campo === "orden") {
+    return (
+      <CampoUnicoView
+        label="Orden de producción"
+        value={trace.numero_orden_sap ?? "Sin orden SAP vinculada"}
+        small={!trace.numero_orden_sap}
+      />
+    );
+  }
+
   return vista === "sap"
     ? <SapView trace={trace} status={status} pesoMostrado={pesoMostrado} />
     : <TrazabilidadView trace={trace} status={status} pesoMostrado={pesoMostrado} />;
 }
+
+/* Vista de dato único: mismo encabezado institucional, un solo dato en el cuerpo. */
+function CampoUnicoView({
+  label,
+  value,
+  unit,
+  small,
+}: {
+  label: string;
+  value: string;
+  unit?: string;
+  small?: boolean;
+}) {
+  return (
+    <ShellSap subtitle="Vista SAP · Rollo">
+      <div className="rounded-2xl border-2 border-[#0b2545] bg-white shadow-sm overflow-hidden">
+        <Cell label={label} value={value} unit={unit} small={small} />
+      </div>
+    </ShellSap>
+  );
+}
+
 
 function ShellSap({ children, subtitle }: { children: React.ReactNode; subtitle?: string }) {
   return (
