@@ -9,6 +9,14 @@ import { getEstadoOficial } from "./qc-estado-oficial";
 import logoConvertipap from "@/assets/logo-convertipap.png";
 
 type Muestra = OperatorVisionData["muestras"][number];
+type Med = {
+  clave: string;
+  valor: number | null;
+  min: number | null;
+  obj: number | null;
+  max: number | null;
+  estado: string;
+};
 
 export interface VarDef {
   clave: string;
@@ -103,7 +111,7 @@ export async function exportarHistorialVisor(input: OperatorVisionExportInput): 
   const logoId = await loadLogo(wb);
 
   const valorDe = (m: Muestra, clave: string) =>
-    m.mediciones.find((x) => x.clave === clave)?.valor ?? null;
+    (m.mediciones as Med[]).find((x) => x.clave === clave)?.valor ?? null;
 
   // ---------------------------------------------------------------- Resumen
   const ws1 = wb.addWorksheet("Resumen", { views: [{ showGridLines: false }] });
@@ -237,7 +245,7 @@ export async function exportarHistorialVisor(input: OperatorVisionExportInput): 
     headerRow(ws3, ["Variable", "Valor", "Unidad", "Mínimo", "Objetivo", "Máximo", "Estado"], r3);
     r3 += 1;
     for (const v of varCols) {
-      const med = current.mediciones.find((x) => x.clave === v.clave);
+      const med = (current.mediciones as Med[]).find((x) => x.clave === v.clave);
       const row = ws3.getRow(r3);
       row.values = [
         v.etiqueta,
@@ -291,7 +299,7 @@ export async function exportarHistorialVisor(input: OperatorVisionExportInput): 
   let filas4 = 0;
   for (const m of ordenados) {
     const estadoOf = getEstadoOficial({ estatus_liberacion: m.estatus }).estado_nombre;
-    for (const med of m.mediciones) {
+    for (const med of m.mediciones as Med[]) {
       const row = ws4.addRow([
         fmtFecha(m.capturadoAt),
         fmtHora(m.capturadoAt),
