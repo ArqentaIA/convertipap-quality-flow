@@ -114,7 +114,9 @@ const OBS_OPCIONES = ["Arruga", "Picado", "Porosidad", "Hoyos por gomas", "Otro"
 function buildHtml(
   data: EtiquetaData,
   qrDataUrl: string,
-  qrSapDataUrl: string,
+  qrRolloDataUrl: string,
+  qrPesoDataUrl: string,
+  qrOrdenDataUrl: string,
   logoDataUrl: string,
   sapLogoDataUrl: string,
 ): string {
@@ -238,14 +240,10 @@ function buildHtml(
   .estatus .val-e{padding:16px 8px;text-align:center;font-weight:900;font-size:32px;letter-spacing:.16em;color:${estatusColor};background:${estatusBg};display:flex;align-items:center;justify-content:center}
 
   /* Bloque SAP inferior: datos a la izquierda + QR grande + logo a la derecha */
-  .sap-footer{display:grid;grid-template-columns:1fr 200px 100px;border-bottom:2px solid #0f172a;background:#f8fafc}
-  .sap-footer .sap-datos{padding:14px;display:flex;flex-direction:column;justify-content:center;gap:12px;border-right:1px solid #0f172a}
-  .sap-footer .sap-datos .item .k{font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#64748b}
-  .sap-footer .sap-datos .item .v{font-size:22px;font-weight:900;color:#0f172a;font-variant-numeric:tabular-nums;letter-spacing:-.01em;margin-top:3px;line-height:1.1;word-break:break-word}
-  .sap-footer .sap-datos .item .v.small{font-size:14px;font-weight:800;color:#475569}
-  .sap-footer .sap-qr{padding:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;border-right:1px solid #0f172a}
-  .sap-footer .sap-qr img{width:170px;height:170px;display:block}
-  .sap-footer .sap-qr .cap{font-size:9px;color:#475569;margin-top:4px;text-align:center;letter-spacing:.1em;text-transform:uppercase;font-weight:800}
+  .sap-footer{display:grid;grid-template-columns:1fr 1fr 1fr 110px;align-items:center;border-bottom:2px solid #0f172a;background:#f8fafc}
+  .sap-footer .sap-qr{padding:10px 6px;display:flex;flex-direction:column;align-items:center;justify-content:center;border-right:1px solid #0f172a}
+  .sap-footer .sap-qr img{width:118px;height:118px;display:block;background:#fff;padding:4px}
+  .sap-footer .sap-qr .cap{font-size:8.5px;color:#334155;margin-top:5px;text-align:center;letter-spacing:.1em;text-transform:uppercase;font-weight:800;line-height:1.2}
   .sap-footer .sap-logo{padding:10px;display:flex;align-items:center;justify-content:center}
   .sap-footer .sap-logo img{max-width:88px;max-height:88px;object-fit:contain;display:block}
 
@@ -348,24 +346,23 @@ function buildHtml(
     </div>
 
     <div class="sap-footer">
-      <div class="sap-datos">
-        <div class="item">
-          <div class="k">N.º Orden de Producción</div>
-          <div class="v ${data.numeroOrdenSap ? "" : "small"}">${esc(data.numeroOrdenSap ?? "Sin orden SAP vinculada")}</div>
-        </div>
-        <div class="item">
-          <div class="k">Estado SAP</div>
-          <div class="v ${data.estadoSap ? "" : "small"}">${esc(data.estadoSap ?? "N/A")}</div>
-        </div>
+      <div class="sap-qr">
+        <img src="${qrRolloDataUrl}" alt="QR N.º de rollo" />
+        <div class="cap">N.º de rollo</div>
       </div>
       <div class="sap-qr">
-        <img src="${qrSapDataUrl}" alt="QR SAP HANA" />
-        <div class="cap">Vista SAP · Rollo</div>
+        <img src="${qrPesoDataUrl}" alt="QR Peso" />
+        <div class="cap">Peso</div>
+      </div>
+      <div class="sap-qr">
+        <img src="${qrOrdenDataUrl}" alt="QR Orden de producción" />
+        <div class="cap">Orden de producción</div>
       </div>
       <div class="sap-logo">
         <img src="${sapLogoDataUrl}" alt="SAP HANA" />
       </div>
     </div>
+
 
     <div class="foot">FOR-CAL-04 · Generado automáticamente</div>
   </div>
@@ -397,19 +394,10 @@ function buildHtml(
 export async function printEtiquetaLiberacion(data: EtiquetaData): Promise<void> {
   const traceUrl = buildTraceUrl(data.muestraId);
 
-  // QR SAP HANA: debe abrir la vista pública corporativa del rollo.
-  // Antes se codificaba texto plano (rollo/peso/estatus); iOS/Google Lens lo
-  // interpreta como búsqueda web. Con URL canónica siempre abre Convertipap.
-  const pesoMed = data.mediciones.find(
-    (m) => m.etiqueta.trim().toLowerCase() === "peso" ||
-      m.etiqueta.trim().toLowerCase() === "peso del rollo" ||
-      m.etiqueta.trim().toLowerCase() === "peso rollo",
-  );
-  // Peso oficial = medición "Peso" de Control de Calidad. Sin fallback a báscula.
-  const pesoTxt = pesoMed && pesoMed.valor !== null && pesoMed.valor !== undefined
-    ? String(pesoMed.valor)
-    : "";
-  const sapTraceUrl = `${traceUrl}?vista=sap&rollo=${encodeURIComponent(data.numeroRollo || "")}${pesoTxt ? `&peso=${encodeURIComponent(pesoTxt)}` : ""}&estatus=${encodeURIComponent(data.estatus)}`;
+  // Tres QR inferiores: mismo muestra_id canónico, una URL por dato.
+  const qrRolloUrl = `${traceUrl}?vista=sap&campo=rollo`;
+  const qrPesoUrl = `${traceUrl}?vista=sap&campo=peso`;
+  const qrOrdenUrl = `${traceUrl}?vista=sap&campo=orden`;
 
   // Enriquecer con datos SAP (N.º de orden + estado) si no vienen ya en `data`.
   let numeroOrdenSap: string | null = data.numeroOrdenSap ?? null;
@@ -427,13 +415,25 @@ export async function printEtiquetaLiberacion(data: EtiquetaData): Promise<void>
     }
   }
 
-  const [qrDataUrl, qrSapDataUrl, logoDataUrl, sapLogoDataUrl] = await Promise.all([
-    QRCode.toDataURL(traceUrl, { margin: 1, width: 240, errorCorrectionLevel: "M" }),
-    QRCode.toDataURL(sapTraceUrl, { margin: 1, width: 420, errorCorrectionLevel: "M" }),
-    toDataUrl(logoUrl),
-    toDataUrl(sapHanaAsset.url),
-  ]);
-  const html = buildHtml({ ...data, numeroOrdenSap, estadoSap }, qrDataUrl, qrSapDataUrl, logoDataUrl, sapLogoDataUrl);
+  const [qrDataUrl, qrRolloDataUrl, qrPesoDataUrl, qrOrdenDataUrl, logoDataUrl, sapLogoDataUrl] =
+    await Promise.all([
+      QRCode.toDataURL(traceUrl, { margin: 1, width: 240, errorCorrectionLevel: "M" }),
+      QRCode.toDataURL(qrRolloUrl, { margin: 2, width: 400, errorCorrectionLevel: "M" }),
+      QRCode.toDataURL(qrPesoUrl, { margin: 2, width: 400, errorCorrectionLevel: "M" }),
+      QRCode.toDataURL(qrOrdenUrl, { margin: 2, width: 400, errorCorrectionLevel: "M" }),
+      toDataUrl(logoUrl),
+      toDataUrl(sapHanaAsset.url),
+    ]);
+  const html = buildHtml(
+    { ...data, numeroOrdenSap, estadoSap },
+    qrDataUrl,
+    qrRolloDataUrl,
+    qrPesoDataUrl,
+    qrOrdenDataUrl,
+    logoDataUrl,
+    sapLogoDataUrl,
+  );
+
   const w = window.open("", "_blank", "width=960,height=900");
   if (!w) {
     throw new Error("El navegador bloqueó la ventana. Permite popups para imprimir la etiqueta.");
