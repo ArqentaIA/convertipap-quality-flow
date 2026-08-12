@@ -62,6 +62,17 @@ const fmtHora = (iso?: string | null) =>
 const estadoTecnico = (s: string) =>
   s === "ok" ? "EN SPEC" : s === "bad" ? "FUERA DE SPEC" : s === "warn" ? "CON JUSTIFICACIÓN" : "SIN DATO";
 
+function colToLetter(col: number): string {
+  let s = "";
+  let n = col;
+  while (n > 0) {
+    const r = (n - 1) % 26;
+    s = String.fromCharCode(65 + r) + s;
+    n = Math.floor((n - 1) / 26);
+  }
+  return s;
+}
+
 function headerRow(ws: ExcelJS.Worksheet, values: string[], row: number) {
   const r = ws.getRow(row);
   r.values = values;
@@ -205,6 +216,29 @@ export async function exportarHistorialVisor(input: OperatorVisionExportInput): 
     row.font = { name: "Arial", size: 10 };
     row.alignment = { horizontal: "center" };
   }
+
+  // Fila de resumen al final del historial
+  if (ordenados.length > 0) {
+    const lastDataRow = 1 + ordenados.length;
+    const summaryRow = ws2.getRow(lastDataRow + 1);
+    summaryRow.getCell(1).value = "RESUMEN";
+    summaryRow.getCell(2).value = "PROMEDIO";
+    varCols.forEach((_, idx) => {
+      const col = 3 + idx;
+      const letter = colToLetter(col);
+      summaryRow.getCell(col).value = { formula: `AVERAGE(${letter}2:${letter}${lastDataRow})` };
+    });
+    summaryRow.eachCell((cell) => {
+      cell.font = { name: "Arial", bold: true, size: 10, color: { argb: "FF1E293B" } };
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE2E8F0" } };
+      cell.border = {
+        top: { style: "double" }, left: { style: "thin" },
+        bottom: { style: "thin" }, right: { style: "thin" },
+      };
+      cell.alignment = { horizontal: "center" };
+    });
+  }
+
   ws2.views = [{ state: "frozen", ySplit: 1, xSplit: 2 }];
   if (ordenados.length > 0) {
     ws2.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: head2.length } };
