@@ -62,10 +62,11 @@ import {
 import { getAppSettings } from "@/lib/settings.functions";
 import { cn } from "@/lib/utils";
 import {
-  DEFECTOS_VISUALES_CONVERSION,
+  DEFECTOS_VISUALES_CATALOGO,
   VARIABLES_TECNICAS_DIMENSIONALES,
   CRITERIOS_DEFECTO,
 } from "@/lib/hallazgo";
+import { DefectosMultiSelect } from "@/components/qc/DefectosMultiSelect";
 
 const ROLLO_REGEX = /^[A-Za-z0-9-]{1,30}$/;
 
