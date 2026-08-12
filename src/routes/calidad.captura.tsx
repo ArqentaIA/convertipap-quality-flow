@@ -1939,22 +1939,15 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
             <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-3">
               <div className="space-y-1.5">
                 <Label className="text-base">Defectos Visuales y de Conversión</Label>
-                <Select
-                  value={defectoVisual || "__none__"}
-                  onValueChange={(v) => setDefectoVisual(v === "__none__" ? "" : v)}
-                >
-                  <SelectTrigger className="h-11 text-base">
-                    <SelectValue placeholder="— Sin hallazgo —" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__none__">— Sin hallazgo —</SelectItem>
-                    {DEFECTOS_VISUALES_CONVERSION.map((d) => (
-                      <SelectItem key={d} value={d}>
-                        {d}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <DefectosMultiSelect
+                  options={DEFECTOS_VISUALES_CATALOGO}
+                  value={defectos}
+                  onChange={setDefectos}
+                  disabled={isBlocked}
+                />
+                <p className="text-[11px] text-muted-foreground">
+                  Puede seleccionar uno o varios defectos. «Sin hallazgo» es excluyente.
+                </p>
               </div>
               <div className="space-y-1.5">
                 <Label className="text-base">Variables Técnicas y Dimensionales</Label>
