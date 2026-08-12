@@ -62,6 +62,17 @@ const fmtHora = (iso?: string | null) =>
 const estadoTecnico = (s: string) =>
   s === "ok" ? "EN SPEC" : s === "bad" ? "FUERA DE SPEC" : s === "warn" ? "CON JUSTIFICACIÓN" : "SIN DATO";
 
+function colToLetter(col: number): string {
+  let s = "";
+  let n = col;
+  while (n > 0) {
+    const r = (n - 1) % 26;
+    s = String.fromCharCode(65 + r) + s;
+    n = Math.floor((n - 1) / 26);
+  }
+  return s;
+}
+
 function headerRow(ws: ExcelJS.Worksheet, values: string[], row: number) {
   const r = ws.getRow(row);
   r.values = values;
