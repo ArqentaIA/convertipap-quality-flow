@@ -26,6 +26,37 @@ export const DEFECTOS_VISUALES_CONVERSION = [
   "Grumos",
 ] as const;
 
+/**
+ * Nuevas opciones autorizadas (12-Ago-2026). Se agregan al catálogo visible
+ * SIN renombrar ni eliminar valores históricos. "Centro corrido" ya existía
+ * en el catálogo histórico y por eso no se duplica aquí.
+ * NO incluye "1 unión / 2 uniones / 3 uniones": la cantidad de uniones se
+ * administra exclusivamente por la variable de Calidad correspondiente.
+ */
+export const DEFECTOS_VISUALES_NUEVOS = [
+  "Diámetro menor",
+  "Diámetro mayor",
+  "Desfase de la hoja",
+  "Corte ovalado",
+  "Daño por cuña",
+  "Mal corte",
+  "Hoja abierta",
+  "Ancho útil erróneo",
+  "Rebaba",
+  "Contaminado/sucio",
+  "Arruga",
+  "Telescopiado",
+  "Enrollado flojo",
+] as const;
+
+/** Catálogo completo disponible en el selector (históricos + nuevos, sin duplicados). */
+export const DEFECTOS_VISUALES_CATALOGO: string[] = [
+  ...DEFECTOS_VISUALES_CONVERSION,
+  ...DEFECTOS_VISUALES_NUEVOS.filter(
+    (d) => !(DEFECTOS_VISUALES_CONVERSION as readonly string[]).includes(d),
+  ),
+];
+
 export const VARIABLES_TECNICAS_DIMENSIONALES = [
   "Blancura",
   "RH",

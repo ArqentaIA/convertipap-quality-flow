@@ -231,8 +231,14 @@ export async function exportConsolidadoXLSX(payload: ConsolidadoPayload): Promis
         obsParts.push(`Justificación: ${row.liberacion_justificacion.trim()}`);
       }
       const defectosList = (row.defectos ?? []).map((d) => d.trim()).filter(Boolean);
-      if (row.defecto_visual_conversion && row.defecto_visual_conversion.trim()) {
-        defectosList.push(row.defecto_visual_conversion.trim());
+      const legado = row.defecto_visual_conversion?.trim();
+      // El campo legado puede repetir el primer defecto del arreglo canónico: no duplicar.
+      if (
+        legado &&
+        legado.toUpperCase() !== "SIN DEFECTO" &&
+        !defectosList.some((d) => d.toLowerCase() === legado.toLowerCase())
+      ) {
+        defectosList.push(legado);
       }
       if (defectosList.length > 0) {
         obsParts.push(`Defectos: ${defectosList.join(", ")}`);

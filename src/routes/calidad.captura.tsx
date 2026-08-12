@@ -62,10 +62,11 @@ import {
 import { getAppSettings } from "@/lib/settings.functions";
 import { cn } from "@/lib/utils";
 import {
-  DEFECTOS_VISUALES_CONVERSION,
+  DEFECTOS_VISUALES_CATALOGO,
   VARIABLES_TECNICAS_DIMENSIONALES,
   CRITERIOS_DEFECTO,
 } from "@/lib/hallazgo";
+import { DefectosMultiSelect } from "@/components/qc/DefectosMultiSelect";
 
 const ROLLO_REGEX = /^[A-Za-z0-9-]{1,30}$/;
 
@@ -460,7 +461,9 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
     setDefectos((prev) => (prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]));
 
   // Sección E — Hallazgos del rollo (3 selects opcionales)
-  const [defectoVisual, setDefectoVisual] = useState<string>("");
+  // Compatibilidad: campo legado de un solo defecto. Se deriva del arreglo canónico.
+  const defectoVisual = defectos[0] ?? "";
+  const setDefectoVisual = (_v: string) => setDefectos([]);
   const [variableTecnica, setVariableTecnica] = useState<string>("");
   const [criterioDefecto, setCriterioDefecto] = useState<"" | "MENOR" | "MAYOR" | "CRÍTICO">("");
 
@@ -1939,22 +1942,15 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
             <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-3">
               <div className="space-y-1.5">
                 <Label className="text-base">Defectos Visuales y de Conversión</Label>
-                <Select
-                  value={defectoVisual || "__none__"}
-                  onValueChange={(v) => setDefectoVisual(v === "__none__" ? "" : v)}
-                >
-                  <SelectTrigger className="h-11 text-base">
-                    <SelectValue placeholder="— Sin hallazgo —" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__none__">— Sin hallazgo —</SelectItem>
-                    {DEFECTOS_VISUALES_CONVERSION.map((d) => (
-                      <SelectItem key={d} value={d}>
-                        {d}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <DefectosMultiSelect
+                  options={DEFECTOS_VISUALES_CATALOGO}
+                  value={defectos}
+                  onChange={setDefectos}
+                  disabled={isBlocked}
+                />
+                <p className="text-[11px] text-muted-foreground">
+                  Puede seleccionar uno o varios defectos. «Sin hallazgo» es excluyente.
+                </p>
               </div>
               <div className="space-y-1.5">
                 <Label className="text-base">Variables Técnicas y Dimensionales</Label>
