@@ -58,8 +58,21 @@ export function DefectosMultiSelect({
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-          <ScrollArea className="max-h-72">
+        <PopoverContent
+          className="w-[--radix-popover-trigger-width] p-0"
+          align="start"
+          collisionPadding={12}
+          avoidCollisions
+        >
+          <div
+            className="overflow-y-auto overscroll-contain"
+            style={{
+              maxHeight: "min(60vh, var(--radix-popover-content-available-height, 60vh))",
+              WebkitOverflowScrolling: "touch",
+            }}
+            onWheel={(e) => e.stopPropagation()}
+            onTouchMove={(e) => e.stopPropagation()}
+          >
             <div className="p-1">
               <button
                 type="button"
