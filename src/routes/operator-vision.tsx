@@ -14,6 +14,7 @@ import {
   Maximize2,
   Timer,
   Weight,
+  FileSpreadsheet,
 } from "lucide-react";
 import { getOperatorVisionData } from "@/lib/operator-vision.functions";
 import { getTurnosConfig } from "@/lib/settings.functions";
@@ -24,6 +25,7 @@ import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { Lock } from "lucide-react";
 import { getEstadoOficial } from "@/lib/qc-estado-oficial";
+import { exportarHistorialVisor } from "@/lib/operator-vision-export";
 
 // Convierte "HH:MM" en minutos desde 00:00 (hora local).
 function hhmmToMin(s: string | undefined | null): number | null {
@@ -642,6 +644,7 @@ function OperatorVisionPage() {
   const now = useTicker(1000);
   const screenRef = useRef<HTMLDivElement>(null);
   const [capturing, setCapturing] = useState(false);
+  const [exportando, setExportando] = useState(false);
 
   const { data, error, dataUpdatedAt, isError } = useQuery({
     queryKey: ["operator-vision", maquina],
@@ -880,6 +883,48 @@ function OperatorVisionPage() {
     }
   }
 
+  // Exportación READ ONLY del historial del turno visualizado (mismo payload del visor).
+  async function exportarHistorial() {
+    if (exportando) return;
+    if (!data) {
+      toast.error("Aún no hay datos cargados en el visor");
+      return;
+    }
+    setExportando(true);
+    try {
+      const file = await exportarHistorialVisor({
+        maquina,
+        turnoLabel,
+        data,
+        variablesParaMostrar,
+        evalRollo: (m) => evalRollo(m as any),
+        kpis: {
+          rollosProducidos: muestrasAll.length,
+          noConformes: rollosNC,
+          cumplimientoPct: cumplimiento.pct,
+          cumplimientoTexto: cumplimiento.texto,
+          velocidadMaquina: (current as any)?.velocidadMaquina ?? null,
+          velocidadEnrollador: (current as any)?.velocidadEnrollador ?? null,
+          crepadoPct: (current as any)?.crepadoPct ?? null,
+          peso: (mapMedActual.get("peso") as number | null) ?? null,
+          unionesTurno: muestrasAll.reduce((acc, m) => {
+            const med = m.mediciones.find(
+              (x: { clave: string; valor: number | null }) => x.clave === "uniones",
+            );
+            return acc + (med && med.valor !== null && Number.isFinite(Number(med.valor)) ? Number(med.valor) : 0);
+          }, 0),
+          minSinCaptura: lastCaptureMin,
+        },
+      });
+      toast.success(`Historial exportado: ${file}`, { duration: 4000 });
+    } catch (e) {
+      console.error("EXPORT HISTORIAL ERROR", e);
+      toast.error(`No se pudo generar el historial: ${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      setExportando(false);
+    }
+  }
+
 
   // Historial SCADA: TODOS los rollos del turno, más reciente primero,
   // con todas las variables técnicas evaluadas contra spec.
@@ -1002,6 +1047,15 @@ function OperatorVisionPage() {
             >
               <Camera className="h-5 w-5" />
               {capturing ? "Capturando…" : "Capturar Pantalla"}
+            </button>
+            <button
+              onClick={exportarHistorial}
+              disabled={exportando}
+              className="flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-base font-bold text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-50"
+              title="Descargar historial del turno en Excel"
+            >
+              <FileSpreadsheet className="h-5 w-5" />
+              {exportando ? "Generando…" : "Historial"}
             </button>
             <button
               onClick={goFullscreen}
