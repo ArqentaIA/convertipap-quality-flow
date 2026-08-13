@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import logoConvertipap from "@/assets/logo-convertipap.png";
 import { toast } from "sonner";
 import { getAppSettings, updateAppSettings, type AppSettings } from "@/lib/settings.functions";
+import { getBackendInfo, type BackendInfo } from "@/lib/backend-info.functions";
 import { getCEOReport } from "@/lib/ceo-report.functions";
 import { useAuth } from "@/lib/auth";
 
