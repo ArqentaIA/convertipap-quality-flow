@@ -287,6 +287,8 @@ function ConfigContent({ settings }: { settings: AppSettings }) {
           )}
 
 
+          <BackendInfoCard />
+
           {isAdmin && <MachineAccessCodesCard />}
 
           <button
