@@ -616,6 +616,73 @@ function KPI({ label, value }: { label: string; value: string }) {
   );
 }
 
+function BackendInfoCard() {
+  const { session } = useAuth();
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["backend-info"],
+    queryFn: () => getBackendInfo(),
+    enabled: !!session?.access_token,
+    retry: false,
+    refetchInterval: 30000,
+  });
+
+  const envBadge = (env: BackendInfo["environment"]) => {
+    const classes: Record<BackendInfo["environment"], string> = {
+      local: "bg-slate-100 text-slate-700",
+      desarrollo: "bg-blue-100 text-blue-700",
+      staging: "bg-amber-100 text-amber-700",
+      producción: "bg-emerald-100 text-emerald-700",
+      desconocido: "bg-gray-100 text-gray-600",
+    };
+    return classes[env];
+  };
+
+  return (
+    <Card icon={Cloud} title="Infraestructura y entorno" desc="Base de datos y entorno de despliegue">
+      {isLoading && <div className="text-xs text-muted-foreground">Cargando información…</div>}
+      {error && (
+        <div className="text-xs text-destructive">No se pudo obtener la información: {error.message}</div>
+      )}
+      {data && (
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 items-center gap-3">
+            <span className="text-xs text-muted-foreground">Proveedor</span>
+            <span className="text-sm font-medium text-foreground">{data.provider}</span>
+          </div>
+          <div className="grid grid-cols-2 items-center gap-3">
+            <span className="text-xs text-muted-foreground">Servicio</span>
+            <span className="text-sm font-medium text-foreground">{data.service}</span>
+          </div>
+          <div className="grid grid-cols-2 items-center gap-3">
+            <span className="text-xs text-muted-foreground">Región</span>
+            <span className="text-sm font-medium text-foreground">{data.region}</span>
+          </div>
+          <div className="grid grid-cols-2 items-center gap-3">
+            <span className="text-xs text-muted-foreground">Entorno</span>
+            <span className={`inline-flex w-fit rounded-full px-2.5 py-0.5 text-xs font-semibold ${envBadge(data.environment)}`}>
+              {data.environmentLabel}
+            </span>
+          </div>
+          <div className="grid grid-cols-2 items-center gap-3">
+            <span className="text-xs text-muted-foreground">Host</span>
+            <span className="text-sm font-medium text-foreground">{data.host}</span>
+          </div>
+          <div className="grid grid-cols-2 items-center gap-3">
+            <span className="text-xs text-muted-foreground">Estado de la base de datos</span>
+            <span className={`inline-flex items-center gap-1.5 text-xs font-semibold ${data.status === "conectado" ? "text-emerald-700" : "text-destructive"}`}>
+              <span className={`h-2 w-2 rounded-full ${data.status === "conectado" ? "bg-emerald-500" : "bg-destructive"}`} />
+              {data.status === "conectado" ? "Conectado" : "Desconectado"}
+            </span>
+          </div>
+          <div className="text-[10px] text-muted-foreground">
+            Última verificación: {new Date(data.lastCheck).toLocaleString("es-MX")}
+          </div>
+        </div>
+      )}
+    </Card>
+  );
+}
+
 type MaquinaRow = { id: string; codigo: string; nombre: string; access_code: string | null };
 
 function MachineAccessCodesCard() {
