@@ -4,11 +4,12 @@ import { queryOptions, useQuery, useMutation, useQueryClient } from "@tanstack/r
 import { useServerFn } from "@tanstack/react-start";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { SessionGate } from "@/components/SessionGate";
-import { Save, Eye, X, Mail, Sliders, Bell, ShieldAlert, FileCheck2, Lock, Monitor } from "lucide-react";
+import { Save, Eye, X, Mail, Sliders, Bell, ShieldAlert, FileCheck2, Lock, Monitor, Cloud } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import logoConvertipap from "@/assets/logo-convertipap.png";
 import { toast } from "sonner";
 import { getAppSettings, updateAppSettings, type AppSettings } from "@/lib/settings.functions";
+import { getBackendInfo, type BackendInfo } from "@/lib/backend-info.functions";
 import { getCEOReport } from "@/lib/ceo-report.functions";
 import { useAuth } from "@/lib/auth";
 
@@ -285,6 +286,8 @@ function ConfigContent({ settings }: { settings: AppSettings }) {
             </div>
           )}
 
+
+          <BackendInfoCard />
 
           {isAdmin && <MachineAccessCodesCard />}
 
@@ -610,6 +613,73 @@ function KPI({ label, value }: { label: string; value: string }) {
       <div className="text-[10px] font-medium uppercase tracking-wider text-gray-500">{label}</div>
       <div className="mt-1 text-lg font-bold tabular-nums text-gray-900">{value}</div>
     </div>
+  );
+}
+
+function BackendInfoCard() {
+  const { session } = useAuth();
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["backend-info"],
+    queryFn: () => getBackendInfo(),
+    enabled: !!session?.access_token,
+    retry: false,
+    refetchInterval: 30000,
+  });
+
+  const envBadge = (env: BackendInfo["environment"]) => {
+    const classes: Record<BackendInfo["environment"], string> = {
+      local: "bg-slate-100 text-slate-700",
+      desarrollo: "bg-blue-100 text-blue-700",
+      staging: "bg-amber-100 text-amber-700",
+      producción: "bg-emerald-100 text-emerald-700",
+      desconocido: "bg-gray-100 text-gray-600",
+    };
+    return classes[env];
+  };
+
+  return (
+    <Card icon={Cloud} title="Infraestructura y entorno" desc="Base de datos y entorno de despliegue">
+      {isLoading && <div className="text-xs text-muted-foreground">Cargando información…</div>}
+      {error && (
+        <div className="text-xs text-destructive">No se pudo obtener la información: {error.message}</div>
+      )}
+      {data && (
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 items-center gap-3">
+            <span className="text-xs text-muted-foreground">Proveedor</span>
+            <span className="text-sm font-medium text-foreground">{data.provider}</span>
+          </div>
+          <div className="grid grid-cols-2 items-center gap-3">
+            <span className="text-xs text-muted-foreground">Servicio</span>
+            <span className="text-sm font-medium text-foreground">{data.service}</span>
+          </div>
+          <div className="grid grid-cols-2 items-center gap-3">
+            <span className="text-xs text-muted-foreground">Región</span>
+            <span className="text-sm font-medium text-foreground">{data.region}</span>
+          </div>
+          <div className="grid grid-cols-2 items-center gap-3">
+            <span className="text-xs text-muted-foreground">Entorno</span>
+            <span className={`inline-flex w-fit rounded-full px-2.5 py-0.5 text-xs font-semibold ${envBadge(data.environment)}`}>
+              {data.environmentLabel}
+            </span>
+          </div>
+          <div className="grid grid-cols-2 items-center gap-3">
+            <span className="text-xs text-muted-foreground">Host</span>
+            <span className="text-sm font-medium text-foreground">{data.host}</span>
+          </div>
+          <div className="grid grid-cols-2 items-center gap-3">
+            <span className="text-xs text-muted-foreground">Estado de la base de datos</span>
+            <span className={`inline-flex items-center gap-1.5 text-xs font-semibold ${data.status === "conectado" ? "text-emerald-700" : "text-destructive"}`}>
+              <span className={`h-2 w-2 rounded-full ${data.status === "conectado" ? "bg-emerald-500" : "bg-destructive"}`} />
+              {data.status === "conectado" ? "Conectado" : "Desconectado"}
+            </span>
+          </div>
+          <div className="text-[10px] text-muted-foreground">
+            Última verificación: {new Date(data.lastCheck).toLocaleString("es-MX")}
+          </div>
+        </div>
+      )}
+    </Card>
   );
 }
 
