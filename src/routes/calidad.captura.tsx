@@ -394,6 +394,30 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
       return `${prev}-${sufijoMaq}`;
     });
   }, [sufijoMaq, maquina.codigo]);
+
+  // ---------------------------------------------------------------------------
+  // Numeración automática por máquina — vigencia server-side
+  // (14/08/2026 07:00:00, inicio 1er turno, Planta Tlaxcala).
+  // La autoridad es el reloj del servidor: esta consulta sólo informa a la UI
+  // y NO consume números. Mientras no esté activa, el capturista sigue
+  // escribiendo el número manualmente igual que hoy.
+  // ---------------------------------------------------------------------------
+  const numeracionQuery = useQuery({
+    queryKey: ["numeracion-rollo", maquinaId],
+    queryFn: () => getEstadoNumeracionRollo({ data: { maquina_id: maquinaId } }),
+    enabled: hasAuthToken && !!maquinaId,
+    refetchInterval: 60_000,
+    staleTime: 30_000,
+    retry: false,
+  });
+  const numeracionAuto = numeracionQuery.data;
+  const numeracionActiva = !!numeracionAuto?.activa;
+  useEffect(() => {
+    if (numeracionActiva && numeracionAuto?.proximo_numero) {
+      setNumeroRollo(numeracionAuto.proximo_numero);
+    }
+  }, [numeracionActiva, numeracionAuto?.proximo_numero]);
+
   const [horaMuestreo, setHoraMuestreo] = useState<string>(ahoraLocal);
   const [observaciones, setObservaciones] = useState<string>("");
   const [mediciones, setMediciones] = useState<MedicionInputState>({});
