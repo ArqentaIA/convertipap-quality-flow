@@ -142,6 +142,8 @@ function buildHtml(
   qrPesoDataUrl: string,
   qrOrdenDataUrl: string,
   logoDataUrl: string,
+  sapLogoDataUrl: string,
+  payloads: { rollo: string; peso: string; orden: string },
 ): string {
   const fechaImpresion = new Date().toLocaleString("es-MX");
   const estatusColor =
