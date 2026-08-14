@@ -42,6 +42,8 @@ import {
   upsertMuestraConMediciones,
   listMisMuestrasRecientes,
   dictaminarMuestra,
+  getEstadoNumeracionRollo,
+
 } from "@/lib/qc.functions";
 import {
   buscarPesajePorRollo,
@@ -394,6 +396,30 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
       return `${prev}-${sufijoMaq}`;
     });
   }, [sufijoMaq, maquina.codigo]);
+
+  // ---------------------------------------------------------------------------
+  // Numeración automática por máquina — vigencia server-side
+  // (14/08/2026 07:00:00, inicio 1er turno, Planta Tlaxcala).
+  // La autoridad es el reloj del servidor: esta consulta sólo informa a la UI
+  // y NO consume números. Mientras no esté activa, el capturista sigue
+  // escribiendo el número manualmente igual que hoy.
+  // ---------------------------------------------------------------------------
+  const numeracionQuery = useQuery({
+    queryKey: ["numeracion-rollo", maquinaId],
+    queryFn: () => getEstadoNumeracionRollo({ data: { maquina_id: maquinaId } }),
+    enabled: hasAuthToken && !!maquinaId,
+    refetchInterval: 60_000,
+    staleTime: 30_000,
+    retry: false,
+  });
+  const numeracionAuto = numeracionQuery.data;
+  const numeracionActiva = !!numeracionAuto?.activa;
+  useEffect(() => {
+    if (numeracionActiva && numeracionAuto?.proximo_numero) {
+      setNumeroRollo(numeracionAuto.proximo_numero);
+    }
+  }, [numeracionActiva, numeracionAuto?.proximo_numero]);
+
   const [horaMuestreo, setHoraMuestreo] = useState<string>(ahoraLocal);
   const [observaciones, setObservaciones] = useState<string>("");
   const [mediciones, setMediciones] = useState<MedicionInputState>({});
@@ -1209,43 +1235,60 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
               <Label htmlFor="rollo" className="text-base">
                 3. Número de rollo{" "}
                 <span className="text-muted-foreground font-normal">
-                  (sufijo automático según máquina)
+                  {numeracionActiva
+                    ? "(asignación automática por máquina)"
+                    : "(sufijo automático según máquina)"}
                 </span>
               </Label>
-              <div
-                className={cn(
-                  "flex h-11 items-stretch rounded-md border border-input bg-transparent shadow-sm focus-within:ring-1 focus-within:ring-ring",
-                  !maqResuelta && "opacity-60",
-                  numeroRollo && !ROLLO_REGEX.test(numeroRollo.trim()) && "border-destructive",
-                )}
-              >
-                <Input
-                  id="rollo"
-                  type="text"
-                  inputMode="text"
-                  placeholder={maqResuelta ? `Ej. 2807-${sufijoMaq || "X"}` : "Selecciona máquina primero"}
-                  pattern="[A-Za-z0-9-]{1,28}"
-                  disabled={!maqResuelta}
-                  value={baseRollo}
-                  onChange={(e) => {
-                    const raw = e.target.value.replace(/-+$/, "");
-                    setNumeroRollo(raw ? `${raw}-${sufijoMaq}` : "");
-                  }}
-                  className="h-full flex-1 border-0 bg-transparent text-base shadow-none focus-visible:ring-0"
-                />
-                <span
-                  className="flex items-center rounded-r-md border-l border-input bg-muted px-3 text-base font-semibold text-muted-foreground select-none"
-                  title={maqResuelta ? `Sufijo fijo para ${maquina.codigo}` : "Sufijo se define al elegir máquina"}
-                  aria-label={`Sufijo fijo -${sufijoMaq || "?"}`}
-                >
-                  -{maqResuelta ? (sufijoMaq || "?") : "?"}
-                </span>
-              </div>
-              {numeroRollo && !ROLLO_REGEX.test(numeroRollo.trim()) && (
-                <p className="text-[11px] text-destructive">
-                  Usa máximo 30 caracteres: letras, números y guion.
-                </p>
+              {numeracionActiva ? (
+                <>
+                  <div className="flex h-11 items-center rounded-md border border-input bg-muted px-3 text-base font-semibold">
+                    {numeroRollo || "—"}
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    Número consecutivo asignado automáticamente por el servidor al
+                    guardar la captura. Campo de solo lectura.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <div
+                    className={cn(
+                      "flex h-11 items-stretch rounded-md border border-input bg-transparent shadow-sm focus-within:ring-1 focus-within:ring-ring",
+                      !maqResuelta && "opacity-60",
+                      numeroRollo && !ROLLO_REGEX.test(numeroRollo.trim()) && "border-destructive",
+                    )}
+                  >
+                    <Input
+                      id="rollo"
+                      type="text"
+                      inputMode="text"
+                      placeholder={maqResuelta ? `Ej. 2807-${sufijoMaq || "X"}` : "Selecciona máquina primero"}
+                      pattern="[A-Za-z0-9-]{1,28}"
+                      disabled={!maqResuelta}
+                      value={baseRollo}
+                      onChange={(e) => {
+                        const raw = e.target.value.replace(/-+$/, "");
+                        setNumeroRollo(raw ? `${raw}-${sufijoMaq}` : "");
+                      }}
+                      className="h-full flex-1 border-0 bg-transparent text-base shadow-none focus-visible:ring-0"
+                    />
+                    <span
+                      className="flex items-center rounded-r-md border-l border-input bg-muted px-3 text-base font-semibold text-muted-foreground select-none"
+                      title={maqResuelta ? `Sufijo fijo para ${maquina.codigo}` : "Sufijo se define al elegir máquina"}
+                      aria-label={`Sufijo fijo -${sufijoMaq || "?"}`}
+                    >
+                      -{maqResuelta ? (sufijoMaq || "?") : "?"}
+                    </span>
+                  </div>
+                  {numeroRollo && !ROLLO_REGEX.test(numeroRollo.trim()) && (
+                    <p className="text-[11px] text-destructive">
+                      Usa máximo 30 caracteres: letras, números y guion.
+                    </p>
+                  )}
+                </>
               )}
+
               {!maqResuelta && (
                 <p className="text-[11px] text-muted-foreground">
                   Se habilita al seleccionar Máquina.

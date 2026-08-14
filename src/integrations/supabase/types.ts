@@ -1115,6 +1115,50 @@ export type Database = {
           },
         ]
       }
+      numeracion_rollos: {
+        Row: {
+          activo: boolean
+          created_at: string
+          maquina_codigo: string
+          maquina_id: string
+          numero_inicial: number
+          proximo_numero: number
+          sufijo: string
+          updated_at: string
+          vigente_desde: string
+        }
+        Insert: {
+          activo?: boolean
+          created_at?: string
+          maquina_codigo: string
+          maquina_id: string
+          numero_inicial: number
+          proximo_numero: number
+          sufijo: string
+          updated_at?: string
+          vigente_desde: string
+        }
+        Update: {
+          activo?: boolean
+          created_at?: string
+          maquina_codigo?: string
+          maquina_id?: string
+          numero_inicial?: number
+          proximo_numero?: number
+          sufijo?: string
+          updated_at?: string
+          vigente_desde?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "numeracion_rollos_maquina_id_fkey"
+            columns: ["maquina_id"]
+            isOneToOne: true
+            referencedRelation: "maquinas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       operarios: {
         Row: {
           activo: boolean
@@ -2705,6 +2749,7 @@ export type Database = {
         Args: { _cinta_id: string; _motivo: string }
         Returns: undefined
       }
+      asignar_numero_rollo: { Args: { _maquina_id: string }; Returns: string }
       audit_action: {
         Args: {
           p_datos?: Json
@@ -2809,6 +2854,7 @@ export type Database = {
         Args: { _motivo: string; _spec_id: string }
         Returns: undefined
       }
+      estado_numeracion_rollo: { Args: { _maquina_id: string }; Returns: Json }
       finalizar_lote_cintas:
         | { Args: { _lote_id: string }; Returns: Json }
         | { Args: { _lote_id: string; _peso_mermas_kg: number }; Returns: Json }

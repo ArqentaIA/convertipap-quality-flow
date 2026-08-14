@@ -649,19 +649,46 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
     const ROLLO_DUPLICADO_MSG =
       "El número de rollo ya se encuentra registrado en el sistema. Verifique la información antes de continuar.";
 
+    // -------------------------------------------------------------------------
+    // NUMERACIÓN AUTOMÁTICA POR MÁQUINA — vigencia server-side.
+    // Efectiva: 14/08/2026 07:00:00 (America/Mexico_City, inicio 1er turno,
+    // Planta Tlaxcala). La decisión se toma AQUÍ, en el guardado definitivo,
+    // contra el reloj de la base de datos (`now()` dentro del RPC), nunca
+    // contra el reloj del navegador. Antes de la hora efectiva el RPC devuelve
+    // NULL y se conserva íntegro el comportamiento anterior (número manual).
+    // Sólo aplica a creación; nunca renumera muestras existentes.
+    // -------------------------------------------------------------------------
+    let numeroRolloFinal = data.numero_rollo;
+    if (!data.muestra_id) {
+      const { data: asignado, error: eNum } = await (
+        sb as unknown as {
+          rpc: (
+            n: string,
+            a: unknown,
+          ) => Promise<{ data: string | null; error: { message: string } | null }>;
+        }
+      ).rpc("asignar_numero_rollo", { _maquina_id: data.maquina_id });
+      if (eNum) throw new Error(eNum.message);
+      if (asignado) {
+        numeroRolloFinal = asignado;
+        (muestraPayload as { numero_rollo: string }).numero_rollo = asignado;
+      }
+    }
+
     // Pre-validación: el número de rollo debe ser único en toda la plataforma.
     // Se excluye la propia muestra cuando se trata de una edición.
     {
       let q = sb
         .from("muestras_calidad")
         .select("id")
-        .eq("numero_rollo", data.numero_rollo)
+        .eq("numero_rollo", numeroRolloFinal)
         .limit(1);
       if (data.muestra_id) q = q.neq("id", data.muestra_id);
       const { data: dup, error: eDup } = await q.maybeSingle();
       if (eDup) throw new Error(eDup.message);
       if (dup) throw new Error(ROLLO_DUPLICADO_MSG);
     }
+
 
     let muestraId = data.muestra_id;
     // Cast: nuevas columnas (liberado_con_justificacion, liberacion_justificacion,
@@ -1549,4 +1576,38 @@ export const resolveRolloStatusServer = createServerFn({ method: "GET" })
       },
       data,
     );
+  });
+
+// =============================================================================
+// NUMERACIÓN AUTOMÁTICA DE ROLLO POR MÁQUINA (solo lectura)
+// Vigencia efectiva: 14/08/2026 07:00:00 hora Planta Tlaxcala (America/Mexico_City).
+// Esta consulta NO consume números; sólo informa a la UI si la regla ya está
+// activa según el reloj del servidor/BD.
+// =============================================================================
+
+export type EstadoNumeracionRollo = {
+  configurada: boolean;
+  activa: boolean;
+  vigente_desde?: string;
+  sufijo?: string;
+  proximo_numero?: string;
+  ahora_servidor?: string;
+};
+
+export const getEstadoNumeracionRollo = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ maquina_id: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }): Promise<EstadoNumeracionRollo> => {
+    const { data: r, error } = await (
+      context.supabase as unknown as {
+        rpc: (
+          n: string,
+          a: unknown,
+        ) => Promise<{ data: unknown; error: { message: string } | null }>;
+      }
+    ).rpc("estado_numeracion_rollo", { _maquina_id: data.maquina_id });
+    if (error || !r) return { configurada: false, activa: false };
+    return r as EstadoNumeracionRollo;
   });
