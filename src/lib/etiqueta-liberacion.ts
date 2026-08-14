@@ -2,6 +2,7 @@
 // Sin marcas de plataforma, sin logos externos. Layout fiel al formato impreso.
 import QRCode from "qrcode";
 import logoUrl from "@/assets/logo-convertipap.png";
+import sapHanaAsset from "@/assets/sap-hana-logo.jpg.asset.json";
 
 async function toDataUrl(url: string): Promise<string> {
   try {
