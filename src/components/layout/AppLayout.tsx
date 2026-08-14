@@ -94,21 +94,37 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
     }
   }, [auth.loading, auth.isAuthenticated, navigate]);
 
+  // Pesaje de Rollo (bobina madre): RESTRINGIDO temporalmente solo a administradores.
+  const isAdmin = auth.hasRole("administrador");
+
   // 2) Si está en una ruta sin permisos, mandarlo al primer módulo permitido.
   useEffect(() => {
     if (auth.loading || !auth.isAuthenticated) return;
+    if (pathname.startsWith("/pesaje/bobina-madre") && !isAdmin) {
+      void navigate({ to: auth.canAccess("pesaje_cintas") ? "/pesaje/cintas" : "/", replace: true });
+      return;
+    }
     const mod = moduleForPath(pathname);
     if (auth.canAccess(mod)) return;
     const firstAllowed = NAV.find((n) => auth.canAccess(n.module));
     if (firstAllowed && firstAllowed.to !== pathname) {
       void navigate({ to: firstAllowed.to, replace: true });
     }
-  }, [auth.loading, auth.isAuthenticated, auth.modules, auth.roles, pathname, navigate]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [auth.loading, auth.isAuthenticated, auth.modules, auth.roles, pathname, navigate, isAdmin]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const visibleNav = useMemo(
-    () => NAV.filter((item) => auth.canAccess(item.module)),
-    [auth.modules, auth.roles], // eslint-disable-line react-hooks/exhaustive-deps
+    () =>
+      NAV.filter((item) => {
+        if (!auth.canAccess(item.module)) return false;
+        // Oculta "Control de Pesaje" si solo contenía Pesaje de Rollo y no es admin
+        if (item.to === "/pesaje/bobina-madre" && !isAdmin && !auth.canAccess("pesaje_cintas")) {
+          return false;
+        }
+        return true;
+      }),
+    [auth.modules, auth.roles, isAdmin], // eslint-disable-line react-hooks/exhaustive-deps
   );
+
 
   const currentModule = moduleForPath(pathname);
   const allowedHere = auth.canAccess(currentModule);
@@ -148,7 +164,7 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
             return (
               <div key={to}>
                 <Link
-                  to={to}
+                  to={isPesaje && !isAdmin ? "/pesaje/cintas" : to}
                   className={
                     isOrdenes
                       ? `mx-2 my-0.5 flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium border-l-2 transition-colors ${
@@ -165,14 +181,17 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
                 </Link>
                 {isPesaje && !collapsed && (
                   <div className="ml-6 mb-1 border-l border-sidebar-border/60 pl-2">
-                    <Link
-                      to="/pesaje/bobina-madre"
-                      className="cabinet-panel mx-1 my-0.5 flex items-center gap-2 rounded-md px-2.5 py-1.5 text-xs font-medium text-sidebar-foreground/80 hover:text-white"
-                      data-active={pathname === "/pesaje/bobina-madre"}
-                    >
-                      <Scale className="h-3.5 w-3.5 shrink-0" />
-                      <span className="truncate">Pesaje de Rollo</span>
-                    </Link>
+                    {isAdmin && (
+                      <Link
+                        to="/pesaje/bobina-madre"
+                        className="cabinet-panel mx-1 my-0.5 flex items-center gap-2 rounded-md px-2.5 py-1.5 text-xs font-medium text-sidebar-foreground/80 hover:text-white"
+                        data-active={pathname === "/pesaje/bobina-madre"}
+                      >
+                        <Scale className="h-3.5 w-3.5 shrink-0" />
+                        <span className="truncate">Pesaje de Rollo</span>
+                      </Link>
+                    )}
+
                     {auth.canAccess("pesaje_cintas") && (
                       <Link
                         to="/pesaje/cintas"
