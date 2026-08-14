@@ -378,14 +378,28 @@ function buildHtml(
       <div class="sap-qr">
         <img src="${qrRolloDataUrl}" alt="QR N.º de rollo" />
         <div class="cap">N.º de rollo</div>
+        <div class="valbig${payloads.rollo.length > 10 ? " long" : ""}">${esc(payloads.rollo || "—")}</div>
       </div>
       <div class="sap-qr">
         <img src="${qrPesoDataUrl}" alt="QR Peso" />
         <div class="cap">Peso</div>
+        <div class="valbig${/^[\d.,]+$/.test(payloads.peso) ? "" : " text"}">${esc(
+          /^[\d.,]+$/.test(payloads.peso) ? `${payloads.peso} kg` : payloads.peso,
+        )}</div>
       </div>
       <div class="sap-qr">
         <img src="${qrOrdenDataUrl}" alt="QR Orden de producción" />
         <div class="cap">Orden de producción</div>
+        <div class="valbig${
+          /^\d+$/.test(payloads.orden)
+            ? payloads.orden.length > 10
+              ? " long"
+              : ""
+            : " text"
+        }">${esc(payloads.orden)}</div>
+      </div>
+      <div class="sap-logo">
+        <img src="${sapLogoDataUrl}" alt="SAP HANA" />
       </div>
     </div>
 
