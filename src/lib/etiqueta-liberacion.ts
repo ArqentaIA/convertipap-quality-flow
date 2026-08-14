@@ -456,13 +456,14 @@ export async function printEtiquetaLiberacion(data: EtiquetaData): Promise<void>
   const payloadPeso = buildPayloadPeso(data);
   const payloadOrden = buildPayloadOrden(numeroOrdenSap);
 
-  const [qrDataUrl, qrRolloDataUrl, qrPesoDataUrl, qrOrdenDataUrl, logoDataUrl] =
+  const [qrDataUrl, qrRolloDataUrl, qrPesoDataUrl, qrOrdenDataUrl, logoDataUrl, sapLogoDataUrl] =
     await Promise.all([
       QRCode.toDataURL(traceUrl, { margin: 1, width: 240, errorCorrectionLevel: "M" }),
       QRCode.toDataURL(payloadRollo, { margin: 2, width: 400, errorCorrectionLevel: "M" }),
       QRCode.toDataURL(payloadPeso, { margin: 2, width: 400, errorCorrectionLevel: "M" }),
       QRCode.toDataURL(payloadOrden, { margin: 2, width: 400, errorCorrectionLevel: "M" }),
       toDataUrl(logoUrl),
+      toDataUrl(sapHanaAsset.url),
     ]);
   const html = buildHtml(
     { ...data, numeroOrdenSap, estadoSap },
@@ -471,6 +472,8 @@ export async function printEtiquetaLiberacion(data: EtiquetaData): Promise<void>
     qrPesoDataUrl,
     qrOrdenDataUrl,
     logoDataUrl,
+    sapLogoDataUrl,
+    { rollo: payloadRollo, peso: payloadPeso, orden: payloadOrden },
   );
 
   const w = window.open("", "_blank", "width=960,height=900");
