@@ -111,7 +111,8 @@ export function buildPayloadPeso(data: Pick<EtiquetaData, "mediciones">): string
   const med = (data.mediciones || []).find(
     (m) => m.clave?.trim().toLowerCase() === "peso" || isPesoLabel(m.etiqueta),
   );
-  if (!med || med.valor === null || med.valor === undefined) return "";
+  // Sin medición oficial de peso no se codifica un número inventado.
+  if (!med || med.valor === null || med.valor === undefined) return "Sin peso registrado";
   return fmtKg(med.valor);
 }
 
