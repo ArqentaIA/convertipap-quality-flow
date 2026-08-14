@@ -164,7 +164,7 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
             return (
               <div key={to}>
                 <Link
-                  to={to}
+                  to={isPesaje && !isAdmin ? "/pesaje/cintas" : to}
                   className={
                     isOrdenes
                       ? `mx-2 my-0.5 flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium border-l-2 transition-colors ${
@@ -181,14 +181,17 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
                 </Link>
                 {isPesaje && !collapsed && (
                   <div className="ml-6 mb-1 border-l border-sidebar-border/60 pl-2">
-                    <Link
-                      to="/pesaje/bobina-madre"
-                      className="cabinet-panel mx-1 my-0.5 flex items-center gap-2 rounded-md px-2.5 py-1.5 text-xs font-medium text-sidebar-foreground/80 hover:text-white"
-                      data-active={pathname === "/pesaje/bobina-madre"}
-                    >
-                      <Scale className="h-3.5 w-3.5 shrink-0" />
-                      <span className="truncate">Pesaje de Rollo</span>
-                    </Link>
+                    {isAdmin && (
+                      <Link
+                        to="/pesaje/bobina-madre"
+                        className="cabinet-panel mx-1 my-0.5 flex items-center gap-2 rounded-md px-2.5 py-1.5 text-xs font-medium text-sidebar-foreground/80 hover:text-white"
+                        data-active={pathname === "/pesaje/bobina-madre"}
+                      >
+                        <Scale className="h-3.5 w-3.5 shrink-0" />
+                        <span className="truncate">Pesaje de Rollo</span>
+                      </Link>
+                    )}
+
                     {auth.canAccess("pesaje_cintas") && (
                       <Link
                         to="/pesaje/cintas"
