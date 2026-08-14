@@ -2,7 +2,6 @@
 // Sin marcas de plataforma, sin logos externos. Layout fiel al formato impreso.
 import QRCode from "qrcode";
 import logoUrl from "@/assets/logo-convertipap.png";
-import sapHanaAsset from "@/assets/sap-hana-logo.jpg.asset.json";
 
 async function toDataUrl(url: string): Promise<string> {
   try {
@@ -98,6 +97,30 @@ function isPesoLabel(label: string): boolean {
   return s === "peso" || s === "peso del rollo" || s === "peso rollo";
 }
 
+// -----------------------------------------------------------------------------
+// Payloads de los 3 QR inferiores: TEXTO PLANO con el valor del dato.
+// Sin URL, sin esquema URI, sin JSON, sin UUID. Aplica igual en impresión
+// inicial y en reimpresión (ambas usan printEtiquetaLiberacion).
+// -----------------------------------------------------------------------------
+export function buildPayloadRollo(data: Pick<EtiquetaData, "numeroRollo">): string {
+  return String(data.numeroRollo ?? "").trim();
+}
+
+/** Peso oficial: exclusivamente la medición de Control de Calidad (clave `peso`). */
+export function buildPayloadPeso(data: Pick<EtiquetaData, "mediciones">): string {
+  const med = (data.mediciones || []).find(
+    (m) => m.clave?.trim().toLowerCase() === "peso" || isPesoLabel(m.etiqueta),
+  );
+  if (!med || med.valor === null || med.valor === undefined) return "";
+  return fmtKg(med.valor);
+}
+
+/** Orden de producción: fuente canónica SAP; sin orden vinculada = texto oficial. */
+export function buildPayloadOrden(numeroOrdenSap: string | null | undefined): string {
+  const v = (numeroOrdenSap ?? "").trim();
+  return v || "Sin orden SAP vinculada";
+}
+
 function row(m: EtiquetaMedicion): string {
   const v = m.valor === null || m.valor === undefined ? "—" : m.valor;
   const unidad = m.unidad;
@@ -118,7 +141,6 @@ function buildHtml(
   qrPesoDataUrl: string,
   qrOrdenDataUrl: string,
   logoDataUrl: string,
-  sapLogoDataUrl: string,
 ): string {
   const fechaImpresion = new Date().toLocaleString("es-MX");
   const estatusColor =
@@ -240,12 +262,11 @@ function buildHtml(
   .estatus .val-e{padding:16px 8px;text-align:center;font-weight:900;font-size:32px;letter-spacing:.16em;color:${estatusColor};background:${estatusBg};display:flex;align-items:center;justify-content:center}
 
   /* Bloque SAP inferior: datos a la izquierda + QR grande + logo a la derecha */
-  .sap-footer{display:grid;grid-template-columns:1fr 1fr 1fr 110px;align-items:center;border-bottom:2px solid #0f172a;background:#f8fafc}
+  .sap-footer{display:grid;grid-template-columns:1fr 1fr 1fr;align-items:center;border-bottom:2px solid #0f172a;background:#f8fafc}
   .sap-footer .sap-qr{padding:10px 6px;display:flex;flex-direction:column;align-items:center;justify-content:center;border-right:1px solid #0f172a}
+  .sap-footer .sap-qr:last-child{border-right:0}
   .sap-footer .sap-qr img{width:118px;height:118px;display:block;background:#fff;padding:4px}
   .sap-footer .sap-qr .cap{font-size:8.5px;color:#334155;margin-top:5px;text-align:center;letter-spacing:.1em;text-transform:uppercase;font-weight:800;line-height:1.2}
-  .sap-footer .sap-logo{padding:10px;display:flex;align-items:center;justify-content:center}
-  .sap-footer .sap-logo img{max-width:88px;max-height:88px;object-fit:contain;display:block}
 
   .foot{padding:5px 12px;font-size:9.5px;color:#64748b;text-align:right;margin-top:auto}
 
@@ -358,9 +379,6 @@ function buildHtml(
         <img src="${qrOrdenDataUrl}" alt="QR Orden de producción" />
         <div class="cap">Orden de producción</div>
       </div>
-      <div class="sap-logo">
-        <img src="${sapLogoDataUrl}" alt="SAP HANA" />
-      </div>
     </div>
 
 
@@ -394,10 +412,6 @@ function buildHtml(
 export async function printEtiquetaLiberacion(data: EtiquetaData): Promise<void> {
   const traceUrl = buildTraceUrl(data.muestraId);
 
-  // Tres QR inferiores: mismo muestra_id canónico, una URL por dato.
-  const qrRolloUrl = `${traceUrl}?vista=sap&campo=rollo`;
-  const qrPesoUrl = `${traceUrl}?vista=sap&campo=peso`;
-  const qrOrdenUrl = `${traceUrl}?vista=sap&campo=orden`;
 
   // Enriquecer con datos SAP (N.º de orden + estado) si no vienen ya en `data`.
   let numeroOrdenSap: string | null = data.numeroOrdenSap ?? null;
@@ -415,14 +429,18 @@ export async function printEtiquetaLiberacion(data: EtiquetaData): Promise<void>
     }
   }
 
-  const [qrDataUrl, qrRolloDataUrl, qrPesoDataUrl, qrOrdenDataUrl, logoDataUrl, sapLogoDataUrl] =
+  // Payloads de los 3 QR inferiores: TEXTO PLANO, sin URL ni esquema URI.
+  const payloadRollo = buildPayloadRollo(data);
+  const payloadPeso = buildPayloadPeso(data);
+  const payloadOrden = buildPayloadOrden(numeroOrdenSap);
+
+  const [qrDataUrl, qrRolloDataUrl, qrPesoDataUrl, qrOrdenDataUrl, logoDataUrl] =
     await Promise.all([
       QRCode.toDataURL(traceUrl, { margin: 1, width: 240, errorCorrectionLevel: "M" }),
-      QRCode.toDataURL(qrRolloUrl, { margin: 2, width: 400, errorCorrectionLevel: "M" }),
-      QRCode.toDataURL(qrPesoUrl, { margin: 2, width: 400, errorCorrectionLevel: "M" }),
-      QRCode.toDataURL(qrOrdenUrl, { margin: 2, width: 400, errorCorrectionLevel: "M" }),
+      QRCode.toDataURL(payloadRollo, { margin: 2, width: 400, errorCorrectionLevel: "M" }),
+      QRCode.toDataURL(payloadPeso, { margin: 2, width: 400, errorCorrectionLevel: "M" }),
+      QRCode.toDataURL(payloadOrden, { margin: 2, width: 400, errorCorrectionLevel: "M" }),
       toDataUrl(logoUrl),
-      toDataUrl(sapHanaAsset.url),
     ]);
   const html = buildHtml(
     { ...data, numeroOrdenSap, estadoSap },
@@ -431,7 +449,6 @@ export async function printEtiquetaLiberacion(data: EtiquetaData): Promise<void>
     qrPesoDataUrl,
     qrOrdenDataUrl,
     logoDataUrl,
-    sapLogoDataUrl,
   );
 
   const w = window.open("", "_blank", "width=960,height=900");
