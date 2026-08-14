@@ -266,14 +266,12 @@ function buildHtml(
   .estatus .val-e{padding:16px 8px;text-align:center;font-weight:900;font-size:32px;letter-spacing:.16em;color:${estatusColor};background:${estatusBg};display:flex;align-items:center;justify-content:center}
 
   /* Bloque inferior: 3 QR con valor visible + logo SAP HANA a la derecha */
-  .sap-footer{display:grid;grid-template-columns:1fr 1fr 1.15fr 0.85fr;align-items:stretch;border-bottom:2px solid #0f172a;background:#f8fafc}
-  .sap-footer .sap-qr{padding:10px 8px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;border-right:1px solid #0f172a}
+  .sap-footer{display:grid;grid-template-columns:1fr 1fr 1fr 0.9fr;align-items:stretch;border-bottom:2px solid #0f172a;background:#f8fafc}
+  .sap-footer .sap-qr{padding:10px 8px;display:flex;flex-direction:column;align-items:center;justify-content:center;border-right:1px solid #0f172a}
   .sap-footer .sap-qr:last-child{border-right:0}
-  .sap-footer .sap-qr img{width:112px;height:112px;display:block;background:#fff;padding:4px}
-  .sap-footer .sap-qr .cap{font-size:8.5px;color:#334155;margin-top:6px;text-align:center;letter-spacing:.1em;text-transform:uppercase;font-weight:800;line-height:1.2}
-  .sap-footer .sap-qr .valbig{margin-top:2px;text-align:center;font-weight:900;color:#0f172a;font-size:22px;line-height:1.1;letter-spacing:.01em;word-break:break-word}
-  .sap-footer .sap-qr .valbig.long{font-size:17px}
-  .sap-footer .sap-qr .valbig.text{font-size:13px;letter-spacing:.02em}
+  .sap-footer .sap-qr img{width:140px;height:140px;display:block;background:#fff;padding:4px}
+  .sap-footer .sap-qr .cap{font-size:9px;color:#334155;margin-top:6px;text-align:center;letter-spacing:.1em;text-transform:uppercase;font-weight:800;line-height:1.2}
+
   .sap-logo{display:flex;align-items:center;justify-content:center;padding:10px}
   .sap-logo img{max-width:100%;max-height:96px;width:auto;height:auto;object-fit:contain}
 
@@ -379,26 +377,16 @@ function buildHtml(
       <div class="sap-qr">
         <img src="${qrRolloDataUrl}" alt="QR N.º de rollo" />
         <div class="cap">N.º de rollo</div>
-        <div class="valbig${payloads.rollo.length > 10 ? " long" : ""}">${esc(payloads.rollo || "—")}</div>
       </div>
       <div class="sap-qr">
         <img src="${qrPesoDataUrl}" alt="QR Peso" />
         <div class="cap">Peso</div>
-        <div class="valbig${/^[\d.,]+$/.test(payloads.peso) ? "" : " text"}">${esc(
-          /^[\d.,]+$/.test(payloads.peso) ? `${payloads.peso} kg` : payloads.peso,
-        )}</div>
       </div>
       <div class="sap-qr">
         <img src="${qrOrdenDataUrl}" alt="QR Orden de producción" />
         <div class="cap">Orden de producción</div>
-        <div class="valbig${
-          /^\d+$/.test(payloads.orden)
-            ? payloads.orden.length > 10
-              ? " long"
-              : ""
-            : " text"
-        }">${esc(payloads.orden)}</div>
       </div>
+
       <div class="sap-logo">
         <img src="${sapLogoDataUrl}" alt="SAP HANA" />
       </div>
