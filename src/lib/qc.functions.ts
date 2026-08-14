@@ -1577,3 +1577,37 @@ export const resolveRolloStatusServer = createServerFn({ method: "GET" })
       data,
     );
   });
+
+// =============================================================================
+// NUMERACIÓN AUTOMÁTICA DE ROLLO POR MÁQUINA (solo lectura)
+// Vigencia efectiva: 14/08/2026 07:00:00 hora Planta Tlaxcala (America/Mexico_City).
+// Esta consulta NO consume números; sólo informa a la UI si la regla ya está
+// activa según el reloj del servidor/BD.
+// =============================================================================
+
+export type EstadoNumeracionRollo = {
+  configurada: boolean;
+  activa: boolean;
+  vigente_desde?: string;
+  sufijo?: string;
+  proximo_numero?: string;
+  ahora_servidor?: string;
+};
+
+export const getEstadoNumeracionRollo = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ maquina_id: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }): Promise<EstadoNumeracionRollo> => {
+    const { data: r, error } = await (
+      context.supabase as unknown as {
+        rpc: (
+          n: string,
+          a: unknown,
+        ) => Promise<{ data: unknown; error: { message: string } | null }>;
+      }
+    ).rpc("estado_numeracion_rollo", { _maquina_id: data.maquina_id });
+    if (error || !r) return { configurada: false, activa: false };
+    return r as EstadoNumeracionRollo;
+  });
