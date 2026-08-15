@@ -1191,8 +1191,17 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
     });
   }
 
+  // Estado SAVED: existe una muestra guardada en pantalla. Mientras dure, la
+  // captura NO puede guardar de nuevo (evita estados híbridos "formulario nuevo
+  // + muestra anterior guardada").
+  const muestraGuardadaEnPantalla = numeracionActiva && !!rolloAsignado;
   const puedeEnviar =
-    !isBlocked && !mutation.isPending && !!spec && !(numeracionActiva && !!rolloAsignado);
+    !isBlocked &&
+    !mutation.isPending &&
+    !iniciandoNueva &&
+    !!spec &&
+    !muestraGuardadaEnPantalla;
+
 
   return (
     <AppLayout title={modoFueraTurno ? "Captura fuera de turno" : "Captura de Muestra de Calidad"}>
