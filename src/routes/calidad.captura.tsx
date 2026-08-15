@@ -419,8 +419,36 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
   // reportada al cambiar estatus o refrescar).
   const [rolloAsignado, setRolloAsignado] = useState<string | null>(null);
   // Clave de idempotencia por intento de captura: protege contra doble submit,
-  // timeout y reintentos. Se renueva sólo al iniciar una NUEVA muestra.
-  const [idempotencyKey, setIdempotencyKey] = useState<string>(() => crypto.randomUUID());
+  // timeout, pérdida de respuesta y F5/reload. Se PERSISTE en sessionStorage
+  // por máquina, de modo que un remontaje del componente NO genera otro UUID.
+  // Sólo se renueva al iniciar explícitamente una NUEVA muestra.
+  const idemStorageKey = `qc:idem:${maquina.id}`;
+  const [idempotencyKey, setIdempotencyKey] = useState<string>(() => {
+    if (typeof window === "undefined") return crypto.randomUUID();
+    const prev = window.sessionStorage.getItem(idemStorageKey);
+    if (prev) return prev;
+    const fresh = crypto.randomUUID();
+    window.sessionStorage.setItem(idemStorageKey, fresh);
+    return fresh;
+  });
+  // Sincroniza la clave persistida al cambiar de máquina (cada máquina tiene su
+  // propia operación pendiente).
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const prev = window.sessionStorage.getItem(idemStorageKey);
+    if (prev) {
+      setIdempotencyKey(prev);
+    } else {
+      const fresh = crypto.randomUUID();
+      window.sessionStorage.setItem(idemStorageKey, fresh);
+      setIdempotencyKey(fresh);
+    }
+  }, [idemStorageKey]);
+  function renovarIdempotency() {
+    const fresh = crypto.randomUUID();
+    if (typeof window !== "undefined") window.sessionStorage.setItem(idemStorageKey, fresh);
+    setIdempotencyKey(fresh);
+  }
   useEffect(() => {
     if (rolloAsignado) return; // ya hay número definitivo: no pisar
     if (numeracionActiva && numeracionAuto?.proximo_numero) {
@@ -432,7 +460,7 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
   // consecutivo estimado y se renueva la clave de idempotencia.
   function iniciarNuevaMuestra() {
     setRolloAsignado(null);
-    setIdempotencyKey(crypto.randomUUID());
+    renovarIdempotency();
     setNumeroRollo("");
     void numeracionQuery.refetch();
   }
@@ -855,7 +883,7 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
         setNumeroRollo(asignado);
       } else {
         setNumeroRollo("");
-        setIdempotencyKey(crypto.randomUUID());
+        renovarIdempotency();
       }
       setLiberarConJustif(false);
       setJustificacionLib("");
