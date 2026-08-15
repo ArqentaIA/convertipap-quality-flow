@@ -414,11 +414,28 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
   });
   const numeracionAuto = numeracionQuery.data;
   const numeracionActiva = !!numeracionAuto?.activa;
+  // Número DEFINITIVO devuelto por la transacción de alta. Mientras exista, la
+  // pantalla NO se sustituye por el siguiente consecutivo (evita la confusión
+  // reportada al cambiar estatus o refrescar).
+  const [rolloAsignado, setRolloAsignado] = useState<string | null>(null);
+  // Clave de idempotencia por intento de captura: protege contra doble submit,
+  // timeout y reintentos. Se renueva sólo al iniciar una NUEVA muestra.
+  const [idempotencyKey, setIdempotencyKey] = useState<string>(() => crypto.randomUUID());
   useEffect(() => {
+    if (rolloAsignado) return; // ya hay número definitivo: no pisar
     if (numeracionActiva && numeracionAuto?.proximo_numero) {
       setNumeroRollo(numeracionAuto.proximo_numero);
     }
-  }, [numeracionActiva, numeracionAuto?.proximo_numero]);
+  }, [numeracionActiva, numeracionAuto?.proximo_numero, rolloAsignado]);
+
+  // Inicia explícitamente una NUEVA muestra: sólo aquí se consulta el próximo
+  // consecutivo estimado y se renueva la clave de idempotencia.
+  function iniciarNuevaMuestra() {
+    setRolloAsignado(null);
+    setIdempotencyKey(crypto.randomUUID());
+    setNumeroRollo("");
+    void numeracionQuery.refetch();
+  }
 
   const [horaMuestreo, setHoraMuestreo] = useState<string>(ahoraLocal);
   const [observaciones, setObservaciones] = useState<string>("");
@@ -726,7 +743,7 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
 
   const mutation = useMutation({
     mutationFn: upsertFn,
-    onSuccess: async (res: { muestra_id: string }) => {
+    onSuccess: async (res: { muestra_id: string; numero_rollo?: string }) => {
       // Vincula el pesaje (si existe) antes de refrescar caches.
       const pesajeIdParaVincular = pesajeVinculado?.id ?? null;
       if (pesajeIdParaVincular) {
@@ -830,7 +847,16 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
       setPrensero("");
       setAnalista("");
       setObservaciones("");
-      setNumeroRollo("");
+      // Conserva en pantalla el NÚMERO DE ROLLO ASIGNADO por la transacción.
+      // Sólo "Nueva muestra" vuelve a mostrar el próximo estimado.
+      if (numeracionActiva) {
+        const asignado = res.numero_rollo ?? numeroRollo;
+        setRolloAsignado(asignado);
+        setNumeroRollo(asignado);
+      } else {
+        setNumeroRollo("");
+        setIdempotencyKey(crypto.randomUUID());
+      }
       setLiberarConJustif(false);
       setJustificacionLib("");
       setDefectos([]);
@@ -1108,11 +1134,13 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
         enviar_a_revision: modo === "envio",
         fuera_de_turno: modoFueraTurno,
         fuera_de_turno_motivo: modoFueraTurno ? motivoFueraTurno.trim() : null,
+        idempotency_key: idempotencyKey,
       },
     });
   }
 
-  const puedeEnviar = !isBlocked && !mutation.isPending && !!spec;
+  const puedeEnviar =
+    !isBlocked && !mutation.isPending && !!spec && !(numeracionActiva && !!rolloAsignado);
 
   return (
     <AppLayout title={modoFueraTurno ? "Captura fuera de turno" : "Captura de Muestra de Calidad"}>
@@ -1242,13 +1270,31 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
               </Label>
               {numeracionActiva ? (
                 <>
-                  <div className="flex h-11 items-center rounded-md border border-input bg-muted px-3 text-base font-semibold">
+                  <div
+                    className={cn(
+                      "flex h-11 items-center rounded-md border px-3 text-base font-semibold",
+                      rolloAsignado
+                        ? "border-emerald-500 bg-emerald-50 text-emerald-900"
+                        : "border-input bg-muted",
+                    )}
+                  >
                     {numeroRollo || "—"}
                   </div>
-                  <p className="text-[11px] text-muted-foreground">
-                    Número consecutivo asignado automáticamente por el servidor al
-                    guardar la captura. Campo de solo lectura.
-                  </p>
+                  {rolloAsignado ? (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="text-[11px] font-medium text-emerald-700">
+                        NÚMERO DE ROLLO ASIGNADO · definitivo para esta muestra.
+                      </p>
+                      <Button type="button" size="sm" variant="outline" onClick={iniciarNuevaMuestra}>
+                        Nueva muestra
+                      </Button>
+                    </div>
+                  ) : (
+                    <p className="text-[11px] text-muted-foreground">
+                      PRÓXIMO NÚMERO ESTIMADO · no está reservado y puede cambiar si otro
+                      operador guarda antes. El número oficial se confirma al guardar.
+                    </p>
+                  )}
                 </>
               ) : (
                 <>
