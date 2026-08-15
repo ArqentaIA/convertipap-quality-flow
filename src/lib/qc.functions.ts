@@ -473,6 +473,10 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
         enviar_a_revision: z.boolean().default(false),
         fuera_de_turno: z.boolean().optional().default(false),
         fuera_de_turno_motivo: z.string().trim().max(2000).nullable().optional(),
+        // Idempotencia del alta: la genera el cliente por intento de captura.
+        // Un reintento (doble clic, timeout, refresh) con la misma clave devuelve
+        // la misma muestra y el mismo consecutivo, sin consumir otro número.
+        idempotency_key: z.string().uuid(),
       })
       .parse(input),
   )
@@ -815,6 +819,7 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
 
     return {
       muestra_id: muestraId,
+      numero_rollo: numeroRolloFinal,
       reabre_dictamen: !!dictamenPrevioAt,
       regla_critica: {
         forzado_nc: criticalEval.forzarNC,
