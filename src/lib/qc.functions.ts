@@ -473,6 +473,10 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
         enviar_a_revision: z.boolean().default(false),
         fuera_de_turno: z.boolean().optional().default(false),
         fuera_de_turno_motivo: z.string().trim().max(2000).nullable().optional(),
+        // Idempotencia del alta: la genera el cliente por intento de captura.
+        // Un reintento (doble clic, timeout, refresh) con la misma clave devuelve
+        // la misma muestra y el mismo consecutivo, sin consumir otro número.
+        idempotency_key: z.string().uuid(),
       })
       .parse(input),
   )
@@ -650,52 +654,67 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
       "El número de rollo ya se encuentra registrado en el sistema. Verifique la información antes de continuar.";
 
     // -------------------------------------------------------------------------
-    // NUMERACIÓN AUTOMÁTICA POR MÁQUINA — vigencia server-side.
-    // Efectiva: 14/08/2026 07:00:00 (America/Mexico_City, inicio 1er turno,
-    // Planta Tlaxcala). La decisión se toma AQUÍ, en el guardado definitivo,
-    // contra el reloj de la base de datos (`now()` dentro del RPC), nunca
-    // contra el reloj del navegador. Antes de la hora efectiva el RPC devuelve
-    // NULL y se conserva íntegro el comportamiento anterior (número manual).
-    // Sólo aplica a creación; nunca renumera muestras existentes.
+    // ALTA NUEVA — TRANSACCIÓN ÚNICA ATÓMICA (RPC `crear_muestra_con_mediciones`).
+    // Dentro de UNA sola transacción PostgreSQL: bloqueo FOR UPDATE de la fila de
+    // `numeracion_rollos` de ESA máquina → validación de colisión → INSERT muestra
+    // → INSERT de TODAS las mediciones → `qc_recalc_estatus_muestra` → incremento
+    // del contador. Si cualquier paso falla, ROLLBACK completo: no hay muestra,
+    // no hay mediciones y el contador NO avanza. Sin compensación (nunca se resta).
+    // Idempotencia: `idempotency_key` (único). Un reintento del mismo submit
+    // devuelve la misma muestra y el mismo número, sin consumir otro consecutivo.
+    // La rama de EDICIÓN nunca solicita consecutivo ni toca `numero_rollo`.
     // -------------------------------------------------------------------------
     let numeroRolloFinal = data.numero_rollo;
-    if (!data.muestra_id) {
-      const { data: asignado, error: eNum } = await (
+    let muestraId = data.muestra_id;
+
+    if (!muestraId) {
+      const { data: res, error: eRpc } = await (
         sb as unknown as {
           rpc: (
             n: string,
             a: unknown,
-          ) => Promise<{ data: string | null; error: { message: string } | null }>;
+          ) => Promise<{ data: unknown; error: { message: string } | null }>;
         }
-      ).rpc("asignar_numero_rollo", { _maquina_id: data.maquina_id });
-      if (eNum) throw new Error(eNum.message);
-      if (asignado) {
-        numeroRolloFinal = asignado;
-        (muestraPayload as { numero_rollo: string }).numero_rollo = asignado;
+      ).rpc("crear_muestra_con_mediciones", {
+        _muestra: muestraPayload,
+        _mediciones: data.mediciones.map((m) => ({
+          variable_id: m.variable_id,
+          variable_clave: m.variable_clave,
+          valor: m.valor,
+          min_snapshot: m.min_snapshot,
+          objetivo_snapshot: m.objetivo_snapshot,
+          max_snapshot: m.max_snapshot,
+          observacion: m.observacion,
+          estado: calcularEstadoMedicion(
+            m.valor,
+            m.min_snapshot,
+            m.max_snapshot,
+            m.variable_clave,
+          ),
+        })),
+        _idempotency: data.idempotency_key,
+      });
+      if (eRpc) {
+        if (/duplicate key|unique/i.test(eRpc.message)) throw new Error(ROLLO_DUPLICADO_MSG);
+        throw new Error(eRpc.message);
       }
-    }
-
-    // Pre-validación: el número de rollo debe ser único en toda la plataforma.
-    // Se excluye la propia muestra cuando se trata de una edición.
-    {
-      let q = sb
+      const out = res as { muestra_id: string; numero_rollo: string } | null;
+      if (!out?.muestra_id) throw new Error("No se pudo crear la muestra.");
+      muestraId = out.muestra_id;
+      numeroRolloFinal = out.numero_rollo;
+    } else {
+      // EDICIÓN: conserva su número de rollo; sólo se valida unicidad contra otras.
+      const { data: dup, error: eDup } = await sb
         .from("muestras_calidad")
         .select("id")
         .eq("numero_rollo", numeroRolloFinal)
-        .limit(1);
-      if (data.muestra_id) q = q.neq("id", data.muestra_id);
-      const { data: dup, error: eDup } = await q.maybeSingle();
+        .neq("id", muestraId)
+        .limit(1)
+        .maybeSingle();
       if (eDup) throw new Error(eDup.message);
       if (dup) throw new Error(ROLLO_DUPLICADO_MSG);
-    }
 
-
-    let muestraId = data.muestra_id;
-    // Cast: nuevas columnas (liberado_con_justificacion, liberacion_justificacion,
-    // liberado_por, liberado_at, variables_fuera_spec) introducidas en la
-    // migración 18-Jun-2026 aún no están en los tipos generados.
-    const muestraPayloadSb = muestraPayload as unknown as never;
-    if (muestraId) {
+      const muestraPayloadSb = muestraPayload as unknown as never;
       const { error } = await sb
         .from("muestras_calidad")
         .update(muestraPayloadSb)
@@ -706,54 +725,39 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
         }
         throw new Error(error.message);
       }
-      // borrar mediciones previas y reinsertar
       const { error: eDel } = await sb
         .from("mediciones_calidad")
         .delete()
         .eq("muestra_id", muestraId);
       if (eDel) throw new Error(eDel.message);
-    } else {
-      const { data: nueva, error } = await sb
-        .from("muestras_calidad")
-        .insert(muestraPayloadSb)
-        .select("id")
-        .single();
-      if (error) {
-        if (error.code === "23505" || /duplicate key|unique/i.test(error.message)) {
-          throw new Error(ROLLO_DUPLICADO_MSG);
-        }
-        throw new Error(error.message);
+
+      const medsPayload = data.mediciones.map((m) => ({
+        muestra_id: muestraId!,
+        variable_id: m.variable_id,
+        variable_clave: m.variable_clave,
+        valor: m.valor,
+        min_snapshot: m.min_snapshot,
+        objetivo_snapshot: m.objetivo_snapshot,
+        max_snapshot: m.max_snapshot,
+        observacion: m.observacion,
+        estado: calcularEstadoMedicion(m.valor, m.min_snapshot, m.max_snapshot, m.variable_clave),
+        capturado_por: userId,
+      }));
+      if (medsPayload.length > 0) {
+        const { error: eMed } = await sb.from("mediciones_calidad").insert(medsPayload);
+        if (eMed) throw new Error(eMed.message);
       }
-      muestraId = nueva.id;
+
+      try {
+        await (sb as unknown as { rpc: (n: string, a: unknown) => Promise<unknown> }).rpc(
+          "qc_recalc_estatus_muestra",
+          { _muestra_id: muestraId },
+        );
+      } catch {
+        // Los triggers de BD ya aplican la regla; el RPC es refuerzo idempotente.
+      }
     }
 
-    const medsPayload = data.mediciones.map((m) => ({
-      muestra_id: muestraId!,
-      variable_id: m.variable_id,
-      variable_clave: m.variable_clave,
-      valor: m.valor,
-      min_snapshot: m.min_snapshot,
-      objetivo_snapshot: m.objetivo_snapshot,
-      max_snapshot: m.max_snapshot,
-      observacion: m.observacion,
-      estado: calcularEstadoMedicion(m.valor, m.min_snapshot, m.max_snapshot, m.variable_clave),
-      capturado_por: userId,
-    }));
-    if (medsPayload.length > 0) {
-      const { error } = await sb.from("mediciones_calidad").insert(medsPayload);
-      if (error) throw new Error(error.message);
-    }
-
-    // Evaluación canónica única (BD): decide estatus_liberacion y estado.
-    // Ambos módulos (captura normal y fuera de turno) consumen esta misma regla.
-    try {
-      await (sb as unknown as { rpc: (n: string, a: unknown) => Promise<unknown> }).rpc(
-        "qc_recalc_estatus_muestra",
-        { _muestra_id: muestraId },
-      );
-    } catch {
-      // Los triggers de BD ya aplican la regla; el RPC es refuerzo idempotente.
-    }
 
 
 
@@ -815,6 +819,7 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
 
     return {
       muestra_id: muestraId,
+      numero_rollo: numeroRolloFinal,
       reabre_dictamen: !!dictamenPrevioAt,
       regla_critica: {
         forzado_nc: criticalEval.forzarNC,
