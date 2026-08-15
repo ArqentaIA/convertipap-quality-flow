@@ -1343,15 +1343,25 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
                         ✓ Registro completado correctamente. Este número corresponde a la
                         muestra actual y no cambiará al modificar su estatus.
                       </p>
+                      <p className="mt-2 rounded bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-900">
+                        La captura está BLOQUEADA para nuevos registros. Pulse “Nueva
+                        muestra” antes de capturar el siguiente rollo.
+                      </p>
                       <div className="mt-3 flex flex-wrap items-center gap-2">
-                        <Button type="button" size="sm" onClick={iniciarNuevaMuestra}>
-                          Nueva muestra
+                        <Button
+                          type="button"
+                          size="sm"
+                          disabled={iniciandoNueva}
+                          onClick={() => void iniciarNuevaMuestra()}
+                        >
+                          {iniciandoNueva ? "Preparando…" : "Nueva muestra"}
                         </Button>
                         <p className="text-[11px] text-emerald-800">
                           Pulse “Nueva muestra” para iniciar el siguiente rollo y consultar
                           el próximo consecutivo.
                         </p>
                       </div>
+
                     </div>
                   ) : (
                     <>
