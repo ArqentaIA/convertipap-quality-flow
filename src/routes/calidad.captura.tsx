@@ -462,12 +462,32 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
 
   // Inicia explícitamente una NUEVA muestra: sólo aquí se consulta el próximo
   // consecutivo estimado y se renueva la clave de idempotencia.
-  function iniciarNuevaMuestra() {
-    setRolloAsignado(null);
-    renovarIdempotency();
-    setNumeroRollo("");
-    void numeracionQuery.refetch();
+  // Es determinístico: limpia TODO el estado de la muestra guardada, invalida la
+  // numeración cacheada y espera la respuesta fresca del servidor antes de
+  // habilitar de nuevo el guardado.
+  const [iniciandoNueva, setIniciandoNueva] = useState(false);
+  async function iniciarNuevaMuestra() {
+    setIniciandoNueva(true);
+    try {
+      setRolloAsignado(null);
+      setNumeroRollo("");
+      renovarIdempotency();
+      mutation.reset();
+      setUltimaEtiqueta(null);
+      setMuestraRecienId(null);
+      // Elimina el resultado anterior del cache para que no se muestre un valor stale.
+      queryClient.removeQueries({ queryKey: ["numeracion-rollo", maquinaId] });
+      await numeracionQuery.refetch();
+    } finally {
+      setIniciandoNueva(false);
+    }
   }
+
+  // Cambio de máquina: nunca conservar el número definitivo de otra máquina.
+  useEffect(() => {
+    setRolloAsignado(null);
+  }, [maquinaId]);
+
 
   const [horaMuestreo, setHoraMuestreo] = useState<string>(ahoraLocal);
   const [observaciones, setObservaciones] = useState<string>("");
@@ -1171,8 +1191,17 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
     });
   }
 
+  // Estado SAVED: existe una muestra guardada en pantalla. Mientras dure, la
+  // captura NO puede guardar de nuevo (evita estados híbridos "formulario nuevo
+  // + muestra anterior guardada").
+  const muestraGuardadaEnPantalla = numeracionActiva && !!rolloAsignado;
   const puedeEnviar =
-    !isBlocked && !mutation.isPending && !!spec && !(numeracionActiva && !!rolloAsignado);
+    !isBlocked &&
+    !mutation.isPending &&
+    !iniciandoNueva &&
+    !!spec &&
+    !muestraGuardadaEnPantalla;
+
 
   return (
     <AppLayout title={modoFueraTurno ? "Captura fuera de turno" : "Captura de Muestra de Calidad"}>
@@ -1314,15 +1343,25 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
                         ✓ Registro completado correctamente. Este número corresponde a la
                         muestra actual y no cambiará al modificar su estatus.
                       </p>
+                      <p className="mt-2 rounded bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-900">
+                        La captura está BLOQUEADA para nuevos registros. Pulse “Nueva
+                        muestra” antes de capturar el siguiente rollo.
+                      </p>
                       <div className="mt-3 flex flex-wrap items-center gap-2">
-                        <Button type="button" size="sm" onClick={iniciarNuevaMuestra}>
-                          Nueva muestra
+                        <Button
+                          type="button"
+                          size="sm"
+                          disabled={iniciandoNueva}
+                          onClick={() => void iniciarNuevaMuestra()}
+                        >
+                          {iniciandoNueva ? "Preparando…" : "Nueva muestra"}
                         </Button>
                         <p className="text-[11px] text-emerald-800">
                           Pulse “Nueva muestra” para iniciar el siguiente rollo y consultar
                           el próximo consecutivo.
                         </p>
                       </div>
+
                     </div>
                   ) : (
                     <>
@@ -2257,7 +2296,23 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
         )}
 
         {spec && (
-          <div className="flex justify-end sticky bottom-0 bg-background/95 backdrop-blur py-3 border-t z-10">
+          <div className="sticky bottom-0 z-10 flex flex-wrap items-center justify-end gap-3 border-t bg-background/95 py-3 backdrop-blur">
+            {muestraGuardadaEnPantalla && (
+              <div className="flex flex-1 flex-wrap items-center gap-2 text-xs font-semibold text-amber-900">
+                <span className="rounded bg-amber-100 px-2 py-1">
+                  Muestra {rolloAsignado} ya guardada — para capturar el siguiente rollo pulse
+                  “Nueva muestra”.
+                </span>
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={iniciandoNueva}
+                  onClick={() => void iniciarNuevaMuestra()}
+                >
+                  {iniciandoNueva ? "Preparando…" : "Nueva muestra"}
+                </Button>
+              </div>
+            )}
             <Button
               size="lg"
               className={`text-base font-semibold transition-colors ${
@@ -2269,10 +2324,17 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
               onClick={() => handleSubmit("envio")}
             >
               <CheckCircle2 className="mr-2 h-5 w-5" />
-              {mutation.isPending ? "Validando..." : "Validar Captura"}
+              {mutation.isPending
+                ? "Validando..."
+                : muestraGuardadaEnPantalla
+                  ? "Pulse “Nueva muestra”"
+                  : iniciandoNueva
+                    ? "Preparando…"
+                    : "Validar Captura"}
             </Button>
           </div>
         )}
+
 
         {/* E. Producción capturada recientemente */}
         <Card id="produccion-capturada">
