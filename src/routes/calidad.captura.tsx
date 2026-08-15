@@ -404,20 +404,24 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
   // y NO consume números. Mientras no esté activa, el capturista sigue
   // escribiendo el número manualmente igual que hoy.
   // ---------------------------------------------------------------------------
+  // Número DEFINITIVO devuelto por la transacción de alta (declarado antes de la
+  // query para poder pausar el refetch mientras se trabaja la muestra guardada).
+  const [rolloAsignado, setRolloAsignado] = useState<string | null>(null);
   const numeracionQuery = useQuery({
     queryKey: ["numeracion-rollo", maquinaId],
     queryFn: () => getEstadoNumeracionRollo({ data: { maquina_id: maquinaId } }),
     enabled: hasAuthToken && !!maquinaId,
-    refetchInterval: 60_000,
+    // Con una muestra ya guardada en pantalla NO se consulta el próximo
+    // consecutivo: el número mostrado pertenece a la muestra actual.
+    refetchInterval: rolloAsignado ? false : 60_000,
     staleTime: 30_000,
     retry: false,
   });
+
   const numeracionAuto = numeracionQuery.data;
   const numeracionActiva = !!numeracionAuto?.activa;
-  // Número DEFINITIVO devuelto por la transacción de alta. Mientras exista, la
-  // pantalla NO se sustituye por el siguiente consecutivo (evita la confusión
-  // reportada al cambiar estatus o refrescar).
-  const [rolloAsignado, setRolloAsignado] = useState<string | null>(null);
+  // (rolloAsignado se declara arriba, antes de numeracionQuery)
+
   // Clave de idempotencia por intento de captura: protege contra doble submit,
   // timeout, pérdida de respuesta y F5/reload. Se PERSISTE en sessionStorage
   // por máquina, de modo que un remontaje del componente NO genera otro UUID.
@@ -1298,32 +1302,44 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
               </Label>
               {numeracionActiva ? (
                 <>
-                  <div
-                    className={cn(
-                      "flex h-11 items-center rounded-md border px-3 text-base font-semibold",
-                      rolloAsignado
-                        ? "border-emerald-500 bg-emerald-50 text-emerald-900"
-                        : "border-input bg-muted",
-                    )}
-                  >
-                    {numeroRollo || "—"}
-                  </div>
                   {rolloAsignado ? (
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="text-[11px] font-medium text-emerald-700">
-                        NÚMERO DE ROLLO ASIGNADO · definitivo para esta muestra.
+                    <div className="rounded-md border-2 border-emerald-500 bg-emerald-50 p-3">
+                      <p className="text-[11px] font-bold tracking-wide text-emerald-700">
+                        MUESTRA GUARDADA — NÚMERO DEFINITIVO
                       </p>
-                      <Button type="button" size="sm" variant="outline" onClick={iniciarNuevaMuestra}>
-                        Nueva muestra
-                      </Button>
+                      <p className="mt-1 text-3xl font-extrabold leading-none text-emerald-900">
+                        {rolloAsignado}
+                      </p>
+                      <p className="mt-2 text-xs text-emerald-800">
+                        ✓ Registro completado correctamente. Este número corresponde a la
+                        muestra actual y no cambiará al modificar su estatus.
+                      </p>
+                      <div className="mt-3 flex flex-wrap items-center gap-2">
+                        <Button type="button" size="sm" onClick={iniciarNuevaMuestra}>
+                          Nueva muestra
+                        </Button>
+                        <p className="text-[11px] text-emerald-800">
+                          Pulse “Nueva muestra” para iniciar el siguiente rollo y consultar
+                          el próximo consecutivo.
+                        </p>
+                      </div>
                     </div>
                   ) : (
-                    <p className="text-[11px] text-muted-foreground">
-                      PRÓXIMO NÚMERO ESTIMADO · no está reservado y puede cambiar si otro
-                      operador guarda antes. El número oficial se confirma al guardar.
-                    </p>
+                    <>
+                      <p className="text-[11px] font-semibold tracking-wide text-muted-foreground">
+                        PRÓXIMO NÚMERO ESTIMADO
+                      </p>
+                      <div className="flex h-11 items-center rounded-md border border-input bg-muted px-3 text-base font-semibold">
+                        {numeroRollo || "—"}
+                      </div>
+                      <p className="text-[11px] text-muted-foreground">
+                        Se confirmará al guardar la muestra. No está reservado y puede
+                        cambiar si otro operador guarda antes.
+                      </p>
+                    </>
                   )}
                 </>
+
               ) : (
                 <>
                   <div
