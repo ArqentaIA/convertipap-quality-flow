@@ -2296,7 +2296,23 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
         )}
 
         {spec && (
-          <div className="flex justify-end sticky bottom-0 bg-background/95 backdrop-blur py-3 border-t z-10">
+          <div className="sticky bottom-0 z-10 flex flex-wrap items-center justify-end gap-3 border-t bg-background/95 py-3 backdrop-blur">
+            {muestraGuardadaEnPantalla && (
+              <div className="flex flex-1 flex-wrap items-center gap-2 text-xs font-semibold text-amber-900">
+                <span className="rounded bg-amber-100 px-2 py-1">
+                  Muestra {rolloAsignado} ya guardada — para capturar el siguiente rollo pulse
+                  “Nueva muestra”.
+                </span>
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={iniciandoNueva}
+                  onClick={() => void iniciarNuevaMuestra()}
+                >
+                  {iniciandoNueva ? "Preparando…" : "Nueva muestra"}
+                </Button>
+              </div>
+            )}
             <Button
               size="lg"
               className={`text-base font-semibold transition-colors ${
@@ -2308,10 +2324,17 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
               onClick={() => handleSubmit("envio")}
             >
               <CheckCircle2 className="mr-2 h-5 w-5" />
-              {mutation.isPending ? "Validando..." : "Validar Captura"}
+              {mutation.isPending
+                ? "Validando..."
+                : muestraGuardadaEnPantalla
+                  ? "Pulse “Nueva muestra”"
+                  : iniciandoNueva
+                    ? "Preparando…"
+                    : "Validar Captura"}
             </Button>
           </div>
         )}
+
 
         {/* E. Producción capturada recientemente */}
         <Card id="produccion-capturada">
