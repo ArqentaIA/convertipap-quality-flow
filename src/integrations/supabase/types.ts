@@ -922,6 +922,7 @@ export type Database = {
           fuera_de_turno_motivo: string | null
           hora_muestreo: string
           id: string
+          idempotency_key: string | null
           jefe_maquina: string | null
           liberacion_justificacion: string | null
           liberado_at: string | null
@@ -980,6 +981,7 @@ export type Database = {
           fuera_de_turno_motivo?: string | null
           hora_muestreo?: string
           id?: string
+          idempotency_key?: string | null
           jefe_maquina?: string | null
           liberacion_justificacion?: string | null
           liberado_at?: string | null
@@ -1038,6 +1040,7 @@ export type Database = {
           fuera_de_turno_motivo?: string | null
           hora_muestreo?: string
           id?: string
+          idempotency_key?: string | null
           jefe_maquina?: string | null
           liberacion_justificacion?: string | null
           liberado_at?: string | null
@@ -2834,6 +2837,10 @@ export type Database = {
           _uniones: number
         }
         Returns: string
+      }
+      crear_muestra_con_mediciones: {
+        Args: { _idempotency: string; _mediciones: Json; _muestra: Json }
+        Returns: Json
       }
       descartar_borrador: {
         Args: { _motivo: string; _spec_id: string }
