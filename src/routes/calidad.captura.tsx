@@ -420,10 +420,8 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
 
   const numeracionAuto = numeracionQuery.data;
   const numeracionActiva = !!numeracionAuto?.activa;
-  // Número DEFINITIVO devuelto por la transacción de alta. Mientras exista, la
-  // pantalla NO se sustituye por el siguiente consecutivo (evita la confusión
-  // reportada al cambiar estatus o refrescar).
-  const [rolloAsignado, setRolloAsignado] = useState<string | null>(null);
+  // (rolloAsignado se declara arriba, antes de numeracionQuery)
+
   // Clave de idempotencia por intento de captura: protege contra doble submit,
   // timeout, pérdida de respuesta y F5/reload. Se PERSISTE en sessionStorage
   // por máquina, de modo que un remontaje del componente NO genera otro UUID.
