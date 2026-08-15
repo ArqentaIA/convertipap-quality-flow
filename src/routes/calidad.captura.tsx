@@ -404,14 +404,20 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
   // y NO consume números. Mientras no esté activa, el capturista sigue
   // escribiendo el número manualmente igual que hoy.
   // ---------------------------------------------------------------------------
+  // Número DEFINITIVO devuelto por la transacción de alta (declarado antes de la
+  // query para poder pausar el refetch mientras se trabaja la muestra guardada).
+  const [rolloAsignado, setRolloAsignado] = useState<string | null>(null);
   const numeracionQuery = useQuery({
     queryKey: ["numeracion-rollo", maquinaId],
     queryFn: () => getEstadoNumeracionRollo({ data: { maquina_id: maquinaId } }),
     enabled: hasAuthToken && !!maquinaId,
-    refetchInterval: 60_000,
+    // Con una muestra ya guardada en pantalla NO se consulta el próximo
+    // consecutivo: el número mostrado pertenece a la muestra actual.
+    refetchInterval: rolloAsignado ? false : 60_000,
     staleTime: 30_000,
     retry: false,
   });
+
   const numeracionAuto = numeracionQuery.data;
   const numeracionActiva = !!numeracionAuto?.activa;
   // Número DEFINITIVO devuelto por la transacción de alta. Mientras exista, la
