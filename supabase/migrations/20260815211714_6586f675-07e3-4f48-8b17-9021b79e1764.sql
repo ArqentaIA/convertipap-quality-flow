@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.asignar_numero_rollo(uuid) FROM authenticated;
