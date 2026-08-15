@@ -462,12 +462,32 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
 
   // Inicia explícitamente una NUEVA muestra: sólo aquí se consulta el próximo
   // consecutivo estimado y se renueva la clave de idempotencia.
-  function iniciarNuevaMuestra() {
-    setRolloAsignado(null);
-    renovarIdempotency();
-    setNumeroRollo("");
-    void numeracionQuery.refetch();
+  // Es determinístico: limpia TODO el estado de la muestra guardada, invalida la
+  // numeración cacheada y espera la respuesta fresca del servidor antes de
+  // habilitar de nuevo el guardado.
+  const [iniciandoNueva, setIniciandoNueva] = useState(false);
+  async function iniciarNuevaMuestra() {
+    setIniciandoNueva(true);
+    try {
+      setRolloAsignado(null);
+      setNumeroRollo("");
+      renovarIdempotency();
+      mutation.reset();
+      setUltimaEtiqueta(null);
+      setMuestraRecienId(null);
+      // Elimina el resultado anterior del cache para que no se muestre un valor stale.
+      queryClient.removeQueries({ queryKey: ["numeracion-rollo", maquinaId] });
+      await numeracionQuery.refetch();
+    } finally {
+      setIniciandoNueva(false);
+    }
   }
+
+  // Cambio de máquina: nunca conservar el número definitivo de otra máquina.
+  useEffect(() => {
+    setRolloAsignado(null);
+  }, [maquinaId]);
+
 
   const [horaMuestreo, setHoraMuestreo] = useState<string>(ahoraLocal);
   const [observaciones, setObservaciones] = useState<string>("");
