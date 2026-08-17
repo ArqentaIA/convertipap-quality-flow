@@ -94,8 +94,8 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
     }
   }, [auth.loading, auth.isAuthenticated, navigate]);
 
-  // Pesaje de Rollo (bobina madre): RESTRINGIDO temporalmente solo a administradores.
-  const isAdmin = auth.hasRole("administrador");
+  // Pesaje de Rollo (bobina madre): restringido a administradores y dirección/gerencia general.
+  const isAdmin = auth.hasRole("administrador") || auth.hasRole("gerente_general");
 
   // 2) Si está en una ruta sin permisos, mandarlo al primer módulo permitido.
   useEffect(() => {
