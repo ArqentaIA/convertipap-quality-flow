@@ -951,8 +951,12 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
         setNumeroRollo(asignado);
       } else {
         setNumeroRollo("");
-        renovarIdempotency();
       }
+      // La clave de idempotencia protege UN intento hasta tener respuesta
+      // confirmada del servidor. Confirmada la respuesta, se renueva SIEMPRE:
+      // así una clave ya consumida jamás se reutiliza en la siguiente captura
+      // (causa raíz de "capturé varias veces y no aparece el registro").
+      renovarIdempotency();
       setLiberarConJustif(false);
       setJustificacionLib("");
       setDefectos([]);
