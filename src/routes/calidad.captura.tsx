@@ -408,7 +408,21 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
   // ---------------------------------------------------------------------------
   // Número DEFINITIVO devuelto por la transacción de alta (declarado antes de la
   // query para poder pausar el refetch mientras se trabaja la muestra guardada).
-  const [rolloAsignado, setRolloAsignado] = useState<string | null>(null);
+  // Se PERSISTE por máquina: si el componente se remonta (cambio de estatus,
+  // navegación, F5, re-login) la pantalla sigue mostrando "MUESTRA GUARDADA" y
+  // no vuelve a un formulario en blanco con la clave de idempotencia ya usada.
+  const savedStorageKey = `qc:saved:${maquina.id}`;
+  const [rolloAsignado, setRolloAsignadoState] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    return window.sessionStorage.getItem(`qc:saved:${maquina.id}`);
+  });
+  const setRolloAsignado = (v: string | null) => {
+    if (typeof window !== "undefined") {
+      if (v) window.sessionStorage.setItem(savedStorageKey, v);
+      else window.sessionStorage.removeItem(savedStorageKey);
+    }
+    setRolloAsignadoState(v);
+  };
   const numeracionQuery = useQuery({
     queryKey: ["numeracion-rollo", maquinaId],
     queryFn: () => getEstadoNumeracionRollo({ data: { maquina_id: maquinaId } }),
@@ -486,9 +500,12 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
   }
 
   // Cambio de máquina: nunca conservar el número definitivo de otra máquina.
+  // Se recupera el estado guardado (si lo hay) de la máquina seleccionada.
   useEffect(() => {
-    setRolloAsignado(null);
-  }, [maquinaId]);
+    if (typeof window === "undefined") return;
+    setRolloAsignadoState(window.sessionStorage.getItem(savedStorageKey));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [savedStorageKey]);
 
 
   const [horaMuestreo, setHoraMuestreo] = useState<string>(ahoraLocal);
@@ -807,7 +824,11 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
 
   const mutation = useMutation({
     mutationFn: upsertFn,
-    onSuccess: async (res: { muestra_id: string; numero_rollo?: string }) => {
+    onSuccess: async (res: {
+      muestra_id: string;
+      numero_rollo?: string;
+      reintento?: boolean;
+    }) => {
       // Vincula el pesaje (si existe) antes de refrescar caches.
       const pesajeIdParaVincular = pesajeVinculado?.id ?? null;
       if (pesajeIdParaVincular) {
@@ -843,13 +864,24 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
         (m) => !CAMPOS_OBLIGATORIOS_CLAVES.includes(m.spec.clave) && m.input.valor === "",
       ).length;
       const descBase = "Agregada al listado de producción capturada.";
-      toast.success(`Muestra guardada (${folioToast})`, {
-        description:
-          noObligatoriosFaltantes > 0
-            ? `${descBase} Faltaron (${noObligatoriosFaltantes}) datos no obligatorios.`
-            : descBase,
-        duration: 5000,
-      });
+      if (res.reintento) {
+        // La operación NO creó un registro nuevo: el servidor devolvió la muestra
+        // previa asociada a la misma clave de operación. Nunca anunciarlo como
+        // guardado nuevo: es exactamente lo que provocaba "capturé y no aparece".
+        toast.warning(`Esta captura ya estaba registrada como ${res.numero_rollo ?? folioToast}`, {
+          description:
+            "No se creó un registro nuevo. Pulse «Nueva muestra» para capturar el siguiente rollo.",
+          duration: 9000,
+        });
+      } else {
+        toast.success(`Muestra guardada (${folioToast})`, {
+          description:
+            noObligatoriosFaltantes > 0
+              ? `${descBase} Faltaron (${noObligatoriosFaltantes}) datos no obligatorios.`
+              : descBase,
+          duration: 5000,
+        });
+      }
       setMuestraRecienId(res.muestra_id);
       setTimeout(() => {
         document.getElementById("produccion-capturada")?.scrollIntoView({
@@ -919,8 +951,12 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
         setNumeroRollo(asignado);
       } else {
         setNumeroRollo("");
-        renovarIdempotency();
       }
+      // La clave de idempotencia protege UN intento hasta tener respuesta
+      // confirmada del servidor. Confirmada la respuesta, se renueva SIEMPRE:
+      // así una clave ya consumida jamás se reutiliza en la siguiente captura
+      // (causa raíz de "capturé varias veces y no aparece el registro").
+      renovarIdempotency();
       setLiberarConJustif(false);
       setJustificacionLib("");
       setDefectos([]);
