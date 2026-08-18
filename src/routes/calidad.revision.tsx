@@ -253,7 +253,7 @@ function RevisionPage() {
     dictaminarMut.mutate({
       muestra_id: selected.id,
       dictamen,
-      motivo: motivo || "(sin motivo)",
+      motivo: motivo.trim(),
       observaciones: obsParts.filter(Boolean).join(" — "),
     });
   }
@@ -287,8 +287,14 @@ function RevisionPage() {
     if ((accion === "rechazar" || accion === "concesion") && !motivo.trim()) {
       toast.error("El motivo es obligatorio"); return;
     }
-    if (!motivo.trim() || motivo.trim().length < 5) {
-      toast.error("El motivo es obligatorio (mín. 5 caracteres)."); return;
+    // Motivo REAL obligatorio: mínimo 10 caracteres y nunca el nombre del dictamen.
+    if (motivo.trim().length < 10) {
+      toast.error("El motivo es obligatorio (mín. 10 caracteres) y debe expresar la razón real de la decisión.");
+      return;
+    }
+    if (MOTIVOS_NO_VALIDOS.has(motivo.trim().toLowerCase())) {
+      toast.error("Motivo no válido: describe la razón real de la decisión, no el nombre del dictamen.");
+      return;
     }
 
     // Doble validación electrónica antes de cambiar el estatus.
