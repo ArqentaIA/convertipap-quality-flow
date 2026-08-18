@@ -18,6 +18,7 @@ import { auditAction } from "@/lib/audit";
 import { getEffectiveStatus, toEtiquetaEstatus } from "@/lib/qc-effective-status";
 import { evaluateCriticalRule } from "@/lib/qc-critical-rule";
 import { useShiftTick } from "@/hooks/useCurrentShift";
+import { MOTIVO_MIN_LEN, validarMotivoEstatus } from "@/lib/motivo-estatus";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -806,6 +807,7 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
     "liberada",
   );
   const [liberarObservaciones, setLiberarObservaciones] = useState("");
+  const [liberarMotivo, setLiberarMotivo] = useState("");
   const liberarMutation = useMutation({
     mutationFn: dictaminarFn,
     onSuccess: async () => {
@@ -2530,6 +2532,7 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
             if (!open) {
               setLiberarMuestra(null);
               setLiberarObservaciones("");
+              setLiberarMotivo("");
             }
           }}
         >
@@ -2566,6 +2569,22 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
 
               <div className="space-y-2">
                 <Label>
+                  Motivo real del cambio de estatus{" "}
+                  <span className="text-destructive">*</span>
+                </Label>
+                <Textarea
+                  value={liberarMotivo}
+                  onChange={(e) => setLiberarMotivo(e.target.value)}
+                  placeholder="Razón real de la decisión (mínimo 10 caracteres). No se acepta el nombre del dictamen."
+                  rows={3}
+                />
+                <p className="text-xs text-muted-foreground">
+                  {liberarMotivo.trim().length}/{MOTIVO_MIN_LEN} caracteres mínimos · queda en auditoría.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label>
                   Observaciones del Gerente de Calidad{" "}
                   <span className="text-destructive">*</span>
                 </Label>
@@ -2587,6 +2606,7 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
                 onClick={() => {
                   setLiberarMuestra(null);
                   setLiberarObservaciones("");
+                  setLiberarMotivo("");
                 }}
               >
                 Cancelar
@@ -2595,15 +2615,18 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
                 disabled={
                   liberarMutation.isPending ||
                   liberarObservaciones.trim().length < 10 ||
+                  validarMotivoEstatus(liberarMotivo) !== null ||
                   !liberarMuestra
                 }
                 onClick={() => {
                   if (!liberarMuestra) return;
+                  const errMotivo = validarMotivoEstatus(liberarMotivo);
+                  if (errMotivo) { toast.error(errMotivo); return; }
                   liberarMutation.mutate({
                     data: {
                       muestra_id: liberarMuestra.id,
                       dictamen: liberarDictamen,
-                      motivo: liberarDictamen,
+                      motivo: liberarMotivo.trim(),
                       observaciones: liberarObservaciones.trim(),
                     },
                   });

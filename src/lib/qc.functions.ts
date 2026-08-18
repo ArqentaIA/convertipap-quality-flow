@@ -18,6 +18,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
+import { MOTIVOS_NO_VALIDOS, MOTIVO_MIN_LEN } from "./motivo-estatus";
 import {
   resolveRolloStatusFrom,
   type ResolveRolloInput,
@@ -845,14 +846,6 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
 // Prohibido volver a un UPDATE directo de estatus desde la aplicación.
 // -----------------------------------------------------------------------------
 
-/** Textos que NO constituyen un motivo real de decisión. */
-const MOTIVOS_NO_VALIDOS = new Set([
-  "liberada", "liberado", "liberacion", "liberación", "concesion", "concesión",
-  "rechazada", "rechazado", "no conforme", "noconforme", "nc", "l", "c",
-  "correccion_solicitada", "corrección solicitada", "sin motivo", "(sin motivo)",
-  "n/a", "na",
-]);
-
 export const dictaminarMuestra = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
@@ -863,7 +856,7 @@ export const dictaminarMuestra = createServerFn({ method: "POST" })
         motivo: z
           .string()
           .trim()
-          .min(10, "El motivo del cambio de estatus es obligatorio (mín. 10 caracteres) y debe expresar la razón real de la decisión.")
+          .min(MOTIVO_MIN_LEN, "El motivo del cambio de estatus es obligatorio (mín. 10 caracteres) y debe expresar la razón real de la decisión.")
           .refine(
             (v) => !MOTIVOS_NO_VALIDOS.has(v.toLowerCase()),
             "Motivo no válido: describe la razón real de la decisión, no el nombre del dictamen.",
