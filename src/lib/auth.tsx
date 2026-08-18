@@ -120,11 +120,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => sub.subscription.unsubscribe();
   }, []);
 
-  // Auto-cierre por inactividad (5 min sin interacción)
+  // Auto-cierre por inactividad (5 min sin interacción).
+  // Reglas industriales:
+  //  - NUNCA cierra la sesión mientras hay una operación crítica en curso
+  //    (guardado en vuelo o formulario de captura con datos).
+  //  - Avisa 60 s antes con opción de continuar, para no perder la captura.
   useEffect(() => {
     if (!session?.user) return;
     const IDLE_MS = 5 * 60 * 1000;
+    const WARN_MS = 60 * 1000;
     let timer: ReturnType<typeof setTimeout>;
+    let warnTimer: ReturnType<typeof setTimeout>;
+    let warned = false;
 
     const logout = async () => {
       try {
@@ -143,10 +150,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     const reset = () => {
+      warned = false;
       clearTimeout(timer);
+      clearTimeout(warnTimer);
+      warnTimer = setTimeout(() => {
+        if (isCriticalWorkActive()) return;
+        warned = true;
+        void (async () => {
+          try {
+            const { toast } = await import("sonner");
+            toast.warning("Su sesión se cerrará en 60 s por inactividad", {
+              id: "idle-warn",
+              duration: WARN_MS,
+              action: { label: "Continuar sesión", onClick: () => reset() },
+            });
+          } catch {
+            // sonner opcional
+          }
+        })();
+      }, IDLE_MS - WARN_MS);
       timer = setTimeout(() => {
+        // Captura en curso: no interrumpir. Se reinicia el ciclo.
+        if (isCriticalWorkActive()) {
+          reset();
+          return;
+        }
         void logout();
       }, IDLE_MS);
+      if (warned) warned = false;
     };
 
     const events: (keyof WindowEventMap)[] = [
@@ -165,14 +196,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (document.visibilityState === "visible") reset();
     };
     document.addEventListener("visibilitychange", onVisibility);
+    // Si termina una operación crítica, se reinicia el conteo desde cero.
+    const unsubCritical = subscribeCriticalWork(() => reset());
     reset();
 
     return () => {
       clearTimeout(timer);
+      clearTimeout(warnTimer);
+      unsubCritical();
       events.forEach((ev) => window.removeEventListener(ev, reset));
       document.removeEventListener("visibilitychange", onVisibility);
     };
   }, [session?.user?.id]);
+
 
 
   const value = useMemo<AuthState>(
