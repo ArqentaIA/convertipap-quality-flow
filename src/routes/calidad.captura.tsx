@@ -2700,10 +2700,6 @@ function buildEtiquetaFromMuestra(m: MuestraReciente): EtiquetaData {
       fueraSpec: md.estado === "no_conforme" || md.estado === "fuera_rango_critico",
     };
   });
-  // Estatus EFECTIVO — la etiqueta y el QR reflejan dictamen autorizado del
-  // Gerente de Calidad; sin autorización, un NC capturado o derivado de
-  // mediciones se MANTIENE en la etiqueta impresa y se preserva al reimprimir.
-  const eff = getEffectiveStatus(m as Parameters<typeof getEffectiveStatus>[0]);
   const est = (m as { estatus_liberacion?: string | null }).estatus_liberacion ?? null;
   const defectos = ((m as { defectos?: string[] | null }).defectos ?? []) as string[];
   // FUENTE CANÓNICA de la etiqueta/QR: estatus_liberacion (L/C/NC/NULL).
