@@ -864,13 +864,24 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
         (m) => !CAMPOS_OBLIGATORIOS_CLAVES.includes(m.spec.clave) && m.input.valor === "",
       ).length;
       const descBase = "Agregada al listado de producción capturada.";
-      toast.success(`Muestra guardada (${folioToast})`, {
-        description:
-          noObligatoriosFaltantes > 0
-            ? `${descBase} Faltaron (${noObligatoriosFaltantes}) datos no obligatorios.`
-            : descBase,
-        duration: 5000,
-      });
+      if (res.reintento) {
+        // La operación NO creó un registro nuevo: el servidor devolvió la muestra
+        // previa asociada a la misma clave de operación. Nunca anunciarlo como
+        // guardado nuevo: es exactamente lo que provocaba "capturé y no aparece".
+        toast.warning(`Esta captura ya estaba registrada como ${res.numero_rollo ?? folioToast}`, {
+          description:
+            "No se creó un registro nuevo. Pulse «Nueva muestra» para capturar el siguiente rollo.",
+          duration: 9000,
+        });
+      } else {
+        toast.success(`Muestra guardada (${folioToast})`, {
+          description:
+            noObligatoriosFaltantes > 0
+              ? `${descBase} Faltaron (${noObligatoriosFaltantes}) datos no obligatorios.`
+              : descBase,
+          duration: 5000,
+        });
+      }
       setMuestraRecienId(res.muestra_id);
       setTimeout(() => {
         document.getElementById("produccion-capturada")?.scrollIntoView({
