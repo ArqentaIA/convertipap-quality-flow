@@ -666,6 +666,9 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
     // -------------------------------------------------------------------------
     let numeroRolloFinal = data.numero_rollo;
     let muestraId = data.muestra_id;
+    // true cuando la RPC NO creó nada porque la clave de idempotencia ya fue
+    // consumida: devuelve la muestra anterior. Debe avisarse al capturista.
+    let reintentoIdempotente = false;
 
     if (!muestraId) {
       const { data: res, error: eRpc } = await (
