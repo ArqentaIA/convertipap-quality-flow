@@ -2345,7 +2345,8 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
             >
               <CheckCircle2 className="mr-2 h-5 w-5" />
               {mutation.isPending
-                ? "Validando..."
+                ? "GUARDANDO MUESTRA — NO REPITA LA CAPTURA"
+
                 : muestraGuardadaEnPantalla
                   ? "Pulse “Nueva muestra”"
                   : iniciandoNueva
