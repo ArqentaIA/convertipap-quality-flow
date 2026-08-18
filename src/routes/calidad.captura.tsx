@@ -500,9 +500,12 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
   }
 
   // Cambio de máquina: nunca conservar el número definitivo de otra máquina.
+  // Se recupera el estado guardado (si lo hay) de la máquina seleccionada.
   useEffect(() => {
-    setRolloAsignado(null);
-  }, [maquinaId]);
+    if (typeof window === "undefined") return;
+    setRolloAsignadoState(window.sessionStorage.getItem(savedStorageKey));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [savedStorageKey]);
 
 
   const [horaMuestreo, setHoraMuestreo] = useState<string>(ahoraLocal);
