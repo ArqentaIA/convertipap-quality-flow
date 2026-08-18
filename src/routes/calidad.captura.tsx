@@ -408,7 +408,21 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
   // ---------------------------------------------------------------------------
   // Número DEFINITIVO devuelto por la transacción de alta (declarado antes de la
   // query para poder pausar el refetch mientras se trabaja la muestra guardada).
-  const [rolloAsignado, setRolloAsignado] = useState<string | null>(null);
+  // Se PERSISTE por máquina: si el componente se remonta (cambio de estatus,
+  // navegación, F5, re-login) la pantalla sigue mostrando "MUESTRA GUARDADA" y
+  // no vuelve a un formulario en blanco con la clave de idempotencia ya usada.
+  const savedStorageKey = `qc:saved:${maquina.id}`;
+  const [rolloAsignado, setRolloAsignadoState] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    return window.sessionStorage.getItem(`qc:saved:${maquina.id}`);
+  });
+  const setRolloAsignado = (v: string | null) => {
+    if (typeof window !== "undefined") {
+      if (v) window.sessionStorage.setItem(savedStorageKey, v);
+      else window.sessionStorage.removeItem(savedStorageKey);
+    }
+    setRolloAsignadoState(v);
+  };
   const numeracionQuery = useQuery({
     queryKey: ["numeracion-rollo", maquinaId],
     queryFn: () => getEstadoNumeracionRollo({ data: { maquina_id: maquinaId } }),
