@@ -21,6 +21,7 @@
 // NO se modifican tablas, RLS ni migraciones.
 // =============================================================================
 
+import { getEstadoOficial } from "./qc-estado-oficial";
 import type { MuestraCalidad, AjusteCalidad } from "./qc-types";
 
 export type RolloStatusKey =
