@@ -910,8 +910,8 @@ export const dictaminarMuestra = createServerFn({ method: "POST" })
       p_dictamen: data.dictamen,
       p_motivo: data.motivo,
       p_observaciones: data.observaciones,
-      p_ip: ip,
-      p_user_agent: ua,
+      p_ip: ip ?? undefined,
+      p_user_agent: ua ?? undefined,
     });
     // Sin try/catch mudo: si la transacción (estatus + evidencia) falla, falla todo.
     if (error) {
