@@ -1,6 +1,8 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { isCriticalWorkActive, subscribeCriticalWork } from "@/lib/idle-guard";
+
 import type { Session, User } from "@supabase/supabase-js";
 
 export type AppRole =
