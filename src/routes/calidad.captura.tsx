@@ -802,6 +802,7 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
     onError: (e: Error) => toast.error(e.message || "No se pudo actualizar el estatus"),
   });
 
+
   const mutation = useMutation({
     mutationFn: upsertFn,
     onSuccess: async (res: { muestra_id: string; numero_rollo?: string }) => {
