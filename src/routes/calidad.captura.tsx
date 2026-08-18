@@ -1207,6 +1207,14 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
   // captura NO puede guardar de nuevo (evita estados híbridos "formulario nuevo
   // + muestra anterior guardada").
   const muestraGuardadaEnPantalla = numeracionActiva && !!rolloAsignado;
+
+  // Protege la captura frente al cierre automático por inactividad.
+  const trabajoCritico = mutation.isPending || (hayCapturaEnCurso && !muestraGuardadaEnPantalla);
+  useEffect(() => {
+    setCriticalWork("qc-captura", trabajoCritico);
+    return () => setCriticalWork("qc-captura", false);
+  }, [trabajoCritico]);
+
   const puedeEnviar =
     !isBlocked &&
     !mutation.isPending &&
