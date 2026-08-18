@@ -63,6 +63,8 @@ import {
 } from "@/components/ui/dialog";
 import { getAppSettings } from "@/lib/settings.functions";
 import { cn } from "@/lib/utils";
+import { setCriticalWork } from "@/lib/idle-guard";
+
 import {
   DEFECTOS_VISUALES_CATALOGO,
   VARIABLES_TECNICAS_DIMENSIONALES,
@@ -753,6 +755,15 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
   const justifTrimmed = justificacionLib.trim();
   const justifValida = justifTrimmed.length >= 10;
 
+  // Guarda de inactividad: mientras exista captura en curso (mediciones
+  // escritas y aún no guardadas) o un guardado en vuelo, la sesión NO se cierra
+  // por inactividad. Evita perder la captura y tener que repetirla.
+  const hayCapturaEnCurso = useMemo(
+    () => evalMediciones.some((m) => String(m.input.valor ?? "").trim() !== ""),
+    [evalMediciones],
+  );
+
+
   // Si el rollo CUMPLE limpiar cualquier flag previo de justificación.
   useEffect(() => {
     if (!fuerzaNCPorReglaCritica && (liberarConJustif || justificacionLib !== "")) {
@@ -792,6 +803,7 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
     },
     onError: (e: Error) => toast.error(e.message || "No se pudo actualizar el estatus"),
   });
+
 
   const mutation = useMutation({
     mutationFn: upsertFn,
@@ -1195,6 +1207,14 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
   // captura NO puede guardar de nuevo (evita estados híbridos "formulario nuevo
   // + muestra anterior guardada").
   const muestraGuardadaEnPantalla = numeracionActiva && !!rolloAsignado;
+
+  // Protege la captura frente al cierre automático por inactividad.
+  const trabajoCritico = mutation.isPending || (hayCapturaEnCurso && !muestraGuardadaEnPantalla);
+  useEffect(() => {
+    setCriticalWork("qc-captura", trabajoCritico);
+    return () => setCriticalWork("qc-captura", false);
+  }, [trabajoCritico]);
+
   const puedeEnviar =
     !isBlocked &&
     !mutation.isPending &&
@@ -2325,7 +2345,8 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
             >
               <CheckCircle2 className="mr-2 h-5 w-5" />
               {mutation.isPending
-                ? "Validando..."
+                ? "GUARDANDO MUESTRA — NO REPITA LA CAPTURA"
+
                 : muestraGuardadaEnPantalla
                   ? "Pulse “Nueva muestra”"
                   : iniciandoNueva
