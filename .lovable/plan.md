@@ -1,48 +1,75 @@
-# Fase 3 — Flujo Borrador / Revisión / Publicación (APROBADO con ajustes)
+# Auditoría de trazabilidad — Registro de rollos, cambio de estatus y liberación
 
-## Principio rector
-- `producto_especificaciones.estado='vigente'` sigue siendo la única fuente leída por QC, reportes, QR y MP-04…MP-07.
-- Edición SIEMPRE sobre una fila `borrador` (o `en_revision`); nunca sobre la `vigente`.
-- Publicar = `vigente → obsoleta` y `borrador → vigente`, atómico. Cada versión conserva SUS propios `spec_documentos` (no se re-apuntan).
-- Descartar = `borrador → descartada` (UPDATE, sin DELETE). No se borra historial.
+Auditoría READ ONLY del proceso global (captura en Control de Calidad y en Captura fuera de turno, dictamen/liberación, etiquetas/QR y bitácora). Datos verificados sobre la base productiva: 4,853 muestras, 225,800 registros de bitácora.
 
-## Migración (un solo archivo)
-1. Enum `spec_status`: `ADD VALUE 'en_revision'`, `ADD VALUE 'descartada'`. (Ya existen `borrador`, `vigente`, `obsoleta`.)
-2. `producto_especificaciones`: nuevas columnas
-   - `borrador_de uuid REFERENCES producto_especificaciones(id)`
-   - `enviado_revision_por uuid`, `enviado_revision_at timestamptz`
-   - `publicado_por uuid`, `publicado_at timestamptz`
-   - `motivo_cambio text`
-   - `descartado_por uuid`, `descartado_at timestamptz`, `motivo_descarte text`
-3. Índices únicos parciales:
-   - una sola `vigente` por producto
-   - un solo `borrador|en_revision` activo por producto (excluye `descartada` y `obsoleta`)
-4. RPCs SECURITY DEFINER (rol calidad/administrador):
-   - `crear_borrador_especificacion(_producto_id uuid, _motivo text)` → clona caracteristicas + producto_variables; idempotente.
-   - `enviar_a_revision(_spec_id uuid, _motivo text)`
-   - `publicar_especificacion(_spec_id uuid, _motivo text)` → si flag ON exige evidencia vigente en el BORRADOR; vigente→obsoleta, borrador→vigente. NO re-apunta documentos.
-   - `descartar_borrador(_spec_id uuid, _motivo text)` → estado='descartada'; conserva producto_variables y documentos.
-5. GRANT EXECUTE a `authenticated` en las 4 RPCs.
+## Lo que SÍ está correcto (no se toca)
 
-## Server functions
-- Nuevo `src/lib/spec-publicacion.functions.ts`: `obtenerEstadoEspecificacion`, `crearBorrador`, `enviarARevision`, `publicarVersion`, `descartarBorrador`.
-- `qc.functions.ts` (mínimo):
-  - `registrarSpecAuditByCode` y `updateCaracteristicasByCode`: resolver SIEMPRE a la spec borrador/en_revision; si la única que existe es `vigente`, rechazar con "Primero crea un borrador para modificar esta especificación."
-  - Guard de evidencia (flag ON) ahora se evalúa sobre la spec borrador.
-  - `listEspecsActivasConVariables`: devuelve la spec `vigente` (read-only) y, si existe, datos del `borrador` (id, version, variables, caracteristicas, evidencia).
-  - Lecturas QC/QR/MP-04…07: SIN CAMBIOS, siguen leyendo `vigente`.
-- `spec-documentos.functions.ts`:
-  - `subirDocumento` y `getEvidenciaEstado` aceptan `target: 'vigente' | 'borrador'`.
-  - `resolveSpecIdByProductCode` explícita el filtro `estado='vigente'`; nuevo overload por target.
+- Numeración consecutiva por máquina: transacción única con bloqueo de fila, idempotente, igual en ambos módulos de captura. 0 números duplicados.
+- Coherencia estado/estatus: 100% consistente (liberada/L, rechazada/NC, concesion/C, pendiente/NULL).
+- Sin mediciones huérfanas, sin muestras sin mediciones.
+- Bitácora automática por disparador de base de datos sobre muestras y mediciones (208 mil eventos): toda alta y edición sí queda registrada a nivel base.
 
-## UI `src/routes/variables-calidad.tsx`
-- Panel "Versiones" con dos tarjetas: Vigente (read-only) y Borrador (editable o "Sin borrador").
-- Botones: `Crear borrador`, `Enviar a revisión`, `Publicar versión`, `Descartar borrador`, `Subir evidencia al borrador`.
-- Tabla de variables editable SOLO cuando hay borrador; sin borrador, tabla en modo solo-lectura mostrando la vigente.
-- Banner: "Los cambios no impactan producción hasta publicar."
-- Indicador "Evidencia obligatoria: Activa/Inactiva" se mantiene.
+## Hallazgos (con evidencia)
 
-## Restricciones
-- Cero cambios en MP-04, MP-05, MP-06, MP-07, QR, reportes, `ensure_orden_auto`, `productos`, `variables_calidad`, `muestras_calidad`, `mediciones_calidad`.
-- No se elimina ningún registro histórico.
-- RLS existente sin tocar (RPCs son SECURITY DEFINER).
+### H1 — CRÍTICO: el evento "cambio de estatus" casi nunca se registra con su motivo
+La bitácora de dictamen se escribe desde el servidor con una inserción directa envuelta en un `try/catch` mudo, pero la política de seguridad de `audit_log` solo permite insertar a `administrador`. Resultado real: **1,506 dictámenes emitidos y solo 3 eventos `STATUS_CHANGE` registrados**. Todo lo demás falló en silencio.
+Consecuencia: no hay evidencia formal de quién liberó/rechazó, con qué IP, dispositivo ni motivo. Es exactamente el registro que exige una auditoría de calidad.
+
+### H2 — CRÍTICO: el motivo del dictamen no es un motivo
+`dictamen_motivo` guarda literalmente la palabra del dictamen ("concesion", "liberada"). **0 de 1,506 dictámenes tienen un motivo real de al menos 10 caracteres.** La pantalla envía el propio dictamen como motivo; las observaciones del gerente sí se guardan aparte, pero el campo de motivo —el que consultan los reportes y la bitácora— está vacío de contenido.
+
+### H3 — ALTO: existe una función de base de datos oficial para cambio de estatus que nadie usa
+`change_roll_status` implementa lo correcto: verificación de rol, motivo obligatorio ≥10 caracteres, bloqueo de la fila, y escritura garantizada de la bitácora con IP, dispositivo, planta, máquina, laboratorio, folio y estatus anterior/nuevo. El código de la aplicación la ignora y hace una actualización directa sin bloqueo ni garantía de bitácora. De ahí nacen H1 y H2.
+
+### H4 — ALTO: el resolvedor de estatus puede devolver "indefinido"
+`src/lib/roll-status.ts` decide el estatus para QR/etiqueta/reportes leyendo `dictamen`/`estado`, y su bloque final no contempla `pendiente_dictamen`. Hoy hay **394 muestras en ese estado**: al consultarlas por QR el resolvedor no devuelve valor. Además usa una fuente distinta a `qc-estado-oficial.ts` (que usa `estatus_liberacion`), y la etiqueta de impresión lee los campos crudos por su cuenta: **cuatro caminos distintos para el mismo dato**.
+
+### H5 — MEDIO: dictamen y autorización se ejecutan en un solo paso
+La pantalla llama dictaminar y autorizar en la misma acción y el mismo rol firma ambos. La regla documentada (dictamen técnico + autorización gerencial) no se cumple, y la propia función marca `autorizado_por` automáticamente.
+
+### H6 — MEDIO: liberación automática sin evento propio
+2,281 rollos tienen estatus L asignado automáticamente por la regla de especificación (sin firma humana). Es correcto por diseño, pero no existe un evento explícito "liberación automática por cumplimiento de especificación" en la bitácora, así que en una auditoría externa no se distingue de una liberación firmada.
+
+### H7 — MEDIO: acciones sin registro
+No se registran: vinculación de pesaje a muestra, impresión del PDF de detalle de rollo, ni la autorización cuando se invoca sola.
+
+### H8 — MEDIO: trazabilidad de autoría en ediciones
+Al editar una muestra se sobrescribe `capturado_por` con el último editor: se pierde el capturista original. El motivo de edición posterior a dictamen es un texto fijo genérico, no el motivo real del usuario.
+
+### H9 — INFORMATIVO: 4,816 de 4,853 muestras sin pesaje vinculado
+La cadena rollo → peso físico está prácticamente sin enlazar.
+
+## Soluciones propuestas
+
+Aplican por igual a **Control de Calidad** y a **Captura fuera de turno** (comparten componente y servidor).
+
+1. **Enrutar todo cambio de estatus por `change_roll_status`** (H1, H2, H3, H5).
+   Reescribir `dictaminarMuestra` para invocar la función de base de datos en vez de actualizar la tabla: bloqueo de fila, motivo obligatorio real, bitácora garantizada por función privilegiada (ya no depende de la política de inserción). Se extiende la función para recibir también `observaciones` y el rol autorizador, conservando el comportamiento actual de estatus. Se elimina la inserción directa a `audit_log` con `try/catch` mudo.
+
+2. **Motivo real obligatorio** (H2).
+   La pantalla de cambio de estatus deja de enviar el dictamen como motivo: envía el texto escrito por el gerente, validado en cliente y servidor con mínimo 10 caracteres. Sin motivo, no hay cambio de estatus.
+
+3. **Bitácora que no puede fallar en silencio** (H1).
+   Toda escritura de bitácora pasa por la función `audit_action` (privilegiada). Si falla, el error se propaga en las acciones críticas (cambio de estatus) en lugar de descartarse.
+
+4. **Fuente única de verdad del estatus** (H4).
+   `estatus_liberacion` queda como único origen. `roll-status.ts` se reescribe para derivar de ese campo con caso por defecto explícito (nunca devuelve indefinido) y `pendiente_dictamen` mapeado a "Pendiente de dictamen". La etiqueta de impresión y el visor QR consumen la misma función. Se conservan las advertencias de inconsistencia (edición posterior al dictamen, ajustes abiertos).
+
+5. **Evento explícito de liberación automática** (H6).
+   La función que recalcula el estatus registra en bitácora `LIBERACION_AUTOMATICA` con las variables evaluadas, para distinguir liberación por especificación de liberación firmada.
+
+6. **Registrar las acciones faltantes** (H7): vinculación de pesaje, impresión de PDF de detalle y autorización individual.
+
+7. **Preservar autoría original** (H8): `capturado_por` deja de sobrescribirse en edición; se añade motivo real de edición capturado del usuario cuando la muestra ya tiene dictamen.
+
+8. **Reporte de integridad** (verificación): consulta administrativa que lista rollos con estatus sin evento de bitácora asociado, dictámenes sin motivo válido y muestras en estado indefinido, para cierre documental.
+
+## Sin cambios retroactivos automáticos
+
+Los 1,506 dictámenes históricos sin motivo y sin evento no se reescriben: alterarlos destruiría la evidencia real. Se propone dejarlos identificados en el reporte de integridad del punto 8 y, si Dirección lo requiere, registrar una nota de regularización fechada.
+
+## Alcance técnico
+
+- Base de datos: extender `change_roll_status`, añadir evento de liberación automática en `qc_recalc_estatus_muestra`, función de reporte de integridad.
+- Servidor: `src/lib/qc.functions.ts` (dictaminar, autorizar, upsert), `src/lib/pesajes.functions.ts`.
+- Cliente: `src/routes/calidad.captura.tsx`, `src/routes/calidad.revision.tsx`, `src/components/qc/DetalleCalidadModal.tsx`, `src/lib/roll-status.ts`, `src/lib/etiqueta-liberacion.ts`.
