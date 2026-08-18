@@ -4,8 +4,11 @@
 //
 // Reglas (acordadas con operación):
 //
-//  1. La fuente única de verdad es el dictamen de Calidad más reciente
-//     asociado al rollo (`MuestraCalidad.dictamen` / `MuestraCalidad.estado`).
+//  1. La fuente ÚNICA y canónica es `muestras_calidad.estatus_liberacion`:
+//     L → Liberado · C → Liberado con concesión · NC → No Conforme ·
+//     NULL → Pendiente de dictamen. `dictamen` y `estado` son información
+//     complementaria y NUNCA prevalecen en la presentación oficial.
+//     Nunca se devuelve undefined.
 //  2. Estados permitidos:
 //        pendiente_revision · liberado · liberado_concesion ·
 //        en_ajuste · reproceso · rechazado · inconsistencia
