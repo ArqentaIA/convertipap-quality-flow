@@ -824,7 +824,11 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
 
   const mutation = useMutation({
     mutationFn: upsertFn,
-    onSuccess: async (res: { muestra_id: string; numero_rollo?: string }) => {
+    onSuccess: async (res: {
+      muestra_id: string;
+      numero_rollo?: string;
+      reintento?: boolean;
+    }) => {
       // Vincula el pesaje (si existe) antes de refrescar caches.
       const pesajeIdParaVincular = pesajeVinculado?.id ?? null;
       if (pesajeIdParaVincular) {
