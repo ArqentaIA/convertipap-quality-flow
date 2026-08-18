@@ -63,6 +63,8 @@ import {
 } from "@/components/ui/dialog";
 import { getAppSettings } from "@/lib/settings.functions";
 import { cn } from "@/lib/utils";
+import { setCriticalWork } from "@/lib/idle-guard";
+
 import {
   DEFECTOS_VISUALES_CATALOGO,
   VARIABLES_TECNICAS_DIMENSIONALES,
