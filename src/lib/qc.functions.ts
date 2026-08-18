@@ -701,10 +701,13 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
         if (/duplicate key|unique/i.test(eRpc.message)) throw new Error(ROLLO_DUPLICADO_MSG);
         throw new Error(eRpc.message);
       }
-      const out = res as { muestra_id: string; numero_rollo: string } | null;
+      const out = res as
+        | { muestra_id: string; numero_rollo: string; reintento?: boolean }
+        | null;
       if (!out?.muestra_id) throw new Error("No se pudo crear la muestra.");
       muestraId = out.muestra_id;
       numeroRolloFinal = out.numero_rollo;
+      reintentoIdempotente = !!out.reintento;
     } else {
       // EDICIÓN: conserva su número de rollo; sólo se valida unicidad contra otras.
       const { data: dup, error: eDup } = await sb
