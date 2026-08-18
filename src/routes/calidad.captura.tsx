@@ -15,7 +15,8 @@ import {
 } from "lucide-react";
 import { printEtiquetaLiberacion, type EtiquetaData } from "@/lib/etiqueta-liberacion";
 import { auditAction } from "@/lib/audit";
-import { getEffectiveStatus, toEtiquetaEstatus } from "@/lib/qc-effective-status";
+import { getEffectiveStatus } from "@/lib/qc-effective-status";
+import { toEtiquetaEstatusOficial } from "@/lib/qc-estado-oficial";
 import { evaluateCriticalRule } from "@/lib/qc-critical-rule";
 import { useShiftTick } from "@/hooks/useCurrentShift";
 import { MOTIVO_MIN_LEN, validarMotivoEstatus } from "@/lib/motivo-estatus";
@@ -2705,7 +2706,10 @@ function buildEtiquetaFromMuestra(m: MuestraReciente): EtiquetaData {
   const eff = getEffectiveStatus(m as Parameters<typeof getEffectiveStatus>[0]);
   const est = (m as { estatus_liberacion?: string | null }).estatus_liberacion ?? null;
   const defectos = ((m as { defectos?: string[] | null }).defectos ?? []) as string[];
-  const estatus: EtiquetaData["estatus"] = toEtiquetaEstatus(eff.key);
+  // FUENTE CANÓNICA de la etiqueta/QR: estatus_liberacion (L/C/NC/NULL).
+  const estatus: EtiquetaData["estatus"] = toEtiquetaEstatusOficial(
+    m as { estatus_liberacion?: string | null; liberado_con_justificacion?: boolean | null },
+  );
   return {
     muestraId: m.id,
     folio,

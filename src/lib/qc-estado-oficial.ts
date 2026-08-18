@@ -111,3 +111,24 @@ export function resumirEstadoOficial(
     pct_liberacion: total > 0 ? ((l + c) / total) * 100 : 0,
   };
 }
+
+/**
+ * Etiqueta impresa / QR: estatus derivado EXCLUSIVAMENTE de estatus_liberacion.
+ * NULL → "PENDIENTE" (Pendiente de dictamen). Nunca devuelve undefined.
+ */
+export function toEtiquetaEstatusOficial(
+  m: (EstadoOficialInput & { liberado_con_justificacion?: boolean | null }) | null | undefined,
+):
+  | "NO CONFORME"
+  | "LIBERADO"
+  | "LIBERADO CON CONCESIÓN"
+  | "LIBERADO C/JUSTIF"
+  | "PENDIENTE" {
+  const e = getEstadoOficial(m);
+  if (e.es_liberado_normal) {
+    return m?.liberado_con_justificacion ? "LIBERADO C/JUSTIF" : "LIBERADO";
+  }
+  if (e.es_concesion) return "LIBERADO CON CONCESIÓN";
+  if (e.es_no_conforme) return "NO CONFORME";
+  return "PENDIENTE";
+}
