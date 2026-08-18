@@ -9,6 +9,7 @@ import { useServerFn } from "@tanstack/react-start";
 import {
   useMutation, useQueryClient, useSuspenseQuery, queryOptions,
 } from "@tanstack/react-query";
+import { MOTIVO_MIN_LEN, validarMotivoEstatus } from "@/lib/motivo-estatus";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -253,7 +254,7 @@ function RevisionPage() {
     dictaminarMut.mutate({
       muestra_id: selected.id,
       dictamen,
-      motivo: motivo || "(sin motivo)",
+      motivo: motivo.trim(),
       observaciones: obsParts.filter(Boolean).join(" — "),
     });
   }
@@ -287,9 +288,9 @@ function RevisionPage() {
     if ((accion === "rechazar" || accion === "concesion") && !motivo.trim()) {
       toast.error("El motivo es obligatorio"); return;
     }
-    if (!motivo.trim() || motivo.trim().length < 5) {
-      toast.error("El motivo es obligatorio (mín. 5 caracteres)."); return;
-    }
+    // Motivo REAL obligatorio (espejo de la validación server-side).
+    const errMotivo = validarMotivoEstatus(motivo);
+    if (errMotivo) { toast.error(errMotivo); return; }
 
     // Doble validación electrónica antes de cambiar el estatus.
     setReauthOpen(true);
@@ -644,12 +645,10 @@ function RevisionPage() {
             )}
             <div className="space-y-1.5">
               <Label>
-                {accion === "liberar"
-                  ? "Motivo (opcional)"
-                  : "Motivo / justificación (obligatorio)"}
+                Motivo real de la decisión (obligatorio, mín. {MOTIVO_MIN_LEN} caracteres)
               </Label>
               <Textarea rows={3} value={motivo} onChange={(e) => setMotivo(e.target.value)}
-                placeholder="Describe la decisión…" />
+                placeholder="Razón real de la decisión. No se acepta el nombre del dictamen." />
             </div>
             {(accion === "liberar" || accion === "concesion" || accion === "rechazar") && (
               <div className="space-y-1.5">

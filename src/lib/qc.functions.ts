@@ -18,6 +18,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
+import { MOTIVOS_NO_VALIDOS, MOTIVO_MIN_LEN } from "./motivo-estatus";
 import {
   resolveRolloStatusFrom,
   type ResolveRolloInput,
@@ -836,6 +837,15 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
     };
   });
 
+// -----------------------------------------------------------------------------
+// Cambio de estatus / dictamen — ÚNICA RUTA AUTORIZADA.
+// Se ejecuta exclusivamente vía la función de dominio `change_roll_status`:
+// una sola transacción con auth.uid(), validación de rol server-side,
+// bloqueo FOR UPDATE de la muestra, motivo real obligatorio y registro de
+// auditoría indivisible (si la evidencia falla → ROLLBACK total).
+// Prohibido volver a un UPDATE directo de estatus desde la aplicación.
+// -----------------------------------------------------------------------------
+
 export const dictaminarMuestra = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
@@ -843,7 +853,14 @@ export const dictaminarMuestra = createServerFn({ method: "POST" })
       .object({
         muestra_id: z.string().uuid(),
         dictamen: z.enum(["liberada", "rechazada", "concesion", "correccion_solicitada"]),
-        motivo: z.string().min(1),
+        motivo: z
+          .string()
+          .trim()
+          .min(MOTIVO_MIN_LEN, "El motivo del cambio de estatus es obligatorio (mín. 10 caracteres) y debe expresar la razón real de la decisión.")
+          .refine(
+            (v) => !MOTIVOS_NO_VALIDOS.has(v.toLowerCase()),
+            "Motivo no válido: describe la razón real de la decisión, no el nombre del dictamen.",
+          ),
         observaciones: z
           .string()
           .trim()
@@ -856,22 +873,6 @@ export const dictaminarMuestra = createServerFn({ method: "POST" })
     const roles = await getUserRoles(sb, context.userId);
     requireRollStatusRole(roles);
 
-    // Snapshot previo — sirve como evidencia de qué se modificó.
-    const { data: prev } = await sb
-      .from("muestras_calidad")
-      .select("dictamen, estatus_liberacion, estado, autorizado_por, planta_id, maquina_id, numero_rollo")
-      .eq("id", data.muestra_id)
-      .maybeSingle();
-
-    const now = new Date().toISOString();
-    const estatusLiberacion =
-      data.dictamen === "liberada"
-        ? "L"
-        : data.dictamen === "concesion"
-          ? "C"
-          : data.dictamen === "rechazada"
-            ? "NC"
-            : null; // correccion_solicitada: sin estatus mientras Producción corrige
     const nuevoEstado =
       data.dictamen === "liberada"
         ? "liberada"
@@ -879,65 +880,38 @@ export const dictaminarMuestra = createServerFn({ method: "POST" })
           ? "rechazada"
           : data.dictamen === "concesion"
             ? "concesion"
-            : ("pendiente_dictamen" as Database["public"]["Enums"]["qc_muestra_estado"]);
-    const { error } = await sb
-      .from("muestras_calidad")
-      .update({
-        dictamen: data.dictamen as Database["public"]["Enums"]["qc_dictamen"],
-        dictamen_motivo: data.motivo,
-        dictamen_observaciones: data.observaciones,
-        dictamen_at: now,
-        revisado_por: context.userId,
-        revisado_at: now,
-        autorizado_por: context.userId,
-        autorizado_at: now,
-        rol_autorizador: "calidad",
-        estatus_liberacion: estatusLiberacion,
-        estado: nuevoEstado,
-      })
-      .eq("id", data.muestra_id);
-    if (error) throw new Error(error.message);
+            : "pendiente_dictamen";
 
-    // Auditoría enriquecida: usuario, IP, dispositivo, planta, máquina, lab,
-    // folio, estatus anterior/nuevo, motivo. Inalterable por RLS.
+    // IP/dispositivo: solo si la infraestructura los provee. Nunca se inventan.
+    let ip: string | null = null;
+    let ua: string | null = null;
     try {
       const { getRequest } = await import("@tanstack/react-start/server");
       const req = getRequest();
       // IP auténtica de Cloudflare (cf-connecting-ip). No usar x-forwarded-for:
       // es manipulable por el cliente y puede falsificar la trazabilidad.
-      const ip = req?.headers.get("cf-connecting-ip") ?? null;
-      const ua = req?.headers.get("user-agent") ?? null;
-      let lab: string | null = null;
-      let codigoMaquina: string | null = null;
-      if (prev?.maquina_id) {
-        const { data: m } = await sb.from("maquinas").select("codigo").eq("id", prev.maquina_id).maybeSingle();
-        codigoMaquina = m?.codigo ?? null;
-        if (codigoMaquina === "MP-06" || codigoMaquina === "MP-07") lab = "norte";
-        else if (codigoMaquina === "MP-04" || codigoMaquina === "MP-05") lab = "sur";
-      }
-      await (sb as unknown as { from: (t: string) => { insert: (v: unknown) => Promise<unknown> } })
-        .from("audit_log")
-        .insert({
-          tabla_afectada: "muestras_calidad",
-          operacion: "STATUS_CHANGE",
-          registro_id: data.muestra_id,
-          datos_anteriores: { estado: prev?.estado ?? null, dictamen: prev?.dictamen ?? null, estatus_liberacion: prev?.estatus_liberacion ?? null },
-          datos_nuevos: { dictamen: data.dictamen, estatus_liberacion: estatusLiberacion },
-          usuario_id: context.userId,
-          modulo: "control_calidad",
-          descripcion_accion: `Dictamen ${data.dictamen}`,
-          ip_address: ip,
-          user_agent: ua,
-          planta_id: prev?.planta_id ?? null,
-          maquina_id: prev?.maquina_id ?? null,
-          laboratorio: lab,
-          folio_rollo: prev?.numero_rollo ?? null,
-          estatus_anterior: prev?.estatus_liberacion ?? prev?.estado ?? null,
-          estatus_nuevo: estatusLiberacion,
-          motivo: data.motivo,
-        });
+      ip = req?.headers.get("cf-connecting-ip") ?? null;
+      ua = req?.headers.get("user-agent") ?? null;
     } catch {
-      /* audit best-effort */
+      ip = null;
+      ua = null;
+    }
+
+    const { error } = await sb.rpc("change_roll_status", {
+      p_muestra_id: data.muestra_id,
+      p_nuevo_estado: nuevoEstado,
+      p_dictamen: data.dictamen,
+      p_motivo: data.motivo,
+      p_observaciones: data.observaciones,
+      p_ip: ip ?? undefined,
+      p_user_agent: ua ?? undefined,
+    });
+    // Sin try/catch mudo: si la transacción (estatus + evidencia) falla, falla todo.
+    if (error) {
+      throw new Error(
+        error.message ||
+          "No fue posible completar el cambio de estatus. La operación no fue aplicada.",
+      );
     }
     return { ok: true };
   });

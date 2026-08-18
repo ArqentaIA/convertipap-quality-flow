@@ -15,9 +15,11 @@ import {
 } from "lucide-react";
 import { printEtiquetaLiberacion, type EtiquetaData } from "@/lib/etiqueta-liberacion";
 import { auditAction } from "@/lib/audit";
-import { getEffectiveStatus, toEtiquetaEstatus } from "@/lib/qc-effective-status";
+import { getEffectiveStatus } from "@/lib/qc-effective-status";
+import { toEtiquetaEstatusOficial } from "@/lib/qc-estado-oficial";
 import { evaluateCriticalRule } from "@/lib/qc-critical-rule";
 import { useShiftTick } from "@/hooks/useCurrentShift";
+import { MOTIVO_MIN_LEN, validarMotivoEstatus } from "@/lib/motivo-estatus";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -806,6 +808,7 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
     "liberada",
   );
   const [liberarObservaciones, setLiberarObservaciones] = useState("");
+  const [liberarMotivo, setLiberarMotivo] = useState("");
   const liberarMutation = useMutation({
     mutationFn: dictaminarFn,
     onSuccess: async () => {
@@ -2530,6 +2533,7 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
             if (!open) {
               setLiberarMuestra(null);
               setLiberarObservaciones("");
+              setLiberarMotivo("");
             }
           }}
         >
@@ -2566,6 +2570,22 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
 
               <div className="space-y-2">
                 <Label>
+                  Motivo real del cambio de estatus{" "}
+                  <span className="text-destructive">*</span>
+                </Label>
+                <Textarea
+                  value={liberarMotivo}
+                  onChange={(e) => setLiberarMotivo(e.target.value)}
+                  placeholder="Razón real de la decisión (mínimo 10 caracteres). No se acepta el nombre del dictamen."
+                  rows={3}
+                />
+                <p className="text-xs text-muted-foreground">
+                  {liberarMotivo.trim().length}/{MOTIVO_MIN_LEN} caracteres mínimos · queda en auditoría.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label>
                   Observaciones del Gerente de Calidad{" "}
                   <span className="text-destructive">*</span>
                 </Label>
@@ -2587,6 +2607,7 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
                 onClick={() => {
                   setLiberarMuestra(null);
                   setLiberarObservaciones("");
+                  setLiberarMotivo("");
                 }}
               >
                 Cancelar
@@ -2595,15 +2616,18 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
                 disabled={
                   liberarMutation.isPending ||
                   liberarObservaciones.trim().length < 10 ||
+                  validarMotivoEstatus(liberarMotivo) !== null ||
                   !liberarMuestra
                 }
                 onClick={() => {
                   if (!liberarMuestra) return;
+                  const errMotivo = validarMotivoEstatus(liberarMotivo);
+                  if (errMotivo) { toast.error(errMotivo); return; }
                   liberarMutation.mutate({
                     data: {
                       muestra_id: liberarMuestra.id,
                       dictamen: liberarDictamen,
-                      motivo: liberarDictamen,
+                      motivo: liberarMotivo.trim(),
                       observaciones: liberarObservaciones.trim(),
                     },
                   });
@@ -2676,13 +2700,12 @@ function buildEtiquetaFromMuestra(m: MuestraReciente): EtiquetaData {
       fueraSpec: md.estado === "no_conforme" || md.estado === "fuera_rango_critico",
     };
   });
-  // Estatus EFECTIVO — la etiqueta y el QR reflejan dictamen autorizado del
-  // Gerente de Calidad; sin autorización, un NC capturado o derivado de
-  // mediciones se MANTIENE en la etiqueta impresa y se preserva al reimprimir.
-  const eff = getEffectiveStatus(m as Parameters<typeof getEffectiveStatus>[0]);
   const est = (m as { estatus_liberacion?: string | null }).estatus_liberacion ?? null;
   const defectos = ((m as { defectos?: string[] | null }).defectos ?? []) as string[];
-  const estatus: EtiquetaData["estatus"] = toEtiquetaEstatus(eff.key);
+  // FUENTE CANÓNICA de la etiqueta/QR: estatus_liberacion (L/C/NC/NULL).
+  const estatus: EtiquetaData["estatus"] = toEtiquetaEstatusOficial(
+    m as { estatus_liberacion?: string | null; liberado_con_justificacion?: boolean | null },
+  );
   return {
     muestraId: m.id,
     folio,

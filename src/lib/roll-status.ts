@@ -4,8 +4,11 @@
 //
 // Reglas (acordadas con operación):
 //
-//  1. La fuente única de verdad es el dictamen de Calidad más reciente
-//     asociado al rollo (`MuestraCalidad.dictamen` / `MuestraCalidad.estado`).
+//  1. La fuente ÚNICA y canónica es `muestras_calidad.estatus_liberacion`:
+//     L → Liberado · C → Liberado con concesión · NC → No Conforme ·
+//     NULL → Pendiente de dictamen. `dictamen` y `estado` son información
+//     complementaria y NUNCA prevalecen en la presentación oficial.
+//     Nunca se devuelve undefined.
 //  2. Estados permitidos:
 //        pendiente_revision · liberado · liberado_concesion ·
 //        en_ajuste · reproceso · rechazado · inconsistencia
@@ -21,6 +24,7 @@
 // NO se modifican tablas, RLS ni migraciones.
 // =============================================================================
 
+import { getEstadoOficial } from "./qc-estado-oficial";
 import type { MuestraCalidad, AjusteCalidad } from "./qc-types";
 
 export type RolloStatusKey =
@@ -223,65 +227,29 @@ function fromMuestra(
     return present("inconsistencia", "inconsistencia", warnings);
   }
 
-  // -- Regla B: existe dictamen técnico pero NO está autorizado por Gerencia
-  // de Calidad → siempre "Pendiente de dictamen de calidad".
-  if (muestra.dictamen && !muestra.autorizado_por) {
-    return present("pendiente_revision", "sin_dictamen", [
-      "Dictamen técnico sin autorización formal de Gerencia de Calidad",
-    ]);
-  }
-
-  // -- Regla C: dictamen vs estado vs ajustes abiertos.
-  if (muestra.dictamen === "liberada" && muestra.estado !== "liberada") {
-    warnings.push(
-      `Dictamen=liberada pero estado=${muestra.estado} en muestra ${muestra.id}`,
-    );
-  }
-  if (muestra.dictamen === "rechazada" && muestra.estado !== "rechazada") {
-    warnings.push(
-      `Dictamen=rechazada pero estado=${muestra.estado} en muestra ${muestra.id}`,
-    );
-  }
+  // -- Advertencia informativa: liberado con ajustes abiertos. No cambia el
+  // estatus oficial (que sale de estatus_liberacion), solo se reporta.
+  const oficial = getEstadoOficial(muestra as { estatus_liberacion?: string | null });
   const ajustesAbiertos = ajustes.filter((a) => a.estado_flujo !== "cerrado");
-  if (muestra.dictamen === "liberada" && ajustesAbiertos.length > 0) {
+  if (oficial.es_liberado && ajustesAbiertos.length > 0) {
     warnings.push(
       `Muestra liberada con ${ajustesAbiertos.length} ajuste(s) abierto(s)`,
     );
   }
 
-  if (warnings.length > 0) {
-    // eslint-disable-next-line no-console
-    console.warn("[resolveRolloStatus] Inconsistencia detectada:", {
-      muestra_id: muestra.id,
-      rollo: muestra.numero_rollo,
-      dictamen: muestra.dictamen,
-      estado: muestra.estado,
-      warnings,
-    });
-    return present("inconsistencia", "inconsistencia", warnings);
-  }
+  // -- FUENTE CANÓNICA: muestras_calidad.estatus_liberacion.
+  //    L → Liberado · C → Liberado con concesión · NC → No Conforme ·
+  //    NULL → Pendiente de dictamen. `dictamen`/`estado` son complementarios
+  //    y NUNCA prevalecen sobre estatus_liberacion en la presentación oficial.
+  if (oficial.es_liberado_normal) return present("liberado", "dictamen_calidad", warnings);
+  if (oficial.es_concesion) return present("liberado_concesion", "dictamen_calidad", warnings);
+  if (oficial.es_no_conforme) return present("rechazado", "dictamen_calidad", warnings);
 
-  // Prioridad 1: dictamen autorizado por Gerencia de Calidad.
-  if (muestra.dictamen === "liberada") return present("liberado", "dictamen_calidad");
-  if (muestra.dictamen === "rechazada") return present("rechazado", "dictamen_calidad");
-  if (muestra.dictamen === "concesion") return present("liberado_concesion", "dictamen_calidad");
-
-  // Prioridad 2: estado del workflow (sin dictamen aún).
-  switch (muestra.estado) {
-    case "pendiente_revision":
-    case "borrador":
-      return present("pendiente_revision", "estado_muestra");
-    case "en_ajuste":
-      return present("en_ajuste", "estado_muestra");
-    case "reproceso":
-      return present("reproceso", "estado_muestra");
-    case "liberada":
-      return present("liberado", "estado_muestra");
-    case "rechazada":
-      return present("rechazado", "estado_muestra");
-    case "concesion":
-      return present("liberado_concesion", "estado_muestra");
-  }
+  // estatus_liberacion IS NULL → Pendiente de dictamen. Se conservan matices
+  // operativos del workflow que no contradicen el estado pendiente.
+  if (muestra.estado === "en_ajuste") return present("en_ajuste", "estado_muestra", warnings);
+  if (muestra.estado === "reproceso") return present("reproceso", "estado_muestra", warnings);
+  return present("pendiente_revision", "sin_dictamen", warnings);
 }
 
 function fromLegacy(code: "L" | "NC" | "C"): RolloStatusInfo {
