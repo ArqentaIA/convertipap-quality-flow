@@ -827,6 +827,7 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
       muestra_id: muestraId,
       numero_rollo: numeroRolloFinal,
       reabre_dictamen: !!dictamenPrevioAt,
+      reintento: reintentoIdempotente,
       regla_critica: {
         forzado_nc: criticalEval.forzarNC,
         fallas: criticalEval.fallas,
