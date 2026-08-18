@@ -2788,6 +2788,7 @@ export type Database = {
           p_motivo: string
           p_muestra_id: string
           p_nuevo_estado: string
+          p_observaciones?: string
           p_user_agent?: string
         }
         Returns: string
