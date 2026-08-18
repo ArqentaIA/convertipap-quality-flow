@@ -9,6 +9,7 @@ import { useServerFn } from "@tanstack/react-start";
 import {
   useMutation, useQueryClient, useSuspenseQuery, queryOptions,
 } from "@tanstack/react-query";
+import { validarMotivoEstatus } from "@/lib/motivo-estatus";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -287,15 +288,9 @@ function RevisionPage() {
     if ((accion === "rechazar" || accion === "concesion") && !motivo.trim()) {
       toast.error("El motivo es obligatorio"); return;
     }
-    // Motivo REAL obligatorio: mínimo 10 caracteres y nunca el nombre del dictamen.
-    if (motivo.trim().length < 10) {
-      toast.error("El motivo es obligatorio (mín. 10 caracteres) y debe expresar la razón real de la decisión.");
-      return;
-    }
-    if (MOTIVOS_NO_VALIDOS.has(motivo.trim().toLowerCase())) {
-      toast.error("Motivo no válido: describe la razón real de la decisión, no el nombre del dictamen.");
-      return;
-    }
+    // Motivo REAL obligatorio (espejo de la validación server-side).
+    const errMotivo = validarMotivoEstatus(motivo);
+    if (errMotivo) { toast.error(errMotivo); return; }
 
     // Doble validación electrónica antes de cambiar el estatus.
     setReauthOpen(true);
