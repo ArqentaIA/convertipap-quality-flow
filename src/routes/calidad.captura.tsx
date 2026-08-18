@@ -753,6 +753,15 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
   const justifTrimmed = justificacionLib.trim();
   const justifValida = justifTrimmed.length >= 10;
 
+  // Guarda de inactividad: mientras exista captura en curso (mediciones
+  // escritas y aún no guardadas) o un guardado en vuelo, la sesión NO se cierra
+  // por inactividad. Evita perder la captura y tener que repetirla.
+  const hayCapturaEnCurso = useMemo(
+    () => evalMediciones.some((m) => String(m.input.valor ?? "").trim() !== ""),
+    [evalMediciones],
+  );
+
+
   // Si el rollo CUMPLE limpiar cualquier flag previo de justificación.
   useEffect(() => {
     if (!fuerzaNCPorReglaCritica && (liberarConJustif || justificacionLib !== "")) {
