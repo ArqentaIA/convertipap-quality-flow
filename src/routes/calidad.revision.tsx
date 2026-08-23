@@ -249,14 +249,16 @@ function RevisionPage() {
       accion === "concesion" ? "concesion" :
       accion === "correccion" ? "correccion_solicitada" : null;
     if (!dictamen) return;
-    const obsParts = [observaciones];
-    if (evidenciaUrl) obsParts.push(`Evidencia: ${evidenciaUrl}`);
+    // Campo único: el motivo es la evidencia. La URL de evidencia se anexa si existe.
     dictaminarMut.mutate({
       muestra_id: selected.id,
       dictamen,
       motivo: motivo.trim(),
-      observaciones: obsParts.filter(Boolean).join(" — "),
+      observaciones: evidenciaUrl
+        ? `${motivo.trim()} — Evidencia: ${evidenciaUrl}`
+        : motivo.trim(),
     });
+
   }
 
   function ejecutar() {
