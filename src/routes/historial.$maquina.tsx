@@ -165,7 +165,7 @@ function HistorialPage() {
         operador: r.operador,
         peso: r.pesoKg ?? null,
         cumpl: r.cumplimiento ?? null,
-        estatus: r.estatus === "L" ? "Liberado" : r.estatus === "NC" ? "Rechazado" : "Pendiente",
+        estatus: ESTATUS_LABEL[r.estatus ?? "P"],
         obs: obsParts.join(" | "),
       });
     });
