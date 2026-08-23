@@ -25,6 +25,7 @@ export type AppModule =
   | "configuracion"
   | "usuarios_permisos"
   | "auditoria"
+  | "catalogos"
   | "ordenes_produccion"
   | "pesaje_bobina_madre"
   | "pesaje_cintas";

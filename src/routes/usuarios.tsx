@@ -5,7 +5,12 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { asignarRol, quitarRol } from "@/lib/usuarios-roles.functions";
+import {
+  asignarRol,
+  quitarRol,
+  agregarModuloARol,
+  quitarModuloDeRol,
+} from "@/lib/usuarios-roles.functions";
 import { useAuth, type AppRole, type AppModule } from "@/lib/auth";
 
 export const Route = createFileRoute("/usuarios")({ component: UsuariosPage });
@@ -52,6 +57,7 @@ const MODULO_LABEL: Record<AppModule, string> = {
   configuracion: "Configuración",
   usuarios_permisos: "Usuarios y permisos",
   auditoria: "Auditoría",
+  catalogos: "Catálogos",
   ordenes_produccion: "Órdenes de Producción",
   pesaje_bobina_madre: "Pesaje de Rollo",
   pesaje_cintas: "Pesaje de Cintas",
@@ -68,8 +74,29 @@ function UsuariosPage() {
   const [error, setError] = useState<string | null>(null);
   const [tick, setTick] = useState(0);
   const [busy, setBusy] = useState<string | null>(null);
+  const [modsPorRol, setModsPorRol] = useState<Record<string, AppModule[]>>({});
   const doAsignar = useServerFn(asignarRol);
   const doQuitar = useServerFn(quitarRol);
+  const doAddMod = useServerFn(agregarModuloARol);
+  const doDelMod = useServerFn(quitarModuloDeRol);
+
+  async function cambiarModulo(
+    role: AppRole,
+    module: AppModule,
+    accion: "add" | "remove",
+  ) {
+    setBusy(`mod:${role}:${module}`);
+    try {
+      if (accion === "add") await doAddMod({ data: { role, module } });
+      else await doDelMod({ data: { role, module } });
+      toast.success(accion === "add" ? "Módulo agregado" : "Módulo eliminado");
+      setTick((t) => t + 1);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "No se pudo actualizar el módulo");
+    } finally {
+      setBusy(null);
+    }
+  }
 
   async function cambiarRol(
     userId: string,
@@ -165,7 +192,17 @@ function UsuariosPage() {
           };
         });
 
-        if (!cancelado) setUsuarios(filas);
+        if (!cancelado) {
+          setUsuarios(filas);
+          setModsPorRol(
+            Object.fromEntries(
+              (Object.keys(ROL_LABEL) as AppRole[]).map((r) => [
+                r,
+                modulosPorRol.get(r) ?? [],
+              ]),
+            ),
+          );
+        }
       } catch (e) {
         if (!cancelado)
           setError(e instanceof Error ? e.message : "Error desconocido");
@@ -222,6 +259,76 @@ function UsuariosPage() {
           />
           <Stat label="Roles definidos" value="5" />
           <Stat label="Módulos del sistema" value="7" tone="primary" />
+        </div>
+
+        {/* Módulos por rol */}
+        <div className="rounded-xl border border-border bg-card shadow-sm">
+          <div className="border-b border-border p-4">
+            <div className="text-sm font-semibold text-foreground">
+              Módulos por rol
+            </div>
+            <div className="text-xs text-muted-foreground">
+              Agrega o elimina los módulos (menús) que puede ver cada rol. El cambio
+              aplica a todos los usuarios con ese rol.
+            </div>
+          </div>
+          <div className="divide-y divide-border">
+            {(Object.keys(ROL_LABEL) as AppRole[]).map((r) => {
+              const mods = modsPorRol[r] ?? [];
+              return (
+                <div key={r} className="flex flex-wrap items-start gap-3 p-4">
+                  <span
+                    className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${ROL_COLORS[r]}`}
+                  >
+                    <Shield className="h-3 w-3" />
+                    {ROL_LABEL[r]}
+                  </span>
+                  <div className="flex flex-1 flex-wrap items-center gap-1">
+                    {mods.length === 0 && (
+                      <span className="text-xs italic text-muted-foreground">
+                        sin módulos
+                      </span>
+                    )}
+                    {mods.map((m) => (
+                      <span
+                        key={m}
+                        className="inline-flex items-center gap-1 rounded-md border border-border bg-muted/40 px-2 py-0.5 text-[11px] text-foreground/80"
+                      >
+                        {MODULO_LABEL[m]}
+                        <button
+                          type="button"
+                          title="Eliminar módulo"
+                          disabled={busy === `mod:${r}:${m}`}
+                          onClick={() => void cambiarModulo(r, m, "remove")}
+                          className="rounded-full p-0.5 hover:bg-destructive/15 hover:text-destructive disabled:opacity-40"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </span>
+                    ))}
+                    <select
+                      value=""
+                      disabled={busy?.startsWith(`mod:${r}:`)}
+                      onChange={(e) => {
+                        const m = e.target.value as AppModule;
+                        if (m) void cambiarModulo(r, m, "add");
+                      }}
+                      className="rounded-md border border-dashed border-border bg-background px-1.5 py-0.5 text-[11px] text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                    >
+                      <option value="">+ Agregar módulo</option>
+                      {(Object.keys(MODULO_LABEL) as AppModule[])
+                        .filter((m) => !mods.includes(m))
+                        .map((m) => (
+                          <option key={m} value={m}>
+                            {MODULO_LABEL[m]}
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
 
         <div className="rounded-xl border border-border bg-card shadow-sm">

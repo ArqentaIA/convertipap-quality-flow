@@ -59,3 +59,54 @@ export const quitarRol = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+// ---------------------------------------------------------------------
+// Módulos por rol (module_permissions)
+// ---------------------------------------------------------------------
+const MODULOS = [
+  "dashboard",
+  "produccion",
+  "control_calidad",
+  "variables_calidad",
+  "reportes",
+  "configuracion",
+  "usuarios_permisos",
+  "auditoria",
+  "catalogos",
+  "ordenes_produccion",
+  "pesaje_bobina_madre",
+  "pesaje_cintas",
+] as const;
+
+const moduloSchema = z.object({
+  role: z.enum(ROLES),
+  module: z.enum(MODULOS),
+});
+
+export const agregarModuloARol = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => moduloSchema.parse(d))
+  .handler(async ({ data, context }) => {
+    assertAutorizado(context.claims as Record<string, unknown>);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin
+      .from("module_permissions")
+      .insert({ role: data.role, module: data.module });
+    if (error && !error.message.includes("duplicate")) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const quitarModuloDeRol = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => moduloSchema.parse(d))
+  .handler(async ({ data, context }) => {
+    assertAutorizado(context.claims as Record<string, unknown>);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin
+      .from("module_permissions")
+      .delete()
+      .eq("role", data.role)
+      .eq("module", data.module);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
