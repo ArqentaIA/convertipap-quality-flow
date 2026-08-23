@@ -267,7 +267,7 @@ function HistorialPage() {
                       </td>
                       <td className="px-4 py-3">
                         <span className={`inline-flex items-center rounded-md border px-2 py-0.5 text-[11px] font-semibold ${tone}`}>
-                          {r.estatus === "L" ? "Liberado" : r.estatus === "NC" ? "Rechazado" : "Pendiente"}
+                          {ESTATUS_LABEL[r.estatus ?? "P"]}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-right">
