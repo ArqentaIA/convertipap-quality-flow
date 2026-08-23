@@ -1,8 +1,11 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Search, Shield, Lock, Mail, User2 } from "lucide-react";
+import { Search, Shield, Lock, Mail, User2, X, Plus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useServerFn } from "@tanstack/react-start";
+import { toast } from "sonner";
+import { asignarRol, quitarRol } from "@/lib/usuarios-roles.functions";
 import { useAuth, type AppRole, type AppModule } from "@/lib/auth";
 
 export const Route = createFileRoute("/usuarios")({ component: UsuariosPage });
