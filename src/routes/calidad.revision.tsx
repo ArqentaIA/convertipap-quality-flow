@@ -666,13 +666,8 @@ function RevisionPage() {
                 />
               </div>
             )}
-            {(accion === "liberar" || accion === "concesion" || accion === "rechazar") && (
-              <div className="space-y-1.5">
-                <Label>Observaciones (opcional)</Label>
-                <Textarea rows={2} value={observaciones} onChange={(e) => setObservaciones(e.target.value)}
-                  placeholder="Notas adicionales…" />
-              </div>
-            )}
+            {/* Campo único: el "Motivo del cambio de estatus" es la evidencia registrada. */}
+
           </div>
 
 
