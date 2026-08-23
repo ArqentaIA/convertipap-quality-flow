@@ -66,8 +66,9 @@ function UsuariosPage() {
 
   // Defensa adicional: si el usuario llega por URL directa sin permiso,
   // redirigir al primer módulo permitido (o /login si no tiene ninguno).
+  // Perfiles y Roles: acceso exclusivo de adgral@convertipap.site.
   const tienePermiso =
-    auth.hasRole("administrador") || auth.hasRole("gerente_general");
+    (auth.user?.email ?? "").toLowerCase() === "adgral@convertipap.site";
 
   useEffect(() => {
     if (auth.loading) return;
@@ -166,7 +167,7 @@ function UsuariosPage() {
   // Mientras se valida permiso, no renderizar contenido
   if (auth.loading || !tienePermiso) {
     return (
-      <AppLayout title="Usuarios y permisos">
+      <AppLayout title="Perfiles y Roles">
         <div className="flex items-center justify-center py-20 text-sm text-muted-foreground">
           Verificando permisos…
         </div>
@@ -175,7 +176,7 @@ function UsuariosPage() {
   }
 
   return (
-    <AppLayout title="Usuarios y permisos">
+    <AppLayout title="Perfiles y Roles">
       <div className="space-y-6">
         {/* Aviso de solo lectura */}
         <div className="flex items-start gap-3 rounded-xl border border-border bg-muted/40 p-4 text-sm">

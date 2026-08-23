@@ -14,6 +14,8 @@ import { useLabFilter, LAB_LABEL } from "@/lib/lab";
 import { ShieldCheck } from "lucide-react";
 import { auditAction } from "@/lib/audit";
 
+export const PERFILES_ROLES_EMAIL = "adgral@convertipap.site";
+
 type NavItem = {
   to: string;
   label: string;
@@ -38,7 +40,8 @@ const NAV: NavItem[] = [
   // { to: "/auditoria", label: "Auditoría", icon: ShieldCheck, module: "auditoria" },
   // Usuarios y Permisos: oculto del menú lateral por decisión de negocio.
   // Solo accesible mediante ruta directa /usuarios (o enlace desde Configuración).
-  // { to: "/usuarios", label: "Usuarios y Permisos", icon: Users, module: "usuarios_permisos" },
+  // Perfiles y Roles: visible solo para adgral@convertipap.site (ver PERFILES_ROLES_EMAIL).
+  { to: "/usuarios", label: "Perfiles y Roles", icon: Users, module: "usuarios_permisos" },
   { to: "/configuracion", label: "Configuración", icon: Settings, module: "configuracion" },
 ];
 
@@ -97,11 +100,22 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
   // Pesaje de Rollo (bobina madre): restringido a administradores y dirección/gerencia general.
   const isAdmin = auth.hasRole("administrador") || auth.hasRole("gerente_general");
 
+  // Perfiles y Roles: acceso exclusivo de una sola cuenta.
+  const canPerfilesRoles =
+    (auth.user?.email ?? "").toLowerCase() === PERFILES_ROLES_EMAIL;
+
   // 2) Si está en una ruta sin permisos, mandarlo al primer módulo permitido.
   useEffect(() => {
     if (auth.loading || !auth.isAuthenticated) return;
     if (pathname.startsWith("/pesaje/bobina-madre") && !isAdmin) {
       void navigate({ to: auth.canAccess("pesaje_cintas") ? "/pesaje/cintas" : "/", replace: true });
+      return;
+    }
+    if (pathname.startsWith("/usuarios")) {
+      if (!canPerfilesRoles) {
+        const first = NAV.find((n) => n.to !== "/usuarios" && auth.canAccess(n.module));
+        void navigate({ to: first?.to ?? "/login", replace: true });
+      }
       return;
     }
     const mod = moduleForPath(pathname);
@@ -110,11 +124,12 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
     if (firstAllowed && firstAllowed.to !== pathname) {
       void navigate({ to: firstAllowed.to, replace: true });
     }
-  }, [auth.loading, auth.isAuthenticated, auth.modules, auth.roles, pathname, navigate, isAdmin]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [auth.loading, auth.isAuthenticated, auth.modules, auth.roles, pathname, navigate, isAdmin, canPerfilesRoles]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const visibleNav = useMemo(
     () =>
       NAV.filter((item) => {
+        if (item.to === "/usuarios") return canPerfilesRoles;
         if (!auth.canAccess(item.module)) return false;
         // Oculta "Control de Pesaje" si solo contenía Pesaje de Rollo y no es admin
         if (item.to === "/pesaje/bobina-madre" && !isAdmin && !auth.canAccess("pesaje_cintas")) {
@@ -122,12 +137,14 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
         }
         return true;
       }),
-    [auth.modules, auth.roles, isAdmin], // eslint-disable-line react-hooks/exhaustive-deps
+    [auth.modules, auth.roles, isAdmin, canPerfilesRoles], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
 
   const currentModule = moduleForPath(pathname);
-  const allowedHere = auth.canAccess(currentModule);
+  const allowedHere = pathname.startsWith("/usuarios")
+    ? canPerfilesRoles
+    : auth.canAccess(currentModule);
 
   if (auth.loading || !auth.isAuthenticated) {
     return (
