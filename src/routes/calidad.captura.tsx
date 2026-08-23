@@ -2570,34 +2570,17 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
 
               <div className="space-y-2">
                 <Label>
-                  Motivo real del cambio de estatus{" "}
+                  Motivo del cambio de estatus{" "}
                   <span className="text-destructive">*</span>
                 </Label>
                 <Textarea
                   value={liberarMotivo}
                   onChange={(e) => setLiberarMotivo(e.target.value)}
                   placeholder="Razón real de la decisión (mínimo 10 caracteres). No se acepta el nombre del dictamen."
-                  rows={3}
-                />
-                <p className="text-xs text-muted-foreground">
-                  {liberarMotivo.trim().length}/{MOTIVO_MIN_LEN} caracteres mínimos · queda en auditoría.
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label>
-                  Observaciones de quien autoriza (queda en auditoría){" "}
-                  <span className="text-destructive">*</span>
-
-                </Label>
-                <Textarea
-                  value={liberarObservaciones}
-                  onChange={(e) => setLiberarObservaciones(e.target.value)}
-                  placeholder="Justifica el cambio de estatus (mínimo 10 caracteres). Esta evidencia queda en el historial."
                   rows={4}
                 />
                 <p className="text-xs text-muted-foreground">
-                  {liberarObservaciones.trim().length}/10 caracteres mínimos.
+                  {liberarMotivo.trim().length}/{MOTIVO_MIN_LEN} caracteres mínimos · queda en auditoría.
                 </p>
               </div>
             </div>
@@ -2616,7 +2599,6 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
               <Button
                 disabled={
                   liberarMutation.isPending ||
-                  liberarObservaciones.trim().length < 10 ||
                   validarMotivoEstatus(liberarMotivo) !== null ||
                   !liberarMuestra
                 }
@@ -2629,11 +2611,11 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
                       muestra_id: liberarMuestra.id,
                       dictamen: liberarDictamen,
                       motivo: liberarMotivo.trim(),
-                      observaciones: liberarObservaciones.trim(),
                     },
                   });
                 }}
               >
+
                 {liberarMutation.isPending ? "Guardando..." : "Confirmar cambio"}
               </Button>
             </DialogFooter>
