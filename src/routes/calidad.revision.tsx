@@ -647,11 +647,15 @@ function RevisionPage() {
             )}
             <div className="space-y-1.5">
               <Label>
-                Motivo real de la decisión (obligatorio, mín. {MOTIVO_MIN_LEN} caracteres)
+                Motivo del cambio de estatus (obligatorio, mín. {MOTIVO_MIN_LEN} caracteres)
               </Label>
-              <Textarea rows={3} value={motivo} onChange={(e) => setMotivo(e.target.value)}
-                placeholder="Razón real de la decisión. No se acepta el nombre del dictamen." />
+              <Textarea rows={4} value={motivo} onChange={(e) => setMotivo(e.target.value)}
+                placeholder="Razón real de la decisión (mínimo 10 caracteres). No se acepta el nombre del dictamen." />
+              <p className="text-xs text-muted-foreground">
+                {motivo.trim().length}/{MOTIVO_MIN_LEN} caracteres mínimos · queda en auditoría.
+              </p>
             </div>
+
             {(accion === "liberar" || accion === "concesion" || accion === "rechazar") && (
               <div className="space-y-1.5">
                 <Label>
