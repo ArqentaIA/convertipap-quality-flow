@@ -860,10 +860,11 @@ export const dictaminarMuestra = createServerFn({ method: "POST" })
           (v) => !MOTIVOS_NO_VALIDOS.has(v.toLowerCase()),
           "Motivo no válido: describe la razón real de la decisión, no el nombre del dictamen.",
         ),
-      observaciones: z
-        .string()
-        .trim()
-        .min(10, "Las observaciones de quien autoriza son obligatorias (mín. 10 caracteres) y quedan registradas como evidencia."),
+      // Campo único en pantalla: la UI captura solo "Motivo del cambio de estatus".
+      // `observaciones` queda opcional y, si no viene, se replica el motivo para
+      // que la evidencia de auditoría siempre quede completa.
+      observaciones: z.string().trim().optional(),
+
     });
     const res = schema.safeParse(input);
     if (res.success) return res.data;
