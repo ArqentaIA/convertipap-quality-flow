@@ -247,6 +247,8 @@ function HistorialPage() {
                       ? "bg-destructive/15 text-destructive border-destructive/40"
                       : r.estatus === "L"
                       ? "bg-success/15 text-success border-success/40"
+                      : r.estatus === "C"
+                      ? "bg-amber-500/15 text-amber-600 border-amber-500/40"
                       : "bg-muted text-muted-foreground border-border";
                   return (
                     <tr key={r.muestraId} className="border-t border-border hover:bg-muted/30">
