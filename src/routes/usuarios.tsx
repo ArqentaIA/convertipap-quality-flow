@@ -1,8 +1,11 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Search, Shield, Lock, Mail, User2 } from "lucide-react";
+import { Search, Shield, Lock, Mail, User2, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useServerFn } from "@tanstack/react-start";
+import { toast } from "sonner";
+import { asignarRol, quitarRol } from "@/lib/usuarios-roles.functions";
 import { useAuth, type AppRole, type AppModule } from "@/lib/auth";
 
 export const Route = createFileRoute("/usuarios")({ component: UsuariosPage });
@@ -63,6 +66,28 @@ function UsuariosPage() {
   const [usuarios, setUsuarios] = useState<UsuarioFila[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [tick, setTick] = useState(0);
+  const [busy, setBusy] = useState<string | null>(null);
+  const doAsignar = useServerFn(asignarRol);
+  const doQuitar = useServerFn(quitarRol);
+
+  async function cambiarRol(
+    userId: string,
+    role: AppRole,
+    accion: "add" | "remove",
+  ) {
+    setBusy(`${userId}:${role}`);
+    try {
+      if (accion === "add") await doAsignar({ data: { userId, role } });
+      else await doQuitar({ data: { userId, role } });
+      toast.success(accion === "add" ? "Rol asignado" : "Rol removido");
+      setTick((t) => t + 1);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "No se pudo actualizar el rol");
+    } finally {
+      setBusy(null);
+    }
+  }
 
   // Defensa adicional: si el usuario llega por URL directa sin permiso,
   // redirigir al primer módulo permitido (o /login si no tiene ninguno).
@@ -151,7 +176,7 @@ function UsuariosPage() {
     return () => {
       cancelado = true;
     };
-  }, [tienePermiso]);
+  }, [tienePermiso, tick]);
 
   const filtered = useMemo(
     () =>
@@ -182,10 +207,9 @@ function UsuariosPage() {
         <div className="flex items-start gap-3 rounded-xl border border-border bg-muted/40 p-4 text-sm">
           <Lock className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
           <div className="text-muted-foreground">
-            Este módulo es <span className="font-semibold text-foreground">informativo</span>.
-            La gestión real de usuarios (alta, baja, cambio de rol, restablecimiento
-            de contraseña) se realiza directamente desde el panel de administración
-            del sistema.
+            Puedes <span className="font-semibold text-foreground">agregar o quitar roles</span> a
+            cada usuario. El alta, baja y restablecimiento de contraseña se realiza
+            desde el panel de administración del sistema.
           </div>
         </div>
 
@@ -273,22 +297,48 @@ function UsuariosPage() {
                           </span>
                         </td>
                         <td className="px-4 py-3 align-top">
-                          <div className="flex flex-wrap gap-1">
-                            {u.roles.length === 0 ? (
+                          <div className="flex flex-wrap items-center gap-1">
+                            {u.roles.length === 0 && (
                               <span className="text-xs italic text-muted-foreground">
                                 sin rol
                               </span>
-                            ) : (
-                              u.roles.map((r) => (
-                                <span
-                                  key={r}
-                                  className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${ROL_COLORS[r]}`}
-                                >
-                                  <Shield className="h-3 w-3" />
-                                  {ROL_LABEL[r]}
-                                </span>
-                              ))
                             )}
+                            {u.roles.map((r) => (
+                              <span
+                                key={r}
+                                className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${ROL_COLORS[r]}`}
+                              >
+                                <Shield className="h-3 w-3" />
+                                {ROL_LABEL[r]}
+                                <button
+                                  type="button"
+                                  title="Quitar rol"
+                                  disabled={busy === `${u.id}:${r}`}
+                                  onClick={() => void cambiarRol(u.id, r, "remove")}
+                                  className="ml-0.5 rounded-full p-0.5 hover:bg-destructive/15 hover:text-destructive disabled:opacity-40"
+                                >
+                                  <X className="h-3 w-3" />
+                                </button>
+                              </span>
+                            ))}
+                            <select
+                              value=""
+                              disabled={busy?.startsWith(u.id)}
+                              onChange={(e) => {
+                                const r = e.target.value as AppRole;
+                                if (r) void cambiarRol(u.id, r, "add");
+                              }}
+                              className="rounded-md border border-dashed border-border bg-background px-1.5 py-0.5 text-[11px] text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                            >
+                              <option value="">+ Agregar rol</option>
+                              {(Object.keys(ROL_LABEL) as AppRole[])
+                                .filter((r) => !u.roles.includes(r))
+                                .map((r) => (
+                                  <option key={r} value={r}>
+                                    {ROL_LABEL[r]}
+                                  </option>
+                                ))}
+                            </select>
                           </div>
                         </td>
                         <td className="px-4 py-3 align-top">
