@@ -298,22 +298,48 @@ function UsuariosPage() {
                           </span>
                         </td>
                         <td className="px-4 py-3 align-top">
-                          <div className="flex flex-wrap gap-1">
-                            {u.roles.length === 0 ? (
+                          <div className="flex flex-wrap items-center gap-1">
+                            {u.roles.length === 0 && (
                               <span className="text-xs italic text-muted-foreground">
                                 sin rol
                               </span>
-                            ) : (
-                              u.roles.map((r) => (
-                                <span
-                                  key={r}
-                                  className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${ROL_COLORS[r]}`}
-                                >
-                                  <Shield className="h-3 w-3" />
-                                  {ROL_LABEL[r]}
-                                </span>
-                              ))
                             )}
+                            {u.roles.map((r) => (
+                              <span
+                                key={r}
+                                className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${ROL_COLORS[r]}`}
+                              >
+                                <Shield className="h-3 w-3" />
+                                {ROL_LABEL[r]}
+                                <button
+                                  type="button"
+                                  title="Quitar rol"
+                                  disabled={busy === `${u.id}:${r}`}
+                                  onClick={() => void cambiarRol(u.id, r, "remove")}
+                                  className="ml-0.5 rounded-full p-0.5 hover:bg-destructive/15 hover:text-destructive disabled:opacity-40"
+                                >
+                                  <X className="h-3 w-3" />
+                                </button>
+                              </span>
+                            ))}
+                            <select
+                              value=""
+                              disabled={busy?.startsWith(u.id)}
+                              onChange={(e) => {
+                                const r = e.target.value as AppRole;
+                                if (r) void cambiarRol(u.id, r, "add");
+                              }}
+                              className="rounded-md border border-dashed border-border bg-background px-1.5 py-0.5 text-[11px] text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                            >
+                              <option value="">+ Agregar rol</option>
+                              {(Object.keys(ROL_LABEL) as AppRole[])
+                                .filter((r) => !u.roles.includes(r))
+                                .map((r) => (
+                                  <option key={r} value={r}>
+                                    {ROL_LABEL[r]}
+                                  </option>
+                                ))}
+                            </select>
                           </div>
                         </td>
                         <td className="px-4 py-3 align-top">
