@@ -66,6 +66,28 @@ function UsuariosPage() {
   const [usuarios, setUsuarios] = useState<UsuarioFila[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [tick, setTick] = useState(0);
+  const [busy, setBusy] = useState<string | null>(null);
+  const doAsignar = useServerFn(asignarRol);
+  const doQuitar = useServerFn(quitarRol);
+
+  async function cambiarRol(
+    userId: string,
+    role: AppRole,
+    accion: "add" | "remove",
+  ) {
+    setBusy(`${userId}:${role}`);
+    try {
+      if (accion === "add") await doAsignar({ data: { userId, role } });
+      else await doQuitar({ data: { userId, role } });
+      toast.success(accion === "add" ? "Rol asignado" : "Rol removido");
+      setTick((t) => t + 1);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "No se pudo actualizar el rol");
+    } finally {
+      setBusy(null);
+    }
+  }
 
   // Defensa adicional: si el usuario llega por URL directa sin permiso,
   // redirigir al primer módulo permitido (o /login si no tiene ninguno).
