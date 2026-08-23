@@ -2713,8 +2713,13 @@ function buildEtiquetaFromMuestra(m: MuestraReciente): EtiquetaData {
     autorizacion: (m as { autorizado_por?: string | null }).autorizado_por
       ? {
           dictamen: (m as { dictamen?: string }).dictamen ?? "",
+          // Campo único: si no hay observaciones propias (no se duplica el
+          // texto), se muestra el motivo como fuente canónica.
           observaciones:
-            (m as { dictamen_observaciones?: string | null }).dictamen_observaciones ?? "",
+            (m as { dictamen_observaciones?: string | null }).dictamen_observaciones ??
+            (m as { dictamen_motivo?: string | null }).dictamen_motivo ??
+            "",
+
           motivo: (m as { dictamen_motivo?: string | null }).dictamen_motivo ?? null,
           autorizadoAt: (m as { autorizado_at?: string | null }).autorizado_at ?? null,
           rolAutorizador:
