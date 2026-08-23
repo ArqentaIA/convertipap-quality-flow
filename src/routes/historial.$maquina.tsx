@@ -304,12 +304,13 @@ function HistorialPage() {
 
 function StatCard({
   label, value, hint, tone = "default",
-}: { label: string; value: string; hint: string; tone?: "default" | "primary" | "success" | "danger" }) {
+}: { label: string; value: string; hint: string; tone?: "default" | "primary" | "success" | "danger" | "warning" }) {
   const tones: Record<string, string> = {
     default: "text-foreground",
     primary: "text-primary",
     success: "text-success",
     danger: "text-destructive",
+    warning: "text-amber-600",
   };
   return (
     <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
