@@ -862,7 +862,7 @@ export const dictaminarMuestra = createServerFn({ method: "POST" })
         ),
       // Campo único en pantalla: la UI captura solo "Motivo del cambio de estatus".
       // `observaciones` queda opcional; si no viene, NO se duplica el texto:
-      // que la evidencia de auditoría siempre quede completa.
+      // `motivo` es la fuente única y las lecturas usan COALESCE.
       observaciones: z.string().trim().optional(),
 
     });
