@@ -1152,13 +1152,16 @@ export const listRollosMaquina = createServerFn({ method: "GET" })
       const total = meds.length;
       const nc = meds.filter((x) => x.estado === "no_conforme" || x.estado === "fuera_rango_critico").length;
       const cumplimiento = total > 0 ? Math.round(((total - nc) / total) * 1000) / 10 : null;
-      // Mapeo claro para Producción: se respeta el estatus oficial de Calidad.
-      //   'L'  → Liberado (incluye liberado con justificación)
-      //   'NC' → Rechazado (no conforme)
-      //   resto (C/null) → Pendiente
+      // Estatus real de Calidad, sin colapsar:
+      //   'L' Liberado · 'C' Liberado con concesión · 'NC' No conforme · null Pendiente
       const eo = getEstadoOficial(r as { estatus_liberacion?: string | null });
-      const estatus: "L" | "NC" | "C" =
-        eo.es_liberado_normal ? "L" : eo.es_no_conforme ? "NC" : "C";
+      const estatus: "L" | "C" | "NC" | null = eo.es_liberado_normal
+        ? "L"
+        : eo.es_no_conforme
+        ? "NC"
+        : (r.estatus_liberacion as string | null) === "C"
+        ? "C"
+        : null;
       return {
         muestraId: r.id as string,
         ordenId: r.orden_id as string,

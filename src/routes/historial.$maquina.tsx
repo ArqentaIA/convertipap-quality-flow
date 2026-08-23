@@ -10,6 +10,13 @@ import { formatCaptura } from "@/lib/format";
 import { DetalleCalidadModal } from "@/components/qc/DetalleCalidadModal";
 import { BuscadorRollo } from "@/components/qc/BuscadorRollo";
 
+const ESTATUS_LABEL: Record<string, string> = {
+  L: "Liberado",
+  C: "Liberado con concesión",
+  NC: "No Conforme",
+  P: "Pendiente",
+};
+
 export const Route = createFileRoute("/historial/$maquina")({
   component: HistorialPage,
   errorComponent: ({ error }) => (
@@ -24,6 +31,7 @@ export const Route = createFileRoute("/historial/$maquina")({
 function HistorialPage() {
   const { maquina: maquinaCodigo } = Route.useParams();
   const [q, setQ] = useState("");
+  const [estatusFiltro, setEstatusFiltro] = useState<"TODOS" | "L" | "C" | "NC" | "P">("TODOS");
   const [detalle, setDetalle] = useState<{ muestraId: string; folio: string } | null>(null);
   const labFilter = useLabFilter();
 
@@ -71,6 +79,22 @@ function HistorialPage() {
 
   const filtered = useMemo(
     () =>
+      rollos.filter((r) => {
+        const matchTexto = [r.rollo, r.folioOrden, r.producto, r.operador, r.turno]
+          .join(" ")
+          .toLowerCase()
+          .includes(q.toLowerCase());
+        const matchEstatus =
+          estatusFiltro === "TODOS" ||
+          (estatusFiltro === "P" ? r.estatus == null : r.estatus === estatusFiltro);
+        return matchTexto && matchEstatus;
+      }),
+    [rollos, q, estatusFiltro],
+  );
+
+  // Base para contadores: sólo filtro de texto (los KPIs siempre suman el total)
+  const base = useMemo(
+    () =>
       rollos.filter((r) =>
         [r.rollo, r.folioOrden, r.producto, r.operador, r.turno]
           .join(" ")
@@ -80,9 +104,11 @@ function HistorialPage() {
     [rollos, q],
   );
 
-  const total = filtered.length;
-  const ok = filtered.filter((r) => r.estatus === "L").length;
-  const nc = filtered.filter((r) => r.estatus === "NC").length;
+  const total = base.length;
+  const ok = base.filter((r) => r.estatus === "L").length;
+  const conc = base.filter((r) => r.estatus === "C").length;
+  const nc = base.filter((r) => r.estatus === "NC").length;
+  const pend = base.filter((r) => r.estatus == null).length;
   const kgTotal = filtered.reduce((s, r) => s + (r.pesoKg ?? 0), 0);
   const cumpProm = filtered.length
     ? (
@@ -139,7 +165,7 @@ function HistorialPage() {
         operador: r.operador,
         peso: r.pesoKg ?? null,
         cumpl: r.cumplimiento ?? null,
-        estatus: r.estatus === "L" ? "Liberado" : r.estatus === "NC" ? "Rechazado" : "Pendiente",
+        estatus: ESTATUS_LABEL[r.estatus ?? "P"],
         obs: obsParts.join(" | "),
       });
     });
@@ -179,15 +205,42 @@ function HistorialPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-6">
           <StatCard label="Rollos (turno + anterior)" value={String(total)} hint="capturados" />
-          <StatCard label="OK" value={String(ok)} hint="liberados" tone="success" />
-          <StatCard label="No conformes" value={String(nc)} hint="rechazados / fuera" tone="danger" />
+          <StatCard label="Liberados (L)" value={String(ok)} hint="sin concesión" tone="success" />
+          <StatCard label="Concesión (C)" value={String(conc)} hint="liberado condicional" tone="warning" />
+          <StatCard label="No Conformes (NC)" value={String(nc)} hint="rechazados" tone="danger" />
+          <StatCard label="Pendientes" value={String(pend)} hint="sin dictamen" />
           <StatCard label="Cumpl. prom." value={`${cumpProm}${cumpProm === "—" ? "" : "%"}`} hint={`${kgTotal.toFixed(0)} kg total`} tone="primary" />
         </div>
+        <p className="text-xs text-muted-foreground">
+          Control: L {ok} + C {conc} + NC {nc} + Pendientes {pend} = {ok + conc + nc + pend} de {total} rollos
+          {ok + conc + nc + pend !== total && " ⚠ descuadre"}
+        </p>
 
         <div className="rounded-xl border border-border bg-card shadow-sm">
-          <div className="flex flex-wrap items-center justify-end gap-3 border-b border-border p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border p-4">
+            <div className="flex flex-wrap items-center gap-2">
+              {([
+                ["TODOS", `Todos (${total})`],
+                ["L", `Liberado (${ok})`],
+                ["C", `Concesión (${conc})`],
+                ["NC", `No Conforme (${nc})`],
+                ["P", `Pendiente (${pend})`],
+              ] as const).map(([val, label]) => (
+                <button
+                  key={val}
+                  onClick={() => setEstatusFiltro(val)}
+                  className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                    estatusFiltro === val
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border bg-card text-muted-foreground hover:bg-muted"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
             <button
               onClick={exportXlsx}
               disabled={filtered.length === 0}
@@ -228,6 +281,8 @@ function HistorialPage() {
                       ? "bg-destructive/15 text-destructive border-destructive/40"
                       : r.estatus === "L"
                       ? "bg-success/15 text-success border-success/40"
+                      : r.estatus === "C"
+                      ? "bg-amber-500/15 text-amber-600 border-amber-500/40"
                       : "bg-muted text-muted-foreground border-border";
                   return (
                     <tr key={r.muestraId} className="border-t border-border hover:bg-muted/30">
@@ -248,7 +303,7 @@ function HistorialPage() {
                       </td>
                       <td className="px-4 py-3">
                         <span className={`inline-flex items-center rounded-md border px-2 py-0.5 text-[11px] font-semibold ${tone}`}>
-                          {r.estatus === "L" ? "Liberado" : r.estatus === "NC" ? "Rechazado" : "Pendiente"}
+                          {ESTATUS_LABEL[r.estatus ?? "P"]}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-right">
@@ -285,12 +340,13 @@ function HistorialPage() {
 
 function StatCard({
   label, value, hint, tone = "default",
-}: { label: string; value: string; hint: string; tone?: "default" | "primary" | "success" | "danger" }) {
+}: { label: string; value: string; hint: string; tone?: "default" | "primary" | "success" | "danger" | "warning" }) {
   const tones: Record<string, string> = {
     default: "text-foreground",
     primary: "text-primary",
     success: "text-success",
     danger: "text-destructive",
+    warning: "text-amber-600",
   };
   return (
     <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
