@@ -176,7 +176,7 @@ function UsuariosPage() {
     return () => {
       cancelado = true;
     };
-  }, [tienePermiso]);
+  }, [tienePermiso, tick]);
 
   const filtered = useMemo(
     () =>
