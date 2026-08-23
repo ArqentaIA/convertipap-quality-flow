@@ -2586,8 +2586,9 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
 
               <div className="space-y-2">
                 <Label>
-                  Observaciones del Gerente de Calidad{" "}
+                  Observaciones de quien autoriza (queda en auditoría){" "}
                   <span className="text-destructive">*</span>
+
                 </Label>
                 <Textarea
                   value={liberarObservaciones}
