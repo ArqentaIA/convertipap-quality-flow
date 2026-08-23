@@ -24,6 +24,7 @@ export const Route = createFileRoute("/historial/$maquina")({
 function HistorialPage() {
   const { maquina: maquinaCodigo } = Route.useParams();
   const [q, setQ] = useState("");
+  const [estatusFiltro, setEstatusFiltro] = useState<"TODOS" | "L" | "C" | "NC" | "P">("TODOS");
   const [detalle, setDetalle] = useState<{ muestraId: string; folio: string } | null>(null);
   const labFilter = useLabFilter();
 
