@@ -71,6 +71,22 @@ function HistorialPage() {
 
   const filtered = useMemo(
     () =>
+      rollos.filter((r) => {
+        const matchTexto = [r.rollo, r.folioOrden, r.producto, r.operador, r.turno]
+          .join(" ")
+          .toLowerCase()
+          .includes(q.toLowerCase());
+        const matchEstatus =
+          estatusFiltro === "TODOS" ||
+          (estatusFiltro === "P" ? r.estatus == null : r.estatus === estatusFiltro);
+        return matchTexto && matchEstatus;
+      }),
+    [rollos, q, estatusFiltro],
+  );
+
+  // Base para contadores: sólo filtro de texto (los KPIs siempre suman el total)
+  const base = useMemo(
+    () =>
       rollos.filter((r) =>
         [r.rollo, r.folioOrden, r.producto, r.operador, r.turno]
           .join(" ")
@@ -80,9 +96,11 @@ function HistorialPage() {
     [rollos, q],
   );
 
-  const total = filtered.length;
-  const ok = filtered.filter((r) => r.estatus === "L").length;
-  const nc = filtered.filter((r) => r.estatus === "NC").length;
+  const total = base.length;
+  const ok = base.filter((r) => r.estatus === "L").length;
+  const conc = base.filter((r) => r.estatus === "C").length;
+  const nc = base.filter((r) => r.estatus === "NC").length;
+  const pend = base.filter((r) => r.estatus == null).length;
   const kgTotal = filtered.reduce((s, r) => s + (r.pesoKg ?? 0), 0);
   const cumpProm = filtered.length
     ? (
