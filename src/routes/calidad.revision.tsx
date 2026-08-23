@@ -679,7 +679,8 @@ function RevisionPage() {
             <Button variant="outline" onClick={() => setAccion(null)} disabled={isPending}>Cancelar</Button>
             <Button
               onClick={ejecutar}
-              disabled={isPending}
+              disabled={isPending || (accion !== "ajuste" && validarMotivoEstatus(motivo) !== null)}
+
               variant={accion === "rechazar" ? "destructive" : "default"}
               className={cn(
                 accion === "liberar" && "bg-emerald-600 hover:bg-emerald-700",
