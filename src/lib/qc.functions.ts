@@ -861,7 +861,7 @@ export const dictaminarMuestra = createServerFn({ method: "POST" })
           "Motivo no válido: describe la razón real de la decisión, no el nombre del dictamen.",
         ),
       // Campo único en pantalla: la UI captura solo "Motivo del cambio de estatus".
-      // `observaciones` queda opcional y, si no viene, se replica el motivo para
+      // `observaciones` queda opcional; si no viene, NO se duplica el texto:
       // que la evidencia de auditoría siempre quede completa.
       observaciones: z.string().trim().optional(),
 
