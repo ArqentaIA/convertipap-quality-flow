@@ -861,8 +861,8 @@ export const dictaminarMuestra = createServerFn({ method: "POST" })
           "Motivo no válido: describe la razón real de la decisión, no el nombre del dictamen.",
         ),
       // Campo único en pantalla: la UI captura solo "Motivo del cambio de estatus".
-      // `observaciones` queda opcional y, si no viene, se replica el motivo para
-      // que la evidencia de auditoría siempre quede completa.
+      // `observaciones` queda opcional; si no viene, NO se duplica el texto:
+      // `motivo` es la fuente única y las lecturas usan COALESCE.
       observaciones: z.string().trim().optional(),
 
     });
@@ -911,7 +911,11 @@ export const dictaminarMuestra = createServerFn({ method: "POST" })
       p_nuevo_estado: nuevoEstado,
       p_dictamen: data.dictamen,
       p_motivo: data.motivo,
-      p_observaciones: data.observaciones && data.observaciones.length > 0 ? data.observaciones : data.motivo,
+      // No se duplica el texto: si la UI no envía observaciones propias,
+      // `motivo` queda como fuente única y `observaciones` no se escribe.
+      p_observaciones:
+        data.observaciones && data.observaciones.length > 0 ? data.observaciones : undefined,
+
       p_ip: ip ?? undefined,
       p_user_agent: ua ?? undefined,
     });
