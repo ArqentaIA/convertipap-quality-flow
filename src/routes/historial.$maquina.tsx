@@ -10,6 +10,13 @@ import { formatCaptura } from "@/lib/format";
 import { DetalleCalidadModal } from "@/components/qc/DetalleCalidadModal";
 import { BuscadorRollo } from "@/components/qc/BuscadorRollo";
 
+const ESTATUS_LABEL: Record<string, string> = {
+  L: "Liberado",
+  C: "Liberado con concesión",
+  NC: "No Conforme",
+  P: "Pendiente",
+};
+
 export const Route = createFileRoute("/historial/$maquina")({
   component: HistorialPage,
   errorComponent: ({ error }) => (
