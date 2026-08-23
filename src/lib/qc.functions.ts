@@ -911,7 +911,11 @@ export const dictaminarMuestra = createServerFn({ method: "POST" })
       p_nuevo_estado: nuevoEstado,
       p_dictamen: data.dictamen,
       p_motivo: data.motivo,
-      p_observaciones: data.observaciones && data.observaciones.length > 0 ? data.observaciones : data.motivo,
+      // No se duplica el texto: si la UI no envía observaciones propias,
+      // `motivo` queda como fuente única y `observaciones` no se escribe.
+      p_observaciones:
+        data.observaciones && data.observaciones.length > 0 ? data.observaciones : undefined,
+
       p_ip: ip ?? undefined,
       p_user_agent: ua ?? undefined,
     });
