@@ -848,26 +848,34 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
 
 export const dictaminarMuestra = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) =>
-    z
-      .object({
-        muestra_id: z.string().uuid(),
-        dictamen: z.enum(["liberada", "rechazada", "concesion", "correccion_solicitada"]),
-        motivo: z
-          .string()
-          .trim()
-          .min(MOTIVO_MIN_LEN, "El motivo del cambio de estatus es obligatorio (mín. 10 caracteres) y debe expresar la razón real de la decisión.")
-          .refine(
-            (v) => !MOTIVOS_NO_VALIDOS.has(v.toLowerCase()),
-            "Motivo no válido: describe la razón real de la decisión, no el nombre del dictamen.",
-          ),
-        observaciones: z
-          .string()
-          .trim()
-          .min(10, "Las observaciones del Gerente de Calidad son obligatorias (mín. 10 caracteres) y quedan registradas como evidencia."),
-      })
-      .parse(input),
-  )
+  .inputValidator((input: unknown) => {
+    const schema = z.object({
+      muestra_id: z.string().uuid(),
+      dictamen: z.enum(["liberada", "rechazada", "concesion", "correccion_solicitada"]),
+      motivo: z
+        .string()
+        .trim()
+        .min(MOTIVO_MIN_LEN, "El motivo del cambio de estatus es obligatorio (mín. 10 caracteres) y debe expresar la razón real de la decisión.")
+        .refine(
+          (v) => !MOTIVOS_NO_VALIDOS.has(v.toLowerCase()),
+          "Motivo no válido: describe la razón real de la decisión, no el nombre del dictamen.",
+        ),
+      observaciones: z
+        .string()
+        .trim()
+        .min(10, "Las observaciones de quien autoriza son obligatorias (mín. 10 caracteres) y quedan registradas como evidencia."),
+    });
+    const res = schema.safeParse(input);
+    if (res.success) return res.data;
+    // Mensaje legible para el usuario: nunca se devuelve el JSON crudo de Zod.
+    const msgs = Array.from(new Set(res.error.issues.map((i) => i.message)));
+    throw new Error(
+      msgs.length === 1
+        ? `No se pudo cambiar el estatus: ${msgs[0]}`
+        : `No se pudo cambiar el estatus:\n• ${msgs.join("\n• ")}`,
+    );
+  })
+
   .handler(async ({ data, context }) => {
     const sb = context.supabase as SB;
     const roles = await getUserRoles(sb, context.userId);
