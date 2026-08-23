@@ -205,12 +205,18 @@ function HistorialPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-6">
           <StatCard label="Rollos (turno + anterior)" value={String(total)} hint="capturados" />
-          <StatCard label="OK" value={String(ok)} hint="liberados" tone="success" />
-          <StatCard label="No conformes" value={String(nc)} hint="rechazados / fuera" tone="danger" />
+          <StatCard label="Liberados (L)" value={String(ok)} hint="sin concesión" tone="success" />
+          <StatCard label="Concesión (C)" value={String(conc)} hint="liberado condicional" tone="warning" />
+          <StatCard label="No Conformes (NC)" value={String(nc)} hint="rechazados" tone="danger" />
+          <StatCard label="Pendientes" value={String(pend)} hint="sin dictamen" />
           <StatCard label="Cumpl. prom." value={`${cumpProm}${cumpProm === "—" ? "" : "%"}`} hint={`${kgTotal.toFixed(0)} kg total`} tone="primary" />
         </div>
+        <p className="text-xs text-muted-foreground">
+          Control: L {ok} + C {conc} + NC {nc} + Pendientes {pend} = {ok + conc + nc + pend} de {total} rollos
+          {ok + conc + nc + pend !== total && " ⚠ descuadre"}
+        </p>
 
         <div className="rounded-xl border border-border bg-card shadow-sm">
           <div className="flex flex-wrap items-center justify-end gap-3 border-b border-border p-4">
