@@ -219,7 +219,28 @@ function HistorialPage() {
         </p>
 
         <div className="rounded-xl border border-border bg-card shadow-sm">
-          <div className="flex flex-wrap items-center justify-end gap-3 border-b border-border p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border p-4">
+            <div className="flex flex-wrap items-center gap-2">
+              {([
+                ["TODOS", `Todos (${total})`],
+                ["L", `Liberado (${ok})`],
+                ["C", `Concesión (${conc})`],
+                ["NC", `No Conforme (${nc})`],
+                ["P", `Pendiente (${pend})`],
+              ] as const).map(([val, label]) => (
+                <button
+                  key={val}
+                  onClick={() => setEstatusFiltro(val)}
+                  className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                    estatusFiltro === val
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border bg-card text-muted-foreground hover:bg-muted"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
             <button
               onClick={exportXlsx}
               disabled={filtered.length === 0}
