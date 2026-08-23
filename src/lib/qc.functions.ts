@@ -911,7 +911,7 @@ export const dictaminarMuestra = createServerFn({ method: "POST" })
       p_nuevo_estado: nuevoEstado,
       p_dictamen: data.dictamen,
       p_motivo: data.motivo,
-      p_observaciones: data.observaciones,
+      p_observaciones: data.observaciones && data.observaciones.length > 0 ? data.observaciones : data.motivo,
       p_ip: ip ?? undefined,
       p_user_agent: ua ?? undefined,
     });
