@@ -105,13 +105,14 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
     }
   }, [auth.loading, auth.isAuthenticated, navigate]);
 
-  // Pesaje de Rollo (bobina madre): administradores/dirección general
-  // + capturistas de Planta Ixtapaluca (IXT).
+  // Pesaje de Rollo (bobina madre): administradores/dirección general.
+  // Planta Ixtapaluca (IXT): deshabilitado para TODOS los usuarios — el peso
+  // se captura en Control de Calidad / Captura fuera de turno.
   const esIxtapaluca = plantas.length > 0 && plantas.every((p) => p.codigo?.toUpperCase() === "IXT");
   const isAdmin =
-    auth.hasRole("administrador") ||
-    auth.hasRole("gerente_general") ||
-    (auth.hasRole("capturista") && esIxtapaluca);
+    !esIxtapaluca &&
+    (auth.hasRole("administrador") || auth.hasRole("gerente_general"));
+
 
   // Perfiles y Roles: acceso exclusivo de una sola cuenta.
   const canPerfilesRoles =
