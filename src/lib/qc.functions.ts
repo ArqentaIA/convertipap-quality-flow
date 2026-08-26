@@ -450,6 +450,15 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
           .min(1)
           .max(30)
           .regex(/^[A-Za-z0-9-]+$/, "Rollo inválido"),
+        // Ixtapaluca: rollo ya pesado y pendiente de captura. Cuando viene, la
+        // muestra toma ESE número y el consecutivo automático NO avanza.
+        numero_rollo_pesaje: z
+          .string()
+          .trim()
+          .max(30)
+          .regex(/^[A-Za-z0-9-]+$/, "Rollo inválido")
+          .nullable()
+          .optional(),
         jefe_maquina: z.string().trim().max(120).nullable().optional(),
         operador: z.string().trim().max(120).nullable().optional(),
         prensero: z.string().trim().max(120).nullable().optional(),
@@ -597,6 +606,7 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
       turno: data.turno,
       operario_id: data.operario_id,
       numero_rollo: data.numero_rollo,
+      numero_rollo_pesaje: data.numero_rollo_pesaje?.trim() || null,
       jefe_maquina: data.jefe_maquina?.trim() ? data.jefe_maquina.trim() : null,
       operador: data.operador?.trim() ? data.operador.trim() : null,
       prensero: data.prensero?.trim() ? data.prensero.trim() : null,
@@ -732,7 +742,9 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
       if (eDup) throw new Error(eDup.message);
       if (dup) throw new Error(ROLLO_DUPLICADO_MSG);
 
-      const muestraPayloadSb = muestraPayload as unknown as never;
+      // `numero_rollo_pesaje` es solo un hint para la RPC de alta; no es columna.
+      const { numero_rollo_pesaje: _ignorado, ...muestraPayloadUpdate } = muestraPayload;
+      const muestraPayloadSb = muestraPayloadUpdate as unknown as never;
       const { error } = await sb
         .from("muestras_calidad")
         .update(muestraPayloadSb)

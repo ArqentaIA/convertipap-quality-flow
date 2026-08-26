@@ -51,6 +51,7 @@ import {
   buscarPesajePorRollo,
   vincularPesajeMuestra,
   firmarEvidenciaCaptura,
+  listarPesajesPendientesCaptura,
   type PesajeParaCaptura,
 } from "@/lib/pesajes.functions";
 import { listOrdenesActivas } from "@/lib/ordenes-produccion.functions";
@@ -471,12 +472,20 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
     if (typeof window !== "undefined") window.sessionStorage.setItem(idemStorageKey, fresh);
     setIdempotencyKey(fresh);
   }
+  // Rollo ya pesado seleccionado (Planta Ixtapaluca). Si hay uno seleccionado,
+  // la captura usa ESE número y no el consecutivo estimado.
+  const [rolloPesajeSel, setRolloPesajeSel] = useState<string>("");
   useEffect(() => {
     if (rolloAsignado) return; // ya hay número definitivo: no pisar
+    if (rolloPesajeSel) {
+      setNumeroRollo(rolloPesajeSel);
+      return;
+    }
     if (numeracionActiva && numeracionAuto?.proximo_numero) {
       setNumeroRollo(numeracionAuto.proximo_numero);
     }
-  }, [numeracionActiva, numeracionAuto?.proximo_numero, rolloAsignado]);
+  }, [numeracionActiva, numeracionAuto?.proximo_numero, rolloAsignado, rolloPesajeSel]);
+
 
   // Inicia explícitamente una NUEVA muestra: sólo aquí se consulta el próximo
   // consecutivo estimado y se renueva la clave de idempotencia.
@@ -488,6 +497,7 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
     setIniciandoNueva(true);
     try {
       setRolloAsignado(null);
+      setRolloPesajeSel("");
       setNumeroRollo("");
       renovarIdempotency();
       mutation.reset();
@@ -505,6 +515,7 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
   // Se recupera el estado guardado (si lo hay) de la máquina seleccionada.
   useEffect(() => {
     if (typeof window === "undefined") return;
+    setRolloPesajeSel("");
     setRolloAsignadoState(window.sessionStorage.getItem(savedStorageKey));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [savedStorageKey]);
@@ -627,6 +638,21 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
     retry: false,
   });
   const pesajeVinculado: PesajeParaCaptura | null = pesajeQuery.data ?? null;
+
+  // ---- Rollos ya pesados pendientes de captura (Planta Ixtapaluca) ----------
+  // Devuelve [] para máquinas de otras plantas. Un rollo desaparece de la lista
+  // en cuanto se captura en Control de Calidad o en Captura fuera de turno.
+  const listarPendientesFn = useServerFn(listarPesajesPendientesCaptura);
+  const pendientesQuery = useQuery({
+    queryKey: ["pesajes-pendientes-captura", maquina.id],
+    queryFn: () => listarPendientesFn({ data: { maquina_id: maquina.id } }),
+    enabled: !!maquina.id,
+    staleTime: 15_000,
+    retry: false,
+  });
+  const pesajesPendientes = pendientesQuery.data ?? [];
+
+
 
   useEffect(() => {
     if (!pesoVarId) return;
@@ -845,9 +871,11 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
           });
         }
       }
+      setRolloPesajeSel("");
       await queryClient.invalidateQueries({ queryKey: ["qc"] });
       await queryClient.invalidateQueries({ queryKey: ["produccion"] });
       await queryClient.invalidateQueries({ queryKey: ["qc", "cumplimiento"] });
+      await queryClient.invalidateQueries({ queryKey: ["pesajes-pendientes-captura"] });
       await queryClient.refetchQueries({
         queryKey: ["qc", "mis-muestras-recientes"],
         type: "active",
@@ -1191,6 +1219,9 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
         turno,
         operario_id: auth.user!.id,
         numero_rollo: rolloNormalizado,
+        // Ixtapaluca: si se eligió un rollo ya pesado, se conserva ese número
+        // y el consecutivo automático no avanza.
+        numero_rollo_pesaje: rolloPesajeSel || null,
         jefe_maquina: jefeMaquina.trim() || undefined,
         operador: operador.trim() || undefined,
         prensero: prensero.trim() || undefined,
@@ -1424,15 +1455,43 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
                     </div>
                   ) : (
                     <>
+                      {pesajesPendientes.length > 0 && (
+                        <div className="space-y-1 rounded-md border border-amber-300 bg-amber-50 p-2">
+                          <p className="text-[11px] font-semibold tracking-wide text-amber-900">
+                            ROLLOS PESADOS PENDIENTES DE CAPTURA
+                          </p>
+                          <select
+                            className="h-10 w-full rounded-md border border-input bg-background px-2 text-sm"
+                            value={rolloPesajeSel}
+                            onChange={(e) => setRolloPesajeSel(e.target.value)}
+                          >
+                            <option value="">Nuevo rollo (consecutivo automático)</option>
+                            {pesajesPendientes.map((p) => (
+                              <option key={p.id} value={p.numero_rollo}>
+                                {p.numero_rollo} · {p.peso_neto_kg} kg ·{" "}
+                                {new Date(p.fecha_hora_pesaje).toLocaleString("es-MX", {
+                                  dateStyle: "short",
+                                  timeStyle: "short",
+                                })}
+                              </option>
+                            ))}
+                          </select>
+                          <p className="text-[11px] text-amber-900">
+                            Seleccione un rollo ya pesado para completar sus datos de calidad.
+                            Al guardarlo desaparece de esta lista y no consume consecutivo nuevo.
+                          </p>
+                        </div>
+                      )}
                       <p className="text-[11px] font-semibold tracking-wide text-muted-foreground">
-                        PRÓXIMO NÚMERO ESTIMADO
+                        {rolloPesajeSel ? "ROLLO SELECCIONADO (YA PESADO)" : "PRÓXIMO NÚMERO ESTIMADO"}
                       </p>
                       <div className="flex h-11 items-center rounded-md border border-input bg-muted px-3 text-base font-semibold">
                         {numeroRollo || "—"}
                       </div>
                       <p className="text-[11px] text-muted-foreground">
-                        Se confirmará al guardar la muestra. No está reservado y puede
-                        cambiar si otro operador guarda antes.
+                        {rolloPesajeSel
+                          ? "Este número proviene de Pesaje de Rollo y se conservará al guardar."
+                          : "Se confirmará al guardar la muestra. No está reservado y puede cambiar si otro operador guarda antes."}
                       </p>
                     </>
                   )}
