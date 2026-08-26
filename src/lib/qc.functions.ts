@@ -27,6 +27,7 @@ import {
 import type { MuestraCalidad, AjusteCalidad } from "@/lib/qc-types";
 import { evaluateCriticalRule } from "@/lib/qc-critical-rule";
 import { allowedPlantaIds } from "@/lib/planta-acceso";
+import { ordenCatalogo } from "@/lib/qc-orden-variables";
 
 type SB = SupabaseClient<Database>;
 
