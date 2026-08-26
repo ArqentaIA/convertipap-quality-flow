@@ -38,8 +38,22 @@ export type EtiquetaCinta = {
   ancho_util_unidad: string | null;
   observaciones: string | null;
   estado?: string;
+  /** Estatus de liberación de la cinta: L / C / NC (Planta Ixtapaluca). */
+  estatus_liberacion?: string | null;
   version_etiqueta?: number;
   created_at?: string;
+};
+
+export const ESTATUS_CINTA_LABEL: Record<string, string> = {
+  L: "LIBERADO",
+  C: "CONDICIONADO",
+  NC: "NO CONFORME",
+};
+
+const ESTATUS_CINTA_COLOR: Record<string, string> = {
+  L: "#15803d",
+  C: "#b45309",
+  NC: "#b91c1c",
 };
 
 export type EtiquetaSnapshot = {
