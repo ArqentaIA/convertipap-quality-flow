@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Camera, CheckCircle2, Loader2, RefreshCw, ImageIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { listPesajes, firmarEvidencia, type PesajeBobina } from "@/lib/pesajes.functions";
+import { listPesajes, firmarEvidencia, verificarRolloUtilizado, type PesajeBobina, type RolloYaUtilizado } from "@/lib/pesajes.functions";
 import { fechaCortoMX, horaMX } from "@/lib/format";
 
 export const Route = createFileRoute("/pesaje/bobina-madre")({
@@ -156,6 +156,12 @@ function PesajeBobinaPage() {
 
   // Pantalla previa de confirmación de datos antes de registrar
   const [preConfirm, setPreConfirm] = useState(false);
+
+  // Bloqueo por número de rollo ya utilizado
+  const [duplicado, setDuplicado] = useState<RolloYaUtilizado | null>(null);
+  const [verificandoDup, setVerificandoDup] = useState(false);
+  const verificarDup = useServerFn(verificarRolloUtilizado);
+
 
 
   // Dedupe: un solo toast + un solo registro por captura
@@ -512,9 +518,21 @@ function PesajeBobinaPage() {
     registro?: PesajeBobina;
   };
 
-  function registrar() {
+  async function registrar() {
     if (!puedeRegistrar) return;
     if (confirmData) return; // ya hay uno abierto
+    setVerificandoDup(true);
+    try {
+      const res = await verificarDup({ data: { numero_rollo: numeroRollo.trim(), maquina_id: null } });
+      if (res.usado && res.pesaje) {
+        setDuplicado(res);
+        return;
+      }
+    } catch {
+      // Si la verificación falla, continuamos: la BD y la Edge Function revalidan.
+    } finally {
+      setVerificandoDup(false);
+    }
     setPreConfirm(true);
   }
 
@@ -522,6 +540,7 @@ function PesajeBobinaPage() {
     if (!puedeRegistrar) return;
     if (confirmData) return;
     setPreConfirm(false);
+
     setProcesando(true);
     let uploadedPath: string | null = null;
     const clientRequestId = crypto.randomUUID();
@@ -828,7 +847,7 @@ function PesajeBobinaPage() {
         <div className="mt-6 flex flex-wrap gap-3">
           <button
             onClick={registrar}
-            disabled={!puedeRegistrar}
+            disabled={!puedeRegistrar || verificandoDup}
             className="inline-flex min-h-[52px] items-center gap-2 rounded-md bg-primary px-6 py-3 text-base font-semibold text-primary-foreground shadow disabled:opacity-50"
           >
             {procesando ? <Loader2 className="h-5 w-5 animate-spin" /> : <CheckCircle2 className="h-5 w-5" />}
@@ -844,7 +863,47 @@ function PesajeBobinaPage() {
         </div>
       </section>
 
+      {/* Bloqueo: número de rollo ya utilizado */}
+      {duplicado?.pesaje && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="w-full max-w-md rounded-xl border border-destructive/40 bg-background p-5 shadow-xl">
+            <h3 className="text-lg font-semibold text-destructive">Este número de rollo ya está utilizado</h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              El rollo <span className="font-semibold">{duplicado.pesaje.numero_rollo}</span> ya cuenta con un pesaje registrado. No se puede capturar de nuevo.
+            </p>
+            <dl className="mt-4 space-y-2 rounded-md border border-border bg-muted/30 p-3 text-sm">
+              <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Máquina</dt><dd className="font-medium">{duplicado.pesaje.maquina_codigo}</dd></div>
+              <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Orden</dt><dd className="font-medium">{duplicado.pesaje.numero_orden || "—"}</dd></div>
+              <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Fecha de pesaje</dt><dd className="font-medium">{fechaCortoMX(duplicado.pesaje.fecha_hora_pesaje)} {horaMX(duplicado.pesaje.fecha_hora_pesaje)}</dd></div>
+              <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Peso bruto</dt><dd className="font-medium tabular-nums">{duplicado.pesaje.peso_bruto_kg} kg</dd></div>
+              <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Peso neto</dt><dd className="font-semibold tabular-nums">{duplicado.pesaje.peso_neto_kg} kg</dd></div>
+              <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Capturado por</dt><dd className="font-medium">{duplicado.pesaje.capturado_por_nombre || "—"}</dd></div>
+              {duplicado.lote_cintas && (
+                <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Lote de cintas</dt><dd className="font-medium">{duplicado.lote_cintas.estado} · {duplicado.lote_cintas.cantidad_cintas} cintas</dd></div>
+              )}
+            </dl>
+            <div className="mt-5 flex gap-3">
+              <button
+                type="button"
+                onClick={() => { setDuplicado(null); resetForm(true); }}
+                className="inline-flex min-h-[48px] flex-1 items-center justify-center rounded-md bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground"
+              >
+                Capturar otro rollo
+              </button>
+              <button
+                type="button"
+                onClick={() => setDuplicado(null)}
+                className="inline-flex min-h-[48px] flex-1 items-center justify-center rounded-md border border-border px-5 py-3 text-sm font-medium"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Pantalla de confirmación previa */}
+
       {preConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <div className="w-full max-w-md rounded-xl border border-border bg-background p-5 shadow-xl">

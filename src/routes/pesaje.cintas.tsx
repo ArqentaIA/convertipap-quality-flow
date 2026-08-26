@@ -154,7 +154,15 @@ function PesajeCintasPage() {
         setLoteId(ctx.lote.id);
         setConductorId(ctx.lote.conductor_id ?? "");
         setBobinadoraId(ctx.lote.bobinadora_id);
+        if (ctx.lote.estado === "finalizado") {
+          toast.error(
+            `Este número de rollo ya está utilizado: el lote de cintas fue finalizado (${ctx.lote.cantidad_cintas} cintas). Solo consulta.`,
+          );
+        } else {
+          toast.info("Este número de rollo ya está utilizado: se abrió el lote existente para continuar la captura.");
+        }
       }
+
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Error al buscar el rollo.";
       if (msg.toLowerCase().includes("rollo no encontrado") || msg.toLowerCase().includes("not found") || msg.toLowerCase().includes("no encontrado")) {
