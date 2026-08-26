@@ -117,6 +117,14 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
   const canPerfilesRoles =
     (auth.user?.email ?? "").toLowerCase() === PERFILES_ROLES_EMAIL;
 
+  // Variables de Calidad: habilitado para todos los usuarios de Planta
+  // Ixtapaluca (IXT), además de los roles con el permiso global.
+  const canVariablesCalidad = auth.canAccess("variables_calidad") || esIxtapaluca;
+
+  // Acceso efectivo por módulo (permiso global + excepciones por planta).
+  const puedeVer = (mod: (typeof NAV)[number]["module"]) =>
+    mod === "variables_calidad" ? canVariablesCalidad : auth.canAccess(mod);
+
   // 2) Si está en una ruta sin permisos, mandarlo al primer módulo permitido.
   useEffect(() => {
     if (auth.loading || !auth.isAuthenticated) return;
@@ -126,38 +134,38 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
     }
     if (pathname.startsWith("/usuarios")) {
       if (!canPerfilesRoles) {
-        const first = NAV.find((n) => n.to !== "/usuarios" && auth.canAccess(n.module));
+        const first = NAV.find((n) => n.to !== "/usuarios" && puedeVer(n.module));
         void navigate({ to: first?.to ?? "/login", replace: true });
       }
       return;
     }
     const mod = moduleForPath(pathname);
-    if (auth.canAccess(mod)) return;
-    const firstAllowed = NAV.find((n) => auth.canAccess(n.module));
+    if (puedeVer(mod)) return;
+    const firstAllowed = NAV.find((n) => puedeVer(n.module));
     if (firstAllowed && firstAllowed.to !== pathname) {
       void navigate({ to: firstAllowed.to, replace: true });
     }
-  }, [auth.loading, auth.isAuthenticated, auth.modules, auth.roles, pathname, navigate, isAdmin, canPerfilesRoles]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [auth.loading, auth.isAuthenticated, auth.modules, auth.roles, pathname, navigate, isAdmin, canPerfilesRoles, canVariablesCalidad]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const visibleNav = useMemo(
     () =>
       NAV.filter((item) => {
         if (item.to === "/usuarios") return canPerfilesRoles;
-        if (!auth.canAccess(item.module)) return false;
+        if (!puedeVer(item.module)) return false;
         // Oculta "Control de Pesaje" si solo contenía Pesaje de Rollo y no es admin
         if (item.to === "/pesaje/bobina-madre" && !isAdmin && !auth.canAccess("pesaje_cintas")) {
           return false;
         }
         return true;
       }),
-    [auth.modules, auth.roles, isAdmin, canPerfilesRoles], // eslint-disable-line react-hooks/exhaustive-deps
+    [auth.modules, auth.roles, isAdmin, canPerfilesRoles, canVariablesCalidad], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
 
   const currentModule = moduleForPath(pathname);
   const allowedHere = pathname.startsWith("/usuarios")
     ? canPerfilesRoles
-    : auth.canAccess(currentModule);
+    : puedeVer(currentModule);
 
   if (auth.loading || !auth.isAuthenticated) {
     return (
