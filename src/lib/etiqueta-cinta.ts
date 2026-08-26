@@ -118,6 +118,7 @@ export type CintaLabelData = {
   ancho_unidad: string;
   uniones_cinta: number;
   estado_cinta: string;
+  estatus_liberacion: string | null;
   observaciones: string | null;
   registrado_at: string | null;
   version_etiqueta: number;
@@ -227,6 +228,7 @@ export function buildCintaLabelData(snap: EtiquetaSnapshot, cinta: EtiquetaCinta
     ancho_unidad: cinta.ancho_util_unidad ?? "cm",
     uniones_cinta: cinta.uniones,
     estado_cinta: cinta.estado ?? "registrada",
+    estatus_liberacion: cinta.estatus_liberacion ?? null,
     observaciones: limpio(cinta.observaciones),
     registrado_at: cinta.created_at ?? null,
     version_etiqueta: version,
@@ -260,6 +262,8 @@ export function buildCintaLabelData(snap: EtiquetaSnapshot, cinta: EtiquetaCinta
     uniones_cinta: data.uniones_cinta,
     total_uniones_cintas: data.total_uniones_cintas,
     estado_cinta: data.estado_cinta,
+    estatus_liberacion: data.estatus_liberacion,
+    estatus_liberacion_texto: data.estatus_liberacion ? (ESTATUS_CINTA_LABEL[data.estatus_liberacion] ?? data.estatus_liberacion) : null,
     version_etiqueta: data.version_etiqueta,
     generado_at: data.generado_at,
     url: data.trace_url,
@@ -367,7 +371,10 @@ function renderEtiqueta(d: CintaLabelData, snap: EtiquetaSnapshot, assets: Asset
 
       ${filaPersonal ? `<div class="lbl-row">${filaPersonal}</div>` : ""}
 
-      ${d.observaciones ? `<div class="lbl-obs"><span class="k">Obs.</span> ${d.observaciones}</div>` : ""}
+      ${d.observaciones || d.estatus_liberacion ? `<div class="lbl-obs">
+        <div class="lbl-obs-txt">${d.observaciones ? `<span class="k">Obs.</span> ${d.observaciones}` : ""}</div>
+        ${d.estatus_liberacion ? `<div class="lbl-obs-est"><span class="k">Estatus</span><span class="est-badge" style="background:${ESTATUS_CINTA_COLOR[d.estatus_liberacion] ?? "#555"}">${ESTATUS_CINTA_LABEL[d.estatus_liberacion] ?? d.estatus_liberacion}</span></div>` : ""}
+      </div>` : ""}
 
       ${assets.qrTrace || assets.qrSap ? `
       <div class="lbl-qr-zone">
@@ -457,7 +464,10 @@ export async function abrirImpresionEtiquetas(snap: EtiquetaSnapshot): Promise<v
   .lbl-grid > div { display: flex; flex-direction: column; }
   .lbl-cinta { background: transparent; padding: 1.5mm 0; border-top: 0.2mm solid #999; border-bottom: 0.2mm solid #999; }
   .lbl-cinta-tit { font-size: 6.5pt; text-transform: uppercase; color: #111; font-weight: 700; margin-bottom: 1mm; }
-  .lbl-obs { font-size: 7pt; padding-top: 1mm; border-top: 0.2mm dotted #999; }
+  .lbl-obs { font-size: 7pt; padding-top: 1mm; border-top: 0.2mm dotted #999; display: flex; gap: 2mm; align-items: flex-start; }
+  .lbl-obs-txt { width: 50%; }
+  .lbl-obs-est { width: 50%; display: flex; flex-direction: column; align-items: flex-start; gap: 0.6mm; }
+  .est-badge { display: inline-block; padding: 0.6mm 2mm; border-radius: 1mm; color: #fff; font-size: 8pt; font-weight: 900; letter-spacing: 0.3px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .lbl-ver { font-size: 6pt; color: #555; text-align: right; }
 
   .lbl-qr-zone { margin-top: auto; padding-top: 1.5mm; border-top: 0.3mm solid #555; display: flex; justify-content: space-around; align-items: flex-end; gap: 4mm; }
