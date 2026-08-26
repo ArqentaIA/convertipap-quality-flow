@@ -285,7 +285,7 @@ function buildHtml(
   @page{size:5.5in 8.5in portrait;margin:0}
   @media print{
     html,body{background:#fff;padding:0;margin:0;width:139.7mm;height:215.9mm;overflow:hidden}
-    .toolbar{display:none}
+    .toolbar,.hint{display:none}
     .fit{width:135mm;margin:0;transform:scale(var(--fit-scale,1));transform-origin:top left}
     .sheet{width:135mm;min-height:auto;border:2px solid #0f172a;box-shadow:none;margin:0;page-break-inside:avoid;break-inside:avoid;page-break-after:avoid}
   }
