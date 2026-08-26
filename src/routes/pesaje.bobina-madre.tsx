@@ -776,7 +776,8 @@ function PesajeBobinaPage() {
           </div>
         </div>
 
-        {/* 4. Evidencia con OCR */}
+        {/* 4. Evidencia con OCR — oculto para capturistas */}
+        {!esCapturista && (
         <div className="mt-5">
           <label className="mb-2 block text-xs font-medium text-muted-foreground">
             4. Evidencia fotográfica del display * <span className="text-[10px] font-normal">(el peso se lee automáticamente)</span>
@@ -817,6 +818,8 @@ function PesajeBobinaPage() {
               </div>
             )}
           </div>
+        </div>
+        )}
 
           {/* Captura manual del peso (opcional, sustituye la lectura automática) */}
           <div className="mt-4 rounded-xl border-2 border-amber-400/70 bg-amber-50/70 p-4 shadow-sm dark:bg-amber-950/20">
