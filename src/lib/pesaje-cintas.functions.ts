@@ -353,6 +353,24 @@ export const asignarBobinadoraLote = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+export const asignarBobinadorNombre = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({
+    lote_id: z.string().uuid(),
+    nombre: z.string().trim().min(3).max(80),
+  }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { error } = await (context.supabase.rpc as unknown as (
+      fn: string,
+      args: Record<string, unknown>,
+    ) => Promise<{ error: { message: string } | null }>)("pc_set_bobinador_nombre", {
+      _lote_id: data.lote_id,
+      _nombre: data.nombre,
+    });
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
 
 // ------------------------------- Finalizar -------------------------------- //
 

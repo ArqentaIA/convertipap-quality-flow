@@ -1637,6 +1637,7 @@ export type Database = {
           actualizado_por: string | null
           anulado_at: string | null
           anulado_por: string | null
+          bobinador_nombre: string | null
           bobinadora_id: string | null
           bobinadora_nombre_snapshot: string
           cantidad_cintas: number
@@ -1675,6 +1676,7 @@ export type Database = {
           actualizado_por?: string | null
           anulado_at?: string | null
           anulado_por?: string | null
+          bobinador_nombre?: string | null
           bobinadora_id?: string | null
           bobinadora_nombre_snapshot: string
           cantidad_cintas?: number
@@ -1713,6 +1715,7 @@ export type Database = {
           actualizado_por?: string | null
           anulado_at?: string | null
           anulado_por?: string | null
+          bobinador_nombre?: string | null
           bobinadora_id?: string | null
           bobinadora_nombre_snapshot?: string
           cantidad_cintas?: number
@@ -2934,6 +2937,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      pc_set_bobinador_nombre: {
+        Args: { _lote_id: string; _nombre: string }
+        Returns: undefined
       }
       pc_set_bobinadora: {
         Args: { _bobinadora_id: string; _lote_id: string }
