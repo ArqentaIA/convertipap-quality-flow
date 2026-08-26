@@ -1455,15 +1455,43 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
                     </div>
                   ) : (
                     <>
+                      {pesajesPendientes.length > 0 && (
+                        <div className="space-y-1 rounded-md border border-amber-300 bg-amber-50 p-2">
+                          <p className="text-[11px] font-semibold tracking-wide text-amber-900">
+                            ROLLOS PESADOS PENDIENTES DE CAPTURA
+                          </p>
+                          <select
+                            className="h-10 w-full rounded-md border border-input bg-background px-2 text-sm"
+                            value={rolloPesajeSel}
+                            onChange={(e) => setRolloPesajeSel(e.target.value)}
+                          >
+                            <option value="">Nuevo rollo (consecutivo automático)</option>
+                            {pesajesPendientes.map((p) => (
+                              <option key={p.id} value={p.numero_rollo}>
+                                {p.numero_rollo} · {p.peso_neto_kg} kg ·{" "}
+                                {new Date(p.fecha_hora_pesaje).toLocaleString("es-MX", {
+                                  dateStyle: "short",
+                                  timeStyle: "short",
+                                })}
+                              </option>
+                            ))}
+                          </select>
+                          <p className="text-[11px] text-amber-900">
+                            Seleccione un rollo ya pesado para completar sus datos de calidad.
+                            Al guardarlo desaparece de esta lista y no consume consecutivo nuevo.
+                          </p>
+                        </div>
+                      )}
                       <p className="text-[11px] font-semibold tracking-wide text-muted-foreground">
-                        PRÓXIMO NÚMERO ESTIMADO
+                        {rolloPesajeSel ? "ROLLO SELECCIONADO (YA PESADO)" : "PRÓXIMO NÚMERO ESTIMADO"}
                       </p>
                       <div className="flex h-11 items-center rounded-md border border-input bg-muted px-3 text-base font-semibold">
                         {numeroRollo || "—"}
                       </div>
                       <p className="text-[11px] text-muted-foreground">
-                        Se confirmará al guardar la muestra. No está reservado y puede
-                        cambiar si otro operador guarda antes.
+                        {rolloPesajeSel
+                          ? "Este número proviene de Pesaje de Rollo y se conservará al guardar."
+                          : "Se confirmará al guardar la muestra. No está reservado y puede cambiar si otro operador guarda antes."}
                       </p>
                     </>
                   )}
