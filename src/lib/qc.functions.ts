@@ -1403,7 +1403,54 @@ export const listEspecsActivasConVariables = createServerFn({ method: "GET" })
           max: Number(r.max_valor),
           orden: r.variables_calidad?.orden ?? 0,
         }))
-        .sort((a, b) => a.orden - b.orden);
+        .sort(
+          (a, b) =>
+            ordenCatalogo(a.key, a.orden) - ordenCatalogo(b.key, b.orden),
+        );
+
+    // ---------------------------------------------------------------------
+    // Filtro por planta: usuarios restringidos exclusivamente a Ixtapaluca
+    // solo ven productos cuya especificación esté ligada a máquinas de su
+    // planta. Tlaxcala y usuarios sin restricción no se ven afectados.
+    // ---------------------------------------------------------------------
+    let productosVisibles = productos;
+    const { data: upRows } = await sb
+      .from("user_plantas")
+      .select("planta_id, plantas:planta_id (codigo)")
+      .eq("user_id", context.userId);
+    const codigosPlanta = (upRows ?? []).map(
+      (r) => (r as unknown as { plantas?: { codigo?: string } }).plantas?.codigo ?? "",
+    );
+    const soloIxtapaluca =
+      codigosPlanta.length > 0 && codigosPlanta.every((c) => c === "IXT");
+    if (soloIxtapaluca) {
+      const plantaIds = (upRows ?? []).map((r) => r.planta_id as string);
+      const { data: maqs } = await sb
+        .from("maquinas")
+        .select("id")
+        .in("planta_id", plantaIds);
+      const maqIds = (maqs ?? []).map((m) => m.id as string);
+      let specsPermitidos = new Set<string>();
+      if (maqIds.length > 0 && specIds.length > 0) {
+        const { data: links } = await sb
+          .from("producto_especificacion_maquinas")
+          .select("especificacion_id")
+          .in("maquina_id", maqIds)
+          .in("especificacion_id", specIds);
+        specsPermitidos = new Set(
+          (links ?? []).map((l) => l.especificacion_id as string),
+        );
+      }
+      productosVisibles = productos.filter((p) => {
+        const vig = vigByProd.get(p.id);
+        const bdf = bdfByProd.get(p.id);
+        return (
+          (vig && specsPermitidos.has(vig.id)) ||
+          (bdf && specsPermitidos.has(bdf.id))
+        );
+      });
+    }
+
 
     return productos.map((p) => {
       const vig = vigByProd.get(p.id);
