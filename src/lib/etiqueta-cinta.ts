@@ -229,6 +229,8 @@ export function buildCintaLabelData(snap: EtiquetaSnapshot, cinta: EtiquetaCinta
     numero_rollo: data.numero_rollo,
     numero_rollo_original: data.numero_rollo,
     numero_rollo_etiqueta: data.numero_rollo_etiqueta,
+    bobinadora_codigo: codigoBobinadoraIxt(snap.bobinadora),
+
     orden_produccion: data.orden_produccion,
     peso_neto_rollo_kg: data.peso_neto_rollo_kg,
     diametro_rollo_cm: data.diametro_rollo_cm,
