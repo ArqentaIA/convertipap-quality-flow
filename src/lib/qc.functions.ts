@@ -742,7 +742,9 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
       if (eDup) throw new Error(eDup.message);
       if (dup) throw new Error(ROLLO_DUPLICADO_MSG);
 
-      const muestraPayloadSb = muestraPayload as unknown as never;
+      // `numero_rollo_pesaje` es solo un hint para la RPC de alta; no es columna.
+      const { numero_rollo_pesaje: _ignorado, ...muestraPayloadUpdate } = muestraPayload;
+      const muestraPayloadSb = muestraPayloadUpdate as unknown as never;
       const { error } = await sb
         .from("muestras_calidad")
         .update(muestraPayloadSb)
