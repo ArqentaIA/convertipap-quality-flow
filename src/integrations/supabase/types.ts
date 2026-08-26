@@ -2966,6 +2966,10 @@ export type Database = {
         }
         Returns: Json
       }
+      registrar_pesaje_bobina_numerado: {
+        Args: { _registro: Json }
+        Returns: Json
+      }
       shift_op_date: { Args: { _ts: string; _turno: string }; Returns: string }
       spec_tiene_evidencia_vigente: {
         Args: { _spec_id: string }

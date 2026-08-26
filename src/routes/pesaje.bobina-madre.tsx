@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Camera, CheckCircle2, Loader2, RefreshCw, ImageIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { listPesajes, firmarEvidencia, verificarRolloUtilizado, type PesajeBobina, type RolloYaUtilizado } from "@/lib/pesajes.functions";
+import { getEstadoNumeracionRollo } from "@/lib/qc.functions";
 import { fechaCortoMX, horaMX } from "@/lib/format";
 
 export const Route = createFileRoute("/pesaje/bobina-madre")({
@@ -207,25 +208,26 @@ function PesajeBobinaPage() {
     () => maquinasQ.data?.find((m) => m.id === maquinaId)?.codigo ?? "",
     [maquinasQ.data, maquinaId],
   );
-  const sufijoMaq = useMemo(() => {
-    const m = /(\d)$/.exec(maqCodigo);
-    return m ? m[1] : "";
-  }, [maqCodigo]);
-  const baseRollo = useMemo(() => {
-    if (!numeroRollo) return "";
-    const m = /^(.*)-(\d)$/.exec(numeroRollo);
-    return m ? m[1] : numeroRollo;
-  }, [numeroRollo]);
+  const consultarNumeracion = useServerFn(getEstadoNumeracionRollo);
+  const numeracionQ = useQuery({
+    queryKey: ["pesaje", "numeracion-estimada", maquinaId],
+    queryFn: () => consultarNumeracion({ data: { maquina_id: maquinaId } }),
+    enabled: !!maquinaId,
+    staleTime: 0,
+  });
 
   useEffect(() => {
-    if (!sufijoMaq) return;
-    setNumeroRollo((prev) => {
-      if (!prev) return prev;
-      const m = /^(.*)-(\d)$/.exec(prev);
-      if (m) return m[2] !== sufijoMaq ? `${m[1]}-${sufijoMaq}` : prev;
-      return `${prev}-${sufijoMaq}`;
-    });
-  }, [sufijoMaq]);
+    if (!maquinaId) {
+      setNumeroRollo("");
+      return;
+    }
+    const estado = numeracionQ.data;
+    setNumeroRollo(
+      estado?.configurada && estado.activa && estado.proximo_numero
+        ? estado.proximo_numero
+        : "",
+    );
+  }, [maquinaId, numeracionQ.data]);
 
 
 
@@ -239,7 +241,7 @@ function PesajeBobinaPage() {
 
   const puedeMaquina = ordenSel !== "";
   const puedeRollo = !!maquinaId;
-  const puedeFoto = !!numeroRollo.trim() && !!baseRollo;
+  const puedeFoto = !!numeroRollo.trim() && !numeracionQ.isFetching;
   const pesoManualNum = pesoManual.trim() === "" ? null : Number(pesoManual.replace(",", "."));
   const pesoManualValido =
     pesoManualNum !== null && Number.isFinite(pesoManualNum) && pesoManualNum > 0 && pesoManualNum <= 3000;
@@ -750,28 +752,24 @@ function PesajeBobinaPage() {
             )}
           </div>
 
-          {/* 3. Rollo */}
+          {/* 3. Rollo estimado */}
           <div>
             <label className="mb-1 block text-xs font-medium text-muted-foreground">
-              3. N.º de rollo * <span className="text-[10px] font-normal">(sufijo automático)</span>
+              3. N.º de rollo * <span className="text-[10px] font-normal">(estimado automático)</span>
             </label>
-            <div className="flex items-stretch gap-2">
-              <input
-                className="min-h-[48px] w-full rounded-md border border-input bg-background px-3 py-2 text-base disabled:opacity-50"
-                value={baseRollo}
-                onChange={(e) => {
-                  const raw = e.target.value.toUpperCase().replace(/-\d$/, "").trim();
-                  setNumeroRollo(raw ? (sufijoMaq ? `${raw}-${sufijoMaq}` : raw) : "");
-                  limpiarFoto();
-                }}
-                placeholder={maqCodigo ? `Ej. 2807-${sufijoMaq || "X"}` : "Selecciona máquina primero"}
-                disabled={!puedeRollo}
-                inputMode="text"
-              />
-              <span className="inline-flex min-w-[56px] items-center justify-center rounded-md border border-input bg-muted px-3 text-base font-semibold">
-                -{maquinaId ? (sufijoMaq || "?") : "?"}
-              </span>
-            </div>
+            <input
+              className="min-h-[48px] w-full cursor-not-allowed rounded-md border border-input bg-muted px-3 py-2 text-base font-semibold disabled:opacity-50"
+              value={numeroRollo}
+              readOnly
+              aria-readonly="true"
+              placeholder={numeracionQ.isFetching ? "Consultando consecutivo…" : "Selecciona máquina primero"}
+              disabled={!puedeRollo || numeracionQ.isFetching}
+            />
+            {maquinaId && !numeracionQ.isFetching && !numeroRollo && (
+              <p className="mt-1 text-[11px] text-destructive">
+                La máquina no tiene una numeración automática activa.
+              </p>
+            )}
           </div>
         </div>
 
