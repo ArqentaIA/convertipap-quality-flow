@@ -56,6 +56,7 @@ function PesajeCintasPage() {
   const preparar = useServerFn(prepararImpresion);
   const actualizarOp = useServerFn(actualizarDatosOperativos);
   const asignarBobinadora = useServerFn(asignarBobinadoraLote);
+  const asignarBobinador = useServerFn(asignarBobinadorNombre);
 
   const [rolMe, setRolMe] = useState<string | null>(null);
   const [authReady, setAuthReady] = useState(false);
@@ -222,6 +223,7 @@ function PesajeCintasPage() {
       return null;
     }
     if (esIxtapaluca && !manualBobinadoraId) { toast.error("Seleccione la máquina (rebobinadora)."); return null; }
+    if (esIxtapaluca && bobinadorNombre.trim().length < 3) { toast.error("Capture el nombre del bobinador."); return null; }
     return { peso, diametro, uniones };
   }
 
@@ -257,6 +259,11 @@ function PesajeCintasPage() {
           idempotency_key: uuid(),
         },
       });
+      if (esIxtapaluca && bobinadorNombre.trim()) {
+        await asignarBobinador({ data: { lote_id, nombre: bobinadorNombre.trim() } }).catch(() => {
+          toast.warning("El lote se creó, pero no se pudo registrar el nombre del bobinador.");
+        });
+      }
       if (esIxtapaluca && manualBobinadoraId) {
         await asignarBobinadora({ data: { lote_id, bobinadora_id: manualBobinadoraId } }).catch(() => {
           toast.warning("El lote se creó, pero no se pudo registrar la máquina. Asígnela desde 'Cambiar conductor/bobinadora'.");
@@ -278,6 +285,7 @@ function PesajeCintasPage() {
   async function onCrearLote() {
     if (!contexto) return;
     if (!conductorId || !bobinadoraId) { toast.error("Seleccione conductor y bobinadora."); return; }
+    if (esIxtapaluca && bobinadorNombre.trim().length < 3) { toast.error("Capture el nombre del bobinador."); return; }
     if (requestGuard.current) return;
     requestGuard.current = true;
     setSaving(true);
@@ -290,6 +298,11 @@ function PesajeCintasPage() {
           idempotency_key: uuid(),
         },
       });
+      if (esIxtapaluca && bobinadorNombre.trim()) {
+        await asignarBobinador({ data: { lote_id, nombre: bobinadorNombre.trim() } }).catch(() => {
+          toast.warning("El lote se creó, pero no se pudo registrar el nombre del bobinador.");
+        });
+      }
       if (ordenSistema.trim()) {
         await guardarOrden({ data: { lote_id, orden: ordenSistema.trim() } }).catch(() => null);
       }
@@ -698,7 +711,7 @@ function PesajeCintasPage() {
       {contexto && !lote && (
         <div className="rounded-lg border border-border bg-card p-4">
           <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">3 · Conductor y {esIxtapaluca ? "máquina" : "bobinadora"}</div>
-          <div className="grid gap-3 md:grid-cols-3">
+          <div className={esIxtapaluca ? "grid gap-3 md:grid-cols-4" : "grid gap-3 md:grid-cols-3"}>
             <div>
               <label className="mb-1 block text-xs text-muted-foreground">Conductor</label>
               <select
@@ -725,10 +738,23 @@ function PesajeCintasPage() {
                 ))}
               </select>
             </div>
+            {esIxtapaluca && (
+              <div>
+                <label className="mb-1 block text-xs text-muted-foreground">Nombre del bobinador</label>
+                <input
+                  type="text"
+                  maxLength={80}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  placeholder="Nombre completo"
+                  value={bobinadorNombre}
+                  onChange={(e) => setBobinadorNombre(e.target.value)}
+                />
+              </div>
+            )}
             <div className="flex items-end">
               <button
                 onClick={onCrearLote}
-                disabled={saving || !conductorId || !bobinadoraId}
+                disabled={saving || !conductorId || !bobinadoraId || (esIxtapaluca && bobinadorNombre.trim().length < 3)}
                 className="w-full rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground disabled:opacity-50"
               >
                 {saving ? "Iniciando…" : "Iniciar lote"}
