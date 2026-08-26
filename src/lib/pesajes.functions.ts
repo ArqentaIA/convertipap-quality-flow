@@ -174,3 +174,87 @@ export const buscarPesajePorRollo = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return (p as PesajeParaCaptura | null) ?? null;
   });
+
+/**
+ * Verifica si un número de rollo ya fue utilizado en Pesaje de Bobina Madre
+ * (y si además ya tiene lote de cintas). Se usa para bloquear la captura
+ * duplicada y mostrar al operador el registro existente.
+ */
+export type RolloYaUtilizado = {
+  usado: boolean;
+  pesaje: {
+    id: string;
+    numero_rollo: string;
+    maquina_codigo: string;
+    peso_bruto_kg: number;
+    peso_neto_kg: number;
+    fecha_hora_pesaje: string;
+    numero_orden: string | null;
+    capturado_por_nombre: string | null;
+  } | null;
+  lote_cintas: {
+    id: string;
+    estado: string;
+    cantidad_cintas: number;
+    created_at: string;
+  } | null;
+};
+
+export const verificarRolloUtilizado = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z.object({
+      numero_rollo: z.string().trim().min(1).max(64),
+      maquina_id: z.string().uuid().nullish(),
+    }).parse(d),
+  )
+  .handler(async ({ data, context }): Promise<RolloYaUtilizado> => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    let q = supabaseAdmin
+      .from("pesajes_bobina_madre")
+      .select("id, numero_rollo, maquina_codigo, peso_bruto_kg, peso_neto_kg, fecha_hora_pesaje, numero_orden, capturado_por")
+      .eq("numero_rollo", data.numero_rollo)
+      .order("fecha_hora_pesaje", { ascending: false })
+      .limit(1);
+    if (data.maquina_id) q = q.eq("maquina_id", data.maquina_id);
+    const { data: rows, error } = await q;
+    if (error) throw new Error(error.message);
+    const p = rows?.[0] ?? null;
+
+    let nombre: string | null = null;
+    if (p?.capturado_por) {
+      const { data: prof } = await supabaseAdmin
+        .from("profiles").select("nombre, email").eq("id", p.capturado_por).maybeSingle();
+      nombre = prof?.nombre ?? prof?.email ?? null;
+    }
+
+    const { data: lotes } = await supabaseAdmin
+      .from("pesajes_cintas_lotes")
+      .select("id, estado, cantidad_cintas, created_at")
+      .eq("numero_rollo", data.numero_rollo)
+      .neq("estado", "anulado")
+      .order("created_at", { ascending: false })
+      .limit(1);
+    const lote = lotes?.[0] ?? null;
+
+    void context.userId;
+    return {
+      usado: !!p,
+      pesaje: p
+        ? {
+            id: p.id,
+            numero_rollo: p.numero_rollo,
+            maquina_codigo: p.maquina_codigo,
+            peso_bruto_kg: Number(p.peso_bruto_kg),
+            peso_neto_kg: Number(p.peso_neto_kg),
+            fecha_hora_pesaje: p.fecha_hora_pesaje,
+            numero_orden: p.numero_orden,
+            capturado_por_nombre: nombre,
+          }
+        : null,
+      lote_cintas: lote
+        ? { id: lote.id, estado: lote.estado, cantidad_cintas: lote.cantidad_cintas, created_at: lote.created_at }
+        : null,
+    };
+  });
