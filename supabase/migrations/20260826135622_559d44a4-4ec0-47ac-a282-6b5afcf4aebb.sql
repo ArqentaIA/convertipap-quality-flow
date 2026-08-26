@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.pc_propagar_estatus_muestra_fn() FROM PUBLIC, anon, authenticated;
