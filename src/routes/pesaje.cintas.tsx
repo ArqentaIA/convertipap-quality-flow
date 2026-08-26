@@ -84,6 +84,9 @@ function PesajeCintasPage() {
   const [conductorId, setConductorId] = useState<string>("");
   const [bobinadoraId, setBobinadoraId] = useState<string>("");
   const [bobinadorNombre, setBobinadorNombre] = useState<string>("");
+  // Ixtapaluca: conductor y máquina se capturan como texto libre (máx. 20)
+  const [conductorNombre, setConductorNombre] = useState<string>("");
+  const [maquinaNombre, setMaquinaNombre] = useState<string>("");
   const [saving, setSaving] = useState(false);
   const [manualOpen, setManualOpen] = useState(false);
   const [manualRollo, setManualRollo] = useState("");
