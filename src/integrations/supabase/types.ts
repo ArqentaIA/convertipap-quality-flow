@@ -2946,6 +2946,10 @@ export type Database = {
         Args: { _bobinadora_id: string; _lote_id: string }
         Returns: undefined
       }
+      pc_set_nombres_operativos: {
+        Args: { _conductor: string; _lote_id: string; _maquina: string }
+        Returns: undefined
+      }
       pc_set_orden_manual: {
         Args: { _lote_id: string; _orden: string }
         Returns: undefined

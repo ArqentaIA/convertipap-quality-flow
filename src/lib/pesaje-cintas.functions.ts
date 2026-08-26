@@ -371,6 +371,26 @@ export const asignarBobinadorNombre = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+export const asignarNombresOperativos = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({
+    lote_id: z.string().uuid(),
+    conductor: z.string().trim().max(20),
+    maquina: z.string().trim().max(20),
+  }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { error } = await (context.supabase.rpc as unknown as (
+      fn: string,
+      args: Record<string, unknown>,
+    ) => Promise<{ error: { message: string } | null }>)("pc_set_nombres_operativos", {
+      _lote_id: data.lote_id,
+      _conductor: data.conductor,
+      _maquina: data.maquina,
+    });
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
 
 // ------------------------------- Finalizar -------------------------------- //
 

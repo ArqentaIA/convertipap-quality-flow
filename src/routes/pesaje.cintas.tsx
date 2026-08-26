@@ -9,7 +9,7 @@ import {
   buscarContextoRollo, listConductores, listBobinadoras,
   crearLote, crearLoteManualV2, guardarOrdenManual, obtenerLoteYCintas, registrarCinta, corregirCinta, anularCinta,
   finalizarLote, prepararImpresion, actualizarDatosOperativos, asignarBobinadoraLote,
-  asignarBobinadorNombre,
+  asignarBobinadorNombre, asignarNombresOperativos,
   type ContextoRollo, type CintaRegistrada, type LoteCintas,
 } from "@/lib/pesaje-cintas.functions";
 
@@ -57,6 +57,7 @@ function PesajeCintasPage() {
   const actualizarOp = useServerFn(actualizarDatosOperativos);
   const asignarBobinadora = useServerFn(asignarBobinadoraLote);
   const asignarBobinador = useServerFn(asignarBobinadorNombre);
+  const asignarNombresOp = useServerFn(asignarNombresOperativos);
 
   const [rolMe, setRolMe] = useState<string | null>(null);
   const [authReady, setAuthReady] = useState(false);
@@ -83,6 +84,9 @@ function PesajeCintasPage() {
   const [conductorId, setConductorId] = useState<string>("");
   const [bobinadoraId, setBobinadoraId] = useState<string>("");
   const [bobinadorNombre, setBobinadorNombre] = useState<string>("");
+  // Ixtapaluca: conductor y máquina se capturan como texto libre (máx. 20)
+  const [conductorNombre, setConductorNombre] = useState<string>("");
+  const [maquinaNombre, setMaquinaNombre] = useState<string>("");
   const [saving, setSaving] = useState(false);
   const [manualOpen, setManualOpen] = useState(false);
   const [manualRollo, setManualRollo] = useState("");
@@ -222,7 +226,7 @@ function PesajeCintasPage() {
       toast.error("Las uniones deben ser un número entero igual o mayor que cero.");
       return null;
     }
-    if (esIxtapaluca && !manualBobinadoraId) { toast.error("Seleccione la máquina (rebobinadora)."); return null; }
+    if (esIxtapaluca && maquinaNombre.trim().length < 2) { toast.error("Capture la máquina."); return null; }
     if (esIxtapaluca && bobinadorNombre.trim().length < 3) { toast.error("Capture el nombre del bobinador."); return null; }
     return { peso, diametro, uniones };
   }
@@ -264,9 +268,15 @@ function PesajeCintasPage() {
           toast.warning("El lote se creó, pero no se pudo registrar el nombre del bobinador.");
         });
       }
-      if (esIxtapaluca && manualBobinadoraId) {
-        await asignarBobinadora({ data: { lote_id, bobinadora_id: manualBobinadoraId } }).catch(() => {
-          toast.warning("El lote se creó, pero no se pudo registrar la máquina. Asígnela desde 'Cambiar conductor/bobinadora'.");
+      if (esIxtapaluca) {
+        await asignarNombresOp({
+          data: {
+            lote_id,
+            conductor: conductorNombre.trim().slice(0, 20),
+            maquina: maquinaNombre.trim().slice(0, 20),
+          },
+        }).catch(() => {
+          toast.warning("El lote se creó, pero no se pudieron registrar conductor y máquina.");
         });
       }
 
@@ -284,7 +294,17 @@ function PesajeCintasPage() {
 
   async function onCrearLote() {
     if (!contexto) return;
-    if (!conductorId || !bobinadoraId) { toast.error("Seleccione conductor y bobinadora."); return; }
+    // Ixtapaluca: conductor y máquina son texto libre; se usan referencias base
+    // del catálogo solo para satisfacer el registro y luego se guardan los nombres.
+    const condRef = esIxtapaluca ? (conductoresQ.data ?? [])[0]?.id ?? "" : conductorId;
+    const bobRef = esIxtapaluca ? bobinadorasVisibles[0]?.id ?? "" : bobinadoraId;
+    if (esIxtapaluca) {
+      if (conductorNombre.trim().length < 3) { toast.error("Capture el nombre del conductor."); return; }
+      if (maquinaNombre.trim().length < 2) { toast.error("Capture la máquina."); return; }
+      if (!condRef || !bobRef) { toast.error("No fue posible iniciar el lote. Intente de nuevo."); return; }
+    } else if (!conductorId || !bobinadoraId) {
+      toast.error("Seleccione conductor y bobinadora."); return;
+    }
     if (esIxtapaluca && bobinadorNombre.trim().length < 3) { toast.error("Capture el nombre del bobinador."); return; }
     if (requestGuard.current) return;
     requestGuard.current = true;
@@ -293,11 +313,18 @@ function PesajeCintasPage() {
       const { lote_id } = await crear({
         data: {
           numero_rollo: contexto.muestra.numero_rollo,
-          conductor_id: conductorId,
-          bobinadora_id: bobinadoraId,
+          conductor_id: condRef,
+          bobinadora_id: bobRef,
           idempotency_key: uuid(),
         },
       });
+      if (esIxtapaluca) {
+        await asignarNombresOp({
+          data: { lote_id, conductor: conductorNombre.trim().slice(0, 20), maquina: maquinaNombre.trim().slice(0, 20) },
+        }).catch(() => {
+          toast.warning("El lote se creó, pero no se pudieron registrar conductor y máquina.");
+        });
+      }
       if (esIxtapaluca && bobinadorNombre.trim()) {
         await asignarBobinador({ data: { lote_id, nombre: bobinadorNombre.trim() } }).catch(() => {
           toast.warning("El lote se creó, pero no se pudo registrar el nombre del bobinador.");
@@ -652,17 +679,28 @@ function PesajeCintasPage() {
                 </div>
                 {esIxtapaluca && (
                   <div>
-                    <label className="mb-1 block text-[11px] uppercase tracking-wide text-muted-foreground">Máquina *</label>
-                    <select
+                    <label className="mb-1 block text-[11px] uppercase tracking-wide text-muted-foreground">Conductor *</label>
+                    <input
+                      type="text"
+                      maxLength={20}
                       className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                      value={manualBobinadoraId}
-                      onChange={(e) => setManualBobinadoraId(e.target.value)}
-                    >
-                      <option value="">Seleccione…</option>
-                      {bobinadorasVisibles.map((b) => (
-                        <option key={b.id} value={b.id}>{b.nombre}</option>
-                      ))}
-                    </select>
+                      placeholder="Nombre (máx. 20)"
+                      value={conductorNombre}
+                      onChange={(e) => setConductorNombre(e.target.value)}
+                    />
+                  </div>
+                )}
+                {esIxtapaluca && (
+                  <div>
+                    <label className="mb-1 block text-[11px] uppercase tracking-wide text-muted-foreground">Máquina *</label>
+                    <input
+                      type="text"
+                      maxLength={20}
+                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      placeholder="Máquina (máx. 20)"
+                      value={maquinaNombre}
+                      onChange={(e) => setMaquinaNombre(e.target.value)}
+                    />
                   </div>
                 )}
                 {esIxtapaluca && (
@@ -727,29 +765,51 @@ function PesajeCintasPage() {
           <div className={esIxtapaluca ? "grid gap-3 md:grid-cols-4" : "grid gap-3 md:grid-cols-3"}>
             <div>
               <label className="mb-1 block text-xs text-muted-foreground">Conductor</label>
-              <select
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                value={conductorId}
-                onChange={(e) => setConductorId(e.target.value)}
-              >
-                <option value="">— seleccionar —</option>
-                {(conductoresQ.data ?? []).map((c) => (
-                  <option key={c.id} value={c.id}>{c.nombre}{c.puesto ? ` · ${c.puesto}` : ""}</option>
-                ))}
-              </select>
+              {esIxtapaluca ? (
+                <input
+                  type="text"
+                  maxLength={20}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  placeholder="Nombre (máx. 20)"
+                  value={conductorNombre}
+                  onChange={(e) => setConductorNombre(e.target.value)}
+                />
+              ) : (
+                <select
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  value={conductorId}
+                  onChange={(e) => setConductorId(e.target.value)}
+                >
+                  <option value="">— seleccionar —</option>
+                  {(conductoresQ.data ?? []).map((c) => (
+                    <option key={c.id} value={c.id}>{c.nombre}{c.puesto ? ` · ${c.puesto}` : ""}</option>
+                  ))}
+                </select>
+              )}
             </div>
             <div>
               <label className="mb-1 block text-xs text-muted-foreground">{esIxtapaluca ? "Máquina" : "Bobinadora"}</label>
-              <select
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                value={bobinadoraId}
-                onChange={(e) => setBobinadoraId(e.target.value)}
-              >
-                <option value="">— seleccionar —</option>
-                {bobinadorasVisibles.map((b) => (
-                  <option key={b.id} value={b.id}>{b.nombre}{b.codigo ? ` (${b.codigo})` : ""}</option>
-                ))}
-              </select>
+              {esIxtapaluca ? (
+                <input
+                  type="text"
+                  maxLength={20}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  placeholder="Máquina (máx. 20)"
+                  value={maquinaNombre}
+                  onChange={(e) => setMaquinaNombre(e.target.value)}
+                />
+              ) : (
+                <select
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  value={bobinadoraId}
+                  onChange={(e) => setBobinadoraId(e.target.value)}
+                >
+                  <option value="">— seleccionar —</option>
+                  {bobinadorasVisibles.map((b) => (
+                    <option key={b.id} value={b.id}>{b.nombre}{b.codigo ? ` (${b.codigo})` : ""}</option>
+                  ))}
+                </select>
+              )}
             </div>
             {esIxtapaluca && (
               <div>
@@ -767,7 +827,12 @@ function PesajeCintasPage() {
             <div className="flex items-end">
               <button
                 onClick={onCrearLote}
-                disabled={saving || !conductorId || !bobinadoraId || (esIxtapaluca && bobinadorNombre.trim().length < 3)}
+                disabled={
+                  saving ||
+                  (esIxtapaluca
+                    ? conductorNombre.trim().length < 3 || maquinaNombre.trim().length < 2 || bobinadorNombre.trim().length < 3
+                    : !conductorId || !bobinadoraId)
+                }
                 className="w-full rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground disabled:opacity-50"
               >
                 {saving ? "Iniciando…" : "Iniciar lote"}
