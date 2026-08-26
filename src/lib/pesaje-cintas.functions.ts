@@ -76,6 +76,8 @@ export type CintaRegistrada = {
   ancho_util_unidad: string | null;
   observaciones: string | null;
   estado: "registrada" | "sustituida" | "anulada";
+  /** Estatus de liberación de la cinta: L (Liberado), C (Condicionado), NC (No conforme). */
+  estatus_liberacion: "L" | "C" | "NC" | null;
   version_etiqueta: number | null;
   created_at: string;
 };
