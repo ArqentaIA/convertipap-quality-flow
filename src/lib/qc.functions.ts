@@ -606,6 +606,7 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
       turno: data.turno,
       operario_id: data.operario_id,
       numero_rollo: data.numero_rollo,
+      numero_rollo_pesaje: data.numero_rollo_pesaje?.trim() || null,
       jefe_maquina: data.jefe_maquina?.trim() ? data.jefe_maquina.trim() : null,
       operador: data.operador?.trim() ? data.operador.trim() : null,
       prensero: data.prensero?.trim() ? data.prensero.trim() : null,
