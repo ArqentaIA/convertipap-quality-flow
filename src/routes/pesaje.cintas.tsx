@@ -268,9 +268,15 @@ function PesajeCintasPage() {
           toast.warning("El lote se creó, pero no se pudo registrar el nombre del bobinador.");
         });
       }
-      if (esIxtapaluca && manualBobinadoraId) {
-        await asignarBobinadora({ data: { lote_id, bobinadora_id: manualBobinadoraId } }).catch(() => {
-          toast.warning("El lote se creó, pero no se pudo registrar la máquina. Asígnela desde 'Cambiar conductor/bobinadora'.");
+      if (esIxtapaluca) {
+        await asignarNombresOp({
+          data: {
+            lote_id,
+            conductor: conductorNombre.trim().slice(0, 20),
+            maquina: maquinaNombre.trim().slice(0, 20),
+          },
+        }).catch(() => {
+          toast.warning("El lote se creó, pero no se pudieron registrar conductor y máquina.");
         });
       }
 
