@@ -280,10 +280,12 @@ function buildHtml(
   /* Contenedor de ajuste a media carta */
   .fit{width:139.7mm;margin:0 auto;transform-origin:top center}
 
-  @page{size:5.5in 8.5in;margin:0}
+  .hint{max-width:140mm;margin:0 auto 8px;font-size:11px;color:#334155;background:#fef9c3;border:1px solid #fde68a;border-radius:6px;padding:6px 10px;line-height:1.4}
+
+  @page{size:5.5in 8.5in portrait;margin:0}
   @media print{
     html,body{background:#fff;padding:0;margin:0;width:139.7mm;height:215.9mm;overflow:hidden}
-    .toolbar{display:none}
+    .toolbar,.hint{display:none}
     .fit{width:135mm;margin:0;transform:scale(var(--fit-scale,1));transform-origin:top left}
     .sheet{width:135mm;min-height:auto;border:2px solid #0f172a;box-shadow:none;margin:0;page-break-inside:avoid;break-inside:avoid;page-break-after:avoid}
   }
@@ -294,6 +296,7 @@ function buildHtml(
     <button class="secondary" onclick="window.close()">Cerrar</button>
     <button onclick="window.print()">Imprimir</button>
   </div>
+  <div class="hint"><b>Para imprimir a media carta:</b> Tamaño del papel = <b>Media carta / Statement (5.5 × 8.5 pulg)</b> · Disposición = <b>Vertical</b> · Escala = <b>100 % (Tamaño real)</b> · Márgenes = <b>Ninguno</b> · desactivar “Imprimir por ambas caras”. Si la impresora no tiene media carta, use <b>Carta Vertical</b>: la etiqueta se imprime en la mitad superior para recortar.</div>
   <div class="fit">
   <div class="sheet">
     <div class="head">
