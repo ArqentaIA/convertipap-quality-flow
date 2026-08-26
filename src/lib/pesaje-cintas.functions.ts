@@ -306,6 +306,22 @@ export const corregirCinta = createServerFn({ method: "POST" })
     return res as unknown as { cinta_id: string; posicion?: number };
   });
 
+/** Estatus de liberación por cinta (hereda el del rollo; editable por el usuario). */
+export const asignarEstatusCinta = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({
+    cinta_id: z.string().uuid(),
+    estatus: z.enum(["L", "C", "NC"]),
+  }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase.rpc("pc_set_estatus_cinta", {
+      _cinta_id: data.cinta_id,
+      _estatus: data.estatus,
+    });
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
 export const anularCinta = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ cinta_id: z.string().uuid(), motivo: z.string().min(5).max(500) }).parse(d))
