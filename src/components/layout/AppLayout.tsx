@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 
 import logo from "@/assets/logo.png";
-import { useMaquinasPermitidas, usePlantasPermitidas } from "@/hooks/usePlantasPermitidas";
+import { useMaquinasPermitidas, usePlantasPermitidas, PLANTA_ACTIVA_KEY } from "@/hooks/usePlantasPermitidas";
 import { useAuth, type AppModule } from "@/lib/auth";
 import { useLabFilter, LAB_LABEL } from "@/lib/lab";
 import { ShieldCheck } from "lucide-react";
@@ -97,6 +97,13 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
   const plant = plantas.find((p) => p.id === plantId) ?? plantas[0] ?? null;
   const now = new Date();
   const dateStr = now.toLocaleDateString("es-MX", { weekday: "long", day: "2-digit", month: "long", year: "numeric" });
+
+  // Compartir la planta activa con el resto de pantallas (reglas por planta).
+  useEffect(() => {
+    if (!plant?.codigo) return;
+    window.localStorage.setItem(PLANTA_ACTIVA_KEY, plant.codigo.toUpperCase());
+    window.dispatchEvent(new Event("planta-activa-change"));
+  }, [plant?.codigo]);
 
   // 1) Redirigir a /login si no hay sesión
   useEffect(() => {

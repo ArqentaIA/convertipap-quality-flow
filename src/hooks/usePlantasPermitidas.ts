@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
@@ -26,6 +27,32 @@ export function usePlantasPermitidas() {
       return allowed.length > 0 ? all.filter((p) => allowed.includes(p.id)) : all;
     },
   });
+}
+
+export const PLANTA_ACTIVA_KEY = "planta_activa_codigo";
+
+/**
+ * Código de la planta seleccionada en el encabezado (persistida en localStorage).
+ * Permite que las pantallas apliquen reglas por planta aunque el usuario
+ * tenga acceso a más de una.
+ */
+export function usePlantaActivaCodigo(): string | null {
+  const [codigo, setCodigo] = useState<string | null>(
+    typeof window === "undefined" ? null : window.localStorage.getItem(PLANTA_ACTIVA_KEY),
+  );
+
+  useEffect(() => {
+    const leer = () => setCodigo(window.localStorage.getItem(PLANTA_ACTIVA_KEY));
+    leer();
+    window.addEventListener("planta-activa-change", leer);
+    window.addEventListener("storage", leer);
+    return () => {
+      window.removeEventListener("planta-activa-change", leer);
+      window.removeEventListener("storage", leer);
+    };
+  }, []);
+
+  return codigo;
 }
 
 /** Máquinas activas visibles para el usuario (filtradas por planta asignada). */
