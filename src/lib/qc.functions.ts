@@ -516,6 +516,10 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
           .enum(["MENOR", "MAYOR", "CRÍTICO", "SIN DEFECTO"])
           .nullable()
           .optional(),
+        // Estatus elegido por el capturista — EXCLUSIVO Planta Ixtapaluca.
+        // Manda sobre el resultado automático de la sección F.
+        estatus_capturista: z.enum(["L", "C", "NC"]).nullable().optional(),
+        estatus_capturista_motivo: z.string().trim().max(240).nullable().optional(),
         variables_snapshot_json: z.record(z.string(), z.unknown()).default({}),
         mediciones: z.array(medicionInputSchema),
         enviar_a_revision: z.boolean().default(false),
@@ -825,6 +829,57 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
 
 
 
+
+    // -------------------------------------------------------------------------
+    // ESTATUS ELEGIDO POR EL CAPTURISTA — EXCLUSIVO PLANTA IXTAPALUCA.
+    // Manda sobre el resultado automático de la sección F. Motivo obligatorio:
+    // ≥20 caracteres si libera (L), ≥10 caracteres para C / NC.
+    // Se aplica por la ÚNICA ruta autorizada: RPC `change_roll_status`.
+    // -------------------------------------------------------------------------
+    if (data.estatus_capturista && muestraId) {
+      const { data: maq } = await sb
+        .from("maquinas")
+        .select("planta_id, plantas:planta_id(codigo)")
+        .eq("id", data.maquina_id)
+        .maybeSingle();
+      const codigoPlanta = (
+        (maq as unknown as { plantas?: { codigo?: string | null } | null })?.plantas?.codigo ?? ""
+      ).toUpperCase();
+      if (codigoPlanta !== "IXT") {
+        throw new Error(
+          "El estatus manual del capturista solo está habilitado en la planta Ixtapaluca.",
+        );
+      }
+      const motivoEst = (data.estatus_capturista_motivo ?? "").trim();
+      const minLen = data.estatus_capturista === "L" ? 20 : 10;
+      if (motivoEst.length < minLen) {
+        throw new Error(
+          data.estatus_capturista === "L"
+            ? "Para liberar el rollo debes registrar una justificación de al menos 20 caracteres."
+            : "Debes registrar el motivo del estatus (mínimo 10 caracteres).",
+        );
+      }
+      const mapa = {
+        L: { estado: "liberada", dictamen: "liberada" },
+        C: { estado: "concesion", dictamen: "concesion" },
+        NC: { estado: "rechazada", dictamen: "rechazada" },
+      } as const;
+      const destino = mapa[data.estatus_capturista];
+      const { error: eEstatus } = await (
+        sb as unknown as {
+          rpc: (n: string, a: unknown) => Promise<{ error: { message: string } | null }>;
+        }
+      ).rpc("change_roll_status", {
+        p_muestra_id: muestraId,
+        p_nuevo_estado: destino.estado,
+        p_dictamen: destino.dictamen,
+        p_motivo: motivoEst,
+        p_observaciones: null,
+        p_ip: null,
+        p_user_agent: null,
+      });
+      if (eEstatus) throw new Error(eEstatus.message);
+    }
 
     // Auditoría explícita de los hallazgos del rollo (creación o edición).
     if (
