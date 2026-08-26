@@ -1219,6 +1219,9 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
         turno,
         operario_id: auth.user!.id,
         numero_rollo: rolloNormalizado,
+        // Ixtapaluca: si se eligió un rollo ya pesado, se conserva ese número
+        // y el consecutivo automático no avanza.
+        numero_rollo_pesaje: rolloPesajeSel || null,
         jefe_maquina: jefeMaquina.trim() || undefined,
         operador: operador.trim() || undefined,
         prensero: prensero.trim() || undefined,
