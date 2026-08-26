@@ -252,8 +252,11 @@ function PesajeCintasPage() {
         },
       });
       if (esIxtapaluca && manualBobinadoraId) {
-        await asignarBobinadora({ data: { lote_id, bobinadora_id: manualBobinadoraId } }).catch(() => null);
+        await asignarBobinadora({ data: { lote_id, bobinadora_id: manualBobinadoraId } }).catch(() => {
+          toast.warning("El lote se creó, pero no se pudo registrar la máquina. Asígnela desde 'Cambiar conductor/bobinadora'.");
+        });
       }
+
       setConfirmManual(false);
       setLoteId(lote_id);
       await qc.invalidateQueries({ queryKey: ["cintas-lote", lote_id] });
