@@ -1153,6 +1153,14 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
       toast.error(`Lote Logístico: faltan ${faltan} ${faltan === 1 ? "dígito" : "dígitos"} (deben ser 10).`);
       return;
     }
+    if (modo === "envio" && esIxtapaluca && estatusManual && !estatusManualMotivoValido) {
+      toast.error(
+        estatusManual === "L"
+          ? "Para liberar el rollo debes registrar una justificación de al menos 20 caracteres."
+          : "Debes registrar el motivo del estatus (mínimo 10 caracteres).",
+      );
+      return;
+    }
     if (modo === "envio" && modoFueraTurno) {
       if (motivoFueraTurno.trim().length < 10) {
         toast.error("Captura fuera de turno: el motivo es obligatorio (mínimo 10 caracteres).");
