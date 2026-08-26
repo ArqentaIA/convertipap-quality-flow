@@ -1126,6 +1126,7 @@ export type Database = {
           maquina_id: string
           numero_inicial: number
           proximo_numero: number
+          relleno_digitos: number
           sufijo: string
           updated_at: string
           vigente_desde: string
@@ -1137,6 +1138,7 @@ export type Database = {
           maquina_id: string
           numero_inicial: number
           proximo_numero: number
+          relleno_digitos?: number
           sufijo: string
           updated_at?: string
           vigente_desde: string
@@ -1148,6 +1150,7 @@ export type Database = {
           maquina_id?: string
           numero_inicial?: number
           proximo_numero?: number
+          relleno_digitos?: number
           sufijo?: string
           updated_at?: string
           vigente_desde?: string
