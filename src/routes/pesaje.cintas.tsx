@@ -9,7 +9,7 @@ import {
   buscarContextoRollo, listConductores, listBobinadoras,
   crearLote, crearLoteManualV2, guardarOrdenManual, obtenerLoteYCintas, registrarCinta, corregirCinta, anularCinta,
   finalizarLote, prepararImpresion, actualizarDatosOperativos, asignarBobinadoraLote,
-  asignarBobinadorNombre,
+  asignarBobinadorNombre, asignarNombresOperativos,
   type ContextoRollo, type CintaRegistrada, type LoteCintas,
 } from "@/lib/pesaje-cintas.functions";
 
