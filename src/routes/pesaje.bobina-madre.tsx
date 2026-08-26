@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Camera, CheckCircle2, Loader2, RefreshCw, ImageIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { listPesajes, firmarEvidencia, type PesajeBobina } from "@/lib/pesajes.functions";
+import { listPesajes, firmarEvidencia, verificarRolloUtilizado, type PesajeBobina, type RolloYaUtilizado } from "@/lib/pesajes.functions";
 import { fechaCortoMX, horaMX } from "@/lib/format";
 
 export const Route = createFileRoute("/pesaje/bobina-madre")({
