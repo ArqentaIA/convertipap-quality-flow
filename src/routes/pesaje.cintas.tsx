@@ -14,6 +14,7 @@ import {
 
 import { abrirImpresionEtiquetas, type EtiquetaSnapshot } from "@/lib/etiqueta-cinta";
 import { supabase } from "@/integrations/supabase/client";
+import { usePlantasPermitidas } from "@/hooks/usePlantasPermitidas";
 
 export const Route = createFileRoute("/pesaje/cintas")({
   head: () => ({
@@ -100,6 +101,19 @@ function PesajeCintasPage() {
     queryFn: () => traerBobinadoras(),
     enabled: authReady,
   });
+
+  // Ixtapaluca usa su propio grupo de máquinas (JG01/JG02/RB01/RB02).
+  const { data: plantasPermitidas } = usePlantasPermitidas();
+  const esIxtapaluca =
+    (plantasPermitidas ?? []).length > 0 &&
+    (plantasPermitidas ?? []).every((p) => p.codigo?.toUpperCase() === "IXT");
+  const CODIGOS_IXT = ["JG01", "JG02", "RB01", "RB02"];
+  const bobinadorasVisibles = useMemo(() => {
+    const todas = bobinadorasQ.data ?? [];
+    return esIxtapaluca
+      ? todas.filter((b) => CODIGOS_IXT.includes((b.codigo ?? "").toUpperCase()))
+      : todas.filter((b) => !CODIGOS_IXT.includes((b.codigo ?? "").toUpperCase()));
+  }, [bobinadorasQ.data, esIxtapaluca]);
 
   const loteQ = useQuery({
     queryKey: ["cintas-lote", loteId],
@@ -373,7 +387,7 @@ function PesajeCintasPage() {
   async function onCambiarOperativos() {
     if (!lote) return;
     const conductores = conductoresQ.data ?? [];
-    const bobinadoras = bobinadorasQ.data ?? [];
+    const bobinadoras = bobinadorasVisibles;
     if (conductores.length === 0 || bobinadoras.length === 0) {
       toast.error("Catálogos no disponibles."); return;
     }
@@ -652,7 +666,7 @@ function PesajeCintasPage() {
 
       {contexto && !lote && (
         <div className="rounded-lg border border-border bg-card p-4">
-          <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">3 · Conductor y bobinadora</div>
+          <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">3 · Conductor y {esIxtapaluca ? "máquina" : "bobinadora"}</div>
           <div className="grid gap-3 md:grid-cols-3">
             <div>
               <label className="mb-1 block text-xs text-muted-foreground">Conductor</label>
@@ -668,15 +682,15 @@ function PesajeCintasPage() {
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-xs text-muted-foreground">Bobinadora</label>
+              <label className="mb-1 block text-xs text-muted-foreground">{esIxtapaluca ? "Máquina" : "Bobinadora"}</label>
               <select
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 value={bobinadoraId}
                 onChange={(e) => setBobinadoraId(e.target.value)}
               >
                 <option value="">— seleccionar —</option>
-                {(bobinadorasQ.data ?? []).map((b) => (
-                  <option key={b.id} value={b.id}>{b.nombre}</option>
+                {bobinadorasVisibles.map((b) => (
+                  <option key={b.id} value={b.id}>{b.nombre}{b.codigo ? ` (${b.codigo})` : ""}</option>
                 ))}
               </select>
             </div>
