@@ -521,6 +521,13 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
         enviar_a_revision: z.boolean().default(false),
         fuera_de_turno: z.boolean().optional().default(false),
         fuera_de_turno_motivo: z.string().trim().max(2000).nullable().optional(),
+        // Lote Logístico (9 dígitos) — uso exclusivo Planta Ixtapaluca.
+        lote_logistico: z
+          .string()
+          .trim()
+          .regex(/^\d{9}$/, "El Lote Logístico debe tener exactamente 9 dígitos")
+          .nullable()
+          .optional(),
         // Idempotencia del alta: la genera el cliente por intento de captura.
         // Un reintento (doble clic, timeout, refresh) con la misma clave devuelve
         // la misma muestra y el mismo consecutivo, sin consumir otro número.
@@ -688,6 +695,7 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
       capturado_por: userId,
       fuera_de_turno: data.fuera_de_turno === true,
       fuera_de_turno_motivo: data.fuera_de_turno === true ? motivoFueraTurnoTrim : null,
+      lote_logistico: data.lote_logistico?.trim() || null,
       ...(dictamenPrevioAt
         ? {
             mediciones_modificadas_at: new Date().toISOString(),

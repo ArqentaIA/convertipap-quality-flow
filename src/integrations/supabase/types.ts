@@ -928,6 +928,7 @@ export type Database = {
           liberado_at: string | null
           liberado_con_justificacion: boolean
           liberado_por: string | null
+          lote_logistico: string | null
           maquina_id: string
           mediciones_modificacion_motivo: string | null
           mediciones_modificadas_at: string | null
@@ -987,6 +988,7 @@ export type Database = {
           liberado_at?: string | null
           liberado_con_justificacion?: boolean
           liberado_por?: string | null
+          lote_logistico?: string | null
           maquina_id: string
           mediciones_modificacion_motivo?: string | null
           mediciones_modificadas_at?: string | null
@@ -1046,6 +1048,7 @@ export type Database = {
           liberado_at?: string | null
           liberado_con_justificacion?: boolean
           liberado_por?: string | null
+          lote_logistico?: string | null
           maquina_id?: string
           mediciones_modificacion_motivo?: string | null
           mediciones_modificadas_at?: string | null

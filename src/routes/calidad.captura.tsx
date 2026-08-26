@@ -74,6 +74,7 @@ import {
   CRITERIOS_DEFECTO,
 } from "@/lib/hallazgo";
 import { DefectosMultiSelect } from "@/components/qc/DefectosMultiSelect";
+import { usePlantasPermitidas } from "@/hooks/usePlantasPermitidas";
 
 const ROLLO_REGEX = /^[A-Za-z0-9-]{1,30}$/;
 
@@ -652,6 +653,14 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
   });
   const pesajesPendientes = pendientesQuery.data ?? [];
 
+  // ---- Lote Logístico (9 dígitos) — exclusivo Planta Ixtapaluca ------------
+  const { data: plantasPermitidas } = usePlantasPermitidas();
+  const esIxtapaluca =
+    (plantasPermitidas ?? []).length > 0 &&
+    (plantasPermitidas ?? []).every((p) => p.codigo?.toUpperCase() === "IXT");
+  const [loteLogistico, setLoteLogistico] = useState<string>("");
+  const loteLogisticoValido = /^\d{9}$/.test(loteLogistico);
+
 
 
   useEffect(() => {
@@ -996,6 +1005,7 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
       setCriterioDefecto("");
       setHoraMuestreo(toLocalDateTimeInputValue(new Date()));
       setMotivoFueraTurno("");
+      setLoteLogistico("");
     },
     onError: (err: Error) =>
       toast.error("No se pudo guardar la captura", { description: err.message, duration: 7000 }),
@@ -1118,6 +1128,10 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
     }
     if (porcentajeRupturasPct.trim() !== "" && (Number(porcentajeRupturasPct) < 0 || Number(porcentajeRupturasPct) > 100)) {
       toast.error("El campo Porcentaje de rupturas debe estar entre 0 y 100"); return;
+    }
+    if (modo === "envio" && esIxtapaluca && !loteLogisticoValido) {
+      toast.error("Lote Logístico obligatorio: debe capturar exactamente 9 dígitos numéricos.");
+      return;
     }
     if (modo === "envio" && modoFueraTurno) {
       if (motivoFueraTurno.trim().length < 10) {
@@ -1268,6 +1282,7 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
         enviar_a_revision: modo === "envio",
         fuera_de_turno: modoFueraTurno,
         fuera_de_turno_motivo: modoFueraTurno ? motivoFueraTurno.trim() : null,
+        lote_logistico: esIxtapaluca && loteLogisticoValido ? loteLogistico : null,
         idempotency_key: idempotencyKey,
       },
     });
@@ -1589,6 +1604,28 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
 
 
             </div>
+
+            {esIxtapaluca && (
+              <div className="space-y-1.5">
+                <Label htmlFor="lote-logistico" className="text-base">
+                  4. Lote Logístico{" "}
+                  <span className="text-muted-foreground font-normal">(9 dígitos, obligatorio)</span>
+                </Label>
+                <Input
+                  id="lote-logistico"
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={9}
+                  placeholder="Ej. 100234567"
+                  value={loteLogistico}
+                  onChange={(e) => setLoteLogistico(e.target.value.replace(/\D/g, "").slice(0, 9))}
+                  className={cn("h-11 text-base tabular-nums", loteLogistico && !loteLogisticoValido && "border-destructive")}
+                />
+                <p className={cn("text-[11px]", loteLogistico && !loteLogisticoValido ? "text-destructive" : "text-muted-foreground")}>
+                  {loteLogistico.length}/9 dígitos · solo números.
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
 
