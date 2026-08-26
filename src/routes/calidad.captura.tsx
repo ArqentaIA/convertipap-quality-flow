@@ -472,12 +472,20 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
     if (typeof window !== "undefined") window.sessionStorage.setItem(idemStorageKey, fresh);
     setIdempotencyKey(fresh);
   }
+  // Rollo ya pesado seleccionado (Planta Ixtapaluca). Si hay uno seleccionado,
+  // la captura usa ESE número y no el consecutivo estimado.
+  const [rolloPesajeSel, setRolloPesajeSel] = useState<string>("");
   useEffect(() => {
     if (rolloAsignado) return; // ya hay número definitivo: no pisar
+    if (rolloPesajeSel) {
+      setNumeroRollo(rolloPesajeSel);
+      return;
+    }
     if (numeracionActiva && numeracionAuto?.proximo_numero) {
       setNumeroRollo(numeracionAuto.proximo_numero);
     }
-  }, [numeracionActiva, numeracionAuto?.proximo_numero, rolloAsignado]);
+  }, [numeracionActiva, numeracionAuto?.proximo_numero, rolloAsignado, rolloPesajeSel]);
+
 
   // Inicia explícitamente una NUEVA muestra: sólo aquí se consulta el próximo
   // consecutivo estimado y se renueva la clave de idempotencia.
