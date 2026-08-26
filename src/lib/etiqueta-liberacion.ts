@@ -296,6 +296,7 @@ function buildHtml(
     <button class="secondary" onclick="window.close()">Cerrar</button>
     <button onclick="window.print()">Imprimir</button>
   </div>
+  <div class="hint"><b>Para imprimir a media carta:</b> Tamaño del papel = <b>Media carta / Statement (5.5 × 8.5 pulg)</b> · Disposición = <b>Vertical</b> · Escala = <b>100 % (Tamaño real)</b> · Márgenes = <b>Ninguno</b> · desactivar “Imprimir por ambas caras”. Si la impresora no tiene media carta, use <b>Carta Vertical</b>: la etiqueta se imprime en la mitad superior para recortar.
   <div class="fit">
   <div class="sheet">
     <div class="head">
