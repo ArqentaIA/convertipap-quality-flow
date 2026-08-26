@@ -1171,7 +1171,7 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
         { valor: velocidadMaquina, etiqueta: "Velocidad de máquina" },
         { valor: velocidadEnrollador, etiqueta: "Velocidad de enrollador" },
         { valor: crepadoPct, etiqueta: "% Crepado" },
-        { valor: porcentajeRupturasPct, etiqueta: "% Rupturas" },
+        ...(esIxtapaluca ? [] : [{ valor: porcentajeRupturasPct, etiqueta: "% Rupturas" }]),
         { valor: destino, etiqueta: "Destino" },
       ];
       const faltantesEncabezado = camposEncabezado.filter((c) => !String(c.valor ?? "").trim());
