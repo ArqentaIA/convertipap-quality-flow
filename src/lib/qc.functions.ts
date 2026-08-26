@@ -450,6 +450,15 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
           .min(1)
           .max(30)
           .regex(/^[A-Za-z0-9-]+$/, "Rollo inválido"),
+        // Ixtapaluca: rollo ya pesado y pendiente de captura. Cuando viene, la
+        // muestra toma ESE número y el consecutivo automático NO avanza.
+        numero_rollo_pesaje: z
+          .string()
+          .trim()
+          .max(30)
+          .regex(/^[A-Za-z0-9-]+$/, "Rollo inválido")
+          .nullable()
+          .optional(),
         jefe_maquina: z.string().trim().max(120).nullable().optional(),
         operador: z.string().trim().max(120).nullable().optional(),
         prensero: z.string().trim().max(120).nullable().optional(),
