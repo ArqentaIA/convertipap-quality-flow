@@ -51,6 +51,7 @@ import {
   buscarPesajePorRollo,
   vincularPesajeMuestra,
   firmarEvidenciaCaptura,
+  listarPesajesPendientesCaptura,
   type PesajeParaCaptura,
 } from "@/lib/pesajes.functions";
 import { listOrdenesActivas } from "@/lib/ordenes-produccion.functions";
