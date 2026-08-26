@@ -1055,7 +1055,7 @@ function PesajeBobinaPage() {
         </div>
       )}
 
-      {!esIxtapaluca && <ListaPesajes lista={listaQ.data ?? []} loading={listaQ.isLoading} />}
+      {/* Sección "Últimos pesajes" oculta por solicitud operativa */}
 
     </div>
   );
