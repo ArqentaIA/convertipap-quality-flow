@@ -10,6 +10,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { esLiberadoOficial, esNoConformeOficial, getEstadoOficial } from "@/lib/qc-estado-oficial";
+import { allowedPlantaIds } from "@/lib/planta-acceso";
 
 type SB = SupabaseClient<Database>;
 
@@ -631,11 +632,14 @@ export const listMaquinasConEstado = createServerFn({ method: "GET" })
     const sb = context.supabase as SB;
     const rango = data?.rango ?? "dia";
 
-    const { data: maquinas, error: errMaq } = await sb
+    let maqQ = sb
       .from("maquinas")
       .select("id, codigo, nombre, area, planta_id, activo, plantas(nombre, codigo)")
       .eq("activo", true)
       .order("codigo");
+    const plantasPermitidas = await allowedPlantaIds(sb, context.userId);
+    if (plantasPermitidas) maqQ = maqQ.in("planta_id", plantasPermitidas);
+    const { data: maquinas, error: errMaq } = await maqQ;
     if (errMaq) throw new Error(errMaq.message);
 
     const ids = (maquinas ?? []).map((m) => m.id);
