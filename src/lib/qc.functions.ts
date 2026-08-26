@@ -166,12 +166,37 @@ export const listProductosConSpec = createServerFn({ method: "GET" })
     // Un producto puede tener múltiples vigentes (perfiles por máquina).
     // Aquí devolvemos UNA entrada por producto; la resolución fina se hace
     // en getSpecPorProducto usando maquinaId + producto_especificacion_maquinas.
+    // Filtro por planta: usuarios restringidos exclusivamente a Ixtapaluca solo
+    // ven productos cuya especificación vigente esté ligada a máquinas de su planta.
+    const { data: upRows } = await sb
+      .from("user_plantas")
+      .select("planta_id, plantas:planta_id (codigo)")
+      .eq("user_id", context.userId);
+    const codigos = (upRows ?? []).map(
+      (r) => (r as unknown as { plantas?: { codigo?: string } }).plantas?.codigo ?? "",
+    );
+    const soloIxtapaluca = codigos.length > 0 && codigos.every((c) => c === "IXT");
+    let specsPermitidos: Set<string> | null = null;
+    if (soloIxtapaluca) {
+      const plantaIds = (upRows ?? []).map((r) => r.planta_id as string);
+      const { data: maqs } = await sb.from("maquinas").select("id").in("planta_id", plantaIds);
+      const maqIds = (maqs ?? []).map((m) => m.id as string);
+      const { data: links } = maqIds.length
+        ? await sb
+            .from("producto_especificacion_maquinas")
+            .select("especificacion_id")
+            .in("maquina_id", maqIds)
+        : { data: [] as { especificacion_id: string }[] };
+      specsPermitidos = new Set((links ?? []).map((l) => l.especificacion_id as string));
+    }
+
     const byProd = new Map<
       string,
       { producto_id: string; codigo: string; nombre: string; especificacion_id: string; especificacion_version: string }
     >();
     for (const row of data ?? []) {
       if (!row.productos || !row.productos.activo) continue;
+      if (specsPermitidos && !specsPermitidos.has(row.id)) continue;
       if (byProd.has(row.producto_id)) continue;
       byProd.set(row.producto_id, {
         producto_id: row.producto_id,
@@ -182,6 +207,7 @@ export const listProductosConSpec = createServerFn({ method: "GET" })
       });
     }
     return Array.from(byProd.values()).sort((a, b) => a.codigo.localeCompare(b.codigo));
+
   });
 
 /**
