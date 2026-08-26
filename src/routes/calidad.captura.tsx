@@ -639,6 +639,21 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
   });
   const pesajeVinculado: PesajeParaCaptura | null = pesajeQuery.data ?? null;
 
+  // ---- Rollos ya pesados pendientes de captura (Planta Ixtapaluca) ----------
+  // Devuelve [] para máquinas de otras plantas. Un rollo desaparece de la lista
+  // en cuanto se captura en Control de Calidad o en Captura fuera de turno.
+  const listarPendientesFn = useServerFn(listarPesajesPendientesCaptura);
+  const pendientesQuery = useQuery({
+    queryKey: ["pesajes-pendientes-captura", maquina.id],
+    queryFn: () => listarPendientesFn({ data: { maquina_id: maquina.id } }),
+    enabled: !!maquina.id,
+    staleTime: 15_000,
+    retry: false,
+  });
+  const pesajesPendientes = pendientesQuery.data ?? [];
+
+
+
   useEffect(() => {
     if (!pesoVarId) return;
     if (!pesajeVinculado) return;
