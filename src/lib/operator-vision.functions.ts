@@ -359,11 +359,16 @@ export const getOperatorVisionData = createServerFn({ method: "GET" })
     }
 
 
+    const planta = (maquina as any).plantas as
+      | { codigo: string; nombre: string } | null;
+
     return {
       maquina: {
         codigo: maquina.codigo as string,
         nombre: maquina.nombre as string,
         area: (maquina.area as string) ?? "",
+        plantaNombre: planta?.nombre ?? "",
+        plantaCodigo: planta?.codigo ?? "",
       },
       orden: ordenActiva
         ? {
