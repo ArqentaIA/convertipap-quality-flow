@@ -9,7 +9,7 @@ import {
   buscarContextoRollo, listConductores, listBobinadoras,
   crearLote, crearLoteManualV2, guardarOrdenManual, obtenerLoteYCintas, registrarCinta, corregirCinta, anularCinta,
   finalizarLote, prepararImpresion, actualizarDatosOperativos, asignarBobinadoraLote,
-  asignarBobinadorNombre, asignarNombresOperativos,
+  asignarBobinadorNombre, asignarNombresOperativos, asignarEstatusCinta,
   type ContextoRollo, type CintaRegistrada, type LoteCintas,
 } from "@/lib/pesaje-cintas.functions";
 
@@ -51,6 +51,7 @@ function PesajeCintasPage() {
   const traer = useServerFn(obtenerLoteYCintas);
   const registrar = useServerFn(registrarCinta);
   const corregir = useServerFn(corregirCinta);
+  const setEstatusCinta = useServerFn(asignarEstatusCinta);
   const anular = useServerFn(anularCinta);
   const finalizar = useServerFn(finalizarLote);
   const preparar = useServerFn(prepararImpresion);
@@ -402,6 +403,18 @@ function PesajeCintasPage() {
     }
   }
 
+  // Estatus de liberación por cinta (Ixtapaluca): hereda el del rollo y el
+  // usuario puede cambiarlo según cómo salga el corte.
+  async function onCambiarEstatusCinta(cintaId: string, estatus: "L" | "C" | "NC") {
+    try {
+      await setEstatusCinta({ data: { cinta_id: cintaId, estatus } });
+      await qc.invalidateQueries({ queryKey: ["cintas-lote", loteId] });
+      toast.success("Estatus de la cinta actualizado.");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Error al cambiar el estatus.");
+    }
+  }
+
   async function onAnular(cintaId: string) {
     const motivo = window.prompt("Motivo de anulación (mínimo 5 caracteres):");
     if (!motivo || motivo.trim().length < 5) return;
@@ -505,7 +518,13 @@ function PesajeCintasPage() {
       await qc.invalidateQueries({ queryKey: ["cintas-lote", lote.id] });
       await loteQ.refetch();
       const res = await preparar({ data: { lote_id: lote.id, motivo, cinta_id: cintaId } });
-      await abrirImpresionEtiquetas(res.snapshot as unknown as EtiquetaSnapshot);
+      const vigentes = (loteQ.data?.cintas ?? cintas) as CintaRegistrada[];
+      const snap = res.snapshot as unknown as EtiquetaSnapshot;
+      snap.cintas = (snap.cintas ?? []).map((c) => ({
+        ...c,
+        estatus_liberacion: vigentes.find((v) => v.id === c.id)?.estatus_liberacion ?? null,
+      }));
+      await abrirImpresionEtiquetas(snap);
       toast.success(
         `${res.tipo === "REIMPRESION" ? "Reimpresión" : "Impresión"} ${res.folio} · ${res.cantidad_etiquetas} etiqueta(s) · versión ${res.version_etiqueta}`,
       );
@@ -975,6 +994,8 @@ function PesajeCintasPage() {
 
                     onCorregir={c && lote.estado === "abierto" ? () => onCorregir(c) : undefined}
                     onReimprimir={c ? () => onReimprimirCinta(c) : undefined}
+                    mostrarEstatus={esIxtapaluca}
+                    onCambiarEstatus={c ? (e) => onCambiarEstatusCinta(c.id, e) : undefined}
                     saving={saving || imprimiendo}
                   />
                 );
@@ -1018,10 +1039,18 @@ type CintaCardProps = {
   onAnular?: () => void;
   onCorregir?: () => void;
   onReimprimir?: () => void;
+  mostrarEstatus?: boolean;
+  onCambiarEstatus?: (estatus: "L" | "C" | "NC") => void | Promise<void>;
   saving: boolean;
 };
 
-function CintaCard({ pos, cinta, habilitada, disponibleKg, onRegistrar, onAnular, onCorregir, onReimprimir, saving }: CintaCardProps) {
+const ESTATUS_OPCIONES: Array<{ v: "L" | "C" | "NC"; label: string; clase: string }> = [
+  { v: "L", label: "Liberado", clase: "border-success/50 bg-success/10 text-success" },
+  { v: "C", label: "Condicionado", clase: "border-warning/50 bg-warning/10 text-warning" },
+  { v: "NC", label: "No conforme", clase: "border-destructive/50 bg-destructive/10 text-destructive" },
+];
+
+function CintaCard({ pos, cinta, habilitada, disponibleKg, onRegistrar, onAnular, onCorregir, onReimprimir, mostrarEstatus, onCambiarEstatus, saving }: CintaCardProps) {
   const [peso, setPeso] = useState("");
   const [uniones, setUniones] = useState("0");
   const [ancho, setAncho] = useState("");
@@ -1048,6 +1077,25 @@ function CintaCard({ pos, cinta, habilitada, disponibleKg, onRegistrar, onAnular
           <div><span className="text-muted-foreground">Peso:</span> <b>{n(cinta.peso_cinta_kg)} kg</b></div>
           <div><span className="text-muted-foreground">Uniones:</span> <b>{cinta.uniones}</b></div>
           {cinta.observaciones && <div className="text-xs text-muted-foreground">{cinta.observaciones}</div>}
+          {mostrarEstatus && (
+            <div className="pt-1">
+              <div className="mb-1 text-[11px] uppercase tracking-wide text-muted-foreground">Estatus de liberación</div>
+              <select
+                value={cinta.estatus_liberacion ?? ""}
+                onChange={(e) => onCambiarEstatus?.(e.target.value as "L" | "C" | "NC")}
+                disabled={!onCambiarEstatus || saving}
+                className={`w-full rounded-md border px-2 py-1.5 text-sm font-semibold disabled:opacity-60 ${
+                  ESTATUS_OPCIONES.find((o) => o.v === cinta.estatus_liberacion)?.clase ??
+                  "border-input bg-background text-foreground"
+                }`}
+              >
+                <option value="">Sin estatus</option>
+                {ESTATUS_OPCIONES.map((o) => (
+                  <option key={o.v} value={o.v}>{o.label}</option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
         <div className="mt-2 flex items-center gap-3">
           {onCorregir && (
