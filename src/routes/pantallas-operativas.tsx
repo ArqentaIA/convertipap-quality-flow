@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
+import { useMaquinasPermitidas } from "@/hooks/usePlantasPermitidas";
 
 export const Route = createFileRoute("/pantallas-operativas")({
   component: PantallasGate,
@@ -14,7 +15,8 @@ export const Route = createFileRoute("/pantallas-operativas")({
 });
 
 const OPERATOR_VISION_BASE = "https://www.convertipap.site";
-const MAQUINAS_OV = ["MP-04", "MP-05", "MP-06", "MP-07"] as const;
+/** Máquinas que cuentan con visor Operator Vision. */
+const MAQUINAS_OV = ["MP-01", "MP-04", "MP-05", "MP-06", "MP-07"] as const;
 
 function PantallasGate() {
   return (
@@ -38,6 +40,12 @@ function OperatorVisionUrls() {
   const { hasRole } = useAuth();
   const isAdmin = hasRole("administrador");
   const [reveal, setReveal] = useState<Record<string, boolean>>({});
+
+  const { data: maquinasPlanta } = useMaquinasPermitidas();
+  // Solo las máquinas con visor que pertenecen a las plantas asignadas al usuario.
+  const maquinasVisibles = (MAQUINAS_OV as readonly string[]).filter((codigo) =>
+    (maquinasPlanta ?? []).some((m) => m.codigo === codigo),
+  );
 
   const { data: maquinas } = useQuery({
     queryKey: ["maquinas-access-codes-list"],
@@ -82,7 +90,7 @@ function OperatorVisionUrls() {
         </div>
 
         <div className="space-y-2">
-          {MAQUINAS_OV.map((maq) => {
+          {maquinasVisibles.map((maq) => {
             const url = `${OPERATOR_VISION_BASE}/operator-vision?maquina=${maq}`;
             const internalUrl = `/operator-vision?maquina=${maq}`;
             const pin = codeByMaq.get(maq) ?? null;
