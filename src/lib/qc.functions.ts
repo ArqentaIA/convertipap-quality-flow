@@ -343,25 +343,32 @@ export const listMisMuestrasRecientes = createServerFn({ method: "GET" })
       .order("secuencia_captura", { ascending: false })
       .limit(seesAll ? 50 : isCapturista ? 30 : 20);
 
+    const plantasPermitidas = await allowedPlantaIds(sb, userId);
+
     if (!seesAll) {
       if (isCapturista) {
-        // Capturista: mostrar historial reciente de SUS máquinas permitidas
+        // Capturista: historial reciente de las máquinas de SU planta
         // (no solo lo que él tecleó), porque varios capturistas se relevan
         // en el mismo turno y necesitan ver continuidad del rollo.
-        const { data: maqRows } = await sb
-          .from("maquinas")
-          .select("id, codigo")
-          .eq("activo", true);
-        const allowedCodes = new Set(["MP-04", "MP-05", "MP-06", "MP-07"]);
-        const allowedIds = (maqRows ?? [])
-          .filter((m) => allowedCodes.has(m.codigo))
-          .map((m) => m.id);
+        let maqQ = sb.from("maquinas").select("id, codigo").eq("activo", true);
+        if (plantasPermitidas) maqQ = maqQ.in("planta_id", plantasPermitidas);
+        const { data: maqRows } = await maqQ;
+        const allowedIds = (maqRows ?? []).map((m) => m.id);
         if (allowedIds.length === 0) return [];
         q = q.in("maquina_id", allowedIds);
       } else {
         q = q.eq("capturado_por", userId);
       }
+    } else if (plantasPermitidas) {
+      const { data: maqRows } = await sb
+        .from("maquinas")
+        .select("id")
+        .in("planta_id", plantasPermitidas);
+      const allowedIds = (maqRows ?? []).map((m) => m.id);
+      if (allowedIds.length === 0) return [];
+      q = q.in("maquina_id", allowedIds);
     }
+
     const { data, error } = await q;
     if (error) throw new Error(error.message);
     return data ?? [];
