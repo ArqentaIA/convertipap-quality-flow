@@ -76,6 +76,8 @@ export type CintaRegistrada = {
   ancho_util_unidad: string | null;
   observaciones: string | null;
   estado: "registrada" | "sustituida" | "anulada";
+  /** Estatus de liberación de la cinta: L (Liberado), C (Condicionado), NC (No conforme). */
+  estatus_liberacion: "L" | "C" | "NC" | null;
   version_etiqueta: number | null;
   created_at: string;
 };
@@ -302,6 +304,22 @@ export const corregirCinta = createServerFn({ method: "POST" })
     });
     if (error) throw new Error(error.message);
     return res as unknown as { cinta_id: string; posicion?: number };
+  });
+
+/** Estatus de liberación por cinta (hereda el del rollo; editable por el usuario). */
+export const asignarEstatusCinta = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({
+    cinta_id: z.string().uuid(),
+    estatus: z.enum(["L", "C", "NC"]),
+  }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase.rpc("pc_set_estatus_cinta", {
+      _cinta_id: data.cinta_id,
+      _estatus: data.estatus,
+    });
+    if (error) throw new Error(error.message);
+    return { ok: true };
   });
 
 export const anularCinta = createServerFn({ method: "POST" })

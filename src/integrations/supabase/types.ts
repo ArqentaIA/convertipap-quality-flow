@@ -1507,6 +1507,7 @@ export type Database = {
           creado_por: string
           created_at: string
           estado: Database["public"]["Enums"]["pesaje_cinta_estado"]
+          estatus_liberacion: string | null
           id: string
           idempotency_key: string
           lote_id: string
@@ -1528,6 +1529,7 @@ export type Database = {
           creado_por: string
           created_at?: string
           estado?: Database["public"]["Enums"]["pesaje_cinta_estado"]
+          estatus_liberacion?: string | null
           id?: string
           idempotency_key: string
           lote_id: string
@@ -1549,6 +1551,7 @@ export type Database = {
           creado_por?: string
           created_at?: string
           estado?: Database["public"]["Enums"]["pesaje_cinta_estado"]
+          estatus_liberacion?: string | null
           id?: string
           idempotency_key?: string
           lote_id?: string
@@ -2944,6 +2947,10 @@ export type Database = {
       }
       pc_set_bobinadora: {
         Args: { _bobinadora_id: string; _lote_id: string }
+        Returns: undefined
+      }
+      pc_set_estatus_cinta: {
+        Args: { _cinta_id: string; _estatus: string }
         Returns: undefined
       }
       pc_set_nombres_operativos: {
