@@ -2223,6 +2223,7 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
                     )}
                   </div>
                 ))}
+                {!esIxtapaluca && (
                 <div className="rounded-xl border border-border p-5 shadow-sm bg-card">
                   <div className="mb-3">
                     <div className="font-semibold text-base">Porcentaje de rupturas</div>
@@ -2241,6 +2242,8 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
                     placeholder="0 - 100"
                   />
                 </div>
+                )}
+
                 <div className="rounded-xl border border-border p-5 shadow-sm bg-primary/15">
                   <div className="mb-3">
                     <div className="font-semibold text-base">Destino</div>
