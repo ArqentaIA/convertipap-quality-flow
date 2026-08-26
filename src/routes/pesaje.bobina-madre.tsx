@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { useAuth } from "@/lib/auth";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -136,6 +137,8 @@ async function mensajeFunctionError(error: unknown): Promise<string> {
 
 function PesajeBobinaPage() {
   const qc = useQueryClient();
+  const auth = useAuth();
+  const esCapturista = auth.hasRole("capturista");
 
   const [ordenSel, setOrdenSel] = useState<string>("");
   const [ordenOtro, setOrdenOtro] = useState("");
@@ -773,8 +776,10 @@ function PesajeBobinaPage() {
           </div>
         </div>
 
-        {/* 4. Evidencia con OCR */}
+        {/* 4. Evidencia con OCR — oculto para capturistas */}
         <div className="mt-5">
+        {!esCapturista && (
+          <>
           <label className="mb-2 block text-xs font-medium text-muted-foreground">
             4. Evidencia fotográfica del display * <span className="text-[10px] font-normal">(el peso se lee automáticamente)</span>
           </label>
@@ -814,6 +819,8 @@ function PesajeBobinaPage() {
               </div>
             )}
           </div>
+          </>
+        )}
 
           {/* Captura manual del peso (opcional, sustituye la lectura automática) */}
           <div className="mt-4 rounded-xl border-2 border-amber-400/70 bg-amber-50/70 p-4 shadow-sm dark:bg-amber-950/20">
@@ -846,6 +853,7 @@ function PesajeBobinaPage() {
           </div>
 
         </div>
+
 
 
         {/* Botones */}
