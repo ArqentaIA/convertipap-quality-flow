@@ -11,18 +11,25 @@ export const attachFreshSupabaseAuth = createMiddleware({ type: "function" }).cl
   async ({ next }) => {
     let token: string | undefined;
     try {
-      const { data } = await supabase.auth.getSession();
-      let session = data.session;
-      const expSoon =
-        !session?.expires_at || session.expires_at * 1000 - Date.now() < 30_000;
-      if (session && expSoon) {
-        const { data: refreshed } = await supabase.auth.refreshSession();
-        session = refreshed.session ?? session;
+      // La sesión puede no estar hidratada aún al montar la página: reintentamos.
+      for (let intento = 0; intento < 3 && !token; intento++) {
+        const { data } = await supabase.auth.getSession();
+        let session = data.session;
+        if (session) {
+          const expSoon =
+            !session.expires_at || session.expires_at * 1000 - Date.now() < 30_000;
+          if (expSoon) {
+            const { data: refreshed } = await supabase.auth.refreshSession();
+            session = refreshed.session ?? session;
+          }
+          token = session?.access_token;
+        }
+        if (!token && intento < 2) await new Promise((r) => setTimeout(r, 300));
       }
-      token = session?.access_token;
     } catch {
       token = undefined;
     }
     return next({ headers: token ? { Authorization: `Bearer ${token}` } : {} });
   },
 );
+
