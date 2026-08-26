@@ -515,6 +515,7 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
   // Se recupera el estado guardado (si lo hay) de la máquina seleccionada.
   useEffect(() => {
     if (typeof window === "undefined") return;
+    setRolloPesajeSel("");
     setRolloAsignadoState(window.sessionStorage.getItem(savedStorageKey));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [savedStorageKey]);
