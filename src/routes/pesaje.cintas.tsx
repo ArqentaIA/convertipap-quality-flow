@@ -226,7 +226,7 @@ function PesajeCintasPage() {
       toast.error("Las uniones deben ser un número entero igual o mayor que cero.");
       return null;
     }
-    if (esIxtapaluca && !manualBobinadoraId) { toast.error("Seleccione la máquina (rebobinadora)."); return null; }
+    if (esIxtapaluca && maquinaNombre.trim().length < 2) { toast.error("Capture la máquina."); return null; }
     if (esIxtapaluca && bobinadorNombre.trim().length < 3) { toast.error("Capture el nombre del bobinador."); return null; }
     return { peso, diametro, uniones };
   }
