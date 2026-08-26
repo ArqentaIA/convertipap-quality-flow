@@ -157,6 +157,12 @@ function PesajeBobinaPage() {
   // Pantalla previa de confirmación de datos antes de registrar
   const [preConfirm, setPreConfirm] = useState(false);
 
+  // Bloqueo por número de rollo ya utilizado
+  const [duplicado, setDuplicado] = useState<RolloYaUtilizado | null>(null);
+  const [verificandoDup, setVerificandoDup] = useState(false);
+  const verificarDup = useServerFn(verificarRolloUtilizado);
+
+
 
   // Dedupe: un solo toast + un solo registro por captura
   const activeRequestRef = useRef<string | null>(null);
