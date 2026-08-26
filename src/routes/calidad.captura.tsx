@@ -655,9 +655,16 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
 
   // ---- Lote Logístico (10 dígitos) — exclusivo Planta Ixtapaluca ------------
   const { data: plantasPermitidas } = usePlantasPermitidas();
+  // Planta de la máquina seleccionada (fuente principal); si no está
+  // disponible, se usa el conjunto de plantas asignadas al usuario.
+  const plantaCodigoMaquina = (
+    (maquina as unknown as { plantas?: { codigo?: string | null } | null })?.plantas?.codigo ?? ""
+  ).toUpperCase();
   const esIxtapaluca =
-    (plantasPermitidas ?? []).length > 0 &&
-    (plantasPermitidas ?? []).every((p) => p.codigo?.toUpperCase() === "IXT");
+    plantaCodigoMaquina === "IXT" ||
+    (!plantaCodigoMaquina &&
+      (plantasPermitidas ?? []).length > 0 &&
+      (plantasPermitidas ?? []).every((p) => p.codigo?.toUpperCase() === "IXT"));
   const [loteLogistico, setLoteLogistico] = useState<string>("");
   const loteLogisticoValido = /^\d{10}$/.test(loteLogistico);
 
