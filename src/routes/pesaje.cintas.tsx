@@ -8,7 +8,7 @@ import { Loader2, Search, Printer, CheckCircle2, Ban, Lock, Pencil, UserCog } fr
 import {
   buscarContextoRollo, listConductores, listBobinadoras,
   crearLote, crearLoteManualV2, guardarOrdenManual, obtenerLoteYCintas, registrarCinta, corregirCinta, anularCinta,
-  finalizarLote, prepararImpresion, actualizarDatosOperativos,
+  finalizarLote, prepararImpresion, actualizarDatosOperativos, asignarBobinadoraLote,
   type ContextoRollo, type CintaRegistrada, type LoteCintas,
 } from "@/lib/pesaje-cintas.functions";
 
@@ -54,6 +54,7 @@ function PesajeCintasPage() {
   const finalizar = useServerFn(finalizarLote);
   const preparar = useServerFn(prepararImpresion);
   const actualizarOp = useServerFn(actualizarDatosOperativos);
+  const asignarBobinadora = useServerFn(asignarBobinadoraLote);
 
   const [rolMe, setRolMe] = useState<string | null>(null);
   const [authReady, setAuthReady] = useState(false);
@@ -84,6 +85,7 @@ function PesajeCintasPage() {
   const [manualDiametro, setManualDiametro] = useState("");
   const [manualUniones, setManualUniones] = useState("0");
   const [manualOrden, setManualOrden] = useState("");
+  const [manualBobinadoraId, setManualBobinadoraId] = useState("");
   const [ordenSistema, setOrdenSistema] = useState("");
   const [confirmManual, setConfirmManual] = useState(false);
   const requestGuard = useRef(false);
@@ -197,6 +199,7 @@ function PesajeCintasPage() {
     setManualDiametro("");
     setManualUniones("0");
     setManualOrden("");
+    setManualBobinadoraId("");
     setManualOpen(true);
     toast.info("Rollo no encontrado en la base de datos. Capture los datos mínimos del rollo de origen para continuar.");
   }
@@ -212,6 +215,7 @@ function PesajeCintasPage() {
       toast.error("Las uniones deben ser un número entero igual o mayor que cero.");
       return null;
     }
+    if (esIxtapaluca && !manualBobinadoraId) { toast.error("Seleccione la máquina (rebobinadora)."); return null; }
     return { peso, diametro, uniones };
   }
 
@@ -247,6 +251,9 @@ function PesajeCintasPage() {
           idempotency_key: uuid(),
         },
       });
+      if (esIxtapaluca && manualBobinadoraId) {
+        await asignarBobinadora({ data: { lote_id, bobinadora_id: manualBobinadoraId } }).catch(() => null);
+      }
       setConfirmManual(false);
       setLoteId(lote_id);
       await qc.invalidateQueries({ queryKey: ["cintas-lote", lote_id] });
@@ -621,6 +628,21 @@ function PesajeCintasPage() {
                     onChange={(e) => setManualUniones(e.target.value)}
                   />
                 </div>
+                {esIxtapaluca && (
+                  <div>
+                    <label className="mb-1 block text-[11px] uppercase tracking-wide text-muted-foreground">Máquina *</label>
+                    <select
+                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      value={manualBobinadoraId}
+                      onChange={(e) => setManualBobinadoraId(e.target.value)}
+                    >
+                      <option value="">Seleccione…</option>
+                      {bobinadorasVisibles.map((b) => (
+                        <option key={b.id} value={b.id}>{b.nombre}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </div>
               <button
                 onClick={onSolicitarLoteManual}
