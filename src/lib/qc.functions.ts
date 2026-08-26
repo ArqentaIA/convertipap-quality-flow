@@ -1453,7 +1453,7 @@ export const listEspecsActivasConVariables = createServerFn({ method: "GET" })
     }
 
 
-    return productos.map((p) => {
+    return productosVisibles.map((p) => {
       const vig = vigByProd.get(p.id);
       const bdf = bdfByProd.get(p.id);
       const tipo = (
