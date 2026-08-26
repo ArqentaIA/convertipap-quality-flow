@@ -280,7 +280,9 @@ function buildHtml(
   /* Contenedor de ajuste a media carta */
   .fit{width:139.7mm;margin:0 auto;transform-origin:top center}
 
-  @page{size:5.5in 8.5in;margin:0}
+  .hint{max-width:140mm;margin:0 auto 8px;font-size:11px;color:#334155;background:#fef9c3;border:1px solid #fde68a;border-radius:6px;padding:6px 10px;line-height:1.4}
+
+  @page{size:5.5in 8.5in portrait;margin:0}
   @media print{
     html,body{background:#fff;padding:0;margin:0;width:139.7mm;height:215.9mm;overflow:hidden}
     .toolbar{display:none}
