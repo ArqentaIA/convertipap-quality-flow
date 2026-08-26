@@ -1248,7 +1248,7 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
         // Cumplimiento se calcula desde la BD; nunca capturado a mano.
         cumplimiento_pct: null,
         porcentaje_rupturas_pct:
-          porcentajeRupturasPct.trim() === "" ? null : Number(porcentajeRupturasPct),
+          esIxtapaluca || porcentajeRupturasPct.trim() === "" ? null : Number(porcentajeRupturasPct),
         destino: destino.trim() === "" ? null : destino.trim(),
         // estatus_liberacion ya NO viene del cliente: lo deriva la BD por la regla de oro.
         // Política 29-Jul-2026: la captura nunca libera. Solo Calidad dictamina
@@ -2058,6 +2058,7 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
                         </td>
                       </tr>
                     ))}
+                    {!esIxtapaluca && (
                     <tr className="border-b last:border-0 bg-background">
                       <td className="py-4 px-3 align-middle">
                         <div className="font-semibold text-lg leading-snug">Porcentaje de rupturas</div>
@@ -2081,6 +2082,8 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
                         />
                       </td>
                     </tr>
+                    )}
+
                     <tr className="border-b last:border-0 bg-primary/15">
                       <td className="py-4 px-3 align-middle">
                         <div className="font-semibold text-lg leading-snug">Destino</div>
@@ -2220,6 +2223,7 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
                     )}
                   </div>
                 ))}
+                {!esIxtapaluca && (
                 <div className="rounded-xl border border-border p-5 shadow-sm bg-card">
                   <div className="mb-3">
                     <div className="font-semibold text-base">Porcentaje de rupturas</div>
@@ -2238,6 +2242,8 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
                     placeholder="0 - 100"
                   />
                 </div>
+                )}
+
                 <div className="rounded-xl border border-border p-5 shadow-sm bg-primary/15">
                   <div className="mb-3">
                     <div className="font-semibold text-base">Destino</div>
