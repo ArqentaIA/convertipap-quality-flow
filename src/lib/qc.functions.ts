@@ -354,7 +354,7 @@ export const listMisMuestrasRecientes = createServerFn({ method: "GET" })
     let q = sb
       .from("muestras_calidad")
       .select(
-        `id, hora_muestreo, capturado_at, secuencia_captura, numero_rollo, estado, observaciones_generales,
+        `id, hora_muestreo, capturado_at, secuencia_captura, numero_rollo, estado, observaciones_generales, lote_logistico,
          defecto_visual_conversion, variable_tecnica_dimensional, criterio_defecto,
          producto_id, maquina_id, capturado_por, turno,
          jefe_maquina, operador, prensero, analista,
