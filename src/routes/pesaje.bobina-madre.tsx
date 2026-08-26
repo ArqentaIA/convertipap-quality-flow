@@ -10,7 +10,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { listPesajes, firmarEvidencia, verificarRolloUtilizado, type PesajeBobina, type RolloYaUtilizado } from "@/lib/pesajes.functions";
 import { getEstadoNumeracionRollo } from "@/lib/qc.functions";
 import { fechaCortoMX, horaMX } from "@/lib/format";
-import { usePlantasPermitidas } from "@/hooks/usePlantasPermitidas";
 
 export const Route = createFileRoute("/pesaje/bobina-madre")({
   head: () => ({
