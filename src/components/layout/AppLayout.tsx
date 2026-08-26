@@ -98,6 +98,13 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
   const now = new Date();
   const dateStr = now.toLocaleDateString("es-MX", { weekday: "long", day: "2-digit", month: "long", year: "numeric" });
 
+  // Compartir la planta activa con el resto de pantallas (reglas por planta).
+  useEffect(() => {
+    if (!plant?.codigo) return;
+    window.localStorage.setItem(PLANTA_ACTIVA_KEY, plant.codigo.toUpperCase());
+    window.dispatchEvent(new Event("planta-activa-change"));
+  }, [plant?.codigo]);
+
   // 1) Redirigir a /login si no hay sesión
   useEffect(() => {
     if (!auth.loading && !auth.isAuthenticated) {
