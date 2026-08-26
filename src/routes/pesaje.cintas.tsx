@@ -59,10 +59,11 @@ function PesajeCintasPage() {
   const [rolMe, setRolMe] = useState<string | null>(null);
   const [authReady, setAuthReady] = useState(false);
   useEffect(() => {
-    supabase.auth.getUser().then(async ({ data }) => {
-      if (!data.user) return;
+    supabase.auth.getSession().then(async ({ data: sess }) => {
+      const user = sess.session?.user;
+      if (!user) return;
       setAuthReady(true);
-      const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", data.user.id);
+      const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", user.id);
       const list = (roles ?? []).map((r) => r.role as string);
       if (list.includes("administrador")) setRolMe("administrador");
       else if (list.includes("calidad")) setRolMe("calidad");
@@ -70,6 +71,7 @@ function PesajeCintasPage() {
       else setRolMe(list[0] ?? null);
     });
   }, []);
+
   const puedeCambiarOperativos = rolMe === "administrador" || rolMe === "calidad" || rolMe === "gerente_general";
 
   const [rolloInput, setRolloInput] = useState("");
