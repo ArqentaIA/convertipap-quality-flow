@@ -871,9 +871,11 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
           });
         }
       }
+      setRolloPesajeSel("");
       await queryClient.invalidateQueries({ queryKey: ["qc"] });
       await queryClient.invalidateQueries({ queryKey: ["produccion"] });
       await queryClient.invalidateQueries({ queryKey: ["qc", "cumplimiento"] });
+      await queryClient.invalidateQueries({ queryKey: ["pesajes-pendientes-captura"] });
       await queryClient.refetchQueries({
         queryKey: ["qc", "mis-muestras-recientes"],
         type: "active",
