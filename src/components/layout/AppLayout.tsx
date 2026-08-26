@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 
 import logo from "@/assets/logo.png";
-import { useMaquinasPermitidas, usePlantasPermitidas } from "@/hooks/usePlantasPermitidas";
+import { useMaquinasPermitidas, usePlantasPermitidas, PLANTA_ACTIVA_KEY } from "@/hooks/usePlantasPermitidas";
 import { useAuth, type AppModule } from "@/lib/auth";
 import { useLabFilter, LAB_LABEL } from "@/lib/lab";
 import { ShieldCheck } from "lucide-react";
