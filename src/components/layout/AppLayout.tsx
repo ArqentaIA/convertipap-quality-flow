@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 
 import logo from "@/assets/logo.png";
-import { PLANTS } from "@/lib/qc-data";
+import { usePlantasPermitidas } from "@/hooks/usePlantasPermitidas";
 import { useAuth, type AppModule } from "@/lib/auth";
 import { useLabFilter, LAB_LABEL } from "@/lib/lab";
 import { ShieldCheck } from "lucide-react";
@@ -83,10 +83,12 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
   const auth = useAuth();
   const labFilter = useLabFilter();
   const [collapsed, setCollapsed] = useState(false);
-  const [plantId, setPlantId] = useState("tlx");
+  const { data: plantasPermitidas } = usePlantasPermitidas();
+  const [plantId, setPlantId] = useState<string | null>(null);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const currentSearch = useRouterState({ select: (s) => s.location.search as { maquina?: string } });
-  const plant = PLANTS.find((p) => p.id === plantId)!;
+  const plantas = plantasPermitidas ?? [];
+  const plant = plantas.find((p) => p.id === plantId) ?? plantas[0] ?? null;
   const now = new Date();
   const dateStr = now.toLocaleDateString("es-MX", { weekday: "long", day: "2-digit", month: "long", year: "numeric" });
 
@@ -270,12 +272,12 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
           <div className="flex items-center gap-3">
             <div className="relative">
               <select
-                value={plantId}
+                value={plant?.id ?? ""}
                 onChange={(e) => setPlantId(e.target.value)}
                 className="appearance-none rounded-md border border-input bg-background pl-3 pr-9 py-2 text-sm font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               >
-                {PLANTS.map((p) => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
+                {plantas.map((p) => (
+                  <option key={p.id} value={p.id}>{p.nombre}</option>
                 ))}
               </select>
               <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -283,7 +285,7 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
 
             <div className="hidden md:flex flex-col items-end leading-tight">
               <div className="text-xs text-muted-foreground capitalize">{dateStr}</div>
-              <div className="text-xs font-semibold text-primary">Planta {plant.code}</div>
+              <div className="text-xs font-semibold text-primary">Planta {plant?.codigo ?? "—"}</div>
             </div>
 
             {labFilter.lab && (

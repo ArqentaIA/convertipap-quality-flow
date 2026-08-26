@@ -18,3 +18,9 @@ export async function allowedPlantaIds(sb: SB, userId: string): Promise<string[]
   const ids = (data ?? []).map((r) => r.planta_id as string);
   return ids.length > 0 ? ids : null;
 }
+
+// ---------------------------------------------------------------------
+// Hook de UI: plantas visibles para el usuario en sesión.
+// Si el usuario tiene filas en `user_plantas`, solo ve esas plantas.
+// ---------------------------------------------------------------------
+export type PlantaRow = { id: string; codigo: string; nombre: string };
