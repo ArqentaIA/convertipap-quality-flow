@@ -765,29 +765,51 @@ function PesajeCintasPage() {
           <div className={esIxtapaluca ? "grid gap-3 md:grid-cols-4" : "grid gap-3 md:grid-cols-3"}>
             <div>
               <label className="mb-1 block text-xs text-muted-foreground">Conductor</label>
-              <select
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                value={conductorId}
-                onChange={(e) => setConductorId(e.target.value)}
-              >
-                <option value="">— seleccionar —</option>
-                {(conductoresQ.data ?? []).map((c) => (
-                  <option key={c.id} value={c.id}>{c.nombre}{c.puesto ? ` · ${c.puesto}` : ""}</option>
-                ))}
-              </select>
+              {esIxtapaluca ? (
+                <input
+                  type="text"
+                  maxLength={20}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  placeholder="Nombre (máx. 20)"
+                  value={conductorNombre}
+                  onChange={(e) => setConductorNombre(e.target.value)}
+                />
+              ) : (
+                <select
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  value={conductorId}
+                  onChange={(e) => setConductorId(e.target.value)}
+                >
+                  <option value="">— seleccionar —</option>
+                  {(conductoresQ.data ?? []).map((c) => (
+                    <option key={c.id} value={c.id}>{c.nombre}{c.puesto ? ` · ${c.puesto}` : ""}</option>
+                  ))}
+                </select>
+              )}
             </div>
             <div>
               <label className="mb-1 block text-xs text-muted-foreground">{esIxtapaluca ? "Máquina" : "Bobinadora"}</label>
-              <select
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                value={bobinadoraId}
-                onChange={(e) => setBobinadoraId(e.target.value)}
-              >
-                <option value="">— seleccionar —</option>
-                {bobinadorasVisibles.map((b) => (
-                  <option key={b.id} value={b.id}>{b.nombre}{b.codigo ? ` (${b.codigo})` : ""}</option>
-                ))}
-              </select>
+              {esIxtapaluca ? (
+                <input
+                  type="text"
+                  maxLength={20}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  placeholder="Máquina (máx. 20)"
+                  value={maquinaNombre}
+                  onChange={(e) => setMaquinaNombre(e.target.value)}
+                />
+              ) : (
+                <select
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  value={bobinadoraId}
+                  onChange={(e) => setBobinadoraId(e.target.value)}
+                >
+                  <option value="">— seleccionar —</option>
+                  {bobinadorasVisibles.map((b) => (
+                    <option key={b.id} value={b.id}>{b.nombre}{b.codigo ? ` (${b.codigo})` : ""}</option>
+                  ))}
+                </select>
+              )}
             </div>
             {esIxtapaluca && (
               <div>
@@ -805,7 +827,12 @@ function PesajeCintasPage() {
             <div className="flex items-end">
               <button
                 onClick={onCrearLote}
-                disabled={saving || !conductorId || !bobinadoraId || (esIxtapaluca && bobinadorNombre.trim().length < 3)}
+                disabled={
+                  saving ||
+                  (esIxtapaluca
+                    ? conductorNombre.trim().length < 3 || maquinaNombre.trim().length < 2 || bobinadorNombre.trim().length < 3
+                    : !conductorId || !bobinadoraId)
+                }
                 className="w-full rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground disabled:opacity-50"
               >
                 {saving ? "Iniciando…" : "Iniciar lote"}
