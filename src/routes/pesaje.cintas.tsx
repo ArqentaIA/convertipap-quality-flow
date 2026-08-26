@@ -679,17 +679,28 @@ function PesajeCintasPage() {
                 </div>
                 {esIxtapaluca && (
                   <div>
-                    <label className="mb-1 block text-[11px] uppercase tracking-wide text-muted-foreground">Máquina *</label>
-                    <select
+                    <label className="mb-1 block text-[11px] uppercase tracking-wide text-muted-foreground">Conductor *</label>
+                    <input
+                      type="text"
+                      maxLength={20}
                       className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                      value={manualBobinadoraId}
-                      onChange={(e) => setManualBobinadoraId(e.target.value)}
-                    >
-                      <option value="">Seleccione…</option>
-                      {bobinadorasVisibles.map((b) => (
-                        <option key={b.id} value={b.id}>{b.nombre}</option>
-                      ))}
-                    </select>
+                      placeholder="Nombre (máx. 20)"
+                      value={conductorNombre}
+                      onChange={(e) => setConductorNombre(e.target.value)}
+                    />
+                  </div>
+                )}
+                {esIxtapaluca && (
+                  <div>
+                    <label className="mb-1 block text-[11px] uppercase tracking-wide text-muted-foreground">Máquina *</label>
+                    <input
+                      type="text"
+                      maxLength={20}
+                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      placeholder="Máquina (máx. 20)"
+                      value={maquinaNombre}
+                      onChange={(e) => setMaquinaNombre(e.target.value)}
+                    />
                   </div>
                 )}
                 {esIxtapaluca && (
