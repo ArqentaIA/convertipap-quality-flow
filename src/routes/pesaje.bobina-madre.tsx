@@ -512,9 +512,21 @@ function PesajeBobinaPage() {
     registro?: PesajeBobina;
   };
 
-  function registrar() {
+  async function registrar() {
     if (!puedeRegistrar) return;
     if (confirmData) return; // ya hay uno abierto
+    setVerificandoDup(true);
+    try {
+      const res = await verificarDup({ data: { numero_rollo: numeroRollo.trim(), maquina_id: null } });
+      if (res.usado && res.pesaje) {
+        setDuplicado(res);
+        return;
+      }
+    } catch {
+      // Si la verificación falla, continuamos: la BD y la Edge Function revalidan.
+    } finally {
+      setVerificandoDup(false);
+    }
     setPreConfirm(true);
   }
 
@@ -522,6 +534,7 @@ function PesajeBobinaPage() {
     if (!puedeRegistrar) return;
     if (confirmData) return;
     setPreConfirm(false);
+
     setProcesando(true);
     let uploadedPath: string | null = null;
     const clientRequestId = crypto.randomUUID();
