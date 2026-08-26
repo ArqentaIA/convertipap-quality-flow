@@ -668,6 +668,15 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
   const [loteLogistico, setLoteLogistico] = useState<string>("");
   const loteLogisticoValido = /^\d{10}$/.test(loteLogistico);
 
+  // ---- Estatus del rollo elegido por el capturista (exclusivo Ixtapaluca) ----
+  // Opcional. Si se elige, MANDA sobre el resultado automático de la sección F.
+  // Motivo obligatorio: ≥20 caracteres para Liberado, ≥10 para Condicionado/NC.
+  const [estatusManual, setEstatusManual] = useState<"" | "L" | "C" | "NC">("");
+  const [estatusManualMotivo, setEstatusManualMotivo] = useState<string>("");
+  const estatusManualMinLen = estatusManual === "L" ? 20 : 10;
+  const estatusManualMotivoValido =
+    !estatusManual || estatusManualMotivo.trim().length >= estatusManualMinLen;
+
 
 
   useEffect(() => {
