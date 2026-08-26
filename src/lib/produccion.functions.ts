@@ -10,6 +10,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { esLiberadoOficial, esNoConformeOficial, getEstadoOficial } from "@/lib/qc-estado-oficial";
+import { allowedPlantaIds } from "@/lib/planta-acceso";
 
 type SB = SupabaseClient<Database>;
 
