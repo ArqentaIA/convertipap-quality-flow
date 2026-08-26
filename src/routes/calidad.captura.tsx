@@ -497,6 +497,7 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
     setIniciandoNueva(true);
     try {
       setRolloAsignado(null);
+      setRolloPesajeSel("");
       setNumeroRollo("");
       renovarIdempotency();
       mutation.reset();
