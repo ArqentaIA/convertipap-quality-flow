@@ -186,15 +186,22 @@ function PesajeBobinaPage() {
   const maquinasQ = useQuery({
     queryKey: ["pesaje", "maquinas"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("maquinas")
-        .select("id, codigo")
-        .in("codigo", ["MP-04", "MP-05", "MP-06", "MP-07"])
-        .eq("activo", true).order("codigo");
+      const { data: userRes } = await supabase.auth.getUser();
+      const uid = userRes.user?.id;
+      let plantas: string[] | null = null;
+      if (uid) {
+        const { data: up } = await supabase.from("user_plantas").select("planta_id").eq("user_id", uid);
+        if (up && up.length > 0) plantas = up.map((r) => r.planta_id as string);
+      }
+      let q = supabase.from("maquinas").select("id, codigo").eq("activo", true).order("codigo");
+      if (plantas) q = q.in("planta_id", plantas);
+      const { data, error } = await q;
       if (error) throw new Error(error.message);
       return (data ?? []) as Maquina[];
     },
     staleTime: 5 * 60_000,
   });
+
 
   const maqCodigo = useMemo(
     () => maquinasQ.data?.find((m) => m.id === maquinaId)?.codigo ?? "",
