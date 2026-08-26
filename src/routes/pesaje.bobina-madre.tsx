@@ -1055,7 +1055,7 @@ function PesajeBobinaPage() {
         </div>
       )}
 
-      <ListaPesajes lista={listaQ.data ?? []} loading={listaQ.isLoading} />
+      {!esIxtapaluca && <ListaPesajes lista={listaQ.data ?? []} loading={listaQ.isLoading} />}
 
     </div>
   );
