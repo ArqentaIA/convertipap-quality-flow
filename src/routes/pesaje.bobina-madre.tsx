@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { listPesajes, firmarEvidencia, verificarRolloUtilizado, type PesajeBobina, type RolloYaUtilizado } from "@/lib/pesajes.functions";
 import { getEstadoNumeracionRollo } from "@/lib/qc.functions";
 import { fechaCortoMX, horaMX } from "@/lib/format";
+import { usePlantasPermitidas } from "@/hooks/usePlantasPermitidas";
 
 export const Route = createFileRoute("/pesaje/bobina-madre")({
   head: () => ({
@@ -139,6 +140,10 @@ function PesajeBobinaPage() {
   const qc = useQueryClient();
   const auth = useAuth();
   const esCapturista = auth.hasRole("capturista");
+  const { data: plantasPermitidas } = usePlantasPermitidas();
+  const esIxtapaluca =
+    (plantasPermitidas ?? []).length > 0 &&
+    (plantasPermitidas ?? []).every((p) => p.codigo?.toUpperCase() === "IXT");
 
   const [ordenSel, setOrdenSel] = useState<string>("");
   const [ordenOtro, setOrdenOtro] = useState("");
@@ -1050,7 +1055,7 @@ function PesajeBobinaPage() {
         </div>
       )}
 
-      <ListaPesajes lista={listaQ.data ?? []} loading={listaQ.isLoading} />
+      {!esIxtapaluca && <ListaPesajes lista={listaQ.data ?? []} loading={listaQ.isLoading} />}
 
     </div>
   );
