@@ -1311,6 +1311,10 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
         fuera_de_turno: modoFueraTurno,
         fuera_de_turno_motivo: modoFueraTurno ? motivoFueraTurno.trim() : null,
         lote_logistico: esIxtapaluca && loteLogisticoValido ? loteLogistico : null,
+        // Estatus del rollo elegido por el capturista (solo Ixtapaluca).
+        estatus_capturista: esIxtapaluca && estatusManual ? estatusManual : null,
+        estatus_capturista_motivo:
+          esIxtapaluca && estatusManual ? estatusManualMotivo.trim() : null,
         idempotency_key: idempotencyKey,
       },
     });
