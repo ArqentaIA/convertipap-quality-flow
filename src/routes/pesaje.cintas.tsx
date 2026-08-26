@@ -665,6 +665,19 @@ function PesajeCintasPage() {
                     </select>
                   </div>
                 )}
+                {esIxtapaluca && (
+                  <div>
+                    <label className="mb-1 block text-[11px] uppercase tracking-wide text-muted-foreground">Nombre del bobinador *</label>
+                    <input
+                      type="text"
+                      maxLength={80}
+                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      placeholder="Nombre completo"
+                      value={bobinadorNombre}
+                      onChange={(e) => setBobinadorNombre(e.target.value)}
+                    />
+                  </div>
+                )}
               </div>
               <button
                 onClick={onSolicitarLoteManual}
