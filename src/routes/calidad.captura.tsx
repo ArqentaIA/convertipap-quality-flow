@@ -2374,6 +2374,85 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
           </Card>
         )}
 
+        {spec && esIxtapaluca && (
+          <Card className={cn(isBlocked && "opacity-60 pointer-events-none")}>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base font-semibold">
+                E.1 Estatus del rollo{" "}
+                <span className="text-xs font-normal text-muted-foreground">
+                  (opcional — si lo eliges, manda sobre el resultado automático)
+                </span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="space-y-1.5 md:max-w-md">
+                <Label className="text-base">Estatus</Label>
+                <Select
+                  value={estatusManual || "__auto__"}
+                  onValueChange={(v) => {
+                    setEstatusManual(v === "__auto__" ? "" : (v as "L" | "C" | "NC"));
+                    if (v === "__auto__") setEstatusManualMotivo("");
+                  }}
+                >
+                  <SelectTrigger
+                    className={cn(
+                      "h-11 text-base font-semibold",
+                      estatusManual === "L" && "border-emerald-600 text-emerald-700",
+                      estatusManual === "C" && "border-amber-500 text-amber-700",
+                      estatusManual === "NC" && "border-red-600 text-red-700",
+                    )}
+                  >
+                    <SelectValue placeholder="— Automático (según sección F) —" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__auto__">— Automático (según sección F) —</SelectItem>
+                    <SelectItem value="L">
+                      <span className="font-semibold text-emerald-700">Liberado</span>
+                    </SelectItem>
+                    <SelectItem value="C">
+                      <span className="font-semibold text-amber-700">Condicionado</span>
+                    </SelectItem>
+                    <SelectItem value="NC">
+                      <span className="font-semibold text-red-700">No conforme</span>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {estatusManual && (
+                <div className="space-y-1.5">
+                  <Label className="text-base">
+                    {estatusManual === "L"
+                      ? "Justificación de liberación (mín. 20 caracteres)"
+                      : "Motivo del estatus (mín. 10 caracteres)"}
+                  </Label>
+                  <Textarea
+                    value={estatusManualMotivo}
+                    onChange={(e) => setEstatusManualMotivo(e.target.value.slice(0, 240))}
+                    rows={2}
+                    className={cn(
+                      "text-base",
+                      !estatusManualMotivoValido && "border-destructive",
+                    )}
+                    placeholder="Describe la razón real de la decisión"
+                  />
+                  <p
+                    className={cn(
+                      "text-[11px]",
+                      estatusManualMotivoValido ? "text-muted-foreground" : "text-destructive",
+                    )}
+                  >
+                    {estatusManualMotivoValido
+                      ? `${estatusManualMotivo.trim().length}/240 caracteres`
+                      : `Faltan ${estatusManualMinLen - estatusManualMotivo.trim().length} caracteres (mín. ${estatusManualMinLen}).`}
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+
+
         {spec && (
           <Card className={cn(isBlocked && "opacity-60 pointer-events-none")}>
             <CardHeader className="pb-2">
