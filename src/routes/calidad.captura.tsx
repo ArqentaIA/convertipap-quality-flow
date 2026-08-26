@@ -1615,10 +1615,10 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
                   id="lote-logistico"
                   type="text"
                   inputMode="numeric"
-                  maxLength={9}
-                  placeholder="Ej. 100234567"
+                  maxLength={10}
+                  placeholder="Ej. 1002345678"
                   value={loteLogistico}
-                  onChange={(e) => setLoteLogistico(e.target.value.replace(/\D/g, "").slice(0, 9))}
+                  onChange={(e) => setLoteLogistico(e.target.value.replace(/\D/g, "").slice(0, 10))}
                   className={cn("h-11 text-base tabular-nums", loteLogistico && !loteLogisticoValido && "border-destructive")}
                 />
                 <p className={cn("text-[11px]", loteLogistico && !loteLogisticoValido ? "text-destructive" : "text-muted-foreground")}>
