@@ -176,6 +176,66 @@ export const buscarPesajePorRollo = createServerFn({ method: "POST" })
   });
 
 /**
+ * Rollos ya pesados (Planta Ixtapaluca) que aún NO tienen captura de calidad.
+ * Se usa en Control de Calidad y Captura fuera de turno para continuar la
+ * captura de un rollo registrado con anticipación, sin consumir un consecutivo
+ * nuevo. Al capturarlo en cualquiera de los dos módulos, deja de listarse.
+ */
+export type PesajePendienteCaptura = {
+  id: string;
+  numero_rollo: string;
+  peso_neto_kg: number;
+  fecha_hora_pesaje: string;
+  numero_orden: string | null;
+};
+
+export const listarPesajesPendientesCaptura = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ maquina_id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }): Promise<PesajePendienteCaptura[]> => {
+    const { data: allowed, error: rerr } = await context.supabase.rpc(
+      "can_access_module",
+      { _user_id: context.userId, _module: "control_calidad" as never },
+    );
+    if (rerr) throw new Error(rerr.message);
+    if (!allowed) throw new Error("Sin permiso para consultar pesajes desde Calidad.");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // Solo aplica a máquinas de Planta Ixtapaluca (IXT).
+    const { data: maq, error: merr } = await supabaseAdmin
+      .from("maquinas")
+      .select("id, planta_id, plantas!inner(codigo)")
+      .eq("id", data.maquina_id)
+      .maybeSingle();
+    if (merr) throw new Error(merr.message);
+    const codigoPlanta = (maq as { plantas?: { codigo?: string } } | null)?.plantas?.codigo ?? "";
+    if (codigoPlanta.toUpperCase() !== "IXT") return [];
+
+    const { data: pesajes, error } = await supabaseAdmin
+      .from("pesajes_bobina_madre")
+      .select("id, numero_rollo, peso_neto_kg, fecha_hora_pesaje, numero_orden")
+      .eq("maquina_id", data.maquina_id)
+      .order("fecha_hora_pesaje", { ascending: false })
+      .limit(200);
+    if (error) throw new Error(error.message);
+
+    const lista = (pesajes ?? []) as PesajePendienteCaptura[];
+    if (lista.length === 0) return [];
+
+    const { data: capturados, error: cerr } = await supabaseAdmin
+      .from("muestras_calidad")
+      .select("numero_rollo")
+      .in("numero_rollo", lista.map((p) => p.numero_rollo));
+    if (cerr) throw new Error(cerr.message);
+    const usados = new Set((capturados ?? []).map((m) => m.numero_rollo as string));
+
+    return lista.filter((p) => !usados.has(p.numero_rollo));
+  });
+
+
+
+/**
  * Verifica si un número de rollo ya fue utilizado en Pesaje de Bobina Madre
  * (y si además ya tiene lote de cintas). Se usa para bloquear la captura
  * duplicada y mostrar al operador el registro existente.
