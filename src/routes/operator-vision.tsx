@@ -991,7 +991,9 @@ function OperatorVisionPage() {
           <div className="flex min-w-0 items-center gap-3">
             <div className="min-w-0">
               <div className="text-[13px] font-black uppercase tracking-[0.2em] text-slate-500">
-                Visión Operador
+                {data?.maquina?.plantaNombre
+                  ? `${data.maquina.plantaNombre} · Visión Operador`
+                  : "Visión Operador"}
               </div>
               <div className="flex items-center gap-2">
                 <span className="rounded bg-emerald-600 px-2 py-0.5 font-mono text-lg font-black text-white">
