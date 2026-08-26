@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 
 import logo from "@/assets/logo.png";
-import { usePlantasPermitidas } from "@/hooks/usePlantasPermitidas";
+import { useMaquinasPermitidas, usePlantasPermitidas } from "@/hooks/usePlantasPermitidas";
 import { useAuth, type AppModule } from "@/lib/auth";
 import { useLabFilter, LAB_LABEL } from "@/lib/lab";
 import { ShieldCheck } from "lucide-react";
@@ -84,10 +84,16 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
   const labFilter = useLabFilter();
   const [collapsed, setCollapsed] = useState(false);
   const { data: plantasPermitidas } = usePlantasPermitidas();
+  const { data: maquinasPermitidas } = useMaquinasPermitidas();
   const [plantId, setPlantId] = useState<string | null>(null);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const currentSearch = useRouterState({ select: (s) => s.location.search as { maquina?: string } });
   const plantas = plantasPermitidas ?? [];
+  const visoresPermitidos = (maquinasPermitidas ?? [])
+    .map((maquina) => maquina.codigo)
+    .filter((codigo): codigo is "MP-01" | "MP-04" | "MP-05" | "MP-06" | "MP-07" =>
+      ["MP-01", "MP-04", "MP-05", "MP-06", "MP-07"].includes(codigo),
+    );
   const plant = plantas.find((p) => p.id === plantId) ?? plantas[0] ?? null;
   const now = new Date();
   const dateStr = now.toLocaleDateString("es-MX", { weekday: "long", day: "2-digit", month: "long", year: "numeric" });
@@ -225,7 +231,7 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
                 )}
                 {isPantallas && !collapsed && (
                   <div className="ml-6 mb-1 border-l border-sidebar-border/60 pl-2">
-                    {(["MP-04", "MP-05", "MP-06", "MP-07"] as const).map((maq) => {
+                    {visoresPermitidos.map((maq) => {
                       const subActive =
                         pathname.startsWith("/operator-vision") &&
                         currentSearch?.maquina === maq;
