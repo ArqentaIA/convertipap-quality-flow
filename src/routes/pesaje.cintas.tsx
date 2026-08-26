@@ -14,7 +14,7 @@ import {
 
 import { abrirImpresionEtiquetas, type EtiquetaSnapshot } from "@/lib/etiqueta-cinta";
 import { supabase } from "@/integrations/supabase/client";
-import { usePlantasPermitidas } from "@/hooks/usePlantasPermitidas";
+import { usePlantasPermitidas, usePlantaActivaCodigo } from "@/hooks/usePlantasPermitidas";
 
 export const Route = createFileRoute("/pesaje/cintas")({
   head: () => ({
