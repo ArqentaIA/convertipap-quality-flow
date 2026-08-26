@@ -653,13 +653,13 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
   });
   const pesajesPendientes = pendientesQuery.data ?? [];
 
-  // ---- Lote Logístico (9 dígitos) — exclusivo Planta Ixtapaluca ------------
+  // ---- Lote Logístico (10 dígitos) — exclusivo Planta Ixtapaluca ------------
   const { data: plantasPermitidas } = usePlantasPermitidas();
   const esIxtapaluca =
     (plantasPermitidas ?? []).length > 0 &&
     (plantasPermitidas ?? []).every((p) => p.codigo?.toUpperCase() === "IXT");
   const [loteLogistico, setLoteLogistico] = useState<string>("");
-  const loteLogisticoValido = /^\d{9}$/.test(loteLogistico);
+  const loteLogisticoValido = /^\d{10}$/.test(loteLogistico);
 
 
 
@@ -1130,7 +1130,7 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
       toast.error("El campo Porcentaje de rupturas debe estar entre 0 y 100"); return;
     }
     if (modo === "envio" && esIxtapaluca && !loteLogisticoValido) {
-      toast.error("Lote Logístico obligatorio: debe capturar exactamente 9 dígitos numéricos.");
+      toast.error("Lote Logístico obligatorio: debe capturar exactamente 10 dígitos numéricos.");
       return;
     }
     if (modo === "envio" && modoFueraTurno) {
@@ -1615,14 +1615,14 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
                   id="lote-logistico"
                   type="text"
                   inputMode="numeric"
-                  maxLength={9}
-                  placeholder="Ej. 100234567"
+                  maxLength={10}
+                  placeholder="Ej. 1002345678"
                   value={loteLogistico}
-                  onChange={(e) => setLoteLogistico(e.target.value.replace(/\D/g, "").slice(0, 9))}
+                  onChange={(e) => setLoteLogistico(e.target.value.replace(/\D/g, "").slice(0, 10))}
                   className={cn("h-11 text-base tabular-nums", loteLogistico && !loteLogisticoValido && "border-destructive")}
                 />
                 <p className={cn("text-[11px]", loteLogistico && !loteLogisticoValido ? "text-destructive" : "text-muted-foreground")}>
-                  {loteLogistico.length}/9 dígitos · solo números.
+                  {loteLogistico.length}/10 dígitos · solo números.
                 </p>
               </div>
             )}
