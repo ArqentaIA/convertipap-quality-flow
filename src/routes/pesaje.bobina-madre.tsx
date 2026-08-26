@@ -847,7 +847,7 @@ function PesajeBobinaPage() {
         <div className="mt-6 flex flex-wrap gap-3">
           <button
             onClick={registrar}
-            disabled={!puedeRegistrar}
+            disabled={!puedeRegistrar || verificandoDup}
             className="inline-flex min-h-[52px] items-center gap-2 rounded-md bg-primary px-6 py-3 text-base font-semibold text-primary-foreground shadow disabled:opacity-50"
           >
             {procesando ? <Loader2 className="h-5 w-5 animate-spin" /> : <CheckCircle2 className="h-5 w-5" />}
