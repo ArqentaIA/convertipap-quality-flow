@@ -516,6 +516,10 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
           .enum(["MENOR", "MAYOR", "CRÍTICO", "SIN DEFECTO"])
           .nullable()
           .optional(),
+        // Estatus elegido por el capturista — EXCLUSIVO Planta Ixtapaluca.
+        // Manda sobre el resultado automático de la sección F.
+        estatus_capturista: z.enum(["L", "C", "NC"]).nullable().optional(),
+        estatus_capturista_motivo: z.string().trim().max(240).nullable().optional(),
         variables_snapshot_json: z.record(z.string(), z.unknown()).default({}),
         mediciones: z.array(medicionInputSchema),
         enviar_a_revision: z.boolean().default(false),
