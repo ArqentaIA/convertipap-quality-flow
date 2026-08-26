@@ -2935,6 +2935,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      pc_set_bobinadora: {
+        Args: { _bobinadora_id: string; _lote_id: string }
+        Returns: undefined
+      }
       pc_set_orden_manual: {
         Args: { _lote_id: string; _orden: string }
         Returns: undefined
