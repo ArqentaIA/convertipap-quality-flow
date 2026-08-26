@@ -288,7 +288,17 @@ function PesajeCintasPage() {
 
   async function onCrearLote() {
     if (!contexto) return;
-    if (!conductorId || !bobinadoraId) { toast.error("Seleccione conductor y bobinadora."); return; }
+    // Ixtapaluca: conductor y máquina son texto libre; se usan referencias base
+    // del catálogo solo para satisfacer el registro y luego se guardan los nombres.
+    const condRef = esIxtapaluca ? (conductoresQ.data ?? [])[0]?.id ?? "" : conductorId;
+    const bobRef = esIxtapaluca ? bobinadorasVisibles[0]?.id ?? "" : bobinadoraId;
+    if (esIxtapaluca) {
+      if (conductorNombre.trim().length < 3) { toast.error("Capture el nombre del conductor."); return; }
+      if (maquinaNombre.trim().length < 2) { toast.error("Capture la máquina."); return; }
+      if (!condRef || !bobRef) { toast.error("No fue posible iniciar el lote. Intente de nuevo."); return; }
+    } else if (!conductorId || !bobinadoraId) {
+      toast.error("Seleccione conductor y bobinadora."); return;
+    }
     if (esIxtapaluca && bobinadorNombre.trim().length < 3) { toast.error("Capture el nombre del bobinador."); return; }
     if (requestGuard.current) return;
     requestGuard.current = true;
@@ -297,11 +307,18 @@ function PesajeCintasPage() {
       const { lote_id } = await crear({
         data: {
           numero_rollo: contexto.muestra.numero_rollo,
-          conductor_id: conductorId,
-          bobinadora_id: bobinadoraId,
+          conductor_id: condRef,
+          bobinadora_id: bobRef,
           idempotency_key: uuid(),
         },
       });
+      if (esIxtapaluca) {
+        await asignarNombresOp({
+          data: { lote_id, conductor: conductorNombre.trim().slice(0, 20), maquina: maquinaNombre.trim().slice(0, 20) },
+        }).catch(() => {
+          toast.warning("El lote se creó, pero no se pudieron registrar conductor y máquina.");
+        });
+      }
       if (esIxtapaluca && bobinadorNombre.trim()) {
         await asignarBobinador({ data: { lote_id, nombre: bobinadorNombre.trim() } }).catch(() => {
           toast.warning("El lote se creó, pero no se pudo registrar el nombre del bobinador.");
