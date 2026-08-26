@@ -106,9 +106,11 @@ function PesajeCintasPage() {
 
   // Ixtapaluca usa su propio grupo de máquinas (JG01/JG02/RB01/RB02).
   const { data: plantasPermitidas } = usePlantasPermitidas();
+  const plantaActiva = usePlantaActivaCodigo();
   const esIxtapaluca =
-    (plantasPermitidas ?? []).length > 0 &&
-    (plantasPermitidas ?? []).every((p) => p.codigo?.toUpperCase() === "IXT");
+    plantaActiva === "IXT" ||
+    ((plantasPermitidas ?? []).length > 0 &&
+      (plantasPermitidas ?? []).every((p) => p.codigo?.toUpperCase() === "IXT"));
   const CODIGOS_IXT = ["JG01", "JG02", "RB01", "RB02"];
   const bobinadorasVisibles = useMemo(() => {
     const todas = bobinadorasQ.data ?? [];
