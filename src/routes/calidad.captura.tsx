@@ -1140,7 +1140,8 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
       toast.error("El campo Porcentaje de rupturas debe estar entre 0 y 100"); return;
     }
     if (modo === "envio" && esIxtapaluca && !loteLogisticoValido) {
-      toast.error("Lote Logístico obligatorio: debe capturar exactamente 10 dígitos numéricos.");
+      const faltan = 10 - loteLogistico.length;
+      toast.error(`Lote Logístico: faltan ${faltan} ${faltan === 1 ? "dígito" : "dígitos"} (deben ser 10).`);
       return;
     }
     if (modo === "envio" && modoFueraTurno) {
@@ -1619,7 +1620,7 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
               <div className="space-y-1.5">
                 <Label htmlFor="lote-logistico" className="text-base">
                   4. Lote Logístico{" "}
-                  <span className="text-muted-foreground font-normal">(9 dígitos, obligatorio)</span>
+                  <span className="text-muted-foreground font-normal">(10 dígitos, obligatorio)</span>
                 </Label>
                 <Input
                   id="lote-logistico"
@@ -1632,7 +1633,9 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
                   className={cn("h-11 text-base tabular-nums", loteLogistico && !loteLogisticoValido && "border-destructive")}
                 />
                 <p className={cn("text-[11px]", loteLogistico && !loteLogisticoValido ? "text-destructive" : "text-muted-foreground")}>
-                  {loteLogistico.length}/10 dígitos · solo números.
+                  {loteLogistico && !loteLogisticoValido
+                    ? `Faltan ${10 - loteLogistico.length} ${10 - loteLogistico.length === 1 ? "dígito" : "dígitos"} para completar los 10.`
+                    : `${loteLogistico.length}/10 dígitos · solo números.`}
                 </p>
               </div>
             )}
