@@ -137,6 +137,8 @@ async function mensajeFunctionError(error: unknown): Promise<string> {
 
 function PesajeBobinaPage() {
   const qc = useQueryClient();
+  const auth = useAuth();
+  const esCapturista = auth.hasRole("capturista");
 
   const [ordenSel, setOrdenSel] = useState<string>("");
   const [ordenOtro, setOrdenOtro] = useState("");
