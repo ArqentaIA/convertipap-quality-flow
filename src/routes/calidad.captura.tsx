@@ -2058,6 +2058,7 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
                         </td>
                       </tr>
                     ))}
+                    {!esIxtapaluca && (
                     <tr className="border-b last:border-0 bg-background">
                       <td className="py-4 px-3 align-middle">
                         <div className="font-semibold text-lg leading-snug">Porcentaje de rupturas</div>
@@ -2081,6 +2082,8 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
                         />
                       </td>
                     </tr>
+                    )}
+
                     <tr className="border-b last:border-0 bg-primary/15">
                       <td className="py-4 px-3 align-middle">
                         <div className="font-semibold text-lg leading-snug">Destino</div>
