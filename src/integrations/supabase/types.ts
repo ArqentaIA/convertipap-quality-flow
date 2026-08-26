@@ -2492,6 +2492,38 @@ export type Database = {
           },
         ]
       }
+      user_plantas: {
+        Row: {
+          created_at: string
+          id: string
+          planta_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          planta_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          planta_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_plantas_planta_id_fkey"
+            columns: ["planta_id"]
+            isOneToOne: false
+            referencedRelation: "plantas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -2944,6 +2976,7 @@ export type Database = {
         Args: { _user_id: string }
         Returns: string[]
       }
+      user_allowed_planta_ids: { Args: { _user_id: string }; Returns: string[] }
       user_can_use_machine: {
         Args: { _maquina_id: string; _user_id: string }
         Returns: boolean
