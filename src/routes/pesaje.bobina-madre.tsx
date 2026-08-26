@@ -140,6 +140,10 @@ function PesajeBobinaPage() {
   const qc = useQueryClient();
   const auth = useAuth();
   const esCapturista = auth.hasRole("capturista");
+  const { data: plantasPermitidas } = usePlantasPermitidas();
+  const esIxtapaluca =
+    (plantasPermitidas ?? []).length > 0 &&
+    (plantasPermitidas ?? []).every((p) => p.codigo?.toUpperCase() === "IXT");
 
   const [ordenSel, setOrdenSel] = useState<string>("");
   const [ordenOtro, setOrdenOtro] = useState("");
