@@ -431,15 +431,16 @@ Deno.serve(async (req) => {
         if (ord) ordenProduccionId = ord.id;
       }
 
-      const { data: ins, error: insErr } = await admin.from("pesajes_bobina_madre").insert({
-        numero_rollo: numeroRollo, maquina_id: maquinaId, maquina_codigo: maq.codigo,
-        orden_produccion_id: ordenProduccionId, numero_orden: numeroOrden,
-        peso_bruto_kg: bruto, peso_eje_kg: tara, peso_neto_kg: neto,
-        fecha_hora_pesaje: fechaHora ?? new Date().toISOString(),
-        evidencia_path: evidenciaPath, ocr_confianza: 100,
-        ocr_raw: { confirmadoManual: true, idempotencyKey } as never,
-        capturado_por: uid,
-      }).select("*").single();
+      const { data: ins, error: insErr } = await admin.rpc("registrar_pesaje_bobina_numerado", {
+        _registro: {
+          numero_rollo: numeroRollo, maquina_id: maquinaId, maquina_codigo: maq.codigo,
+          orden_produccion_id: ordenProduccionId, numero_orden: numeroOrden,
+          peso_bruto_kg: bruto, peso_eje_kg: tara, peso_neto_kg: neto,
+          fecha_hora_pesaje: fechaHora ?? new Date().toISOString(),
+          evidencia_path: evidenciaPath, ocr_confianza: 100,
+          ocr_raw: { confirmadoManual: true, idempotencyKey }, capturado_por: uid,
+        },
+      });
       if (insErr || !ins) {
         return json({ status: "technical_error", reasonCode: "TECHNICAL_ERROR",
           message: "No fue posible procesar la fotografía. Intenta nuevamente.", requestId }, 500);
@@ -520,14 +521,16 @@ Deno.serve(async (req) => {
           .select("id").eq("numero_orden", numeroOrden).maybeSingle();
         if (ord) ordenProduccionId = ord.id;
       }
-      const { data: ins, error: insErr } = await admin.from("pesajes_bobina_madre").insert({
-        numero_rollo: numeroRollo, maquina_id: maquinaId, maquina_codigo: maq.codigo,
-        orden_produccion_id: ordenProduccionId, numero_orden: numeroOrden,
-        peso_bruto_kg: bruto, peso_eje_kg: tara, peso_neto_kg: neto,
-        fecha_hora_pesaje: fechaHora ?? new Date().toISOString(),
-        evidencia_path: evidenciaPath, ocr_confianza: analisis.confianza,
-        ocr_raw: { g1, g2, idempotencyKey } as never, capturado_por: uid,
-      }).select("*").single();
+      const { data: ins, error: insErr } = await admin.rpc("registrar_pesaje_bobina_numerado", {
+        _registro: {
+          numero_rollo: numeroRollo, maquina_id: maquinaId, maquina_codigo: maq.codigo,
+          orden_produccion_id: ordenProduccionId, numero_orden: numeroOrden,
+          peso_bruto_kg: bruto, peso_eje_kg: tara, peso_neto_kg: neto,
+          fecha_hora_pesaje: fechaHora ?? new Date().toISOString(),
+          evidencia_path: evidenciaPath, ocr_confianza: analisis.confianza,
+          ocr_raw: { g1, g2, idempotencyKey }, capturado_por: uid,
+        },
+      });
       if (insErr || !ins) {
         return json({ status: "technical_error", reasonCode: "TECHNICAL_ERROR",
           message: "No fue posible procesar la fotografía. Intenta nuevamente.", requestId }, 500);
