@@ -126,19 +126,22 @@ export const listMaquinasCaptura = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const sb = context.supabase as SB;
 
-    // Restricción Norte/Sur eliminada: todos los roles (incluido capturista)
-    // pueden ver y capturar en todas las máquinas activas.
-    const q = sb
+    // Restricción Norte/Sur eliminada. La única restricción vigente es por
+    // planta asignada al usuario (tabla user_plantas).
+    let q = sb
       .from("maquinas")
       .select("id, nombre, codigo, area, planta_id, plantas(id, nombre, codigo)")
       .eq("activo", true)
       .order("codigo");
 
+    const plantas = await allowedPlantaIds(sb, context.userId);
+    if (plantas) q = q.in("planta_id", plantas);
 
     const { data, error } = await q;
     if (error) throw new Error(error.message);
     return data ?? [];
   });
+
 
 /**
  * Productos activos que tienen al menos una especificación vigente,
