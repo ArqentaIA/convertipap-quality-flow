@@ -9,6 +9,7 @@ import {
   buscarContextoRollo, listConductores, listBobinadoras,
   crearLote, crearLoteManualV2, guardarOrdenManual, obtenerLoteYCintas, registrarCinta, corregirCinta, anularCinta,
   finalizarLote, prepararImpresion, actualizarDatosOperativos, asignarBobinadoraLote,
+  asignarBobinadorNombre,
   type ContextoRollo, type CintaRegistrada, type LoteCintas,
 } from "@/lib/pesaje-cintas.functions";
 
@@ -80,6 +81,7 @@ function PesajeCintasPage() {
   const [loteId, setLoteId] = useState<string | null>(null);
   const [conductorId, setConductorId] = useState<string>("");
   const [bobinadoraId, setBobinadoraId] = useState<string>("");
+  const [bobinadorNombre, setBobinadorNombre] = useState<string>("");
   const [saving, setSaving] = useState(false);
   const [manualOpen, setManualOpen] = useState(false);
   const [manualRollo, setManualRollo] = useState("");
