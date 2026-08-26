@@ -994,7 +994,7 @@ function PesajeCintasPage() {
 
                     onCorregir={c && lote.estado === "abierto" ? () => onCorregir(c) : undefined}
                     onReimprimir={c ? () => onReimprimirCinta(c) : undefined}
-                    mostrarEstatus={esIxtapaluca}
+                    mostrarEstatus={true}
                     onCambiarEstatus={c ? (e) => onCambiarEstatusCinta(c.id, e) : undefined}
                     saving={saving || imprimiendo}
                   />
