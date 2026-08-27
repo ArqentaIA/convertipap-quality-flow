@@ -98,7 +98,7 @@ function DashboardGate() {
     }
     // Todos los usuarios autenticados se redirigen fuera del dashboard
     const esPesajeOperativo =
-      auth.hasRole("pesaje_operativo") &&
+      (auth.hasRole("pesaje_operativo") || auth.hasRole("operador")) &&
       !auth.hasRole("administrador") &&
       !auth.hasRole("gerente_general") &&
       !auth.hasRole("direccion") &&
