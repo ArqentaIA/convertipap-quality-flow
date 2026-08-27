@@ -10,7 +10,6 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { esLiberadoOficial, esNoConformeOficial, getEstadoOficial } from "@/lib/qc-estado-oficial";
-import { allowedPlantaIds } from "@/lib/planta-acceso";
 import {
   esVariableSinTopeSuperior,
   recomputarEstadoMedicion,
@@ -28,8 +27,6 @@ import {
   cancelarSchema,
   rangoEnum,
   rangoToDesde,
-  turnoActualPorReloj,
-  maquinasInputSchema,
   histSchema,
   detalleSchema,
   detalleRolloSchema,
@@ -415,165 +412,6 @@ export const cancelarOrden = createServerFn({ method: "POST" })
 // =====================================================================
 // 7) LECTURAS — Estado de máquinas, OEE, historial
 // =====================================================================
-
-/**
- * Lista todas las máquinas con su estado actual, orden activa, paro abierto
- * y métricas del turno actual (rollos, OEE estimado).
- */
-
-export const listMaquinasConEstado = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((input) => maquinasInputSchema.parse(input ?? undefined))
-  .handler(async ({ data, context }) => {
-    const sb = context.supabase as SB;
-    const rango = data?.rango ?? "dia";
-
-    let maqQ = sb
-      .from("maquinas")
-      .select("id, codigo, nombre, area, planta_id, activo, plantas(nombre, codigo)")
-      .eq("activo", true)
-      .order("codigo");
-    const plantasPermitidas = await allowedPlantaIds(sb, context.userId);
-    if (plantasPermitidas) maqQ = maqQ.in("planta_id", plantasPermitidas);
-    const { data: maquinas, error: errMaq } = await maqQ;
-    if (errMaq) throw new Error(errMaq.message);
-
-    const ids = (maquinas ?? []).map((m) => m.id);
-    if (ids.length === 0) return [];
-
-    const { data: turnosCfg } = await sb
-      .from("app_settings")
-      .select("turno1_inicio, turno1_fin, turno2_inicio, turno2_fin, turno3_inicio, turno3_fin")
-      .limit(1)
-      .maybeSingle();
-    const desde24h = rangoToDesde(rango, turnosCfg) ?? new Date(Date.now() - 24 * 3600_000).toISOString();
-
-    // CRITERIO ÚNICO DE TURNO (mismo que el Visor del Operador):
-    // cuando el rango es "turno", un rollo cuenta en el turno DECLARADO en la
-    // muestra, no en el turno del reloj de captura. Se amplía la ventana 8 h
-    // hacia atrás para recuperar capturas tardías del turno vigente y se
-    // descartan las del turno anterior aunque se hayan registrado ya iniciado
-    // este turno (evita el desfase visor ↔ producción).
-    const turnoVigente = rango === "turno" ? turnoActualPorReloj(turnosCfg) : null;
-    const desdeMuestras =
-      rango === "turno"
-        ? new Date(new Date(desde24h).getTime() - 8 * 3600_000).toISOString()
-        : desde24h;
-
-    const [
-      { data: estados },
-      { data: ordenes },
-      { data: paros },
-      { data: rollos },
-      { data: muestras },
-    ] = await Promise.all([
-      sb.from("maquina_estado_actual").select("*").in("maquina_id", ids),
-      sb
-        .from("ordenes_fabricacion")
-        .select(
-          "id, folio, estado, maquina_id, producto_id, turno, fecha_inicio, productos(nombre, codigo)",
-        )
-        .in("maquina_id", ids)
-        .in("estado", ["en_proceso", "pausada"]),
-      sb
-        .from("paros_maquina")
-        .select(
-          "id, maquina_id, inicio, fin, tipo_paro_id, descripcion, tipos_paro:tipo_paro_id(codigo, nombre)",
-        )
-        .in("maquina_id", ids)
-        .gte("inicio", desde24h),
-      sb
-        .from("rollos_producidos")
-        .select(
-          "id, orden_id, peso_kg, registrado_at, ordenes_fabricacion:orden_id(maquina_id, fecha_inicio)",
-        )
-        .gte("registrado_at", desde24h),
-      // Criterio único: ventana por `capturado_at` + turno DECLARADO en la
-      // muestra cuando el rango es "turno". Así un rollo del T3 capturado ya
-      // iniciado el T1 sigue contando en el T3 (igual que en el Visor).
-      (() => {
-        let q = sb
-          .from("muestras_calidad")
-          .select(
-            "id, maquina_id, capturado_at, turno, numero_rollo, mediciones_calidad(variable_clave, valor)",
-          )
-          .in("maquina_id", ids)
-          .gte("capturado_at", desdeMuestras);
-        if (turnoVigente) q = q.eq("turno", turnoVigente);
-        return q;
-      })(),
-    ]);
-
-    return (maquinas ?? []).map((m) => {
-      const estado = estados?.find((e) => e.maquina_id === m.id) ?? null;
-      const orden =
-        ordenes?.find((o) => o.id === estado?.orden_activa_id) ??
-        ordenes?.find((o) => o.maquina_id === m.id) ??
-        null;
-      const paroActivo = paros?.find((p) => p.maquina_id === m.id && p.fin === null) ?? null;
-
-      const rollosMaq = (rollos ?? []).filter(
-        (r) =>
-          (r as { ordenes_fabricacion?: { maquina_id?: string } | null })?.ordenes_fabricacion
-            ?.maquina_id === m.id,
-      );
-      const muestrasMaq = (muestras ?? []).filter((ms) => ms.maquina_id === m.id);
-      const rollosTurno = rollosMaq.length > 0 ? rollosMaq.length : muestrasMaq.length;
-      const kgTurno =
-        rollosMaq.length > 0
-          ? rollosMaq.reduce((s, r) => s + (Number(r.peso_kg) || 0), 0)
-          : muestrasMaq.reduce((s, ms) => {
-              const peso = (ms.mediciones_calidad ?? []).find(
-                (md) => md.variable_clave === "peso",
-              )?.valor;
-              return s + (Number(peso) || 0);
-            }, 0);
-
-      // OEE estimado simple: 1 - (minutos parados últimas 24h / 1440)
-      const parosMaq = (paros ?? []).filter((p) => p.maquina_id === m.id);
-      const minutosParo = parosMaq.reduce((s, p) => {
-        const fin = p.fin ? new Date(p.fin).getTime() : Date.now();
-        const ini = new Date(p.inicio).getTime();
-        return s + Math.max(0, (fin - ini) / 60000);
-      }, 0);
-      const oee = Math.max(0, Math.min(100, (1 - minutosParo / 1440) * 100));
-
-      let estadoUI: "operando" | "paro" | "mantenimiento" | "libre" = "libre";
-      if (estado?.estado === "produciendo") estadoUI = "operando";
-      else if (estado?.estado === "paro") estadoUI = "paro";
-      else if (estado?.estado === "mantenimiento") estadoUI = "mantenimiento";
-
-      return {
-        id: m.id,
-        codigo: m.codigo,
-        nombre: m.nombre,
-        planta: (m as { plantas?: { nombre?: string } | null }).plantas?.nombre ?? "—",
-        estado: estadoUI,
-        orden: orden
-          ? {
-              id: orden.id,
-              folio: orden.folio,
-              producto: orden.productos?.nombre ?? "—",
-              turno: orden.turno ?? "—",
-            }
-          : null,
-        paroActivo: paroActivo
-          ? {
-              id: paroActivo.id,
-              inicio: paroActivo.inicio,
-              tipo:
-                (paroActivo as { tipos_paro?: { nombre?: string } | null }).tipos_paro?.nombre ??
-                "—",
-              descripcion: paroActivo.descripcion,
-            }
-          : null,
-        rollosTurno,
-        kgTurno: Math.round(kgTurno * 10) / 10,
-        oee: Math.round(oee * 10) / 10,
-        ultimoCambio: estado?.ultimo_cambio ?? null,
-      };
-    });
-  });
 
 /**
  * Historial de órdenes de una máquina, con métricas de calidad.

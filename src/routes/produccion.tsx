@@ -13,7 +13,7 @@ import {
   Trophy,
 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { listMaquinasConEstado } from "@/lib/produccion.functions";
+import { listMaquinasConEstado } from "@/lib/produccion-maquinas.functions";
 import { useProduccionRealtime } from "@/hooks/use-produccion-realtime";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
