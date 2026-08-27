@@ -120,26 +120,43 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
     !esIxtapaluca &&
     (auth.hasRole("administrador") || auth.hasRole("gerente_general"));
 
+  // Perfil operativo de pesaje: acceso EXCLUSIVO a Pesaje de Rollo
+  // (en cualquier planta, incluida Ixtapaluca).
+  const esPesajeOperativo =
+    auth.hasRole("pesaje_operativo") &&
+    !auth.hasRole("administrador") &&
+    !auth.hasRole("gerente_general") &&
+    !auth.hasRole("direccion") &&
+    !auth.hasRole("direccion_general") &&
+    !auth.hasRole("calidad") &&
+    !auth.hasRole("capturista") &&
+    !auth.hasRole("planeacion");
+
+  const puedePesajeRollo = isAdmin || esPesajeOperativo;
 
   // Perfiles y Roles: acceso exclusivo de una sola cuenta.
   const canPerfilesRoles =
-    (auth.user?.email ?? "").toLowerCase() === PERFILES_ROLES_EMAIL;
+    !esPesajeOperativo && (auth.user?.email ?? "").toLowerCase() === PERFILES_ROLES_EMAIL;
 
   // Variables de Calidad: habilitado para todos los usuarios de Planta
   // Ixtapaluca (IXT), además de los roles con el permiso global.
-  const canVariablesCalidad = auth.canAccess("variables_calidad") || esIxtapaluca;
+  const canVariablesCalidad =
+    !esPesajeOperativo && (auth.canAccess("variables_calidad") || esIxtapaluca);
 
   // Acceso efectivo por módulo (permiso global + excepciones por planta).
-  const puedeVer = (mod: (typeof NAV)[number]["module"]) =>
-    mod === "variables_calidad" ? canVariablesCalidad : auth.canAccess(mod);
+  const puedeVer = (mod: (typeof NAV)[number]["module"]) => {
+    if (esPesajeOperativo) return mod === "pesaje_bobina_madre";
+    return mod === "variables_calidad" ? canVariablesCalidad : auth.canAccess(mod);
+  };
 
   // 2) Si está en una ruta sin permisos, mandarlo al primer módulo permitido.
   useEffect(() => {
     if (auth.loading || !auth.isAuthenticated) return;
-    if (pathname.startsWith("/pesaje/bobina-madre") && !isAdmin) {
+    if (pathname.startsWith("/pesaje/bobina-madre") && !puedePesajeRollo) {
       void navigate({ to: auth.canAccess("pesaje_cintas") ? "/pesaje/cintas" : "/", replace: true });
       return;
     }
+
     if (pathname.startsWith("/usuarios")) {
       if (!canPerfilesRoles) {
         const first = NAV.find((n) => n.to !== "/usuarios" && puedeVer(n.module));
@@ -153,21 +170,22 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
     if (firstAllowed && firstAllowed.to !== pathname) {
       void navigate({ to: firstAllowed.to, replace: true });
     }
-  }, [auth.loading, auth.isAuthenticated, auth.modules, auth.roles, pathname, navigate, isAdmin, canPerfilesRoles, canVariablesCalidad]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [auth.loading, auth.isAuthenticated, auth.modules, auth.roles, pathname, navigate, puedePesajeRollo, canPerfilesRoles, canVariablesCalidad, esPesajeOperativo]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const visibleNav = useMemo(
     () =>
       NAV.filter((item) => {
         if (item.to === "/usuarios") return canPerfilesRoles;
         if (!puedeVer(item.module)) return false;
-        // Oculta "Control de Pesaje" si solo contenía Pesaje de Rollo y no es admin
-        if (item.to === "/pesaje/bobina-madre" && !isAdmin && !auth.canAccess("pesaje_cintas")) {
+        // Oculta "Control de Pesaje" si solo contenía Pesaje de Rollo y no puede usarlo
+        if (item.to === "/pesaje/bobina-madre" && !puedePesajeRollo && !auth.canAccess("pesaje_cintas")) {
           return false;
         }
         return true;
       }),
-    [auth.modules, auth.roles, isAdmin, canPerfilesRoles, canVariablesCalidad], // eslint-disable-line react-hooks/exhaustive-deps
+    [auth.modules, auth.roles, puedePesajeRollo, canPerfilesRoles, canVariablesCalidad, esPesajeOperativo], // eslint-disable-line react-hooks/exhaustive-deps
   );
+
 
 
   const currentModule = moduleForPath(pathname);
