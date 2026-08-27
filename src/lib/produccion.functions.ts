@@ -623,6 +623,40 @@ function rangoToDesde(
 
 
 
+/** Turno vigente ("1"|"2"|"3") según el reloj de planta y app_settings. */
+function turnoActualPorReloj(
+  turnos?: {
+    turno1_inicio: string; turno1_fin: string;
+    turno2_inicio: string; turno2_fin: string;
+    turno3_inicio: string; turno3_fin: string;
+  } | null,
+): string | null {
+  const TZ = "America/Mexico_City";
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: TZ, hour: "2-digit", minute: "2-digit", hourCycle: "h23",
+  }).formatToParts(new Date());
+  const get = (t: string) => Number(parts.find((p) => p.type === t)?.value ?? "0");
+  const curMin = get("hour") * 60 + get("minute");
+  const toMin = (s?: string | null): number | null => {
+    if (!s) return null;
+    const [hh, mm] = String(s).split(":").map(Number);
+    return Number.isFinite(hh) && Number.isFinite(mm) ? hh * 60 + mm : null;
+  };
+  const ranges = [
+    { id: "1", ini: turnos?.turno1_inicio ?? "07:00", fin: turnos?.turno1_fin ?? "15:00" },
+    { id: "2", ini: turnos?.turno2_inicio ?? "15:00", fin: turnos?.turno2_fin ?? "23:00" },
+    { id: "3", ini: turnos?.turno3_inicio ?? "23:00", fin: turnos?.turno3_fin ?? "07:00" },
+  ];
+  for (const r of ranges) {
+    const ini = toMin(r.ini);
+    const fin = toMin(r.fin);
+    if (ini === null || fin === null) continue;
+    const inRange = ini <= fin ? curMin >= ini && curMin < fin : curMin >= ini || curMin < fin;
+    if (inRange) return r.id;
+  }
+  return null;
+}
+
 const maquinasInputSchema = z.object({ rango: rangoEnum.optional() }).optional();
 
 export const listMaquinasConEstado = createServerFn({ method: "GET" })
