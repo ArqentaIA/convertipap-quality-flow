@@ -230,7 +230,7 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
             return (
               <div key={to}>
                 <Link
-                  to={isPesaje && !isAdmin ? "/pesaje/cintas" : to}
+                  to={isPesaje && !puedePesajeRollo && auth.canAccess("pesaje_cintas") ? "/pesaje/cintas" : to}
                   className={
                     isOrdenes
                       ? `mx-2 my-0.5 flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium border-l-2 transition-colors ${
