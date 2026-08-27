@@ -182,6 +182,7 @@ export const getOperatorVisionData = createServerFn({ method: "GET" })
       rollo: m.numero_rollo as string,
       capturadoAt: m.capturado_at as string,
       turno: m.turno as string,
+      fueraDeTurno: !!m.fuera_de_turno,
       operador: (m.operador as string) ?? "",
       analista: (m.analista as string) ?? "",
       crepadoPct: m.crepado_pct === null || m.crepado_pct === undefined ? null : Number(m.crepado_pct),
