@@ -7,7 +7,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Camera, CheckCircle2, Loader2, RefreshCw, ImageIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { listPesajes, firmarEvidencia, verificarRolloUtilizado, type PesajeBobina, type RolloYaUtilizado } from "@/lib/pesajes.functions";
+import { verificarRolloUtilizado, type PesajeBobina, type RolloYaUtilizado } from "@/lib/pesajes.functions";
 import { getEstadoNumeracionRollo } from "@/lib/qc.functions";
 import { fechaCortoMX, horaMX } from "@/lib/format";
 import { usePlantasPermitidas } from "@/hooks/usePlantasPermitidas";
@@ -240,12 +240,6 @@ function PesajeBobinaPage() {
 
 
 
-  const listar = useServerFn(listPesajes);
-  const listaQ = useQuery({
-    queryKey: ["pesajes", "lista"],
-    queryFn: () => listar(),
-    staleTime: 30_000,
-  });
 
   const puedeMaquina = ordenSel !== "";
   const puedeRollo = !!maquinaId;
@@ -1055,7 +1049,6 @@ function PesajeBobinaPage() {
         </div>
       )}
 
-      {!esIxtapaluca && <ListaPesajes lista={listaQ.data ?? []} loading={listaQ.isLoading} />}
 
     </div>
   );
