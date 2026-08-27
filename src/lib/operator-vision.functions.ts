@@ -145,10 +145,20 @@ export const getOperatorVisionData = createServerFn({ method: "GET" })
     }
     const endNowHist = nowUtc;
 
+    // CRITERIO ÚNICO DE TURNO (unificado con Producción / Historial / Reportes):
+    // un rollo pertenece al turno DECLARADO en la muestra, no al reloj de captura.
+    // Se amplía la ventana 8 h hacia atrás del inicio del turno vigente para
+    // recuperar capturas tardías (p. ej. el último rollo del turno registrado ya
+    // iniciado el siguiente) y se incluyen las capturas `fuera_de_turno`,
+    // marcadas con distintivo en la UI.
+    const ventanaDesde = new Date(
+      (inicioTurnoVigente ?? nowUtc).getTime() - 8 * 3600 * 1000,
+    );
+
     let muestrasQ = sb
       .from("muestras_calidad")
       .select(
-        `id, numero_rollo, capturado_at, hora_muestreo, turno, estado,
+        `id, numero_rollo, capturado_at, hora_muestreo, turno, estado, fuera_de_turno,
          operador, analista, estatus_liberacion, dictamen, producto_id, orden_id, crepado_pct,
          liberado_con_justificacion, liberacion_justificacion, autorizado_por,
          velocidad_maquina, velocidad_enrollador,
@@ -156,8 +166,7 @@ export const getOperatorVisionData = createServerFn({ method: "GET" })
          mediciones_calidad(variable_clave, valor, min_snapshot, objetivo_snapshot, max_snapshot, estado)`,
       )
       .eq("maquina_id", maquina.id)
-      .eq("fuera_de_turno", false)
-      .gte("capturado_at", (inicioTurnoVigente ?? nowUtc).toISOString())
+      .gte("capturado_at", ventanaDesde.toISOString())
       .lte("capturado_at", endNowHist.toISOString())
       .order("capturado_at", { ascending: false })
       .limit(50);
@@ -173,6 +182,7 @@ export const getOperatorVisionData = createServerFn({ method: "GET" })
       rollo: m.numero_rollo as string,
       capturadoAt: m.capturado_at as string,
       turno: m.turno as string,
+      fueraDeTurno: !!m.fuera_de_turno,
       operador: (m.operador as string) ?? "",
       analista: (m.analista as string) ?? "",
       crepadoPct: m.crepado_pct === null || m.crepado_pct === undefined ? null : Number(m.crepado_pct),

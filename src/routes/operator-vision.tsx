@@ -950,6 +950,7 @@ function OperatorVisionPage() {
         return {
           id: m.id,
           rollo: m.rollo,
+          fueraDeTurno: !!(m as { fueraDeTurno?: boolean }).fueraDeTurno,
           hora: new Date(m.capturadoAt).toLocaleTimeString("es-MX", {
             hour12: false,
             hour: "2-digit",
@@ -1369,6 +1370,15 @@ function OperatorVisionPage() {
                                 style={{ fontSize: `${fz + 1}px` }}
                               >
                                 {h.rollo}
+                                {h.fueraDeTurno && (
+                                  <span
+                                    className="ml-1.5 rounded-sm bg-amber-100 px-1 py-0.5 align-middle font-extrabold uppercase tracking-wider text-amber-700 ring-1 ring-amber-300"
+                                    style={{ fontSize: `${Math.max(8, fz - 4)}px` }}
+                                    title="Captura registrada fuera de turno"
+                                  >
+                                    FT
+                                  </span>
+                                )}
                               </td>
                               {COLS.map((c) => {
                                 const v = varByKey.get(c.key);

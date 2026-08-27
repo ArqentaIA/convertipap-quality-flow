@@ -623,6 +623,40 @@ function rangoToDesde(
 
 
 
+/** Turno vigente ("1"|"2"|"3") según el reloj de planta y app_settings. */
+function turnoActualPorReloj(
+  turnos?: {
+    turno1_inicio: string; turno1_fin: string;
+    turno2_inicio: string; turno2_fin: string;
+    turno3_inicio: string; turno3_fin: string;
+  } | null,
+): string | null {
+  const TZ = "America/Mexico_City";
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: TZ, hour: "2-digit", minute: "2-digit", hourCycle: "h23",
+  }).formatToParts(new Date());
+  const get = (t: string) => Number(parts.find((p) => p.type === t)?.value ?? "0");
+  const curMin = get("hour") * 60 + get("minute");
+  const toMin = (s?: string | null): number | null => {
+    if (!s) return null;
+    const [hh, mm] = String(s).split(":").map(Number);
+    return Number.isFinite(hh) && Number.isFinite(mm) ? hh * 60 + mm : null;
+  };
+  const ranges = [
+    { id: "1", ini: turnos?.turno1_inicio ?? "07:00", fin: turnos?.turno1_fin ?? "15:00" },
+    { id: "2", ini: turnos?.turno2_inicio ?? "15:00", fin: turnos?.turno2_fin ?? "23:00" },
+    { id: "3", ini: turnos?.turno3_inicio ?? "23:00", fin: turnos?.turno3_fin ?? "07:00" },
+  ];
+  for (const r of ranges) {
+    const ini = toMin(r.ini);
+    const fin = toMin(r.fin);
+    if (ini === null || fin === null) continue;
+    const inRange = ini <= fin ? curMin >= ini && curMin < fin : curMin >= ini || curMin < fin;
+    if (inRange) return r.id;
+  }
+  return null;
+}
+
 const maquinasInputSchema = z.object({ rango: rangoEnum.optional() }).optional();
 
 export const listMaquinasConEstado = createServerFn({ method: "GET" })
@@ -652,6 +686,18 @@ export const listMaquinasConEstado = createServerFn({ method: "GET" })
       .maybeSingle();
     const desde24h = rangoToDesde(rango, turnosCfg) ?? new Date(Date.now() - 24 * 3600_000).toISOString();
 
+    // CRITERIO ÚNICO DE TURNO (mismo que el Visor del Operador):
+    // cuando el rango es "turno", un rollo cuenta en el turno DECLARADO en la
+    // muestra, no en el turno del reloj de captura. Se amplía la ventana 8 h
+    // hacia atrás para recuperar capturas tardías del turno vigente y se
+    // descartan las del turno anterior aunque se hayan registrado ya iniciado
+    // este turno (evita el desfase visor ↔ producción).
+    const turnoVigente = rango === "turno" ? turnoActualPorReloj(turnosCfg) : null;
+    const desdeMuestras =
+      rango === "turno"
+        ? new Date(new Date(desde24h).getTime() - 8 * 3600_000).toISOString()
+        : desde24h;
+
     const [
       { data: estados },
       { data: ordenes },
@@ -680,18 +726,20 @@ export const listMaquinasConEstado = createServerFn({ method: "GET" })
           "id, orden_id, peso_kg, registrado_at, ordenes_fabricacion:orden_id(maquina_id, fecha_inicio)",
         )
         .gte("registrado_at", desde24h),
-      // Producción usa `capturado_at` (reloj oficial del servidor, inmutable)
-      // en lugar de `hora_muestreo` (capturada por el operador, puede ser
-      // retroactiva). Así el panel siempre refleja lo que se está
-      // capturando AHORA dentro del turno vigente, sin depender de la
-      // hora declarada por el usuario ni de la zona horaria del navegador.
-      sb
-        .from("muestras_calidad")
-        .select(
-          "id, maquina_id, capturado_at, numero_rollo, mediciones_calidad(variable_clave, valor)",
-        )
-        .in("maquina_id", ids)
-        .gte("capturado_at", desde24h),
+      // Criterio único: ventana por `capturado_at` + turno DECLARADO en la
+      // muestra cuando el rango es "turno". Así un rollo del T3 capturado ya
+      // iniciado el T1 sigue contando en el T3 (igual que en el Visor).
+      (() => {
+        let q = sb
+          .from("muestras_calidad")
+          .select(
+            "id, maquina_id, capturado_at, turno, numero_rollo, mediciones_calidad(variable_clave, valor)",
+          )
+          .in("maquina_id", ids)
+          .gte("capturado_at", desdeMuestras);
+        if (turnoVigente) q = q.eq("turno", turnoVigente);
+        return q;
+      })(),
     ]);
 
     return (maquinas ?? []).map((m) => {
