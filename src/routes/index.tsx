@@ -97,6 +97,19 @@ function DashboardGate() {
       return;
     }
     // Todos los usuarios autenticados se redirigen fuera del dashboard
+    const esPesajeOperativo =
+      auth.hasRole("pesaje_operativo") &&
+      !auth.hasRole("administrador") &&
+      !auth.hasRole("gerente_general") &&
+      !auth.hasRole("direccion") &&
+      !auth.hasRole("direccion_general") &&
+      !auth.hasRole("calidad") &&
+      !auth.hasRole("capturista") &&
+      !auth.hasRole("planeacion");
+    if (esPesajeOperativo) {
+      void navigate({ to: "/pesaje/bobina-madre", replace: true });
+      return;
+    }
     const isOnlyCapturista =
       auth.hasRole("capturista") &&
       !auth.hasRole("administrador") &&
@@ -108,6 +121,7 @@ function DashboardGate() {
     } else {
       void navigate({ to: "/produccion", replace: true });
     }
+
   }, [auth, navigate]);
   if (auth.loading || !auth.isAuthenticated) {
     return (
