@@ -950,6 +950,7 @@ function OperatorVisionPage() {
         return {
           id: m.id,
           rollo: m.rollo,
+          fueraDeTurno: !!(m as { fueraDeTurno?: boolean }).fueraDeTurno,
           hora: new Date(m.capturadoAt).toLocaleTimeString("es-MX", {
             hour12: false,
             hour: "2-digit",
