@@ -35,6 +35,7 @@ const ROL_LABEL: Record<AppRole, string> = {
   reportes_consulta: "Reportes / Consulta",
   planeacion: "Planeación",
   pesaje_operativo: "Pesaje Operativo",
+  operador: "Operador",
 };
 
 const ROL_COLORS: Record<AppRole, string> = {
@@ -48,6 +49,7 @@ const ROL_COLORS: Record<AppRole, string> = {
   reportes_consulta: "bg-accent text-accent-foreground border-border",
   planeacion: "bg-primary/10 text-primary border-primary/25",
   pesaje_operativo: "bg-muted text-foreground/80 border-border",
+  operador: "bg-muted text-foreground/80 border-border",
 };
 
 const MODULO_LABEL: Record<AppModule, string> = {
