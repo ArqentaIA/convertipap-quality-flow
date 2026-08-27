@@ -652,6 +652,18 @@ export const listMaquinasConEstado = createServerFn({ method: "GET" })
       .maybeSingle();
     const desde24h = rangoToDesde(rango, turnosCfg) ?? new Date(Date.now() - 24 * 3600_000).toISOString();
 
+    // CRITERIO ÚNICO DE TURNO (mismo que el Visor del Operador):
+    // cuando el rango es "turno", un rollo cuenta en el turno DECLARADO en la
+    // muestra, no en el turno del reloj de captura. Se amplía la ventana 8 h
+    // hacia atrás para recuperar capturas tardías del turno vigente y se
+    // descartan las del turno anterior aunque se hayan registrado ya iniciado
+    // este turno (evita el desfase visor ↔ producción).
+    const turnoVigente = rango === "turno" ? turnoActualPorReloj(turnosCfg) : null;
+    const desdeMuestras =
+      rango === "turno"
+        ? new Date(new Date(desde24h).getTime() - 8 * 3600_000).toISOString()
+        : desde24h;
+
     const [
       { data: estados },
       { data: ordenes },
