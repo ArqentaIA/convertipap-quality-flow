@@ -134,8 +134,7 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
     !auth.hasRole("planeacion");
 
   const puedePesajeRollo =
-    isAdmin || esPesajeOperativo ||
-    (!esIxtapaluca && auth.canAccess("pesaje_bobina_madre"));
+    isAdmin || esPesajeOperativo || auth.canAccess("pesaje_bobina_madre");
 
   // Perfiles y Roles: acceso exclusivo de una sola cuenta.
   const canPerfilesRoles =
