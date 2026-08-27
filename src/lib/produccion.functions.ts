@@ -726,18 +726,20 @@ export const listMaquinasConEstado = createServerFn({ method: "GET" })
           "id, orden_id, peso_kg, registrado_at, ordenes_fabricacion:orden_id(maquina_id, fecha_inicio)",
         )
         .gte("registrado_at", desde24h),
-      // Producción usa `capturado_at` (reloj oficial del servidor, inmutable)
-      // en lugar de `hora_muestreo` (capturada por el operador, puede ser
-      // retroactiva). Así el panel siempre refleja lo que se está
-      // capturando AHORA dentro del turno vigente, sin depender de la
-      // hora declarada por el usuario ni de la zona horaria del navegador.
-      sb
-        .from("muestras_calidad")
-        .select(
-          "id, maquina_id, capturado_at, numero_rollo, mediciones_calidad(variable_clave, valor)",
-        )
-        .in("maquina_id", ids)
-        .gte("capturado_at", desde24h),
+      // Criterio único: ventana por `capturado_at` + turno DECLARADO en la
+      // muestra cuando el rango es "turno". Así un rollo del T3 capturado ya
+      // iniciado el T1 sigue contando en el T3 (igual que en el Visor).
+      (() => {
+        let q = sb
+          .from("muestras_calidad")
+          .select(
+            "id, maquina_id, capturado_at, turno, numero_rollo, mediciones_calidad(variable_clave, valor)",
+          )
+          .in("maquina_id", ids)
+          .gte("capturado_at", desdeMuestras);
+        if (turnoVigente) q = q.eq("turno", turnoVigente);
+        return q;
+      })(),
     ]);
 
     return (maquinas ?? []).map((m) => {
