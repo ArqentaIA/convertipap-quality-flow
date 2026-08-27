@@ -15,7 +15,8 @@ export type AppRole =
   | "capturista"
   | "reportes_consulta"
   | "planeacion"
-  | "pesaje_operativo";
+  | "pesaje_operativo"
+  | "operador";
 
 export type AppModule =
   | "dashboard"

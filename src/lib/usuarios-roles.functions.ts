@@ -19,6 +19,7 @@ const ROLES = [
   "reportes_consulta",
   "planeacion",
   "pesaje_operativo",
+  "operador",
 ] as const;
 
 const schema = z.object({

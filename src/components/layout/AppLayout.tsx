@@ -121,9 +121,10 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
     (auth.hasRole("administrador") || auth.hasRole("gerente_general"));
 
   // Perfil operativo de pesaje: acceso EXCLUSIVO a Pesaje de Rollo
-  // (en cualquier planta, incluida Ixtapaluca).
+  // (en cualquier planta, incluida Ixtapaluca). Aplica a los roles
+  // "pesaje_operativo" y "operador".
   const esPesajeOperativo =
-    auth.hasRole("pesaje_operativo") &&
+    (auth.hasRole("pesaje_operativo") || auth.hasRole("operador")) &&
     !auth.hasRole("administrador") &&
     !auth.hasRole("gerente_general") &&
     !auth.hasRole("direccion") &&
