@@ -3043,6 +3043,7 @@ export type Database = {
         | "calidad_operativo"
         | "planeacion"
         | "direccion_general"
+        | "pesaje_operativo"
       impresion_cinta_tipo: "ORIGINAL" | "REIMPRESION"
       maquina_estado: "libre" | "produciendo" | "paro" | "mantenimiento"
       orden_estado:
@@ -3259,6 +3260,7 @@ export const Constants = {
         "calidad_operativo",
         "planeacion",
         "direccion_general",
+        "pesaje_operativo",
       ],
       impresion_cinta_tipo: ["ORIGINAL", "REIMPRESION"],
       maquina_estado: ["libre", "produciendo", "paro", "mantenimiento"],
