@@ -1006,6 +1006,7 @@ function PesajeCintasPage() {
         </>
       )}
 
+      <UltimosLotesCintas planta={plantaActiva} />
     </div>
   );
 }
