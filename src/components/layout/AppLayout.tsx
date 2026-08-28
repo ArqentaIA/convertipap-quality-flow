@@ -187,8 +187,8 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
       NAV.filter((item) => {
         if (item.to === "/usuarios") return canPerfilesRoles;
         if (!puedeVer(item.module)) return false;
-        // Oculta "Control de Pesaje" si solo contenía Pesaje de Rollo y no puede usarlo
-        if (item.to === "/pesaje/bobina-madre" && !puedePesajeRollo && !auth.canAccess("pesaje_cintas")) {
+        // Oculta "Control de Pesaje" si el usuario no puede usar Pesaje de Rollo
+        if (item.to === "/pesaje/bobina-madre" && !puedePesajeRollo) {
           return false;
         }
         return true;
