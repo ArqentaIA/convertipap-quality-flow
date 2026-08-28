@@ -128,6 +128,7 @@ function PesajePublicoPage() {
   async function onGuardar() {
     if (!puedeGuardar || !info?.numero_rollo) return;
     setGuardando(true);
+    setErrorMsg(null);
     try {
       const evidencia = foto ? await fileABase64(foto) : null;
       const res = await registrar({
