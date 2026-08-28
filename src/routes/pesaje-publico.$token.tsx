@@ -119,20 +119,41 @@ function PesajePublicoPage() {
   const info = infoQ.data;
   const pesoNum = peso.trim() === "" ? null : Number(peso.replace(",", "."));
   const pesoValido = pesoNum !== null && Number.isFinite(pesoNum) && pesoNum > 0 && pesoNum <= 3000;
-  const puedeGuardar = !!info?.ok && !!info.numero_rollo && pesoValido && !guardando;
+  const puedeGuardar =
+    !!info?.ok && !!info.numero_rollo && pesoValido && !guardando && !procesandoFoto;
+  const motivoBloqueo = !info?.numero_rollo
+    ? "La numeración automática no está disponible. Reporta al administrador."
+    : !pesoValido
+      ? "Captura el peso en kg para habilitar el botón."
+      : procesandoFoto
+        ? "Procesando la fotografía…"
+        : null;
 
   async function onFoto(f: File | null) {
     if (!f) return;
     setErrorMsg(null);
-    const c = await comprimir(f);
-    if (!c) {
+    setProcesandoFoto(true);
+    try {
+      const c = await conTiempoLimite(comprimir(f), 25_000, "TIMEOUT_FOTO");
+      if (!c) {
+        setFoto(null);
+        setPreview(null);
+        setErrorMsg(
+          "No fue posible preparar la fotografía en este teléfono. Puedes registrar el peso sin evidencia.",
+        );
+        return;
+      }
+      setFoto(c);
+      setPreview(URL.createObjectURL(c));
+    } catch {
       setFoto(null);
       setPreview(null);
-      setErrorMsg("La fotografía es demasiado pesada. Toma la foto de nuevo con menor resolución o registra el peso sin evidencia.");
-      return;
+      setErrorMsg(
+        "La fotografía tardó demasiado en procesarse. Puedes registrar el peso sin evidencia.",
+      );
+    } finally {
+      setProcesandoFoto(false);
     }
-    setFoto(c);
-    setPreview(URL.createObjectURL(c));
   }
 
   async function onGuardar() {
@@ -140,16 +161,27 @@ function PesajePublicoPage() {
     setGuardando(true);
     setErrorMsg(null);
     try {
-      const evidencia = foto ? await fileABase64(foto) : null;
-      const res = await registrar({
-        data: {
-          token,
-          numero_rollo: info.numero_rollo,
-          peso_bruto_kg: Math.trunc(pesoNum as number),
-          numero_orden: orden.trim() || null,
-          evidencia_base64: evidencia,
-        },
-      });
+      let evidencia: string | null = null;
+      if (foto) {
+        try {
+          evidencia = await conTiempoLimite(fileABase64(foto), 20_000, "TIMEOUT_FOTO");
+        } catch {
+          evidencia = null;
+        }
+      }
+      const res = await conTiempoLimite(
+        registrar({
+          data: {
+            token,
+            numero_rollo: info.numero_rollo,
+            peso_bruto_kg: Math.trunc(pesoNum as number),
+            numero_orden: orden.trim() || null,
+            evidencia_base64: evidencia,
+          },
+        }),
+        45_000,
+        "La conexión tardó demasiado. Verifica tu señal y vuelve a intentar; revisa la lista de abajo antes de repetir.",
+      );
       toast.success(`Rollo ${res.numero_rollo} registrado con ${res.peso_neto_kg} kg.`);
       setPeso("");
       setOrden("");
