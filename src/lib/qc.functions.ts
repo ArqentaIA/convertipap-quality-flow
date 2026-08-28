@@ -525,7 +525,7 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
         enviar_a_revision: z.boolean().default(false),
         fuera_de_turno: z.boolean().optional().default(false),
         fuera_de_turno_motivo: z.string().trim().max(2000).nullable().optional(),
-        // Lote Logístico (10 dígitos) — uso exclusivo Planta Ixtapaluca.
+        // Lote Logístico (10 dígitos) — obligatorio en todas las plantas.
         lote_logistico: z
           .string()
           .trim()
