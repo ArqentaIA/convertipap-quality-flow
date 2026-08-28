@@ -124,6 +124,7 @@ function buildFileName(nombre: string) {
 
 
 function ReportesPage() {
+  const plantaActiva = usePlantaActivaCodigo();
   const auth = useAuth();
   const [rango, setRango] = useState<Rango>("semana");
   const [mesesSel, setMesesSel] = useState<number[]>(MESES.map((_, i) => i));
@@ -131,7 +132,6 @@ function ReportesPage() {
   const freq = rangoToFreq(rango);
   const labFilter = useLabFilter();
   const { start, end } = useMemo(() => computeWindow(rango, mesesSel), [rango, mesesSel]);
-  const plantaActiva = usePlantaActivaCodigo();
 
   const reportesQuery = useQuery({
     ...reportesQueryOptions(start, end, plantaActiva),
