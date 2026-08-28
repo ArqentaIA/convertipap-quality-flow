@@ -465,6 +465,23 @@ export const prepararImpresion = createServerFn({ method: "POST" })
       _cinta_id: (data.cinta_id ?? null) as unknown as string,
     });
     if (error) throw new Error(error.message);
+
+    // Lote Logístico: dato canónico capturado en Calidad (muestras_calidad).
+    // Se adjunta al snapshot para que la etiqueta de cinta lo codifique en QR.
+    const out = res as unknown as { snapshot?: { muestra_calidad_id?: string | null; lote_logistico?: string | null } };
+    const muestraId = out?.snapshot?.muestra_calidad_id ?? null;
+    if (out?.snapshot) {
+      out.snapshot.lote_logistico = null;
+      if (muestraId) {
+        const { data: m } = await context.supabase
+          .from("muestras_calidad")
+          .select("lote_logistico")
+          .eq("id", muestraId)
+          .maybeSingle();
+        out.snapshot.lote_logistico = (m as { lote_logistico: string | null } | null)?.lote_logistico ?? null;
+      }
+    }
+
     return res as unknown as {
       impresion_id: string;
       folio: string;
