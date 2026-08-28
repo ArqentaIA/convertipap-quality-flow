@@ -101,6 +101,58 @@ async function assertAcceso(supabase: {
   if (data !== true) throw new Error("No autorizado para Reportes de Cintas.");
 }
 
+// ---------------------------------------------------------------------
+// Aislamiento por planta para lotes de cintas.
+// `pesajes_cintas_lotes` no tiene planta_id: se deriva por la muestra de
+// calidad o el pesaje de bobina madre; en su defecto, por el sufijo de
+// máquina del número de rollo (00021-1 → MP-01).
+// ---------------------------------------------------------------------
+async function filtrarLotesPorPlanta(
+  sb: any,
+  userId: string,
+  planta: string | null | undefined,
+  todas: LoteCintasRow[],
+): Promise<{ filas: LoteCintasRow[]; plantaNombre: string | null }> {
+  const scope = await resolvePlantaScope(sb, userId, planta);
+  const plantaIds = new Set(scope.plantaIds);
+  const maquinasScope = new Set(scope.maquinaIds);
+  const sufijosPlanta = new Set(
+    scope.maquinaCodigos.map((c) => String(Number(c.replace(/^\D+/, "")))),
+  );
+
+  const muestraIds = todas.map((l) => l.muestra_calidad_id).filter((v): v is string => !!v);
+  const pesajeIds = todas.map((l) => l.pesaje_bobina_madre_id).filter((v): v is string => !!v);
+  const [muestrasRes, pesajesRes] = await Promise.all([
+    muestraIds.length
+      ? sb.from("muestras_calidad").select("id, planta_id").in("id", muestraIds)
+      : Promise.resolve({ data: [] as { id: string; planta_id: string }[] }),
+    pesajeIds.length
+      ? sb.from("pesajes_bobina_madre").select("id, maquina_id").in("id", pesajeIds)
+      : Promise.resolve({ data: [] as { id: string; maquina_id: string }[] }),
+  ]);
+  const plantaPorMuestra = new Map<string, string>(
+    ((muestrasRes.data ?? []) as { id: string; planta_id: string }[]).map((m) => [m.id, m.planta_id]),
+  );
+  const maquinaPorPesaje = new Map<string, string>(
+    ((pesajesRes.data ?? []) as { id: string; maquina_id: string }[]).map((p) => [p.id, p.maquina_id]),
+  );
+
+  const filas = todas.filter((l) => {
+    if (l.muestra_calidad_id) {
+      const pid = plantaPorMuestra.get(l.muestra_calidad_id);
+      if (pid) return plantaIds.has(pid);
+    }
+    if (l.pesaje_bobina_madre_id) {
+      const mid = maquinaPorPesaje.get(l.pesaje_bobina_madre_id);
+      if (mid) return maquinasScope.has(mid);
+    }
+    const suf = (l.numero_rollo ?? "").split("-")[1];
+    return suf ? sufijosPlanta.has(String(Number(suf))) : false;
+  });
+
+  return { filas, plantaNombre: scope.plantaNombre };
+}
+
 export const getDatosReporteCintas = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => rangoSchema.parse(d))
@@ -123,42 +175,9 @@ export const getDatosReporteCintas = createServerFn({ method: "POST" })
 
     const todas = (lotes ?? []) as unknown as LoteCintasRow[];
 
-    // --------- Aislamiento por planta ---------
-    // `pesajes_cintas_lotes` no tiene planta_id: se deriva por la muestra de
-    // calidad o el pesaje de bobina madre; en su defecto, por el sufijo de
-    // máquina del número de rollo (00021-1 → MP-01).
-    const scope = await resolvePlantaScope(context.supabase, context.userId, data.planta);
-    const plantaIds = new Set(scope.plantaIds);
-    const sufijosPlanta = new Set(
-      scope.maquinaCodigos.map((c) => String(Number(c.replace(/^\D+/, "")))),
+    const { filas, plantaNombre } = await filtrarLotesPorPlanta(
+      context.supabase, context.userId, data.planta, todas,
     );
-
-    const muestraIds = todas.map((l) => l.muestra_calidad_id).filter((v): v is string => !!v);
-    const pesajeIds = todas.map((l) => l.pesaje_bobina_madre_id).filter((v): v is string => !!v);
-    const [muestrasRes, pesajesRes] = await Promise.all([
-      muestraIds.length
-        ? context.supabase.from("muestras_calidad").select("id, planta_id").in("id", muestraIds)
-        : Promise.resolve({ data: [] as { id: string; planta_id: string }[] }),
-      pesajeIds.length
-        ? context.supabase.from("pesajes_bobina_madre").select("id, maquina_id").in("id", pesajeIds)
-        : Promise.resolve({ data: [] as { id: string; maquina_id: string }[] }),
-    ]);
-    const plantaPorMuestra = new Map((muestrasRes.data ?? []).map((m) => [m.id, m.planta_id]));
-    const maquinasScope = new Set(scope.maquinaIds);
-    const maquinaPorPesaje = new Map((pesajesRes.data ?? []).map((p) => [p.id, p.maquina_id]));
-
-    const filas = todas.filter((l) => {
-      if (l.muestra_calidad_id) {
-        const pid = plantaPorMuestra.get(l.muestra_calidad_id);
-        if (pid) return plantaIds.has(pid);
-      }
-      if (l.pesaje_bobina_madre_id) {
-        const mid = maquinaPorPesaje.get(l.pesaje_bobina_madre_id);
-        if (mid) return maquinasScope.has(mid);
-      }
-      const suf = (l.numero_rollo ?? "").split("-")[1];
-      return suf ? sufijosPlanta.has(String(Number(suf))) : false;
-    });
 
     const ids = filas.map((l) => l.id);
     const cintas = await cintasDeLotes(context.supabase, ids);
@@ -167,7 +186,7 @@ export const getDatosReporteCintas = createServerFn({ method: "POST" })
       fechaInicio: data.fechaInicio,
       fechaFin: data.fechaFin,
       turno,
-      planta: scope.plantaNombre ?? "—",
+      planta: plantaNombre ?? "—",
       usuario: (context.claims?.["email"] as string | undefined) ?? "—",
       generadoAt: new Date().toISOString(),
       lotes: filas,
@@ -236,7 +255,10 @@ export const getBaseIntegralCintas = createServerFn({ method: "POST" })
     const { data: lotes, error } = await q;
     if (error) throw new Error(error.message);
 
-    const filas = (lotes ?? []) as unknown as LoteCintasRow[];
+    const todas = (lotes ?? []) as unknown as LoteCintasRow[];
+    const { filas, plantaNombre } = await filtrarLotesPorPlanta(
+      context.supabase, context.userId, data.planta, todas,
+    );
     const ids = filas.map((l) => l.id);
     const cintas = await cintasDeLotes(sb, ids);
 
@@ -277,14 +299,11 @@ export const getBaseIntegralCintas = createServerFn({ method: "POST" })
       porLotes(sb, "profiles", "id", userIds, "id, nombre, email, rol_visible"),
     ]);
 
-    const { data: plantas } = await context.supabase
-      .from("plantas").select("nombre").eq("activo", true).order("nombre").limit(1);
-
     return {
       fechaInicio: data.fechaInicio,
       fechaFin: data.fechaFin,
       turno,
-      planta: plantas?.[0]?.nombre ?? "PLANTA TLAXCALA",
+      planta: plantaNombre ?? "—",
       usuario: (context.claims?.["email"] as string | undefined) ?? "—",
       generadoAt: new Date().toISOString(),
       lotes: filas,
