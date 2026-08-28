@@ -4,7 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import {
   LayoutDashboard, Factory, ClipboardCheck, FileBarChart2,
   Settings, ChevronLeft, ChevronRight, Bell, ChevronDown, SlidersHorizontal,
-  LogOut, Lock, Loader2, BookOpen, Users, Monitor, Tv, ClipboardList, Scale,
+  LogOut, Lock, Loader2, BookOpen, Users, Monitor, Tv, ClipboardList, Scale, Scissors,
 } from "lucide-react";
 
 import logo from "@/assets/logo.png";
@@ -31,6 +31,7 @@ const NAV: NavItem[] = [
   { to: "/produccion", label: "Producción", icon: Factory, module: "produccion", pathPrefixes: ["/produccion", "/historial"] },
   { to: "/ordenes-produccion", label: "Órdenes de Producción", icon: ClipboardList, module: "ordenes_produccion" },
   { to: "/pesaje/bobina-madre", label: "Control de Pesaje", icon: Scale, module: "pesaje_bobina_madre", pathPrefixes: ["/pesaje"] },
+  { to: "/pesaje/cintas", label: "CORTES BOBINA", icon: Scissors, module: "pesaje_cintas", pathPrefixes: ["/pesaje/cintas"] },
 
   { to: "/calidad/captura", label: "Control de Calidad", icon: ClipboardCheck, module: "control_calidad" },
   { to: "/calidad/captura-fuera-turno", label: "Captura fuera de turno", icon: ClipboardCheck, module: "control_calidad" },
@@ -186,8 +187,8 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
       NAV.filter((item) => {
         if (item.to === "/usuarios") return canPerfilesRoles;
         if (!puedeVer(item.module)) return false;
-        // Oculta "Control de Pesaje" si solo contenía Pesaje de Rollo y no puede usarlo
-        if (item.to === "/pesaje/bobina-madre" && !puedePesajeRollo && !auth.canAccess("pesaje_cintas")) {
+        // Oculta "Control de Pesaje" si el usuario no puede usar Pesaje de Rollo
+        if (item.to === "/pesaje/bobina-madre" && !puedePesajeRollo) {
           return false;
         }
         return true;
@@ -262,17 +263,6 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
                       >
                         <Scale className="h-3.5 w-3.5 shrink-0" />
                         <span className="truncate">Pesaje de Rollo</span>
-                      </Link>
-                    )}
-
-                    {auth.canAccess("pesaje_cintas") && (
-                      <Link
-                        to="/pesaje/cintas"
-                        className="cabinet-panel mx-1 my-0.5 flex items-center gap-2 rounded-md px-2.5 py-1.5 text-xs font-medium text-sidebar-foreground/80 hover:text-white"
-                        data-active={pathname === "/pesaje/cintas"}
-                      >
-                        <Scale className="h-3.5 w-3.5 shrink-0" />
-                        <span className="truncate">Pesaje de Cintas</span>
                       </Link>
                     )}
                   </div>
