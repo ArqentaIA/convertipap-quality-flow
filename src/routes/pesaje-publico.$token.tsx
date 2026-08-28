@@ -259,6 +259,12 @@ function PesajePublicoPage() {
             )}
           </div>
 
+          {errorMsg && (
+            <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+              {errorMsg}
+            </div>
+          )}
+
           <Button className="w-full" disabled={!puedeGuardar} onClick={() => void onGuardar()}>
             {guardando ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
             Registrar peso
