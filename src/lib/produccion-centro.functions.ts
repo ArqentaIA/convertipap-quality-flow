@@ -7,12 +7,15 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { resolvePlantaScope } from "@/lib/planta-scope";
 import { esLiberadoOficial, esNoConformeOficial, esConcesionOficial } from "@/lib/qc-estado-oficial";
 
 const inputSchema = z.object({
   rango: z.enum(["dia", "semana", "mes", "año", "custom"]),
   start: z.string(),
   end: z.string(),
+  // Aislamiento por planta: código de la planta activa del encabezado.
+  planta: z.string().nullish(),
 });
 
 export type UltimoRollo = {
@@ -187,6 +190,12 @@ export const getProduccionCentro = createServerFn({ method: "POST" })
     const start = new Date(data.start);
     const end = new Date(data.end);
 
+    // Aislamiento por planta.
+    const scope = await resolvePlantaScope(sb, context.userId, data.planta);
+    const NONE = ["00000000-0000-0000-0000-000000000000"];
+    const plantaIds = scope.plantaIds.length > 0 ? scope.plantaIds : NONE;
+    const maquinaIds = scope.maquinaIds.length > 0 ? scope.maquinaIds : NONE;
+
     // Paginado de mediciones: PostgREST limita a 1000 filas por defecto.
     // Con varias variables × muestras se superan los 1000 fácilmente.
     async function fetchAllMediciones() {
@@ -215,18 +224,19 @@ export const getProduccionCentro = createServerFn({ method: "POST" })
       { data: maquinas },
       { data: productos },
       { data: muestras },
-      mediciones,
+      medicionesAll,
       { data: paros },
       { data: estados },
       settingsResp,
     ] = await Promise.all([
-      sb.from("maquinas").select("id, codigo, nombre").order("codigo"),
+      sb.from("maquinas").select("id, codigo, nombre").in("planta_id", plantaIds).order("codigo"),
       sb.from("productos").select("id, codigo, nombre"),
       sb
         .from("muestras_calidad")
         .select(
           "id, secuencia_captura, numero_rollo, capturado_at, hora_muestreo, maquina_id, producto_id, turno, estado, dictamen, estatus_liberacion, liberado_con_justificacion, liberacion_justificacion, autorizado_por, analista, defectos",
         )
+        .in("planta_id", plantaIds)
         .gte("capturado_at", start.toISOString())
         .lte("capturado_at", end.toISOString())
         .order("capturado_at", { ascending: false }),
@@ -234,11 +244,17 @@ export const getProduccionCentro = createServerFn({ method: "POST" })
       sb
         .from("paros_maquina")
         .select("id, maquina_id, duracion_min, inicio, fin, descripcion")
+        .in("maquina_id", maquinaIds)
         .gte("inicio", start.toISOString())
         .lte("inicio", end.toISOString()),
-      sb.from("maquina_estado_actual").select("maquina_id, estado, ultimo_cambio"),
+      sb.from("maquina_estado_actual").select("maquina_id, estado, ultimo_cambio").in("maquina_id", maquinaIds),
       sb.from("app_settings").select("costo_no_calidad_kg").limit(1).maybeSingle(),
     ]);
+
+    // Mediciones recortadas a las muestras de la planta activa.
+    const muestraIdsScope = new Set((muestras ?? []).map((m) => m.id));
+    const mediciones = (medicionesAll ?? []).filter((m) => muestraIdsScope.has(m.muestra_id));
+
 
 
     const maquinaById = new Map((maquinas ?? []).map((m) => [m.id, m]));
@@ -303,6 +319,7 @@ export const getProduccionCentro = createServerFn({ method: "POST" })
       .select(
         "id, secuencia_captura, numero_rollo, capturado_at, maquina_id, producto_id, turno, estado, dictamen, estatus_liberacion, liberado_con_justificacion, liberacion_justificacion, autorizado_por, analista, defectos",
       )
+      .in("planta_id", plantaIds)
       .order("capturado_at", { ascending: false })
       .limit(2);
     let ultimoRollo: UltimoRollo = null;
@@ -495,6 +512,7 @@ export const getProduccionCentro = createServerFn({ method: "POST" })
     const { data: muestrasPrev } = await sb
       .from("muestras_calidad")
       .select("id, dictamen, estatus_liberacion, defectos")
+      .in("planta_id", plantaIds)
       .gte("capturado_at", prevStart.toISOString())
       .lte("capturado_at", prevEnd.toISOString());
     const { data: medsPrev } = await sb

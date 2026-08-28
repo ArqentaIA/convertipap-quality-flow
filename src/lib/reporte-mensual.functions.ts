@@ -12,11 +12,14 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { resolvePlantaScope } from "@/lib/planta-scope";
 import { esLiberadoOficial, esNoConformeOficial, esConcesionOficial } from "@/lib/qc-estado-oficial";
 
 const inputSchema = z.object({
   year: z.number().int().min(2000).max(2100),
   month: z.number().int().min(1).max(12).nullable().optional(),
+  // Aislamiento por planta: código de la planta activa del encabezado.
+  planta: z.string().nullish(),
 });
 
 export type ReporteMensualBucket = {
@@ -137,6 +140,8 @@ export const getReporteMensual = createServerFn({ method: "POST" })
     // un turno 3 capturado el día N a las 05:00 cuenta como op_date N-1.
     const queryStart = new Date(startDate.getTime() - 24 * 60 * 60 * 1000);
     const queryEnd = new Date(endDate.getTime() + 24 * 60 * 60 * 1000);
+    const scope = await resolvePlantaScope(sb, context.userId, data.planta);
+    const plantaIdsScope = scope.plantaIds.length > 0 ? scope.plantaIds : ["00000000-0000-0000-0000-000000000000"];
     {
       const pageSize = 1000;
       let from = 0;
@@ -144,6 +149,7 @@ export const getReporteMensual = createServerFn({ method: "POST" })
         const { data: page, error } = await sb
           .from("muestras_calidad")
           .select("id, numero_rollo, capturado_at, maquina_id, producto_id, turno, estado, dictamen, estatus_liberacion, capturado_por")
+          .in("planta_id", plantaIdsScope)
           .gte("capturado_at", queryStart.toISOString())
           .lt("capturado_at", queryEnd.toISOString())
           .neq("estado", "borrador")
