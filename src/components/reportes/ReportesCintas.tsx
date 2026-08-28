@@ -3,6 +3,7 @@
 // Acceso controlado por el módulo `pesaje_cintas` (menú, ruta, componente,
 // consulta y server function).
 // =============================================================================
+import { usePlantaActivaCodigo } from "@/hooks/usePlantasPermitidas";
 import { useMemo, useState } from "react";
 import { FileSpreadsheet, Loader2, Layers, Database } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
