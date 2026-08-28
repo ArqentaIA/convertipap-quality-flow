@@ -1170,6 +1170,12 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
       toast.error(`Lote Logístico: faltan ${faltan} ${faltan === 1 ? "dígito" : "dígitos"} (deben ser 10).`);
       return;
     }
+    if (modo === "envio" && !justifLiberacionOk) {
+      toast.error(
+        "Este rollo tiene hallazgo o variables fuera de especificación: para liberarlo (L) debes registrar una justificación de al menos 20 caracteres.",
+      );
+      return;
+    }
     if (modo === "envio" && esIxtapaluca && estatusManual && !estatusManualMotivoValido) {
       toast.error(
         estatusManual === "L"
@@ -1299,9 +1305,12 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
         // Política 29-Jul-2026: la captura nunca libera. Solo Calidad dictamina
         // desde la ficha del rollo. Se envía siempre false; el motivo del
         // capturista viaja como `liberacion_justificacion` para el dictamen.
-        liberado_con_justificacion: false,
-        liberacion_justificacion:
-          variablesFueraDeSpec.length > 0 && justifValida ? justifTrimmed : null,
+        liberado_con_justificacion: requiereJustifLiberacion,
+        liberacion_justificacion: requiereJustifLiberacion
+          ? estatusManualMotivo.trim()
+          : variablesFueraDeSpec.length > 0 && justifValida
+            ? justifTrimmed
+            : null,
         defectos,
         tipo_muestreo: "por_rollo" as const,
         hora_muestreo: horaMuestreo ? new Date(horaMuestreo).toISOString() : undefined,
@@ -1350,6 +1359,7 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
   }, [trabajoCritico]);
 
   const puedeEnviar =
+    justifLiberacionOk &&
     !isBlocked &&
     !mutation.isPending &&
     !iniciandoNueva &&
