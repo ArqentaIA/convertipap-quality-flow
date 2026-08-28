@@ -15,6 +15,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { RangoSelector, MESES, rangoLabel, type Rango } from "@/components/qc/RangoSelector";
 import { getDashboard } from "@/lib/dashboard.functions";
 import { useAuth } from "@/lib/auth";
+import { usePlantaActivaCodigo } from "@/hooks/usePlantasPermitidas";
 import { supabase } from "@/integrations/supabase/client";
 
 
@@ -69,11 +70,11 @@ function computeWindow(rango: Rango, mesesSel: number[]): { start: Date; end: Da
   };
 }
 
-const dashboardQO = (rango: Rango, mesesSel: number[]) => {
+const dashboardQO = (rango: Rango, mesesSel: number[], planta: string | null) => {
   const { start, end } = computeWindow(rango, mesesSel);
   return queryOptions({
-    queryKey: ["dashboard", rango, start.toISOString(), end.toISOString()],
-    queryFn: () => getDashboard({ data: { rango, start: start.toISOString(), end: end.toISOString() } }),
+    queryKey: ["dashboard", rango, start.toISOString(), end.toISOString(), planta],
+    queryFn: () => getDashboard({ data: { rango, start: start.toISOString(), end: end.toISOString(), planta } }),
   });
 };
 
@@ -141,9 +142,10 @@ function Dashboard() {
   const [rango, setRango] = useState<Rango>("dia");
   const [mesesSel, setMesesSel] = useState<number[]>(MESES.map((_, i) => i));
   const queryClient = useQueryClient();
+  const plantaActiva = usePlantaActivaCodigo();
 
   const { data } = useSuspenseQuery({
-    ...dashboardQO(rango, mesesSel),
+    ...dashboardQO(rango, mesesSel, plantaActiva),
     refetchInterval: 30_000,
   });
   const { serie, maquinas, costoNoCalidad } = data;
