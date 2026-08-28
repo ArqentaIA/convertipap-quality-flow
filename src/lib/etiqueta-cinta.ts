@@ -59,6 +59,7 @@ const ESTATUS_CINTA_COLOR: Record<string, string> = {
 export type EtiquetaSnapshot = {
   lote_id: string;
   muestra_calidad_id?: string | null;
+  lote_logistico?: string | null;
   numero_orden?: string | null;
   numero_rollo: string;
   fabricacion: string;
@@ -127,7 +128,20 @@ export type CintaLabelData = {
   qr_payload: Record<string, unknown>;
   trace_url: string | null;
   sap_url: string | null;
+  lote_logistico: string | null;
+  /** URLs públicas de los 3 QR inferiores (mismo esquema que la etiqueta de rollo). */
+  url_qr_rollo: string;
+  url_qr_peso: string;
+  url_qr_lote: string;
 };
+
+/**
+ * Página pública minimalista: logotipo + un solo dato. Mismo esquema que la
+ * etiqueta de liberación de rollo. Aplica a ambas plantas.
+ */
+function buildDatoUrl(tipo: "rollo" | "peso" | "lote", valor: string): string {
+  return `${TRACE_BASE_URL}/q/${tipo}/${encodeURIComponent(valor)}`;
+}
 
 const SIN_DATOS = /^\s*(sin datos registrados|—|-)?\s*$/i;
 function limpio(v: string | null | undefined): string | null {
@@ -237,7 +251,15 @@ export function buildCintaLabelData(snap: EtiquetaSnapshot, cinta: EtiquetaCinta
     qr_payload: {},
     trace_url: traceUrl,
     sap_url: sapUrl,
+    lote_logistico: limpio(snap.lote_logistico ?? null),
+    url_qr_rollo: "",
+    url_qr_peso: "",
+    url_qr_lote: "",
   };
+
+  data.url_qr_rollo = buildDatoUrl("rollo", data.numero_rollo_etiqueta);
+  data.url_qr_peso = buildDatoUrl("peso", `${fmtKg(data.peso_cinta_kg)} kg`);
+  data.url_qr_lote = buildDatoUrl("lote", data.lote_logistico ?? "Sin lote logístico");
 
   data.qr_payload = {
     version_esquema_qr: 1,
@@ -263,6 +285,7 @@ export function buildCintaLabelData(snap: EtiquetaSnapshot, cinta: EtiquetaCinta
     total_uniones_cintas: data.total_uniones_cintas,
     estado_cinta: data.estado_cinta,
     estatus_liberacion: data.estatus_liberacion,
+    lote_logistico: data.lote_logistico,
     estatus_liberacion_texto: data.estatus_liberacion ? (ESTATUS_CINTA_LABEL[data.estatus_liberacion] ?? data.estatus_liberacion) : null,
     version_etiqueta: data.version_etiqueta,
     generado_at: data.generado_at,
@@ -300,8 +323,9 @@ function fmtKg(value: number | string): string {
 type Assets = {
   logo: string;
   sapLogo: string;
-  qrTrace: string | null;
-  qrSap: string | null;
+  qrRollo: string;
+  qrPeso: string;
+  qrLote: string;
 };
 
 function fila(k: string, v: string | null): string {
@@ -376,19 +400,21 @@ function renderEtiqueta(d: CintaLabelData, snap: EtiquetaSnapshot, assets: Asset
         ${d.estatus_liberacion ? `<div class="lbl-obs-est"><span class="k">Estatus</span><span class="est-badge" style="background:${ESTATUS_CINTA_COLOR[d.estatus_liberacion] ?? "#555"}">${ESTATUS_CINTA_LABEL[d.estatus_liberacion] ?? d.estatus_liberacion}</span></div>` : ""}
       </div>` : ""}
 
-      ${assets.qrTrace || assets.qrSap ? `
       <div class="lbl-qr-zone">
-        ${assets.qrTrace ? `
         <div class="qr-box">
-          <img src="${assets.qrTrace}" alt="QR trazabilidad" />
-          <div class="qr-cap">Trazabilidad</div>
-        </div>` : ""}
-        ${assets.qrSap ? `
+          <img src="${assets.qrRollo}" alt="QR N.º de rollo / cinta" />
+          <div class="qr-cap">N.º de rollo</div>
+        </div>
         <div class="qr-box">
-          <img src="${assets.qrSap}" alt="QR SAP HANA" />
-          <div class="qr-cap"><img class="qr-saplogo" src="${assets.sapLogo}" alt="SAP HANA" /></div>
-        </div>` : ""}
-      </div>` : ""}
+          <img src="${assets.qrPeso}" alt="QR Peso" />
+          <div class="qr-cap">Peso</div>
+        </div>
+        <div class="qr-box">
+          <img src="${assets.qrLote}" alt="QR Lote Logístico" />
+          <div class="qr-cap">Lote Logístico</div>
+        </div>
+        <div class="qr-sap"><img src="${assets.sapLogo}" alt="SAP HANA" /></div>
+      </div>
       <div class="lbl-ver">Versión de etiqueta ${d.version_etiqueta}${snap.folio ? ` · ${snap.folio}` : ""}</div>
     </div>
   </div>`;
@@ -406,11 +432,13 @@ export async function abrirImpresionEtiquetas(snap: EtiquetaSnapshot): Promise<v
   // El QR se regenera SIEMPRE con los datos vigentes de cada cinta.
   const etiquetas = await Promise.all(
     datos.map(async (d) => {
-      const [qrTrace, qrSap] = await Promise.all([
-        d.trace_url ? QRCode.toDataURL(d.trace_url, { margin: 1, width: 220, errorCorrectionLevel: "M" }) : Promise.resolve(null),
-        d.sap_url ? QRCode.toDataURL(d.sap_url, { margin: 1, width: 220, errorCorrectionLevel: "M" }) : Promise.resolve(null),
+      const opts = { margin: 1, width: 220, errorCorrectionLevel: "M" as const };
+      const [qrRollo, qrPeso, qrLote] = await Promise.all([
+        QRCode.toDataURL(d.url_qr_rollo, opts),
+        QRCode.toDataURL(d.url_qr_peso, opts),
+        QRCode.toDataURL(d.url_qr_lote, opts),
       ]);
-      return renderEtiqueta(d, snap, { logo: logoDataUrl, sapLogo: sapLogoDataUrl, qrTrace, qrSap });
+      return renderEtiqueta(d, snap, { logo: logoDataUrl, sapLogo: sapLogoDataUrl, qrRollo, qrPeso, qrLote });
     }),
   );
 
@@ -475,6 +503,9 @@ export async function abrirImpresionEtiquetas(snap: EtiquetaSnapshot): Promise<v
   .lbl-qr-zone .qr-box img { width: 20mm; height: 20mm; display: block; }
   .lbl-qr-zone .qr-cap { font-size: 6.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: #111; display: flex; align-items: center; justify-content: center; height: 4mm; }
   .lbl-qr-zone .qr-saplogo { width: auto !important; height: 4mm !important; max-width: 22mm; object-fit: contain; }
+  .lbl-qr-zone .qr-box img { width: 17mm; height: 17mm; }
+  .lbl-qr-zone .qr-sap { display: flex; align-items: flex-end; }
+  .lbl-qr-zone .qr-sap img { height: 6mm; max-width: 18mm; object-fit: contain; }
   @media screen {
     body { background: #eee; padding: 20px; }
     .print-page { margin: 0 auto 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.15); background: #fff; }
