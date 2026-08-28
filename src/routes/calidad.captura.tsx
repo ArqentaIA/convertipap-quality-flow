@@ -825,6 +825,23 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
   const justifTrimmed = justificacionLib.trim();
   const justifValida = justifTrimmed.length >= 10;
 
+  // -------------------------------------------------------------------------
+  // IXTAPALUCA — Liberación manual (L) con hallazgo: JUSTIFICACIÓN OBLIGATORIA.
+  // Aplica a Control de Calidad y Captura fuera de turno.
+  // Se exige sólo cuando hay defecto registrado o variables fuera de spec.
+  // -------------------------------------------------------------------------
+  const hayHallazgoRegistrado = defectos.some((d) => {
+    const t = (d ?? "").trim().toUpperCase();
+    return t !== "" && t !== "SIN HALLAZGO" && t !== "SIN DEFECTO";
+  });
+  const requiereJustifLiberacion =
+    esIxtapaluca &&
+    estatusManual === "L" &&
+    (hayHallazgoRegistrado || variablesFueraDeSpec.length > 0);
+  const justifLiberacionOk =
+    !requiereJustifLiberacion || estatusManualMotivo.trim().length >= 20;
+
+
   // Guarda de inactividad: mientras exista captura en curso (mediciones
   // escritas y aún no guardadas) o un guardado en vuelo, la sesión NO se cierra
   // por inactividad. Evita perder la captura y tener que repetirla.
