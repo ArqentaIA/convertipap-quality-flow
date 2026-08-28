@@ -95,6 +95,14 @@ function buildTraceUrl(muestraId: string): string {
   return `${TRACE_BASE_URL}/muestra/${muestraId}`;
 }
 
+/**
+ * Los 3 QR inferiores apuntan a una página pública que despliega únicamente
+ * el logotipo y el dato correspondiente.
+ */
+function buildDatoUrl(tipo: "rollo" | "peso" | "lote", valor: string): string {
+  return `${TRACE_BASE_URL}/q?t=${tipo}&v=${encodeURIComponent(valor)}`;
+}
+
 function isPesoLabel(label: string): boolean {
   const s = label.trim().toLowerCase();
   return s === "peso" || s === "peso del rollo" || s === "peso rollo";
