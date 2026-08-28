@@ -215,7 +215,6 @@ function ReportesPage() {
 // Reporte de Producción — generador XLSX con filtros propios
 // ─────────────────────────────────────────────────────────────────
 function ReporteProduccionItem(props: {
-  const plantaActiva = usePlantaActivaCodigo();
 
   start: string;
   end: string;
@@ -228,6 +227,7 @@ function ReporteProduccionItem(props: {
   mesesSel: number[];
   setMesesSel: (m: number[]) => void;
 }) {
+  const plantaActiva = usePlantaActivaCodigo();
   const { start, end, freq, periodo, usuario, enabled, rango, setRango, mesesSel, setMesesSel } = props;
   const [turno, setTurno] = useState("");
   const [maquina, setMaquina] = useState("");
