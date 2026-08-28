@@ -679,8 +679,12 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
       estatus_liberacion: estatusLiberacionEfectivo,
       // La captura NUNCA libera (política 29-Jul-2026). El motivo del capturista
       // se persiste para dictamen posterior de Calidad; nunca se marca liberado.
-      liberado_con_justificacion: false,
-      liberacion_justificacion: hayFueraSpec ? justifTrim : null,
+      liberado_con_justificacion: liberacionManualConHallazgo,
+      liberacion_justificacion: liberacionManualConHallazgo
+        ? (data.estatus_capturista_motivo ?? "").trim()
+        : hayFueraSpec
+          ? justifTrim
+          : null,
       liberado_por: null,
       liberado_at: null,
       // Snapshot completo de variables fuera de spec (todas, no sólo las críticas).
