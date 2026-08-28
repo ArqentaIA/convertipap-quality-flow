@@ -494,6 +494,7 @@ export const prepararImpresion = createServerFn({ method: "POST" })
       snapshot: {
         lote_id: string;
         muestra_calidad_id: string | null;
+        lote_logistico: string | null;
         numero_orden: string | null;
         numero_rollo: string;
         fabricacion: string;
