@@ -596,3 +596,100 @@ export const obtenerReporteMensualCintas = createServerFn({ method: "POST" })
       snapshots,
     };
   });
+
+// ------------------- Últimos rollos cortados (por planta) ------------------ //
+// Alcance estricto de planta: un lote pertenece a la planta de su muestra de
+// calidad o de su pesaje de bobina madre; los lotes manuales se ubican por el
+// sufijo del número de rollo (MP-04 → "-4"), que es único por máquina/planta.
+
+export type LoteResumen = {
+  id: string;
+  numero_rollo: string;
+  fabricacion: string;
+  producto_codigo: string | null;
+  producto_nombre: string | null;
+  estado: "abierto" | "finalizado" | "anulado";
+  es_manual: boolean;
+  cantidad_cintas: number;
+  peso_bobina_madre_neto_kg: number;
+  peso_total_cintas_kg: number;
+  peso_pendiente_kg: number;
+  peso_mermas_kg: number | null;
+  merma_porcentaje: number | null;
+  numero_orden: string | null;
+  conductor_nombre_snapshot: string;
+  bobinadora_nombre_snapshot: string;
+  bobinador_nombre: string | null;
+  fecha_produccion: string | null;
+  created_at: string;
+};
+
+export const listarUltimosLotesCintas = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        planta: z.string().nullable().optional(),
+        buscar: z.string().trim().max(64).nullable().optional(),
+        limite: z.number().int().min(1).max(200).optional(),
+      })
+      .parse(d ?? {}),
+  )
+  .handler(async ({ data, context }): Promise<LoteResumen[]> => {
+    const { resolvePlantaScope } = await import("@/lib/planta-scope");
+    const scope = await resolvePlantaScope(context.supabase, context.userId, data.planta ?? null);
+    if (scope.plantaIds.length === 0) return [];
+
+    const limite = data.limite ?? 50;
+    let q = context.supabase
+      .from("pesajes_cintas_lotes")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(Math.max(limite * 6, 300));
+    const term = (data.buscar ?? "").trim();
+    if (term) q = q.ilike("numero_rollo", `%${term}%`);
+
+    const { data: rows, error } = await q;
+    if (error) throw new Error(error.message);
+    const lotes = (rows ?? []) as unknown as (LoteResumen & {
+      muestra_calidad_id: string | null;
+      pesaje_bobina_madre_id: string | null;
+    })[];
+    if (lotes.length === 0) return [];
+
+    const muestraIds = [...new Set(lotes.map((l) => l.muestra_calidad_id).filter(Boolean))] as string[];
+    const pesajeIds = [...new Set(lotes.map((l) => l.pesaje_bobina_madre_id).filter(Boolean))] as string[];
+
+    const [muestras, pesajes] = await Promise.all([
+      muestraIds.length
+        ? context.supabase.from("muestras_calidad").select("id, planta_id").in("id", muestraIds)
+        : Promise.resolve({ data: [], error: null }),
+      pesajeIds.length
+        ? context.supabase.from("pesajes_bobina_madre").select("id, maquina_id").in("id", pesajeIds)
+        : Promise.resolve({ data: [], error: null }),
+    ]);
+
+    const plantaPorMuestra = new Map<string, string>();
+    for (const m of (muestras.data ?? []) as { id: string; planta_id: string }[]) {
+      plantaPorMuestra.set(m.id, m.planta_id);
+    }
+    const maquinaPorPesaje = new Map<string, string>();
+    for (const p of (pesajes.data ?? []) as { id: string; maquina_id: string }[]) {
+      maquinaPorPesaje.set(p.id, p.maquina_id);
+    }
+
+    const sufijos = new Set(
+      scope.maquinaCodigos.map((c) => (c.split("-")[1] ?? "").replace(/^0+/, "") || c).filter(Boolean),
+    );
+
+    const visibles = lotes.filter((l) => {
+      const plantaMuestra = l.muestra_calidad_id ? plantaPorMuestra.get(l.muestra_calidad_id) : undefined;
+      if (plantaMuestra) return scope.plantaIds.includes(plantaMuestra);
+      const maquina = l.pesaje_bobina_madre_id ? maquinaPorPesaje.get(l.pesaje_bobina_madre_id) : undefined;
+      if (maquina) return scope.maquinaIds.includes(maquina);
+      const suf = (l.numero_rollo.split("-")[1] ?? "").replace(/^0+/, "");
+      return suf ? sufijos.has(suf) : false;
+    });
+
+    return visibles.slice(0, limite) as LoteResumen[];
+  });
