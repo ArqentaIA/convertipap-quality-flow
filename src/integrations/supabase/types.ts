@@ -579,6 +579,47 @@ export type Database = {
         }
         Relationships: []
       }
+      enlaces_pesaje_publico: {
+        Row: {
+          activo: boolean
+          creado_por: string | null
+          created_at: string
+          descripcion: string | null
+          expira_at: string
+          id: string
+          maquina_id: string
+          token: string
+        }
+        Insert: {
+          activo?: boolean
+          creado_por?: string | null
+          created_at?: string
+          descripcion?: string | null
+          expira_at: string
+          id?: string
+          maquina_id: string
+          token: string
+        }
+        Update: {
+          activo?: boolean
+          creado_por?: string | null
+          created_at?: string
+          descripcion?: string | null
+          expira_at?: string
+          id?: string
+          maquina_id?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "enlaces_pesaje_publico_maquina_id_fkey"
+            columns: ["maquina_id"]
+            isOneToOne: false
+            referencedRelation: "maquinas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       familias_producto: {
         Row: {
           activo: boolean

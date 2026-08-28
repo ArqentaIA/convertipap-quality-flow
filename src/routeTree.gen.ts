@@ -26,6 +26,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as TFolioRouteImport } from './routes/t.$folio'
 import { Route as PesajeCintasRouteImport } from './routes/pesaje.cintas'
 import { Route as PesajeBobinaMadreRouteImport } from './routes/pesaje.bobina-madre'
+import { Route as PesajePublicoTokenRouteImport } from './routes/pesaje-publico.$token'
 import { Route as MuestraIdRouteImport } from './routes/muestra.$id'
 import { Route as LoteCintasIdRouteImport } from './routes/lote-cintas.$id'
 import { Route as HistorialMaquinaRouteImport } from './routes/historial.$maquina'
@@ -121,6 +122,11 @@ const PesajeBobinaMadreRoute = PesajeBobinaMadreRouteImport.update({
   path: '/pesaje/bobina-madre',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PesajePublicoTokenRoute = PesajePublicoTokenRouteImport.update({
+  id: '/pesaje-publico/$token',
+  path: '/pesaje-publico/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MuestraIdRoute = MuestraIdRouteImport.update({
   id: '/muestra/$id',
   path: '/muestra/$id',
@@ -192,6 +198,7 @@ export interface FileRoutesByFullPath {
   '/historial/$maquina': typeof HistorialMaquinaRoute
   '/lote-cintas/$id': typeof LoteCintasIdRoute
   '/muestra/$id': typeof MuestraIdRoute
+  '/pesaje-publico/$token': typeof PesajePublicoTokenRoute
   '/pesaje/bobina-madre': typeof PesajeBobinaMadreRoute
   '/pesaje/cintas': typeof PesajeCintasRoute
   '/t/$folio': typeof TFolioRoute
@@ -220,6 +227,7 @@ export interface FileRoutesByTo {
   '/historial/$maquina': typeof HistorialMaquinaRoute
   '/lote-cintas/$id': typeof LoteCintasIdRoute
   '/muestra/$id': typeof MuestraIdRoute
+  '/pesaje-publico/$token': typeof PesajePublicoTokenRoute
   '/pesaje/bobina-madre': typeof PesajeBobinaMadreRoute
   '/pesaje/cintas': typeof PesajeCintasRoute
   '/t/$folio': typeof TFolioRoute
@@ -249,6 +257,7 @@ export interface FileRoutesById {
   '/historial/$maquina': typeof HistorialMaquinaRoute
   '/lote-cintas/$id': typeof LoteCintasIdRoute
   '/muestra/$id': typeof MuestraIdRoute
+  '/pesaje-publico/$token': typeof PesajePublicoTokenRoute
   '/pesaje/bobina-madre': typeof PesajeBobinaMadreRoute
   '/pesaje/cintas': typeof PesajeCintasRoute
   '/t/$folio': typeof TFolioRoute
@@ -279,6 +288,7 @@ export interface FileRouteTypes {
     | '/historial/$maquina'
     | '/lote-cintas/$id'
     | '/muestra/$id'
+    | '/pesaje-publico/$token'
     | '/pesaje/bobina-madre'
     | '/pesaje/cintas'
     | '/t/$folio'
@@ -307,6 +317,7 @@ export interface FileRouteTypes {
     | '/historial/$maquina'
     | '/lote-cintas/$id'
     | '/muestra/$id'
+    | '/pesaje-publico/$token'
     | '/pesaje/bobina-madre'
     | '/pesaje/cintas'
     | '/t/$folio'
@@ -335,6 +346,7 @@ export interface FileRouteTypes {
     | '/historial/$maquina'
     | '/lote-cintas/$id'
     | '/muestra/$id'
+    | '/pesaje-publico/$token'
     | '/pesaje/bobina-madre'
     | '/pesaje/cintas'
     | '/t/$folio'
@@ -364,6 +376,7 @@ export interface RootRouteChildren {
   HistorialMaquinaRoute: typeof HistorialMaquinaRoute
   LoteCintasIdRoute: typeof LoteCintasIdRoute
   MuestraIdRoute: typeof MuestraIdRoute
+  PesajePublicoTokenRoute: typeof PesajePublicoTokenRoute
   PesajeBobinaMadreRoute: typeof PesajeBobinaMadreRoute
   PesajeCintasRoute: typeof PesajeCintasRoute
   TFolioRoute: typeof TFolioRoute
@@ -490,6 +503,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PesajeBobinaMadreRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/pesaje-publico/$token': {
+      id: '/pesaje-publico/$token'
+      path: '/pesaje-publico/$token'
+      fullPath: '/pesaje-publico/$token'
+      preLoaderRoute: typeof PesajePublicoTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/muestra/$id': {
       id: '/muestra/$id'
       path: '/muestra/$id'
@@ -580,6 +600,7 @@ const rootRouteChildren: RootRouteChildren = {
   HistorialMaquinaRoute: HistorialMaquinaRoute,
   LoteCintasIdRoute: LoteCintasIdRoute,
   MuestraIdRoute: MuestraIdRoute,
+  PesajePublicoTokenRoute: PesajePublicoTokenRoute,
   PesajeBobinaMadreRoute: PesajeBobinaMadreRoute,
   PesajeCintasRoute: PesajeCintasRoute,
   TFolioRoute: TFolioRoute,
