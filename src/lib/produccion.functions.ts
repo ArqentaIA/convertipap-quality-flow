@@ -527,7 +527,7 @@ export const getDetalleCalidadOrden = createServerFn({ method: "GET" })
       .from("muestras_calidad")
       .select(
         `id, numero_rollo, hora_muestreo, turno, operador, jefe_maquina, analista,
-         dictamen, estatus_liberacion, defectos, observaciones_generales,
+         dictamen, estatus_liberacion, defectos, observaciones_generales, lote_logistico,
          mediciones_calidad(variable_clave, valor, min_snapshot, objetivo_snapshot, max_snapshot, estado, observacion)`,
       )
       .eq("orden_id", data.orden_id)
@@ -572,7 +572,12 @@ export const getDetalleCalidadOrden = createServerFn({ method: "GET" })
         analista: (m.analista as string) ?? "—",
         estatus,
         defectos: ((m.defectos ?? []) as string[]).filter(Boolean),
-        observaciones: (m.observaciones_generales as string) ?? "",
+        observaciones: [
+          (m as { lote_logistico?: string | null }).lote_logistico
+            ? `Lote logístico: ${(m as { lote_logistico?: string | null }).lote_logistico}`
+            : "",
+          (m.observaciones_generales as string) ?? "",
+        ].filter(Boolean).join(" | "),
         pesoKg: peso === null || peso === undefined ? null : Number(peso),
         ncCount,
         totalMediciones: total,
@@ -631,7 +636,7 @@ export const getDetalleRollo = createServerFn({ method: "GET" })
       .from("muestras_calidad")
       .select(
         `id, numero_rollo, hora_muestreo, turno, operador, jefe_maquina, analista,
-         dictamen, estatus_liberacion, defectos, observaciones_generales,
+         dictamen, estatus_liberacion, defectos, observaciones_generales, lote_logistico,
          variables_snapshot_json,
          producto_id, productos!muestras_calidad_producto_id_fkey(nombre, codigo),
          ordenes_fabricacion(folio, maquinas(codigo), plantas(nombre)),
@@ -736,7 +741,12 @@ export const getDetalleRollo = createServerFn({ method: "GET" })
         analista: (m.analista as string) ?? "—",
         estatus: estatusOficial,
         defectos: ((m.defectos ?? []) as string[]).filter(Boolean),
-        observaciones: (m.observaciones_generales as string) ?? "",
+        observaciones: [
+          (m as { lote_logistico?: string | null }).lote_logistico
+            ? `Lote logístico: ${(m as { lote_logistico?: string | null }).lote_logistico}`
+            : "",
+          (m.observaciones_generales as string) ?? "",
+        ].filter(Boolean).join(" | "),
         folioOrden: ord?.folio ?? "—",
         producto: (m as any).productos?.nombre ?? "—",
         productoCodigo: (m as any).productos?.codigo ?? "—",
@@ -776,7 +786,7 @@ export const listRollosMaquina = createServerFn({ method: "GET" })
       .from("muestras_calidad")
       .select(
         `id, numero_rollo, secuencia_captura, hora_muestreo, turno, operador, jefe_maquina, analista,
-         dictamen, estatus_liberacion, defectos, observaciones_generales,
+         dictamen, estatus_liberacion, defectos, observaciones_generales, lote_logistico,
          liberado_con_justificacion, liberacion_justificacion, orden_id,
          producto_id, productos!muestras_calidad_producto_id_fkey(nombre, codigo),
          ordenes_fabricacion:orden_id(folio),
@@ -821,7 +831,12 @@ export const listRollosMaquina = createServerFn({ method: "GET" })
         ncCount: nc,
         totalMediciones: total,
         estatus,
-        observacionesGenerales: (r.observaciones_generales as string) ?? "",
+        observacionesGenerales: [
+          (r as { lote_logistico?: string | null }).lote_logistico
+            ? `Lote logístico: ${(r as { lote_logistico?: string | null }).lote_logistico}`
+            : "",
+          (r.observaciones_generales as string) ?? "",
+        ].filter(Boolean).join(" | "),
         liberacionJustificacion: (r.liberacion_justificacion as string) ?? "",
         liberadoConJustificacion: !!r.liberado_con_justificacion,
         defectos: ((r.defectos ?? []) as string[]).filter(Boolean),
