@@ -93,6 +93,7 @@ function PesajePublicoPage() {
   const [foto, setFoto] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [guardando, setGuardando] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const infoQ = useQuery({
     queryKey: ["pesaje-publico", "info", token],
