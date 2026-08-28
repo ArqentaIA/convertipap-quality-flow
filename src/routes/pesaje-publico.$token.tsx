@@ -39,18 +39,46 @@ async function fileABase64(file: File): Promise<string> {
   return btoa(bin);
 }
 
-async function comprimir(file: File): Promise<File> {
-  const bitmap = await createImageBitmap(file).catch(() => null);
-  if (!bitmap) return file;
-  const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
+// iOS Safari puede no soportar createImageBitmap con HEIC/JPEG grandes:
+// se usa un <img> como respaldo para garantizar la compresión en móvil.
+async function cargarImagen(file: File): Promise<{ w: number; h: number; src: CanvasImageSource } | null> {
+  try {
+    const bitmap = await createImageBitmap(file);
+    return { w: bitmap.width, h: bitmap.height, src: bitmap };
+  } catch {
+    /* respaldo abajo */
+  }
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise<HTMLImageElement>((res, rej) => {
+      const el = new Image();
+      el.onload = () => res(el);
+      el.onerror = () => rej(new Error("no-image"));
+      el.src = url;
+    });
+    return { w: img.naturalWidth, h: img.naturalHeight, src: img };
+  } catch {
+    return null;
+  } finally {
+    setTimeout(() => URL.revokeObjectURL(url), 10_000);
+  }
+}
+
+async function comprimir(file: File): Promise<File | null> {
+  const img = await cargarImagen(file);
+  if (!img || !img.w || !img.h) return file.size <= 2_000_000 ? file : null;
+  const scale = Math.min(1, 1280 / Math.max(img.w, img.h));
   const canvas = document.createElement("canvas");
-  canvas.width = Math.round(bitmap.width * scale);
-  canvas.height = Math.round(bitmap.height * scale);
+  canvas.width = Math.round(img.w * scale);
+  canvas.height = Math.round(img.h * scale);
   const ctx = canvas.getContext("2d");
-  if (!ctx) return file;
-  ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-  const blob = await new Promise<Blob | null>((res) => canvas.toBlob((b) => res(b), "image/jpeg", 0.72));
-  return blob ? new File([blob], "evidencia.jpg", { type: "image/jpeg" }) : file;
+  if (!ctx) return file.size <= 2_000_000 ? file : null;
+  ctx.drawImage(img.src, 0, 0, canvas.width, canvas.height);
+  for (const q of [0.7, 0.5, 0.35]) {
+    const blob = await new Promise<Blob | null>((res) => canvas.toBlob((b) => res(b), "image/jpeg", q));
+    if (blob && blob.size <= 2_000_000) return new File([blob], "evidencia.jpg", { type: "image/jpeg" });
+  }
+  return null;
 }
 
 function PesajePublicoPage() {
