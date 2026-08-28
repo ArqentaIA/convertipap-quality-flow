@@ -6,7 +6,7 @@ import logoAsset from "@/assets/logo-convertipap-sombra.png.asset.json";
 const TITULOS: Record<string, string> = {
   rollo: "N.º de rollo",
   peso: "Peso",
-  lote: "Código logístico",
+  lote: "Lote Logístico",
 };
 
 export const Route = createFileRoute("/q/$tipo/$valor")({

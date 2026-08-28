@@ -396,8 +396,8 @@ function buildHtml(
         <div class="cap">Peso</div>
       </div>
       <div class="sap-qr">
-        <img src="${qrOrdenDataUrl}" alt="QR Código logístico" />
-        <div class="cap">Código logístico</div>
+        <img src="${qrOrdenDataUrl}" alt="QR Lote Logístico" />
+        <div class="cap">Lote Logístico</div>
       </div>
 
       <div class="sap-logo">
