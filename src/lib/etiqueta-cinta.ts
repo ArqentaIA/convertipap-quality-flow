@@ -494,8 +494,9 @@ export async function abrirImpresionEtiquetas(snap: EtiquetaSnapshot): Promise<v
   .lbl-cinta { background: transparent; padding: 1.5mm 0; border-top: 0.2mm solid #999; border-bottom: 0.2mm solid #999; }
   .lbl-cinta-tit { font-size: 6.5pt; text-transform: uppercase; color: #111; font-weight: 700; margin-bottom: 1mm; }
   .lbl-obs { font-size: 7pt; padding-top: 1mm; border-top: 0.2mm dotted #999; display: flex; gap: 2mm; align-items: flex-start; }
-  .lbl-obs-txt { width: 50%; }
-  .lbl-obs-est { width: 50%; display: flex; flex-direction: column; align-items: flex-start; gap: 0.6mm; }
+  .lbl-obs > div { flex: 1 1 0; min-width: 0; }
+  .lbl-obs-lote { display: flex; flex-direction: column; align-items: flex-start; gap: 0.6mm; }
+  .lbl-obs-est { display: flex; flex-direction: column; align-items: flex-start; gap: 0.6mm; }
   .est-badge { display: inline-block; padding: 0.6mm 2mm; border-radius: 1mm; color: #fff; font-size: 8pt; font-weight: 900; letter-spacing: 0.3px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .lbl-ver { font-size: 6pt; color: #555; text-align: right; }
 
