@@ -36,6 +36,7 @@ import { Route as CalidadDashboardRouteImport } from './routes/calidad.dashboard
 import { Route as CalidadCapturaFueraTurnoRouteImport } from './routes/calidad.captura-fuera-turno'
 import { Route as CalidadCapturaRouteImport } from './routes/calidad.captura'
 import { Route as CalidadAjustesRouteImport } from './routes/calidad.ajustes'
+import { Route as QTipoValorRouteImport } from './routes/q.$tipo.$valor'
 
 const VariablesCalidadRoute = VariablesCalidadRouteImport.update({
   id: '/variables-calidad',
@@ -173,6 +174,11 @@ const CalidadAjustesRoute = CalidadAjustesRouteImport.update({
   path: '/calidad/ajustes',
   getParentRoute: () => rootRouteImport,
 } as any)
+const QTipoValorRoute = QTipoValorRouteImport.update({
+  id: '/q/$tipo/$valor',
+  path: '/q/$tipo/$valor',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -202,6 +208,7 @@ export interface FileRoutesByFullPath {
   '/pesaje/bobina-madre': typeof PesajeBobinaMadreRoute
   '/pesaje/cintas': typeof PesajeCintasRoute
   '/t/$folio': typeof TFolioRoute
+  '/q/$tipo/$valor': typeof QTipoValorRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -231,6 +238,7 @@ export interface FileRoutesByTo {
   '/pesaje/bobina-madre': typeof PesajeBobinaMadreRoute
   '/pesaje/cintas': typeof PesajeCintasRoute
   '/t/$folio': typeof TFolioRoute
+  '/q/$tipo/$valor': typeof QTipoValorRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -261,6 +269,7 @@ export interface FileRoutesById {
   '/pesaje/bobina-madre': typeof PesajeBobinaMadreRoute
   '/pesaje/cintas': typeof PesajeCintasRoute
   '/t/$folio': typeof TFolioRoute
+  '/q/$tipo/$valor': typeof QTipoValorRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -292,6 +301,7 @@ export interface FileRouteTypes {
     | '/pesaje/bobina-madre'
     | '/pesaje/cintas'
     | '/t/$folio'
+    | '/q/$tipo/$valor'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -321,6 +331,7 @@ export interface FileRouteTypes {
     | '/pesaje/bobina-madre'
     | '/pesaje/cintas'
     | '/t/$folio'
+    | '/q/$tipo/$valor'
   id:
     | '__root__'
     | '/'
@@ -350,6 +361,7 @@ export interface FileRouteTypes {
     | '/pesaje/bobina-madre'
     | '/pesaje/cintas'
     | '/t/$folio'
+    | '/q/$tipo/$valor'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -380,6 +392,7 @@ export interface RootRouteChildren {
   PesajeBobinaMadreRoute: typeof PesajeBobinaMadreRoute
   PesajeCintasRoute: typeof PesajeCintasRoute
   TFolioRoute: typeof TFolioRoute
+  QTipoValorRoute: typeof QTipoValorRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -573,6 +586,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CalidadAjustesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/q/$tipo/$valor': {
+      id: '/q/$tipo/$valor'
+      path: '/q/$tipo/$valor'
+      fullPath: '/q/$tipo/$valor'
+      preLoaderRoute: typeof QTipoValorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -604,6 +624,7 @@ const rootRouteChildren: RootRouteChildren = {
   PesajeBobinaMadreRoute: PesajeBobinaMadreRoute,
   PesajeCintasRoute: PesajeCintasRoute,
   TFolioRoute: TFolioRoute,
+  QTipoValorRoute: QTipoValorRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
