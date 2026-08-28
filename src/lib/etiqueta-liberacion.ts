@@ -463,9 +463,9 @@ export async function printEtiquetaLiberacion(data: EtiquetaData): Promise<void>
   const [qrDataUrl, qrRolloDataUrl, qrPesoDataUrl, qrOrdenDataUrl, logoDataUrl, sapLogoDataUrl] =
     await Promise.all([
       QRCode.toDataURL(traceUrl, { margin: 1, width: 240, errorCorrectionLevel: "M" }),
-      QRCode.toDataURL(payloadRollo, { margin: 2, width: 400, errorCorrectionLevel: "M" }),
-      QRCode.toDataURL(payloadPeso, { margin: 2, width: 400, errorCorrectionLevel: "M" }),
-      QRCode.toDataURL(payloadOrden, { margin: 2, width: 400, errorCorrectionLevel: "M" }),
+      QRCode.toDataURL(buildDatoUrl("rollo", payloadRollo), { margin: 2, width: 400, errorCorrectionLevel: "M" }),
+      QRCode.toDataURL(buildDatoUrl("peso", payloadPeso), { margin: 2, width: 400, errorCorrectionLevel: "M" }),
+      QRCode.toDataURL(buildDatoUrl("lote", payloadOrden), { margin: 2, width: 400, errorCorrectionLevel: "M" }),
       toDataUrl(logoUrl),
       toDataUrl(sapHanaAsset.url),
     ]);
