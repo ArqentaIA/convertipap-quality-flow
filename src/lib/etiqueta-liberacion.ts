@@ -100,7 +100,7 @@ function buildTraceUrl(muestraId: string): string {
  * el logotipo y el dato correspondiente.
  */
 function buildDatoUrl(tipo: "rollo" | "peso" | "lote", valor: string): string {
-  return `${TRACE_BASE_URL}/q?t=${tipo}&v=${encodeURIComponent(valor)}`;
+  return `${TRACE_BASE_URL}/q/${tipo}/${encodeURIComponent(valor)}`;
 }
 
 function isPesoLabel(label: string): boolean {
