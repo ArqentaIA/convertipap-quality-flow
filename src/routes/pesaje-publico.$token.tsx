@@ -147,7 +147,15 @@ function PesajePublicoPage() {
       setPreview(null);
       await qc.invalidateQueries({ queryKey: ["pesaje-publico"] });
     } catch (e) {
-      toast.error((e as Error).message || "No fue posible registrar el peso.");
+      const msg = (e as Error).message || "No fue posible registrar el peso.";
+      const amable = msg.includes("CONSECUTIVO_CAMBIO")
+        ? "El consecutivo cambió porque alguien más registró un rollo. Se actualizó el número, vuelve a presionar Registrar peso."
+        : msg.includes("COLISION_NUMERACION")
+          ? "El número de rollo ya está utilizado. Reporta al administrador."
+          : msg;
+      setErrorMsg(amable);
+      toast.error(amable);
+      await qc.invalidateQueries({ queryKey: ["pesaje-publico"] });
     } finally {
       setGuardando(false);
     }
