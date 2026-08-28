@@ -2445,6 +2445,22 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
                   </SelectContent>
                 </Select>
               </div>
+              {requiereJustifLiberacion && (
+                <Alert className="border-amber-500 bg-amber-50 text-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertTitle>Justificación obligatoria para liberar</AlertTitle>
+                  <AlertDescription className="text-xs">
+                    Este rollo tiene{" "}
+                    {hayHallazgoRegistrado ? "hallazgo registrado" : ""}
+                    {hayHallazgoRegistrado && variablesFueraDeSpec.length > 0 ? " y " : ""}
+                    {variablesFueraDeSpec.length > 0
+                      ? `${variablesFueraDeSpec.length} variable(s) fuera de especificación`
+                      : ""}
+                    . No podrás guardar como <strong>Liberado</strong> sin una justificación de
+                    al menos 20 caracteres (queda en auditoría).
+                  </AlertDescription>
+                </Alert>
+              )}
               {estatusManual && (
                 <div className="space-y-1.5">
                   <Label className="text-base">
@@ -2452,6 +2468,7 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
                       ? "Justificación de liberación (mín. 20 caracteres)"
                       : "Motivo del estatus (mín. 10 caracteres)"}
                   </Label>
+
                   <Textarea
                     value={estatusManualMotivo}
                     onChange={(e) => setEstatusManualMotivo(e.target.value.slice(0, 240))}
