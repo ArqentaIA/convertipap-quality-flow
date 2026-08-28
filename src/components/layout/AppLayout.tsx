@@ -4,7 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import {
   LayoutDashboard, Factory, ClipboardCheck, FileBarChart2,
   Settings, ChevronLeft, ChevronRight, Bell, ChevronDown, SlidersHorizontal,
-  LogOut, Lock, Loader2, BookOpen, Users, Monitor, Tv, ClipboardList, Scale,
+  LogOut, Lock, Loader2, BookOpen, Users, Monitor, Tv, ClipboardList, Scale, Scissors,
 } from "lucide-react";
 
 import logo from "@/assets/logo.png";
