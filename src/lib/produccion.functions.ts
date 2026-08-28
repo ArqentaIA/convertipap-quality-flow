@@ -633,7 +633,8 @@ export const getDetalleRollo = createServerFn({ method: "GET" })
         `id, numero_rollo, hora_muestreo, turno, operador, jefe_maquina, analista,
          dictamen, estatus_liberacion, defectos, observaciones_generales,
          variables_snapshot_json,
-         ordenes_fabricacion(folio, productos(nombre, codigo), maquinas(codigo), plantas(nombre)),
+         producto_id, productos!muestras_calidad_producto_id_fkey(nombre, codigo),
+         ordenes_fabricacion(folio, maquinas(codigo), plantas(nombre)),
          mediciones_calidad(variable_clave, valor, min_snapshot, objetivo_snapshot, max_snapshot, estado, observacion)`,
       )
       .eq("id", data.muestra_id)
@@ -737,8 +738,8 @@ export const getDetalleRollo = createServerFn({ method: "GET" })
         defectos: ((m.defectos ?? []) as string[]).filter(Boolean),
         observaciones: (m.observaciones_generales as string) ?? "",
         folioOrden: ord?.folio ?? "—",
-        producto: ord?.productos?.nombre ?? "—",
-        productoCodigo: ord?.productos?.codigo ?? "—",
+        producto: (m as any).productos?.nombre ?? "—",
+        productoCodigo: (m as any).productos?.codigo ?? "—",
         maquina: ord?.maquinas?.codigo ?? "—",
         planta: ord?.plantas?.nombre ?? "—",
         ncCount,
@@ -777,7 +778,8 @@ export const listRollosMaquina = createServerFn({ method: "GET" })
         `id, numero_rollo, secuencia_captura, hora_muestreo, turno, operador, jefe_maquina, analista,
          dictamen, estatus_liberacion, defectos, observaciones_generales,
          liberado_con_justificacion, liberacion_justificacion, orden_id,
-         ordenes_fabricacion:orden_id(folio, productos(nombre, codigo)),
+         producto_id, productos!muestras_calidad_producto_id_fkey(nombre, codigo),
+         ordenes_fabricacion:orden_id(folio),
          mediciones_calidad(variable_clave, valor, estado)`,
       )
       .eq("maquina_id", data.maquina_id)
@@ -813,7 +815,7 @@ export const listRollosMaquina = createServerFn({ method: "GET" })
         capturadoAt: r.hora_muestreo as string,
         turno: (r.turno as string) ?? "—",
         operador: (r.operador as string) ?? "—",
-        producto: r.ordenes_fabricacion?.productos?.nombre ?? "—",
+        producto: r.productos?.nombre ?? "—",
         pesoKg: peso === null || peso === undefined ? null : Number(peso),
         cumplimiento,
         ncCount: nc,
