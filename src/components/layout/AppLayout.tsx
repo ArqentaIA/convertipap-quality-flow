@@ -179,7 +179,7 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
     if (firstAllowed && firstAllowed.to !== pathname) {
       void navigate({ to: firstAllowed.to, replace: true });
     }
-  }, [auth.loading, auth.isAuthenticated, auth.modules, auth.roles, pathname, navigate, puedePesajeRollo, canPerfilesRoles, canVariablesCalidad, esPesajeOperativo]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [auth.loading, auth.isAuthenticated, auth.modules, auth.roles, pathname, navigate, puedePesajeRollo, canPerfilesRoles, canOrdenesProduccion, canVariablesCalidad, esPesajeOperativo]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const visibleNav = useMemo(
     () =>
@@ -192,7 +192,7 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
         }
         return true;
       }),
-    [auth.modules, auth.roles, puedePesajeRollo, canPerfilesRoles, canVariablesCalidad, esPesajeOperativo], // eslint-disable-line react-hooks/exhaustive-deps
+    [auth.modules, auth.roles, puedePesajeRollo, canPerfilesRoles, canOrdenesProduccion, canVariablesCalidad, esPesajeOperativo], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
 
