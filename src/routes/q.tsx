@@ -13,8 +13,8 @@ const TITULOS: Record<string, string> = {
 
 export const Route = createFileRoute("/q")({
   validateSearch: (search: Record<string, unknown>): QSearch => ({
-    t: typeof search['t'] === "string" ? search['t'] : undefined,
-    v: typeof search['v'] === "string" ? search['v'] : undefined,
+    t: search['t'] == null ? undefined : String(search['t']),
+    v: search['v'] == null ? undefined : String(search['v']),
   }),
   head: () => ({
     meta: [
