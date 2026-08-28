@@ -265,17 +265,6 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
                         <span className="truncate">Pesaje de Rollo</span>
                       </Link>
                     )}
-
-                    {auth.canAccess("pesaje_cintas") && (
-                      <Link
-                        to="/pesaje/cintas"
-                        className="cabinet-panel mx-1 my-0.5 flex items-center gap-2 rounded-md px-2.5 py-1.5 text-xs font-medium text-sidebar-foreground/80 hover:text-white"
-                        data-active={pathname === "/pesaje/cintas"}
-                      >
-                        <Scale className="h-3.5 w-3.5 shrink-0" />
-                        <span className="truncate">Pesaje de Cintas</span>
-                      </Link>
-                    )}
                   </div>
                 )}
                 {isPantallas && !collapsed && (
