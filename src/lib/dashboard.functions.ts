@@ -5,12 +5,15 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { fetchAllPaged } from "@/lib/paginate";
+import { resolvePlantaScope } from "@/lib/planta-scope";
 import { esLiberadoOficial, esNoConformeOficial, esConcesionOficial } from "@/lib/qc-estado-oficial";
 
 const inputSchema = z.object({
   rango: z.enum(["dia", "semana", "mes", "año", "custom"]),
   start: z.string(), // ISO
   end: z.string(),   // ISO
+  // Aislamiento por planta: código de la planta activa del encabezado.
+  planta: z.string().nullish(),
 });
 
 export type DashboardPayload = {
@@ -84,10 +87,16 @@ export const getDashboard = createServerFn({ method: "POST" })
     const start = new Date(data.start);
     const end = new Date(data.end);
 
-    const [maquinas, muestras, mediciones, rollos, ordenes, paros, settingsResp] =
+    // Aislamiento por planta: todo el dashboard se recorta a la planta activa.
+    const scope = await resolvePlantaScope(sb, context.userId, data.planta);
+    const NONE = ["00000000-0000-0000-0000-000000000000"];
+    const plantaIds = scope.plantaIds.length > 0 ? scope.plantaIds : NONE;
+    const maquinaIds = scope.maquinaIds.length > 0 ? scope.maquinaIds : NONE;
+
+    const [maquinas, muestras, medicionesAll, rollos, ordenes, paros, settingsResp] =
       await Promise.all([
         fetchAllPaged<{ id: string; codigo: string }>((from, to) =>
-          sb.from("maquinas").select("id, codigo").order("codigo").range(from, to),
+          sb.from("maquinas").select("id, codigo").in("planta_id", plantaIds).order("codigo").range(from, to),
         ),
         fetchAllPaged<{
           id: string;
@@ -101,6 +110,7 @@ export const getDashboard = createServerFn({ method: "POST" })
           sb
             .from("muestras_calidad")
             .select("id, maquina_id, capturado_at, dictamen, estatus_liberacion, defectos, estado")
+            .in("planta_id", plantaIds)
             .gte("capturado_at", start.toISOString())
             .lte("capturado_at", end.toISOString())
             .range(from, to),
@@ -129,18 +139,24 @@ export const getDashboard = createServerFn({ method: "POST" })
             .range(from, to),
         ),
         fetchAllPaged<{ id: string; maquina_id: string }>((from, to) =>
-          sb.from("ordenes_fabricacion").select("id, maquina_id").range(from, to),
+          sb.from("ordenes_fabricacion").select("id, maquina_id").in("maquina_id", maquinaIds).range(from, to),
         ),
         fetchAllPaged<{ maquina_id: string; duracion_min: number | null; inicio: string }>((from, to) =>
           sb
             .from("paros_maquina")
             .select("maquina_id, duracion_min, inicio")
+            .in("maquina_id", maquinaIds)
             .gte("inicio", start.toISOString())
             .lte("inicio", end.toISOString())
             .range(from, to),
         ),
         sb.from("app_settings").select("costo_no_calidad_kg").limit(1).maybeSingle(),
       ]);
+
+    // Las mediciones no tienen planta: se recortan a las muestras de la planta.
+    const muestraIdsScope = new Set((muestras ?? []).map((m) => m.id));
+    const mediciones = (medicionesAll ?? []).filter((m) => muestraIdsScope.has(m.muestra_id));
+
 
     const maquinaList = (maquinas ?? []).map((m) => m.codigo);
     const maquinaCodeById = new Map((maquinas ?? []).map((m) => [m.id, m.codigo]));

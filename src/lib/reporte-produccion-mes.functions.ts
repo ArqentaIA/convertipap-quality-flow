@@ -6,10 +6,13 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { resolvePlantaScope } from "@/lib/planta-scope";
 
 const input = z.object({
   year: z.number().int().min(2020).max(2100),
   month: z.number().int().min(1).max(12),
+  // Aislamiento por planta: código de la planta activa del encabezado.
+  planta: z.string().nullish(),
 });
 
 export type DiaTurnoKey = string; // YYYY-MM-DD
@@ -154,9 +157,14 @@ export const getReporteProduccionMes = createServerFn({ method: "POST" })
     const winEnd = new Date(now.getTime() + 24 * 3600_000);
 
     // 1) Catálogos máquinas (todas para orden estable)
+    const scopeProd = await resolvePlantaScope(sb, context.userId, data.planta);
+    const NONE_PROD = ["00000000-0000-0000-0000-000000000000"];
+    const plantaIdsProd = scopeProd.plantaIds.length > 0 ? scopeProd.plantaIds : NONE_PROD;
+    const maquinaIdsProd = scopeProd.maquinaIds.length > 0 ? scopeProd.maquinaIds : NONE_PROD;
     const { data: maquinasRaw, error: eMaq } = await sb
       .from("maquinas")
       .select("id, codigo, nombre")
+      .in("planta_id", plantaIdsProd)
       .order("codigo");
     if (eMaq) throw new Error(eMaq.message);
 
@@ -164,6 +172,7 @@ export const getReporteProduccionMes = createServerFn({ method: "POST" })
     const { data: ordenes, error: eOrd } = await sb
       .from("ordenes_fabricacion")
       .select("id, turno, fecha_inicio, maquina_id, producto_id")
+      .in("maquina_id", maquinaIdsProd)
       .gte("fecha_inicio", winStart.toISOString())
       .lt("fecha_inicio", winEnd.toISOString());
     if (eOrd) throw new Error(eOrd.message);

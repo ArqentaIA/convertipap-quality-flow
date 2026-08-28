@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { resolvePlantaScope } from "@/lib/planta-scope";
 
 /**
  * ============================================================
@@ -40,6 +41,8 @@ const inputSchema = z.object({
   turno: z.enum(["1", "2", "3"]).optional().nullable(),
   from: z.string().min(1),
   to: z.string().min(1),
+  // Aislamiento por planta: código de la planta activa del encabezado.
+  planta: z.string().nullish(),
 });
 
 /**
@@ -51,6 +54,8 @@ export const getCumplimientoIndicador = createServerFn({ method: "GET" })
   .inputValidator((input: z.infer<typeof inputSchema>) => inputSchema.parse(input))
   .handler(async ({ data, context }) => {
     const sb = context.supabase;
+    const scope = await resolvePlantaScope(sb, context.userId, data.planta);
+    const plantaIds = scope.plantaIds.length > 0 ? scope.plantaIds : ["00000000-0000-0000-0000-000000000000"];
     // Paginación: PostgREST limita a 1000 filas por respuesta. Recorremos
     // todas las páginas para que `capturados` refleje el total real, no el
     // length truncado de la primera página.
@@ -62,6 +67,7 @@ export const getCumplimientoIndicador = createServerFn({ method: "GET" })
       let q = sb
         .from("muestras_calidad")
         .select("id, estatus_liberacion", { count: "exact" })
+        .in("planta_id", plantaIds)
         .gte("capturado_at", data.from)
         .lte("capturado_at", data.to)
         .range(from, from + PAGE - 1);
@@ -101,6 +107,8 @@ export const getCumplimientoVariables = createServerFn({ method: "GET" })
   .inputValidator((input: z.infer<typeof inputSchema>) => inputSchema.parse(input))
   .handler(async ({ data, context }) => {
     const sb = context.supabase;
+    const scope = await resolvePlantaScope(sb, context.userId, data.planta);
+    const plantaIds = scope.plantaIds.length > 0 ? scope.plantaIds : ["00000000-0000-0000-0000-000000000000"];
     const PAGE = 1000;
 
     // 1) Paginar muestras (id)
@@ -110,6 +118,7 @@ export const getCumplimientoVariables = createServerFn({ method: "GET" })
       let mq = sb
         .from("muestras_calidad")
         .select("id")
+        .in("planta_id", plantaIds)
         .gte("capturado_at", data.from)
         .lte("capturado_at", data.to)
         .range(from, from + PAGE - 1);

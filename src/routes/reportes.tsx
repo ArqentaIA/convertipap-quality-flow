@@ -25,6 +25,7 @@ import {
   exportReporteNoConformeXLSX,
 } from "@/lib/reporte-no-conforme-export";
 import { ReportesCintasSection } from "@/components/reportes/ReportesCintas";
+import { usePlantaActivaCodigo } from "@/hooks/usePlantasPermitidas";
 
 
 
@@ -87,10 +88,10 @@ function computeWindow(rango: Rango, mesesSel: number[]): { start: string; end: 
   return { start: start.toISOString(), end: end.toISOString() };
 }
 
-const reportesQueryOptions = (start: string, end: string) =>
+const reportesQueryOptions = (start: string, end: string, planta: string | null) =>
   queryOptions({
-    queryKey: ["reportes", start, end],
-    queryFn: () => getReportes({ data: { start, end } }),
+    queryKey: ["reportes", start, end, planta],
+    queryFn: () => getReportes({ data: { start, end, planta } }),
     staleTime: 0,
     gcTime: 0,
     refetchOnMount: "always",
@@ -123,6 +124,7 @@ function buildFileName(nombre: string) {
 
 
 function ReportesPage() {
+  const plantaActiva = usePlantaActivaCodigo();
   const auth = useAuth();
   const [rango, setRango] = useState<Rango>("semana");
   const [mesesSel, setMesesSel] = useState<number[]>(MESES.map((_, i) => i));
@@ -132,7 +134,7 @@ function ReportesPage() {
   const { start, end } = useMemo(() => computeWindow(rango, mesesSel), [rango, mesesSel]);
 
   const reportesQuery = useQuery({
-    ...reportesQueryOptions(start, end),
+    ...reportesQueryOptions(start, end, plantaActiva),
     enabled: !!auth.session?.access_token,
     retry: false,
   });
@@ -225,6 +227,7 @@ function ReporteProduccionItem(props: {
   mesesSel: number[];
   setMesesSel: (m: number[]) => void;
 }) {
+  const plantaActiva = usePlantaActivaCodigo();
   const { start, end, freq, periodo, usuario, enabled, rango, setRango, mesesSel, setMesesSel } = props;
   const [turno, setTurno] = useState("");
   const [maquina, setMaquina] = useState("");
@@ -245,8 +248,8 @@ function ReporteProduccionItem(props: {
   }, [freq]);
 
   const dataQuery = useQuery({
-    queryKey: ["reporte-produccion", start, end, rangoCentro],
-    queryFn: () => getProduccionCentro({ data: { rango: rangoCentro, start, end } }),
+    queryKey: ["reporte-produccion", start, end, rangoCentro, plantaActiva],
+    queryFn: () => getProduccionCentro({ data: { rango: rangoCentro, start, end, planta: plantaActiva } }),
     enabled,
     staleTime: 30_000,
   });
@@ -375,6 +378,7 @@ const MESES_RM = [
 ];
 
 function ReporteMensualItem({ usuario, enabled }: { usuario: string; enabled: boolean }) {
+  const plantaActiva = usePlantaActivaCodigo();
   const now = new Date();
   const [year, setYear] = useState<number>(now.getFullYear());
   const [month, setMonth] = useState<number | "">("");
@@ -386,8 +390,8 @@ function ReporteMensualItem({ usuario, enabled }: { usuario: string; enabled: bo
   const periodoTexto = modo === "anual" ? `Año ${year}` : `${MESES_RM[(month as number) - 1]} ${year}`;
 
   const query = useQuery({
-    queryKey: ["reporte-mensual", year, month],
-    queryFn: () => getReporteMensual({ data: { year, month: month === "" ? null : (month as number) } }),
+    queryKey: ["reporte-mensual", year, month, plantaActiva],
+    queryFn: () => getReporteMensual({ data: { year, month: month === "" ? null : (month as number), planta: plantaActiva } }),
     enabled,
     staleTime: 30_000,
   });
@@ -482,6 +486,7 @@ const TURNO_LABEL_RT: Record<string, string> = {
 };
 
 function ReporteTurnoItem({ usuario, enabled }: { usuario: string; enabled: boolean }) {
+  const plantaActiva = usePlantaActivaCodigo();
   const todayISO = useMemo(() => {
     const d = new Date();
     const pad = (n: number) => String(n).padStart(2, "0");
@@ -500,8 +505,8 @@ function ReporteTurnoItem({ usuario, enabled }: { usuario: string; enabled: bool
     : "";
 
   const dataQuery = useQuery({
-    queryKey: ["reporte-turno", consultaKey?.fecha, consultaKey?.turno],
-    queryFn: () => getProduccionCentro({ data: { rango: "dia" as const, start: startISO, end: endISO } }),
+    queryKey: ["reporte-turno", consultaKey?.fecha, consultaKey?.turno, plantaActiva],
+    queryFn: () => getProduccionCentro({ data: { rango: "dia" as const, start: startISO, end: endISO, planta: plantaActiva } }),
     enabled: enabled && !!consultaKey,
     staleTime: 0,
   });
@@ -603,6 +608,7 @@ function ReporteTurnoItem({ usuario, enabled }: { usuario: string; enabled: bool
 // Reporte General — XLSX con filtros propios (Turno/Día/Semana/Mes/Año)
 // ─────────────────────────────────────────────────────────────────
 function ReporteGeneralItem({ enabled }: { enabled: boolean }) {
+  const plantaActiva = usePlantaActivaCodigo();
   const [rango, setRango] = useState<Rango>("semana");
   const [mesesSel, setMesesSel] = useState<number[]>(MESES.map((_, i) => i));
   const [busy, setBusy] = useState(false);
@@ -616,7 +622,7 @@ function ReporteGeneralItem({ enabled }: { enabled: boolean }) {
     if (!enabled) return;
     setBusy(true); setError(null);
     try {
-      const fresh = await getReportes({ data: { start, end } });
+      const fresh = await getReportes({ data: { start, end, planta: plantaActiva } });
       const hojas = fresh.datasets?.["Reporte General"] ?? [{ sheet: "Datos", rows: [] }];
       const out = hojas.map((h) => ({
         ...h,
@@ -688,6 +694,7 @@ function ReporteGeneralItem({ enabled }: { enabled: boolean }) {
 // Reporte CONSOLIDADO — por fecha (todas las máquinas MP-04..MP-07)
 // ─────────────────────────────────────────────────────────────────
 function ReporteConsolidadoItem({ enabled }: { enabled: boolean }) {
+  const plantaActiva = usePlantaActivaCodigo();
   const todayISO = useMemo(() => {
     const d = new Date();
     const pad = (n: number) => String(n).padStart(2, "0");
@@ -702,7 +709,7 @@ function ReporteConsolidadoItem({ enabled }: { enabled: boolean }) {
     setBusy(true);
     setError(null);
     try {
-      const data = await getConsolidado({ data: { fecha } });
+      const data = await getConsolidado({ data: { fecha, planta: plantaActiva } });
       await exportConsolidadoXLSX(data);
     } catch (e) {
       setError((e as Error).message);
@@ -766,6 +773,7 @@ function ReporteConsolidadoItem({ enabled }: { enabled: boolean }) {
 // Reporte de Producción Mensual (dinámico) — formato FOR-PRO-05
 // ─────────────────────────────────────────────────────────────────
 function ReporteProduccionMesItem({ enabled }: { enabled: boolean }) {
+  const plantaActiva = usePlantaActivaCodigo();
   const now = new Date();
   const [year, setYear] = useState<number>(now.getFullYear());
   const [month, setMonth] = useState<number>(now.getMonth() + 1);
@@ -773,8 +781,8 @@ function ReporteProduccionMesItem({ enabled }: { enabled: boolean }) {
   const [error, setError] = useState<string | null>(null);
 
   const query = useQuery({
-    queryKey: ["reporte-produccion-mes", year, month],
-    queryFn: () => getReporteProduccionMes({ data: { year, month } }),
+    queryKey: ["reporte-produccion-mes", year, month, plantaActiva],
+    queryFn: () => getReporteProduccionMes({ data: { year, month, planta: plantaActiva } }),
     enabled,
     staleTime: 30_000,
   });
@@ -865,6 +873,7 @@ function ReporteProduccionMesItem({ enabled }: { enabled: boolean }) {
 // Reporte NO CONFORME — rollos NC y CONDICIONADO del mes vigente
 // ─────────────────────────────────────────────────────────────────
 function ReporteNoConformeItem({ enabled }: { enabled: boolean }) {
+  const plantaActiva = usePlantaActivaCodigo();
   const now = new Date();
   const [year, setYear] = useState<number>(now.getFullYear());
   const [month, setMonth] = useState<number>(now.getMonth() + 1);
@@ -872,8 +881,8 @@ function ReporteNoConformeItem({ enabled }: { enabled: boolean }) {
   const [error, setError] = useState<string | null>(null);
 
   const query = useQuery({
-    queryKey: ["reporte-no-conforme", year, month],
-    queryFn: () => getReporteNoConforme({ data: { year, month } }),
+    queryKey: ["reporte-no-conforme", year, month, plantaActiva],
+    queryFn: () => getReporteNoConforme({ data: { year, month, planta: plantaActiva } }),
     enabled,
     staleTime: 30_000,
   });

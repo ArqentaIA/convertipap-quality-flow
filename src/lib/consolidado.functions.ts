@@ -7,9 +7,12 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { fetchAllPaged, fetchInChunks } from "@/lib/paginate";
+import { resolvePlantaScope } from "@/lib/planta-scope";
 
+/** Orden histórico de referencia (Tlaxcala). Las máquinas reales se resuelven
+ *  dinámicamente según la planta activa para no mezclar información. */
 export const MAQUINAS_CONSOLIDADO = ["MP-07", "MP-06", "MP-05", "MP-04"] as const;
-export type MaquinaConsolidado = (typeof MAQUINAS_CONSOLIDADO)[number];
+export type MaquinaConsolidado = string;
 
 export const VARIABLES_PROMEDIO = [
   "pesoBase",
@@ -62,6 +65,8 @@ export type ConsolidadoPayload = {
 
 const inputSchema = z.object({
   fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Formato esperado YYYY-MM-DD"),
+  // Aislamiento por planta: código de la planta activa del encabezado.
+  planta: z.string().nullish(),
 });
 
 // México (CDMX) — UTC-6, sin DST desde 2022.
@@ -83,14 +88,18 @@ export const getConsolidado = createServerFn({ method: "GET" })
     const { supabase } = context;
     const { startIso, endIso } = diaMexicoToUtcRange(data.fecha);
 
-    // 1) Buscar IDs de las 4 máquinas
+    // 1) Máquinas de la planta activa (aislamiento TLX / IXT)
+    const scope = await resolvePlantaScope(supabase, context.userId, data.planta);
+    const plantaIds = scope.plantaIds.length > 0 ? scope.plantaIds : ["00000000-0000-0000-0000-000000000000"];
     const { data: maqs, error: maqErr } = await supabase
       .from("maquinas")
       .select("id, codigo")
-      .in("codigo", MAQUINAS_CONSOLIDADO as unknown as string[]);
+      .in("planta_id", plantaIds)
+      .order("codigo", { ascending: false });
     if (maqErr) throw maqErr;
     const maqMap = new Map<string, MaquinaConsolidado>();
     for (const m of maqs ?? []) maqMap.set(m.id as string, m.codigo as MaquinaConsolidado);
+    const codigosPlanta: MaquinaConsolidado[] = Array.from(maqMap.values());
 
     // 2) Muestras en rango + producto (paginado)
     const muestras = await fetchAllPaged<any>((from, to) =>
@@ -163,7 +172,7 @@ export const getConsolidado = createServerFn({ method: "GET" })
 
     // 4) Agrupar por máquina, ordenar
     const grupos = new Map<MaquinaConsolidado, ConsolidadoRow[]>();
-    for (const code of MAQUINAS_CONSOLIDADO) grupos.set(code, []);
+    for (const code of codigosPlanta) grupos.set(code, []);
 
     for (const mu of muestras ?? []) {
       const code = maqMap.get(mu.maquina_id as string);
@@ -203,7 +212,7 @@ export const getConsolidado = createServerFn({ method: "GET" })
     return {
       fecha: data.fecha,
       generadoAt: new Date().toISOString(),
-      maquinas: MAQUINAS_CONSOLIDADO.map((codigo) => ({
+      maquinas: codigosPlanta.map((codigo) => ({
         codigo,
         rows: grupos.get(codigo) ?? [],
       })),

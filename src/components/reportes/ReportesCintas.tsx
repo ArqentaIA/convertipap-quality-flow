@@ -3,6 +3,7 @@
 // Acceso controlado por el módulo `pesaje_cintas` (menú, ruta, componente,
 // consulta y server function).
 // =============================================================================
+import { usePlantaActivaCodigo } from "@/hooks/usePlantasPermitidas";
 import { useMemo, useState } from "react";
 import { FileSpreadsheet, Loader2, Layers, Database } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
@@ -76,13 +77,14 @@ function TarjetaReporte(props: {
   const fechaFin = modo === "fecha" ? inicio : fin;
   const rangoInvalido = modo === "rango" && (!inicio || !fin || fin < inicio);
 
+  const plantaActiva = usePlantaActivaCodigo();
   const datosFn = useServerFn(getDatosReporteCintas);
   const integralFn = useServerFn(getBaseIntegralCintas);
   const bobinadorasFn = useServerFn(listBobinadoras);
 
   const conteo = useQuery({
-    queryKey: ["reportes-cintas-conteo", inicio, fechaFin, turno],
-    queryFn: () => datosFn({ data: { fechaInicio: inicio, fechaFin: fechaFin, turno: turno || null } }),
+    queryKey: ["reportes-cintas-conteo", inicio, fechaFin, turno, plantaActiva],
+    queryFn: () => datosFn({ data: { fechaInicio: inicio, fechaFin: fechaFin, turno: turno || null, planta: plantaActiva } }),
     enabled: !!auth.session?.access_token && !!inicio && !!fechaFin && !rangoInvalido,
     staleTime: 30_000,
     retry: false,
@@ -144,7 +146,7 @@ function TarjetaReporte(props: {
 
     setBusy(true);
     const fileName = nombreArchivo();
-    const input = { fechaInicio: inicio, fechaFin, turno: turno || null };
+    const input = { fechaInicio: inicio, fechaFin, turno: turno || null, planta: plantaActiva };
     try {
       let lotes = 0, cintas = 0;
       if (props.tipo === "integral") {

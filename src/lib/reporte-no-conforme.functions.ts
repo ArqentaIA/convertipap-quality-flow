@@ -7,11 +7,14 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { resolvePlantaScope } from "@/lib/planta-scope";
 
 const input = z
   .object({
     year: z.number().int().min(2020).max(2100).optional(),
     month: z.number().int().min(1).max(12).optional(),
+    // Aislamiento por planta: código de la planta activa del encabezado.
+    planta: z.string().nullish(),
   })
   .optional()
   .default({});
@@ -152,11 +155,14 @@ export const getReporteNoConforme = createServerFn({ method: "POST" })
     const winEnd = localToUtc(next.getUTCFullYear(), next.getUTCMonth() + 1, next.getUTCDate(), 8);
 
     // 1) Muestras NC o liberadas con justificación dentro de la ventana
+    const scopeNC = await resolvePlantaScope(sb, context.userId, data?.planta);
+    const plantaIdsNC = scopeNC.plantaIds.length > 0 ? scopeNC.plantaIds : ["00000000-0000-0000-0000-000000000000"];
     const { data: muestras, error: eM } = await sb
       .from("muestras_calidad")
       .select(
         "id, turno, numero_rollo, capturado_at, hora_muestreo, defectos, defecto_visual_conversion, destino, estatus_liberacion, liberado_con_justificacion, producto_id, maquina_id, capturado_por, mediciones_modificadas_at, mediciones_modificadas_por",
       )
+      .in("planta_id", plantaIdsNC)
       .gte("capturado_at", winStart.toISOString())
       .lt("capturado_at", winEnd.toISOString())
       .or("estatus_liberacion.eq.NC,liberado_con_justificacion.eq.true");

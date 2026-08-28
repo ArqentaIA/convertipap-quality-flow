@@ -9,6 +9,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { resolvePlantaScope } from "@/lib/planta-scope";
 import {
   esLiberadoOficial as _esLiberadoOficial,
   esNoConformeOficial as _esNoConformeOficial,
@@ -18,7 +19,10 @@ import {
 const rangoInput = z.object({
   start: z.string(), // ISO
   end: z.string(),   // ISO
+  // Aislamiento por planta: código de la planta activa del encabezado.
+  planta: z.string().nullish(),
 });
+
 
 export type ReportePayload = {
   desempenoPlanta: {
@@ -51,10 +55,15 @@ export const getReportes = createServerFn({ method: "POST" })
     const prevStart = new Date(startMs - span).toISOString();
     const prevEnd = start;
 
-    // --------- Catálogos ---------
+    // --------- Alcance por planta (aislamiento TLX / IXT) ---------
+    const scope = await resolvePlantaScope(sb, context.userId, data.planta);
+    const plantaIds = scope.plantaIds;
+    const maquinaIds = scope.maquinaIds;
+
+    // --------- Catálogos (recortados a la planta activa) ---------
     const [{ data: plantas }, { data: maquinas }] = await Promise.all([
-      sb.from("plantas").select("id, codigo, nombre"),
-      sb.from("maquinas").select("id, codigo, nombre, planta_id"),
+      sb.from("plantas").select("id, codigo, nombre").in("id", plantaIds),
+      sb.from("maquinas").select("id, codigo, nombre, planta_id").in("planta_id", plantaIds),
     ]);
     const plantaById = new Map((plantas ?? []).map((p) => [p.id, p]));
     const maquinaById = new Map((maquinas ?? []).map((m) => [m.id, m]));
@@ -78,23 +87,27 @@ export const getReportes = createServerFn({ method: "POST" })
       return out;
     }
 
-    const muestras = await fetchAllPaged<{
+    const muestras = plantaIds.length === 0 ? [] : await fetchAllPaged<{
       id: string; planta_id: string; maquina_id: string; turno: string;
       hora_muestreo: string; dictamen: string | null; estado: string | null;
       estatus_liberacion: string | null;
     }>(() => sb
       .from("muestras_calidad")
       .select("id, planta_id, maquina_id, turno, hora_muestreo, dictamen, estado, estatus_liberacion")
+      .in("planta_id", plantaIds)
       .gte("hora_muestreo", start)
       .lte("hora_muestreo", end));
 
-    const muestrasPrev = await fetchAllPaged<{
+    const muestrasPrev = plantaIds.length === 0 ? [] : await fetchAllPaged<{
       id: string; planta_id: string; dictamen: string | null; estatus_liberacion: string | null;
     }>(() => sb
       .from("muestras_calidad")
       .select("id, planta_id, dictamen, estatus_liberacion")
+      .in("planta_id", plantaIds)
       .gte("hora_muestreo", prevStart)
       .lt("hora_muestreo", prevEnd));
+
+
 
 
     // --------- Mediciones del periodo (paginado: PostgREST limita a 1000) ---------
@@ -145,15 +158,18 @@ export const getReportes = createServerFn({ method: "POST" })
 
     const { data: ordenes } = await sb
       .from("ordenes_fabricacion")
-      .select("id, planta_id, maquina_id");
+      .select("id, planta_id, maquina_id")
+      .in("planta_id", plantaIds.length > 0 ? plantaIds : ["00000000-0000-0000-0000-000000000000"]);
     const ordenById = new Map((ordenes ?? []).map((o) => [o.id, o]));
 
     // --------- Paros (para OEE) ---------
     const { data: paros } = await sb
       .from("paros_maquina")
       .select("id, maquina_id, inicio, fin, duracion_min")
+      .in("maquina_id", maquinaIds.length > 0 ? maquinaIds : ["00000000-0000-0000-0000-000000000000"])
       .gte("inicio", start)
       .lte("inicio", end);
+
 
     // ====================================================
     // Desempeño por planta — Fase 1 v2 (reglas A/B/E)
@@ -463,6 +479,7 @@ export const getReportes = createServerFn({ method: "POST" })
          productos!muestras_calidad_producto_id_fkey(nombre, codigo, capas, gramaje, tipos_producto(codigo, nombre, familias_producto(codigo, nombre))),
          ordenes_fabricacion(folio)`,
       )
+      .in("planta_id", plantaIds.length > 0 ? plantaIds : ["00000000-0000-0000-0000-000000000000"])
       .gte("hora_muestreo", start)
       .lte("hora_muestreo", end)
       .order("hora_muestreo", { ascending: false }));
