@@ -112,7 +112,14 @@ function PesajePublicoPage() {
 
   async function onFoto(f: File | null) {
     if (!f) return;
+    setErrorMsg(null);
     const c = await comprimir(f);
+    if (!c) {
+      setFoto(null);
+      setPreview(null);
+      setErrorMsg("La fotografía es demasiado pesada. Toma la foto de nuevo con menor resolución o registra el peso sin evidencia.");
+      return;
+    }
     setFoto(c);
     setPreview(URL.createObjectURL(c));
   }
