@@ -469,7 +469,7 @@ export async function printEtiquetaLiberacion(data: EtiquetaData): Promise<void>
     qrOrdenDataUrl,
     logoDataUrl,
     sapLogoDataUrl,
-    { rollo: payloadRollo, peso: payloadPeso, orden: payloadOrden },
+    { rollo: payloadRollo, peso: payloadPeso, lote: payloadOrden },
   );
 
   const w = window.open("", "_blank", "width=960,height=900");
