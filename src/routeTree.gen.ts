@@ -13,7 +13,6 @@ import { Route as VariablesCalidadRouteImport } from './routes/variables-calidad
 import { Route as UsuariosRouteImport } from './routes/usuarios'
 import { Route as ReportesRouteImport } from './routes/reportes'
 import { Route as ReporteMensualRouteImport } from './routes/reporte-mensual'
-import { Route as QRouteImport } from './routes/q'
 import { Route as ProduccionRouteImport } from './routes/produccion'
 import { Route as PantallasOperativasRouteImport } from './routes/pantallas-operativas'
 import { Route as OrdenesProduccionRouteImport } from './routes/ordenes-produccion'
@@ -56,11 +55,6 @@ const ReportesRoute = ReportesRouteImport.update({
 const ReporteMensualRoute = ReporteMensualRouteImport.update({
   id: '/reporte-mensual',
   path: '/reporte-mensual',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const QRoute = QRouteImport.update({
-  id: '/q',
-  path: '/q',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProduccionRoute = ProduccionRouteImport.update({
@@ -191,7 +185,6 @@ export interface FileRoutesByFullPath {
   '/ordenes-produccion': typeof OrdenesProduccionRoute
   '/pantallas-operativas': typeof PantallasOperativasRoute
   '/produccion': typeof ProduccionRoute
-  '/q': typeof QRoute
   '/reporte-mensual': typeof ReporteMensualRoute
   '/reportes': typeof ReportesRoute
   '/usuarios': typeof UsuariosRoute
@@ -221,7 +214,6 @@ export interface FileRoutesByTo {
   '/ordenes-produccion': typeof OrdenesProduccionRoute
   '/pantallas-operativas': typeof PantallasOperativasRoute
   '/produccion': typeof ProduccionRoute
-  '/q': typeof QRoute
   '/reporte-mensual': typeof ReporteMensualRoute
   '/reportes': typeof ReportesRoute
   '/usuarios': typeof UsuariosRoute
@@ -252,7 +244,6 @@ export interface FileRoutesById {
   '/ordenes-produccion': typeof OrdenesProduccionRoute
   '/pantallas-operativas': typeof PantallasOperativasRoute
   '/produccion': typeof ProduccionRoute
-  '/q': typeof QRoute
   '/reporte-mensual': typeof ReporteMensualRoute
   '/reportes': typeof ReportesRoute
   '/usuarios': typeof UsuariosRoute
@@ -284,7 +275,6 @@ export interface FileRouteTypes {
     | '/ordenes-produccion'
     | '/pantallas-operativas'
     | '/produccion'
-    | '/q'
     | '/reporte-mensual'
     | '/reportes'
     | '/usuarios'
@@ -314,7 +304,6 @@ export interface FileRouteTypes {
     | '/ordenes-produccion'
     | '/pantallas-operativas'
     | '/produccion'
-    | '/q'
     | '/reporte-mensual'
     | '/reportes'
     | '/usuarios'
@@ -344,7 +333,6 @@ export interface FileRouteTypes {
     | '/ordenes-produccion'
     | '/pantallas-operativas'
     | '/produccion'
-    | '/q'
     | '/reporte-mensual'
     | '/reportes'
     | '/usuarios'
@@ -375,7 +363,6 @@ export interface RootRouteChildren {
   OrdenesProduccionRoute: typeof OrdenesProduccionRoute
   PantallasOperativasRoute: typeof PantallasOperativasRoute
   ProduccionRoute: typeof ProduccionRoute
-  QRoute: typeof QRoute
   ReporteMensualRoute: typeof ReporteMensualRoute
   ReportesRoute: typeof ReportesRoute
   UsuariosRoute: typeof UsuariosRoute
@@ -423,13 +410,6 @@ declare module '@tanstack/react-router' {
       path: '/reporte-mensual'
       fullPath: '/reporte-mensual'
       preLoaderRoute: typeof ReporteMensualRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/q': {
-      id: '/q'
-      path: '/q'
-      fullPath: '/q'
-      preLoaderRoute: typeof QRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/produccion': {
@@ -607,7 +587,6 @@ const rootRouteChildren: RootRouteChildren = {
   OrdenesProduccionRoute: OrdenesProduccionRoute,
   PantallasOperativasRoute: PantallasOperativasRoute,
   ProduccionRoute: ProduccionRoute,
-  QRoute: QRoute,
   ReporteMensualRoute: ReporteMensualRoute,
   ReportesRoute: ReportesRoute,
   UsuariosRoute: UsuariosRoute,
