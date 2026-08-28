@@ -145,11 +145,18 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
   const canVariablesCalidad =
     !esPesajeOperativo && (auth.canAccess("variables_calidad") || esIxtapaluca);
 
+  // Órdenes de Producción: visible únicamente para adgral@convertipap.site
+  // (se conserva el módulo y sus datos; solo se oculta la pantalla al resto).
+  const canOrdenesProduccion =
+    !esPesajeOperativo && (auth.user?.email ?? "").toLowerCase() === PERFILES_ROLES_EMAIL;
+
   // Acceso efectivo por módulo (permiso global + excepciones por planta).
   const puedeVer = (mod: (typeof NAV)[number]["module"]) => {
     if (esPesajeOperativo) return mod === "pesaje_bobina_madre";
+    if (mod === "ordenes_produccion") return canOrdenesProduccion;
     return mod === "variables_calidad" ? canVariablesCalidad : auth.canAccess(mod);
   };
+
 
   // 2) Si está en una ruta sin permisos, mandarlo al primer módulo permitido.
   useEffect(() => {
