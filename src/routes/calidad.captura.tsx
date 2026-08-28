@@ -980,7 +980,7 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
         productoCodigo: producto.codigo,
         productoNombre: producto.nombre,
         observacionesGenerales:
-          esIxtapaluca && loteLogisticoValido
+          loteLogisticoValido
             ? [`Lote logístico: ${loteLogistico}`, observaciones].filter(Boolean).join(" | ")
             : observaciones,
         turno,
@@ -1165,7 +1165,7 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
     if (porcentajeRupturasPct.trim() !== "" && (Number(porcentajeRupturasPct) < 0 || Number(porcentajeRupturasPct) > 100)) {
       toast.error("El campo Porcentaje de rupturas debe estar entre 0 y 100"); return;
     }
-    if (modo === "envio" && esIxtapaluca && !loteLogisticoValido) {
+    if (modo === "envio" && !loteLogisticoValido) {
       const faltan = 10 - loteLogistico.length;
       toast.error(`Lote Logístico: faltan ${faltan} ${faltan === 1 ? "dígito" : "dígitos"} (deben ser 10).`);
       return;
@@ -1336,7 +1336,7 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
         enviar_a_revision: modo === "envio",
         fuera_de_turno: modoFueraTurno,
         fuera_de_turno_motivo: modoFueraTurno ? motivoFueraTurno.trim() : null,
-        lote_logistico: esIxtapaluca && loteLogisticoValido ? loteLogistico : null,
+        lote_logistico: loteLogisticoValido ? loteLogistico : null,
         // Estatus del rollo elegido por el capturista (solo Ixtapaluca).
         estatus_capturista: esIxtapaluca && estatusManual ? estatusManual : null,
         estatus_capturista_motivo:
@@ -1664,7 +1664,7 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
 
             </div>
 
-            {esIxtapaluca && (
+            {(
               <div className="space-y-1.5">
                 <Label htmlFor="lote-logistico" className="text-base">
                   4. Lote Logístico{" "}
@@ -2960,8 +2960,7 @@ function buildEtiquetaFromMuestra(m: MuestraReciente): EtiquetaData {
     observacionesGenerales: (() => {
       const base = m.observaciones_generales ?? "";
       const lote = (m as { lote_logistico?: string | null }).lote_logistico ?? null;
-      const esIxt = m.maquinas?.plantas?.codigo === "IXT";
-      if (!esIxt || !lote) return base;
+      if (!lote) return base;
       return [`Lote logístico: ${lote}`, base].filter(Boolean).join(" | ");
     })(),
     turno: (m as { turno?: string | null }).turno ?? null,
