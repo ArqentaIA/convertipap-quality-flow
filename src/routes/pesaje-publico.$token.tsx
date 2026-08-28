@@ -64,21 +64,30 @@ async function cargarImagen(file: File): Promise<{ w: number; h: number; src: Ca
   }
 }
 
+const LIMITE_FOTO = 900_000;
+
 async function comprimir(file: File): Promise<File | null> {
   const img = await cargarImagen(file);
-  if (!img || !img.w || !img.h) return file.size <= 2_000_000 ? file : null;
-  const scale = Math.min(1, 1280 / Math.max(img.w, img.h));
+  if (!img || !img.w || !img.h) return file.size <= LIMITE_FOTO ? file : null;
+  const scale = Math.min(1, 1024 / Math.max(img.w, img.h));
   const canvas = document.createElement("canvas");
   canvas.width = Math.round(img.w * scale);
   canvas.height = Math.round(img.h * scale);
   const ctx = canvas.getContext("2d");
-  if (!ctx) return file.size <= 2_000_000 ? file : null;
+  if (!ctx) return file.size <= LIMITE_FOTO ? file : null;
   ctx.drawImage(img.src, 0, 0, canvas.width, canvas.height);
-  for (const q of [0.7, 0.5, 0.35]) {
+  for (const q of [0.6, 0.45, 0.3]) {
     const blob = await new Promise<Blob | null>((res) => canvas.toBlob((b) => res(b), "image/jpeg", q));
-    if (blob && blob.size <= 2_000_000) return new File([blob], "evidencia.jpg", { type: "image/jpeg" });
+    if (blob && blob.size <= LIMITE_FOTO) return new File([blob], "evidencia.jpg", { type: "image/jpeg" });
   }
   return null;
+}
+
+function conTiempoLimite<T>(p: Promise<T>, ms: number, msg: string): Promise<T> {
+  return Promise.race([
+    p,
+    new Promise<T>((_, rej) => setTimeout(() => rej(new Error(msg)), ms)),
+  ]);
 }
 
 function PesajePublicoPage() {
