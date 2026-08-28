@@ -825,6 +825,23 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
   const justifTrimmed = justificacionLib.trim();
   const justifValida = justifTrimmed.length >= 10;
 
+  // -------------------------------------------------------------------------
+  // IXTAPALUCA — Liberación manual (L) con hallazgo: JUSTIFICACIÓN OBLIGATORIA.
+  // Aplica a Control de Calidad y Captura fuera de turno.
+  // Se exige sólo cuando hay defecto registrado o variables fuera de spec.
+  // -------------------------------------------------------------------------
+  const hayHallazgoRegistrado = defectos.some((d) => {
+    const t = (d ?? "").trim().toUpperCase();
+    return t !== "" && t !== "SIN HALLAZGO" && t !== "SIN DEFECTO";
+  });
+  const requiereJustifLiberacion =
+    esIxtapaluca &&
+    estatusManual === "L" &&
+    (hayHallazgoRegistrado || variablesFueraDeSpec.length > 0);
+  const justifLiberacionOk =
+    !requiereJustifLiberacion || estatusManualMotivo.trim().length >= 20;
+
+
   // Guarda de inactividad: mientras exista captura en curso (mediciones
   // escritas y aún no guardadas) o un guardado en vuelo, la sesión NO se cierra
   // por inactividad. Evita perder la captura y tener que repetirla.
@@ -1153,6 +1170,12 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
       toast.error(`Lote Logístico: faltan ${faltan} ${faltan === 1 ? "dígito" : "dígitos"} (deben ser 10).`);
       return;
     }
+    if (modo === "envio" && !justifLiberacionOk) {
+      toast.error(
+        "Este rollo tiene hallazgo o variables fuera de especificación: para liberarlo (L) debes registrar una justificación de al menos 20 caracteres.",
+      );
+      return;
+    }
     if (modo === "envio" && esIxtapaluca && estatusManual && !estatusManualMotivoValido) {
       toast.error(
         estatusManual === "L"
@@ -1282,9 +1305,12 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
         // Política 29-Jul-2026: la captura nunca libera. Solo Calidad dictamina
         // desde la ficha del rollo. Se envía siempre false; el motivo del
         // capturista viaja como `liberacion_justificacion` para el dictamen.
-        liberado_con_justificacion: false,
-        liberacion_justificacion:
-          variablesFueraDeSpec.length > 0 && justifValida ? justifTrimmed : null,
+        liberado_con_justificacion: requiereJustifLiberacion,
+        liberacion_justificacion: requiereJustifLiberacion
+          ? estatusManualMotivo.trim()
+          : variablesFueraDeSpec.length > 0 && justifValida
+            ? justifTrimmed
+            : null,
         defectos,
         tipo_muestreo: "por_rollo" as const,
         hora_muestreo: horaMuestreo ? new Date(horaMuestreo).toISOString() : undefined,
@@ -1333,6 +1359,7 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
   }, [trabajoCritico]);
 
   const puedeEnviar =
+    justifLiberacionOk &&
     !isBlocked &&
     !mutation.isPending &&
     !iniciandoNueva &&
@@ -2418,6 +2445,22 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
                   </SelectContent>
                 </Select>
               </div>
+              {requiereJustifLiberacion && (
+                <Alert className="border-amber-500 bg-amber-50 text-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertTitle>Justificación obligatoria para liberar</AlertTitle>
+                  <AlertDescription className="text-xs">
+                    Este rollo tiene{" "}
+                    {hayHallazgoRegistrado ? "hallazgo registrado" : ""}
+                    {hayHallazgoRegistrado && variablesFueraDeSpec.length > 0 ? " y " : ""}
+                    {variablesFueraDeSpec.length > 0
+                      ? `${variablesFueraDeSpec.length} variable(s) fuera de especificación`
+                      : ""}
+                    . No podrás guardar como <strong>Liberado</strong> sin una justificación de
+                    al menos 20 caracteres (queda en auditoría).
+                  </AlertDescription>
+                </Alert>
+              )}
               {estatusManual && (
                 <div className="space-y-1.5">
                   <Label className="text-base">
@@ -2425,6 +2468,7 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
                       ? "Justificación de liberación (mín. 20 caracteres)"
                       : "Motivo del estatus (mín. 10 caracteres)"}
                   </Label>
+
                   <Textarea
                     value={estatusManualMotivo}
                     onChange={(e) => setEstatusManualMotivo(e.target.value.slice(0, 240))}

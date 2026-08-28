@@ -612,6 +612,12 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
     const hayFueraSpec = fueraSpecCapturista.length > 0;
     const justifTrim = (data.liberacion_justificacion ?? "").trim();
 
+    // Hallazgo real registrado por el capturista («Sin hallazgo» no cuenta).
+    const hayHallazgoRegistrado = (data.defectos ?? []).some((d) => {
+      const t = (d ?? "").trim().toUpperCase();
+      return t !== "" && t !== "SIN HALLAZGO" && t !== "SIN DEFECTO";
+    });
+
     if (hayFueraSpec) {
       if (justifTrim.length < 10) {
         throw new Error(
@@ -622,6 +628,21 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
         throw new Error("El motivo no puede exceder 240 caracteres.");
       }
     }
+
+    // IXTAPALUCA — liberación manual (L) con hallazgo o variables fuera de spec:
+    // la justificación (≥20 caracteres) es OBLIGATORIA. Aplica a Control de
+    // Calidad y Captura fuera de turno.
+    const liberacionManualConHallazgo =
+      data.estatus_capturista === "L" && (hayFueraSpec || hayHallazgoRegistrado);
+    if (
+      liberacionManualConHallazgo &&
+      (data.estatus_capturista_motivo ?? "").trim().length < 20
+    ) {
+      throw new Error(
+        "Este rollo tiene hallazgo o variables fuera de especificación: para liberarlo debes registrar una justificación de al menos 20 caracteres.",
+      );
+    }
+
 
     // La evaluación canónica de liberación vive EXCLUSIVAMENTE en BD
     // (`qc_eval_liberacion` + `qc_recalc_estatus_muestra`). Aquí sólo se envía
@@ -658,8 +679,12 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
       estatus_liberacion: estatusLiberacionEfectivo,
       // La captura NUNCA libera (política 29-Jul-2026). El motivo del capturista
       // se persiste para dictamen posterior de Calidad; nunca se marca liberado.
-      liberado_con_justificacion: false,
-      liberacion_justificacion: hayFueraSpec ? justifTrim : null,
+      liberado_con_justificacion: liberacionManualConHallazgo,
+      liberacion_justificacion: liberacionManualConHallazgo
+        ? (data.estatus_capturista_motivo ?? "").trim()
+        : hayFueraSpec
+          ? justifTrim
+          : null,
       liberado_por: null,
       liberado_at: null,
       // Snapshot completo de variables fuera de spec (todas, no sólo las críticas).
