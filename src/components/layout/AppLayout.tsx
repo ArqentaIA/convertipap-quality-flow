@@ -31,6 +31,7 @@ const NAV: NavItem[] = [
   { to: "/produccion", label: "Producción", icon: Factory, module: "produccion", pathPrefixes: ["/produccion", "/historial"] },
   { to: "/ordenes-produccion", label: "Órdenes de Producción", icon: ClipboardList, module: "ordenes_produccion" },
   { to: "/pesaje/bobina-madre", label: "Control de Pesaje", icon: Scale, module: "pesaje_bobina_madre", pathPrefixes: ["/pesaje"] },
+  { to: "/pesaje/cintas", label: "CORTES BOBINA", icon: Scissors, module: "pesaje_cintas", pathPrefixes: ["/pesaje/cintas"] },
 
   { to: "/calidad/captura", label: "Control de Calidad", icon: ClipboardCheck, module: "control_calidad" },
   { to: "/calidad/captura-fuera-turno", label: "Captura fuera de turno", icon: ClipboardCheck, module: "control_calidad" },
