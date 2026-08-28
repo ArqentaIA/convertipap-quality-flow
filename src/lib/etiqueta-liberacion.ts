@@ -117,10 +117,10 @@ export function buildPayloadPeso(data: Pick<EtiquetaData, "mediciones">): string
   return fmtKg(med.valor);
 }
 
-/** Orden de producción: fuente canónica SAP; sin orden vinculada = texto oficial. */
-export function buildPayloadOrden(numeroOrdenSap: string | null | undefined): string {
-  const v = (numeroOrdenSap ?? "").trim();
-  return v || "Sin orden SAP vinculada";
+/** Código logístico: el tercer QR codifica el lote logístico capturado en Calidad. */
+export function buildPayloadLote(loteLogistico: string | null | undefined): string {
+  const v = (loteLogistico ?? "").trim();
+  return v || "Sin código logístico";
 }
 
 function row(m: EtiquetaMedicion): string {
@@ -386,8 +386,8 @@ function buildHtml(
         <div class="cap">Peso</div>
       </div>
       <div class="sap-qr">
-        <img src="${qrOrdenDataUrl}" alt="QR Orden de producción" />
-        <div class="cap">Orden de producción</div>
+        <img src="${qrOrdenDataUrl}" alt="QR Código logístico" />
+        <div class="cap">Código logístico</div>
       </div>
 
       <div class="sap-logo">
