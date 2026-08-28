@@ -64,21 +64,30 @@ async function cargarImagen(file: File): Promise<{ w: number; h: number; src: Ca
   }
 }
 
+const LIMITE_FOTO = 900_000;
+
 async function comprimir(file: File): Promise<File | null> {
   const img = await cargarImagen(file);
-  if (!img || !img.w || !img.h) return file.size <= 2_000_000 ? file : null;
-  const scale = Math.min(1, 1280 / Math.max(img.w, img.h));
+  if (!img || !img.w || !img.h) return file.size <= LIMITE_FOTO ? file : null;
+  const scale = Math.min(1, 1024 / Math.max(img.w, img.h));
   const canvas = document.createElement("canvas");
   canvas.width = Math.round(img.w * scale);
   canvas.height = Math.round(img.h * scale);
   const ctx = canvas.getContext("2d");
-  if (!ctx) return file.size <= 2_000_000 ? file : null;
+  if (!ctx) return file.size <= LIMITE_FOTO ? file : null;
   ctx.drawImage(img.src, 0, 0, canvas.width, canvas.height);
-  for (const q of [0.7, 0.5, 0.35]) {
+  for (const q of [0.6, 0.45, 0.3]) {
     const blob = await new Promise<Blob | null>((res) => canvas.toBlob((b) => res(b), "image/jpeg", q));
-    if (blob && blob.size <= 2_000_000) return new File([blob], "evidencia.jpg", { type: "image/jpeg" });
+    if (blob && blob.size <= LIMITE_FOTO) return new File([blob], "evidencia.jpg", { type: "image/jpeg" });
   }
   return null;
+}
+
+function conTiempoLimite<T>(p: Promise<T>, ms: number, msg: string): Promise<T> {
+  return Promise.race([
+    p,
+    new Promise<T>((_, rej) => setTimeout(() => rej(new Error(msg)), ms)),
+  ]);
 }
 
 function PesajePublicoPage() {
@@ -93,6 +102,7 @@ function PesajePublicoPage() {
   const [foto, setFoto] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [guardando, setGuardando] = useState(false);
+  const [procesandoFoto, setProcesandoFoto] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const infoQ = useQuery({
@@ -109,20 +119,41 @@ function PesajePublicoPage() {
   const info = infoQ.data;
   const pesoNum = peso.trim() === "" ? null : Number(peso.replace(",", "."));
   const pesoValido = pesoNum !== null && Number.isFinite(pesoNum) && pesoNum > 0 && pesoNum <= 3000;
-  const puedeGuardar = !!info?.ok && !!info.numero_rollo && pesoValido && !guardando;
+  const puedeGuardar =
+    !!info?.ok && !!info.numero_rollo && pesoValido && !guardando && !procesandoFoto;
+  const motivoBloqueo = !info?.numero_rollo
+    ? "La numeración automática no está disponible. Reporta al administrador."
+    : !pesoValido
+      ? "Captura el peso en kg para habilitar el botón."
+      : procesandoFoto
+        ? "Procesando la fotografía…"
+        : null;
 
   async function onFoto(f: File | null) {
     if (!f) return;
     setErrorMsg(null);
-    const c = await comprimir(f);
-    if (!c) {
+    setProcesandoFoto(true);
+    try {
+      const c = await conTiempoLimite(comprimir(f), 25_000, "TIMEOUT_FOTO");
+      if (!c) {
+        setFoto(null);
+        setPreview(null);
+        setErrorMsg(
+          "No fue posible preparar la fotografía en este teléfono. Puedes registrar el peso sin evidencia.",
+        );
+        return;
+      }
+      setFoto(c);
+      setPreview(URL.createObjectURL(c));
+    } catch {
       setFoto(null);
       setPreview(null);
-      setErrorMsg("La fotografía es demasiado pesada. Toma la foto de nuevo con menor resolución o registra el peso sin evidencia.");
-      return;
+      setErrorMsg(
+        "La fotografía tardó demasiado en procesarse. Puedes registrar el peso sin evidencia.",
+      );
+    } finally {
+      setProcesandoFoto(false);
     }
-    setFoto(c);
-    setPreview(URL.createObjectURL(c));
   }
 
   async function onGuardar() {
@@ -130,16 +161,27 @@ function PesajePublicoPage() {
     setGuardando(true);
     setErrorMsg(null);
     try {
-      const evidencia = foto ? await fileABase64(foto) : null;
-      const res = await registrar({
-        data: {
-          token,
-          numero_rollo: info.numero_rollo,
-          peso_bruto_kg: Math.trunc(pesoNum as number),
-          numero_orden: orden.trim() || null,
-          evidencia_base64: evidencia,
-        },
-      });
+      let evidencia: string | null = null;
+      if (foto) {
+        try {
+          evidencia = await conTiempoLimite(fileABase64(foto), 20_000, "TIMEOUT_FOTO");
+        } catch {
+          evidencia = null;
+        }
+      }
+      const res = await conTiempoLimite(
+        registrar({
+          data: {
+            token,
+            numero_rollo: info.numero_rollo,
+            peso_bruto_kg: Math.trunc(pesoNum as number),
+            numero_orden: orden.trim() || null,
+            evidencia_base64: evidencia,
+          },
+        }),
+        45_000,
+        "La conexión tardó demasiado. Verifica tu señal y vuelve a intentar; revisa la lista de abajo antes de repetir.",
+      );
       toast.success(`Rollo ${res.numero_rollo} registrado con ${res.peso_neto_kg} kg.`);
       setPeso("");
       setOrden("");
@@ -247,12 +289,21 @@ function PesajePublicoPage() {
               </div>
             ) : (
               <label className="mt-1 flex cursor-pointer items-center justify-center gap-2 rounded-md border border-dashed px-3 py-6 text-sm text-muted-foreground">
-                <Camera className="h-4 w-4" /> Tomar o adjuntar fotografía
+                {procesandoFoto ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" /> Procesando fotografía…
+                  </>
+                ) : (
+                  <>
+                    <Camera className="h-4 w-4" /> Tomar o adjuntar fotografía
+                  </>
+                )}
                 <input
                   type="file"
                   accept="image/*"
                   capture="environment"
                   className="hidden"
+                  disabled={procesandoFoto}
                   onChange={(e) => void onFoto(e.target.files?.[0] ?? null)}
                 />
               </label>
@@ -263,6 +314,10 @@ function PesajePublicoPage() {
             <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
               {errorMsg}
             </div>
+          )}
+
+          {!errorMsg && motivoBloqueo && (
+            <p className="text-xs text-muted-foreground">{motivoBloqueo}</p>
           )}
 
           <Button className="w-full" disabled={!puedeGuardar} onClick={() => void onGuardar()}>
