@@ -67,6 +67,8 @@ export type EtiquetaData = {
   } | null;
   numeroOrdenSap?: string | null;
   estadoSap?: string | null;
+  /** Código logístico capturado en Calidad (muestras_calidad.lote_logistico). */
+  loteLogistico?: string | null;
 };
 
 function fmtKg(value: number | string): string {
@@ -117,10 +119,10 @@ export function buildPayloadPeso(data: Pick<EtiquetaData, "mediciones">): string
   return fmtKg(med.valor);
 }
 
-/** Orden de producción: fuente canónica SAP; sin orden vinculada = texto oficial. */
-export function buildPayloadOrden(numeroOrdenSap: string | null | undefined): string {
-  const v = (numeroOrdenSap ?? "").trim();
-  return v || "Sin orden SAP vinculada";
+/** Código logístico: el tercer QR codifica el lote logístico capturado en Calidad. */
+export function buildPayloadLote(loteLogistico: string | null | undefined): string {
+  const v = (loteLogistico ?? "").trim();
+  return v || "Sin código logístico";
 }
 
 function row(m: EtiquetaMedicion): string {
@@ -144,7 +146,7 @@ function buildHtml(
   qrOrdenDataUrl: string,
   logoDataUrl: string,
   sapLogoDataUrl: string,
-  payloads: { rollo: string; peso: string; orden: string },
+  payloads: { rollo: string; peso: string; lote: string },
 ): string {
   const fechaImpresion = new Date().toLocaleString("es-MX");
   const estatusColor =
@@ -386,8 +388,8 @@ function buildHtml(
         <div class="cap">Peso</div>
       </div>
       <div class="sap-qr">
-        <img src="${qrOrdenDataUrl}" alt="QR Orden de producción" />
-        <div class="cap">Orden de producción</div>
+        <img src="${qrOrdenDataUrl}" alt="QR Código logístico" />
+        <div class="cap">Código logístico</div>
       </div>
 
       <div class="sap-logo">
@@ -427,16 +429,18 @@ export async function printEtiquetaLiberacion(data: EtiquetaData): Promise<void>
   const traceUrl = buildTraceUrl(data.muestraId);
 
 
-  // Enriquecer con datos SAP (N.º de orden + estado) si no vienen ya en `data`.
+  // Enriquecer con datos SAP (estado) y lote logístico si no vienen ya en `data`.
   let numeroOrdenSap: string | null = data.numeroOrdenSap ?? null;
   let estadoSap: string | null = data.estadoSap ?? null;
-  if (numeroOrdenSap == null || estadoSap == null) {
+  let loteLogistico: string | null = data.loteLogistico ?? null;
+  if (numeroOrdenSap == null || estadoSap == null || loteLogistico == null) {
     try {
       const { getMuestraTrace } = await import("@/lib/trace.functions");
       const trace = await getMuestraTrace({ data: { id: data.muestraId } });
       if (trace.found) {
         numeroOrdenSap = numeroOrdenSap ?? trace.numero_orden_sap ?? null;
         estadoSap = estadoSap ?? trace.estado_sap ?? null;
+        loteLogistico = loteLogistico ?? trace.lote_logistico ?? null;
       }
     } catch {
       /* no bloquear impresión si el trace falla */
@@ -446,7 +450,7 @@ export async function printEtiquetaLiberacion(data: EtiquetaData): Promise<void>
   // Payloads de los 3 QR inferiores: TEXTO PLANO, sin URL ni esquema URI.
   const payloadRollo = buildPayloadRollo(data);
   const payloadPeso = buildPayloadPeso(data);
-  const payloadOrden = buildPayloadOrden(numeroOrdenSap);
+  const payloadOrden = buildPayloadLote(loteLogistico);
 
   const [qrDataUrl, qrRolloDataUrl, qrPesoDataUrl, qrOrdenDataUrl, logoDataUrl, sapLogoDataUrl] =
     await Promise.all([
@@ -465,7 +469,7 @@ export async function printEtiquetaLiberacion(data: EtiquetaData): Promise<void>
     qrOrdenDataUrl,
     logoDataUrl,
     sapLogoDataUrl,
-    { rollo: payloadRollo, peso: payloadPeso, orden: payloadOrden },
+    { rollo: payloadRollo, peso: payloadPeso, lote: payloadOrden },
   );
 
   const w = window.open("", "_blank", "width=960,height=900");

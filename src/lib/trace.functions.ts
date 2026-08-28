@@ -26,6 +26,7 @@ export type TraceMuestra = {
   estado: string;
   estado_sap: string | null;
   numero_orden_sap: string | null;
+  lote_logistico: string | null;
   dictamen: string | null;
   estatus_liberacion: string | null;
   liberado_con_justificacion: boolean;
@@ -52,7 +53,7 @@ export const getMuestraTrace = createServerFn({ method: "GET" })
       .from("muestras_calidad")
       .select(
         `id, orden_id, hora_muestreo, capturado_at, turno, estado, dictamen, numero_rollo,
-         estatus_liberacion, defectos,
+         estatus_liberacion, defectos, lote_logistico,
          liberado_con_justificacion, liberacion_justificacion,
          observaciones_generales, jefe_maquina, operador, prensero, analista,
          producto:productos(codigo, nombre),
@@ -160,6 +161,7 @@ export const getMuestraTrace = createServerFn({ method: "GET" })
       estado: m.estado,
       estado_sap,
       numero_orden_sap,
+      lote_logistico: (m as { lote_logistico?: string | null }).lote_logistico ?? null,
       dictamen: m.dictamen,
       estatus_liberacion: (m as { estatus_liberacion?: string | null }).estatus_liberacion ?? null,
       liberado_con_justificacion: !!(m as { liberado_con_justificacion?: boolean }).liberado_con_justificacion,
