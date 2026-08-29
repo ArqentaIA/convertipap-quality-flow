@@ -714,38 +714,42 @@ function PesajeBobinaPage() {
         </header>
 
         <div className="grid gap-4 md:grid-cols-3">
-          {/* 1. Orden */}
-          <div>
-            <label className="mb-1 block text-xs font-medium text-muted-foreground">1. Orden de producción (opcional)</label>
-            <select
-              className="min-h-[48px] w-full rounded-md border border-input bg-background px-3 py-2 text-base"
-              value={ordenSel}
-              onChange={(e) => {
-                const v = e.target.value;
-                setOrdenSel(v);
-                if (v === "__otro__") setNumeroOrden(ordenOtro.trim());
-                else setNumeroOrden("");
-                setMaquinaId(""); setNumeroRollo(""); limpiarFoto();
-              }}
-            >
-              <option value="">Selecciona…</option>
-              <option value="__otro__">Otro (capturar manualmente)</option>
-              <option value="__sin__">Sin orden (temporal)</option>
+          {false && (
+            <>
+              {/* 1. Orden */}
+              <div>
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">1. Orden de producción (opcional)</label>
+                <select
+                  className="min-h-[48px] w-full rounded-md border border-input bg-background px-3 py-2 text-base"
+                  value={ordenSel}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setOrdenSel(v);
+                    if (v === "__otro__") setNumeroOrden(ordenOtro.trim());
+                    else setNumeroOrden("");
+                    setMaquinaId(""); setNumeroRollo(""); limpiarFoto();
+                  }}
+                >
+                  <option value="">Selecciona…</option>
+                  <option value="__otro__">Otro (capturar manualmente)</option>
+                  <option value="__sin__">Sin orden (temporal)</option>
 
-            </select>
-            {ordenSel === "__otro__" && (
-              <input
-                className="mt-2 min-h-[48px] w-full rounded-md border border-input bg-background px-3 py-2 text-base"
-                value={ordenOtro}
-                onChange={(e) => { const v = e.target.value.trim(); setOrdenOtro(v); setNumeroOrden(v); }}
-                placeholder="Número SAP"
-              />
-            )}
-          </div>
+                </select>
+                {ordenSel === "__otro__" && (
+                  <input
+                    className="mt-2 min-h-[48px] w-full rounded-md border border-input bg-background px-3 py-2 text-base"
+                    value={ordenOtro}
+                    onChange={(e) => { const v = e.target.value.trim(); setOrdenOtro(v); setNumeroOrden(v); }}
+                    placeholder="Número SAP"
+                  />
+                )}
+              </div>
+            </>
+          )}
 
-          {/* 2. Máquina */}
+          {/* 1. Máquina */}
           <div>
-            <label className="mb-1 block text-xs font-medium text-muted-foreground">2. Máquina *</label>
+            <label className="mb-1 block text-xs font-medium text-muted-foreground">1. Máquina *</label>
             <select
               className="min-h-[48px] w-full rounded-md border border-input bg-background px-3 py-2 text-base disabled:opacity-50"
               value={maquinaId}
@@ -755,9 +759,6 @@ function PesajeBobinaPage() {
               <option value="">Selecciona…</option>
               {maquinasQ.data?.map((m) => <option key={m.id} value={m.id}>{m.codigo}</option>)}
             </select>
-            {!puedeMaquina && (
-              <p className="mt-1 text-[11px] text-muted-foreground">Selecciona primero la Orden de producción.</p>
-            )}
             {maqCodigo && (
               <p className="mt-1 text-[11px] text-muted-foreground">Tara: {tara} kg</p>
             )}
