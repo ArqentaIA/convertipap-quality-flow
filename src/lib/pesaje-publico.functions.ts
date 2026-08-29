@@ -76,7 +76,7 @@ export const analizarPesoPublico = createServerFn({ method: "POST" })
     const raw = body?.output_text ?? body?.output?.flatMap((o) => o.content ?? []).find((c) => c.text)?.text;
     if (!raw) throw new Error("La lectura automática no devolvió un resultado.");
     const parsed = JSON.parse(raw) as LecturaPesoPublica;
-    if (!Number.isFinite(parsed.peso_kg) || parsed.peso_kg <= 0 || parsed.peso_kg > 3000) {
+    if (!Number.isFinite(parsed.peso_kg) || parsed.peso_kg <= 0 || parsed.peso_kg > 5000) {
       throw new Error("No fue posible leer un peso válido. Toma otra fotografía más cercana y sin reflejos.");
     }
     return { peso_kg: Math.round(parsed.peso_kg * 100) / 100, confianza: parsed.confianza };
@@ -160,7 +160,7 @@ export const registrarPesajePublico = createServerFn({ method: "POST" })
       .object({
         token: z.string().trim().min(16).max(128),
         numero_rollo: z.string().trim().min(1).max(64),
-        peso_bruto_kg: z.number().gt(300).max(3000),
+        peso_bruto_kg: z.number().gt(300).max(5000),
         numero_orden: z.string().trim().max(64).nullish(),
         evidencia_base64: z.string().min(100).max(4_000_000),
       })
