@@ -96,12 +96,10 @@ function buildTraceUrl(muestraId: string): string {
 }
 
 /**
- * Los 3 QR inferiores apuntan a una página pública que despliega únicamente
- * el logotipo y el dato correspondiente.
+ * Los 3 QR inferiores codifican TEXTO PLANO: únicamente el valor del dato,
+ * sin URL, sin etiquetas, sin espacios extra ni JSON. Si el dato está vacío
+ * no se genera QR y la etiqueta muestra "Dato no disponible".
  */
-function buildDatoUrl(tipo: "rollo" | "peso" | "lote", valor: string): string {
-  return `${TRACE_BASE_URL}/q/${tipo}/${encodeURIComponent(valor)}`;
-}
 
 function isPesoLabel(label: string): boolean {
   const s = label.trim().toLowerCase();
@@ -122,15 +120,15 @@ export function buildPayloadPeso(data: Pick<EtiquetaData, "mediciones">): string
   const med = (data.mediciones || []).find(
     (m) => m.clave?.trim().toLowerCase() === "peso" || isPesoLabel(m.etiqueta),
   );
-  // Sin medición oficial de peso no se codifica un número inventado.
-  if (!med || med.valor === null || med.valor === undefined) return "Sin peso registrado";
-  return fmtKg(med.valor);
+  // Sin medición oficial de peso no se genera QR (la etiqueta muestra "Dato no disponible").
+  if (!med || med.valor === null || med.valor === undefined) return "";
+  const v = fmtKg(med.valor);
+  return v === "—" ? "" : v;
 }
 
-/** Código logístico: el tercer QR codifica el lote logístico capturado en Calidad. */
+/** Código SAP: el tercer QR codifica el lote logístico (10 dígitos) capturado en Calidad. */
 export function buildPayloadLote(loteLogistico: string | null | undefined): string {
-  const v = (loteLogistico ?? "").trim();
-  return v || "Sin código logístico";
+  return (loteLogistico ?? "").trim();
 }
 
 function row(m: EtiquetaMedicion): string {
@@ -280,6 +278,7 @@ function buildHtml(
   .sap-footer .sap-qr{padding:10px 8px;display:flex;flex-direction:column;align-items:center;justify-content:center;border-right:1px solid #0f172a}
   .sap-footer .sap-qr:last-child{border-right:0}
   .sap-footer .sap-qr img{width:140px;height:140px;display:block;background:#fff;padding:4px}
+  .sap-footer .sap-qr .qr-na{width:140px;height:140px;display:flex;align-items:center;justify-content:center;background:#fff;border:1px dashed #94a3b8;color:#64748b;font-size:10px;font-weight:700;text-align:center;padding:8px}
   .sap-footer .sap-qr .cap{font-size:9px;color:#334155;margin-top:6px;text-align:center;letter-spacing:.1em;text-transform:uppercase;font-weight:800;line-height:1.2}
 
   .sap-logo{display:flex;align-items:center;justify-content:center;padding:10px}
@@ -388,15 +387,15 @@ function buildHtml(
 
     <div class="sap-footer">
       <div class="sap-qr">
-        <img src="${qrRolloDataUrl}" alt="QR N.º de rollo" />
+        ${qrRolloDataUrl ? `<img src="${qrRolloDataUrl}" alt="QR N.º de rollo" />` : `<div class="qr-na">Dato no disponible</div>`}
         <div class="cap">N.º de rollo</div>
       </div>
       <div class="sap-qr">
-        <img src="${qrPesoDataUrl}" alt="QR Peso" />
-        <div class="cap">Peso</div>
+        ${qrPesoDataUrl ? `<img src="${qrPesoDataUrl}" alt="QR Peso" />` : `<div class="qr-na">Dato no disponible</div>`}
+        <div class="cap">Peso (kg)</div>
       </div>
       <div class="sap-qr">
-        <img src="${qrOrdenDataUrl}" alt="QR Lote Logístico" />
+        ${qrOrdenDataUrl ? `<img src="${qrOrdenDataUrl}" alt="QR Lote Logístico" />` : `<div class="qr-na">Dato no disponible</div>`}
         <div class="cap">Lote Logístico</div>
       </div>
 
@@ -459,13 +458,18 @@ export async function printEtiquetaLiberacion(data: EtiquetaData): Promise<void>
   const payloadRollo = buildPayloadRollo(data);
   const payloadPeso = buildPayloadPeso(data);
   const payloadOrden = buildPayloadLote(loteLogistico);
+  // Si el dato está vacío no se genera QR; la etiqueta muestra "Dato no disponible".
+  const qrPlano = (valor: string) =>
+    valor
+      ? QRCode.toDataURL(valor, { margin: 2, width: 400, errorCorrectionLevel: "M" })
+      : Promise.resolve("");
 
   const [qrDataUrl, qrRolloDataUrl, qrPesoDataUrl, qrOrdenDataUrl, logoDataUrl, sapLogoDataUrl] =
     await Promise.all([
       QRCode.toDataURL(traceUrl, { margin: 1, width: 240, errorCorrectionLevel: "M" }),
-      QRCode.toDataURL(buildDatoUrl("rollo", payloadRollo), { margin: 2, width: 400, errorCorrectionLevel: "M" }),
-      QRCode.toDataURL(buildDatoUrl("peso", payloadPeso), { margin: 2, width: 400, errorCorrectionLevel: "M" }),
-      QRCode.toDataURL(buildDatoUrl("lote", payloadOrden), { margin: 2, width: 400, errorCorrectionLevel: "M" }),
+      qrPlano(payloadRollo),
+      qrPlano(payloadPeso),
+      qrPlano(payloadOrden),
       toDataUrl(logoUrl),
       toDataUrl(sapHanaAsset.url),
     ]);

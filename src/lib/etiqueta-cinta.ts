@@ -129,19 +129,11 @@ export type CintaLabelData = {
   trace_url: string | null;
   sap_url: string | null;
   lote_logistico: string | null;
-  /** URLs públicas de los 3 QR inferiores (mismo esquema que la etiqueta de rollo). */
+  /** Payloads de TEXTO PLANO de los 3 QR inferiores (sin URL, sin JSON). */
   url_qr_rollo: string;
   url_qr_peso: string;
   url_qr_lote: string;
 };
-
-/**
- * Página pública minimalista: logotipo + un solo dato. Mismo esquema que la
- * etiqueta de liberación de rollo. Aplica a ambas plantas.
- */
-function buildDatoUrl(tipo: "rollo" | "peso" | "lote", valor: string): string {
-  return `${TRACE_BASE_URL}/q/${tipo}/${encodeURIComponent(valor)}`;
-}
 
 const SIN_DATOS = /^\s*(sin datos registrados|—|-)?\s*$/i;
 function limpio(v: string | null | undefined): string | null {
@@ -257,9 +249,14 @@ export function buildCintaLabelData(snap: EtiquetaSnapshot, cinta: EtiquetaCinta
     url_qr_lote: "",
   };
 
-  data.url_qr_rollo = buildDatoUrl("rollo", data.numero_rollo_etiqueta);
-  data.url_qr_peso = buildDatoUrl("peso", `${fmtKg(data.peso_cinta_kg)} kg`);
-  data.url_qr_lote = buildDatoUrl("lote", data.lote_logistico ?? "Sin lote logístico");
+  // TEXTO PLANO: solo el valor del dato. Si está vacío, no se genera QR y la
+  // etiqueta muestra "Dato no disponible".
+  data.url_qr_rollo = String(data.numero_rollo_etiqueta ?? "").trim();
+  {
+    const p = fmtKg(data.peso_cinta_kg);
+    data.url_qr_peso = p === "—" ? "" : p;
+  }
+  data.url_qr_lote = (data.lote_logistico ?? "").trim();
 
   data.qr_payload = {
     version_esquema_qr: 1,
@@ -403,15 +400,15 @@ function renderEtiqueta(d: CintaLabelData, snap: EtiquetaSnapshot, assets: Asset
 
       <div class="lbl-qr-zone">
         <div class="qr-box">
-          <img src="${assets.qrRollo}" alt="QR N.º de rollo / cinta" />
+          ${assets.qrRollo ? `<img src="${assets.qrRollo}" alt="QR N.º de rollo / cinta" />` : `<div class="qr-na">Dato no disponible</div>`}
           <div class="qr-cap">N.º de rollo</div>
         </div>
         <div class="qr-box">
-          <img src="${assets.qrPeso}" alt="QR Peso" />
-          <div class="qr-cap">Peso</div>
+          ${assets.qrPeso ? `<img src="${assets.qrPeso}" alt="QR Peso" />` : `<div class="qr-na">Dato no disponible</div>`}
+          <div class="qr-cap">Peso (kg)</div>
         </div>
         <div class="qr-box">
-          <img src="${assets.qrLote}" alt="QR Lote Logístico" />
+          ${assets.qrLote ? `<img src="${assets.qrLote}" alt="QR Lote Logístico" />` : `<div class="qr-na">Dato no disponible</div>`}
           <div class="qr-cap">Lote Logístico</div>
         </div>
         <div class="qr-sap"><img src="${assets.sapLogo}" alt="SAP HANA" /></div>
@@ -431,13 +428,16 @@ export async function abrirImpresionEtiquetas(snap: EtiquetaSnapshot): Promise<v
   ]);
 
   // El QR se regenera SIEMPRE con los datos vigentes de cada cinta.
+  // Si el dato está vacío no se genera QR; la etiqueta muestra "Dato no disponible".
+  const qrPlano = (valor: string, opts: { margin: number; width: number; errorCorrectionLevel: "M" }) =>
+    valor ? QRCode.toDataURL(valor, opts) : Promise.resolve("");
   const etiquetas = await Promise.all(
     datos.map(async (d) => {
       const opts = { margin: 1, width: 220, errorCorrectionLevel: "M" as const };
       const [qrRollo, qrPeso, qrLote] = await Promise.all([
-        QRCode.toDataURL(d.url_qr_rollo, opts),
-        QRCode.toDataURL(d.url_qr_peso, opts),
-        QRCode.toDataURL(d.url_qr_lote, opts),
+        qrPlano(d.url_qr_rollo, opts),
+        qrPlano(d.url_qr_peso, opts),
+        qrPlano(d.url_qr_lote, opts),
       ]);
       return renderEtiqueta(d, snap, { logo: logoDataUrl, sapLogo: sapLogoDataUrl, qrRollo, qrPeso, qrLote });
     }),
@@ -503,6 +503,7 @@ export async function abrirImpresionEtiquetas(snap: EtiquetaSnapshot): Promise<v
   .lbl-qr-zone { margin-top: auto; padding-top: 1.5mm; border-top: 0.3mm solid #555; display: flex; justify-content: space-around; align-items: flex-end; gap: 4mm; }
   .lbl-qr-zone .qr-box { display: flex; flex-direction: column; align-items: center; gap: 0.8mm; }
   .lbl-qr-zone .qr-box img { width: 20mm; height: 20mm; display: block; }
+  .lbl-qr-zone .qr-box .qr-na { width: 20mm; height: 20mm; display: flex; align-items: center; justify-content: center; border: 0.3mm dashed #999; color: #666; font-size: 6pt; font-weight: 700; text-align: center; padding: 1mm; }
   .lbl-qr-zone .qr-cap { font-size: 6.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: #111; display: flex; align-items: center; justify-content: center; height: 4mm; }
   .lbl-qr-zone .qr-saplogo { width: auto !important; height: 4mm !important; max-width: 22mm; object-fit: contain; }
   .lbl-qr-zone .qr-box img { width: 17mm; height: 17mm; }
