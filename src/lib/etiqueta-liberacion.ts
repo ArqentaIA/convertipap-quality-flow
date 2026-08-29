@@ -395,8 +395,8 @@ function buildHtml(
         <div class="cap">Peso (kg)</div>
       </div>
       <div class="sap-qr">
-        ${qrOrdenDataUrl ? `<img src="${qrOrdenDataUrl}" alt="QR Código SAP" />` : `<div class="qr-na">Dato no disponible</div>`}
-        <div class="cap">Código SAP</div>
+        ${qrOrdenDataUrl ? `<img src="${qrOrdenDataUrl}" alt="QR Lote Logístico" />` : `<div class="qr-na">Dato no disponible</div>`}
+        <div class="cap">Lote Logístico</div>
       </div>
 
       <div class="sap-logo">
