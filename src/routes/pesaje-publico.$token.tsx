@@ -7,6 +7,7 @@ import { Loader2, Scale, Camera, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   validarEnlacePesaje,
@@ -106,6 +107,7 @@ function PesajePublicoPage() {
   const [guardando, setGuardando] = useState(false);
   const [procesandoFoto, setProcesandoFoto] = useState(false);
   const [pesoDetectado, setPesoDetectado] = useState<number | null>(null);
+  const [pesoConfirmado, setPesoConfirmado] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const infoQ = useQuery({
@@ -123,7 +125,7 @@ function PesajePublicoPage() {
   const pesoNum = peso.trim() === "" ? null : Number(peso.replace(",", "."));
   const pesoValido = pesoNum !== null && Number.isFinite(pesoNum) && pesoNum > 300 && pesoNum <= 3000;
   const puedeGuardar =
-    !!info?.ok && !!info.numero_rollo && pesoValido && !guardando && !procesandoFoto;
+    !!info?.ok && !!info.numero_rollo && !!foto && pesoValido && pesoConfirmado && !guardando && !procesandoFoto;
   const motivoBloqueo = !info?.numero_rollo
     ? "La numeración automática no está disponible. Reporta al administrador."
     : !pesoValido
@@ -141,9 +143,7 @@ function PesajePublicoPage() {
       if (!c) {
         setFoto(null);
         setPreview(null);
-        setErrorMsg(
-          "No fue posible preparar la fotografía en este teléfono. Puedes registrar el peso sin evidencia.",
-        );
+        setErrorMsg("No fue posible preparar la fotografía en este teléfono. Toma otra fotografía.");
         return;
       }
       setFoto(c);
@@ -156,11 +156,13 @@ function PesajePublicoPage() {
       );
       setPeso(String(lectura.peso_kg));
       setPesoDetectado(lectura.peso_kg);
+      setPesoConfirmado(false);
     } catch {
       setFoto(null);
       setPreview(null);
       setPeso("");
       setPesoDetectado(null);
+      setPesoConfirmado(false);
       setErrorMsg(
         "No fue posible leer el peso de la fotografía. Tómala nuevamente, más cerca y sin reflejos.",
       );
@@ -181,7 +183,7 @@ function PesajePublicoPage() {
           data: {
             token,
             numero_rollo: info.numero_rollo,
-            peso_bruto_kg: Math.trunc(pesoNum as number),
+            peso_bruto_kg: pesoNum as number,
             numero_orden: orden.trim() || null,
             evidencia_base64: evidencia,
           },
@@ -195,6 +197,7 @@ function PesajePublicoPage() {
       setFoto(null);
       setPreview(null);
       setPesoDetectado(null);
+      setPesoConfirmado(false);
       await qc.invalidateQueries({ queryKey: ["pesaje-publico"] });
     } catch (e) {
       const msg = (e as Error).message || "No fue posible registrar el peso.";
@@ -295,6 +298,7 @@ function PesajePublicoPage() {
                     setPreview(null);
                     setPeso("");
                     setPesoDetectado(null);
+                    setPesoConfirmado(false);
                   }}
                 >
                   <X className="mr-1 h-4 w-4" /> Quitar foto
@@ -322,6 +326,19 @@ function PesajePublicoPage() {
               </label>
             )}
           </div>
+
+          {pesoDetectado !== null && pesoValido && (
+            <div className="flex items-start gap-2 rounded-md border p-3">
+              <Checkbox
+                id="confirmar-peso"
+                checked={pesoConfirmado}
+                onCheckedChange={(checked) => setPesoConfirmado(checked === true)}
+              />
+              <Label htmlFor="confirmar-peso" className="cursor-pointer text-sm leading-5">
+                Confirmo que el display de la fotografía muestra {pesoDetectado} kg.
+              </Label>
+            </div>
+          )}
 
           {errorMsg && (
             <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
