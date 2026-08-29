@@ -278,6 +278,7 @@ function buildHtml(
   .sap-footer .sap-qr{padding:10px 8px;display:flex;flex-direction:column;align-items:center;justify-content:center;border-right:1px solid #0f172a}
   .sap-footer .sap-qr:last-child{border-right:0}
   .sap-footer .sap-qr img{width:140px;height:140px;display:block;background:#fff;padding:4px}
+  .sap-footer .sap-qr .qr-na{width:140px;height:140px;display:flex;align-items:center;justify-content:center;background:#fff;border:1px dashed #94a3b8;color:#64748b;font-size:10px;font-weight:700;text-align:center;padding:8px}
   .sap-footer .sap-qr .cap{font-size:9px;color:#334155;margin-top:6px;text-align:center;letter-spacing:.1em;text-transform:uppercase;font-weight:800;line-height:1.2}
 
   .sap-logo{display:flex;align-items:center;justify-content:center;padding:10px}
