@@ -1218,6 +1218,13 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
       ];
       const faltantesEncabezado = camposEncabezado.filter((c) => !String(c.valor ?? "").trim());
       const medicionesFaltantes = evalMediciones.filter((m) => m.input.valor === "");
+      const pesoInvalido = evalMediciones.find(
+        (m) => m.spec.clave.trim().toLowerCase() === "peso" && (!Number.isFinite(m.num) || m.num <= 0),
+      );
+      if (pesoInvalido) {
+        toast.error("El Peso del rollo es obligatorio y debe ser mayor a 0 kg. No se guardó el registro.");
+        return;
+      }
       const totalFaltantes = faltantesEncabezado.length + medicionesFaltantes.length;
       if (totalFaltantes > 0) {
         const detalle = [

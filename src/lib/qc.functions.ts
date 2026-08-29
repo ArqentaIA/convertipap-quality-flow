@@ -545,6 +545,33 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
     const roles = await getUserRoles(sb, userId);
     requireAnyRole(roles, ROLES_CAPTURA);
 
+    const medicionPeso = data.mediciones.find(
+      (m) => m.variable_clave.trim().toLowerCase() === "peso",
+    );
+    if (!medicionPeso || !Number.isFinite(medicionPeso.valor) || medicionPeso.valor <= 0) {
+      throw new Error(
+        "El Peso del rollo es obligatorio y debe ser mayor a 0 kg. No se asignó ningún número de rollo.",
+      );
+    }
+
+    if (data.numero_rollo_pesaje) {
+      const { data: pesajeOrigen, error: pesajeError } = await sb
+        .from("pesajes_bobina_madre")
+        .select("id, maquina_id, numero_rollo, peso_neto_kg")
+        .eq("maquina_id", data.maquina_id)
+        .eq("numero_rollo", data.numero_rollo_pesaje.trim())
+        .maybeSingle();
+      if (pesajeError) throw new Error(pesajeError.message);
+      if (!pesajeOrigen) {
+        throw new Error("El pesaje seleccionado ya no está disponible. Actualiza la lista antes de guardar.");
+      }
+      if (Math.abs(Number(pesajeOrigen.peso_neto_kg) - medicionPeso.valor) > 0.01) {
+        throw new Error(
+          `El Peso debe coincidir con el pesaje de origen (${Number(pesajeOrigen.peso_neto_kg)} kg).`,
+        );
+      }
+    }
+
     // Validación específica del módulo "Captura fuera de turno":
     // requiere motivo (≥10 chars) y limita la fecha a ±24h respecto a ahora.
     const motivoFueraTurnoTrim = (data.fuera_de_turno_motivo ?? "").trim();

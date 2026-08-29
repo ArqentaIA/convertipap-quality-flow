@@ -101,7 +101,8 @@ export const vincularPesajeMuestra = createServerFn({ method: "POST" })
       .select("id, numero_rollo, maquina_id, orden_id, pesaje_id")
       .eq("id", data.muestra_id).maybeSingle();
     if (!m) throw new Error("Muestra no encontrada.");
-    if (m.pesaje_id) throw new Error("La muestra ya tiene un pesaje vinculado.");
+    if (m.pesaje_id === data.pesaje_id) return { ok: true };
+    if (m.pesaje_id) throw new Error("La muestra ya tiene otro pesaje vinculado.");
 
     // El pesaje se lee con service role porque el capturista de calidad no
     // tiene permisos SELECT sobre pesajes_bobina_madre. Sólo lo usamos para

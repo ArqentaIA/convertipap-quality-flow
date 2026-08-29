@@ -7,11 +7,13 @@ import { Loader2, Scale, Camera, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   validarEnlacePesaje,
   listarPesajesEnlace,
   registrarPesajePublico,
+  analizarPesoPublico,
 } from "@/lib/pesaje-publico.functions";
 import { fechaCortoMX, horaMX } from "@/lib/format";
 
@@ -96,6 +98,7 @@ function PesajePublicoPage() {
   const validar = useServerFn(validarEnlacePesaje);
   const listar = useServerFn(listarPesajesEnlace);
   const registrar = useServerFn(registrarPesajePublico);
+  const analizar = useServerFn(analizarPesoPublico);
 
   const [peso, setPeso] = useState("");
   const [orden, setOrden] = useState("");
@@ -103,6 +106,8 @@ function PesajePublicoPage() {
   const [preview, setPreview] = useState<string | null>(null);
   const [guardando, setGuardando] = useState(false);
   const [procesandoFoto, setProcesandoFoto] = useState(false);
+  const [pesoDetectado, setPesoDetectado] = useState<number | null>(null);
+  const [pesoConfirmado, setPesoConfirmado] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const infoQ = useQuery({
@@ -118,15 +123,19 @@ function PesajePublicoPage() {
 
   const info = infoQ.data;
   const pesoNum = peso.trim() === "" ? null : Number(peso.replace(",", "."));
-  const pesoValido = pesoNum !== null && Number.isFinite(pesoNum) && pesoNum > 0 && pesoNum <= 3000;
+  const pesoValido = pesoNum !== null && Number.isFinite(pesoNum) && pesoNum > 300 && pesoNum <= 3000;
   const puedeGuardar =
-    !!info?.ok && !!info.numero_rollo && pesoValido && !guardando && !procesandoFoto;
+    !!info?.ok && !!info.numero_rollo && !!foto && pesoValido && pesoConfirmado && !guardando && !procesandoFoto;
   const motivoBloqueo = !info?.numero_rollo
     ? "La numeración automática no está disponible. Reporta al administrador."
+    : procesandoFoto
+      ? "Procesando y leyendo la fotografía…"
+      : !foto
+        ? "Toma una fotografía del display para leer el peso."
     : !pesoValido
-      ? "Captura el peso en kg para habilitar el botón."
-      : procesandoFoto
-        ? "Procesando la fotografía…"
+      ? "No se detectó un peso válido; toma otra fotografía."
+      : !pesoConfirmado
+        ? "Confirma que el peso detectado coincide con el display."
         : null;
 
   async function onFoto(f: File | null) {
@@ -138,18 +147,28 @@ function PesajePublicoPage() {
       if (!c) {
         setFoto(null);
         setPreview(null);
-        setErrorMsg(
-          "No fue posible preparar la fotografía en este teléfono. Puedes registrar el peso sin evidencia.",
-        );
+        setErrorMsg("No fue posible preparar la fotografía en este teléfono. Toma otra fotografía.");
         return;
       }
       setFoto(c);
       setPreview(URL.createObjectURL(c));
+      const base64 = await conTiempoLimite(fileABase64(c), 20_000, "TIMEOUT_FOTO");
+      const lectura = await conTiempoLimite(
+        analizar({ data: { token, imagen_base64: base64 } }),
+        60_000,
+        "La lectura automática tardó demasiado. Toma otra fotografía e intenta nuevamente.",
+      );
+      setPeso(String(lectura.peso_kg));
+      setPesoDetectado(lectura.peso_kg);
+      setPesoConfirmado(false);
     } catch {
       setFoto(null);
       setPreview(null);
+      setPeso("");
+      setPesoDetectado(null);
+      setPesoConfirmado(false);
       setErrorMsg(
-        "La fotografía tardó demasiado en procesarse. Puedes registrar el peso sin evidencia.",
+        "No fue posible leer el peso de la fotografía. Tómala nuevamente, más cerca y sin reflejos.",
       );
     } finally {
       setProcesandoFoto(false);
@@ -161,20 +180,14 @@ function PesajePublicoPage() {
     setGuardando(true);
     setErrorMsg(null);
     try {
-      let evidencia: string | null = null;
-      if (foto) {
-        try {
-          evidencia = await conTiempoLimite(fileABase64(foto), 20_000, "TIMEOUT_FOTO");
-        } catch {
-          evidencia = null;
-        }
-      }
+      if (!foto) throw new Error("La fotografía es obligatoria para registrar el peso.");
+      const evidencia = await conTiempoLimite(fileABase64(foto), 20_000, "TIMEOUT_FOTO");
       const res = await conTiempoLimite(
         registrar({
           data: {
             token,
             numero_rollo: info.numero_rollo,
-            peso_bruto_kg: Math.trunc(pesoNum as number),
+            peso_bruto_kg: pesoNum as number,
             numero_orden: orden.trim() || null,
             evidencia_base64: evidencia,
           },
@@ -187,6 +200,8 @@ function PesajePublicoPage() {
       setOrden("");
       setFoto(null);
       setPreview(null);
+      setPesoDetectado(null);
+      setPesoConfirmado(false);
       await qc.invalidateQueries({ queryKey: ["pesaje-publico"] });
     } catch (e) {
       const msg = (e as Error).message || "No fue posible registrar el peso.";
@@ -255,13 +270,16 @@ function PesajePublicoPage() {
             <Input
               id="peso"
               inputMode="numeric"
+              readOnly
               value={peso}
-              onChange={(e) => setPeso(e.target.value)}
-              placeholder="Ej. 1250"
-              className="mt-1 text-lg"
+              placeholder="Se completa al leer la fotografía"
+              className="mt-1 bg-muted text-lg font-semibold"
             />
+            {pesoDetectado !== null && (
+              <p className="mt-1 text-xs text-muted-foreground">Peso detectado automáticamente. Verifica que coincida con el display.</p>
+            )}
             {peso.trim() !== "" && !pesoValido && (
-              <p className="mt-1 text-xs text-destructive">Captura un peso entre 1 y 3000 kg.</p>
+              <p className="mt-1 text-xs text-destructive">El peso detectado debe ser mayor a 300 y no exceder 3000 kg.</p>
             )}
           </div>
 
@@ -271,7 +289,7 @@ function PesajePublicoPage() {
           </div>
 
           <div>
-            <Label>Evidencia fotográfica (opcional)</Label>
+            <Label>Evidencia fotográfica (obligatoria)</Label>
             {preview ? (
               <div className="mt-1 space-y-2">
                 <img src={preview} alt="Evidencia del display de la báscula" className="w-full rounded-md border" />
@@ -282,6 +300,9 @@ function PesajePublicoPage() {
                   onClick={() => {
                     setFoto(null);
                     setPreview(null);
+                    setPeso("");
+                    setPesoDetectado(null);
+                    setPesoConfirmado(false);
                   }}
                 >
                   <X className="mr-1 h-4 w-4" /> Quitar foto
@@ -309,6 +330,19 @@ function PesajePublicoPage() {
               </label>
             )}
           </div>
+
+          {pesoDetectado !== null && pesoValido && (
+            <div className="flex items-start gap-2 rounded-md border p-3">
+              <Checkbox
+                id="confirmar-peso"
+                checked={pesoConfirmado}
+                onCheckedChange={(checked) => setPesoConfirmado(checked === true)}
+              />
+              <Label htmlFor="confirmar-peso" className="cursor-pointer text-sm leading-5">
+                Confirmo que el display de la fotografía muestra {pesoDetectado} kg.
+              </Label>
+            </div>
+          )}
 
           {errorMsg && (
             <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
