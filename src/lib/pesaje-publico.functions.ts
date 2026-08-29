@@ -26,7 +26,63 @@ export type PesajePublicoRow = {
   fecha_hora_pesaje: string;
 };
 
+export type LecturaPesoPublica = {
+  peso_kg: number;
+  confianza: number;
+};
+
 const tokenSchema = z.object({ token: z.string().trim().min(16).max(128) });
+
+export const analizarPesoPublico = createServerFn({ method: "POST" })
+  .inputValidator((d) =>
+    z.object({
+      token: z.string().trim().min(16).max(128),
+      imagen_base64: z.string().min(100).max(4_000_000),
+    }).parse(d),
+  )
+  .handler(async ({ data }): Promise<LecturaPesoPublica> => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: enlace } = await supabaseAdmin
+      .from("enlaces_pesaje_publico")
+      .select("expira_at, activo")
+      .eq("token", data.token)
+      .maybeSingle();
+    if (!enlace?.activo || new Date(enlace.expira_at as string).getTime() < Date.now()) {
+      throw new Error("El enlace no es válido o ya expiró.");
+    }
+
+    const apiKey = process.env["LOVABLE_API_KEY"];
+    if (!apiKey) throw new Error("El servicio de lectura automática no está configurado.");
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Lovable-API-Key": apiKey },
+      body: JSON.stringify({
+        model: "openai/gpt-5.6-sol",
+        service_tier: "priority",
+        input: [{
+          role: "user",
+          content: [
+            { type: "input_text", text: "Lee únicamente el peso principal mostrado en el display de esta báscula. Responde JSON estricto con peso_kg numérico y confianza de 0 a 100. No confundas otros números del display. Si no es legible, usa peso_kg 0." },
+            { type: "input_image", image_url: `data:image/jpeg;base64,${data.imagen_base64}` },
+          ],
+        }],
+        text: { format: { type: "json_schema", name: "lectura_peso", strict: true, schema: { type: "object", properties: { peso_kg: { type: "number" }, confianza: { type: "number" } }, required: ["peso_kg", "confianza"], additionalProperties: false } } },
+      }),
+    });
+    const body = await response.json().catch(() => null) as {
+      output_text?: string;
+      output?: Array<{ content?: Array<{ text?: string }> }>;
+      message?: string;
+    } | null;
+    if (!response.ok) throw new Error(body?.message ?? `La lectura automática falló (HTTP ${response.status}).`);
+    const raw = body?.output_text ?? body?.output?.flatMap((o) => o.content ?? []).find((c) => c.text)?.text;
+    if (!raw) throw new Error("La lectura automática no devolvió un resultado.");
+    const parsed = JSON.parse(raw) as LecturaPesoPublica;
+    if (!Number.isFinite(parsed.peso_kg) || parsed.peso_kg <= 0 || parsed.peso_kg > 3000) {
+      throw new Error("No fue posible leer un peso válido. Toma otra fotografía más cercana y sin reflejos.");
+    }
+    return { peso_kg: Math.round(parsed.peso_kg * 100) / 100, confianza: parsed.confianza };
+  });
 
 export const validarEnlacePesaje = createServerFn({ method: "POST" })
   .inputValidator((d) => tokenSchema.parse(d))
