@@ -376,14 +376,14 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
 
   const ahoraLocal = useMemo(() => toLocalDateTimeInputValue(new Date()), []);
   const [numeroRollo, setNumeroRollo] = useState<string>("");
-  // Sufijo automático según máquina: MP-04→"4", MP-05→"5", etc.
+  // Sufijo automático según máquina: MP-04→"4", MP-05→"5", MP-10→"10", etc.
   const sufijoMaq = useMemo(() => {
-    const m = /(\d)$/.exec(maquina.codigo);
-    return m ? m[1] : "";
+    const m = /-?(\d{1,2})$/.exec(maquina.codigo);
+    return m ? String(Number(m[1])) : "";
   }, [maquina.codigo]);
   const baseRollo = useMemo(() => {
     if (!numeroRollo) return "";
-    const m = /^(.*)-(\d)$/.exec(numeroRollo);
+    const m = /^(.*)-(\d{1,2})$/.exec(numeroRollo);
     return m ? m[1] : numeroRollo;
   }, [numeroRollo]);
   // Auto-corrige el sufijo cuando cambia la máquina.
@@ -391,7 +391,7 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
     if (!sufijoMaq) return;
     setNumeroRollo((prev) => {
       if (!prev) return prev;
-      const m = /^(.*)-(\d)$/.exec(prev);
+      const m = /^(.*)-(\d{1,2})$/.exec(prev);
       if (m) {
         if (m[2] !== sufijoMaq) {
           toast.info(`Sufijo de rollo corregido a -${sufijoMaq} para ${maquina.codigo}`);
@@ -1152,7 +1152,7 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
       toast.error("El número de rollo solo puede usar letras, números y guion"); return;
     }
     if (modo === "envio" && sufijoMaq && rolloNormalizado) {
-      const m = /^(.*)-(\d)$/.exec(rolloNormalizado);
+      const m = /^(.*)-(\d{1,2})$/.exec(rolloNormalizado);
       if (m && m[2] !== sufijoMaq) {
         toast.error(
           `Sufijo inválido: ${maquina.codigo} requiere -${sufijoMaq}. Capturaste -${m[2]}. Corrige o deja sólo el número base para que se complete automáticamente.`,
