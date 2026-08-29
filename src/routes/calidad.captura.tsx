@@ -648,9 +648,15 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
     queryKey: ["pesajes-pendientes-captura", maquina.id],
     queryFn: () => listarPendientesFn({ data: { maquina_id: maquina.id } }),
     enabled: !!maquina.id,
-    staleTime: 15_000,
+    staleTime: 0,
+    // Otro usuario puede registrar el pesaje mientras esta pantalla ya está
+    // abierta: refrescamos periódicamente y al volver el foco a la ventana.
+    refetchInterval: 10_000,
+    refetchOnWindowFocus: true,
+    refetchOnMount: "always",
     retry: false,
   });
+
   const pesajesPendientes = pendientesQuery.data ?? [];
 
   // ---- Lote Logístico (10 dígitos) — exclusivo Planta Ixtapaluca ------------
