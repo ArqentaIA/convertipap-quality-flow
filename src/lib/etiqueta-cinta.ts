@@ -129,19 +129,11 @@ export type CintaLabelData = {
   trace_url: string | null;
   sap_url: string | null;
   lote_logistico: string | null;
-  /** URLs públicas de los 3 QR inferiores (mismo esquema que la etiqueta de rollo). */
+  /** Payloads de TEXTO PLANO de los 3 QR inferiores (sin URL, sin JSON). */
   url_qr_rollo: string;
   url_qr_peso: string;
   url_qr_lote: string;
 };
-
-/**
- * Página pública minimalista: logotipo + un solo dato. Mismo esquema que la
- * etiqueta de liberación de rollo. Aplica a ambas plantas.
- */
-function buildDatoUrl(tipo: "rollo" | "peso" | "lote", valor: string): string {
-  return `${TRACE_BASE_URL}/q/${tipo}/${encodeURIComponent(valor)}`;
-}
 
 const SIN_DATOS = /^\s*(sin datos registrados|—|-)?\s*$/i;
 function limpio(v: string | null | undefined): string | null {
