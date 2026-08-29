@@ -386,15 +386,15 @@ function buildHtml(
 
     <div class="sap-footer">
       <div class="sap-qr">
-        <img src="${qrRolloDataUrl}" alt="QR N.º de rollo" />
+        ${qrRolloDataUrl ? `<img src="${qrRolloDataUrl}" alt="QR N.º de rollo" />` : `<div class="qr-na">Dato no disponible</div>`}
         <div class="cap">N.º de rollo</div>
       </div>
       <div class="sap-qr">
-        <img src="${qrPesoDataUrl}" alt="QR Peso" />
-        <div class="cap">Peso</div>
+        ${qrPesoDataUrl ? `<img src="${qrPesoDataUrl}" alt="QR Peso" />` : `<div class="qr-na">Dato no disponible</div>`}
+        <div class="cap">Peso (kg)</div>
       </div>
       <div class="sap-qr">
-        <img src="${qrOrdenDataUrl}" alt="QR Lote Logístico" />
+        ${qrOrdenDataUrl ? `<img src="${qrOrdenDataUrl}" alt="QR Lote Logístico" />` : `<div class="qr-na">Dato no disponible</div>`}
         <div class="cap">Lote Logístico</div>
       </div>
 
