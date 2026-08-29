@@ -121,7 +121,7 @@ function PesajePublicoPage() {
 
   const info = infoQ.data;
   const pesoNum = peso.trim() === "" ? null : Number(peso.replace(",", "."));
-  const pesoValido = pesoNum !== null && Number.isFinite(pesoNum) && pesoNum > 0 && pesoNum <= 3000;
+  const pesoValido = pesoNum !== null && Number.isFinite(pesoNum) && pesoNum >= 100 && pesoNum <= 3000;
   const puedeGuardar =
     !!info?.ok && !!info.numero_rollo && pesoValido && !guardando && !procesandoFoto;
   const motivoBloqueo = !info?.numero_rollo
@@ -174,14 +174,8 @@ function PesajePublicoPage() {
     setGuardando(true);
     setErrorMsg(null);
     try {
-      let evidencia: string | null = null;
-      if (foto) {
-        try {
-          evidencia = await conTiempoLimite(fileABase64(foto), 20_000, "TIMEOUT_FOTO");
-        } catch {
-          evidencia = null;
-        }
-      }
+      if (!foto) throw new Error("La fotografía es obligatoria para registrar el peso.");
+      const evidencia = await conTiempoLimite(fileABase64(foto), 20_000, "TIMEOUT_FOTO");
       const res = await conTiempoLimite(
         registrar({
           data: {
@@ -269,7 +263,6 @@ function PesajePublicoPage() {
             <Input
               id="peso"
               inputMode="numeric"
-              value={peso}
               readOnly
               value={peso}
               placeholder="Se completa al leer la fotografía"
@@ -279,7 +272,7 @@ function PesajePublicoPage() {
               <p className="mt-1 text-xs text-muted-foreground">Peso detectado automáticamente. Verifica que coincida con el display.</p>
             )}
             {peso.trim() !== "" && !pesoValido && (
-              <p className="mt-1 text-xs text-destructive">Captura un peso entre 1 y 3000 kg.</p>
+              <p className="mt-1 text-xs text-destructive">El peso detectado debe estar entre 100 y 3000 kg.</p>
             )}
           </div>
 

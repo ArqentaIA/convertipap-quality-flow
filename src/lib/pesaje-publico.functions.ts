@@ -31,8 +31,6 @@ export type LecturaPesoPublica = {
   confianza: number;
 };
 
-const tokenSchema = z.object({ token: z.string().trim().min(16).max(128) });
-
 export const analizarPesoPublico = createServerFn({ method: "POST" })
   .inputValidator((d) =>
     z.object({
@@ -85,7 +83,7 @@ export const analizarPesoPublico = createServerFn({ method: "POST" })
   });
 
 export const validarEnlacePesaje = createServerFn({ method: "POST" })
-  .inputValidator((d) => tokenSchema.parse(d))
+  .inputValidator((d) => z.object({ token: z.string().trim().min(16).max(128) }).parse(d))
   .handler(async ({ data }): Promise<EnlacePesajeInfo> => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: enlace } = await supabaseAdmin
@@ -130,7 +128,7 @@ export const validarEnlacePesaje = createServerFn({ method: "POST" })
   });
 
 export const listarPesajesEnlace = createServerFn({ method: "POST" })
-  .inputValidator((d) => tokenSchema.parse(d))
+  .inputValidator((d) => z.object({ token: z.string().trim().min(16).max(128) }).parse(d))
   .handler(async ({ data }): Promise<PesajePublicoRow[]> => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: enlace } = await supabaseAdmin
@@ -162,9 +160,9 @@ export const registrarPesajePublico = createServerFn({ method: "POST" })
       .object({
         token: z.string().trim().min(16).max(128),
         numero_rollo: z.string().trim().min(1).max(64),
-        peso_bruto_kg: z.number().int().positive().max(3000),
+        peso_bruto_kg: z.number().min(100).max(3000),
         numero_orden: z.string().trim().max(64).nullish(),
-        evidencia_base64: z.string().max(4_000_000).nullish(),
+        evidencia_base64: z.string().min(100).max(4_000_000),
       })
       .parse(d),
   )
@@ -197,13 +195,11 @@ export const registrarPesajePublico = createServerFn({ method: "POST" })
     const rolloSanit = data.numero_rollo.replace(/[^A-Za-z0-9_-]/g, "_");
     const path = `publico/${enlace.id as string}/${rolloSanit}-${crypto.randomUUID()}.jpg`;
 
-    if (data.evidencia_base64) {
-      const bin = Uint8Array.from(atob(data.evidencia_base64), (c) => c.charCodeAt(0));
-      const up = await supabaseAdmin.storage
-        .from("pesajes-evidencia")
-        .upload(path, bin, { contentType: "image/jpeg", upsert: false });
-      if (up.error) throw new Error(`No se pudo guardar la evidencia: ${up.error.message}`);
-    }
+    const bin = Uint8Array.from(atob(data.evidencia_base64), (c) => c.charCodeAt(0));
+    const up = await supabaseAdmin.storage
+      .from("pesajes-evidencia")
+      .upload(path, bin, { contentType: "image/jpeg", upsert: false });
+    if (up.error) throw new Error(`No se pudo guardar la evidencia: ${up.error.message}`);
 
     const { error } = await supabaseAdmin.rpc("registrar_pesaje_bobina_numerado", {
       _registro: {
@@ -219,9 +215,7 @@ export const registrarPesajePublico = createServerFn({ method: "POST" })
       } as never,
     });
     if (error) {
-      if (data.evidencia_base64) {
-        await supabaseAdmin.storage.from("pesajes-evidencia").remove([path]);
-      }
+      await supabaseAdmin.storage.from("pesajes-evidencia").remove([path]);
       throw new Error(error.message);
     }
 
