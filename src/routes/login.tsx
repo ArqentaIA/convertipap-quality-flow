@@ -157,7 +157,8 @@ function LoginPage() {
 
           {error && (
             <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
-              {error}
+              <p className="font-semibold">{error}</p>
+              {detalle && <p className="mt-1 font-normal opacity-90">{detalle}</p>}
             </div>
           )}
 
@@ -167,7 +168,8 @@ function LoginPage() {
             className="flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-60"
           >
             {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
-            {submitting ? "Verificando…" : "Entrar"}
+            {submitting ? (intento > 1 ? `Reintentando (${intento}/3)…` : "Verificando…") : "Entrar"}
+
           </button>
         </form>
 
