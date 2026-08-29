@@ -1543,11 +1543,23 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
                     </div>
                   ) : (
                     <>
-                      {pesajesPendientes.length > 0 && (
+                      {!!maquina.id && (
                         <div className="space-y-1 rounded-md border border-amber-300 bg-amber-50 p-2">
-                          <p className="text-[11px] font-semibold tracking-wide text-amber-900">
-                            ROLLOS PESADOS PENDIENTES DE CAPTURA
-                          </p>
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="text-[11px] font-semibold tracking-wide text-amber-900">
+                              ROLLOS PESADOS PENDIENTES DE CAPTURA ({pesajesPendientes.length})
+                            </p>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              className="h-7 px-2 text-[11px]"
+                              disabled={pendientesQuery.isFetching}
+                              onClick={() => void pendientesQuery.refetch()}
+                            >
+                              {pendientesQuery.isFetching ? "Actualizando…" : "Actualizar"}
+                            </Button>
+                          </div>
                           <select
                             className="h-10 w-full rounded-md border border-input bg-background px-2 text-sm"
                             value={rolloPesajeSel}
@@ -1565,11 +1577,13 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
                             ))}
                           </select>
                           <p className="text-[11px] text-amber-900">
-                            Seleccione un rollo ya pesado para completar sus datos de calidad.
-                            Al guardarlo desaparece de esta lista y no consume consecutivo nuevo.
+                            La lista se actualiza automáticamente cada 10 s con los rollos pesados
+                            en <strong>{maquina.codigo}</strong>. Si un rollo no aparece, verifique
+                            que el pesaje se haya registrado en esta misma máquina.
                           </p>
                         </div>
                       )}
+
                       <p className="text-[11px] font-semibold tracking-wide text-muted-foreground">
                         {rolloPesajeSel ? "ROLLO SELECCIONADO (YA PESADO)" : "PRÓXIMO NÚMERO ESTIMADO"}
                       </p>
