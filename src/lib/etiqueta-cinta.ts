@@ -249,9 +249,14 @@ export function buildCintaLabelData(snap: EtiquetaSnapshot, cinta: EtiquetaCinta
     url_qr_lote: "",
   };
 
-  data.url_qr_rollo = buildDatoUrl("rollo", data.numero_rollo_etiqueta);
-  data.url_qr_peso = buildDatoUrl("peso", `${fmtKg(data.peso_cinta_kg)} kg`);
-  data.url_qr_lote = buildDatoUrl("lote", data.lote_logistico ?? "Sin lote logístico");
+  // TEXTO PLANO: solo el valor del dato. Si está vacío, no se genera QR y la
+  // etiqueta muestra "Dato no disponible".
+  data.url_qr_rollo = String(data.numero_rollo_etiqueta ?? "").trim();
+  {
+    const p = fmtKg(data.peso_cinta_kg);
+    data.url_qr_peso = p === "—" ? "" : p;
+  }
+  data.url_qr_lote = (data.lote_logistico ?? "").trim();
 
   data.qr_payload = {
     version_esquema_qr: 1,
