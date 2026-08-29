@@ -96,12 +96,10 @@ function buildTraceUrl(muestraId: string): string {
 }
 
 /**
- * Los 3 QR inferiores apuntan a una página pública que despliega únicamente
- * el logotipo y el dato correspondiente.
+ * Los 3 QR inferiores codifican TEXTO PLANO: únicamente el valor del dato,
+ * sin URL, sin etiquetas, sin espacios extra ni JSON. Si el dato está vacío
+ * no se genera QR y la etiqueta muestra "Dato no disponible".
  */
-function buildDatoUrl(tipo: "rollo" | "peso" | "lote", valor: string): string {
-  return `${TRACE_BASE_URL}/q/${tipo}/${encodeURIComponent(valor)}`;
-}
 
 function isPesoLabel(label: string): boolean {
   const s = label.trim().toLowerCase();
