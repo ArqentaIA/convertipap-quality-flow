@@ -101,10 +101,11 @@ ${PROMPT_BASE}`;
 // (ahorra ~300-900 ms por captura). El descubrimiento dinámico sólo se ejecuta
 // si el modelo por defecto deja de existir (404/400) y se cachea en memoria.
 const MODELO_PREFERENCIA = [
-  "gemini-2.0-flash",
+  // gemini-2.0-flash fue retirado por Google (HTTP 404) — modelos vigentes:
+  "gemini-3.6-flash",
   "gemini-flash-latest",
-  "gemini-2.0-flash-001",
-  "gemini-2.5-flash-preview-05-20",
+  "gemini-2.5-flash",
+  "gemini-3.5-flash",
 ];
 let MODELO_CACHE: string | null = MODELO_PREFERENCIA[0];
 async function descubrirModeloGemini(apiKey: string, requestId: string): Promise<string | null> {
