@@ -128,10 +128,14 @@ function PesajePublicoPage() {
     !!info?.ok && !!info.numero_rollo && !!foto && pesoValido && pesoConfirmado && !guardando && !procesandoFoto;
   const motivoBloqueo = !info?.numero_rollo
     ? "La numeración automática no está disponible. Reporta al administrador."
+    : procesandoFoto
+      ? "Procesando y leyendo la fotografía…"
+      : !foto
+        ? "Toma una fotografía del display para leer el peso."
     : !pesoValido
-      ? "Captura el peso en kg para habilitar el botón."
-      : procesandoFoto
-        ? "Procesando la fotografía…"
+      ? "No se detectó un peso válido; toma otra fotografía."
+      : !pesoConfirmado
+        ? "Confirma que el peso detectado coincide con el display."
         : null;
 
   async function onFoto(f: File | null) {
