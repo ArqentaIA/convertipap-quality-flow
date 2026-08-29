@@ -160,7 +160,7 @@ export const registrarPesajePublico = createServerFn({ method: "POST" })
       .object({
         token: z.string().trim().min(16).max(128),
         numero_rollo: z.string().trim().min(1).max(64),
-        peso_bruto_kg: z.number().min(100).max(3000),
+        peso_bruto_kg: z.number().gt(300).max(3000),
         numero_orden: z.string().trim().max(64).nullish(),
         evidencia_base64: z.string().min(100).max(4_000_000),
       })
