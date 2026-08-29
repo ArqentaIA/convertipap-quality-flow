@@ -250,7 +250,7 @@ function PesajeBobinaPage() {
 
 
 
-  const puedeMaquina = ordenSel !== "";
+  const puedeMaquina = true;
   const puedeRollo = !!maquinaId;
   const puedeFoto = !!numeroRollo.trim() && !numeracionQ.isFetching;
   const pesoManualNum = pesoManual.trim() === "" ? null : Number(pesoManual.replace(",", "."));
