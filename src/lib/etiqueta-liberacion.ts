@@ -457,13 +457,18 @@ export async function printEtiquetaLiberacion(data: EtiquetaData): Promise<void>
   const payloadRollo = buildPayloadRollo(data);
   const payloadPeso = buildPayloadPeso(data);
   const payloadOrden = buildPayloadLote(loteLogistico);
+  // Si el dato está vacío no se genera QR; la etiqueta muestra "Dato no disponible".
+  const qrPlano = (valor: string) =>
+    valor
+      ? QRCode.toDataURL(valor, { margin: 2, width: 400, errorCorrectionLevel: "M" })
+      : Promise.resolve("");
 
   const [qrDataUrl, qrRolloDataUrl, qrPesoDataUrl, qrOrdenDataUrl, logoDataUrl, sapLogoDataUrl] =
     await Promise.all([
       QRCode.toDataURL(traceUrl, { margin: 1, width: 240, errorCorrectionLevel: "M" }),
-      QRCode.toDataURL(buildDatoUrl("rollo", payloadRollo), { margin: 2, width: 400, errorCorrectionLevel: "M" }),
-      QRCode.toDataURL(buildDatoUrl("peso", payloadPeso), { margin: 2, width: 400, errorCorrectionLevel: "M" }),
-      QRCode.toDataURL(buildDatoUrl("lote", payloadOrden), { margin: 2, width: 400, errorCorrectionLevel: "M" }),
+      qrPlano(payloadRollo),
+      qrPlano(payloadPeso),
+      qrPlano(payloadOrden),
       toDataUrl(logoUrl),
       toDataUrl(sapHanaAsset.url),
     ]);
