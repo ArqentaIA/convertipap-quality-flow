@@ -72,7 +72,7 @@ function computeTurnoActual(
   return null;
 }
 
-const MAQUINAS_VALIDAS = ["MP-01", "MP-04", "MP-05", "MP-06", "MP-07"] as const;
+const MAQUINAS_VALIDAS = ["MP-01", "MP-04", "MP-05", "MP-06", "MP-07", "MP-10"] as const;
 type MaquinaValida = (typeof MAQUINAS_VALIDAS)[number];
 
 export const Route = createFileRoute("/operator-vision")({
