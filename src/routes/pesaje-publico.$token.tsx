@@ -283,10 +283,12 @@ function PesajePublicoPage() {
             )}
           </div>
 
-          <div>
-            <Label htmlFor="orden">Orden de producción (opcional)</Label>
-            <Input id="orden" value={orden} onChange={(e) => setOrden(e.target.value)} className="mt-1" />
-          </div>
+          {false && (
+            <div>
+              <Label htmlFor="orden">Orden de producción (opcional)</Label>
+              <Input id="orden" value={orden} onChange={(e) => setOrden(e.target.value)} className="mt-1" />
+            </div>
+          )}
 
           <div>
             <Label>Evidencia fotográfica (obligatoria)</Label>
