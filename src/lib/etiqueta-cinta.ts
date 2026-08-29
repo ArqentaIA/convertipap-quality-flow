@@ -400,16 +400,16 @@ function renderEtiqueta(d: CintaLabelData, snap: EtiquetaSnapshot, assets: Asset
 
       <div class="lbl-qr-zone">
         <div class="qr-box">
-          <img src="${assets.qrRollo}" alt="QR N.º de rollo / cinta" />
+          ${assets.qrRollo ? `<img src="${assets.qrRollo}" alt="QR N.º de rollo / cinta" />` : `<div class="qr-na">Dato no disponible</div>`}
           <div class="qr-cap">N.º de rollo</div>
         </div>
         <div class="qr-box">
-          <img src="${assets.qrPeso}" alt="QR Peso" />
-          <div class="qr-cap">Peso</div>
+          ${assets.qrPeso ? `<img src="${assets.qrPeso}" alt="QR Peso" />` : `<div class="qr-na">Dato no disponible</div>`}
+          <div class="qr-cap">Peso (kg)</div>
         </div>
         <div class="qr-box">
-          <img src="${assets.qrLote}" alt="QR Lote Logístico" />
-          <div class="qr-cap">Lote Logístico</div>
+          ${assets.qrLote ? `<img src="${assets.qrLote}" alt="QR Código SAP" />` : `<div class="qr-na">Dato no disponible</div>`}
+          <div class="qr-cap">Código SAP</div>
         </div>
         <div class="qr-sap"><img src="${assets.sapLogo}" alt="SAP HANA" /></div>
       </div>
