@@ -428,13 +428,16 @@ export async function abrirImpresionEtiquetas(snap: EtiquetaSnapshot): Promise<v
   ]);
 
   // El QR se regenera SIEMPRE con los datos vigentes de cada cinta.
+  // Si el dato está vacío no se genera QR; la etiqueta muestra "Dato no disponible".
+  const qrPlano = (valor: string, opts: { margin: number; width: number; errorCorrectionLevel: "M" }) =>
+    valor ? QRCode.toDataURL(valor, opts) : Promise.resolve("");
   const etiquetas = await Promise.all(
     datos.map(async (d) => {
       const opts = { margin: 1, width: 220, errorCorrectionLevel: "M" as const };
       const [qrRollo, qrPeso, qrLote] = await Promise.all([
-        QRCode.toDataURL(d.url_qr_rollo, opts),
-        QRCode.toDataURL(d.url_qr_peso, opts),
-        QRCode.toDataURL(d.url_qr_lote, opts),
+        qrPlano(d.url_qr_rollo, opts),
+        qrPlano(d.url_qr_peso, opts),
+        qrPlano(d.url_qr_lote, opts),
       ]);
       return renderEtiqueta(d, snap, { logo: logoDataUrl, sapLogo: sapLogoDataUrl, qrRollo, qrPeso, qrLote });
     }),
