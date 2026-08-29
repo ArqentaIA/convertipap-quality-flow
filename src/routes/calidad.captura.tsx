@@ -1152,7 +1152,7 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
       toast.error("El número de rollo solo puede usar letras, números y guion"); return;
     }
     if (modo === "envio" && sufijoMaq && rolloNormalizado) {
-      const m = /^(.*)-(\d)$/.exec(rolloNormalizado);
+      const m = /^(.*)-(\d{1,2})$/.exec(rolloNormalizado);
       if (m && m[2] !== sufijoMaq) {
         toast.error(
           `Sufijo inválido: ${maquina.codigo} requiere -${sufijoMaq}. Capturaste -${m[2]}. Corrige o deja sólo el número base para que se complete automáticamente.`,
