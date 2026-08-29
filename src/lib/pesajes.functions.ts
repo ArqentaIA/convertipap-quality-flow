@@ -202,16 +202,9 @@ export const listarPesajesPendientesCaptura = createServerFn({ method: "POST" })
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    // Solo aplica a máquinas de Planta Ixtapaluca (IXT).
-    const { data: maq, error: merr } = await supabaseAdmin
-      .from("maquinas")
-      .select("id, planta_id, plantas!inner(codigo)")
-      .eq("id", data.maquina_id)
-      .maybeSingle();
-    if (merr) throw new Error(merr.message);
-    const codigoPlanta = (maq as { plantas?: { codigo?: string } } | null)?.plantas?.codigo ?? "";
-    if (codigoPlanta.toUpperCase() !== "IXT") return [];
-
+    // Aplica a cualquier máquina de cualquier planta (Ixtapaluca y Tlaxcala
+    // con la misma lógica): se listan los rollos ya pesados en esa máquina
+    // que aún no han sido capturados en Calidad.
     const { data: pesajes, error } = await supabaseAdmin
       .from("pesajes_bobina_madre")
       .select("id, numero_rollo, peso_neto_kg, fecha_hora_pesaje, numero_orden")
@@ -223,15 +216,19 @@ export const listarPesajesPendientesCaptura = createServerFn({ method: "POST" })
     const lista = (pesajes ?? []) as PesajePendienteCaptura[];
     if (lista.length === 0) return [];
 
+    // El cruce "ya capturado" se limita a la MISMA máquina para evitar
+    // colisiones de texto de rollo entre plantas.
     const { data: capturados, error: cerr } = await supabaseAdmin
       .from("muestras_calidad")
       .select("numero_rollo")
+      .eq("maquina_id", data.maquina_id)
       .in("numero_rollo", lista.map((p) => p.numero_rollo));
     if (cerr) throw new Error(cerr.message);
     const usados = new Set((capturados ?? []).map((m) => m.numero_rollo as string));
 
     return lista.filter((p) => !usados.has(p.numero_rollo));
   });
+
 
 
 
