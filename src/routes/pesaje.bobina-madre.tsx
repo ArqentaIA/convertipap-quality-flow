@@ -206,7 +206,16 @@ function PesajeBobinaPage() {
       if (plantas) q = q.in("planta_id", plantas);
       const { data, error } = await q;
       if (error) throw new Error(error.message);
-      return (data ?? []) as Maquina[];
+      const lista = (data ?? []) as Maquina[];
+      // MP-10 está habilitada para TODOS los usuarios en Pesaje de Rollo,
+      // sin importar la planta asignada.
+      if (!lista.some((m) => m.codigo === "MP-10")) {
+        const { data: mp10 } = await supabase
+          .from("maquinas").select("id, codigo").eq("codigo", "MP-10").eq("activo", true).maybeSingle();
+        if (mp10) lista.push(mp10 as Maquina);
+      }
+      return lista.sort((a, b) => a.codigo.localeCompare(b.codigo));
+
     },
     staleTime: 5 * 60_000,
   });
