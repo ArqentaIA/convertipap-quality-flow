@@ -120,15 +120,15 @@ export function buildPayloadPeso(data: Pick<EtiquetaData, "mediciones">): string
   const med = (data.mediciones || []).find(
     (m) => m.clave?.trim().toLowerCase() === "peso" || isPesoLabel(m.etiqueta),
   );
-  // Sin medición oficial de peso no se codifica un número inventado.
-  if (!med || med.valor === null || med.valor === undefined) return "Sin peso registrado";
-  return fmtKg(med.valor);
+  // Sin medición oficial de peso no se genera QR (la etiqueta muestra "Dato no disponible").
+  if (!med || med.valor === null || med.valor === undefined) return "";
+  const v = fmtKg(med.valor);
+  return v === "—" ? "" : v;
 }
 
-/** Código logístico: el tercer QR codifica el lote logístico capturado en Calidad. */
+/** Código SAP: el tercer QR codifica el lote logístico (10 dígitos) capturado en Calidad. */
 export function buildPayloadLote(loteLogistico: string | null | undefined): string {
-  const v = (loteLogistico ?? "").trim();
-  return v || "Sin código logístico";
+  return (loteLogistico ?? "").trim();
 }
 
 function row(m: EtiquetaMedicion): string {
