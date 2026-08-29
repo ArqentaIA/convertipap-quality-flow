@@ -503,6 +503,7 @@ export async function abrirImpresionEtiquetas(snap: EtiquetaSnapshot): Promise<v
   .lbl-qr-zone { margin-top: auto; padding-top: 1.5mm; border-top: 0.3mm solid #555; display: flex; justify-content: space-around; align-items: flex-end; gap: 4mm; }
   .lbl-qr-zone .qr-box { display: flex; flex-direction: column; align-items: center; gap: 0.8mm; }
   .lbl-qr-zone .qr-box img { width: 20mm; height: 20mm; display: block; }
+  .lbl-qr-zone .qr-box .qr-na { width: 20mm; height: 20mm; display: flex; align-items: center; justify-content: center; border: 0.3mm dashed #999; color: #666; font-size: 6pt; font-weight: 700; text-align: center; padding: 1mm; }
   .lbl-qr-zone .qr-cap { font-size: 6.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: #111; display: flex; align-items: center; justify-content: center; height: 4mm; }
   .lbl-qr-zone .qr-saplogo { width: auto !important; height: 4mm !important; max-width: 22mm; object-fit: contain; }
   .lbl-qr-zone .qr-box img { width: 17mm; height: 17mm; }
