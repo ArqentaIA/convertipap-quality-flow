@@ -767,7 +767,7 @@ function PesajeBobinaPage() {
           {/* 3. Rollo estimado */}
           <div>
             <label className="mb-1 block text-xs font-medium text-muted-foreground">
-              3. N.º de rollo * <span className="text-[10px] font-normal">(estimado automático)</span>
+              2. N.º de rollo * <span className="text-[10px] font-normal">(estimado automático)</span>
             </label>
             <input
               className="min-h-[48px] w-full cursor-not-allowed rounded-md border border-input bg-muted px-3 py-2 text-base font-semibold disabled:opacity-50"
@@ -785,12 +785,12 @@ function PesajeBobinaPage() {
           </div>
         </div>
 
-        {/* 4. Evidencia con OCR — oculto para capturistas */}
+        {/* 3. Evidencia con OCR — oculto para capturistas */}
         <div className="mt-5">
         {!esCapturista && (
           <>
           <label className="mb-2 block text-xs font-medium text-muted-foreground">
-            4. Evidencia fotográfica del display * <span className="text-[10px] font-normal">(el peso se lee automáticamente)</span>
+            3. Evidencia fotográfica del display * <span className="text-[10px] font-normal">(el peso se lee automáticamente)</span>
           </label>
           <div className="grid gap-4 md:grid-cols-2">
             {/* Izquierda: botón de captura (1/4 del tamaño original) */}
@@ -931,7 +931,9 @@ function PesajeBobinaPage() {
           <div className="w-full max-w-md rounded-xl border border-border bg-background p-5 shadow-xl">
             <h3 className="text-lg font-semibold">Confirma los datos a registrar</h3>
             <dl className="mt-4 space-y-2 text-sm">
-              <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Orden de producción</dt><dd className="font-medium">{numeroOrden.trim() || "—"}</dd></div>
+              {false && (
+                <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Orden de producción</dt><dd className="font-medium">{numeroOrden.trim() || "—"}</dd></div>
+              )}
               <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Máquina</dt><dd className="font-medium">{maqCodigo || "—"}</dd></div>
               <div className="flex justify-between gap-4"><dt className="text-muted-foreground">N.º de rollo</dt><dd className="font-medium">{numeroRollo}</dd></div>
               <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Tara</dt><dd className="font-medium">{tara} kg</dd></div>
