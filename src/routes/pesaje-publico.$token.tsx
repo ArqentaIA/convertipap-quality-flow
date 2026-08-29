@@ -123,7 +123,7 @@ function PesajePublicoPage() {
 
   const info = infoQ.data;
   const pesoNum = peso.trim() === "" ? null : Number(peso.replace(",", "."));
-  const pesoValido = pesoNum !== null && Number.isFinite(pesoNum) && pesoNum > 300 && pesoNum <= 3000;
+  const pesoValido = pesoNum !== null && Number.isFinite(pesoNum) && pesoNum > 300 && pesoNum <= 5000;
   const puedeGuardar =
     !!info?.ok && !!info.numero_rollo && !!foto && pesoValido && pesoConfirmado && !guardando && !procesandoFoto;
   const motivoBloqueo = !info?.numero_rollo
@@ -279,7 +279,7 @@ function PesajePublicoPage() {
               <p className="mt-1 text-xs text-muted-foreground">Peso detectado automáticamente. Verifica que coincida con el display.</p>
             )}
             {peso.trim() !== "" && !pesoValido && (
-              <p className="mt-1 text-xs text-destructive">El peso detectado debe ser mayor a 300 y no exceder 3000 kg.</p>
+              <p className="mt-1 text-xs text-destructive">El peso detectado debe ser mayor a 300 y no exceder 5000 kg.</p>
             )}
           </div>
 

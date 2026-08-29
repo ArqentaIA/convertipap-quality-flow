@@ -246,7 +246,7 @@ function PesajeBobinaPage() {
   const puedeFoto = !!numeroRollo.trim() && !numeracionQ.isFetching;
   const pesoManualNum = pesoManual.trim() === "" ? null : Number(pesoManual.replace(",", "."));
   const pesoManualValido =
-    pesoManualNum !== null && Number.isFinite(pesoManualNum) && pesoManualNum > 0 && pesoManualNum <= 3000;
+    pesoManualNum !== null && Number.isFinite(pesoManualNum) && pesoManualNum > 0 && pesoManualNum <= 5000;
   const pesoManualError = pesoManualNum !== null && !pesoManualValido;
   const puedeRegistrar =
     puedeFoto && !procesando && !pesoManualError && (!!evidenciaFile || pesoManualValido);
@@ -827,14 +827,14 @@ function PesajeBobinaPage() {
               Captura manual del peso (opcional)
             </label>
             <p className="mb-3 text-[11px] text-amber-800/80 dark:text-amber-200/70">
-              Si el display no se lee correctamente, escribe aquí el peso bruto. Máximo 3000 kg. Si lo capturas, se
+              Si el display no se lee correctamente, escribe aquí el peso bruto. Máximo 5000 kg. Si lo capturas, se
               usará este valor en lugar de la lectura automática.
             </p>
             <div className="flex items-center gap-2">
               <input
                 type="number"
                 min={1}
-                max={3000}
+                max={5000}
                 step={1}
                 inputMode="numeric"
                 value={pesoManual}
@@ -846,7 +846,7 @@ function PesajeBobinaPage() {
             </div>
             {pesoManualError && (
               <p className="mt-2 text-xs font-medium text-destructive">
-                El peso debe ser mayor a 0 y menor o igual a 3000 kg.
+                El peso debe ser mayor a 0 y menor o igual a 5000 kg.
               </p>
             )}
           </div>
