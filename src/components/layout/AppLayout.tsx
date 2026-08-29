@@ -92,8 +92,8 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
   const plantas = plantasPermitidas ?? [];
   const visoresPermitidos = (maquinasPermitidas ?? [])
     .map((maquina) => maquina.codigo)
-    .filter((codigo): codigo is "MP-01" | "MP-04" | "MP-05" | "MP-06" | "MP-07" =>
-      ["MP-01", "MP-04", "MP-05", "MP-06", "MP-07"].includes(codigo),
+    .filter((codigo): codigo is "MP-01" | "MP-04" | "MP-05" | "MP-06" | "MP-07" | "MP-10" =>
+      ["MP-01", "MP-04", "MP-05", "MP-06", "MP-07", "MP-10"].includes(codigo),
     );
   const plant = plantas.find((p) => p.id === plantId) ?? plantas[0] ?? null;
   const now = new Date();
