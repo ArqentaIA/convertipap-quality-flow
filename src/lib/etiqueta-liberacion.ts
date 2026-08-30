@@ -477,12 +477,13 @@ export async function printEtiquetaLiberacion(data: EtiquetaData): Promise<void>
       ? QRCode.toDataURL(valor, { margin: 2, width: 400, errorCorrectionLevel: "M" })
       : Promise.resolve("");
 
-  const [qrDataUrl, qrRolloDataUrl, qrPesoDataUrl, qrOrdenDataUrl, logoDataUrl, sapLogoDataUrl] =
+  const [qrDataUrl, qrRolloDataUrl, qrPesoDataUrl, qrOrdenDataUrl, qrProductoDataUrl, logoDataUrl, sapLogoDataUrl] =
     await Promise.all([
       QRCode.toDataURL(traceUrl, { margin: 1, width: 240, errorCorrectionLevel: "M" }),
       qrPlano(payloadRollo),
       qrPlano(payloadPeso),
       qrPlano(payloadOrden),
+      qrPlano(payloadProducto),
       toDataUrl(logoUrl),
       toDataUrl(sapHanaAsset.url),
     ]);
@@ -492,9 +493,10 @@ export async function printEtiquetaLiberacion(data: EtiquetaData): Promise<void>
     qrRolloDataUrl,
     qrPesoDataUrl,
     qrOrdenDataUrl,
+    qrProductoDataUrl,
     logoDataUrl,
     sapLogoDataUrl,
-    { rollo: payloadRollo, peso: payloadPeso, lote: payloadOrden },
+    { rollo: payloadRollo, peso: payloadPeso, lote: payloadOrden, producto: payloadProducto },
   );
 
   const w = window.open("", "_blank", "width=960,height=900");
