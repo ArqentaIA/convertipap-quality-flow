@@ -1243,6 +1243,10 @@ function CintaCard({ pos, cinta, habilitada, disponibleKg, onRegistrar, onAnular
           <div><span className="text-muted-foreground">Ancho útil:</span> <b>{n(cinta.ancho_util, 3)} {cinta.ancho_util_unidad ?? "cm"}</b></div>
           <div><span className="text-muted-foreground">Peso:</span> <b>{n(cinta.peso_cinta_kg)} kg</b></div>
           <div><span className="text-muted-foreground">Uniones:</span> <b>{cinta.uniones}</b></div>
+          {cinta.lote_logistico_pza && (
+            <div><span className="text-muted-foreground">Lote Logístico pza.:</span> <b className="font-mono">{cinta.lote_logistico_pza}</b></div>
+          )}
+
           {cinta.observaciones && <div className="text-xs text-muted-foreground">{cinta.observaciones}</div>}
           {mostrarEstatus && (
             <div className="pt-1">
