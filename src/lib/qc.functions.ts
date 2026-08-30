@@ -1005,6 +1005,10 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
       numero_rollo: numeroRolloFinal,
       reabre_dictamen: !!dictamenPrevioAt,
       reintento: reintentoIdempotente,
+      salto_numeracion:
+        numerosOmitidos > 0
+          ? { numero_solicitado: numeroSolicitado, numeros_omitidos: numerosOmitidos }
+          : null,
       regla_critica: {
         forzado_nc: criticalEval.forzarNC,
         fallas: criticalEval.fallas,
