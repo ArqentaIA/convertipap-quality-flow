@@ -188,6 +188,7 @@ function PesajeCintasPage() {
     if (!rollo) { toast.error("Ingrese un número de rollo."); return; }
     setBuscando(true);
     setContexto(null); setLoteId(null); setManualOpen(false);
+    setRolloActual(rollo.toUpperCase());
     try {
       const ctx = await buscar({ data: { numero_rollo: rollo } });
       if (!ctx) {
@@ -209,11 +210,11 @@ function PesajeCintasPage() {
         setConductorId(ctx.lote.conductor_id ?? "");
         setBobinadoraId(ctx.lote.bobinadora_id);
         if (ctx.lote.estado === "finalizado") {
-          toast.error(
-            `Este número de rollo ya está utilizado: el lote de cintas fue finalizado (${ctx.lote.cantidad_cintas} cintas). Solo consulta.`,
+          toast.info(
+            `Bajada ${ctx.lote.numero_bajada ?? 1} finalizada (${ctx.lote.cantidad_cintas} cintas). Consulte o inicie una nueva bajada.`,
           );
         } else {
-          toast.info("Este número de rollo ya está utilizado: se abrió el lote existente para continuar la captura.");
+          toast.info(`Bajada ${ctx.lote.numero_bajada ?? 1} abierta: se continúa la captura.`);
         }
       }
 
@@ -225,6 +226,7 @@ function PesajeCintasPage() {
         toast.error(msg);
       }
     } finally {
+      void refrescarBajadas();
       setBuscando(false);
     }
   }
@@ -241,6 +243,34 @@ function PesajeCintasPage() {
     setManualOpen(true);
     toast.info("Rollo no encontrado en la base de datos. Capture los datos mínimos del rollo de origen para continuar.");
   }
+
+  /** Inicia una nueva bajada sobre el rollo consultado (no toca las anteriores). */
+  function onIniciarNuevaBajada() {
+    if (!rolloInfo?.puede_nueva_bajada) return;
+    setLoteId(null);
+    if (contexto) {
+      toast.info(`Capture los datos operativos para la Bajada ${rolloInfo.total_bajadas + 1}.`);
+    } else {
+      activarManual(rolloActual ?? rolloInput.trim());
+    }
+  }
+
+  async function onCerrarRolloDefinitivo() {
+    if (!rolloActual) return;
+    const motivo = window.prompt(
+      `Cerrar definitivamente el rollo ${rolloActual}.\nNo se podrán iniciar más bajadas.\n\nMotivo (mínimo 5 caracteres):`,
+    );
+    if (!motivo || motivo.trim().length < 5) return;
+    try {
+      await cerrarRollo({ data: { numero_rollo: rolloActual, motivo: motivo.trim() } });
+      await refrescarBajadas();
+      toast.success("Rollo cerrado definitivamente.");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Error al cerrar el rollo.");
+    }
+  }
+
+
 
   function validarManual(): { peso: number; diametro: number; uniones: number } | null {
     const peso = Number(manualPeso);
