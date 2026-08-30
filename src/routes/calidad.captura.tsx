@@ -961,6 +961,14 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
           duration: 5000,
         });
       }
+      // Salto automático de numeración: el consecutivo estimado estaba ocupado
+      // por un registro histórico y el sistema asignó el siguiente número libre.
+      if (res.salto_numeracion) {
+        toast.warning(`Numeración ajustada automáticamente → ${res.numero_rollo}`, {
+          description: `El número ${res.salto_numeracion.numero_solicitado ?? "estimado"} ya estaba utilizado. Se omitieron ${res.salto_numeracion.numeros_omitidos} número(s) y el salto quedó registrado en bitácora.`,
+          duration: 12000,
+        });
+      }
       setMuestraRecienId(res.muestra_id);
       setTimeout(() => {
         document.getElementById("produccion-capturada")?.scrollIntoView({
