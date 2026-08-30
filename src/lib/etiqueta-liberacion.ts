@@ -131,6 +131,13 @@ export function buildPayloadLote(loteLogistico: string | null | undefined): stri
   return (loteLogistico ?? "").trim();
 }
 
+/** Cuarto QR: código de producto real de la muestra (texto directo, sin URL ni prefijos). */
+export function buildPayloadProducto(
+  productoCodigo: string | null | undefined,
+): string {
+  return (productoCodigo ?? "").trim();
+}
+
 function row(m: EtiquetaMedicion): string {
   const v = m.valor === null || m.valor === undefined ? "—" : m.valor;
   const unidad = m.unidad;
@@ -150,9 +157,10 @@ function buildHtml(
   qrRolloDataUrl: string,
   qrPesoDataUrl: string,
   qrOrdenDataUrl: string,
+  qrProductoDataUrl: string,
   logoDataUrl: string,
   sapLogoDataUrl: string,
-  payloads: { rollo: string; peso: string; lote: string },
+  payloads: { rollo: string; peso: string; lote: string; producto: string },
 ): string {
   const fechaImpresion = new Date().toLocaleString("es-MX");
   const estatusColor =
@@ -273,12 +281,12 @@ function buildHtml(
   .estatus .lbl-e{background:#0f172a;color:#fff;font-weight:900;font-size:16px;text-align:center;padding:16px 8px;letter-spacing:.16em;display:flex;align-items:center;justify-content:center}
   .estatus .val-e{padding:16px 8px;text-align:center;font-weight:900;font-size:32px;letter-spacing:.16em;color:${estatusColor};background:${estatusBg};display:flex;align-items:center;justify-content:center}
 
-  /* Bloque inferior: 3 QR con valor visible + logo SAP HANA a la derecha */
-  .sap-footer{display:grid;grid-template-columns:1fr 1fr 1fr 0.9fr;align-items:stretch;border-bottom:2px solid #0f172a;background:#f8fafc}
+  /* Bloque inferior: 4 QR con valor visible + logo SAP HANA a la derecha */
+  .sap-footer{display:grid;grid-template-columns:1fr 1fr 1fr 1fr 0.7fr;align-items:stretch;border-bottom:2px solid #0f172a;background:#f8fafc}
   .sap-footer .sap-qr{padding:10px 8px;display:flex;flex-direction:column;align-items:center;justify-content:center;border-right:1px solid #0f172a}
   .sap-footer .sap-qr:last-child{border-right:0}
-  .sap-footer .sap-qr img{width:140px;height:140px;display:block;background:#fff;padding:4px}
-  .sap-footer .sap-qr .qr-na{width:140px;height:140px;display:flex;align-items:center;justify-content:center;background:#fff;border:1px dashed #94a3b8;color:#64748b;font-size:10px;font-weight:700;text-align:center;padding:8px}
+  .sap-footer .sap-qr img{width:112px;height:112px;display:block;background:#fff;padding:4px}
+  .sap-footer .sap-qr .qr-na{width:112px;height:112px;display:flex;align-items:center;justify-content:center;background:#fff;border:1px dashed #94a3b8;color:#64748b;font-size:10px;font-weight:700;text-align:center;padding:8px}
   .sap-footer .sap-qr .cap{font-size:9px;color:#334155;margin-top:6px;text-align:center;letter-spacing:.1em;text-transform:uppercase;font-weight:800;line-height:1.2}
 
   .sap-logo{display:flex;align-items:center;justify-content:center;padding:10px}
@@ -397,6 +405,10 @@ function buildHtml(
       <div class="sap-qr">
         ${qrOrdenDataUrl ? `<img src="${qrOrdenDataUrl}" alt="QR Lote Logístico" />` : `<div class="qr-na">Dato no disponible</div>`}
         <div class="cap">Lote Logístico</div>
+      </div>
+      <div class="sap-qr">
+        ${qrProductoDataUrl ? `<img src="${qrProductoDataUrl}" alt="QR Código de Producto" />` : `<div class="qr-na">Dato no disponible</div>`}
+        <div class="cap">Código de Producto</div>
       </div>
 
       <div class="sap-logo">
