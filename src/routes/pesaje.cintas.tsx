@@ -573,7 +573,9 @@ function PesajeCintasPage() {
     try {
       await finalizar({ data: { lote_id: lote.id, peso_mermas_kg: real } });
       await qc.invalidateQueries({ queryKey: ["cintas-lote", lote.id] });
-      toast.success("Rollo finalizado.");
+      await refrescarBajadas();
+      toast.success(`Bajada ${numeroBajada} finalizada.`);
+
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "Error al finalizar.");
     }
