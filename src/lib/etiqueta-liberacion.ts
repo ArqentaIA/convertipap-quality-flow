@@ -470,6 +470,7 @@ export async function printEtiquetaLiberacion(data: EtiquetaData): Promise<void>
   const payloadRollo = buildPayloadRollo(data);
   const payloadPeso = buildPayloadPeso(data);
   const payloadOrden = buildPayloadLote(loteLogistico);
+  const payloadProducto = buildPayloadProducto(data.productoCodigo);
   // Si el dato está vacío no se genera QR; la etiqueta muestra "Dato no disponible".
   const qrPlano = (valor: string) =>
     valor
