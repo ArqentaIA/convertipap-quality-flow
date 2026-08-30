@@ -1220,15 +1220,17 @@ function CintaCard({ pos, cinta, habilitada, disponibleKg, onRegistrar, onAnular
   const [uniones, setUniones] = useState("0");
   const [ancho, setAncho] = useState("");
   const [obs, setObs] = useState("");
+  const [pza, setPza] = useState("");
   const anchoRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (habilitada) {
-      setPeso(""); setUniones("0"); setAncho(""); setObs("");
+      setPeso(""); setUniones("0"); setAncho(""); setObs(""); setPza("");
       // Posicionar el cursor en Ancho útil para la siguiente captura.
       anchoRef.current?.focus();
     }
   }, [habilitada]);
+
 
   if (cinta) {
     return (
