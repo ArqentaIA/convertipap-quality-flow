@@ -1345,6 +1345,15 @@ function CintaCard({ pos, cinta, habilitada, disponibleKg, onRegistrar, onAnular
           />
         </div>
         <div>
+          <label className="mb-0.5 block text-[11px] text-muted-foreground">Lote Logístico pza. * (máx. 10)</label>
+          <input
+            type="text" maxLength={10}
+            value={pza}
+            onChange={(e) => setPza(e.target.value.toUpperCase())}
+            className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm font-mono"
+          />
+        </div>
+        <div>
           <label className="mb-0.5 block text-[11px] text-muted-foreground">Observaciones (opcional)</label>
           <input
             type="text" maxLength={200}
@@ -1357,14 +1366,16 @@ function CintaCard({ pos, cinta, habilitada, disponibleKg, onRegistrar, onAnular
           onClick={() => {
             const p = Number(peso);
             if (!(p > 0)) return;
+            if (!pza.trim()) return;
             if (!window.confirm(`Confirme el peso registrado: ${p} kg\n\nAceptar para guardar · Cancelar para corregir.`)) return;
-            void onRegistrar(p, Number(uniones || 0), Number(ancho), obs.trim());
+            void onRegistrar(p, Number(uniones || 0), Number(ancho), obs.trim(), pza.trim());
           }}
-          disabled={saving || !peso || !ancho}
+          disabled={saving || !peso || !ancho || !pza.trim()}
           className="w-full rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
         >
           {saving ? "Guardando…" : "Guardar y generar etiqueta"}
         </button>
+
       </div>
     </div>
   );
