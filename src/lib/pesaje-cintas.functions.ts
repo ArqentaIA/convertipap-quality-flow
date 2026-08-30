@@ -53,6 +53,8 @@ export type ContextoRollo = {
   lote: null | {
     id: string;
     estado: "abierto" | "finalizado" | "anulado";
+    /** N.º de bajada (los lotes históricos se leen como Bajada 1). */
+    numero_bajada?: number | null;
     cantidad_cintas: number;
     peso_total_cintas_kg: number;
     peso_pendiente_kg: number;
@@ -63,6 +65,36 @@ export type ContextoRollo = {
     bobinadora_id: string;
     bobinadora_nombre_snapshot: string;
   };
+  /** Estado de bajadas del rollo (aditivo). */
+  rollo?: RolloBajadas | null;
+};
+
+/** Resumen de bajadas de un rollo (entidad ancla `rollos_cintas`). */
+export type RolloBajadas = {
+  numero_rollo: string;
+  rollo_id: string | null;
+  cerrado: boolean;
+  cerrado_at: string | null;
+  motivo_cierre: string | null;
+  total_bajadas: number;
+  lote_abierto_id: string | null;
+  ultima_posicion: number;
+  proxima_posicion: number;
+  puede_nueva_bajada: boolean;
+  bajadas: Array<{
+    lote_id: string;
+    numero_bajada: number;
+    historica: boolean;
+    estado: "abierto" | "finalizado" | "anulado";
+    cantidad_cintas: number;
+    peso_total_cintas_kg: number;
+    peso_mermas_kg: number | null;
+    es_manual: boolean;
+    created_at: string;
+    finalizado_at: string | null;
+    posicion_min: number | null;
+    posicion_max: number | null;
+  }>;
 };
 
 
@@ -78,9 +110,12 @@ export type CintaRegistrada = {
   estado: "registrada" | "sustituida" | "anulada";
   /** Estatus de liberación de la cinta: L (Liberado), C (Condicionado), NC (No conforme). */
   estatus_liberacion: "L" | "C" | "NC" | null;
+  /** Lote Logístico pza. (por cinta, máx. 10 caracteres). Históricos: null. */
+  lote_logistico_pza?: string | null;
   version_etiqueta: number | null;
   created_at: string;
 };
+
 
 
 export type LoteCintas = {
@@ -103,7 +138,10 @@ export type LoteCintas = {
   /** Campo canónico vigente: Peso de Mermas (kg). */
   peso_mermas_kg: number | null;
   estado: "abierto" | "finalizado" | "anulado";
+  /** N.º de bajada (histórico = null, se lee como Bajada 1). */
+  numero_bajada?: number | null;
   es_manual: boolean;
+
   numero_orden: string | null;
   datos_calidad_snapshot: Json;
   fecha_produccion: string | null;
@@ -260,15 +298,21 @@ export const registrarCinta = createServerFn({ method: "POST" })
     peso_cinta_kg: z.number().positive(),
     ancho_util: z.number().positive(),
     observaciones: z.string().max(500).optional().nullable(),
+    lote_logistico_pza: z.string().trim().min(1).max(10).optional().nullable(),
     idempotency_key: z.string().uuid(),
   }).parse(d))
   .handler(async ({ data, context }) => {
-    const { data: res, error } = await context.supabase.rpc("registrar_cinta", {
+    const rpc = context.supabase.rpc as unknown as (
+      fn: string,
+      args: Record<string, unknown>,
+    ) => Promise<{ data: unknown; error: { message: string } | null }>;
+    const { data: res, error } = await rpc("registrar_cinta_v2", {
       _lote_id: data.lote_id,
       _uniones: data.uniones,
       _peso_cinta_kg: data.peso_cinta_kg,
       _ancho_util: data.ancho_util,
       _observaciones: (data.observaciones ?? "") as string,
+      _lote_logistico_pza: data.lote_logistico_pza ?? null,
       _idempotency: data.idempotency_key,
     });
     if (error) throw new Error(error.message);
@@ -277,11 +321,47 @@ export const registrarCinta = createServerFn({ method: "POST" })
       posicion?: number;
       peso_total_cintas_kg?: number;
       peso_pendiente_kg?: number;
+      cantidad_cintas?: number;
       idempotent?: boolean;
     };
   });
 
+/** Bajadas registradas de un rollo + estado de cierre definitivo. */
+export const bajadasRollo = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ numero_rollo: z.string().trim().min(1).max(64) }).parse(d))
+  .handler(async ({ data, context }): Promise<RolloBajadas> => {
+    const rpc = context.supabase.rpc as unknown as (
+      fn: string,
+      args: Record<string, unknown>,
+    ) => Promise<{ data: unknown; error: { message: string } | null }>;
+    const { data: res, error } = await rpc("pc_bajadas_rollo", { _numero_rollo: data.numero_rollo });
+    if (error) throw new Error(error.message);
+    return res as RolloBajadas;
+  });
+
+/** Cierre definitivo del rollo: bloquea nuevas bajadas (no toca las bajadas). */
+export const cerrarRolloDefinitivo = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({
+    numero_rollo: z.string().trim().min(1).max(64),
+    motivo: z.string().trim().min(5).max(500),
+  }).parse(d))
+  .handler(async ({ data, context }) => {
+    const rpc = context.supabase.rpc as unknown as (
+      fn: string,
+      args: Record<string, unknown>,
+    ) => Promise<{ data: unknown; error: { message: string } | null }>;
+    const { data: res, error } = await rpc("cerrar_rollo_cintas", {
+      _numero_rollo: data.numero_rollo,
+      _motivo: data.motivo,
+    });
+    if (error) throw new Error(error.message);
+    return res as unknown as { rollo_id: string; numero_rollo: string; cerrado: boolean };
+  });
+
 export const corregirCinta = createServerFn({ method: "POST" })
+
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({
     cinta_id: z.string().uuid(),

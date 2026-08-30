@@ -10,8 +10,10 @@ import {
   crearLote, crearLoteManualV2, guardarOrdenManual, obtenerLoteYCintas, registrarCinta, corregirCinta, anularCinta,
   finalizarLote, prepararImpresion, actualizarDatosOperativos, asignarBobinadoraLote,
   asignarBobinadorNombre, asignarNombresOperativos, asignarEstatusCinta,
+  bajadasRollo, cerrarRolloDefinitivo,
   type ContextoRollo, type CintaRegistrada, type LoteCintas,
 } from "@/lib/pesaje-cintas.functions";
+
 
 import { abrirImpresionEtiquetas, type EtiquetaSnapshot } from "@/lib/etiqueta-cinta";
 import { supabase } from "@/integrations/supabase/client";
@@ -60,6 +62,10 @@ function PesajeCintasPage() {
   const asignarBobinadora = useServerFn(asignarBobinadoraLote);
   const asignarBobinador = useServerFn(asignarBobinadorNombre);
   const asignarNombresOp = useServerFn(asignarNombresOperativos);
+  const traerBajadas = useServerFn(bajadasRollo);
+  const cerrarRollo = useServerFn(cerrarRolloDefinitivo);
+
+
 
   const [rolMe, setRolMe] = useState<string | null>(null);
   const [authReady, setAuthReady] = useState(false);
@@ -80,6 +86,9 @@ function PesajeCintasPage() {
   const puedeCambiarOperativos = rolMe === "administrador" || rolMe === "calidad" || rolMe === "gerente_general";
 
   const [rolloInput, setRolloInput] = useState("");
+  // Rollo consultado (identidad de la entidad ancla `rollos_cintas`).
+  const [rolloActual, setRolloActual] = useState<string | null>(null);
+
   const [contexto, setContexto] = useState<ContextoRollo | null>(null);
   const [buscando, setBuscando] = useState(false);
   const [loteId, setLoteId] = useState<string | null>(null);
@@ -137,6 +146,22 @@ function PesajeCintasPage() {
     refetchOnWindowFocus: false,
   });
 
+  // Bajadas del rollo (entidad ancla). Solo lectura, aditivo.
+  const bajadasQ = useQuery({
+    queryKey: ["cintas-bajadas", rolloActual],
+    queryFn: () =>
+      rolloActual ? traerBajadas({ data: { numero_rollo: rolloActual } }) : Promise.resolve(null),
+    enabled: !!rolloActual && authReady,
+    refetchOnWindowFocus: false,
+  });
+  const rolloInfo = bajadasQ.data ?? null;
+
+  async function refrescarBajadas() {
+    await qc.invalidateQueries({ queryKey: ["cintas-bajadas", rolloActual] });
+  }
+
+
+
   const lote: LoteCintas | null = loteQ.data?.lote ?? null;
   const todasCintas: CintaRegistrada[] = loteQ.data?.cintas ?? [];
   const cintas: CintaRegistrada[] = todasCintas.filter((c) => c.estado === "registrada");
@@ -163,6 +188,7 @@ function PesajeCintasPage() {
     if (!rollo) { toast.error("Ingrese un número de rollo."); return; }
     setBuscando(true);
     setContexto(null); setLoteId(null); setManualOpen(false);
+    setRolloActual(rollo.toUpperCase());
     try {
       const ctx = await buscar({ data: { numero_rollo: rollo } });
       if (!ctx) {
@@ -184,11 +210,11 @@ function PesajeCintasPage() {
         setConductorId(ctx.lote.conductor_id ?? "");
         setBobinadoraId(ctx.lote.bobinadora_id);
         if (ctx.lote.estado === "finalizado") {
-          toast.error(
-            `Este número de rollo ya está utilizado: el lote de cintas fue finalizado (${ctx.lote.cantidad_cintas} cintas). Solo consulta.`,
+          toast.info(
+            `Bajada ${ctx.lote.numero_bajada ?? 1} finalizada (${ctx.lote.cantidad_cintas} cintas). Consulte o inicie una nueva bajada.`,
           );
         } else {
-          toast.info("Este número de rollo ya está utilizado: se abrió el lote existente para continuar la captura.");
+          toast.info(`Bajada ${ctx.lote.numero_bajada ?? 1} abierta: se continúa la captura.`);
         }
       }
 
@@ -200,6 +226,7 @@ function PesajeCintasPage() {
         toast.error(msg);
       }
     } finally {
+      void refrescarBajadas();
       setBuscando(false);
     }
   }
@@ -216,6 +243,34 @@ function PesajeCintasPage() {
     setManualOpen(true);
     toast.info("Rollo no encontrado en la base de datos. Capture los datos mínimos del rollo de origen para continuar.");
   }
+
+  /** Inicia una nueva bajada sobre el rollo consultado (no toca las anteriores). */
+  function onIniciarNuevaBajada() {
+    if (!rolloInfo?.puede_nueva_bajada) return;
+    setLoteId(null);
+    if (contexto) {
+      toast.info(`Capture los datos operativos para la Bajada ${rolloInfo.total_bajadas + 1}.`);
+    } else {
+      activarManual(rolloActual ?? rolloInput.trim());
+    }
+  }
+
+  async function onCerrarRolloDefinitivo() {
+    if (!rolloActual) return;
+    const motivo = window.prompt(
+      `Cerrar definitivamente el rollo ${rolloActual}.\nNo se podrán iniciar más bajadas.\n\nMotivo (mínimo 5 caracteres):`,
+    );
+    if (!motivo || motivo.trim().length < 5) return;
+    try {
+      await cerrarRollo({ data: { numero_rollo: rolloActual, motivo: motivo.trim() } });
+      await refrescarBajadas();
+      toast.success("Rollo cerrado definitivamente.");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Error al cerrar el rollo.");
+    }
+  }
+
+
 
   function validarManual(): { peso: number; diametro: number; uniones: number } | null {
     const peso = Number(manualPeso);
@@ -285,7 +340,9 @@ function PesajeCintasPage() {
       setConfirmManual(false);
       setLoteId(lote_id);
       await qc.invalidateQueries({ queryKey: ["cintas-lote", lote_id] });
-      toast.success("Lote manual creado.");
+      await refrescarBajadas();
+      toast.success("Bajada iniciada (captura manual).");
+
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "Error al crear el lote manual.");
     } finally {
@@ -337,7 +394,9 @@ function PesajeCintasPage() {
       }
       setLoteId(lote_id);
       await qc.invalidateQueries({ queryKey: ["cintas-lote", lote_id] });
-      toast.success("Lote iniciado.");
+      await refrescarBajadas();
+      toast.success("Bajada iniciada.");
+
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "Error al iniciar el lote.");
     } finally {
@@ -369,16 +428,28 @@ function PesajeCintasPage() {
   const mermaPorPesoKg = compsValidos ? Math.round((compCapa + compProceso + compGallo) * 100) / 100 : NaN;
   const mermaPorPesoPct = netoBM > 0 && Number.isFinite(mermaPorPesoKg) ? (mermaPorPesoKg / netoBM) * 100 : null;
 
-  const siguientePos = useMemo(() => {
-    if (!lote) return 0;
-    if (cintas.length >= 20) return 0;
-    return cintas.length + 1;
-  }, [lote, cintas.length]);
+  const MAX_CINTAS_BAJADA = 50;
+  const MAX_POSICION = 350;
+  const numeroBajada = lote?.numero_bajada ?? 1;
 
-  async function onRegistrar(peso: number, uniones: number, ancho: number, obs: string) {
+  // Posición continua por rollo (no reinicia entre bajadas).
+  const siguientePos = useMemo(() => {
+    if (!lote || lote.estado !== "abierto") return 0;
+    if (cintas.length >= MAX_CINTAS_BAJADA) return 0;
+    const maxLocal = cintas.reduce((m, c) => Math.max(m, c.posicion), 0);
+    const maxGlobal = Math.max(maxLocal, rolloInfo?.ultima_posicion ?? 0);
+    const next = maxGlobal + 1;
+    return next > MAX_POSICION ? 0 : next;
+  }, [lote, cintas, rolloInfo?.ultima_posicion]);
+
+  async function onRegistrar(peso: number, uniones: number, ancho: number, obs: string, pza: string) {
     if (!lote) return;
     if (requestGuard.current) return;
     if (peso <= 0 || ancho <= 0 || uniones < 0) { toast.error("Valores inválidos."); return; }
+    if (!pza.trim() || pza.trim().length > 10) {
+      toast.error("Capture el Lote Logístico pza. (máximo 10 caracteres).");
+      return;
+    }
     if (totalCintas + peso > netoBM + 0.001) {
       toast.error("El peso acumulado de las cintas supera el peso neto del rollo de origen. Revise los pesos capturados.");
       return;
@@ -391,10 +462,12 @@ function PesajeCintasPage() {
           lote_id: lote.id,
           uniones, peso_cinta_kg: peso, ancho_util: ancho,
           observaciones: obs || null,
+          lote_logistico_pza: pza.trim(),
           idempotency_key: uuid(),
         },
       });
       await qc.invalidateQueries({ queryKey: ["cintas-lote", lote.id] });
+      await refrescarBajadas();
       toast.success(`Cinta registrada.`);
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "Error al registrar la cinta.");
@@ -403,6 +476,7 @@ function PesajeCintasPage() {
       setSaving(false);
     }
   }
+
 
   // Estatus de liberación por cinta (Ixtapaluca): hereda el del rollo y el
   // usuario puede cambiarlo según cómo salga el corte.
@@ -503,7 +577,9 @@ function PesajeCintasPage() {
     try {
       await finalizar({ data: { lote_id: lote.id, peso_mermas_kg: real } });
       await qc.invalidateQueries({ queryKey: ["cintas-lote", lote.id] });
-      toast.success("Rollo finalizado.");
+      await refrescarBajadas();
+      toast.success(`Bajada ${numeroBajada} finalizada.`);
+
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "Error al finalizar.");
     }
@@ -584,6 +660,87 @@ function PesajeCintasPage() {
           </div>
         )}
       </div>
+
+      {/* Bajadas del rollo */}
+      {rolloActual && rolloInfo && rolloInfo.total_bajadas > 0 && (
+        <div className="rounded-lg border border-border bg-card p-4">
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Bajadas del rollo {rolloInfo.numero_rollo}
+              </div>
+              <div className="text-sm font-medium">
+                {rolloInfo.total_bajadas} / 7 bajadas · última posición C{rolloInfo.ultima_posicion} · próxima C
+                {rolloInfo.proxima_posicion}
+                {rolloInfo.cerrado && (
+                  <span className="ml-2 rounded-full bg-destructive/15 px-2 py-0.5 text-[10px] font-semibold uppercase text-destructive">
+                    Rollo cerrado
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {rolloInfo.puede_nueva_bajada && (
+                <button
+                  onClick={onIniciarNuevaBajada}
+                  className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground"
+                >
+                  Iniciar nueva bajada ({rolloInfo.total_bajadas + 1})
+                </button>
+              )}
+              {!rolloInfo.cerrado && !rolloInfo.lote_abierto_id && (
+                <button
+                  onClick={onCerrarRolloDefinitivo}
+                  className="flex items-center gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm font-medium text-destructive"
+                >
+                  <Lock className="h-4 w-4" /> Cerrar rollo definitivamente
+                </button>
+              )}
+            </div>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                <tr>
+                  <th className="py-1 pr-3">Bajada</th>
+                  <th className="py-1 pr-3">Estado</th>
+                  <th className="py-1 pr-3 text-right">Cintas</th>
+                  <th className="py-1 pr-3">Posiciones</th>
+                  <th className="py-1 pr-3 text-right">Peso cintas (kg)</th>
+                  <th className="py-1 pr-3 text-right">Peso de mermas (kg)</th>
+                  <th className="py-1 pr-3"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {rolloInfo.bajadas.map((b) => (
+                  <tr key={b.lote_id} className="border-t border-border/60">
+                    <td className="py-1.5 pr-3 font-semibold">
+                      {b.numero_bajada}
+                      {b.historica && <span className="ml-1 text-[10px] text-muted-foreground">(histórica)</span>}
+                    </td>
+                    <td className="py-1.5 pr-3">{b.estado}</td>
+                    <td className="py-1.5 pr-3 text-right">{b.cantidad_cintas}</td>
+                    <td className="py-1.5 pr-3">
+                      {b.posicion_min == null ? "—" : `C${b.posicion_min} – C${b.posicion_max}`}
+                    </td>
+                    <td className="py-1.5 pr-3 text-right">{n(b.peso_total_cintas_kg)}</td>
+                    <td className="py-1.5 pr-3 text-right">{b.peso_mermas_kg == null ? "—" : n(b.peso_mermas_kg)}</td>
+                    <td className="py-1.5 pr-3 text-right">
+                      {b.lote_id !== loteId && (
+                        <button onClick={() => setLoteId(b.lote_id)} className="text-xs text-primary hover:underline">
+                          Ver
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+
 
       {/* Contexto recuperado del sistema */}
       {contexto && (
@@ -868,7 +1025,7 @@ function PesajeCintasPage() {
         <>
           <div className="grid gap-3 md:grid-cols-4">
             <Card k="Neto rollo de origen" v={`${n(netoBM)} kg`} />
-            <Card k="Cintas registradas" v={`${cintas.length} / 20`} />
+            <Card k={`Cintas Bajada ${numeroBajada}`} v={`${cintas.length} / 50`} />
             <Card k="Peso acumulado" v={`${n(totalCintas)} kg`} />
             {lote.estado === "finalizado" ? (
               <Card
@@ -962,7 +1119,7 @@ function PesajeCintasPage() {
                     title={!hayCaptura || !compsValidos ? "Capture Merma Capa, Proceso y Gallo" : undefined}
                     className="flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
                   >
-                    <CheckCircle2 className="h-4 w-4" /> Finalizar rollo
+                    <CheckCircle2 className="h-4 w-4" /> Finalizar bajada {numeroBajada}
                   </button>
                 )}
                 {lote.estado === "finalizado" && (
@@ -976,12 +1133,18 @@ function PesajeCintasPage() {
             </div>
 
 
-            {/* Grid de 20 posiciones (en lote finalizado solo se muestran las registradas) */}
+            {/* Posiciones globales del rollo (C1–C350): registradas de esta bajada + siguiente */}
             <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-4">
-              {Array.from({ length: 20 }, (_, i) => i + 1)
-                .filter((pos) => lote.estado === "abierto" || cintas.some((x) => x.posicion === pos))
+              {Array.from(
+                new Set<number>([
+                  ...cintas.map((x) => x.posicion),
+                  ...(siguientePos > 0 && lote.estado === "abierto" ? [siguientePos] : []),
+                ]),
+              )
+                .sort((a, b) => a - b)
                 .map((pos) => {
                 const c = cintas.find((x) => x.posicion === pos);
+
                 const habilitada = !c && pos === siguientePos && lote.estado === "abierto";
                 return (
                   <CintaCard
@@ -1037,7 +1200,7 @@ type CintaCardProps = {
   cinta: CintaRegistrada | null;
   habilitada: boolean;
   disponibleKg: number;
-  onRegistrar: (peso: number, uniones: number, ancho: number, obs: string) => Promise<void>;
+  onRegistrar: (peso: number, uniones: number, ancho: number, obs: string, pza: string) => Promise<void>;
   onAnular?: () => void;
   onCorregir?: () => void;
   onReimprimir?: () => void;
@@ -1057,15 +1220,17 @@ function CintaCard({ pos, cinta, habilitada, disponibleKg, onRegistrar, onAnular
   const [uniones, setUniones] = useState("0");
   const [ancho, setAncho] = useState("");
   const [obs, setObs] = useState("");
+  const [pza, setPza] = useState("");
   const anchoRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (habilitada) {
-      setPeso(""); setUniones("0"); setAncho(""); setObs("");
+      setPeso(""); setUniones("0"); setAncho(""); setObs(""); setPza("");
       // Posicionar el cursor en Ancho útil para la siguiente captura.
       anchoRef.current?.focus();
     }
   }, [habilitada]);
+
 
   if (cinta) {
     return (
@@ -1078,6 +1243,10 @@ function CintaCard({ pos, cinta, habilitada, disponibleKg, onRegistrar, onAnular
           <div><span className="text-muted-foreground">Ancho útil:</span> <b>{n(cinta.ancho_util, 3)} {cinta.ancho_util_unidad ?? "cm"}</b></div>
           <div><span className="text-muted-foreground">Peso:</span> <b>{n(cinta.peso_cinta_kg)} kg</b></div>
           <div><span className="text-muted-foreground">Uniones:</span> <b>{cinta.uniones}</b></div>
+          {cinta.lote_logistico_pza && (
+            <div><span className="text-muted-foreground">Lote Logístico pza.:</span> <b className="font-mono">{cinta.lote_logistico_pza}</b></div>
+          )}
+
           {cinta.observaciones && <div className="text-xs text-muted-foreground">{cinta.observaciones}</div>}
           {mostrarEstatus && (
             <div className="pt-1">
@@ -1180,6 +1349,15 @@ function CintaCard({ pos, cinta, habilitada, disponibleKg, onRegistrar, onAnular
           />
         </div>
         <div>
+          <label className="mb-0.5 block text-[11px] text-muted-foreground">Lote Logístico pza. * (máx. 10)</label>
+          <input
+            type="text" maxLength={10}
+            value={pza}
+            onChange={(e) => setPza(e.target.value.toUpperCase())}
+            className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm font-mono"
+          />
+        </div>
+        <div>
           <label className="mb-0.5 block text-[11px] text-muted-foreground">Observaciones (opcional)</label>
           <input
             type="text" maxLength={200}
@@ -1192,14 +1370,16 @@ function CintaCard({ pos, cinta, habilitada, disponibleKg, onRegistrar, onAnular
           onClick={() => {
             const p = Number(peso);
             if (!(p > 0)) return;
+            if (!pza.trim()) return;
             if (!window.confirm(`Confirme el peso registrado: ${p} kg\n\nAceptar para guardar · Cancelar para corregir.`)) return;
-            void onRegistrar(p, Number(uniones || 0), Number(ancho), obs.trim());
+            void onRegistrar(p, Number(uniones || 0), Number(ancho), obs.trim(), pza.trim());
           }}
-          disabled={saving || !peso || !ancho}
+          disabled={saving || !peso || !ancho || !pza.trim()}
           className="w-full rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
         >
           {saving ? "Guardando…" : "Guardar y generar etiqueta"}
         </button>
+
       </div>
     </div>
   );
