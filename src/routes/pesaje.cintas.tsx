@@ -340,7 +340,9 @@ function PesajeCintasPage() {
       setConfirmManual(false);
       setLoteId(lote_id);
       await qc.invalidateQueries({ queryKey: ["cintas-lote", lote_id] });
-      toast.success("Lote manual creado.");
+      await refrescarBajadas();
+      toast.success("Bajada iniciada (captura manual).");
+
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "Error al crear el lote manual.");
     } finally {
