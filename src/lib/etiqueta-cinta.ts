@@ -40,6 +40,8 @@ export type EtiquetaCinta = {
   estado?: string;
   /** Estatus de liberación de la cinta: L / C / NC (Planta Ixtapaluca). */
   estatus_liberacion?: string | null;
+  /** Lote Logístico pza. capturado por cinta (tiene prioridad sobre el del lote/muestra). */
+  lote_logistico_pza?: string | null;
   version_etiqueta?: number;
   created_at?: string;
 };
@@ -243,7 +245,9 @@ export function buildCintaLabelData(snap: EtiquetaSnapshot, cinta: EtiquetaCinta
     qr_payload: {},
     trace_url: traceUrl,
     sap_url: sapUrl,
-    lote_logistico: limpio(snap.lote_logistico ?? null),
+    // Fuente del QR/dato "Lote Logístico": el valor capturado en la propia
+    // cinta (Lote Logístico pza.); en su defecto, el del lote/muestra.
+    lote_logistico: limpio(cinta.lote_logistico_pza ?? snap.lote_logistico ?? null),
     url_qr_rollo: "",
     url_qr_peso: "",
     url_qr_lote: "",
