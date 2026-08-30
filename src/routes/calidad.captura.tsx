@@ -1597,16 +1597,29 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
                       )}
 
                       <p className="text-[11px] font-semibold tracking-wide text-muted-foreground">
-                        {rolloPesajeSel ? "ROLLO SELECCIONADO (YA PESADO)" : "PRÓXIMO NÚMERO ESTIMADO"}
+                        {rolloPesajeSel ? "ROLLO SELECCIONADO (YA PESADO)" : "SIGUIENTE FOLIO SUGERIDO"}
                       </p>
                       <div className="flex h-11 items-center rounded-md border border-input bg-muted px-3 text-base font-semibold">
                         {numeroRollo || "—"}
                       </div>
+                      {!rolloPesajeSel && numeracionAuto?.ocupado && (
+                        <div className="rounded-md border border-amber-400 bg-amber-50 p-2 text-[12px] text-amber-900">
+                          <p className="font-semibold">
+                            El folio {numeracionAuto.sugerido_base} ya está ocupado
+                          </p>
+                          <p className="mt-0.5">
+                            Se omitirán {numeracionAuto.saltos} número(s) y al guardar se asignará
+                            automáticamente <strong>{numeracionAuto.proximo_numero}</strong>. El
+                            salto queda registrado en bitácora.
+                          </p>
+                        </div>
+                      )}
                       <p className="text-[11px] text-muted-foreground">
                         {rolloPesajeSel
                           ? "Este número proviene de Pesaje de Rollo y se conservará al guardar."
                           : "Se confirmará al guardar la muestra. No está reservado y puede cambiar si otro operador guarda antes."}
                       </p>
+
                     </>
                   )}
                 </>
