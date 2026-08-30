@@ -10,8 +10,10 @@ import {
   crearLote, crearLoteManualV2, guardarOrdenManual, obtenerLoteYCintas, registrarCinta, corregirCinta, anularCinta,
   finalizarLote, prepararImpresion, actualizarDatosOperativos, asignarBobinadoraLote,
   asignarBobinadorNombre, asignarNombresOperativos, asignarEstatusCinta,
+  bajadasRollo, cerrarRolloDefinitivo,
   type ContextoRollo, type CintaRegistrada, type LoteCintas,
 } from "@/lib/pesaje-cintas.functions";
+
 
 import { abrirImpresionEtiquetas, type EtiquetaSnapshot } from "@/lib/etiqueta-cinta";
 import { supabase } from "@/integrations/supabase/client";
