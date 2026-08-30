@@ -53,6 +53,8 @@ export type ContextoRollo = {
   lote: null | {
     id: string;
     estado: "abierto" | "finalizado" | "anulado";
+    /** N.º de bajada (los lotes históricos se leen como Bajada 1). */
+    numero_bajada?: number | null;
     cantidad_cintas: number;
     peso_total_cintas_kg: number;
     peso_pendiente_kg: number;
@@ -63,6 +65,36 @@ export type ContextoRollo = {
     bobinadora_id: string;
     bobinadora_nombre_snapshot: string;
   };
+  /** Estado de bajadas del rollo (aditivo). */
+  rollo?: RolloBajadas | null;
+};
+
+/** Resumen de bajadas de un rollo (entidad ancla `rollos_cintas`). */
+export type RolloBajadas = {
+  numero_rollo: string;
+  rollo_id: string | null;
+  cerrado: boolean;
+  cerrado_at: string | null;
+  motivo_cierre: string | null;
+  total_bajadas: number;
+  lote_abierto_id: string | null;
+  ultima_posicion: number;
+  proxima_posicion: number;
+  puede_nueva_bajada: boolean;
+  bajadas: Array<{
+    lote_id: string;
+    numero_bajada: number;
+    historica: boolean;
+    estado: "abierto" | "finalizado" | "anulado";
+    cantidad_cintas: number;
+    peso_total_cintas_kg: number;
+    peso_mermas_kg: number | null;
+    es_manual: boolean;
+    created_at: string;
+    finalizado_at: string | null;
+    posicion_min: number | null;
+    posicion_max: number | null;
+  }>;
 };
 
 
@@ -78,9 +110,12 @@ export type CintaRegistrada = {
   estado: "registrada" | "sustituida" | "anulada";
   /** Estatus de liberación de la cinta: L (Liberado), C (Condicionado), NC (No conforme). */
   estatus_liberacion: "L" | "C" | "NC" | null;
+  /** Lote Logístico pza. (por cinta, máx. 10 caracteres). Históricos: null. */
+  lote_logistico_pza?: string | null;
   version_etiqueta: number | null;
   created_at: string;
 };
+
 
 
 export type LoteCintas = {
