@@ -62,6 +62,10 @@ function PesajeCintasPage() {
   const asignarBobinadora = useServerFn(asignarBobinadoraLote);
   const asignarBobinador = useServerFn(asignarBobinadorNombre);
   const asignarNombresOp = useServerFn(asignarNombresOperativos);
+  const traerBajadas = useServerFn(bajadasRollo);
+  const cerrarRollo = useServerFn(cerrarRolloDefinitivo);
+
+
 
   const [rolMe, setRolMe] = useState<string | null>(null);
   const [authReady, setAuthReady] = useState(false);
