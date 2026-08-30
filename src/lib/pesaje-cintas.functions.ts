@@ -302,7 +302,7 @@ export const registrarCinta = createServerFn({ method: "POST" })
     idempotency_key: z.string().uuid(),
   }).parse(d))
   .handler(async ({ data, context }) => {
-    const rpc = context.supabase.rpc as unknown as (
+    const rpc = context.supabase.rpc.bind(context.supabase) as unknown as (
       fn: string,
       args: Record<string, unknown>,
     ) => Promise<{ data: unknown; error: { message: string } | null }>;
@@ -331,7 +331,7 @@ export const bajadasRollo = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ numero_rollo: z.string().trim().min(1).max(64) }).parse(d))
   .handler(async ({ data, context }): Promise<RolloBajadas> => {
-    const rpc = context.supabase.rpc as unknown as (
+    const rpc = context.supabase.rpc.bind(context.supabase) as unknown as (
       fn: string,
       args: Record<string, unknown>,
     ) => Promise<{ data: unknown; error: { message: string } | null }>;
@@ -348,7 +348,7 @@ export const cerrarRolloDefinitivo = createServerFn({ method: "POST" })
     motivo: z.string().trim().min(5).max(500),
   }).parse(d))
   .handler(async ({ data, context }) => {
-    const rpc = context.supabase.rpc as unknown as (
+    const rpc = context.supabase.rpc.bind(context.supabase) as unknown as (
       fn: string,
       args: Record<string, unknown>,
     ) => Promise<{ data: unknown; error: { message: string } | null }>;
@@ -440,7 +440,7 @@ export const asignarBobinadoraLote = createServerFn({ method: "POST" })
     bobinadora_id: z.string().uuid(),
   }).parse(d))
   .handler(async ({ data, context }) => {
-    const { error } = await (context.supabase.rpc as unknown as (
+    const { error } = await (context.supabase.rpc.bind(context.supabase) as unknown as (
       fn: string,
       args: Record<string, unknown>,
     ) => Promise<{ error: { message: string } | null }>)("pc_set_bobinadora", {
@@ -458,7 +458,7 @@ export const asignarBobinadorNombre = createServerFn({ method: "POST" })
     nombre: z.string().trim().min(3).max(80),
   }).parse(d))
   .handler(async ({ data, context }) => {
-    const { error } = await (context.supabase.rpc as unknown as (
+    const { error } = await (context.supabase.rpc.bind(context.supabase) as unknown as (
       fn: string,
       args: Record<string, unknown>,
     ) => Promise<{ error: { message: string } | null }>)("pc_set_bobinador_nombre", {
@@ -477,7 +477,7 @@ export const asignarNombresOperativos = createServerFn({ method: "POST" })
     maquina: z.string().trim().max(20),
   }).parse(d))
   .handler(async ({ data, context }) => {
-    const { error } = await (context.supabase.rpc as unknown as (
+    const { error } = await (context.supabase.rpc.bind(context.supabase) as unknown as (
       fn: string,
       args: Record<string, unknown>,
     ) => Promise<{ error: { message: string } | null }>)("pc_set_nombres_operativos", {
