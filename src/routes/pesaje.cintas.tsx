@@ -394,7 +394,9 @@ function PesajeCintasPage() {
       }
       setLoteId(lote_id);
       await qc.invalidateQueries({ queryKey: ["cintas-lote", lote_id] });
-      toast.success("Lote iniciado.");
+      await refrescarBajadas();
+      toast.success("Bajada iniciada.");
+
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "Error al iniciar el lote.");
     } finally {
