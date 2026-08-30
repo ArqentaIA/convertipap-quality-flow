@@ -905,6 +905,10 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
       muestra_id: string;
       numero_rollo?: string;
       reintento?: boolean;
+      salto_numeracion?: {
+        numero_solicitado: string | null;
+        numeros_omitidos: number;
+      } | null;
     }) => {
       // Vincula el pesaje (si existe) antes de refrescar caches.
       const pesajeIdParaVincular = pesajeVinculado?.id ?? null;
