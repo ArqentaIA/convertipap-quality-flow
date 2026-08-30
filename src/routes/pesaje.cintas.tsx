@@ -1200,7 +1200,7 @@ type CintaCardProps = {
   cinta: CintaRegistrada | null;
   habilitada: boolean;
   disponibleKg: number;
-  onRegistrar: (peso: number, uniones: number, ancho: number, obs: string) => Promise<void>;
+  onRegistrar: (peso: number, uniones: number, ancho: number, obs: string, pza: string) => Promise<void>;
   onAnular?: () => void;
   onCorregir?: () => void;
   onReimprimir?: () => void;
