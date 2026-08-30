@@ -782,6 +782,9 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
     // true cuando la RPC NO creó nada porque la clave de idempotencia ya fue
     // consumida: devuelve la muestra anterior. Debe avisarse al capturista.
     let reintentoIdempotente = false;
+    // Salto automático de numeración aplicado por la RPC (colisión resuelta).
+    let numeroSolicitado: string | null = null;
+    let numerosOmitidos = 0;
 
     if (!muestraId) {
       const { data: res, error: eRpc } = await (
