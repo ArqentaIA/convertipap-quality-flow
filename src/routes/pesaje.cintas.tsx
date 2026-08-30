@@ -818,6 +818,7 @@ function PesajeCintasPage() {
                     value={manualRollo}
                   />
                 </div>
+                {false && (
                 <div>
                   <label className="mb-1 block text-[11px] uppercase tracking-wide text-muted-foreground">Orden de Producción (opcional)</label>
                   <input
@@ -827,6 +828,7 @@ function PesajeCintasPage() {
                     onChange={(e) => setManualOrden(e.target.value)}
                   />
                 </div>
+                )}
                 <div>
                   <label className="mb-1 block text-[11px] uppercase tracking-wide text-muted-foreground">Peso neto (kg) *</label>
                   <input
