@@ -6,6 +6,7 @@ import {
   buildPayloadRollo,
   buildPayloadPeso,
   buildPayloadLote,
+  buildPayloadProducto,
   type EtiquetaMedicion,
 } from '../etiqueta-liberacion'
 
@@ -57,6 +58,19 @@ describe('QR etiqueta — payload texto plano (lo que recibe el handheld)', () =
   it('QR lote vacío → payload vacío', () => {
     expect(buildPayloadLote(null)).toBe('')
     expect(buildPayloadLote(undefined)).toBe('')
+  })
+
+  it('QR código de producto: solo el código, texto plano', async () => {
+    const p = buildPayloadProducto('PSC01')
+    expect(p).toBe('PSC01')
+    expect(await decodePayload(p)).toBe('PSC01')
+    expect(p).not.toMatch(/https?:\/\//)
+  })
+
+  it('QR producto vacío → payload vacío', () => {
+    expect(buildPayloadProducto(null)).toBe('')
+    expect(buildPayloadProducto(undefined)).toBe('')
+    expect(buildPayloadProducto('   ')).toBe('')
   })
 
   it('ningún payload contiene URL, "kg" ni espacios extra', () => {
