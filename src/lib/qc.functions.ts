@@ -1802,6 +1802,12 @@ export type EstadoNumeracionRollo = {
   vigente_desde?: string;
   sufijo?: string;
   proximo_numero?: string;
+  /** Folio que correspondería al contador sin considerar colisiones. */
+  sugerido_base?: string;
+  /** true cuando el folio del contador ya está ocupado por una muestra existente. */
+  ocupado?: boolean;
+  /** Cantidad de números omitidos hasta encontrar uno libre. */
+  saltos?: number;
   ahora_servidor?: string;
 };
 
