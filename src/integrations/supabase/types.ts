@@ -1552,10 +1552,12 @@ export type Database = {
           id: string
           idempotency_key: string
           lote_id: string
+          lote_logistico_pza: string | null
           motivo_anulacion: string | null
           observaciones: string | null
           peso_cinta_kg: number
           posicion: number
+          rollo_id: string | null
           sustituye_a_cinta_id: string | null
           uniones: number
           updated_at: string
@@ -1574,10 +1576,12 @@ export type Database = {
           id?: string
           idempotency_key: string
           lote_id: string
+          lote_logistico_pza?: string | null
           motivo_anulacion?: string | null
           observaciones?: string | null
           peso_cinta_kg: number
           posicion: number
+          rollo_id?: string | null
           sustituye_a_cinta_id?: string | null
           uniones?: number
           updated_at?: string
@@ -1596,10 +1600,12 @@ export type Database = {
           id?: string
           idempotency_key?: string
           lote_id?: string
+          lote_logistico_pza?: string | null
           motivo_anulacion?: string | null
           observaciones?: string | null
           peso_cinta_kg?: number
           posicion?: number
+          rollo_id?: string | null
           sustituye_a_cinta_id?: string | null
           uniones?: number
           updated_at?: string
@@ -1611,6 +1617,13 @@ export type Database = {
             columns: ["lote_id"]
             isOneToOne: false
             referencedRelation: "pesajes_cintas_lotes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pesajes_cintas_rollo_id_fkey"
+            columns: ["rollo_id"]
+            isOneToOne: false
+            referencedRelation: "rollos_cintas"
             referencedColumns: ["id"]
           },
           {
@@ -1703,6 +1716,7 @@ export type Database = {
           merma_real_kg: number | null
           motivo_anulacion: string | null
           muestra_calidad_id: string | null
+          numero_bajada: number | null
           numero_orden: string | null
           numero_rollo: string
           orden_produccion_id: string | null
@@ -1714,6 +1728,7 @@ export type Database = {
           producto_codigo: string | null
           producto_id: string | null
           producto_nombre: string | null
+          rollo_id: string | null
           updated_at: string
         }
         Insert: {
@@ -1742,6 +1757,7 @@ export type Database = {
           merma_real_kg?: number | null
           motivo_anulacion?: string | null
           muestra_calidad_id?: string | null
+          numero_bajada?: number | null
           numero_orden?: string | null
           numero_rollo: string
           orden_produccion_id?: string | null
@@ -1753,6 +1769,7 @@ export type Database = {
           producto_codigo?: string | null
           producto_id?: string | null
           producto_nombre?: string | null
+          rollo_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -1781,6 +1798,7 @@ export type Database = {
           merma_real_kg?: number | null
           motivo_anulacion?: string | null
           muestra_calidad_id?: string | null
+          numero_bajada?: number | null
           numero_orden?: string | null
           numero_rollo?: string
           orden_produccion_id?: string | null
@@ -1792,6 +1810,7 @@ export type Database = {
           producto_codigo?: string | null
           producto_id?: string | null
           producto_nombre?: string | null
+          rollo_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -1849,6 +1868,13 @@ export type Database = {
             columns: ["producto_id"]
             isOneToOne: false
             referencedRelation: "productos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pesajes_cintas_lotes_rollo_id_fkey"
+            columns: ["rollo_id"]
+            isOneToOne: false
+            referencedRelation: "rollos_cintas"
             referencedColumns: ["id"]
           },
         ]
@@ -2192,6 +2218,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      rollos_cintas: {
+        Row: {
+          cerrado: boolean
+          cerrado_at: string | null
+          cerrado_por: string | null
+          created_at: string
+          id: string
+          motivo_cierre: string | null
+          numero_rollo: string
+          updated_at: string
+        }
+        Insert: {
+          cerrado?: boolean
+          cerrado_at?: string | null
+          cerrado_por?: string | null
+          created_at?: string
+          id?: string
+          motivo_cierre?: string | null
+          numero_rollo: string
+          updated_at?: string
+        }
+        Update: {
+          cerrado?: boolean
+          cerrado_at?: string | null
+          cerrado_por?: string | null
+          created_at?: string
+          id?: string
+          motivo_cierre?: string | null
+          numero_rollo?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       rollos_producidos: {
         Row: {
@@ -2866,6 +2925,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      cerrar_rollo_cintas: {
+        Args: { _motivo: string; _numero_rollo: string }
+        Returns: Json
+      }
       change_roll_status: {
         Args: {
           p_dictamen: string
@@ -2982,6 +3045,11 @@ export type Database = {
         }
         Returns: boolean
       }
+      pc_bajadas_rollo: { Args: { _numero_rollo: string }; Returns: Json }
+      pc_get_or_create_rollo: {
+        Args: { _numero_rollo: string }
+        Returns: string
+      }
       pc_set_bobinador_nombre: {
         Args: { _lote_id: string; _nombre: string }
         Returns: undefined
@@ -3026,6 +3094,18 @@ export type Database = {
           _ancho_util: number
           _idempotency: string
           _lote_id: string
+          _observaciones: string
+          _peso_cinta_kg: number
+          _uniones: number
+        }
+        Returns: Json
+      }
+      registrar_cinta_v2: {
+        Args: {
+          _ancho_util: number
+          _idempotency: string
+          _lote_id: string
+          _lote_logistico_pza: string
           _observaciones: string
           _peso_cinta_kg: number
           _uniones: number
