@@ -1025,7 +1025,7 @@ function PesajeCintasPage() {
         <>
           <div className="grid gap-3 md:grid-cols-4">
             <Card k="Neto rollo de origen" v={`${n(netoBM)} kg`} />
-            <Card k="Cintas registradas" v={`${cintas.length} / 20`} />
+            <Card k={`Cintas Bajada ${numeroBajada}`} v={`${cintas.length} / 50`} />
             <Card k="Peso acumulado" v={`${n(totalCintas)} kg`} />
             {lote.estado === "finalizado" ? (
               <Card
