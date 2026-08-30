@@ -6,6 +6,7 @@ import {
   buildPayloadRollo,
   buildPayloadPeso,
   buildPayloadLote,
+  buildPayloadProducto,
   type EtiquetaMedicion,
 } from '../etiqueta-liberacion'
 
