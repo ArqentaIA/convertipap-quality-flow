@@ -50,6 +50,7 @@ function PesajeCintasPage() {
   const buscar = useServerFn(buscarContextoRollo);
   const crear = useServerFn(crearLote);
   const crearManualV2 = useServerFn(crearLoteManualV2);
+  const heredarBajada = useServerFn(iniciarBajadaHeredada);
   const guardarOrden = useServerFn(guardarOrdenManual);
   const traer = useServerFn(obtenerLoteYCintas);
   const registrar = useServerFn(registrarCinta);
