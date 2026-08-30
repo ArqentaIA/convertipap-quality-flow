@@ -905,6 +905,10 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
       muestra_id: string;
       numero_rollo?: string;
       reintento?: boolean;
+      salto_numeracion?: {
+        numero_solicitado: string | null;
+        numeros_omitidos: number;
+      } | null;
     }) => {
       // Vincula el pesaje (si existe) antes de refrescar caches.
       const pesajeIdParaVincular = pesajeVinculado?.id ?? null;
@@ -959,6 +963,14 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
               ? `${descBase} Faltaron (${noObligatoriosFaltantes}) datos no obligatorios.`
               : descBase,
           duration: 5000,
+        });
+      }
+      // Salto automático de numeración: el consecutivo estimado estaba ocupado
+      // por un registro histórico y el sistema asignó el siguiente número libre.
+      if (res.salto_numeracion) {
+        toast.warning(`Numeración ajustada automáticamente → ${res.numero_rollo}`, {
+          description: `El número ${res.salto_numeracion.numero_solicitado ?? "estimado"} ya estaba utilizado. Se omitieron ${res.salto_numeracion.numeros_omitidos} número(s) y el salto quedó registrado en bitácora.`,
+          duration: 12000,
         });
       }
       setMuestraRecienId(res.muestra_id);
@@ -1585,16 +1597,29 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
                       )}
 
                       <p className="text-[11px] font-semibold tracking-wide text-muted-foreground">
-                        {rolloPesajeSel ? "ROLLO SELECCIONADO (YA PESADO)" : "PRÓXIMO NÚMERO ESTIMADO"}
+                        {rolloPesajeSel ? "ROLLO SELECCIONADO (YA PESADO)" : "SIGUIENTE FOLIO SUGERIDO"}
                       </p>
                       <div className="flex h-11 items-center rounded-md border border-input bg-muted px-3 text-base font-semibold">
                         {numeroRollo || "—"}
                       </div>
+                      {!rolloPesajeSel && numeracionAuto?.ocupado && (
+                        <div className="rounded-md border border-amber-400 bg-amber-50 p-2 text-[12px] text-amber-900">
+                          <p className="font-semibold">
+                            El folio {numeracionAuto.sugerido_base} ya está ocupado
+                          </p>
+                          <p className="mt-0.5">
+                            Se omitirán {numeracionAuto.saltos} número(s) y al guardar se asignará
+                            automáticamente <strong>{numeracionAuto.proximo_numero}</strong>. El
+                            salto queda registrado en bitácora.
+                          </p>
+                        </div>
+                      )}
                       <p className="text-[11px] text-muted-foreground">
                         {rolloPesajeSel
                           ? "Este número proviene de Pesaje de Rollo y se conservará al guardar."
                           : "Se confirmará al guardar la muestra. No está reservado y puede cambiar si otro operador guarda antes."}
                       </p>
+
                     </>
                   )}
                 </>
