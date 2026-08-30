@@ -1133,12 +1133,18 @@ function PesajeCintasPage() {
             </div>
 
 
-            {/* Grid de 20 posiciones (en lote finalizado solo se muestran las registradas) */}
+            {/* Posiciones globales del rollo (C1–C350): registradas de esta bajada + siguiente */}
             <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-4">
-              {Array.from({ length: 20 }, (_, i) => i + 1)
-                .filter((pos) => lote.estado === "abierto" || cintas.some((x) => x.posicion === pos))
+              {Array.from(
+                new Set<number>([
+                  ...cintas.map((x) => x.posicion),
+                  ...(siguientePos > 0 && lote.estado === "abierto" ? [siguientePos] : []),
+                ]),
+              )
+                .sort((a, b) => a - b)
                 .map((pos) => {
                 const c = cintas.find((x) => x.posicion === pos);
+
                 const habilitada = !c && pos === siguientePos && lote.estado === "abierto";
                 return (
                   <CintaCard
