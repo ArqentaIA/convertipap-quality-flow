@@ -424,16 +424,28 @@ function PesajeCintasPage() {
   const mermaPorPesoKg = compsValidos ? Math.round((compCapa + compProceso + compGallo) * 100) / 100 : NaN;
   const mermaPorPesoPct = netoBM > 0 && Number.isFinite(mermaPorPesoKg) ? (mermaPorPesoKg / netoBM) * 100 : null;
 
-  const siguientePos = useMemo(() => {
-    if (!lote) return 0;
-    if (cintas.length >= 20) return 0;
-    return cintas.length + 1;
-  }, [lote, cintas.length]);
+  const MAX_CINTAS_BAJADA = 50;
+  const MAX_POSICION = 350;
+  const numeroBajada = lote?.numero_bajada ?? 1;
 
-  async function onRegistrar(peso: number, uniones: number, ancho: number, obs: string) {
+  // Posición continua por rollo (no reinicia entre bajadas).
+  const siguientePos = useMemo(() => {
+    if (!lote || lote.estado !== "abierto") return 0;
+    if (cintas.length >= MAX_CINTAS_BAJADA) return 0;
+    const maxLocal = cintas.reduce((m, c) => Math.max(m, c.posicion), 0);
+    const maxGlobal = Math.max(maxLocal, rolloInfo?.ultima_posicion ?? 0);
+    const next = maxGlobal + 1;
+    return next > MAX_POSICION ? 0 : next;
+  }, [lote, cintas, rolloInfo?.ultima_posicion]);
+
+  async function onRegistrar(peso: number, uniones: number, ancho: number, obs: string, pza: string) {
     if (!lote) return;
     if (requestGuard.current) return;
     if (peso <= 0 || ancho <= 0 || uniones < 0) { toast.error("Valores inválidos."); return; }
+    if (!pza.trim() || pza.trim().length > 10) {
+      toast.error("Capture el Lote Logístico pza. (máximo 10 caracteres).");
+      return;
+    }
     if (totalCintas + peso > netoBM + 0.001) {
       toast.error("El peso acumulado de las cintas supera el peso neto del rollo de origen. Revise los pesos capturados.");
       return;
@@ -446,10 +458,12 @@ function PesajeCintasPage() {
           lote_id: lote.id,
           uniones, peso_cinta_kg: peso, ancho_util: ancho,
           observaciones: obs || null,
+          lote_logistico_pza: pza.trim(),
           idempotency_key: uuid(),
         },
       });
       await qc.invalidateQueries({ queryKey: ["cintas-lote", lote.id] });
+      await refrescarBajadas();
       toast.success(`Cinta registrada.`);
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "Error al registrar la cinta.");
@@ -458,6 +472,7 @@ function PesajeCintasPage() {
       setSaving(false);
     }
   }
+
 
   // Estatus de liberación por cinta (Ixtapaluca): hereda el del rollo y el
   // usuario puede cambiarlo según cómo salga el corte.
