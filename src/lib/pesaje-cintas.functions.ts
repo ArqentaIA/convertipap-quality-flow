@@ -629,7 +629,13 @@ export const prepararImpresion = createServerFn({ method: "POST" })
 
     // Lote Logístico: dato canónico capturado en Calidad (muestras_calidad).
     // Se adjunta al snapshot para que la etiqueta de cinta lo codifique en QR.
-    const out = res as unknown as { snapshot?: { muestra_calidad_id?: string | null; lote_logistico?: string | null } };
+    const out = res as unknown as {
+      snapshot?: {
+        muestra_calidad_id?: string | null;
+        lote_logistico?: string | null;
+        cintas?: Array<{ id: string; lote_logistico_pza?: string | null }>;
+      };
+    };
     const muestraId = out?.snapshot?.muestra_calidad_id ?? null;
     if (out?.snapshot) {
       out.snapshot.lote_logistico = null;
@@ -640,6 +646,20 @@ export const prepararImpresion = createServerFn({ method: "POST" })
           .eq("id", muestraId)
           .maybeSingle();
         out.snapshot.lote_logistico = (m as { lote_logistico: string | null } | null)?.lote_logistico ?? null;
+      }
+      // Lote Logístico pza.: el RPC no lo incluye en el snapshot; se adjunta
+      // por cinta para que la etiqueta/QR use el dato capturado en cada cinta.
+      const cintasSnap = out.snapshot.cintas ?? [];
+      const cintaIds = cintasSnap.map((c) => c.id);
+      if (cintaIds.length > 0) {
+        const { data: pcs } = await context.supabase
+          .from("pesajes_cintas")
+          .select("id, lote_logistico_pza")
+          .in("id", cintaIds);
+        const pzaPorCinta = new Map(
+          ((pcs ?? []) as { id: string; lote_logistico_pza: string | null }[]).map((r) => [r.id, r.lote_logistico_pza]),
+        );
+        for (const c of cintasSnap) c.lote_logistico_pza = pzaPorCinta.get(c.id) ?? null;
       }
     }
 
@@ -685,6 +705,7 @@ export const prepararImpresion = createServerFn({ method: "POST" })
           estado: string;
           version_etiqueta: number;
           created_at: string;
+          lote_logistico_pza?: string | null;
         }>;
       };
     };
