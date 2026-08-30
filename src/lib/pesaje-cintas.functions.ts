@@ -259,6 +259,87 @@ export const crearLoteManualV2 = createServerFn({ method: "POST" })
     return { lote_id: id as unknown as string };
   });
 
+/**
+ * Inicia una nueva bajada heredando TODOS los datos de la bajada anterior
+ * del mismo rollo (peso, diámetro, uniones, orden, conductor, máquina/bobinadora
+ * y nombre del bobinador). No vuelve a solicitar captura al usuario.
+ */
+export const iniciarBajadaHeredada = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({
+    numero_rollo: z.string().trim().min(1).max(64),
+    idempotency_key: z.string().uuid(),
+  }).parse(d))
+  .handler(async ({ data, context }) => {
+    const rpc = context.supabase.rpc.bind(context.supabase) as unknown as (
+      fn: string,
+      args: Record<string, unknown>,
+    ) => Promise<{ data: unknown; error: { message: string } | null }>;
+    const rolloNorm = data.numero_rollo.trim().toUpperCase();
+
+    // Última bajada no anulada del rollo (fuente de los datos a heredar)
+    const { data: previo, error: ePrev } = await context.supabase
+      .from("pesajes_cintas_lotes")
+      .select("*")
+      .ilike("numero_rollo", rolloNorm)
+      .neq("estado", "anulado")
+      .order("numero_bajada", { ascending: false, nullsFirst: false })
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (ePrev) throw new Error(ePrev.message);
+    if (!previo) throw new Error("No existe una bajada previa para heredar los datos.");
+    const prev = previo as unknown as LoteCintas & { bobinador_nombre?: string | null };
+
+    let loteId: string;
+    if (prev.es_manual) {
+      const snap = prev.datos_calidad_snapshot as {
+        datos_origen?: { diametro_origen_cm?: number | null; diametro_cm?: number | null; uniones_origen?: number | null; uniones?: number | null };
+      } | null;
+      const o = snap?.datos_origen ?? {};
+      const diametro = o.diametro_origen_cm ?? o.diametro_cm ?? null;
+      const uniones = o.uniones_origen ?? o.uniones ?? null;
+      if (!(diametro != null && diametro > 0) || uniones == null || uniones < 0) {
+        throw new Error("La bajada anterior no tiene diámetro/uniones de origen; capture la bajada manualmente.");
+      }
+      const { data: id, error } = await rpc("crear_lote_pesaje_cintas_manual_v2", {
+        _numero_rollo: rolloNorm,
+        _peso_neto_kg: prev.peso_bobina_madre_neto_kg,
+        _diametro_cm: diametro,
+        _uniones: uniones,
+        _orden_manual: prev.numero_orden ?? "",
+        _idempotency: data.idempotency_key,
+      });
+      if (error) throw new Error(error.message);
+      loteId = id as string;
+    } else {
+      if (!prev.bobinadora_id) throw new Error("La bajada anterior no tiene máquina/bobinadora registrada.");
+      const { data: id, error } = await rpc("crear_lote_pesaje_cintas", {
+        _numero_rollo: rolloNorm,
+        _conductor_id: prev.conductor_id ?? null,
+        _bobinadora_id: prev.bobinadora_id,
+        _idempotency: data.idempotency_key,
+      });
+      if (error) throw new Error(error.message);
+      loteId = id as string;
+    }
+
+    // Heredar nombres operativos (conductor, máquina y bobinador en texto)
+    const limpio = (v: string | null | undefined) =>
+      v && v.trim() && v.trim().toUpperCase() !== "SIN DATOS REGISTRADOS" ? v.trim() : "";
+    const conductor = limpio(prev.conductor_nombre_snapshot);
+    const maquina = limpio(prev.bobinadora_nombre_snapshot);
+    if (conductor || maquina) {
+      await rpc("pc_set_nombres_operativos", { _lote_id: loteId, _conductor: conductor, _maquina: maquina });
+    }
+    const bobinador = limpio(prev.bobinador_nombre ?? null);
+    if (bobinador) {
+      await rpc("pc_set_bobinador_nombre", { _lote_id: loteId, _nombre: bobinador });
+    }
+
+    return { lote_id: loteId };
+  });
+
 export const guardarOrdenManual = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({

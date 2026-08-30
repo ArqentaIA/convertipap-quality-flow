@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { Loader2, Search, Printer, CheckCircle2, Ban, Lock, Pencil, UserCog } from "lucide-react";
 import {
   buscarContextoRollo, listConductores, listBobinadoras,
-  crearLote, crearLoteManualV2, guardarOrdenManual, obtenerLoteYCintas, registrarCinta, corregirCinta, anularCinta,
+  crearLote, crearLoteManualV2, iniciarBajadaHeredada, guardarOrdenManual, obtenerLoteYCintas, registrarCinta, corregirCinta, anularCinta,
   finalizarLote, prepararImpresion, actualizarDatosOperativos, asignarBobinadoraLote,
   asignarBobinadorNombre, asignarNombresOperativos, asignarEstatusCinta,
   bajadasRollo, cerrarRolloDefinitivo,
@@ -50,6 +50,7 @@ function PesajeCintasPage() {
   const buscar = useServerFn(buscarContextoRollo);
   const crear = useServerFn(crearLote);
   const crearManualV2 = useServerFn(crearLoteManualV2);
+  const heredarBajada = useServerFn(iniciarBajadaHeredada);
   const guardarOrden = useServerFn(guardarOrdenManual);
   const traer = useServerFn(obtenerLoteYCintas);
   const registrar = useServerFn(registrarCinta);
@@ -244,14 +245,24 @@ function PesajeCintasPage() {
     toast.info("Rollo no encontrado en la base de datos. Capture los datos mínimos del rollo de origen para continuar.");
   }
 
-  /** Inicia una nueva bajada sobre el rollo consultado (no toca las anteriores). */
-  function onIniciarNuevaBajada() {
-    if (!rolloInfo?.puede_nueva_bajada) return;
-    setLoteId(null);
-    if (contexto) {
-      toast.info(`Capture los datos operativos para la Bajada ${rolloInfo.total_bajadas + 1}.`);
-    } else {
-      activarManual(rolloActual ?? rolloInput.trim());
+  /** Inicia una nueva bajada heredando los datos de la bajada anterior (sin volver a capturar). */
+  async function onIniciarNuevaBajada() {
+    if (!rolloInfo?.puede_nueva_bajada || !rolloActual) return;
+    const siguiente = rolloInfo.total_bajadas + 1;
+    setSaving(true);
+    try {
+      const { lote_id } = await heredarBajada({
+        data: { numero_rollo: rolloActual, idempotency_key: uuid() },
+      });
+      setManualOpen(false);
+      setLoteId(lote_id);
+      await qc.invalidateQueries({ queryKey: ["cintas-lote", lote_id] });
+      await refrescarBajadas();
+      toast.success(`Bajada ${siguiente} iniciada con los datos de la bajada anterior.`);
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "No se pudo iniciar la nueva bajada.");
+    } finally {
+      setSaving(false);
     }
   }
 
