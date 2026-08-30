@@ -818,12 +818,20 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
         throw new Error(eRpc.message);
       }
       const out = res as
-        | { muestra_id: string; numero_rollo: string; reintento?: boolean }
+        | {
+            muestra_id: string;
+            numero_rollo: string;
+            reintento?: boolean;
+            numero_solicitado?: string | null;
+            numeros_omitidos?: number | null;
+          }
         | null;
       if (!out?.muestra_id) throw new Error("No se pudo crear la muestra.");
       muestraId = out.muestra_id;
       numeroRolloFinal = out.numero_rollo;
       reintentoIdempotente = !!out.reintento;
+      numerosOmitidos = out.numeros_omitidos ?? 0;
+      numeroSolicitado = numerosOmitidos > 0 ? (out.numero_solicitado ?? null) : null;
     } else {
       // EDICIÓN: conserva su número de rollo; sólo se valida unicidad contra otras.
       const { data: dup, error: eDup } = await sb
