@@ -86,6 +86,9 @@ function PesajeCintasPage() {
   const puedeCambiarOperativos = rolMe === "administrador" || rolMe === "calidad" || rolMe === "gerente_general";
 
   const [rolloInput, setRolloInput] = useState("");
+  // Rollo consultado (identidad de la entidad ancla `rollos_cintas`).
+  const [rolloActual, setRolloActual] = useState<string | null>(null);
+
   const [contexto, setContexto] = useState<ContextoRollo | null>(null);
   const [buscando, setBuscando] = useState(false);
   const [loteId, setLoteId] = useState<string | null>(null);
