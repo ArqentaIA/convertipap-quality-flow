@@ -298,15 +298,21 @@ export const registrarCinta = createServerFn({ method: "POST" })
     peso_cinta_kg: z.number().positive(),
     ancho_util: z.number().positive(),
     observaciones: z.string().max(500).optional().nullable(),
+    lote_logistico_pza: z.string().trim().min(1).max(10).optional().nullable(),
     idempotency_key: z.string().uuid(),
   }).parse(d))
   .handler(async ({ data, context }) => {
-    const { data: res, error } = await context.supabase.rpc("registrar_cinta", {
+    const rpc = context.supabase.rpc as unknown as (
+      fn: string,
+      args: Record<string, unknown>,
+    ) => Promise<{ data: unknown; error: { message: string } | null }>;
+    const { data: res, error } = await rpc("registrar_cinta_v2", {
       _lote_id: data.lote_id,
       _uniones: data.uniones,
       _peso_cinta_kg: data.peso_cinta_kg,
       _ancho_util: data.ancho_util,
       _observaciones: (data.observaciones ?? "") as string,
+      _lote_logistico_pza: data.lote_logistico_pza ?? null,
       _idempotency: data.idempotency_key,
     });
     if (error) throw new Error(error.message);
@@ -315,11 +321,47 @@ export const registrarCinta = createServerFn({ method: "POST" })
       posicion?: number;
       peso_total_cintas_kg?: number;
       peso_pendiente_kg?: number;
+      cantidad_cintas?: number;
       idempotent?: boolean;
     };
   });
 
+/** Bajadas registradas de un rollo + estado de cierre definitivo. */
+export const bajadasRollo = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ numero_rollo: z.string().trim().min(1).max(64) }).parse(d))
+  .handler(async ({ data, context }): Promise<RolloBajadas> => {
+    const rpc = context.supabase.rpc as unknown as (
+      fn: string,
+      args: Record<string, unknown>,
+    ) => Promise<{ data: unknown; error: { message: string } | null }>;
+    const { data: res, error } = await rpc("pc_bajadas_rollo", { _numero_rollo: data.numero_rollo });
+    if (error) throw new Error(error.message);
+    return res as RolloBajadas;
+  });
+
+/** Cierre definitivo del rollo: bloquea nuevas bajadas (no toca las bajadas). */
+export const cerrarRolloDefinitivo = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({
+    numero_rollo: z.string().trim().min(1).max(64),
+    motivo: z.string().trim().min(5).max(500),
+  }).parse(d))
+  .handler(async ({ data, context }) => {
+    const rpc = context.supabase.rpc as unknown as (
+      fn: string,
+      args: Record<string, unknown>,
+    ) => Promise<{ data: unknown; error: { message: string } | null }>;
+    const { data: res, error } = await rpc("cerrar_rollo_cintas", {
+      _numero_rollo: data.numero_rollo,
+      _motivo: data.motivo,
+    });
+    if (error) throw new Error(error.message);
+    return res as unknown as { rollo_id: string; numero_rollo: string; cerrado: boolean };
+  });
+
 export const corregirCinta = createServerFn({ method: "POST" })
+
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({
     cinta_id: z.string().uuid(),
