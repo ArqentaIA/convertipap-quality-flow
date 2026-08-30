@@ -661,6 +661,87 @@ function PesajeCintasPage() {
         )}
       </div>
 
+      {/* Bajadas del rollo */}
+      {rolloActual && rolloInfo && rolloInfo.total_bajadas > 0 && (
+        <div className="rounded-lg border border-border bg-card p-4">
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Bajadas del rollo {rolloInfo.numero_rollo}
+              </div>
+              <div className="text-sm font-medium">
+                {rolloInfo.total_bajadas} / 7 bajadas · última posición C{rolloInfo.ultima_posicion} · próxima C
+                {rolloInfo.proxima_posicion}
+                {rolloInfo.cerrado && (
+                  <span className="ml-2 rounded-full bg-destructive/15 px-2 py-0.5 text-[10px] font-semibold uppercase text-destructive">
+                    Rollo cerrado
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {rolloInfo.puede_nueva_bajada && (
+                <button
+                  onClick={onIniciarNuevaBajada}
+                  className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground"
+                >
+                  Iniciar nueva bajada ({rolloInfo.total_bajadas + 1})
+                </button>
+              )}
+              {!rolloInfo.cerrado && !rolloInfo.lote_abierto_id && (
+                <button
+                  onClick={onCerrarRolloDefinitivo}
+                  className="flex items-center gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm font-medium text-destructive"
+                >
+                  <Lock className="h-4 w-4" /> Cerrar rollo definitivamente
+                </button>
+              )}
+            </div>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                <tr>
+                  <th className="py-1 pr-3">Bajada</th>
+                  <th className="py-1 pr-3">Estado</th>
+                  <th className="py-1 pr-3 text-right">Cintas</th>
+                  <th className="py-1 pr-3">Posiciones</th>
+                  <th className="py-1 pr-3 text-right">Peso cintas (kg)</th>
+                  <th className="py-1 pr-3 text-right">Peso de mermas (kg)</th>
+                  <th className="py-1 pr-3"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {rolloInfo.bajadas.map((b) => (
+                  <tr key={b.lote_id} className="border-t border-border/60">
+                    <td className="py-1.5 pr-3 font-semibold">
+                      {b.numero_bajada}
+                      {b.historica && <span className="ml-1 text-[10px] text-muted-foreground">(histórica)</span>}
+                    </td>
+                    <td className="py-1.5 pr-3">{b.estado}</td>
+                    <td className="py-1.5 pr-3 text-right">{b.cantidad_cintas}</td>
+                    <td className="py-1.5 pr-3">
+                      {b.posicion_min == null ? "—" : `C${b.posicion_min} – C${b.posicion_max}`}
+                    </td>
+                    <td className="py-1.5 pr-3 text-right">{n(b.peso_total_cintas_kg)}</td>
+                    <td className="py-1.5 pr-3 text-right">{b.peso_mermas_kg == null ? "—" : n(b.peso_mermas_kg)}</td>
+                    <td className="py-1.5 pr-3 text-right">
+                      {b.lote_id !== loteId && (
+                        <button onClick={() => setLoteId(b.lote_id)} className="text-xs text-primary hover:underline">
+                          Ver
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+
+
       {/* Contexto recuperado del sistema */}
       {contexto && (
         <div className="rounded-lg border border-border bg-card p-4">
