@@ -138,7 +138,10 @@ export type LoteCintas = {
   /** Campo canónico vigente: Peso de Mermas (kg). */
   peso_mermas_kg: number | null;
   estado: "abierto" | "finalizado" | "anulado";
+  /** N.º de bajada (histórico = null, se lee como Bajada 1). */
+  numero_bajada?: number | null;
   es_manual: boolean;
+
   numero_orden: string | null;
   datos_calidad_snapshot: Json;
   fecha_produccion: string | null;
