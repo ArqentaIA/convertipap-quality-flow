@@ -146,6 +146,22 @@ function PesajeCintasPage() {
     refetchOnWindowFocus: false,
   });
 
+  // Bajadas del rollo (entidad ancla). Solo lectura, aditivo.
+  const bajadasQ = useQuery({
+    queryKey: ["cintas-bajadas", rolloActual],
+    queryFn: () =>
+      rolloActual ? traerBajadas({ data: { numero_rollo: rolloActual } }) : Promise.resolve(null),
+    enabled: !!rolloActual && authReady,
+    refetchOnWindowFocus: false,
+  });
+  const rolloInfo = bajadasQ.data ?? null;
+
+  async function refrescarBajadas() {
+    await qc.invalidateQueries({ queryKey: ["cintas-bajadas", rolloActual] });
+  }
+
+
+
   const lote: LoteCintas | null = loteQ.data?.lote ?? null;
   const todasCintas: CintaRegistrada[] = loteQ.data?.cintas ?? [];
   const cintas: CintaRegistrada[] = todasCintas.filter((c) => c.estado === "registrada");
