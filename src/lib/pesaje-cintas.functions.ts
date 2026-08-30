@@ -705,6 +705,7 @@ export const prepararImpresion = createServerFn({ method: "POST" })
           estado: string;
           version_etiqueta: number;
           created_at: string;
+          lote_logistico_pza?: string | null;
         }>;
       };
     };
