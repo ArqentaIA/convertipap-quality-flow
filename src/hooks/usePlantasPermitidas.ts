@@ -76,3 +76,21 @@ export function useMaquinasPermitidas() {
     },
   });
 }
+
+/**
+ * Máquinas visibles en pantalla: plantas permitidas al usuario ∩ planta activa
+ * seleccionada en el encabezado. Es la regla única para Producción y Visores.
+ */
+export function useMaquinasVisibles() {
+  const { data: plantas } = usePlantasPermitidas();
+  const { data: maquinas } = useMaquinasPermitidas();
+  const plantaCodigo = usePlantaActivaCodigo();
+
+  const activa = (plantas ?? []).find(
+    (p) => (p.codigo ?? "").toUpperCase() === (plantaCodigo ?? "").toUpperCase(),
+  );
+
+  const lista = (maquinas ?? []).filter((m) => (activa ? m.planta_id === activa.id : true));
+  return { maquinas: lista, codigos: lista.map((m) => m.codigo) };
+}
+

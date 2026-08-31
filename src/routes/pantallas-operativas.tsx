@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
-import { useMaquinasPermitidas } from "@/hooks/usePlantasPermitidas";
+import { useMaquinasVisibles } from "@/hooks/usePlantasPermitidas";
 
 export const Route = createFileRoute("/pantallas-operativas")({
   component: PantallasGate,
@@ -41,10 +41,10 @@ function OperatorVisionUrls() {
   const isAdmin = hasRole("administrador");
   const [reveal, setReveal] = useState<Record<string, boolean>>({});
 
-  const { data: maquinasPlanta } = useMaquinasPermitidas();
-  // Solo las máquinas con visor que pertenecen a las plantas asignadas al usuario.
+  // Solo las máquinas permitidas al usuario dentro de la planta activa.
+  const { codigos } = useMaquinasVisibles();
   const maquinasVisibles = (MAQUINAS_OV as readonly string[]).filter((codigo) =>
-    (maquinasPlanta ?? []).some((m) => m.codigo === codigo),
+    codigos.includes(codigo),
   );
 
   const { data: maquinas } = useQuery({
