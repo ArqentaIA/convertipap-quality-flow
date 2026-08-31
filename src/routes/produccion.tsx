@@ -21,6 +21,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 import { BuscadorRollo } from "@/components/qc/BuscadorRollo";
 import { useLabFilter } from "@/lib/lab";
+import { useMaquinasVisibles } from "@/hooks/usePlantasPermitidas";
 import trofeoAsset from "@/assets/trofeo.png.asset.json";
 
 const TROFEO_URL = trofeoAsset.url;
@@ -63,9 +64,12 @@ function ProduccionPage() {
   });
 
 
-  // Todos los roles ven las estadísticas de todas las máquinas.
-  // El acceso al detalle de rollos se restringe por máquina en MaquinaCard.
-  const maquinas = all;
+  // Solo se muestran las máquinas permitidas al usuario dentro de la planta activa.
+  const { codigos: codigosVisibles } = useMaquinasVisibles();
+  const maquinas = useMemo(
+    () => (codigosVisibles.length === 0 ? [] : all.filter((m) => codigosVisibles.includes(m.codigo))),
+    [all, codigosVisibles.join(",")], // eslint-disable-line react-hooks/exhaustive-deps
+  );
 
   // Ranking: orden descendente por kg, sin producción al final
   const ranking = useMemo(() => {

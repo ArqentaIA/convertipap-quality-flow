@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 
 import logo from "@/assets/logo.png";
-import { useMaquinasPermitidas, usePlantasPermitidas, PLANTA_ACTIVA_KEY } from "@/hooks/usePlantasPermitidas";
+import { useMaquinasPermitidas, useMaquinasVisibles, usePlantasPermitidas, PLANTA_ACTIVA_KEY } from "@/hooks/usePlantasPermitidas";
 import { useAuth, type AppModule } from "@/lib/auth";
 import { useLabFilter, LAB_LABEL } from "@/lib/lab";
 import { ShieldCheck } from "lucide-react";
@@ -90,11 +90,8 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const currentSearch = useRouterState({ select: (s) => s.location.search as { maquina?: string } });
   const plantas = plantasPermitidas ?? [];
-  const visoresPermitidos = (maquinasPermitidas ?? [])
-    .map((maquina) => maquina.codigo)
-    .filter((codigo): codigo is "MP-01" | "MP-04" | "MP-05" | "MP-06" | "MP-07" | "MP-10" =>
-      ["MP-01", "MP-04", "MP-05", "MP-06", "MP-07", "MP-10"].includes(codigo),
-    );
+  const { codigos: maquinasVisibles } = useMaquinasVisibles();
+  const visoresPermitidos = maquinasVisibles;
   const plant = plantas.find((p) => p.id === plantId) ?? plantas[0] ?? null;
   const now = new Date();
   const dateStr = now.toLocaleDateString("es-MX", { weekday: "long", day: "2-digit", month: "long", year: "numeric" });
@@ -153,7 +150,7 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
 
   // Acceso efectivo por módulo (permiso global + excepciones por planta).
   const puedeVer = (mod: (typeof NAV)[number]["module"]) => {
-    if (esPesajeOperativo) return mod === "pesaje_bobina_madre";
+    if (esPesajeOperativo) return mod === "pesaje_bobina_madre" || mod === "produccion" || mod === "dashboard";
     if (mod === "ordenes_produccion") return canOrdenesProduccion;
     return mod === "variables_calidad" ? canVariablesCalidad : auth.canAccess(mod);
   };
