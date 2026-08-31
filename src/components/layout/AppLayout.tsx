@@ -273,7 +273,7 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
                         <Link
                           key={maq}
                           to="/operator-vision"
-                          search={{ maquina: maq }}
+                          search={{ maquina: maq } as { maquina: "MP-01" }}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="cabinet-panel mx-1 my-0.5 flex items-center gap-2 rounded-md px-2.5 py-1.5 text-xs font-medium text-sidebar-foreground/80 hover:text-white"
