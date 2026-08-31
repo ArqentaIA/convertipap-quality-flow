@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
+import type { AppRole } from "@/lib/auth";
 
 export type PlantaRow = { id: string; codigo: string; nombre: string };
 
@@ -77,20 +78,39 @@ export function useMaquinasPermitidas() {
   });
 }
 
+/** Roles con visibilidad global: no se recortan por la planta activa. */
+const ROLES_GLOBALES: AppRole[] = [
+  "administrador",
+  "direccion_general",
+  "gerente_general",
+  "direccion",
+  "calidad",
+  "reportes_consulta",
+];
+
 /**
- * Máquinas visibles en pantalla: plantas permitidas al usuario ∩ planta activa
- * seleccionada en el encabezado. Es la regla única para Producción y Visores.
+ * Máquinas visibles en pantalla.
+ *  - Roles globales (admin, dirección, gerencia, calidad, consulta):
+ *    ven TODAS las máquinas de las plantas que tienen permitidas.
+ *  - Resto de roles (capturista, operador, pesaje operativo):
+ *    plantas permitidas ∩ planta activa del encabezado.
  */
 export function useMaquinasVisibles() {
   const { data: plantas } = usePlantasPermitidas();
   const { data: maquinas } = useMaquinasPermitidas();
   const plantaCodigo = usePlantaActivaCodigo();
+  const { hasRole } = useAuth();
+
+  const esGlobal = ROLES_GLOBALES.some((r) => hasRole(r));
 
   const activa = (plantas ?? []).find(
     (p) => (p.codigo ?? "").toUpperCase() === (plantaCodigo ?? "").toUpperCase(),
   );
 
-  const lista = (maquinas ?? []).filter((m) => (activa ? m.planta_id === activa.id : true));
+  const lista = (maquinas ?? []).filter((m) =>
+    esGlobal ? true : activa ? m.planta_id === activa.id : true,
+  );
   return { maquinas: lista, codigos: lista.map((m) => m.codigo) };
 }
+
 
