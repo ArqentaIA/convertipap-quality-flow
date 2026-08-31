@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 
 import logo from "@/assets/logo.png";
-import { useMaquinasPermitidas, useMaquinasVisibles, usePlantasPermitidas, PLANTA_ACTIVA_KEY } from "@/hooks/usePlantasPermitidas";
+import { useMaquinasVisibles, usePlantasPermitidas, PLANTA_ACTIVA_KEY } from "@/hooks/usePlantasPermitidas";
 import { useAuth, type AppModule } from "@/lib/auth";
 import { useLabFilter, LAB_LABEL } from "@/lib/lab";
 import { ShieldCheck } from "lucide-react";
@@ -85,7 +85,6 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
   const labFilter = useLabFilter();
   const [collapsed, setCollapsed] = useState(false);
   const { data: plantasPermitidas } = usePlantasPermitidas();
-  const { data: maquinasPermitidas } = useMaquinasPermitidas();
   const [plantId, setPlantId] = useState<string | null>(null);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const currentSearch = useRouterState({ select: (s) => s.location.search as { maquina?: string } });
