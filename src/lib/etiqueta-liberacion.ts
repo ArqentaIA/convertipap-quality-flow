@@ -259,6 +259,7 @@ function buildHtml(
   .hero .producto .tag{font-size:11px;letter-spacing:.18em;color:#64748b;text-transform:uppercase;font-weight:700}
   .hero .producto .nombre{font-size:16px;font-weight:900;line-height:1.1;margin-top:5px;color:#0f172a;letter-spacing:-.01em}
   .hero .producto .codigo{font-size:11px;color:#475569;margin-top:5px;font-family:ui-monospace,Menlo,monospace;letter-spacing:.04em}
+  .hero .producto .sku{font-size:11px;font-weight:700;color:#0f172a;margin-top:4px;font-family:ui-monospace,Menlo,monospace;letter-spacing:.04em}
   .hero .qr-verify{padding:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#f8fafc}
   .hero .qr-verify img{width:96px;height:96px;display:block}
   .hero .qr-verify .cap{font-size:8.5px;color:#475569;margin-top:3px;text-align:center;letter-spacing:.08em;text-transform:uppercase;font-weight:700}
@@ -350,6 +351,7 @@ function buildHtml(
         <div class="tag">Producto</div>
         <div class="nombre">${esc((data.productoNombre || data.productoCodigo).toUpperCase())}</div>
         <div class="codigo">${esc(data.productoCodigo)} · ${esc(data.maquinaCodigo)}</div>
+        ${data.skuSap ? `<div class="sku">SKU SAP: ${esc(data.skuSap)}</div>` : ""}
       </div>
       <div class="qr-verify">
         <img src="${qrDataUrl}" alt="QR verificación" />
