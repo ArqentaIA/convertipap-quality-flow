@@ -65,9 +65,9 @@ export function usePlantaActivaCodigo(): string | null {
  */
 export function usePlantaEfectivaCodigo(): string | null {
   const plantaCodigo = usePlantaActivaCodigo();
-  const plantas = usePlantasPermitidas();
+  const { data: plantas } = usePlantasPermitidas();
   if (plantaCodigo) return plantaCodigo;
-  return plantas[0]?.codigo ?? null;
+  return plantas?.[0]?.codigo ?? null;
 }
 
 /** Máquinas activas visibles para el usuario (filtradas por planta asignada). */
