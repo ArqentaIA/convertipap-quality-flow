@@ -1442,21 +1442,52 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
           </Alert>
         )}
 
-        {/* Contexto de captura — flujo progresivo obligatorio: Máquina → Rollo */}
+        {/* Contexto de captura — flujo progresivo obligatorio: OP → Máquina → Rollo */}
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base font-semibold">Contexto de captura</CardTitle>
           </CardHeader>
-          <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            {/* 1. Máquina */}
+          <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            {/* 1. Orden de Producción */}
             <div className="space-y-1.5">
-              <Label className="text-base">1. Máquina</Label>
+              <Label className="text-base">
+                1. Orden de Producción{" "}
+                <span className="text-muted-foreground font-normal">(opcional)</span>
+              </Label>
+              <Select value={ordenSel} onValueChange={setOrdenSel}>
+                <SelectTrigger className="h-11 text-base">
+                  <SelectValue placeholder={
+                    ordenesQuery.isLoading ? "Cargando órdenes…" : "Selecciona orden de producción"
+                  } />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__sin__">
+                    <span className="italic">Continuar sin Orden de Producción</span>
+                  </SelectItem>
+                  {ordenesActivas.map((o) => (
+                    <SelectItem key={o.id} value={o.id}>
+                      <span className="font-mono">{o.numero_orden}</span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-[11px] text-muted-foreground">
+                Primer paso obligatorio. Cambiarlo reinicia Máquina y Rollo.
+              </p>
+            </div>
+
+            {/* 2. Máquina */}
+            <div className="space-y-1.5">
+              <Label className="text-base">2. Máquina</Label>
               <Select
                 value={maquinaId}
                 onValueChange={setMaquinaId}
+                disabled={!opResuelta}
               >
                 <SelectTrigger className="h-11 text-base">
-                  <SelectValue placeholder="Selecciona máquina" />
+                  <SelectValue placeholder={
+                    opResuelta ? "Selecciona máquina (MP-04 a MP-07)" : "Selecciona primero la Orden de Producción"
+                  } />
                 </SelectTrigger>
                 <SelectContent>
                   {maquinas.map((m) => (
@@ -1472,7 +1503,9 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
                 </SelectContent>
               </Select>
               <p className="text-[11px] text-muted-foreground">
-                Primer paso obligatorio. Cambiar la máquina reinicia el número de rollo.
+                {opResuelta
+                  ? "Cambiar la máquina reinicia el número de rollo."
+                  : "Se habilita al elegir Orden de Producción."}
               </p>
             </div>
 
