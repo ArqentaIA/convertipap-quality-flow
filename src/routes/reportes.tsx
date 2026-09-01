@@ -25,7 +25,7 @@ import {
   exportReporteNoConformeXLSX,
 } from "@/lib/reporte-no-conforme-export";
 import { ReportesCintasSection } from "@/components/reportes/ReportesCintas";
-import { usePlantaActivaCodigo } from "@/hooks/usePlantasPermitidas";
+import { usePlantaEfectivaCodigo } from "@/hooks/usePlantasPermitidas";
 
 
 
@@ -124,7 +124,7 @@ function buildFileName(nombre: string) {
 
 
 function ReportesPage() {
-  const plantaActiva = usePlantaActivaCodigo();
+  const plantaActiva = usePlantaEfectivaCodigo();
   const auth = useAuth();
   const [rango, setRango] = useState<Rango>("semana");
   const [mesesSel, setMesesSel] = useState<number[]>(MESES.map((_, i) => i));
@@ -227,7 +227,7 @@ function ReporteProduccionItem(props: {
   mesesSel: number[];
   setMesesSel: (m: number[]) => void;
 }) {
-  const plantaActiva = usePlantaActivaCodigo();
+  const plantaActiva = usePlantaEfectivaCodigo();
   const { start, end, freq, periodo, usuario, enabled, rango, setRango, mesesSel, setMesesSel } = props;
   const [turno, setTurno] = useState("");
   const [maquina, setMaquina] = useState("");
@@ -378,7 +378,7 @@ const MESES_RM = [
 ];
 
 function ReporteMensualItem({ usuario, enabled }: { usuario: string; enabled: boolean }) {
-  const plantaActiva = usePlantaActivaCodigo();
+  const plantaActiva = usePlantaEfectivaCodigo();
   const now = new Date();
   const [year, setYear] = useState<number>(now.getFullYear());
   const [month, setMonth] = useState<number | "">("");
@@ -486,7 +486,7 @@ const TURNO_LABEL_RT: Record<string, string> = {
 };
 
 function ReporteTurnoItem({ usuario, enabled }: { usuario: string; enabled: boolean }) {
-  const plantaActiva = usePlantaActivaCodigo();
+  const plantaActiva = usePlantaEfectivaCodigo();
   const todayISO = useMemo(() => {
     const d = new Date();
     const pad = (n: number) => String(n).padStart(2, "0");
@@ -608,7 +608,7 @@ function ReporteTurnoItem({ usuario, enabled }: { usuario: string; enabled: bool
 // Reporte General — XLSX con filtros propios (Turno/Día/Semana/Mes/Año)
 // ─────────────────────────────────────────────────────────────────
 function ReporteGeneralItem({ enabled }: { enabled: boolean }) {
-  const plantaActiva = usePlantaActivaCodigo();
+  const plantaActiva = usePlantaEfectivaCodigo();
   const [rango, setRango] = useState<Rango>("semana");
   const [mesesSel, setMesesSel] = useState<number[]>(MESES.map((_, i) => i));
   const [busy, setBusy] = useState(false);
@@ -694,7 +694,7 @@ function ReporteGeneralItem({ enabled }: { enabled: boolean }) {
 // Reporte CONSOLIDADO — por fecha (todas las máquinas MP-04..MP-07)
 // ─────────────────────────────────────────────────────────────────
 function ReporteConsolidadoItem({ enabled }: { enabled: boolean }) {
-  const plantaActiva = usePlantaActivaCodigo();
+  const plantaActiva = usePlantaEfectivaCodigo();
   const todayISO = useMemo(() => {
     const d = new Date();
     const pad = (n: number) => String(n).padStart(2, "0");
@@ -773,7 +773,7 @@ function ReporteConsolidadoItem({ enabled }: { enabled: boolean }) {
 // Reporte de Producción Mensual (dinámico) — formato FOR-PRO-05
 // ─────────────────────────────────────────────────────────────────
 function ReporteProduccionMesItem({ enabled }: { enabled: boolean }) {
-  const plantaActiva = usePlantaActivaCodigo();
+  const plantaActiva = usePlantaEfectivaCodigo();
   const now = new Date();
   const [year, setYear] = useState<number>(now.getFullYear());
   const [month, setMonth] = useState<number>(now.getMonth() + 1);
@@ -873,7 +873,7 @@ function ReporteProduccionMesItem({ enabled }: { enabled: boolean }) {
 // Reporte NO CONFORME — rollos NC y CONDICIONADO del mes vigente
 // ─────────────────────────────────────────────────────────────────
 function ReporteNoConformeItem({ enabled }: { enabled: boolean }) {
-  const plantaActiva = usePlantaActivaCodigo();
+  const plantaActiva = usePlantaEfectivaCodigo();
   const now = new Date();
   const [year, setYear] = useState<number>(now.getFullYear());
   const [month, setMonth] = useState<number>(now.getMonth() + 1);

@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { SessionGate } from "@/components/SessionGate";
 import { FileSpreadsheet, CalendarRange, AlertTriangle, Eye, X } from "lucide-react";
-import { usePlantaActivaCodigo } from "@/hooks/usePlantasPermitidas";
+import { usePlantaEfectivaCodigo } from "@/hooks/usePlantasPermitidas";
 import { useAuth } from "@/lib/auth";
 import { getReporteMensual, type ReporteMensualPayload } from "@/lib/reporte-mensual.functions";
 import { exportReporteMensualXLSX } from "@/lib/reporte-mensual-export";
@@ -49,7 +49,7 @@ function ReporteMensualPage() {
   const [busy, setBusy] = useState<"xlsx" | null>(null);
   const [showTrace, setShowTrace] = useState(false);
 
-  const plantaActiva = usePlantaActivaCodigo();
+  const plantaActiva = usePlantaEfectivaCodigo();
   const modo: "anual" | "mensual" = month === "" ? "anual" : "mensual";
   const titulo = modo === "anual" ? "REPORTE ANUAL" : "REPORTE MENSUAL";
   const periodoTexto = modo === "anual" ? `Año ${year}` : `${MESES[(month as number) - 1]} ${year}`;
