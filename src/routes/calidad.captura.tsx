@@ -1389,6 +1389,7 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
         fuera_de_turno: modoFueraTurno,
         fuera_de_turno_motivo: modoFueraTurno ? motivoFueraTurno.trim() : null,
         lote_logistico: loteLogisticoValido ? loteLogistico : null,
+        sku_sap: skusProducto.length > 0 ? skuSel || null : null,
         // Estatus del rollo elegido por el capturista (solo Ixtapaluca).
         estatus_capturista: esIxtapaluca && estatusManual ? estatusManual : null,
         estatus_capturista_motivo:
