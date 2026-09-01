@@ -1838,6 +1838,28 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
                 </SelectContent>
               </Select>
             </div>
+            {skusProducto.length > 0 && (
+              <div className="space-y-1.5">
+                <Label className="text-base">SKU SAP (ancho)</Label>
+                <Select value={skuSel} onValueChange={setSkuSel}>
+                  <SelectTrigger className="h-11 text-base">
+                    <SelectValue placeholder="Selecciona SKU / ancho" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {skusProducto.map((s) => (
+                      <SelectItem key={s.clave_sku_sap} value={s.clave_sku_sap}>
+                        <span className="font-mono mr-2">{s.clave_sku_sap}</span>
+                        <span className="text-muted-foreground">·</span>
+                        <span className="ml-2">{s.descripcion_sap}</span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Elige la clave SAP que corresponde al ancho real del rollo. Se guarda en la muestra, la etiqueta y el QR.
+                </p>
+              </div>
+            )}
             <div className="space-y-1.5">
               <Label htmlFor="vel-maq" className="text-base">
                 Vel. Máquina{" "}
