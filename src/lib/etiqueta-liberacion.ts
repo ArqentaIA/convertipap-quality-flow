@@ -69,6 +69,10 @@ export type EtiquetaData = {
   estadoSap?: string | null;
   /** Código logístico capturado en Calidad (muestras_calidad.lote_logistico). */
   loteLogistico?: string | null;
+  /** Código de planta (TLX/IXT) — define el juego de QR inferiores. */
+  plantaCodigo?: string | null;
+  /** SKU SAP principal guardado en la captura (solo TLX). */
+  skuSap?: string | null;
 };
 
 function fmtKg(value: number | string): string {
@@ -131,6 +135,11 @@ export function buildPayloadLote(loteLogistico: string | null | undefined): stri
   return (loteLogistico ?? "").trim();
 }
 
+/** QR SKU SAP (TLX): texto plano con la clave SKU SAP de la muestra. */
+export function buildPayloadSkuSap(skuSap: string | null | undefined): string {
+  return (skuSap ?? "").trim();
+}
+
 /** Cuarto QR: código de producto real de la muestra (texto directo, sin URL ni prefijos). */
 export function buildPayloadProducto(
   productoCodigo: string | null | undefined,
@@ -158,9 +167,11 @@ function buildHtml(
   qrPesoDataUrl: string,
   qrOrdenDataUrl: string,
   qrProductoDataUrl: string,
+  qrSkuDataUrl: string,
+  esTlx: boolean,
   logoDataUrl: string,
   sapLogoDataUrl: string,
-  payloads: { rollo: string; peso: string; lote: string; producto: string },
+  payloads: { rollo: string; peso: string; lote: string; producto: string; sku: string },
 ): string {
   const fechaImpresion = new Date().toLocaleString("es-MX");
   const estatusColor =
@@ -282,6 +293,7 @@ function buildHtml(
   .estatus .val-e{padding:16px 8px;text-align:center;font-weight:900;font-size:32px;letter-spacing:.16em;color:${estatusColor};background:${estatusBg};display:flex;align-items:center;justify-content:center}
 
   /* Bloque inferior: 4 QR con valor visible + logo SAP HANA a la derecha */
+  .sap-footer.tres{grid-template-columns:1fr 1fr 1fr 0.7fr}
   .sap-footer{display:grid;grid-template-columns:1fr 1fr 1fr 1fr 0.7fr;align-items:stretch;border-bottom:2px solid #0f172a;background:#f8fafc}
   .sap-footer .sap-qr{padding:10px 8px;display:flex;flex-direction:column;align-items:center;justify-content:center;border-right:1px solid #0f172a}
   .sap-footer .sap-qr:last-child{border-right:0}
@@ -393,7 +405,7 @@ function buildHtml(
       <div class="val-e">${esc(data.estatus)}</div>
     </div>
 
-    <div class="sap-footer">
+    <div class="sap-footer${esTlx ? " tres" : ""}">
       <div class="sap-qr">
         ${qrRolloDataUrl ? `<img src="${qrRolloDataUrl}" alt="QR N.º de rollo" />` : `<div class="qr-na">Dato no disponible</div>`}
         <div class="cap">N.º de rollo</div>
@@ -402,14 +414,21 @@ function buildHtml(
         ${qrPesoDataUrl ? `<img src="${qrPesoDataUrl}" alt="QR Peso" />` : `<div class="qr-na">Dato no disponible</div>`}
         <div class="cap">Peso (kg)</div>
       </div>
-      <div class="sap-qr">
+      ${
+        esTlx
+          ? `<div class="sap-qr">
+        ${qrSkuDataUrl ? `<img src="${qrSkuDataUrl}" alt="QR SKU SAP" />` : `<div class="qr-na">Dato no disponible</div>`}
+        <div class="cap">SKU SAP</div>
+      </div>`
+          : `<div class="sap-qr">
         ${qrOrdenDataUrl ? `<img src="${qrOrdenDataUrl}" alt="QR Lote Logístico" />` : `<div class="qr-na">Dato no disponible</div>`}
         <div class="cap">Lote Logístico</div>
       </div>
       <div class="sap-qr">
         ${qrProductoDataUrl ? `<img src="${qrProductoDataUrl}" alt="QR Código de Producto" />` : `<div class="qr-na">Dato no disponible</div>`}
         <div class="cap">Código de Producto</div>
-      </div>
+      </div>`
+      }
 
       <div class="sap-logo">
         <img src="${sapLogoDataUrl}" alt="SAP HANA" />
@@ -452,7 +471,9 @@ export async function printEtiquetaLiberacion(data: EtiquetaData): Promise<void>
   let numeroOrdenSap: string | null = data.numeroOrdenSap ?? null;
   let estadoSap: string | null = data.estadoSap ?? null;
   let loteLogistico: string | null = data.loteLogistico ?? null;
-  if (numeroOrdenSap == null || estadoSap == null || loteLogistico == null) {
+  let plantaCodigo: string | null = data.plantaCodigo ?? null;
+  let skuSap: string | null = data.skuSap ?? null;
+  if (numeroOrdenSap == null || estadoSap == null || loteLogistico == null || plantaCodigo == null || skuSap == null) {
     try {
       const { getMuestraTrace } = await import("@/lib/trace.functions");
       const trace = await getMuestraTrace({ data: { id: data.muestraId } });
@@ -460,6 +481,8 @@ export async function printEtiquetaLiberacion(data: EtiquetaData): Promise<void>
         numeroOrdenSap = numeroOrdenSap ?? trace.numero_orden_sap ?? null;
         estadoSap = estadoSap ?? trace.estado_sap ?? null;
         loteLogistico = loteLogistico ?? trace.lote_logistico ?? null;
+        plantaCodigo = plantaCodigo ?? trace.planta?.codigo ?? null;
+        skuSap = skuSap ?? trace.sku_sap ?? null;
       }
     } catch {
       /* no bloquear impresión si el trace falla */
@@ -471,32 +494,38 @@ export async function printEtiquetaLiberacion(data: EtiquetaData): Promise<void>
   const payloadPeso = buildPayloadPeso(data);
   const payloadOrden = buildPayloadLote(loteLogistico);
   const payloadProducto = buildPayloadProducto(data.productoCodigo);
+  const payloadSku = buildPayloadSkuSap(skuSap);
+  // Solo Planta Tlaxcala: la zona inferior muestra 3 QR (rollo, peso, SKU SAP).
+  const esTlx = (plantaCodigo ?? "").trim().toUpperCase() === "TLX";
   // Si el dato está vacío no se genera QR; la etiqueta muestra "Dato no disponible".
   const qrPlano = (valor: string) =>
     valor
       ? QRCode.toDataURL(valor, { margin: 2, width: 400, errorCorrectionLevel: "M" })
       : Promise.resolve("");
 
-  const [qrDataUrl, qrRolloDataUrl, qrPesoDataUrl, qrOrdenDataUrl, qrProductoDataUrl, logoDataUrl, sapLogoDataUrl] =
+  const [qrDataUrl, qrRolloDataUrl, qrPesoDataUrl, qrOrdenDataUrl, qrProductoDataUrl, qrSkuDataUrl, logoDataUrl, sapLogoDataUrl] =
     await Promise.all([
       QRCode.toDataURL(traceUrl, { margin: 1, width: 240, errorCorrectionLevel: "M" }),
       qrPlano(payloadRollo),
       qrPlano(payloadPeso),
       qrPlano(payloadOrden),
       qrPlano(payloadProducto),
+      qrPlano(payloadSku),
       toDataUrl(logoUrl),
       toDataUrl(sapHanaAsset.url),
     ]);
   const html = buildHtml(
-    { ...data, numeroOrdenSap, estadoSap },
+    { ...data, numeroOrdenSap, estadoSap, plantaCodigo, skuSap },
     qrDataUrl,
     qrRolloDataUrl,
     qrPesoDataUrl,
     qrOrdenDataUrl,
     qrProductoDataUrl,
+    qrSkuDataUrl,
+    esTlx,
     logoDataUrl,
     sapLogoDataUrl,
-    { rollo: payloadRollo, peso: payloadPeso, lote: payloadOrden, producto: payloadProducto },
+    { rollo: payloadRollo, peso: payloadPeso, lote: payloadOrden, producto: payloadProducto, sku: payloadSku },
   );
 
   const w = window.open("", "_blank", "width=960,height=900");
