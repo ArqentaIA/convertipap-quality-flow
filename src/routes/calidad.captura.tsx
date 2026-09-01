@@ -1001,7 +1001,7 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
         productoCodigo: producto.codigo,
         productoNombre: producto.nombre,
         observacionesGenerales:
-          loteLogisticoValido
+          loteLogisticoValido && esIxtapaluca
             ? [`Lote logístico: ${loteLogistico}`, observaciones].filter(Boolean).join(" | ")
             : observaciones,
         loteLogistico: loteLogisticoValido ? loteLogistico : null,
@@ -3019,8 +3019,11 @@ function buildEtiquetaFromMuestra(m: MuestraReciente): EtiquetaData {
     productoNombre: m.productos?.nombre ?? "",
     observacionesGenerales: (() => {
       const base = m.observaciones_generales ?? "";
+      const plantaCodigoMuestra = (
+        (m as unknown as { maquinas?: { plantas?: { codigo?: string | null } | null } | null })?.maquinas?.plantas?.codigo ?? ""
+      ).toUpperCase();
       const lote = (m as { lote_logistico?: string | null }).lote_logistico ?? null;
-      if (!lote) return base;
+      if (!lote || plantaCodigoMuestra !== "IXT") return base;
       return [`Lote logístico: ${lote}`, base].filter(Boolean).join(" | ");
     })(),
     loteLogistico: (m as { lote_logistico?: string | null }).lote_logistico ?? null,
