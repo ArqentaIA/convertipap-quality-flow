@@ -1463,10 +1463,10 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
               </p>
             </div>
 
-            {/* 3. Número de rollo */}
+            {/* 2. Número de rollo */}
             <div className="space-y-1.5">
               <Label htmlFor="rollo" className="text-base">
-                3. Número de rollo{" "}
+                2. Número de rollo{" "}
                 <span className="text-muted-foreground font-normal">
                   {numeracionActiva
                     ? "(asignación automática por máquina)"
