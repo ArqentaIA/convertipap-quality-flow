@@ -532,6 +532,10 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
           .regex(/^\d{10}$/, "El Lote Logístico debe tener exactamente 10 dígitos")
           .nullable()
           .optional(),
+        // SKU SAP elegido por el capturista (productos con varios anchos, TLX).
+        // La RPC lo valida contra el catálogo del producto; si no viene, la BD
+        // aplica el autollenado vigente (principal o primero alfabético, solo TLX).
+        sku_sap: z.string().trim().max(40).nullable().optional(),
         // Idempotencia del alta: la genera el cliente por intento de captura.
         // Un reintento (doble clic, timeout, refresh) con la misma clave devuelve
         // la misma muestra y el mismo consecutivo, sin consumir otro número.
@@ -752,6 +756,7 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
       fuera_de_turno: data.fuera_de_turno === true,
       fuera_de_turno_motivo: data.fuera_de_turno === true ? motivoFueraTurnoTrim : null,
       lote_logistico: data.lote_logistico?.trim() || null,
+      sku_sap: data.sku_sap?.trim() || null,
       ...(dictamenPrevioAt
         ? {
             mediciones_modificadas_at: new Date().toISOString(),
