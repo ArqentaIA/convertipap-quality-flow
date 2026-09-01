@@ -406,21 +406,25 @@ function buildHtml(
     </div>
 
     <div class="sap-footer${esTlx ? " tres" : ""}">
-      <div class="sap-qr">
-        ${qrRolloDataUrl ? `<img src="${qrRolloDataUrl}" alt="QR N.º de rollo" />` : `<div class="qr-na">Dato no disponible</div>`}
-        <div class="cap">N.º de rollo</div>
-      </div>
-      <div class="sap-qr">
-        ${qrPesoDataUrl ? `<img src="${qrPesoDataUrl}" alt="QR Peso" />` : `<div class="qr-na">Dato no disponible</div>`}
-        <div class="cap">Peso (kg)</div>
-      </div>
       ${
         esTlx
           ? `<div class="sap-qr">
         ${qrSkuDataUrl ? `<img src="${qrSkuDataUrl}" alt="QR SKU SAP" />` : `<div class="qr-na">Dato no disponible</div>`}
         <div class="cap">SKU SAP</div>
+      </div>
+      <div class="sap-qr">
+        ${qrPesoDataUrl ? `<img src="${qrPesoDataUrl}" alt="QR Peso" />` : `<div class="qr-na">Dato no disponible</div>`}
+        <div class="cap">Peso (kg)</div>
+      </div>
+      <div class="sap-qr">
+        ${qrRolloDataUrl ? `<img src="${qrRolloDataUrl}" alt="QR N.º de rollo" />` : `<div class="qr-na">Dato no disponible</div>`}
+        <div class="cap">N.º de rollo</div>
       </div>`
           : `<div class="sap-qr">
+        ${qrRolloDataUrl ? `<img src="${qrRolloDataUrl}" alt="QR N.º de rollo" />` : `<div class="qr-na">Dato no disponible</div>`}
+        <div class="cap">N.º de rollo</div>
+      </div>
+      <div class="sap-qr">
         ${qrOrdenDataUrl ? `<img src="${qrOrdenDataUrl}" alt="QR Lote Logístico" />` : `<div class="qr-na">Dato no disponible</div>`}
         <div class="cap">Lote Logístico</div>
       </div>
