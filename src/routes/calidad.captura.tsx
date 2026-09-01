@@ -40,6 +40,7 @@ import { useAuth } from "@/lib/auth";
 import {
   listMaquinasCaptura,
   listProductosConSpec,
+  listSkusPorProducto,
   getSpecPorProducto,
   upsertMuestraConMediciones,
   listMisMuestrasRecientes,
@@ -312,6 +313,25 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
   const maquina = maquinas.find((m) => m.id === maquinaId) ?? maquinas[0]!;
   const producto = productos.find((p) => p.producto_id === productoId) ?? productos[0]!;
   const hasAuthToken = auth.isAuthenticated && !!auth.session?.access_token;
+
+  // SKU SAP (variantes por ancho) del producto seleccionado. Si el producto
+  // tiene claves cargadas (hoy solo TLX), el capturista elige la real del
+  // rollo; se preselecciona la principal. Sin claves, el campo no se muestra
+  // y la BD conserva su autollenado vigente.
+  const skusQuery = useQuery({
+    queryKey: ["qc", "skus-por-producto", productoId],
+    queryFn: () => listSkusPorProducto({ data: { productoId } }),
+    enabled: !!productoId && hasAuthToken,
+    staleTime: 5 * 60 * 1000,
+  });
+  const skusProducto = skusQuery.data ?? [];
+  const [skuSel, setSkuSel] = useState<string>("");
+  const skusData = skusQuery.data;
+  useEffect(() => {
+    const lista = skusData ?? [];
+    const principal = lista.find((s) => s.es_principal) ?? lista[0];
+    setSkuSel(principal?.clave_sku_sap ?? "");
+  }, [productoId, skusData]);
 
   const ordenesQuery = useQuery({
     queryKey: ["ordenes-produccion", "activas"],
