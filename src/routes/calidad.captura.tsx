@@ -302,9 +302,9 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
   const auth = useAuth();
   const queryClient = useQueryClient();
 
-  // Flujo progresivo obligatorio: Máquina → Rollo.
-  // La Orden de Producción se eliminó del contexto de captura (todas las
-  // plantas, todos los usuarios): la muestra se registra siempre sin orden.
+  // Flujo progresivo obligatorio: OP → Máquina → Rollo.
+  // ordenSel: "" = pendiente, "__sin__" = "Continuar sin OP", "<id>" = orden elegida.
+  const [ordenSel, setOrdenSelRaw] = useState<string>("");
   const [maquinaId, setMaquinaIdRaw] = useState<string>("");
   const [productoId, setProductoId] = useState<string>(productos[0]!.producto_id);
 
@@ -312,8 +312,21 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
   const producto = productos.find((p) => p.producto_id === productoId) ?? productos[0]!;
   const hasAuthToken = auth.isAuthenticated && !!auth.session?.access_token;
 
-  const maqResuelta = maquinaId !== "";
+  const ordenesQuery = useQuery({
+    queryKey: ["ordenes-produccion", "activas"],
+    queryFn: () => listOrdenesActivas(),
+    enabled: hasAuthToken,
+    staleTime: 60_000,
+  });
+  const ordenesActivas = ordenesQuery.data ?? [];
+  const opResuelta = ordenSel !== "";
+  const maqResuelta = opResuelta && maquinaId !== "";
 
+  function setOrdenSel(v: string) {
+    setOrdenSelRaw(v);
+    setMaquinaIdRaw("");
+    setNumeroRollo("");
+  }
   function setMaquinaId(v: string) {
     setMaquinaIdRaw(v);
     setNumeroRollo("");
