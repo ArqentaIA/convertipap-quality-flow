@@ -1674,7 +1674,7 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
             {(
               <div className="space-y-1.5">
                 <Label htmlFor="lote-logistico" className="text-base">
-                  4. Lote Logístico{" "}
+                  3. Lote Logístico{" "}
                   <span className="text-muted-foreground font-normal">(10 dígitos, obligatorio)</span>
                 </Label>
                 <Input
