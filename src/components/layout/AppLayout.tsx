@@ -91,7 +91,13 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
   const plantas = plantasPermitidas ?? [];
   const { codigos: maquinasVisibles } = useMaquinasVisibles();
   const visoresPermitidos = maquinasVisibles;
-  const plant = plantas.find((p) => p.id === plantId) ?? plantas[0] ?? null;
+  // Default: usuarios con acceso a ambas plantas abren en Tlaxcala (TLX),
+  // que es la de mayor tráfico. Si TLX no está entre sus plantas, se usa la primera.
+  const plant =
+    plantas.find((p) => p.id === plantId) ??
+    plantas.find((p) => (p.codigo ?? "").toUpperCase() === "TLX") ??
+    plantas[0] ??
+    null;
   const now = new Date();
   const dateStr = now.toLocaleDateString("es-MX", { weekday: "long", day: "2-digit", month: "long", year: "numeric" });
 
