@@ -518,8 +518,23 @@ export async function printEtiquetaLiberacion(data: EtiquetaData): Promise<void>
       toDataUrl(logoUrl),
       toDataUrl(sapHanaAsset.url),
     ]);
+  // En TLX el lote logístico no se imprime en la sección de Comentarios.
+  const observacionesGeneralesLimpias = esTlx
+    ? (data.observacionesGenerales ?? "")
+        .split(" | ")
+        .filter((part) => !/^Lote\s+log[ií]stico:/i.test(part.trim()))
+        .join(" | ")
+        .trim() || "—"
+    : data.observacionesGenerales;
   const html = buildHtml(
-    { ...data, numeroOrdenSap, estadoSap, plantaCodigo, skuSap },
+    {
+      ...data,
+      numeroOrdenSap,
+      estadoSap,
+      plantaCodigo,
+      skuSap,
+      observacionesGenerales: observacionesGeneralesLimpias,
+    },
     qrDataUrl,
     qrRolloDataUrl,
     qrPesoDataUrl,
