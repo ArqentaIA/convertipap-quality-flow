@@ -56,6 +56,20 @@ export function usePlantaActivaCodigo(): string | null {
   return codigo;
 }
 
+/**
+ * Planta efectiva para REPORTES: nunca mezcla plantas.
+ * - Si hay planta activa seleccionada, la usa.
+ * - Si el usuario solo tiene una planta permitida, la usa automáticamente.
+ * - Si tiene varias y no ha elegido, usa la primera (determinista) en lugar
+ *   de mostrar datos mezclados de todas las plantas.
+ */
+export function usePlantaEfectivaCodigo(): string | null {
+  const plantaCodigo = usePlantaActivaCodigo();
+  const plantas = usePlantasPermitidas();
+  if (plantaCodigo) return plantaCodigo;
+  return plantas[0]?.codigo ?? null;
+}
+
 /** Máquinas activas visibles para el usuario (filtradas por planta asignada). */
 export function useMaquinasPermitidas() {
   const { data: plantas } = usePlantasPermitidas();
