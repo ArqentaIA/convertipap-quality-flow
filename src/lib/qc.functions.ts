@@ -211,6 +211,29 @@ export const listProductosConSpec = createServerFn({ method: "GET" })
   });
 
 /**
+ * Claves SKU SAP de un producto (variantes por ancho/medida).
+ * Se usa en la captura (ambos módulos) para que el capturista elija la clave
+ * real del rollo. Hoy solo Tlaxcala tiene claves cargadas; si el producto no
+ * tiene ninguna, la pantalla no muestra el selector y la BD aplica su regla.
+ */
+export const listSkusPorProducto = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { productoId: string }) =>
+    z.object({ productoId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const sb = context.supabase as SB;
+    const { data: rows, error } = await sb
+      .from("producto_skus_sap")
+      .select("clave_sku_sap, descripcion_sap, es_principal")
+      .eq("producto_id", data.productoId)
+      .order("es_principal", { ascending: false })
+      .order("clave_sku_sap");
+    if (error) throw new Error(error.message);
+    return rows ?? [];
+  });
+
+/**
  * Devuelve la especificación vigente + variables (min/objetivo/max) de un producto.
  * Si el producto tiene múltiples perfiles vigentes (uno por máquina) y se
  * proporciona `maquinaId`, resuelve por `producto_especificacion_maquinas`.
