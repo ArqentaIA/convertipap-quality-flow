@@ -40,6 +40,7 @@ import { useAuth } from "@/lib/auth";
 import {
   listMaquinasCaptura,
   listProductosConSpec,
+  listSkusPorProducto,
   getSpecPorProducto,
   upsertMuestraConMediciones,
   listMisMuestrasRecientes,
@@ -312,6 +313,25 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
   const maquina = maquinas.find((m) => m.id === maquinaId) ?? maquinas[0]!;
   const producto = productos.find((p) => p.producto_id === productoId) ?? productos[0]!;
   const hasAuthToken = auth.isAuthenticated && !!auth.session?.access_token;
+
+  // SKU SAP (variantes por ancho) del producto seleccionado. Si el producto
+  // tiene claves cargadas (hoy solo TLX), el capturista elige la real del
+  // rollo; se preselecciona la principal. Sin claves, el campo no se muestra
+  // y la BD conserva su autollenado vigente.
+  const skusQuery = useQuery({
+    queryKey: ["qc", "skus-por-producto", productoId],
+    queryFn: () => listSkusPorProducto({ data: { productoId } }),
+    enabled: !!productoId && hasAuthToken,
+    staleTime: 5 * 60 * 1000,
+  });
+  const skusProducto = skusQuery.data ?? [];
+  const [skuSel, setSkuSel] = useState<string>("");
+  const skusData = skusQuery.data;
+  useEffect(() => {
+    const lista = skusData ?? [];
+    const principal = lista.find((s) => s.es_principal) ?? lista[0];
+    setSkuSel(principal?.clave_sku_sap ?? "");
+  }, [productoId, skusData]);
 
   const ordenesQuery = useQuery({
     queryKey: ["ordenes-produccion", "activas"],
@@ -1167,6 +1187,9 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
 
     // Validación (usa el valor normalizado para sufijo).
     if (!spec) { toast.error("Selecciona un producto con especificación vigente"); return; }
+    if (skusProducto.length > 0 && !skuSel) {
+      toast.error("Selecciona la clave SKU SAP (ancho) que corresponde al rollo"); return;
+    }
     if (!canCapture) { toast.error("Sin permiso de captura"); return; }
     if (!auth.user?.id) { toast.error("Sesión inválida — vuelve a iniciar sesión"); return; }
     if (rolloNormalizado && !ROLLO_REGEX.test(rolloNormalizado)) {
@@ -1366,6 +1389,7 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
         fuera_de_turno: modoFueraTurno,
         fuera_de_turno_motivo: modoFueraTurno ? motivoFueraTurno.trim() : null,
         lote_logistico: loteLogisticoValido ? loteLogistico : null,
+        sku_sap: skusProducto.length > 0 ? skuSel || null : null,
         // Estatus del rollo elegido por el capturista (solo Ixtapaluca).
         estatus_capturista: esIxtapaluca && estatusManual ? estatusManual : null,
         estatus_capturista_motivo:
@@ -1814,6 +1838,28 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
                 </SelectContent>
               </Select>
             </div>
+            {skusProducto.length > 0 && (
+              <div className="space-y-1.5">
+                <Label className="text-base">SKU SAP (ancho)</Label>
+                <Select value={skuSel} onValueChange={setSkuSel}>
+                  <SelectTrigger className="h-11 text-base">
+                    <SelectValue placeholder="Selecciona SKU / ancho" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {skusProducto.map((s) => (
+                      <SelectItem key={s.clave_sku_sap} value={s.clave_sku_sap}>
+                        <span className="font-mono mr-2">{s.clave_sku_sap}</span>
+                        <span className="text-muted-foreground">·</span>
+                        <span className="ml-2">{s.descripcion_sap}</span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Elige la clave SAP que corresponde al ancho real del rollo. Se guarda en la muestra, la etiqueta y el QR.
+                </p>
+              </div>
+            )}
             <div className="space-y-1.5">
               <Label htmlFor="vel-maq" className="text-base">
                 Vel. Máquina{" "}

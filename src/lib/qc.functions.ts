@@ -211,6 +211,29 @@ export const listProductosConSpec = createServerFn({ method: "GET" })
   });
 
 /**
+ * Claves SKU SAP de un producto (variantes por ancho/medida).
+ * Se usa en la captura (ambos módulos) para que el capturista elija la clave
+ * real del rollo. Hoy solo Tlaxcala tiene claves cargadas; si el producto no
+ * tiene ninguna, la pantalla no muestra el selector y la BD aplica su regla.
+ */
+export const listSkusPorProducto = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { productoId: string }) =>
+    z.object({ productoId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const sb = context.supabase as SB;
+    const { data: rows, error } = await sb
+      .from("producto_skus_sap")
+      .select("clave_sku_sap, descripcion_sap, es_principal")
+      .eq("producto_id", data.productoId)
+      .order("es_principal", { ascending: false })
+      .order("clave_sku_sap");
+    if (error) throw new Error(error.message);
+    return rows ?? [];
+  });
+
+/**
  * Devuelve la especificación vigente + variables (min/objetivo/max) de un producto.
  * Si el producto tiene múltiples perfiles vigentes (uno por máquina) y se
  * proporciona `maquinaId`, resuelve por `producto_especificacion_maquinas`.
@@ -532,6 +555,10 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
           .regex(/^\d{10}$/, "El Lote Logístico debe tener exactamente 10 dígitos")
           .nullable()
           .optional(),
+        // SKU SAP elegido por el capturista (productos con varios anchos, TLX).
+        // La RPC lo valida contra el catálogo del producto; si no viene, la BD
+        // aplica el autollenado vigente (principal o primero alfabético, solo TLX).
+        sku_sap: z.string().trim().max(40).nullable().optional(),
         // Idempotencia del alta: la genera el cliente por intento de captura.
         // Un reintento (doble clic, timeout, refresh) con la misma clave devuelve
         // la misma muestra y el mismo consecutivo, sin consumir otro número.
@@ -752,6 +779,7 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
       fuera_de_turno: data.fuera_de_turno === true,
       fuera_de_turno_motivo: data.fuera_de_turno === true ? motivoFueraTurnoTrim : null,
       lote_logistico: data.lote_logistico?.trim() || null,
+      sku_sap: data.sku_sap?.trim() || null,
       ...(dictamenPrevioAt
         ? {
             mediciones_modificadas_at: new Date().toISOString(),
