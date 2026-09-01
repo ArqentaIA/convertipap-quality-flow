@@ -2046,6 +2046,7 @@ export type Database = {
           clave_sku_sap: string
           created_at: string
           descripcion_sap: string
+          es_principal: boolean
           id: string
           producto_id: string
         }
@@ -2053,6 +2054,7 @@ export type Database = {
           clave_sku_sap: string
           created_at?: string
           descripcion_sap: string
+          es_principal?: boolean
           id?: string
           producto_id: string
         }
@@ -2060,6 +2062,7 @@ export type Database = {
           clave_sku_sap?: string
           created_at?: string
           descripcion_sap?: string
+          es_principal?: boolean
           id?: string
           producto_id?: string
         }
