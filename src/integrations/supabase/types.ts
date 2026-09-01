@@ -949,6 +949,7 @@ export type Database = {
           cumplimiento_pct: number | null
           defecto_visual_conversion: string | null
           defectos: string[]
+          descripcion_sap: string | null
           destino: string | null
           dictamen: Database["public"]["Enums"]["qc_dictamen"] | null
           dictamen_at: string | null
@@ -988,6 +989,7 @@ export type Database = {
           revisado_por: string | null
           rol_autorizador: Database["public"]["Enums"]["app_role"] | null
           secuencia_captura: number
+          sku_sap: string | null
           tipo_muestreo: Database["public"]["Enums"]["qc_tipo_muestreo"]
           turno: string
           updated_at: string
@@ -1009,6 +1011,7 @@ export type Database = {
           cumplimiento_pct?: number | null
           defecto_visual_conversion?: string | null
           defectos?: string[]
+          descripcion_sap?: string | null
           destino?: string | null
           dictamen?: Database["public"]["Enums"]["qc_dictamen"] | null
           dictamen_at?: string | null
@@ -1048,6 +1051,7 @@ export type Database = {
           revisado_por?: string | null
           rol_autorizador?: Database["public"]["Enums"]["app_role"] | null
           secuencia_captura?: number
+          sku_sap?: string | null
           tipo_muestreo: Database["public"]["Enums"]["qc_tipo_muestreo"]
           turno: string
           updated_at?: string
@@ -1069,6 +1073,7 @@ export type Database = {
           cumplimiento_pct?: number | null
           defecto_visual_conversion?: string | null
           defectos?: string[]
+          descripcion_sap?: string | null
           destino?: string | null
           dictamen?: Database["public"]["Enums"]["qc_dictamen"] | null
           dictamen_at?: string | null
@@ -1108,6 +1113,7 @@ export type Database = {
           revisado_por?: string | null
           rol_autorizador?: Database["public"]["Enums"]["app_role"] | null
           secuencia_captura?: number
+          sku_sap?: string | null
           tipo_muestreo?: Database["public"]["Enums"]["qc_tipo_muestreo"]
           turno?: string
           updated_at?: string
@@ -2028,6 +2034,38 @@ export type Database = {
           },
           {
             foreignKeyName: "producto_especificaciones_producto_id_fkey"
+            columns: ["producto_id"]
+            isOneToOne: false
+            referencedRelation: "productos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      producto_skus_sap: {
+        Row: {
+          clave_sku_sap: string
+          created_at: string
+          descripcion_sap: string
+          id: string
+          producto_id: string
+        }
+        Insert: {
+          clave_sku_sap: string
+          created_at?: string
+          descripcion_sap: string
+          id?: string
+          producto_id: string
+        }
+        Update: {
+          clave_sku_sap?: string
+          created_at?: string
+          descripcion_sap?: string
+          id?: string
+          producto_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "producto_skus_sap_producto_id_fkey"
             columns: ["producto_id"]
             isOneToOne: false
             referencedRelation: "productos"
