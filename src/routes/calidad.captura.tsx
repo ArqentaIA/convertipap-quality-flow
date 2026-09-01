@@ -320,7 +320,9 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
     staleTime: 60_000,
   });
   const ordenesActivas = ordenesQuery.data ?? [];
-  const opResuelta = ordenSel !== "";
+  // Campo OP oculto temporalmente: la máquina queda habilitada de inmediato
+  // (equivalente a "Continuar sin OP"); la numeración por máquina no cambia.
+  const opResuelta = true;
   const maqResuelta = opResuelta && maquinaId !== "";
 
   function setOrdenSel(v: string) {
@@ -1449,7 +1451,10 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
             <CardTitle className="text-base font-semibold">Contexto de captura</CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            {/* 1. Orden de Producción */}
+            {/* 1. Orden de Producción — OCULTO TEMPORALMENTE (pendiente refinamiento).
+                La lógica interna (ordenSel, órdenes activas) se mantiene intacta para
+                poder reactivar el campo sin migraciones; al guardar se envía orden_id: null. */}
+            {false && (
             <div className="space-y-1.5">
               <Label className="text-base">
                 1. Orden de Producción{" "}
@@ -1476,6 +1481,7 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
                 Primer paso obligatorio. Cambiarlo reinicia Máquina y Rollo.
               </p>
             </div>
+            )}
 
             {/* 2. Máquina */}
             <div className="space-y-1.5">
