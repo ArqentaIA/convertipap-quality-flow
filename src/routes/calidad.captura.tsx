@@ -1187,6 +1187,9 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
 
     // Validación (usa el valor normalizado para sufijo).
     if (!spec) { toast.error("Selecciona un producto con especificación vigente"); return; }
+    if (skusProducto.length > 0 && !skuSel) {
+      toast.error("Selecciona la clave SKU SAP (ancho) que corresponde al rollo"); return;
+    }
     if (!canCapture) { toast.error("Sin permiso de captura"); return; }
     if (!auth.user?.id) { toast.error("Sesión inválida — vuelve a iniciar sesión"); return; }
     if (rolloNormalizado && !ROLLO_REGEX.test(rolloNormalizado)) {
