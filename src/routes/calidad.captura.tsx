@@ -55,6 +55,7 @@ import {
   type PesajeParaCaptura,
 } from "@/lib/pesajes.functions";
 
+import { listOrdenesActivas } from "@/lib/ordenes-produccion.functions";
 import { getCumplimientoIndicador } from "@/lib/cumplimiento.functions";
 import {
   Dialog,
@@ -1509,10 +1510,10 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
               </p>
             </div>
 
-            {/* 2. Número de rollo */}
+            {/* 3. Número de rollo */}
             <div className="space-y-1.5">
               <Label htmlFor="rollo" className="text-base">
-                2. Número de rollo{" "}
+                3. Número de rollo{" "}
                 <span className="text-muted-foreground font-normal">
                   {numeracionActiva
                     ? "(asignación automática por máquina)"
@@ -1720,7 +1721,7 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
             {(
               <div className="space-y-1.5">
                 <Label htmlFor="lote-logistico" className="text-base">
-                  3. Lote Logístico{" "}
+                  4. Lote Logístico{" "}
                   <span className="text-muted-foreground font-normal">(10 dígitos, obligatorio)</span>
                 </Label>
                 <Input
