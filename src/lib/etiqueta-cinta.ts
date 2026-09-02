@@ -417,6 +417,7 @@ function renderEtiqueta(d: CintaLabelData, snap: EtiquetaSnapshot, assets: Asset
         </div>
         <div class="qr-box">
           ${assets.qrSku ? `<img src="${assets.qrSku}" alt="QR SKU SAP" />` : `<div class="qr-na">Dato no disponible</div>`}
+          <div class="qr-val">${d.url_qr_sku || "Dato no disponible"}</div>
           <div class="qr-cap">SKU SAP</div>
         </div>
         <div class="qr-sap"><img src="${assets.sapLogo}" alt="SAP HANA" /></div>
