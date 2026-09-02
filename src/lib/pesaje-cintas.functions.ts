@@ -473,11 +473,13 @@ export const asignarEstatusCinta = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({
     cinta_id: z.string().uuid(),
     estatus: z.enum(["L", "C", "NC"]),
+    motivo: z.string().trim().min(10).max(500),
   }).parse(d))
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase.rpc("pc_set_estatus_cinta", {
       _cinta_id: data.cinta_id,
       _estatus: data.estatus,
+      _motivo: data.motivo,
     });
     if (error) throw new Error(error.message);
     return { ok: true };
