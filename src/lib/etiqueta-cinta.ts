@@ -327,7 +327,6 @@ function fmtKg(value: number | string): string {
 type Assets = {
   logo: string;
   sapLogo: string;
-  qrRollo: string;
   qrPeso: string;
   qrLote: string;
   qrSku: string;
