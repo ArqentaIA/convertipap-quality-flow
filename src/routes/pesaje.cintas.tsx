@@ -9,7 +9,7 @@ import {
   buscarContextoRollo, listConductores, listBobinadoras,
   crearLote, crearLoteManualV2, iniciarBajadaHeredada, guardarOrdenManual, obtenerLoteYCintas, registrarCinta, corregirCinta, anularCinta,
   finalizarLote, prepararImpresion, actualizarDatosOperativos, asignarBobinadoraLote,
-  asignarBobinadorNombre, asignarNombresOperativos, asignarEstatusCinta,
+  asignarBobinadorNombre, asignarNombresOperativos, asignarEstatusCinta, asignarPersonalCortes,
   bajadasRollo, cerrarRolloDefinitivo,
   type ContextoRollo, type CintaRegistrada, type LoteCintas,
   listarSkuSapCintas,
@@ -64,6 +64,7 @@ function PesajeCintasPage() {
   const asignarBobinadora = useServerFn(asignarBobinadoraLote);
   const asignarBobinador = useServerFn(asignarBobinadorNombre);
   const asignarNombresOp = useServerFn(asignarNombresOperativos);
+  const guardarPersonalCortes = useServerFn(asignarPersonalCortes);
   const traerBajadas = useServerFn(bajadasRollo);
   const traerSkus = useServerFn(listarSkuSapCintas);
   const cerrarRollo = useServerFn(cerrarRolloDefinitivo);
@@ -357,6 +358,18 @@ function PesajeCintasPage() {
         });
       }
 
+      if (operadorCortes.trim() || analistaCortes.trim()) {
+        await guardarPersonalCortes({
+          data: {
+            lote_id,
+            operador: operadorCortes.trim() || null,
+            analista: analistaCortes.trim() || null,
+          },
+        }).catch(() => {
+          toast.warning("El lote se creó, pero no se pudo registrar el personal de cortes.");
+        });
+      }
+
       setConfirmManual(false);
       setLoteId(lote_id);
       await qc.invalidateQueries({ queryKey: ["cintas-lote", lote_id] });
@@ -411,6 +424,17 @@ function PesajeCintasPage() {
       }
       if (ordenSistema.trim()) {
         await guardarOrden({ data: { lote_id, orden: ordenSistema.trim() } }).catch(() => null);
+      }
+      if (operadorCortes.trim() || analistaCortes.trim()) {
+        await guardarPersonalCortes({
+          data: {
+            lote_id,
+            operador: operadorCortes.trim() || null,
+            analista: analistaCortes.trim() || null,
+          },
+        }).catch(() => {
+          toast.warning("El lote se creó, pero no se pudo registrar el personal de cortes.");
+        });
       }
       setLoteId(lote_id);
       await qc.invalidateQueries({ queryKey: ["cintas-lote", lote_id] });
@@ -1061,6 +1085,28 @@ function PesajeCintasPage() {
                 />
               </div>
             )}
+            <div>
+              <label className="mb-1 block text-xs text-muted-foreground">Operador de cortes</label>
+              <input
+                type="text"
+                maxLength={40}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                placeholder="Nombre del operador"
+                value={operadorCortes}
+                onChange={(e) => setOperadorCortes(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs text-muted-foreground">Analista que libera cortes</label>
+              <input
+                type="text"
+                maxLength={40}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                placeholder="Nombre del analista"
+                value={analistaCortes}
+                onChange={(e) => setAnalistaCortes(e.target.value)}
+              />
+            </div>
             <div className="flex items-end">
               <button
                 onClick={onCrearLote}
