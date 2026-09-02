@@ -70,6 +70,9 @@ function PesajeCintasPage() {
 
 
 
+  // Catálogo SKU SAP por cinta, filtrado por el producto del rollo abierto.
+  const [skusSap, setSkusSap] = useState<Array<{ clave: string; descripcion: string }>>([]);
+
   const [rolMe, setRolMe] = useState<string | null>(null);
   const [authReady, setAuthReady] = useState(false);
   useEffect(() => {
