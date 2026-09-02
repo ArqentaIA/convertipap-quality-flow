@@ -408,10 +408,6 @@ function renderEtiqueta(d: CintaLabelData, snap: EtiquetaSnapshot, assets: Asset
 
       <div class="lbl-qr-zone">
         <div class="qr-box">
-          ${assets.qrRollo ? `<img src="${assets.qrRollo}" alt="QR N.º de rollo / cinta" />` : `<div class="qr-na">Dato no disponible</div>`}
-          <div class="qr-cap">N.º de rollo</div>
-        </div>
-        <div class="qr-box">
           ${assets.qrPeso ? `<img src="${assets.qrPeso}" alt="QR Peso" />` : `<div class="qr-na">Dato no disponible</div>`}
           <div class="qr-cap">Peso (kg)</div>
         </div>
