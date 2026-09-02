@@ -1210,11 +1210,6 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
     if (porcentajeRupturasPct.trim() !== "" && (Number(porcentajeRupturasPct) < 0 || Number(porcentajeRupturasPct) > 100)) {
       toast.error("El campo Porcentaje de rupturas debe estar entre 0 y 100"); return;
     }
-    if (modo === "envio" && !loteLogisticoValido) {
-      const faltan = 10 - loteLogistico.length;
-      toast.error(`Lote Logístico: faltan ${faltan} ${faltan === 1 ? "dígito" : "dígitos"} (deben ser 10).`);
-      return;
-    }
     if (modo === "envio" && !justifLiberacionOk) {
       toast.error(
         "Este rollo tiene hallazgo o variables fuera de especificación: para liberarlo (L) debes registrar una justificación de al menos 20 caracteres.",
