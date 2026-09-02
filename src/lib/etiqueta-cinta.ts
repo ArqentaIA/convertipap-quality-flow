@@ -133,7 +133,6 @@ export type CintaLabelData = {
   sap_url: string | null;
   lote_logistico: string | null;
   /** Payloads de TEXTO PLANO de los 3 QR inferiores (sin URL, sin JSON). */
-  url_qr_rollo: string;
   url_qr_peso: string;
   url_qr_lote: string;
   sku_sap: string | null;
@@ -251,7 +250,6 @@ export function buildCintaLabelData(snap: EtiquetaSnapshot, cinta: EtiquetaCinta
     // Fuente del QR/dato "Lote Logístico": el valor capturado en la propia
     // cinta (Lote Logístico pza.); en su defecto, el del lote/muestra.
     lote_logistico: limpio(cinta.lote_logistico_pza ?? snap.lote_logistico ?? null),
-    url_qr_rollo: "",
     url_qr_peso: "",
     url_qr_lote: "",
     sku_sap: limpio(cinta.sku_sap ?? null),
@@ -260,7 +258,6 @@ export function buildCintaLabelData(snap: EtiquetaSnapshot, cinta: EtiquetaCinta
 
   // TEXTO PLANO: solo el valor del dato. Si está vacío, no se genera QR y la
   // etiqueta muestra "Dato no disponible".
-  data.url_qr_rollo = String(data.numero_rollo_etiqueta ?? "").trim();
   {
     const p = fmtKg(data.peso_cinta_kg);
     data.url_qr_peso = p === "—" ? "" : p;
@@ -330,7 +327,6 @@ function fmtKg(value: number | string): string {
 type Assets = {
   logo: string;
   sapLogo: string;
-  qrRollo: string;
   qrPeso: string;
   qrLote: string;
   qrSku: string;
@@ -412,10 +408,6 @@ function renderEtiqueta(d: CintaLabelData, snap: EtiquetaSnapshot, assets: Asset
 
       <div class="lbl-qr-zone">
         <div class="qr-box">
-          ${assets.qrRollo ? `<img src="${assets.qrRollo}" alt="QR N.º de rollo / cinta" />` : `<div class="qr-na">Dato no disponible</div>`}
-          <div class="qr-cap">N.º de rollo</div>
-        </div>
-        <div class="qr-box">
           ${assets.qrPeso ? `<img src="${assets.qrPeso}" alt="QR Peso" />` : `<div class="qr-na">Dato no disponible</div>`}
           <div class="qr-cap">Peso (kg)</div>
         </div>
@@ -450,13 +442,12 @@ export async function abrirImpresionEtiquetas(snap: EtiquetaSnapshot): Promise<v
   const etiquetas = await Promise.all(
     datos.map(async (d) => {
       const opts = { margin: 1, width: 220, errorCorrectionLevel: "M" as const };
-      const [qrRollo, qrPeso, qrLote, qrSku] = await Promise.all([
-        qrPlano(d.url_qr_rollo, opts),
+      const [qrPeso, qrLote, qrSku] = await Promise.all([
         qrPlano(d.url_qr_peso, opts),
         qrPlano(d.url_qr_lote, opts),
         qrPlano(d.url_qr_sku, opts),
       ]);
-      return renderEtiqueta(d, snap, { logo: logoDataUrl, sapLogo: sapLogoDataUrl, qrRollo, qrPeso, qrLote, qrSku });
+      return renderEtiqueta(d, snap, { logo: logoDataUrl, sapLogo: sapLogoDataUrl, qrPeso, qrLote, qrSku });
     }),
   );
 
