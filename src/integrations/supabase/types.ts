@@ -966,6 +966,24 @@ export type Database = {
         }
         Relationships: []
       }
+      monitor_access_codes: {
+        Row: {
+          access_code: string
+          monitor_id: string
+          updated_at: string
+        }
+        Insert: {
+          access_code: string
+          monitor_id: string
+          updated_at?: string
+        }
+        Update: {
+          access_code?: string
+          monitor_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       muestras_calidad: {
         Row: {
           analista: string | null
@@ -3268,6 +3286,10 @@ export type Database = {
       }
       validate_maquina_access: {
         Args: { _codigo: string; _pin: string }
+        Returns: boolean
+      }
+      validate_monitor_access: {
+        Args: { _monitor: string; _pin: string }
         Returns: boolean
       }
       vincular_pesaje_a_muestra: {
