@@ -19,6 +19,8 @@ export const listMaquinasConEstado = createServerFn({ method: "GET" })
       .from("maquinas")
       .select("id, codigo, nombre, area, planta_id, activo, plantas(nombre, codigo)")
       .eq("activo", true)
+      // MP-10 es máquina de pruebas: no debe aparecer en visores de producción/historial.
+      .neq("codigo", "MP-10")
       .order("codigo");
     const plantasPermitidas = await allowedPlantaIds(sb, context.userId);
     if (plantasPermitidas) maqQ = maqQ.in("planta_id", plantasPermitidas);

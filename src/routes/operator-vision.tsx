@@ -72,7 +72,8 @@ function computeTurnoActual(
   return null;
 }
 
-const MAQUINAS_VALIDAS = ["MP-01", "MP-04", "MP-05", "MP-06", "MP-07", "MP-10"] as const;
+// MP-10 excluida: es máquina de pruebas y no debe aparecer en visores.
+const MAQUINAS_VALIDAS = ["MP-01", "MP-04", "MP-05", "MP-06", "MP-07"] as const;
 type MaquinaValida = (typeof MAQUINAS_VALIDAS)[number];
 
 export const Route = createFileRoute("/operator-vision")({

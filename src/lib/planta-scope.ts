@@ -68,8 +68,11 @@ export async function resolvePlantaScope(
       .select("id, codigo")
       .in("planta_id", plantaIds)
       .order("codigo");
-    maquinaIds = (maquinas ?? []).map((m) => m.id as string);
-    maquinaCodigos = (maquinas ?? []).map((m) => m.codigo as string);
+    // MP-10 es máquina de PRUEBAS: se excluye de reportes/visores (este scope
+    // solo lo consumen reportes y tableros). Su captura sigue habilitada.
+    const productivas = (maquinas ?? []).filter((m) => m.codigo !== MAQUINA_PRUEBAS_CODIGO);
+    maquinaIds = productivas.map((m) => m.id as string);
+    maquinaCodigos = productivas.map((m) => m.codigo as string);
   }
 
   return {
