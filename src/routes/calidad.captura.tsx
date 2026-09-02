@@ -1020,11 +1020,8 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
         maquinaNombre: maquina.nombre,
         productoCodigo: producto.codigo,
         productoNombre: producto.nombre,
-        observacionesGenerales:
-          loteLogisticoValido && esIxtapaluca
-            ? [`Lote logístico: ${loteLogistico}`, observaciones].filter(Boolean).join(" | ")
-            : observaciones,
-        loteLogistico: loteLogisticoValido ? loteLogistico : null,
+        observacionesGenerales: observaciones,
+        loteLogistico: null,
         turno,
         jefeMaquina,
         operador,
