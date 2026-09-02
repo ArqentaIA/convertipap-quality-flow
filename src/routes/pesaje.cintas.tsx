@@ -421,6 +421,15 @@ function PesajeCintasPage() {
     }
   }
 
+  const productoRollo = lote?.producto_codigo ?? contexto?.muestra?.producto_codigo ?? null;
+  useEffect(() => {
+    let vivo = true;
+    void traerSkus({ data: { producto_codigo: productoRollo } })
+      .then((r) => { if (vivo) setSkusSap(r.items ?? []); })
+      .catch(() => { if (vivo) setSkusSap([]); });
+    return () => { vivo = false; };
+  }, [productoRollo, traerSkus]);
+
   const netoBM = lote?.peso_bobina_madre_neto_kg ?? contexto?.pesaje.peso_neto_kg ?? 0;
   const totalCintas = lote?.peso_total_cintas_kg ?? 0;
   const pesoMermasGuardado = lote?.peso_mermas_kg ?? lote?.merma_real_kg ?? null;
