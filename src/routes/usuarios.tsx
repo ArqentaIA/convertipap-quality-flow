@@ -122,6 +122,62 @@ function UsuariosPage() {
     }
   }
 
+  // Excepciones de módulo por usuario (solo afectan a ese usuario).
+  async function cambiarModuloUsuario(
+    userId: string,
+    module: AppModule,
+    accion: "add" | "remove",
+    overrides: Partial<Record<AppModule, "grant" | "deny">>,
+  ) {
+    setBusy(`umod:${userId}:${module}`);
+    try {
+      const actual = overrides[module];
+      if (accion === "add") {
+        // Si había un "deny", basta quitarlo; si no, se crea un "grant".
+        if (actual === "deny") {
+          const { error } = await supabase
+            .from("user_module_overrides")
+            .delete()
+            .eq("user_id", userId)
+            .eq("module", module);
+          if (error) throw error;
+        } else {
+          const { error } = await supabase
+            .from("user_module_overrides")
+            .upsert(
+              { user_id: userId, module, action: "grant" },
+              { onConflict: "user_id,module" },
+            );
+          if (error) throw error;
+        }
+      } else {
+        // Si el acceso venía de un "grant", basta quitarlo; si venía del rol, se crea un "deny".
+        if (actual === "grant") {
+          const { error } = await supabase
+            .from("user_module_overrides")
+            .delete()
+            .eq("user_id", userId)
+            .eq("module", module);
+          if (error) throw error;
+        } else {
+          const { error } = await supabase
+            .from("user_module_overrides")
+            .upsert(
+              { user_id: userId, module, action: "deny" },
+              { onConflict: "user_id,module" },
+            );
+          if (error) throw error;
+        }
+      }
+      toast.success(accion === "add" ? "Módulo habilitado" : "Módulo eliminado");
+      setTick((t) => t + 1);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "No se pudo actualizar el módulo");
+    } finally {
+      setBusy(null);
+    }
+  }
+
   // Defensa adicional: si el usuario llega por URL directa sin permiso,
   // redirigir al primer módulo permitido (o /login si no tiene ninguno).
   // Perfiles y Roles: acceso exclusivo de adgral@convertipap.site.
@@ -155,18 +211,20 @@ function UsuariosPage() {
       setLoading(true);
       setError(null);
       try {
-        const [perfilesRes, rolesRes, modsRes] = await Promise.all([
+        const [perfilesRes, rolesRes, modsRes, ovrRes] = await Promise.all([
           supabase
             .from("profiles")
             .select("id, email, nombre, activo")
             .order("nombre", { ascending: true }),
           supabase.from("user_roles").select("user_id, role"),
           supabase.from("module_permissions").select("role, module"),
+          supabase.from("user_module_overrides").select("user_id, module, action"),
         ]);
 
         if (perfilesRes.error) throw perfilesRes.error;
         if (rolesRes.error) throw rolesRes.error;
         if (modsRes.error) throw modsRes.error;
+        if (ovrRes.error) throw ovrRes.error;
 
         const rolesPorUsuario = new Map<string, AppRole[]>();
         for (const r of rolesRes.data ?? []) {
