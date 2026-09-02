@@ -101,6 +101,10 @@ function PesajeCintasPage() {
   const [conductorId, setConductorId] = useState<string>("");
   const [bobinadoraId, setBobinadoraId] = useState<string>("");
   const [bobinadorNombre, setBobinadorNombre] = useState<string>("");
+  // Trazabilidad del área de cortes (ambas plantas). Dato adicional: no
+  // sustituye la trazabilidad del rollo madre ni la etiqueta.
+  const [operadorCortes, setOperadorCortes] = useState<string>("");
+  const [analistaCortes, setAnalistaCortes] = useState<string>("");
   // Ixtapaluca: conductor y máquina se capturan como texto libre (máx. 20)
   const [conductorNombre, setConductorNombre] = useState<string>("");
   const [maquinaNombre, setMaquinaNombre] = useState<string>("");
