@@ -400,11 +400,10 @@ export const listMisMuestrasRecientes = createServerFn({ method: "GET" })
         q = q.eq("capturado_por", userId);
       }
     } else if (plantasPermitidas) {
-      const { data: maqRows } = await sb
-        .from("maquinas")
-        .select("id")
-        .in("planta_id", plantasPermitidas);
-      const allowedIds = (maqRows ?? []).map((m) => m.id);
+      // Usuarios con visión amplia pero restringidos a plantas: incluir MP-10
+      // como máquina de pruebas compartida cuando corresponda.
+      const maqRows = await maquinasPermitidasConPruebas(sb, userId);
+      const allowedIds = maqRows.map((m) => m.id);
       if (allowedIds.length === 0) return [];
       q = q.in("maquina_id", allowedIds);
     }
