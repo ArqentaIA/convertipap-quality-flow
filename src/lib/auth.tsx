@@ -63,10 +63,15 @@ interface AuthState {
 const AuthContext = createContext<AuthState | null>(null);
 
 async function loadProfileAndPerms(userId: string) {
-  const [{ data: profile }, { data: roleRows }] = await Promise.all([
-    supabase.from("profiles").select("*").eq("id", userId).maybeSingle(),
-    supabase.from("user_roles").select("role").eq("user_id", userId),
-  ]);
+  const [{ data: profile }, { data: roleRows }, { data: overrideRows }] =
+    await Promise.all([
+      supabase.from("profiles").select("*").eq("id", userId).maybeSingle(),
+      supabase.from("user_roles").select("role").eq("user_id", userId),
+      supabase
+        .from("user_module_overrides")
+        .select("module, action")
+        .eq("user_id", userId),
+    ]);
 
   const roles = (roleRows ?? []).map((r) => r.role as AppRole);
 
@@ -77,6 +82,13 @@ async function loadProfileAndPerms(userId: string) {
       .select("module")
       .in("role", roles);
     modules = Array.from(new Set((modRows ?? []).map((m) => m.module as AppModule)));
+  }
+
+  // Excepciones por usuario: "grant" agrega, "deny" quita (tiene prioridad).
+  for (const o of overrideRows ?? []) {
+    const m = o.module as AppModule;
+    if (o.action === "deny") modules = modules.filter((x) => x !== m);
+    else if (!modules.includes(m)) modules.push(m);
   }
 
   return { profile: (profile as Profile | null) ?? null, roles, modules };
