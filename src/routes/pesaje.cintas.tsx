@@ -926,7 +926,30 @@ function PesajeCintasPage() {
                     />
                   </div>
                 )}
+                <div>
+                  <label className="mb-1 block text-[11px] uppercase tracking-wide text-muted-foreground">Operador de cortes</label>
+                  <input
+                    type="text"
+                    maxLength={40}
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    placeholder="Nombre del operador"
+                    value={operadorCortes}
+                    onChange={(e) => setOperadorCortes(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-[11px] uppercase tracking-wide text-muted-foreground">Analista que libera cortes</label>
+                  <input
+                    type="text"
+                    maxLength={40}
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    placeholder="Nombre del analista"
+                    value={analistaCortes}
+                    onChange={(e) => setAnalistaCortes(e.target.value)}
+                  />
+                </div>
               </div>
+
               <button
                 onClick={onSolicitarLoteManual}
                 disabled={saving}
