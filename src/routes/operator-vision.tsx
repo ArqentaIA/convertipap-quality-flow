@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -83,13 +83,24 @@ export const Route = createFileRoute("/operator-vision")({
       { name: "description", content: "Pantalla industrial de monitoreo en tiempo real" },
     ],
   }),
-  validateSearch: (search: Record<string, unknown>): { maquina: MaquinaValida } => {
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): {
+    maquina: MaquinaValida;
+    auto?: "1";
+    v?: "a" | "b";
+    t?: number;
+  } => {
     const m = String(search.maquina ?? "");
-    return {
-      maquina: (MAQUINAS_VALIDAS as readonly string[]).includes(m)
-        ? (m as MaquinaValida)
-        : "MP-04",
-    };
+    const maquina = (MAQUINAS_VALIDAS as readonly string[]).includes(m)
+      ? (m as MaquinaValida)
+      : "MP-04";
+    const auto = search.auto === "1" || search.auto === 1 ? ("1" as const) : undefined;
+    if (!auto) return { maquina };
+    const v = String(search.v ?? "a") === "b" ? ("b" as const) : ("a" as const);
+    const tNum = Number(search.t);
+    const t = Number.isFinite(tNum) && tNum >= 10 && tNum <= 600 ? Math.round(tNum) : 45;
+    return { maquina, auto, v, t };
   },
   component: OperatorVisionGate,
   ssr: false,
@@ -641,7 +652,45 @@ function HeaderField({
 }
 
 function OperatorVisionPage() {
-  const { maquina } = Route.useSearch();
+  const { maquina, auto, v, t } = Route.useSearch();
+  const navigate = useNavigate();
+
+  // Modo auto-rotación (pantallas TV/kiosko): cada `t` segundos cambia a la
+  // siguiente máquina del ciclo. La variante "b" inicia desfasada respecto a
+  // la "a", de modo que dos monitores nunca muestran la misma máquina.
+  useEffect(() => {
+    if (!auto) return;
+    const segundos = t ?? 45;
+    const id = setInterval(() => {
+      const idx = MAQUINAS_VALIDAS.indexOf(maquina);
+      const next = MAQUINAS_VALIDAS[(idx + 1) % MAQUINAS_VALIDAS.length];
+      window.scrollTo(0, 0);
+      navigate({
+        to: "/operator-vision",
+        search: { maquina: next, auto: "1", v: v ?? "a", t: segundos },
+        replace: true,
+      });
+    }, segundos * 1000);
+    return () => clearInterval(id);
+  }, [auto, maquina, v, t, navigate]);
+
+  // Desplazamiento automático hacia arriba: el contenido sube lentamente y
+  // al llegar al final reinicia desde arriba. Solo en modo auto-rotación.
+  useEffect(() => {
+    if (!auto) return;
+    window.scrollTo(0, 0);
+    const id = setInterval(() => {
+      const el = document.scrollingElement ?? document.documentElement;
+      const max = el.scrollHeight - window.innerHeight;
+      if (max <= 0) return;
+      if (el.scrollTop >= max - 2) {
+        el.scrollTo({ top: 0 });
+      } else {
+        el.scrollTop += 1;
+      }
+    }, 60);
+    return () => clearInterval(id);
+  }, [auto, maquina]);
   const now = useTicker(1000);
   const screenRef = useRef<HTMLDivElement>(null);
   const [capturing, setCapturing] = useState(false);

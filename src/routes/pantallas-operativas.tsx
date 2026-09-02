@@ -171,6 +171,53 @@ function OperatorVisionUrls() {
           sesión administrativa.
         </p>
       </div>
+
+      {/* URLs de rotación automática para 2 monitores */}
+      <div className="mt-4 rounded-xl border border-border bg-card p-5 shadow-sm">
+        <div className="mb-4 flex items-start gap-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <Monitor className="h-4 w-4" />
+          </div>
+          <div className="flex-1">
+            <h3 className="text-sm font-semibold text-foreground">Rotación automática · 2 monitores</h3>
+            <p className="text-xs text-muted-foreground">
+              Cada URL recorre las máquinas en distinto orden (nunca repiten la misma a la vez) y
+              desplaza el contenido hacia arriba automáticamente. Cambio de máquina cada 45 s
+              (ajustable con el parámetro t, en segundos).
+            </p>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          {([
+            { id: "a", label: "Monitor A", inicio: "MP-01" },
+            { id: "b", label: "Monitor B", inicio: "MP-06" },
+          ] as const).map((m) => {
+            const url = `${OPERATOR_VISION_BASE}/operator-vision?maquina=${m.inicio}&auto=1&v=${m.id}`;
+            return (
+              <div
+                key={m.id}
+                className="flex items-center gap-2 rounded-md border border-border bg-background p-2"
+              >
+                <span className="inline-flex h-7 min-w-[72px] items-center justify-center rounded-md bg-primary/10 px-2 text-[11px] font-bold text-primary">
+                  {m.label}
+                </span>
+                <code className="flex-1 truncate font-mono text-[11px] text-foreground" title={url}>
+                  {url}
+                </code>
+                <button
+                  type="button"
+                  onClick={() => copy(url, `URL ${m.label}`)}
+                  className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-border bg-background text-muted-foreground hover:bg-accent hover:text-foreground"
+                  title="Copiar URL"
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }
