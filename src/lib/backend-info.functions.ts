@@ -77,7 +77,7 @@ export const getBackendInfo = createServerFn({ method: "GET" })
     }
 
     return {
-      provider: "Lovable Cloud",
+      provider: "Python 3.14.7",
       service: "PostgreSQL gestionado",
       region: "Región gestionada por Lovable Cloud",
       environment,
