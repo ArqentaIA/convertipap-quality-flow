@@ -141,7 +141,36 @@ export const listMaquinasCaptura = createServerFn({ method: "GET" })
 
     const { data, error } = await q;
     if (error) throw new Error(error.message);
-    return data ?? [];
+    const lista = (data ?? []) as {
+      id: string;
+      nombre: string;
+      codigo: string;
+      area: string | null;
+      planta_id: string;
+      plantas: { id: string; nombre: string; codigo: string } | null;
+    }[];
+
+    // MP-10 es máquina de PRUEBAS compartida entre Tlaxcala e Ixtapaluca.
+    // Si el usuario tiene acceso a cualquiera de esas plantas, se le muestra
+    // en captura para poder hacer pruebas, sin importar a qué planta esté
+    // asignada en el catálogo.
+    const { data: plantasCodigo } = await sb
+      .from("plantas")
+      .select("codigo")
+      .in("id", plantas ?? []);
+    const codigos = (plantasCodigo ?? []).map((p) => (p.codigo ?? "").toUpperCase());
+    const incluirMP10 = !plantas || codigos.includes("TLX") || codigos.includes("IXT");
+    if (incluirMP10 && !lista.some((m) => m.codigo === "MP-10")) {
+      const { data: mp10 } = await sb
+        .from("maquinas")
+        .select("id, nombre, codigo, area, planta_id, plantas(id, nombre, codigo)")
+        .eq("codigo", "MP-10")
+        .eq("activo", true)
+        .maybeSingle();
+      if (mp10) lista.push(mp10 as typeof lista[number]);
+    }
+
+    return lista.sort((a, b) => a.codigo.localeCompare(b.codigo));
   });
 
 
