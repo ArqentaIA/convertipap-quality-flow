@@ -42,6 +42,7 @@ export type EtiquetaCinta = {
   estatus_liberacion?: string | null;
   /** Lote Logístico pza. capturado por cinta (tiene prioridad sobre el del lote/muestra). */
   lote_logistico_pza?: string | null;
+  sku_sap?: string | null;
   version_etiqueta?: number;
   created_at?: string;
 };
@@ -135,6 +136,8 @@ export type CintaLabelData = {
   url_qr_rollo: string;
   url_qr_peso: string;
   url_qr_lote: string;
+  sku_sap: string | null;
+  url_qr_sku: string;
 };
 
 const SIN_DATOS = /^\s*(sin datos registrados|—|-)?\s*$/i;
@@ -251,6 +254,8 @@ export function buildCintaLabelData(snap: EtiquetaSnapshot, cinta: EtiquetaCinta
     url_qr_rollo: "",
     url_qr_peso: "",
     url_qr_lote: "",
+    sku_sap: limpio(cinta.sku_sap ?? null),
+    url_qr_sku: "",
   };
 
   // TEXTO PLANO: solo el valor del dato. Si está vacío, no se genera QR y la
@@ -261,6 +266,7 @@ export function buildCintaLabelData(snap: EtiquetaSnapshot, cinta: EtiquetaCinta
     data.url_qr_peso = p === "—" ? "" : p;
   }
   data.url_qr_lote = (data.lote_logistico ?? "").trim();
+  data.url_qr_sku = (data.sku_sap ?? "").trim();
 
   data.qr_payload = {
     version_esquema_qr: 1,
@@ -327,6 +333,7 @@ type Assets = {
   qrRollo: string;
   qrPeso: string;
   qrLote: string;
+  qrSku: string;
 };
 
 function fila(k: string, v: string | null): string {
@@ -396,9 +403,10 @@ function renderEtiqueta(d: CintaLabelData, snap: EtiquetaSnapshot, assets: Asset
 
       ${filaPersonal ? `<div class="lbl-row">${filaPersonal}</div>` : ""}
 
-      ${d.observaciones || d.estatus_liberacion || d.lote_logistico ? `<div class="lbl-obs">
+      ${d.observaciones || d.estatus_liberacion || d.lote_logistico || d.sku_sap ? `<div class="lbl-obs">
         ${d.observaciones ? `<div class="lbl-obs-txt"><span class="k">Obs.</span> ${d.observaciones}</div>` : ""}
         ${d.lote_logistico ? `<div class="lbl-obs-lote"><span class="k">N° de ID SAP</span><span class="v">${d.lote_logistico}</span></div>` : ""}
+        ${d.sku_sap ? `<div class="lbl-obs-lote"><span class="k">SKU SAP</span><span class="v">${d.sku_sap}</span></div>` : ""}
         ${d.estatus_liberacion ? `<div class="lbl-obs-est"><span class="k">Estatus</span><span class="est-badge" style="background:${ESTATUS_CINTA_COLOR[d.estatus_liberacion] ?? "#555"}">${ESTATUS_CINTA_LABEL[d.estatus_liberacion] ?? d.estatus_liberacion}</span></div>` : ""}
       </div>` : ""}
 
@@ -414,6 +422,10 @@ function renderEtiqueta(d: CintaLabelData, snap: EtiquetaSnapshot, assets: Asset
         <div class="qr-box">
           ${assets.qrLote ? `<img src="${assets.qrLote}" alt="QR N° de ID SAP" />` : `<div class="qr-na">Dato no disponible</div>`}
           <div class="qr-cap">N° de ID SAP</div>
+        </div>
+        <div class="qr-box">
+          ${assets.qrSku ? `<img src="${assets.qrSku}" alt="QR SKU SAP" />` : `<div class="qr-na">Dato no disponible</div>`}
+          <div class="qr-cap">SKU SAP</div>
         </div>
         <div class="qr-sap"><img src="${assets.sapLogo}" alt="SAP HANA" /></div>
       </div>
@@ -438,12 +450,13 @@ export async function abrirImpresionEtiquetas(snap: EtiquetaSnapshot): Promise<v
   const etiquetas = await Promise.all(
     datos.map(async (d) => {
       const opts = { margin: 1, width: 220, errorCorrectionLevel: "M" as const };
-      const [qrRollo, qrPeso, qrLote] = await Promise.all([
+      const [qrRollo, qrPeso, qrLote, qrSku] = await Promise.all([
         qrPlano(d.url_qr_rollo, opts),
         qrPlano(d.url_qr_peso, opts),
         qrPlano(d.url_qr_lote, opts),
+        qrPlano(d.url_qr_sku, opts),
       ]);
-      return renderEtiqueta(d, snap, { logo: logoDataUrl, sapLogo: sapLogoDataUrl, qrRollo, qrPeso, qrLote });
+      return renderEtiqueta(d, snap, { logo: logoDataUrl, sapLogo: sapLogoDataUrl, qrRollo, qrPeso, qrLote, qrSku });
     }),
   );
 
@@ -510,7 +523,8 @@ export async function abrirImpresionEtiquetas(snap: EtiquetaSnapshot): Promise<v
   .lbl-qr-zone .qr-box .qr-na { width: 20mm; height: 20mm; display: flex; align-items: center; justify-content: center; border: 0.3mm dashed #999; color: #666; font-size: 6pt; font-weight: 700; text-align: center; padding: 1mm; }
   .lbl-qr-zone .qr-cap { font-size: 6.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: #111; display: flex; align-items: center; justify-content: center; height: 4mm; }
   .lbl-qr-zone .qr-saplogo { width: auto !important; height: 4mm !important; max-width: 22mm; object-fit: contain; }
-  .lbl-qr-zone .qr-box img { width: 17mm; height: 17mm; }
+  .lbl-qr-zone .qr-box img { width: 15mm; height: 15mm; }
+  .lbl-qr-zone .qr-box .qr-na { width: 15mm; height: 15mm; }
   .lbl-qr-zone .qr-sap { display: flex; align-items: flex-end; }
   .lbl-qr-zone .qr-sap img { height: 6mm; max-width: 18mm; object-fit: contain; }
   @media screen {
