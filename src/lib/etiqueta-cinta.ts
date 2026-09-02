@@ -133,7 +133,6 @@ export type CintaLabelData = {
   sap_url: string | null;
   lote_logistico: string | null;
   /** Payloads de TEXTO PLANO de los 3 QR inferiores (sin URL, sin JSON). */
-  url_qr_rollo: string;
   url_qr_peso: string;
   url_qr_lote: string;
   sku_sap: string | null;
