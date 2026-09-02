@@ -12,6 +12,7 @@ import {
   asignarBobinadorNombre, asignarNombresOperativos, asignarEstatusCinta,
   bajadasRollo, cerrarRolloDefinitivo,
   type ContextoRollo, type CintaRegistrada, type LoteCintas,
+  listarSkuSapCintas,
 } from "@/lib/pesaje-cintas.functions";
 
 
@@ -64,6 +65,7 @@ function PesajeCintasPage() {
   const asignarBobinador = useServerFn(asignarBobinadorNombre);
   const asignarNombresOp = useServerFn(asignarNombresOperativos);
   const traerBajadas = useServerFn(bajadasRollo);
+  const traerSkus = useServerFn(listarSkuSapCintas);
   const cerrarRollo = useServerFn(cerrarRolloDefinitivo);
 
 
@@ -453,7 +455,7 @@ function PesajeCintasPage() {
     return next > MAX_POSICION ? 0 : next;
   }, [lote, cintas, rolloInfo?.ultima_posicion]);
 
-  async function onRegistrar(peso: number, uniones: number, ancho: number, obs: string, pza: string) {
+  async function onRegistrar(peso: number, uniones: number, ancho: number, obs: string, pza: string, sku: string) {
     if (!lote) return;
     if (requestGuard.current) return;
     if (peso <= 0 || ancho <= 0 || uniones < 0) { toast.error("Valores inválidos."); return; }
@@ -474,6 +476,7 @@ function PesajeCintasPage() {
           uniones, peso_cinta_kg: peso, ancho_util: ancho,
           observaciones: obs || null,
           lote_logistico_pza: pza.trim(),
+          sku_sap: sku.trim() || null,
           idempotency_key: uuid(),
         },
       });
@@ -1172,6 +1175,7 @@ function PesajeCintasPage() {
                     habilitada={habilitada}
                     disponibleKg={netoBM - totalCintas}
                     onRegistrar={onRegistrar}
+                    skus={skusSap}
                     onAnular={c && lote.estado === "abierto" ? () => onAnular(c.id) : undefined}
 
                     onCorregir={c && lote.estado === "abierto" ? () => onCorregir(c) : undefined}
@@ -1218,7 +1222,8 @@ type CintaCardProps = {
   cinta: CintaRegistrada | null;
   habilitada: boolean;
   disponibleKg: number;
-  onRegistrar: (peso: number, uniones: number, ancho: number, obs: string, pza: string) => Promise<void>;
+  onRegistrar: (peso: number, uniones: number, ancho: number, obs: string, pza: string, sku: string) => Promise<void>;
+  skus: Array<{ clave: string; descripcion: string }>;
   onAnular?: () => void;
   onCorregir?: () => void;
   onReimprimir?: () => void;
@@ -1233,17 +1238,18 @@ const ESTATUS_OPCIONES: Array<{ v: "L" | "C" | "NC"; label: string; clase: strin
   { v: "NC", label: "No conforme", clase: "border-destructive/50 bg-destructive/10 text-destructive" },
 ];
 
-function CintaCard({ pos, cinta, habilitada, disponibleKg, onRegistrar, onAnular, onCorregir, onReimprimir, mostrarEstatus, onCambiarEstatus, saving }: CintaCardProps) {
+function CintaCard({ pos, cinta, habilitada, disponibleKg, onRegistrar, skus, onAnular, onCorregir, onReimprimir, mostrarEstatus, onCambiarEstatus, saving }: CintaCardProps) {
   const [peso, setPeso] = useState("");
   const [uniones, setUniones] = useState("0");
   const [ancho, setAncho] = useState("");
   const [obs, setObs] = useState("");
   const [pza, setPza] = useState("");
+  const [sku, setSku] = useState("");
   const anchoRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (habilitada) {
-      setPeso(""); setUniones("0"); setAncho(""); setObs(""); setPza("");
+      setPeso(""); setUniones("0"); setAncho(""); setObs(""); setPza(""); setSku("");
       // Posicionar el cursor en Ancho útil para la siguiente captura.
       anchoRef.current?.focus();
     }
@@ -1261,6 +1267,9 @@ function CintaCard({ pos, cinta, habilitada, disponibleKg, onRegistrar, onAnular
           <div><span className="text-muted-foreground">Ancho útil:</span> <b>{n(cinta.ancho_util, 3)} {cinta.ancho_util_unidad ?? "cm"}</b></div>
           <div><span className="text-muted-foreground">Peso:</span> <b>{n(cinta.peso_cinta_kg)} kg</b></div>
           <div><span className="text-muted-foreground">Uniones:</span> <b>{cinta.uniones}</b></div>
+          {cinta.sku_sap && (
+            <div><span className="text-muted-foreground">SKU SAP:</span> <b className="font-mono">{cinta.sku_sap}</b></div>
+          )}
           {cinta.lote_logistico_pza && (
             <div><span className="text-muted-foreground">N° DE ID SAP:</span> <b className="font-mono">{cinta.lote_logistico_pza}</b></div>
           )}
@@ -1376,6 +1385,22 @@ function CintaCard({ pos, cinta, habilitada, disponibleKg, onRegistrar, onAnular
           />
         </div>
         <div>
+          <label className="mb-0.5 block text-[11px] text-muted-foreground">SKU SAP *</label>
+          <select
+            value={sku}
+            onChange={(e) => setSku(e.target.value)}
+            className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm"
+          >
+            <option value="">Seleccione…</option>
+            {skus.map((s) => (
+              <option key={s.clave} value={s.clave}>{s.clave} · {s.descripcion}</option>
+            ))}
+          </select>
+          {skus.length === 0 && (
+            <p className="mt-0.5 text-[10px] text-destructive">No hay claves SKU SAP disponibles.</p>
+          )}
+        </div>
+        <div>
           <label className="mb-0.5 block text-[11px] text-muted-foreground">Observaciones (opcional)</label>
           <input
             type="text" maxLength={200}
@@ -1389,9 +1414,10 @@ function CintaCard({ pos, cinta, habilitada, disponibleKg, onRegistrar, onAnular
             const p = Number(peso);
             if (!(p > 0)) return;
             if (!pza.trim()) return;
-            void onRegistrar(p, Number(uniones || 0), Number(ancho), obs.trim(), pza.trim());
+            if (!sku) return;
+            void onRegistrar(p, Number(uniones || 0), Number(ancho), obs.trim(), pza.trim(), sku);
           }}
-          disabled={saving || !peso || !ancho || !pza.trim()}
+          disabled={saving || !peso || !ancho || !pza.trim() || !sku}
           className="w-full rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
         >
           {saving ? "Guardando…" : "Guardar"}
