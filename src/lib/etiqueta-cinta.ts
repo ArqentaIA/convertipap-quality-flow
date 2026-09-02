@@ -507,7 +507,7 @@ export async function abrirImpresionEtiquetas(snap: EtiquetaSnapshot): Promise<v
   .lbl-obs-lote { display: flex; flex-direction: column; align-items: flex-start; gap: 0.6mm; }
   .lbl-obs-est { display: flex; flex-direction: column; align-items: flex-start; gap: 0.6mm; }
   .est-badge { display: inline-block; padding: 0.6mm 2mm; border-radius: 1mm; color: #fff; font-size: 8pt; font-weight: 900; letter-spacing: 0.3px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .lbl-ver { font-size: 6pt; color: #555; text-align: right; }
+  .lbl-ver { font-size: 5pt; color: #555; text-align: right; white-space: nowrap; }
 
   .lbl-qr-zone { margin-top: auto; padding-top: 1.5mm; border-top: 0.3mm solid #555; display: flex; justify-content: space-around; align-items: flex-end; gap: 4mm; }
   .lbl-qr-zone .qr-box { display: flex; flex-direction: column; align-items: center; gap: 0.8mm; }
