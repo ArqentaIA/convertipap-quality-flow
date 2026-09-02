@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -83,13 +83,24 @@ export const Route = createFileRoute("/operator-vision")({
       { name: "description", content: "Pantalla industrial de monitoreo en tiempo real" },
     ],
   }),
-  validateSearch: (search: Record<string, unknown>): { maquina: MaquinaValida } => {
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): {
+    maquina: MaquinaValida;
+    auto?: "1";
+    v?: "a" | "b";
+    t?: number;
+  } => {
     const m = String(search.maquina ?? "");
-    return {
-      maquina: (MAQUINAS_VALIDAS as readonly string[]).includes(m)
-        ? (m as MaquinaValida)
-        : "MP-04",
-    };
+    const maquina = (MAQUINAS_VALIDAS as readonly string[]).includes(m)
+      ? (m as MaquinaValida)
+      : "MP-04";
+    const auto = search.auto === "1" || search.auto === 1 ? ("1" as const) : undefined;
+    if (!auto) return { maquina };
+    const v = String(search.v ?? "a") === "b" ? ("b" as const) : ("a" as const);
+    const tNum = Number(search.t);
+    const t = Number.isFinite(tNum) && tNum >= 10 && tNum <= 600 ? Math.round(tNum) : 45;
+    return { maquina, auto, v, t };
   },
   component: OperatorVisionGate,
   ssr: false,
