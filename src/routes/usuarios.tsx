@@ -240,11 +240,28 @@ function UsuariosPage() {
           modulosPorRol.set(m.role as AppRole, arr);
         }
 
+        const ovrPorUsuario = new Map<
+          string,
+          Partial<Record<AppModule, "grant" | "deny">>
+        >();
+        for (const o of ovrRes.data ?? []) {
+          const rec = ovrPorUsuario.get(o.user_id) ?? {};
+          rec[o.module as AppModule] = o.action as "grant" | "deny";
+          ovrPorUsuario.set(o.user_id, rec);
+        }
+
         const filas: UsuarioFila[] = (perfilesRes.data ?? []).map((p) => {
           const userRoles = rolesPorUsuario.get(p.id) ?? [];
+          const overrides = ovrPorUsuario.get(p.id) ?? {};
           const modSet = new Set<AppModule>();
           for (const rol of userRoles) {
             for (const m of modulosPorRol.get(rol) ?? []) modSet.add(m);
+          }
+          for (const [m, action] of Object.entries(overrides) as Array<
+            [AppModule, "grant" | "deny"]
+          >) {
+            if (action === "deny") modSet.delete(m);
+            else modSet.add(m);
           }
           return {
             id: p.id,
@@ -253,6 +270,7 @@ function UsuariosPage() {
             activo: p.activo,
             roles: userRoles,
             modulos: Array.from(modSet),
+            overrides,
           };
         });
 
