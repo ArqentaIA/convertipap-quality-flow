@@ -250,7 +250,6 @@ export function buildCintaLabelData(snap: EtiquetaSnapshot, cinta: EtiquetaCinta
     // Fuente del QR/dato "Lote Logístico": el valor capturado en la propia
     // cinta (Lote Logístico pza.); en su defecto, el del lote/muestra.
     lote_logistico: limpio(cinta.lote_logistico_pza ?? snap.lote_logistico ?? null),
-    url_qr_rollo: "",
     url_qr_peso: "",
     url_qr_lote: "",
     sku_sap: limpio(cinta.sku_sap ?? null),
@@ -259,7 +258,6 @@ export function buildCintaLabelData(snap: EtiquetaSnapshot, cinta: EtiquetaCinta
 
   // TEXTO PLANO: solo el valor del dato. Si está vacío, no se genera QR y la
   // etiqueta muestra "Dato no disponible".
-  data.url_qr_rollo = String(data.numero_rollo_etiqueta ?? "").trim();
   {
     const p = fmtKg(data.peso_cinta_kg);
     data.url_qr_peso = p === "—" ? "" : p;
