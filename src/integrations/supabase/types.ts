@@ -3100,7 +3100,7 @@ export type Database = {
         Returns: undefined
       }
       pc_set_estatus_cinta: {
-        Args: { _cinta_id: string; _estatus: string }
+        Args: { _cinta_id: string; _estatus: string; _motivo: string }
         Returns: undefined
       }
       pc_set_nombres_operativos: {
