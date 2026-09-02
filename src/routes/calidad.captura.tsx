@@ -694,8 +694,6 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
     (!plantaCodigoMaquina &&
       (plantasPermitidas ?? []).length > 0 &&
       (plantasPermitidas ?? []).every((p) => p.codigo?.toUpperCase() === "IXT"));
-  const [loteLogistico, setLoteLogistico] = useState<string>("");
-  const loteLogisticoValido = /^\d{10}$/.test(loteLogistico);
 
   // ---- Estatus del rollo elegido por el capturista (exclusivo Ixtapaluca) ----
   // Opcional. Si se elige, MANDA sobre el resultado automático de la sección F.
