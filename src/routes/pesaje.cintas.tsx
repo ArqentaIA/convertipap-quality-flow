@@ -492,8 +492,13 @@ function PesajeCintasPage() {
   // Estatus de liberación por cinta (Ixtapaluca): hereda el del rollo y el
   // usuario puede cambiarlo según cómo salga el corte.
   async function onCambiarEstatusCinta(cintaId: string, estatus: "L" | "C" | "NC") {
+    const motivo = (window.prompt("Motivo del cambio de estatus (mínimo 10 caracteres):") ?? "").trim();
+    if (motivo.length < 10) {
+      if (motivo.length > 0) toast.error("El motivo debe tener al menos 10 caracteres.");
+      return;
+    }
     try {
-      await setEstatusCinta({ data: { cinta_id: cintaId, estatus } });
+      await setEstatusCinta({ data: { cinta_id: cintaId, estatus, motivo } });
       await qc.invalidateQueries({ queryKey: ["cintas-lote", loteId] });
       toast.success("Estatus de la cinta actualizado.");
     } catch (e: unknown) {
