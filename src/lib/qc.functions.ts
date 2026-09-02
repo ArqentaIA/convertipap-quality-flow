@@ -130,47 +130,9 @@ export const listMaquinasCaptura = createServerFn({ method: "GET" })
 
     // Restricción Norte/Sur eliminada. La única restricción vigente es por
     // planta asignada al usuario (tabla user_plantas).
-    let q = sb
-      .from("maquinas")
-      .select("id, nombre, codigo, area, planta_id, plantas(id, nombre, codigo)")
-      .eq("activo", true)
-      .order("codigo");
-
-    const plantas = await allowedPlantaIds(sb, context.userId);
-    if (plantas) q = q.in("planta_id", plantas);
-
-    const { data, error } = await q;
-    if (error) throw new Error(error.message);
-    const lista = (data ?? []) as {
-      id: string;
-      nombre: string;
-      codigo: string;
-      area: string | null;
-      planta_id: string;
-      plantas: { id: string; nombre: string; codigo: string } | null;
-    }[];
-
-    // MP-10 es máquina de PRUEBAS compartida entre Tlaxcala e Ixtapaluca.
-    // Si el usuario tiene acceso a cualquiera de esas plantas, se le muestra
-    // en captura para poder hacer pruebas, sin importar a qué planta esté
-    // asignada en el catálogo.
-    const { data: plantasCodigo } = await sb
-      .from("plantas")
-      .select("codigo")
-      .in("id", plantas ?? []);
-    const codigos = (plantasCodigo ?? []).map((p) => (p.codigo ?? "").toUpperCase());
-    const incluirMP10 = !plantas || codigos.includes("TLX") || codigos.includes("IXT");
-    if (incluirMP10 && !lista.some((m) => m.codigo === "MP-10")) {
-      const { data: mp10 } = await sb
-        .from("maquinas")
-        .select("id, nombre, codigo, area, planta_id, plantas(id, nombre, codigo)")
-        .eq("codigo", "MP-10")
-        .eq("activo", true)
-        .maybeSingle();
-      if (mp10) lista.push(mp10 as typeof lista[number]);
-    }
-
-    return lista.sort((a, b) => a.codigo.localeCompare(b.codigo));
+    // MP-10 es máquina de PRUEBAS compartida entre TLX e IXT: se incluye
+    // siempre que el usuario tenga acceso a cualquiera de esas plantas.
+    return maquinasPermitidasConPruebas(sb, context.userId);
   });
 
 
