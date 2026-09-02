@@ -22,6 +22,8 @@ type UsuarioFila = {
   activo: boolean;
   roles: AppRole[];
   modulos: AppModule[];
+  /** Excepciones por usuario: grant = acceso extra, deny = acceso removido del rol */
+  overrides: Partial<Record<AppModule, "grant" | "deny">>;
 };
 
 const ROL_LABEL: Record<AppRole, string> = {
@@ -120,6 +122,62 @@ function UsuariosPage() {
     }
   }
 
+  // Excepciones de módulo por usuario (solo afectan a ese usuario).
+  async function cambiarModuloUsuario(
+    userId: string,
+    module: AppModule,
+    accion: "add" | "remove",
+    overrides: Partial<Record<AppModule, "grant" | "deny">>,
+  ) {
+    setBusy(`umod:${userId}:${module}`);
+    try {
+      const actual = overrides[module];
+      if (accion === "add") {
+        // Si había un "deny", basta quitarlo; si no, se crea un "grant".
+        if (actual === "deny") {
+          const { error } = await supabase
+            .from("user_module_overrides")
+            .delete()
+            .eq("user_id", userId)
+            .eq("module", module);
+          if (error) throw error;
+        } else {
+          const { error } = await supabase
+            .from("user_module_overrides")
+            .upsert(
+              { user_id: userId, module, action: "grant" },
+              { onConflict: "user_id,module" },
+            );
+          if (error) throw error;
+        }
+      } else {
+        // Si el acceso venía de un "grant", basta quitarlo; si venía del rol, se crea un "deny".
+        if (actual === "grant") {
+          const { error } = await supabase
+            .from("user_module_overrides")
+            .delete()
+            .eq("user_id", userId)
+            .eq("module", module);
+          if (error) throw error;
+        } else {
+          const { error } = await supabase
+            .from("user_module_overrides")
+            .upsert(
+              { user_id: userId, module, action: "deny" },
+              { onConflict: "user_id,module" },
+            );
+          if (error) throw error;
+        }
+      }
+      toast.success(accion === "add" ? "Módulo habilitado" : "Módulo eliminado");
+      setTick((t) => t + 1);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "No se pudo actualizar el módulo");
+    } finally {
+      setBusy(null);
+    }
+  }
+
   // Defensa adicional: si el usuario llega por URL directa sin permiso,
   // redirigir al primer módulo permitido (o /login si no tiene ninguno).
   // Perfiles y Roles: acceso exclusivo de adgral@convertipap.site.
@@ -153,18 +211,20 @@ function UsuariosPage() {
       setLoading(true);
       setError(null);
       try {
-        const [perfilesRes, rolesRes, modsRes] = await Promise.all([
+        const [perfilesRes, rolesRes, modsRes, ovrRes] = await Promise.all([
           supabase
             .from("profiles")
             .select("id, email, nombre, activo")
             .order("nombre", { ascending: true }),
           supabase.from("user_roles").select("user_id, role"),
           supabase.from("module_permissions").select("role, module"),
+          supabase.from("user_module_overrides").select("user_id, module, action"),
         ]);
 
         if (perfilesRes.error) throw perfilesRes.error;
         if (rolesRes.error) throw rolesRes.error;
         if (modsRes.error) throw modsRes.error;
+        if (ovrRes.error) throw ovrRes.error;
 
         const rolesPorUsuario = new Map<string, AppRole[]>();
         for (const r of rolesRes.data ?? []) {
@@ -180,11 +240,28 @@ function UsuariosPage() {
           modulosPorRol.set(m.role as AppRole, arr);
         }
 
+        const ovrPorUsuario = new Map<
+          string,
+          Partial<Record<AppModule, "grant" | "deny">>
+        >();
+        for (const o of ovrRes.data ?? []) {
+          const rec = ovrPorUsuario.get(o.user_id) ?? {};
+          rec[o.module as AppModule] = o.action as "grant" | "deny";
+          ovrPorUsuario.set(o.user_id, rec);
+        }
+
         const filas: UsuarioFila[] = (perfilesRes.data ?? []).map((p) => {
           const userRoles = rolesPorUsuario.get(p.id) ?? [];
+          const overrides = ovrPorUsuario.get(p.id) ?? {};
           const modSet = new Set<AppModule>();
           for (const rol of userRoles) {
             for (const m of modulosPorRol.get(rol) ?? []) modSet.add(m);
+          }
+          for (const [m, action] of Object.entries(overrides) as Array<
+            [AppModule, "grant" | "deny"]
+          >) {
+            if (action === "deny") modSet.delete(m);
+            else modSet.add(m);
           }
           return {
             id: p.id,
@@ -193,6 +270,7 @@ function UsuariosPage() {
             activo: p.activo,
             roles: userRoles,
             modulos: Array.from(modSet),
+            overrides,
           };
         });
 
@@ -248,9 +326,10 @@ function UsuariosPage() {
         <div className="flex items-start gap-3 rounded-xl border border-border bg-muted/40 p-4 text-sm">
           <Lock className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
           <div className="text-muted-foreground">
-            Puedes <span className="font-semibold text-foreground">agregar o quitar roles</span> a
-            cada usuario. El alta, baja y restablecimiento de contraseña se realiza
-            desde el panel de administración del sistema.
+            Puedes <span className="font-semibold text-foreground">agregar o quitar roles</span> y
+            <span className="font-semibold text-foreground"> quitar u otorgar módulos individuales</span> a
+            cada usuario con la ✕ o el selector (solo afecta a ese usuario). El alta, baja y
+            restablecimiento de contraseña se realiza desde el panel de administración del sistema.
           </div>
         </div>
 
@@ -453,21 +532,50 @@ function UsuariosPage() {
                           </div>
                         </td>
                         <td className="px-4 py-3 align-top">
-                          <div className="flex flex-wrap gap-1">
-                            {u.modulos.length === 0 ? (
+                          <div className="flex flex-wrap items-center gap-1">
+                            {u.modulos.length === 0 && (
                               <span className="text-xs italic text-muted-foreground">
                                 ninguno
                               </span>
-                            ) : (
-                              u.modulos.map((m) => (
-                                <span
-                                  key={m}
-                                  className="inline-flex items-center rounded-md border border-border bg-muted/40 px-2 py-0.5 text-[11px] text-foreground/80"
-                                >
-                                  {MODULO_LABEL[m]}
-                                </span>
-                              ))
                             )}
+                            {u.modulos.map((m) => (
+                              <span
+                                key={m}
+                                className="inline-flex items-center gap-1 rounded-md border border-border bg-muted/40 px-2 py-0.5 text-[11px] text-foreground/80"
+                              >
+                                {MODULO_LABEL[m]}
+                                <button
+                                  type="button"
+                                  title="Quitar acceso solo a este usuario"
+                                  disabled={busy === `umod:${u.id}:${m}`}
+                                  onClick={() =>
+                                    void cambiarModuloUsuario(u.id, m, "remove", u.overrides)
+                                  }
+                                  className="rounded-full p-0.5 hover:bg-destructive/15 hover:text-destructive disabled:opacity-40"
+                                >
+                                  <X className="h-3 w-3" />
+                                </button>
+                              </span>
+                            ))}
+                            <select
+                              value=""
+                              disabled={busy?.startsWith(`umod:${u.id}:`)}
+                              onChange={(e) => {
+                                const m = e.target.value as AppModule;
+                                if (m)
+                                  void cambiarModuloUsuario(u.id, m, "add", u.overrides);
+                              }}
+                              className="rounded-md border border-dashed border-border bg-background px-1.5 py-0.5 text-[11px] text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                            >
+                              <option value="">+ Agregar módulo</option>
+                              {(Object.keys(MODULO_LABEL) as AppModule[])
+                                .filter((m) => !u.modulos.includes(m))
+                                .map((m) => (
+                                  <option key={m} value={m}>
+                                    {MODULO_LABEL[m]}
+                                  </option>
+                                ))}
+                            </select>
                           </div>
                         </td>
                         <td className="px-4 py-3 align-top">
