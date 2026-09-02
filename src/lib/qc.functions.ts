@@ -391,10 +391,9 @@ export const listMisMuestrasRecientes = createServerFn({ method: "GET" })
         // Capturista: historial reciente de las máquinas de SU planta
         // (no solo lo que él tecleó), porque varios capturistas se relevan
         // en el mismo turno y necesitan ver continuidad del rollo.
-        let maqQ = sb.from("maquinas").select("id, codigo").eq("activo", true);
-        if (plantasPermitidas) maqQ = maqQ.in("planta_id", plantasPermitidas);
-        const { data: maqRows } = await maqQ;
-        const allowedIds = (maqRows ?? []).map((m) => m.id);
+        // Incluye MP-10 (pruebas) si el usuario tiene TLX o IXT.
+        const maqRows = await maquinasPermitidasConPruebas(sb, userId);
+        const allowedIds = maqRows.map((m) => m.id);
         if (allowedIds.length === 0) return [];
         q = q.in("maquina_id", allowedIds);
       } else {
