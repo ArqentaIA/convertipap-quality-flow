@@ -26,7 +26,7 @@ import {
 } from "@/lib/roll-status";
 import type { MuestraCalidad, AjusteCalidad } from "@/lib/qc-types";
 import { evaluateCriticalRule } from "@/lib/qc-critical-rule";
-import { allowedPlantaIds, maquinasPermitidasConPruebas } from "@/lib/planta-acceso";
+import { maquinasPermitidasConPruebas } from "@/lib/planta-acceso";
 import { ordenCatalogo } from "@/lib/qc-orden-variables";
 
 type SB = SupabaseClient<Database>;
