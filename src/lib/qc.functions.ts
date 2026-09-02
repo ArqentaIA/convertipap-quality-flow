@@ -26,7 +26,7 @@ import {
 } from "@/lib/roll-status";
 import type { MuestraCalidad, AjusteCalidad } from "@/lib/qc-types";
 import { evaluateCriticalRule } from "@/lib/qc-critical-rule";
-import { allowedPlantaIds } from "@/lib/planta-acceso";
+import { maquinasPermitidasConPruebas } from "@/lib/planta-acceso";
 import { ordenCatalogo } from "@/lib/qc-orden-variables";
 
 type SB = SupabaseClient<Database>;
@@ -130,18 +130,9 @@ export const listMaquinasCaptura = createServerFn({ method: "GET" })
 
     // Restricción Norte/Sur eliminada. La única restricción vigente es por
     // planta asignada al usuario (tabla user_plantas).
-    let q = sb
-      .from("maquinas")
-      .select("id, nombre, codigo, area, planta_id, plantas(id, nombre, codigo)")
-      .eq("activo", true)
-      .order("codigo");
-
-    const plantas = await allowedPlantaIds(sb, context.userId);
-    if (plantas) q = q.in("planta_id", plantas);
-
-    const { data, error } = await q;
-    if (error) throw new Error(error.message);
-    return data ?? [];
+    // MP-10 es máquina de PRUEBAS compartida entre TLX e IXT: se incluye
+    // siempre que el usuario tenga acceso a cualquiera de esas plantas.
+    return maquinasPermitidasConPruebas(sb, context.userId);
   });
 
 
@@ -393,29 +384,23 @@ export const listMisMuestrasRecientes = createServerFn({ method: "GET" })
       .order("secuencia_captura", { ascending: false })
       .limit(seesAll ? 50 : isCapturista ? 30 : 20);
 
-    const plantasPermitidas = await allowedPlantaIds(sb, userId);
+    // Máquinas visibles para captura incluyendo MP-10 como pruebas compartida.
+    const maqRows = await maquinasPermitidasConPruebas(sb, userId);
+    const allowedIds = maqRows.map((m) => m.id);
 
     if (!seesAll) {
       if (isCapturista) {
         // Capturista: historial reciente de las máquinas de SU planta
         // (no solo lo que él tecleó), porque varios capturistas se relevan
         // en el mismo turno y necesitan ver continuidad del rollo.
-        let maqQ = sb.from("maquinas").select("id, codigo").eq("activo", true);
-        if (plantasPermitidas) maqQ = maqQ.in("planta_id", plantasPermitidas);
-        const { data: maqRows } = await maqQ;
-        const allowedIds = (maqRows ?? []).map((m) => m.id);
         if (allowedIds.length === 0) return [];
         q = q.in("maquina_id", allowedIds);
       } else {
         q = q.eq("capturado_por", userId);
       }
-    } else if (plantasPermitidas) {
-      const { data: maqRows } = await sb
-        .from("maquinas")
-        .select("id")
-        .in("planta_id", plantasPermitidas);
-      const allowedIds = (maqRows ?? []).map((m) => m.id);
-      if (allowedIds.length === 0) return [];
+    } else if (allowedIds.length > 0) {
+      // Usuarios con visión amplia: restringir a máquinas permitidas cuando
+      // aplica; MP-10 se incluye como máquina de pruebas compartida.
       q = q.in("maquina_id", allowedIds);
     }
 
