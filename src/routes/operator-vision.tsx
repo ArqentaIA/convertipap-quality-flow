@@ -652,7 +652,45 @@ function HeaderField({
 }
 
 function OperatorVisionPage() {
-  const { maquina } = Route.useSearch();
+  const { maquina, auto, v, t } = Route.useSearch();
+  const navigate = useNavigate();
+
+  // Modo auto-rotación (pantallas TV/kiosko): cada `t` segundos cambia a la
+  // siguiente máquina del ciclo. La variante "b" inicia desfasada respecto a
+  // la "a", de modo que dos monitores nunca muestran la misma máquina.
+  useEffect(() => {
+    if (!auto) return;
+    const segundos = t ?? 45;
+    const id = setInterval(() => {
+      const idx = MAQUINAS_VALIDAS.indexOf(maquina);
+      const next = MAQUINAS_VALIDAS[(idx + 1) % MAQUINAS_VALIDAS.length];
+      window.scrollTo(0, 0);
+      navigate({
+        to: "/operator-vision",
+        search: { maquina: next, auto: "1", v: v ?? "a", t: segundos },
+        replace: true,
+      });
+    }, segundos * 1000);
+    return () => clearInterval(id);
+  }, [auto, maquina, v, t, navigate]);
+
+  // Desplazamiento automático hacia arriba: el contenido sube lentamente y
+  // al llegar al final reinicia desde arriba. Solo en modo auto-rotación.
+  useEffect(() => {
+    if (!auto) return;
+    window.scrollTo(0, 0);
+    const id = setInterval(() => {
+      const el = document.scrollingElement ?? document.documentElement;
+      const max = el.scrollHeight - window.innerHeight;
+      if (max <= 0) return;
+      if (el.scrollTop >= max - 2) {
+        el.scrollTo({ top: 0 });
+      } else {
+        el.scrollTop += 1;
+      }
+    }, 60);
+    return () => clearInterval(id);
+  }, [auto, maquina]);
   const now = useTicker(1000);
   const screenRef = useRef<HTMLDivElement>(null);
   const [capturing, setCapturing] = useState(false);
