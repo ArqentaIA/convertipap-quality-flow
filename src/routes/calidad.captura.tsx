@@ -1078,7 +1078,7 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
       setCriterioDefecto("");
       setHoraMuestreo(toLocalDateTimeInputValue(new Date()));
       setMotivoFueraTurno("");
-      setLoteLogistico("");
+      
     },
     onError: (err: Error) =>
       toast.error("No se pudo guardar la captura", { description: err.message, duration: 7000 }),
