@@ -1731,6 +1731,7 @@ export type Database = {
       pesajes_cintas_lotes: {
         Row: {
           actualizado_por: string | null
+          analista_cortes_nombre: string | null
           anulado_at: string | null
           anulado_por: string | null
           bobinador_nombre: string | null
@@ -1739,6 +1740,7 @@ export type Database = {
           cantidad_cintas: number
           conductor_id: string | null
           conductor_nombre_snapshot: string
+          cortes_personal_registrado_at: string | null
           creado_por: string
           created_at: string
           datos_calidad_snapshot: Json
@@ -1758,6 +1760,7 @@ export type Database = {
           numero_bajada: number | null
           numero_orden: string | null
           numero_rollo: string
+          operador_cortes_nombre: string | null
           orden_produccion_id: string | null
           pesaje_bobina_madre_id: string | null
           peso_bobina_madre_neto_kg: number
@@ -1772,6 +1775,7 @@ export type Database = {
         }
         Insert: {
           actualizado_por?: string | null
+          analista_cortes_nombre?: string | null
           anulado_at?: string | null
           anulado_por?: string | null
           bobinador_nombre?: string | null
@@ -1780,6 +1784,7 @@ export type Database = {
           cantidad_cintas?: number
           conductor_id?: string | null
           conductor_nombre_snapshot: string
+          cortes_personal_registrado_at?: string | null
           creado_por: string
           created_at?: string
           datos_calidad_snapshot?: Json
@@ -1799,6 +1804,7 @@ export type Database = {
           numero_bajada?: number | null
           numero_orden?: string | null
           numero_rollo: string
+          operador_cortes_nombre?: string | null
           orden_produccion_id?: string | null
           pesaje_bobina_madre_id?: string | null
           peso_bobina_madre_neto_kg: number
@@ -1813,6 +1819,7 @@ export type Database = {
         }
         Update: {
           actualizado_por?: string | null
+          analista_cortes_nombre?: string | null
           anulado_at?: string | null
           anulado_por?: string | null
           bobinador_nombre?: string | null
@@ -1821,6 +1828,7 @@ export type Database = {
           cantidad_cintas?: number
           conductor_id?: string | null
           conductor_nombre_snapshot?: string
+          cortes_personal_registrado_at?: string | null
           creado_por?: string
           created_at?: string
           datos_calidad_snapshot?: Json
@@ -1840,6 +1848,7 @@ export type Database = {
           numero_bajada?: number | null
           numero_orden?: string | null
           numero_rollo?: string
+          operador_cortes_nombre?: string | null
           orden_produccion_id?: string | null
           pesaje_bobina_madre_id?: string | null
           peso_bobina_madre_neto_kg?: number
@@ -3177,6 +3186,10 @@ export type Database = {
       }
       pc_set_orden_manual: {
         Args: { _lote_id: string; _orden: string }
+        Returns: undefined
+      }
+      pc_set_personal_cortes: {
+        Args: { _analista: string; _lote_id: string; _operador: string }
         Returns: undefined
       }
       preparar_impresion_etiquetas: {
