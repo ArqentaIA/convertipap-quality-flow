@@ -531,21 +531,50 @@ function UsuariosPage() {
                           </div>
                         </td>
                         <td className="px-4 py-3 align-top">
-                          <div className="flex flex-wrap gap-1">
-                            {u.modulos.length === 0 ? (
+                          <div className="flex flex-wrap items-center gap-1">
+                            {u.modulos.length === 0 && (
                               <span className="text-xs italic text-muted-foreground">
                                 ninguno
                               </span>
-                            ) : (
-                              u.modulos.map((m) => (
-                                <span
-                                  key={m}
-                                  className="inline-flex items-center rounded-md border border-border bg-muted/40 px-2 py-0.5 text-[11px] text-foreground/80"
-                                >
-                                  {MODULO_LABEL[m]}
-                                </span>
-                              ))
                             )}
+                            {u.modulos.map((m) => (
+                              <span
+                                key={m}
+                                className="inline-flex items-center gap-1 rounded-md border border-border bg-muted/40 px-2 py-0.5 text-[11px] text-foreground/80"
+                              >
+                                {MODULO_LABEL[m]}
+                                <button
+                                  type="button"
+                                  title="Quitar acceso solo a este usuario"
+                                  disabled={busy === `umod:${u.id}:${m}`}
+                                  onClick={() =>
+                                    void cambiarModuloUsuario(u.id, m, "remove", u.overrides)
+                                  }
+                                  className="rounded-full p-0.5 hover:bg-destructive/15 hover:text-destructive disabled:opacity-40"
+                                >
+                                  <X className="h-3 w-3" />
+                                </button>
+                              </span>
+                            ))}
+                            <select
+                              value=""
+                              disabled={busy?.startsWith(`umod:${u.id}:`)}
+                              onChange={(e) => {
+                                const m = e.target.value as AppModule;
+                                if (m)
+                                  void cambiarModuloUsuario(u.id, m, "add", u.overrides);
+                              }}
+                              className="rounded-md border border-dashed border-border bg-background px-1.5 py-0.5 text-[11px] text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                            >
+                              <option value="">+ Agregar módulo</option>
+                              {(Object.keys(MODULO_LABEL) as AppModule[])
+                                .filter((m) => !u.modulos.includes(m))
+                                .map((m) => (
+                                  <option key={m} value={m}>
+                                    {MODULO_LABEL[m]}
+                                  </option>
+                                ))}
+                            </select>
                           </div>
                         </td>
                         <td className="px-4 py-3 align-top">
