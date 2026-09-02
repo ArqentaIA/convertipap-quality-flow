@@ -106,60 +106,11 @@ export const Route = createFileRoute("/operator-vision")({
   ssr: false,
 });
 
-// ---------- Gate de acceso por PIN ----------
-// Permite entrar sin desafío si hay sesión autenticada (acceso desde el menú).
-// Si se entra por URL directa (sin sesión), exige el PIN de la máquina.
-// El PIN validado se recuerda en sessionStorage hasta cerrar el navegador.
-// Clave que la página "Pantallas Operativas" deposita en sessionStorage
-// justo antes de navegar al visor desde el menú lateral. Es un intento de
-// un solo uso: se consume al montar el gate. Recargar, abrir en otra pestaña
-// o entrar por URL directa NO tendrán este intento → se exige PIN.
-const INTERNAL_INTENT_KEY = "ov_internal_intent";
-
+// ---------- Acceso directo (sin PIN) ----------
+// El desafío de PIN fue eliminado para que las URLs de los monitores se
+// ejecuten solas al arrancar Windows (kiosko/TV), sin intervención humana.
 function OperatorVisionGate() {
-  const { maquina } = Route.useSearch();
-  const auth = useAuth();
-  // PIN_REQUIRED: bandera para reactivar el desafío de PIN cuando se requiera.
-  // Cambiar a `true` para volver a exigir PIN en accesos externos.
-  const PIN_REQUIRED = false;
-  const [unlocked, setUnlocked] = useState<boolean>(!PIN_REQUIRED);
-  const [checkedIntent, setCheckedIntent] = useState<boolean>(!PIN_REQUIRED);
-
-  // Consume el intento de acceso interno una sola vez por montaje.
-  // Sólo concede acceso si hay sesión activa Y la clave coincide con la máquina.
-  useEffect(() => {
-    if (!PIN_REQUIRED) return;
-    if (typeof window === "undefined") {
-      setCheckedIntent(true);
-      return;
-    }
-    if (auth.loading) return;
-    const intent = sessionStorage.getItem(INTERNAL_INTENT_KEY);
-    if (intent) sessionStorage.removeItem(INTERNAL_INTENT_KEY); // un solo uso
-    if (auth.isAuthenticated && intent === maquina) {
-      setUnlocked(true);
-    }
-    setCheckedIntent(true);
-  }, [PIN_REQUIRED, auth.loading, auth.isAuthenticated, maquina]);
-
-  if (PIN_REQUIRED && (auth.loading || !checkedIntent)) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-100 text-sm text-slate-500">
-        Cargando…
-      </div>
-    );
-  }
-
-  if (unlocked) {
-    return <OperatorVisionPage />;
-  }
-
-  return (
-    <PinChallenge
-      maquina={maquina}
-      onSuccess={() => setUnlocked(true)}
-    />
-  );
+  return <OperatorVisionPage />;
 }
 
 function PinChallenge({
