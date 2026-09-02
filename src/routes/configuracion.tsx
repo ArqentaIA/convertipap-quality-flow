@@ -291,6 +291,9 @@ function ConfigContent({ settings }: { settings: AppSettings }) {
 
           {isAdmin && <MachineAccessCodesCard />}
 
+          {isAdmin && <MonitorUrlsCard />}
+
+
           <button
             onClick={handleSave}
             disabled={mutation.isPending}
