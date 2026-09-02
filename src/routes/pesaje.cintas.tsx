@@ -458,7 +458,7 @@ function PesajeCintasPage() {
     if (requestGuard.current) return;
     if (peso <= 0 || ancho <= 0 || uniones < 0) { toast.error("Valores inválidos."); return; }
     if (!pza.trim() || pza.trim().length > 10) {
-      toast.error("Capture el Lote Logístico pza. (máximo 10 caracteres).");
+      toast.error("Capture el N° DE ID SAP (máximo 10 caracteres).");
       return;
     }
     if (totalCintas + peso > netoBM + 0.001) {
