@@ -576,6 +576,33 @@ export const asignarNombresOperativos = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+/**
+ * Trazabilidad del área de cortes (ambas plantas): operador que ejecuta los
+ * cortes y analista que los libera. Dato ADICIONAL: no sustituye la
+ * trazabilidad del rollo madre ni el contenido actual de la etiqueta.
+ * La fecha y hora se toman automáticamente en la base de datos (now()).
+ */
+export const asignarPersonalCortes = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({
+    lote_id: z.string().uuid(),
+    operador: z.string().trim().max(40).optional().nullable(),
+    analista: z.string().trim().max(40).optional().nullable(),
+  }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { error } = await (context.supabase.rpc.bind(context.supabase) as unknown as (
+      fn: string,
+      args: Record<string, unknown>,
+    ) => Promise<{ error: { message: string } | null }>)("pc_set_personal_cortes", {
+      _lote_id: data.lote_id,
+      _operador: data.operador ?? null,
+      _analista: data.analista ?? null,
+    });
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+
 
 // ------------------------------- Finalizar -------------------------------- //
 
