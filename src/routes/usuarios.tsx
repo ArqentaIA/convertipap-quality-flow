@@ -326,9 +326,10 @@ function UsuariosPage() {
         <div className="flex items-start gap-3 rounded-xl border border-border bg-muted/40 p-4 text-sm">
           <Lock className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
           <div className="text-muted-foreground">
-            Puedes <span className="font-semibold text-foreground">agregar o quitar roles</span> a
-            cada usuario. El alta, baja y restablecimiento de contraseña se realiza
-            desde el panel de administración del sistema.
+            Puedes <span className="font-semibold text-foreground">agregar o quitar roles</span> y
+            <span className="font-semibold text-foreground"> quitar u otorgar módulos individuales</span> a
+            cada usuario con la ✕ o el selector (solo afecta a ese usuario). El alta, baja y
+            restablecimiento de contraseña se realiza desde el panel de administración del sistema.
           </div>
         </div>
 
