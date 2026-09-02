@@ -442,13 +442,12 @@ export async function abrirImpresionEtiquetas(snap: EtiquetaSnapshot): Promise<v
   const etiquetas = await Promise.all(
     datos.map(async (d) => {
       const opts = { margin: 1, width: 220, errorCorrectionLevel: "M" as const };
-      const [qrRollo, qrPeso, qrLote, qrSku] = await Promise.all([
-        qrPlano(d.url_qr_rollo, opts),
+      const [qrPeso, qrLote, qrSku] = await Promise.all([
         qrPlano(d.url_qr_peso, opts),
         qrPlano(d.url_qr_lote, opts),
         qrPlano(d.url_qr_sku, opts),
       ]);
-      return renderEtiqueta(d, snap, { logo: logoDataUrl, sapLogo: sapLogoDataUrl, qrRollo, qrPeso, qrLote, qrSku });
+      return renderEtiqueta(d, snap, { logo: logoDataUrl, sapLogo: sapLogoDataUrl, qrPeso, qrLote, qrSku });
     }),
   );
 
