@@ -99,7 +99,7 @@ export const Route = createFileRoute("/operator-vision")({
     if (!auto) return { maquina };
     const v = String(search.v ?? "a") === "b" ? ("b" as const) : ("a" as const);
     const tNum = Number(search.t);
-    const t = Number.isFinite(tNum) && tNum >= 10 && tNum <= 600 ? Math.round(tNum) : 45;
+    const t = Number.isFinite(tNum) && tNum >= 10 && tNum <= 600 ? Math.round(tNum) : 20;
     return { maquina, auto, v, t };
   },
   component: OperatorVisionGate,
