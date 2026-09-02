@@ -22,6 +22,8 @@ type UsuarioFila = {
   activo: boolean;
   roles: AppRole[];
   modulos: AppModule[];
+  /** Excepciones por usuario: grant = acceso extra, deny = acceso removido del rol */
+  overrides: Partial<Record<AppModule, "grant" | "deny">>;
 };
 
 const ROL_LABEL: Record<AppRole, string> = {
