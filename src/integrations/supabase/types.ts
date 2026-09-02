@@ -579,6 +579,36 @@ export type Database = {
         }
         Relationships: []
       }
+      catalogo_sku_sap_cintas: {
+        Row: {
+          activo: boolean
+          clave: string
+          created_at: string
+          descripcion: string
+          id: string
+          producto_codigo: string
+          updated_at: string
+        }
+        Insert: {
+          activo?: boolean
+          clave: string
+          created_at?: string
+          descripcion: string
+          id?: string
+          producto_codigo: string
+          updated_at?: string
+        }
+        Update: {
+          activo?: boolean
+          clave?: string
+          created_at?: string
+          descripcion?: string
+          id?: string
+          producto_codigo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       enlaces_pesaje_publico: {
         Row: {
           activo: boolean
@@ -1564,6 +1594,7 @@ export type Database = {
           peso_cinta_kg: number
           posicion: number
           rollo_id: string | null
+          sku_sap: string | null
           sustituye_a_cinta_id: string | null
           uniones: number
           updated_at: string
@@ -1588,6 +1619,7 @@ export type Database = {
           peso_cinta_kg: number
           posicion: number
           rollo_id?: string | null
+          sku_sap?: string | null
           sustituye_a_cinta_id?: string | null
           uniones?: number
           updated_at?: string
@@ -1612,6 +1644,7 @@ export type Database = {
           peso_cinta_kg?: number
           posicion?: number
           rollo_id?: string | null
+          sku_sap?: string | null
           sustituye_a_cinta_id?: string | null
           uniones?: number
           updated_at?: string
@@ -3149,6 +3182,19 @@ export type Database = {
           _lote_logistico_pza: string
           _observaciones: string
           _peso_cinta_kg: number
+          _uniones: number
+        }
+        Returns: Json
+      }
+      registrar_cinta_v3: {
+        Args: {
+          _ancho_util: number
+          _idempotency: string
+          _lote_id: string
+          _lote_logistico_pza: string
+          _observaciones: string
+          _peso_cinta_kg: number
+          _sku_sap: string
           _uniones: number
         }
         Returns: Json

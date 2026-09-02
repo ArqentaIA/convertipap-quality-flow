@@ -112,6 +112,8 @@ export type CintaRegistrada = {
   estatus_liberacion: "L" | "C" | "NC" | null;
   /** Lote Logístico pza. (por cinta, máx. 10 caracteres). Históricos: null. */
   lote_logistico_pza?: string | null;
+  /** SKU SAP seleccionado del catálogo para esta cinta. Históricos: null. */
+  sku_sap?: string | null;
   version_etiqueta: number | null;
   created_at: string;
 };
@@ -380,6 +382,7 @@ export const registrarCinta = createServerFn({ method: "POST" })
     ancho_util: z.number().positive(),
     observaciones: z.string().max(500).optional().nullable(),
     lote_logistico_pza: z.string().trim().min(1).max(10).optional().nullable(),
+    sku_sap: z.string().trim().max(30).optional().nullable(),
     idempotency_key: z.string().uuid(),
   }).parse(d))
   .handler(async ({ data, context }) => {
@@ -387,13 +390,14 @@ export const registrarCinta = createServerFn({ method: "POST" })
       fn: string,
       args: Record<string, unknown>,
     ) => Promise<{ data: unknown; error: { message: string } | null }>;
-    const { data: res, error } = await rpc("registrar_cinta_v2", {
+    const { data: res, error } = await rpc("registrar_cinta_v3", {
       _lote_id: data.lote_id,
       _uniones: data.uniones,
       _peso_cinta_kg: data.peso_cinta_kg,
       _ancho_util: data.ancho_util,
       _observaciones: (data.observaciones ?? "") as string,
       _lote_logistico_pza: data.lote_logistico_pza ?? null,
+      _sku_sap: data.sku_sap ?? null,
       _idempotency: data.idempotency_key,
     });
     if (error) throw new Error(error.message);
@@ -635,7 +639,7 @@ export const prepararImpresion = createServerFn({ method: "POST" })
       snapshot?: {
         muestra_calidad_id?: string | null;
         lote_logistico?: string | null;
-        cintas?: Array<{ id: string; lote_logistico_pza?: string | null }>;
+        cintas?: Array<{ id: string; lote_logistico_pza?: string | null; sku_sap?: string | null }>;
       };
     };
     const muestraId = out?.snapshot?.muestra_calidad_id ?? null;
@@ -656,12 +660,15 @@ export const prepararImpresion = createServerFn({ method: "POST" })
       if (cintaIds.length > 0) {
         const { data: pcs } = await context.supabase
           .from("pesajes_cintas")
-          .select("id, lote_logistico_pza")
+          .select("id, lote_logistico_pza, sku_sap")
           .in("id", cintaIds);
-        const pzaPorCinta = new Map(
-          ((pcs ?? []) as { id: string; lote_logistico_pza: string | null }[]).map((r) => [r.id, r.lote_logistico_pza]),
-        );
-        for (const c of cintasSnap) c.lote_logistico_pza = pzaPorCinta.get(c.id) ?? null;
+        const filas = (pcs ?? []) as { id: string; lote_logistico_pza: string | null; sku_sap: string | null }[];
+        const pzaPorCinta = new Map(filas.map((r) => [r.id, r.lote_logistico_pza]));
+        const skuPorCinta = new Map(filas.map((r) => [r.id, r.sku_sap]));
+        for (const c of cintasSnap) {
+          c.lote_logistico_pza = pzaPorCinta.get(c.id) ?? null;
+          c.sku_sap = skuPorCinta.get(c.id) ?? null;
+        }
       }
     }
 
@@ -708,6 +715,7 @@ export const prepararImpresion = createServerFn({ method: "POST" })
           version_etiqueta: number;
           created_at: string;
           lote_logistico_pza?: string | null;
+          sku_sap?: string | null;
         }>;
       };
     };
@@ -894,4 +902,33 @@ export const listarUltimosLotesCintas = createServerFn({ method: "POST" })
     });
 
     return visibles.slice(0, limite) as LoteResumen[];
+  });
+
+
+// ---------------------- Catálogo SKU SAP por cinta ------------------------- //
+// Se filtra por el código de producto del rollo (p. ej. PSC01). Si ese
+// producto no tiene claves cargadas, se devuelve el catálogo completo para
+// no bloquear la captura. Aplica a Tlaxcala e Ixtapaluca.
+export type SkuSapCinta = { clave: string; descripcion: string; producto_codigo: string };
+
+export const listarSkuSapCintas = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ producto_codigo: z.string().trim().max(50).optional().nullable() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const codigo = (data.producto_codigo ?? "").trim().toUpperCase();
+    const base = () =>
+      context.supabase
+        .from("catalogo_sku_sap_cintas")
+        .select("clave, descripcion, producto_codigo")
+        .eq("activo", true)
+        .order("clave");
+
+    if (codigo) {
+      const { data: rows, error } = await base().eq("producto_codigo", codigo);
+      if (error) throw new Error(error.message);
+      if ((rows ?? []).length > 0) return { filtrado: true, items: rows as SkuSapCinta[] };
+    }
+    const { data: todos, error: e2 } = await base();
+    if (e2) throw new Error(e2.message);
+    return { filtrado: false, items: (todos ?? []) as SkuSapCinta[] };
   });
