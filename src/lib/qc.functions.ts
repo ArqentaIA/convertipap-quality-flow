@@ -384,27 +384,23 @@ export const listMisMuestrasRecientes = createServerFn({ method: "GET" })
       .order("secuencia_captura", { ascending: false })
       .limit(seesAll ? 50 : isCapturista ? 30 : 20);
 
-    const plantasPermitidas = await allowedPlantaIds(sb, userId);
+    // Máquinas visibles para captura incluyendo MP-10 como pruebas compartida.
+    const maqRows = await maquinasPermitidasConPruebas(sb, userId);
+    const allowedIds = maqRows.map((m) => m.id);
 
     if (!seesAll) {
       if (isCapturista) {
         // Capturista: historial reciente de las máquinas de SU planta
         // (no solo lo que él tecleó), porque varios capturistas se relevan
         // en el mismo turno y necesitan ver continuidad del rollo.
-        // Incluye MP-10 (pruebas) si el usuario tiene TLX o IXT.
-        const maqRows = await maquinasPermitidasConPruebas(sb, userId);
-        const allowedIds = maqRows.map((m) => m.id);
         if (allowedIds.length === 0) return [];
         q = q.in("maquina_id", allowedIds);
       } else {
         q = q.eq("capturado_por", userId);
       }
-    } else if (plantasPermitidas) {
-      // Usuarios con visión amplia pero restringidos a plantas: incluir MP-10
-      // como máquina de pruebas compartida cuando corresponda.
-      const maqRows = await maquinasPermitidasConPruebas(sb, userId);
-      const allowedIds = maqRows.map((m) => m.id);
-      if (allowedIds.length === 0) return [];
+    } else if (allowedIds.length > 0) {
+      // Usuarios con visión amplia: restringir a máquinas permitidas cuando
+      // aplica; MP-10 se incluye como máquina de pruebas compartida.
       q = q.in("maquina_id", allowedIds);
     }
 
