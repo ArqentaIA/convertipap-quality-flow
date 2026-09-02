@@ -694,8 +694,6 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
     (!plantaCodigoMaquina &&
       (plantasPermitidas ?? []).length > 0 &&
       (plantasPermitidas ?? []).every((p) => p.codigo?.toUpperCase() === "IXT"));
-  const [loteLogistico, setLoteLogistico] = useState<string>("");
-  const loteLogisticoValido = /^\d{10}$/.test(loteLogistico);
 
   // ---- Estatus del rollo elegido por el capturista (exclusivo Ixtapaluca) ----
   // Opcional. Si se elige, MANDA sobre el resultado automático de la sección F.
@@ -1020,11 +1018,8 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
         maquinaNombre: maquina.nombre,
         productoCodigo: producto.codigo,
         productoNombre: producto.nombre,
-        observacionesGenerales:
-          loteLogisticoValido && esIxtapaluca
-            ? [`Lote logístico: ${loteLogistico}`, observaciones].filter(Boolean).join(" | ")
-            : observaciones,
-        loteLogistico: loteLogisticoValido ? loteLogistico : null,
+        observacionesGenerales: observaciones,
+        loteLogistico: null,
         turno,
         jefeMaquina,
         operador,
@@ -1083,7 +1078,7 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
       setCriterioDefecto("");
       setHoraMuestreo(toLocalDateTimeInputValue(new Date()));
       setMotivoFueraTurno("");
-      setLoteLogistico("");
+      
     },
     onError: (err: Error) =>
       toast.error("No se pudo guardar la captura", { description: err.message, duration: 7000 }),
@@ -1209,11 +1204,6 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
     }
     if (porcentajeRupturasPct.trim() !== "" && (Number(porcentajeRupturasPct) < 0 || Number(porcentajeRupturasPct) > 100)) {
       toast.error("El campo Porcentaje de rupturas debe estar entre 0 y 100"); return;
-    }
-    if (modo === "envio" && !loteLogisticoValido) {
-      const faltan = 10 - loteLogistico.length;
-      toast.error(`Lote Logístico: faltan ${faltan} ${faltan === 1 ? "dígito" : "dígitos"} (deben ser 10).`);
-      return;
     }
     if (modo === "envio" && !justifLiberacionOk) {
       toast.error(
@@ -1388,7 +1378,7 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
         enviar_a_revision: modo === "envio",
         fuera_de_turno: modoFueraTurno,
         fuera_de_turno_motivo: modoFueraTurno ? motivoFueraTurno.trim() : null,
-        lote_logistico: loteLogisticoValido ? loteLogistico : null,
+        lote_logistico: null,
         sku_sap: skusProducto.length > 0 ? skuSel || null : null,
         // Estatus del rollo elegido por el capturista (solo Ixtapaluca).
         estatus_capturista: esIxtapaluca && estatusManual ? estatusManual : null,
@@ -1748,29 +1738,9 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
 
             </div>
 
-            {(
-              <div className="space-y-1.5">
-                <Label htmlFor="lote-logistico" className="text-base">
-                  4. Lote Logístico{" "}
-                  <span className="text-muted-foreground font-normal">(10 dígitos, obligatorio)</span>
-                </Label>
-                <Input
-                  id="lote-logistico"
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={10}
-                  placeholder="Ej. 1002345678"
-                  value={loteLogistico}
-                  onChange={(e) => setLoteLogistico(e.target.value.replace(/\D/g, "").slice(0, 10))}
-                  className={cn("h-11 text-base tabular-nums", loteLogistico && !loteLogisticoValido && "border-destructive")}
-                />
-                <p className={cn("text-[11px]", loteLogistico && !loteLogisticoValido ? "text-destructive" : "text-muted-foreground")}>
-                  {loteLogistico && !loteLogisticoValido
-                    ? `Faltan ${10 - loteLogistico.length} ${10 - loteLogistico.length === 1 ? "dígito" : "dígitos"} para completar los 10.`
-                    : `${loteLogistico.length}/10 dígitos · solo números.`}
-                </p>
-              </div>
-            )}
+            {/* Campo "Lote Logístico" retirado del flujo de captura (ambas plantas).
+                La columna muestras_calidad.lote_logistico se conserva en BD para
+                históricos, etiquetas y trazabilidad; las capturas nuevas envían null. */}
           </CardContent>
         </Card>
 

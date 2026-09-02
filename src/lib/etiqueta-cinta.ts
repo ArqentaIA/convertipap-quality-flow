@@ -398,7 +398,7 @@ function renderEtiqueta(d: CintaLabelData, snap: EtiquetaSnapshot, assets: Asset
 
       ${d.observaciones || d.estatus_liberacion || d.lote_logistico ? `<div class="lbl-obs">
         ${d.observaciones ? `<div class="lbl-obs-txt"><span class="k">Obs.</span> ${d.observaciones}</div>` : ""}
-        ${d.lote_logistico ? `<div class="lbl-obs-lote"><span class="k">Lote Logístico</span><span class="v">${d.lote_logistico}</span></div>` : ""}
+        ${d.lote_logistico ? `<div class="lbl-obs-lote"><span class="k">N° de ID SAP</span><span class="v">${d.lote_logistico}</span></div>` : ""}
         ${d.estatus_liberacion ? `<div class="lbl-obs-est"><span class="k">Estatus</span><span class="est-badge" style="background:${ESTATUS_CINTA_COLOR[d.estatus_liberacion] ?? "#555"}">${ESTATUS_CINTA_LABEL[d.estatus_liberacion] ?? d.estatus_liberacion}</span></div>` : ""}
       </div>` : ""}
 
@@ -412,8 +412,8 @@ function renderEtiqueta(d: CintaLabelData, snap: EtiquetaSnapshot, assets: Asset
           <div class="qr-cap">Peso (kg)</div>
         </div>
         <div class="qr-box">
-          ${assets.qrLote ? `<img src="${assets.qrLote}" alt="QR Lote Logístico" />` : `<div class="qr-na">Dato no disponible</div>`}
-          <div class="qr-cap">Lote Logístico</div>
+          ${assets.qrLote ? `<img src="${assets.qrLote}" alt="QR N° de ID SAP" />` : `<div class="qr-na">Dato no disponible</div>`}
+          <div class="qr-cap">N° de ID SAP</div>
         </div>
         <div class="qr-sap"><img src="${assets.sapLogo}" alt="SAP HANA" /></div>
       </div>

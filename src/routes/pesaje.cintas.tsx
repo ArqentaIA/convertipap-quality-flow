@@ -458,7 +458,7 @@ function PesajeCintasPage() {
     if (requestGuard.current) return;
     if (peso <= 0 || ancho <= 0 || uniones < 0) { toast.error("Valores inválidos."); return; }
     if (!pza.trim() || pza.trim().length > 10) {
-      toast.error("Capture el Lote Logístico pza. (máximo 10 caracteres).");
+      toast.error("Capture el N° DE ID SAP (máximo 10 caracteres).");
       return;
     }
     if (totalCintas + peso > netoBM + 0.001) {
@@ -1257,7 +1257,7 @@ function CintaCard({ pos, cinta, habilitada, disponibleKg, onRegistrar, onAnular
           <div><span className="text-muted-foreground">Peso:</span> <b>{n(cinta.peso_cinta_kg)} kg</b></div>
           <div><span className="text-muted-foreground">Uniones:</span> <b>{cinta.uniones}</b></div>
           {cinta.lote_logistico_pza && (
-            <div><span className="text-muted-foreground">Lote Logístico pza.:</span> <b className="font-mono">{cinta.lote_logistico_pza}</b></div>
+            <div><span className="text-muted-foreground">N° DE ID SAP:</span> <b className="font-mono">{cinta.lote_logistico_pza}</b></div>
           )}
 
           {cinta.observaciones && <div className="text-xs text-muted-foreground">{cinta.observaciones}</div>}
@@ -1362,7 +1362,7 @@ function CintaCard({ pos, cinta, habilitada, disponibleKg, onRegistrar, onAnular
           />
         </div>
         <div>
-          <label className="mb-0.5 block text-[11px] text-muted-foreground">Lote Logístico pza. * (máx. 10)</label>
+          <label className="mb-0.5 block text-[11px] text-muted-foreground">N° DE ID SAP * (máx. 10)</label>
           <input
             type="text" maxLength={10}
             value={pza}
