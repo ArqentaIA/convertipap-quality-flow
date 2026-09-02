@@ -1748,29 +1748,9 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
 
             </div>
 
-            {(
-              <div className="space-y-1.5">
-                <Label htmlFor="lote-logistico" className="text-base">
-                  4. Lote Logístico{" "}
-                  <span className="text-muted-foreground font-normal">(10 dígitos, obligatorio)</span>
-                </Label>
-                <Input
-                  id="lote-logistico"
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={10}
-                  placeholder="Ej. 1002345678"
-                  value={loteLogistico}
-                  onChange={(e) => setLoteLogistico(e.target.value.replace(/\D/g, "").slice(0, 10))}
-                  className={cn("h-11 text-base tabular-nums", loteLogistico && !loteLogisticoValido && "border-destructive")}
-                />
-                <p className={cn("text-[11px]", loteLogistico && !loteLogisticoValido ? "text-destructive" : "text-muted-foreground")}>
-                  {loteLogistico && !loteLogisticoValido
-                    ? `Faltan ${10 - loteLogistico.length} ${10 - loteLogistico.length === 1 ? "dígito" : "dígitos"} para completar los 10.`
-                    : `${loteLogistico.length}/10 dígitos · solo números.`}
-                </p>
-              </div>
-            )}
+            {/* Campo "Lote Logístico" retirado del flujo de captura (ambas plantas).
+                La columna muestras_calidad.lote_logistico se conserva en BD para
+                históricos, etiquetas y trazabilidad; las capturas nuevas envían null. */}
           </CardContent>
         </Card>
 
