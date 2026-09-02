@@ -1362,7 +1362,7 @@ function CintaCard({ pos, cinta, habilitada, disponibleKg, onRegistrar, onAnular
           />
         </div>
         <div>
-          <label className="mb-0.5 block text-[11px] text-muted-foreground">Lote Logístico pza. * (máx. 10)</label>
+          <label className="mb-0.5 block text-[11px] text-muted-foreground">N° DE ID SAP * (máx. 10)</label>
           <input
             type="text" maxLength={10}
             value={pza}
