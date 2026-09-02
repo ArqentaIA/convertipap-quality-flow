@@ -18,6 +18,9 @@ import type { Database } from "@/integrations/supabase/types";
 
 type SB = SupabaseClient<Database>;
 
+/** Máquina de pruebas: excluida de reportes y visores (su captura sigue habilitada). */
+export const MAQUINA_PRUEBAS_CODIGO = "MP-10";
+
 export type PlantaScope = {
   /** IDs de planta visibles para esta consulta. */
   plantaIds: string[];
