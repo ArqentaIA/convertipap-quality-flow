@@ -433,6 +433,10 @@ function buildHtml(
       <div class="sap-qr">
         ${qrProductoDataUrl ? `<img src="${qrProductoDataUrl}" alt="QR Código de Producto" />` : `<div class="qr-na">Dato no disponible</div>`}
         <div class="cap">Código de Producto</div>
+      </div>
+      <div class="sap-qr">
+        ${qrPesoDataUrl ? `<img src="${qrPesoDataUrl}" alt="QR Peso" />` : `<div class="qr-na">Dato no disponible</div>`}
+        <div class="cap">Peso (kg)</div>
       </div>`
       }
 
