@@ -382,6 +382,15 @@ function renderEtiqueta(d: CintaLabelData, snap: EtiquetaSnapshot, assets: Asset
         <div class="lbl-pos">${d.posicion}</div>
       </div>
 
+      ${d.observaciones ? (() => {
+        const n = (d.observaciones ?? "").length;
+        const fs = n > 320 ? "4pt" : n > 220 ? "5pt" : n > 120 ? "6pt" : "7pt";
+        return `<div class="lbl-obs" style="font-size:${fs}">
+          <span class="k">Obs.</span>
+          <div class="lbl-obs-txt">${d.observaciones}</div>
+        </div>`;
+      })() : ""}
+
       ${filaRollo ? `<div class="lbl-row">${filaRollo}</div>` : ""}
       ${filaProd ? `<div class="lbl-row">${filaProd}</div>` : ""}
       ${filaOrigen ? `<div class="lbl-row">${filaOrigen}</div>` : ""}
@@ -398,15 +407,6 @@ function renderEtiqueta(d: CintaLabelData, snap: EtiquetaSnapshot, assets: Asset
       </div>
 
       ${filaPersonal ? `<div class="lbl-row">${filaPersonal}</div>` : ""}
-
-      ${d.observaciones ? (() => {
-        const n = (d.observaciones ?? "").length;
-        const fs = n > 320 ? "4pt" : n > 220 ? "5pt" : n > 120 ? "6pt" : "7pt";
-        return `<div class="lbl-obs" style="font-size:${fs}">
-          <span class="k">Obs.</span>
-          <div class="lbl-obs-txt">${d.observaciones}</div>
-        </div>`;
-      })() : ""}
 
       ${d.estatus_liberacion || d.lote_logistico || d.sku_sap ? `<div class="lbl-meta">
         ${d.lote_logistico ? `<div class="lbl-meta-item"><span class="k">N° de ID SAP</span><span class="v">${d.lote_logistico}</span></div>` : ""}
