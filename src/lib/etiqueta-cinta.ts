@@ -239,7 +239,7 @@ export function buildCintaLabelData(snap: EtiquetaSnapshot, cinta: EtiquetaCinta
     uniones_cinta: cinta.uniones,
     estado_cinta: cinta.estado ?? "registrada",
     estatus_liberacion: cinta.estatus_liberacion ?? null,
-    observaciones: limpio(cinta.observaciones),
+    observaciones: limpio(cinta.observaciones)?.slice(0, 50) ?? null,
     registrado_at: cinta.created_at ?? null,
     version_etiqueta: version,
     total_uniones_cintas: snap.total_uniones_cintas ?? calcularTotalUniones(snap.cintas ?? []),
