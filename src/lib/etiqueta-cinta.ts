@@ -399,7 +399,10 @@ function renderEtiqueta(d: CintaLabelData, snap: EtiquetaSnapshot, assets: Asset
 
       ${filaPersonal ? `<div class="lbl-row">${filaPersonal}</div>` : ""}
 
-      ${d.observaciones || d.estatus_liberacion || d.lote_logistico || d.sku_sap ? `<div class="lbl-obs">
+      ${d.observaciones || d.estatus_liberacion || d.lote_logistico || d.sku_sap ? (() => {
+        const n = (d.observaciones ?? "").length;
+        const fs = n > 320 ? "4pt" : n > 220 ? "5pt" : n > 120 ? "6pt" : "7pt";
+        return `<div class="lbl-obs" style="font-size:${fs}">
         ${d.observaciones ? `<div class="lbl-obs-txt"><span class="k">Obs.</span> ${d.observaciones}</div>` : ""}
         ${d.lote_logistico ? `<div class="lbl-obs-lote"><span class="k">N° de ID SAP</span><span class="v">${d.lote_logistico}</span></div>` : ""}
         ${d.sku_sap ? `<div class="lbl-obs-lote"><span class="k">SKU SAP</span><span class="v">${d.sku_sap}</span></div>` : ""}
