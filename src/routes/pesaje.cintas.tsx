@@ -663,6 +663,7 @@ function PesajeCintasPage() {
       const snap = res.snapshot as unknown as EtiquetaSnapshot;
       snap.cintas = (snap.cintas ?? []).map((c) => ({
         ...c,
+        observaciones: vigentes.find((v) => v.id === c.id)?.observaciones ?? c.observaciones ?? null,
         estatus_liberacion: vigentes.find((v) => v.id === c.id)?.estatus_liberacion ?? null,
       }));
       await abrirImpresionEtiquetas(snap);
