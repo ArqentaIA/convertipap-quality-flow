@@ -399,15 +399,20 @@ function renderEtiqueta(d: CintaLabelData, snap: EtiquetaSnapshot, assets: Asset
 
       ${filaPersonal ? `<div class="lbl-row">${filaPersonal}</div>` : ""}
 
-      ${d.observaciones || d.estatus_liberacion || d.lote_logistico || d.sku_sap ? (() => {
+      ${d.observaciones ? (() => {
         const n = (d.observaciones ?? "").length;
         const fs = n > 320 ? "4pt" : n > 220 ? "5pt" : n > 120 ? "6pt" : "7pt";
         return `<div class="lbl-obs" style="font-size:${fs}">
-        ${d.observaciones ? `<div class="lbl-obs-txt"><span class="k">Obs.</span> ${d.observaciones}</div>` : ""}
-        ${d.lote_logistico ? `<div class="lbl-obs-lote"><span class="k">N° de ID SAP</span><span class="v">${d.lote_logistico}</span></div>` : ""}
-        ${d.sku_sap ? `<div class="lbl-obs-lote"><span class="k">SKU SAP</span><span class="v">${d.sku_sap}</span></div>` : ""}
-        ${d.estatus_liberacion ? `<div class="lbl-obs-est"><span class="k">Estatus</span><span class="est-badge" style="background:${ESTATUS_CINTA_COLOR[d.estatus_liberacion] ?? "#555"}">${ESTATUS_CINTA_LABEL[d.estatus_liberacion] ?? d.estatus_liberacion}</span></div>` : ""}
-      </div>`;})() : ""}
+          <span class="k">Obs.</span>
+          <div class="lbl-obs-txt">${d.observaciones}</div>
+        </div>`;
+      })() : ""}
+
+      ${d.estatus_liberacion || d.lote_logistico || d.sku_sap ? `<div class="lbl-meta">
+        ${d.lote_logistico ? `<div class="lbl-meta-item"><span class="k">N° de ID SAP</span><span class="v">${d.lote_logistico}</span></div>` : ""}
+        ${d.sku_sap ? `<div class="lbl-meta-item"><span class="k">SKU SAP</span><span class="v">${d.sku_sap}</span></div>` : ""}
+        ${d.estatus_liberacion ? `<div class="lbl-meta-item"><span class="k">Estatus</span><span class="est-badge" style="background:${ESTATUS_CINTA_COLOR[d.estatus_liberacion] ?? "#555"}">${ESTATUS_CINTA_LABEL[d.estatus_liberacion] ?? d.estatus_liberacion}</span></div>` : ""}
+      </div>` : ""}
 
       <div class="lbl-qr-zone">
         <div class="qr-box">
