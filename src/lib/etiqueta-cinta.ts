@@ -399,15 +399,20 @@ function renderEtiqueta(d: CintaLabelData, snap: EtiquetaSnapshot, assets: Asset
 
       ${filaPersonal ? `<div class="lbl-row">${filaPersonal}</div>` : ""}
 
-      ${d.observaciones || d.estatus_liberacion || d.lote_logistico || d.sku_sap ? (() => {
+      ${d.observaciones ? (() => {
         const n = (d.observaciones ?? "").length;
         const fs = n > 320 ? "4pt" : n > 220 ? "5pt" : n > 120 ? "6pt" : "7pt";
         return `<div class="lbl-obs" style="font-size:${fs}">
-        ${d.observaciones ? `<div class="lbl-obs-txt"><span class="k">Obs.</span> ${d.observaciones}</div>` : ""}
-        ${d.lote_logistico ? `<div class="lbl-obs-lote"><span class="k">N° de ID SAP</span><span class="v">${d.lote_logistico}</span></div>` : ""}
-        ${d.sku_sap ? `<div class="lbl-obs-lote"><span class="k">SKU SAP</span><span class="v">${d.sku_sap}</span></div>` : ""}
-        ${d.estatus_liberacion ? `<div class="lbl-obs-est"><span class="k">Estatus</span><span class="est-badge" style="background:${ESTATUS_CINTA_COLOR[d.estatus_liberacion] ?? "#555"}">${ESTATUS_CINTA_LABEL[d.estatus_liberacion] ?? d.estatus_liberacion}</span></div>` : ""}
-      </div>`;})() : ""}
+          <span class="k">Obs.</span>
+          <div class="lbl-obs-txt">${d.observaciones}</div>
+        </div>`;
+      })() : ""}
+
+      ${d.estatus_liberacion || d.lote_logistico || d.sku_sap ? `<div class="lbl-meta">
+        ${d.lote_logistico ? `<div class="lbl-meta-item"><span class="k">N° de ID SAP</span><span class="v">${d.lote_logistico}</span></div>` : ""}
+        ${d.sku_sap ? `<div class="lbl-meta-item"><span class="k">SKU SAP</span><span class="v">${d.sku_sap}</span></div>` : ""}
+        ${d.estatus_liberacion ? `<div class="lbl-meta-item"><span class="k">Estatus</span><span class="est-badge" style="background:${ESTATUS_CINTA_COLOR[d.estatus_liberacion] ?? "#555"}">${ESTATUS_CINTA_LABEL[d.estatus_liberacion] ?? d.estatus_liberacion}</span></div>` : ""}
+      </div>` : ""}
 
       <div class="lbl-qr-zone">
         <div class="qr-box">
@@ -505,12 +510,12 @@ export async function abrirImpresionEtiquetas(snap: EtiquetaSnapshot): Promise<v
   .lbl-grid > div { display: flex; flex-direction: column; }
   .lbl-cinta { background: transparent; padding: 1.5mm 0; border-top: 0.2mm solid #999; border-bottom: 0.2mm solid #999; }
   .lbl-cinta-tit { font-size: 6.5pt; text-transform: uppercase; color: #111; font-weight: 700; margin-bottom: 1mm; }
-  .lbl-obs { font-size: 7pt; padding-top: 1mm; border-top: 0.2mm dotted #999; display: flex; gap: 2mm; align-items: flex-start; flex: 0 1 auto; min-height: 0; overflow: hidden; }
-  .lbl-obs > div { flex: 1 1 0; min-width: 0; }
-  .lbl-obs-txt { word-break: break-word; overflow: hidden; }
+  .lbl-obs { font-size: 7pt; padding-top: 1mm; border-top: 0.2mm dotted #999; display: block; max-height: 18mm; overflow: hidden; }
+  .lbl-obs .k { display: block; margin-bottom: 0.4mm; }
+  .lbl-obs-txt { word-break: break-word; overflow: hidden; line-height: 1.15; }
+  .lbl-meta { display: flex; gap: 2mm; align-items: flex-start; flex-shrink: 0; padding-top: 1mm; border-top: 0.2mm dotted #999; }
+  .lbl-meta-item { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 0.6mm; }
   .lbl-qr-zone { flex-shrink: 0; }
-  .lbl-obs-lote { display: flex; flex-direction: column; align-items: flex-start; gap: 0.6mm; }
-  .lbl-obs-est { display: flex; flex-direction: column; align-items: flex-start; gap: 0.6mm; }
   .est-badge { display: inline-block; padding: 0.6mm 2mm; border-radius: 1mm; color: #fff; font-size: 8pt; font-weight: 900; letter-spacing: 0.3px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .lbl-ver { font-size: 5pt; color: #555; text-align: right; white-space: nowrap; }
 
