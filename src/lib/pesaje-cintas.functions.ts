@@ -666,7 +666,12 @@ export const prepararImpresion = createServerFn({ method: "POST" })
       snapshot?: {
         muestra_calidad_id?: string | null;
         lote_logistico?: string | null;
-        cintas?: Array<{ id: string; lote_logistico_pza?: string | null; sku_sap?: string | null }>;
+        cintas?: Array<{
+          id: string;
+          lote_logistico_pza?: string | null;
+          sku_sap?: string | null;
+          observaciones?: string | null;
+        }>;
       };
     };
     const muestraId = out?.snapshot?.muestra_calidad_id ?? null;
