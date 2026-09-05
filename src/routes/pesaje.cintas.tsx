@@ -503,6 +503,10 @@ function PesajeCintasPage() {
       toast.error("Capture el N° DE ID SAP (máximo 10 caracteres).");
       return;
     }
+    if (obs.trim().length > 50) {
+      toast.error("Las observaciones deben tener máximo 50 caracteres.");
+      return;
+    }
     if (totalCintas + peso > netoBM + 0.001) {
       toast.error("El peso acumulado de las cintas supera el peso neto del rollo de origen. Revise los pesos capturados.");
       return;
@@ -514,7 +518,7 @@ function PesajeCintasPage() {
         data: {
           lote_id: lote.id,
           uniones, peso_cinta_kg: peso, ancho_util: ancho,
-          observaciones: obs || null,
+          observaciones: obs.trim().slice(0, 50) || null,
           lote_logistico_pza: pza.trim(),
           sku_sap: sku.trim() || null,
           idempotency_key: uuid(),
@@ -569,7 +573,8 @@ function PesajeCintasPage() {
     if (anchoStr == null) return;
     const unionesStr = window.prompt(`Nuevas uniones [actual ${c.uniones}]:`, String(c.uniones));
     if (unionesStr == null) return;
-    const obs = window.prompt(`Observaciones (opcional):`, c.observaciones ?? "") ?? "";
+    const obs = window.prompt(`Observaciones (opcional, máx. 50 caracteres):`, c.observaciones ?? "") ?? "";
+    if (obs.trim().length > 50) { toast.error("Las observaciones deben tener máximo 50 caracteres."); return; }
     const motivo = window.prompt("Motivo de la corrección (mínimo 5 caracteres):") ?? "";
     if (motivo.trim().length < 5) { toast.error("Motivo requerido."); return; }
     const peso = Number(pesoStr), ancho = Number(anchoStr), uniones = Number(unionesStr);
@@ -578,7 +583,7 @@ function PesajeCintasPage() {
     try {
       await corregir({ data: {
         cinta_id: c.id, peso_cinta_kg: peso, ancho_util: ancho, uniones,
-        observaciones: obs.trim() || null, motivo: motivo.trim(), idempotency_key: uuid(),
+        observaciones: obs.trim().slice(0, 50) || null, motivo: motivo.trim(), idempotency_key: uuid(),
       }});
       await qc.invalidateQueries({ queryKey: ["cintas-lote", lote.id] });
       toast.success(`Posición ${c.posicion} corregida.`);
@@ -1486,9 +1491,9 @@ function CintaCard({ pos, cinta, habilitada, disponibleKg, onRegistrar, skus, on
           )}
         </div>
         <div>
-          <label className="mb-0.5 block text-[11px] text-muted-foreground">Observaciones (opcional)</label>
+          <label className="mb-0.5 block text-[11px] text-muted-foreground">Observaciones (opcional, máx. 50 caracteres)</label>
           <input
-            type="text" maxLength={200}
+            type="text" maxLength={50}
             value={obs}
             onChange={(e) => setObs(e.target.value)}
             className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm"
