@@ -687,14 +687,16 @@ export const prepararImpresion = createServerFn({ method: "POST" })
       if (cintaIds.length > 0) {
         const { data: pcs } = await context.supabase
           .from("pesajes_cintas")
-          .select("id, lote_logistico_pza, sku_sap")
+          .select("id, lote_logistico_pza, sku_sap, observaciones")
           .in("id", cintaIds);
-        const filas = (pcs ?? []) as { id: string; lote_logistico_pza: string | null; sku_sap: string | null }[];
+        const filas = (pcs ?? []) as { id: string; lote_logistico_pza: string | null; sku_sap: string | null; observaciones: string | null }[];
         const pzaPorCinta = new Map(filas.map((r) => [r.id, r.lote_logistico_pza]));
         const skuPorCinta = new Map(filas.map((r) => [r.id, r.sku_sap]));
+        const obsPorCinta = new Map(filas.map((r) => [r.id, r.observaciones]));
         for (const c of cintasSnap) {
           c.lote_logistico_pza = pzaPorCinta.get(c.id) ?? null;
           c.sku_sap = skuPorCinta.get(c.id) ?? null;
+          c.observaciones = obsPorCinta.get(c.id) ?? null;
         }
       }
     }

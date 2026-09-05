@@ -381,17 +381,12 @@ function renderEtiqueta(d: CintaLabelData, snap: EtiquetaSnapshot, assets: Asset
           <img class="lbl-logo" src="${assets.logo}" alt="Convertipap" />
           <div class="lbl-sub">Etiqueta de Cinta · Producción</div>
         </div>
+        <div class="lbl-obs">
+          <span class="k">Observaciones</span>
+          <div class="lbl-obs-txt">${d.observaciones ?? "—"}</div>
+        </div>
         <div class="lbl-pos">${d.posicion}</div>
       </div>
-
-      ${d.observaciones ? (() => {
-        const n = (d.observaciones ?? "").length;
-        const fs = n > 320 ? "4pt" : n > 220 ? "5pt" : n > 120 ? "6pt" : "7pt";
-        return `<div class="lbl-obs" style="font-size:${fs}">
-          <span class="k">Obs.</span>
-          <div class="lbl-obs-txt">${d.observaciones}</div>
-        </div>`;
-      })() : ""}
 
       ${filaRollo ? `<div class="lbl-row">${filaRollo}</div>` : ""}
       ${filaProd ? `<div class="lbl-row">${filaProd}</div>` : ""}
@@ -498,10 +493,11 @@ export async function abrirImpresionEtiquetas(snap: EtiquetaSnapshot): Promise<v
   }
   .print-label.empty { background: transparent; }
   .lbl-inner { padding: 3mm 3.2mm; height: 100%; display: flex; flex-direction: column; gap: 1.2mm; font-size: 8.5pt; line-height: 1.15; }
-  .lbl-header { display: flex; align-items: flex-start; justify-content: space-between; border-bottom: 0.3mm solid #555; padding-bottom: 1.5mm; }
+  .lbl-header { display: grid; grid-template-columns: 52mm minmax(0, 1fr) 12mm; gap: 2mm; align-items: start; border-bottom: 0.3mm solid #555; padding-bottom: 1.5mm; }
+  .lbl-title { min-width: 0; }
   .lbl-logo { display: block; height: 11mm; max-width: 52mm; object-fit: contain; }
   .lbl-sub { font-size: 7pt; color: #444; }
-  .lbl-pos { font-size: 30pt; font-weight: 900; color: #111; line-height: 0.9; padding: 0 2mm; }
+  .lbl-pos { font-size: 30pt; font-weight: 900; color: #111; line-height: 0.9; text-align: right; }
   .lbl-row { display: flex; gap: 3mm; }
   .lbl-row > div { flex: 1; display: flex; flex-direction: column; }
   .lbl-row > div.wide { flex: 2; }
@@ -512,9 +508,9 @@ export async function abrirImpresionEtiquetas(snap: EtiquetaSnapshot): Promise<v
   .lbl-grid > div { display: flex; flex-direction: column; }
   .lbl-cinta { background: transparent; padding: 1.5mm 0; border-top: 0.2mm solid #999; border-bottom: 0.2mm solid #999; }
   .lbl-cinta-tit { font-size: 6.5pt; text-transform: uppercase; color: #111; font-weight: 700; margin-bottom: 1mm; }
-  .lbl-obs { font-size: 7pt; padding-top: 1mm; border-top: 0.2mm dotted #999; display: block; max-height: 18mm; overflow: hidden; }
-  .lbl-obs .k { display: block; margin-bottom: 0.4mm; }
-  .lbl-obs-txt { word-break: break-word; overflow: hidden; line-height: 1.15; }
+  .lbl-obs { min-width: 0; padding-top: 0.5mm; font-size: 7pt; }
+  .lbl-obs .k { display: block; margin-bottom: 0.5mm; }
+  .lbl-obs-txt { min-height: 7mm; max-height: 9mm; overflow: hidden; word-break: break-word; font-size: 8pt; font-weight: 700; line-height: 1.15; }
   .lbl-meta { display: flex; gap: 2mm; align-items: flex-start; flex-shrink: 0; padding-top: 1mm; border-top: 0.2mm dotted #999; }
   .lbl-meta-item { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 0.6mm; }
   .lbl-qr-zone { flex-shrink: 0; }
