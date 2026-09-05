@@ -348,7 +348,9 @@ function renderEtiqueta(d: CintaLabelData, snap: EtiquetaSnapshot, assets: Asset
   const filaRollo = [
     fila("N.º Rollo / Cinta", d.numero_rollo_etiqueta),
     fila("Fecha", d.fecha_produccion),
-    fila("O. Producción", d.orden_produccion),
+    // O. Producción SIEMPRE se imprime: si el rollo no tiene orden
+    // registrada, se muestra "—" en lugar de ocultar el campo.
+    fila("O. Producción", d.orden_produccion ?? "—"),
   ].filter(Boolean).join("");
 
   const filaProd = [
