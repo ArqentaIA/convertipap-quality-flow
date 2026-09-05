@@ -510,7 +510,7 @@ export async function abrirImpresionEtiquetas(snap: EtiquetaSnapshot): Promise<v
   .lbl-cinta-tit { font-size: 6.5pt; text-transform: uppercase; color: #111; font-weight: 700; margin-bottom: 1mm; }
   .lbl-obs { min-width: 0; padding-top: 0.5mm; font-size: 7pt; }
   .lbl-obs .k { display: block; margin-bottom: 0.5mm; }
-  .lbl-obs-txt { min-height: 7mm; max-height: 9mm; overflow: hidden; word-break: break-word; font-size: 8pt; font-weight: 700; line-height: 1.15; }
+  .lbl-obs-txt { min-height: 7mm; max-height: 9.5mm; overflow: hidden; word-break: break-word; font-size: 7pt; font-weight: 700; line-height: 1.12; }
   .lbl-meta { display: flex; gap: 2mm; align-items: flex-start; flex-shrink: 0; padding-top: 1mm; border-top: 0.2mm dotted #999; }
   .lbl-meta-item { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 0.6mm; }
   .lbl-qr-zone { flex-shrink: 0; }
