@@ -42,6 +42,7 @@ export const listPesajes = createServerFn({ method: "GET" })
     const { data, error } = await context.supabase
       .from("pesajes_bobina_madre")
       .select("*")
+      .eq("anulado", false)
       .order("fecha_hora_pesaje", { ascending: false })
       .limit(200);
     if (error) throw new Error(error.message);
@@ -171,6 +172,7 @@ export const buscarPesajePorRollo = createServerFn({ method: "POST" })
       .select("id, peso_neto_kg, fecha_hora_pesaje, evidencia_path, numero_orden, orden_produccion_id, maquina_id, numero_rollo")
       .eq("maquina_id", data.maquina_id)
       .eq("numero_rollo", data.numero_rollo)
+      .eq("anulado", false)
       .maybeSingle();
     if (error) throw new Error(error.message);
     return (p as PesajeParaCaptura | null) ?? null;
@@ -210,6 +212,7 @@ export const listarPesajesPendientesCaptura = createServerFn({ method: "POST" })
       .from("pesajes_bobina_madre")
       .select("id, numero_rollo, peso_neto_kg, fecha_hora_pesaje, numero_orden")
       .eq("maquina_id", data.maquina_id)
+      .eq("anulado", false)
       .order("fecha_hora_pesaje", { ascending: false })
       .limit(200);
     if (error) throw new Error(error.message);

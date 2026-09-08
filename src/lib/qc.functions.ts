@@ -572,6 +572,7 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
         .select("id, maquina_id, numero_rollo, peso_neto_kg")
         .eq("maquina_id", data.maquina_id)
         .eq("numero_rollo", data.numero_rollo_pesaje.trim())
+        .eq("anulado", false)
         .maybeSingle();
       if (pesajeError) throw new Error(pesajeError.message);
       if (!pesajeOrigen) {

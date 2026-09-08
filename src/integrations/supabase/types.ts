@@ -1522,7 +1522,14 @@ export type Database = {
       }
       pesajes_bobina_madre: {
         Row: {
+          anulado: boolean
+          anulado_at: string | null
+          anulado_motivo: string | null
+          anulado_por: string | null
           capturado_por: string | null
+          correccion_motivo: string | null
+          corregido_at: string | null
+          corregido_por: string | null
           created_at: string
           evidencia_path: string
           fecha_hora_pesaje: string
@@ -1534,13 +1541,22 @@ export type Database = {
           ocr_confianza: number | null
           ocr_raw: Json | null
           orden_produccion_id: string | null
+          peso_bruto_anterior_kg: number | null
           peso_bruto_kg: number
           peso_eje_kg: number
+          peso_neto_anterior_kg: number | null
           peso_neto_kg: number
           updated_at: string
         }
         Insert: {
+          anulado?: boolean
+          anulado_at?: string | null
+          anulado_motivo?: string | null
+          anulado_por?: string | null
           capturado_por?: string | null
+          correccion_motivo?: string | null
+          corregido_at?: string | null
+          corregido_por?: string | null
           created_at?: string
           evidencia_path: string
           fecha_hora_pesaje?: string
@@ -1552,13 +1568,22 @@ export type Database = {
           ocr_confianza?: number | null
           ocr_raw?: Json | null
           orden_produccion_id?: string | null
+          peso_bruto_anterior_kg?: number | null
           peso_bruto_kg: number
           peso_eje_kg?: number
+          peso_neto_anterior_kg?: number | null
           peso_neto_kg: number
           updated_at?: string
         }
         Update: {
+          anulado?: boolean
+          anulado_at?: string | null
+          anulado_motivo?: string | null
+          anulado_por?: string | null
           capturado_por?: string | null
+          correccion_motivo?: string | null
+          corregido_at?: string | null
+          corregido_por?: string | null
           created_at?: string
           evidencia_path?: string
           fecha_hora_pesaje?: string
@@ -1570,8 +1595,10 @@ export type Database = {
           ocr_confianza?: number | null
           ocr_raw?: Json | null
           orden_produccion_id?: string | null
+          peso_bruto_anterior_kg?: number | null
           peso_bruto_kg?: number
           peso_eje_kg?: number
+          peso_neto_anterior_kg?: number | null
           peso_neto_kg?: number
           updated_at?: string
         }
