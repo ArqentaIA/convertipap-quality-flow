@@ -2294,6 +2294,97 @@ export type Database = {
         }
         Relationships: []
       }
+      qc_edicion_permisos: {
+        Row: {
+          activo: boolean
+          created_at: string
+          email: string
+          id: string
+          maquina_codigo: string
+          updated_at: string
+        }
+        Insert: {
+          activo?: boolean
+          created_at?: string
+          email: string
+          id?: string
+          maquina_codigo: string
+          updated_at?: string
+        }
+        Update: {
+          activo?: boolean
+          created_at?: string
+          email?: string
+          id?: string
+          maquina_codigo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      qc_ediciones_rollo: {
+        Row: {
+          campo: string
+          created_at: string
+          id: string
+          maquina_codigo: string | null
+          motivo: string
+          muestra_id: string
+          numero_rollo: string | null
+          usuario_email: string | null
+          usuario_id: string | null
+          valor_anterior: string | null
+          valor_nuevo: string | null
+        }
+        Insert: {
+          campo: string
+          created_at?: string
+          id?: string
+          maquina_codigo?: string | null
+          motivo: string
+          muestra_id: string
+          numero_rollo?: string | null
+          usuario_email?: string | null
+          usuario_id?: string | null
+          valor_anterior?: string | null
+          valor_nuevo?: string | null
+        }
+        Update: {
+          campo?: string
+          created_at?: string
+          id?: string
+          maquina_codigo?: string | null
+          motivo?: string
+          muestra_id?: string
+          numero_rollo?: string | null
+          usuario_email?: string | null
+          usuario_id?: string | null
+          valor_anterior?: string | null
+          valor_nuevo?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "qc_ediciones_rollo_muestra_id_fkey"
+            columns: ["muestra_id"]
+            isOneToOne: false
+            referencedRelation: "muestras_calidad"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "qc_ediciones_rollo_muestra_id_fkey"
+            columns: ["muestra_id"]
+            isOneToOne: false
+            referencedRelation: "v_muestra_kpis_v2"
+            referencedColumns: ["muestra_id"]
+          },
+          {
+            foreignKeyName: "qc_ediciones_rollo_muestra_id_fkey"
+            columns: ["muestra_id"]
+            isOneToOne: false
+            referencedRelation: "vw_muestras_calidad_estado_oficial"
+            referencedColumns: ["muestra_id"]
+          },
+        ]
+      }
       quality_catalog_audit: {
         Row: {
           action: string
@@ -3245,8 +3336,13 @@ export type Database = {
         Args: { _motivo: string; _spec_id: string }
         Returns: undefined
       }
+      qc_editar_rollo: {
+        Args: { _cambios: Json; _motivo: string; _muestra_id: string }
+        Returns: Json
+      }
       qc_eval_liberacion: { Args: { _muestra_id: string }; Returns: Json }
       qc_eval_regla_oro: { Args: { _muestra_id: string }; Returns: Json }
+      qc_puede_editar_rollo: { Args: { _muestra_id: string }; Returns: Json }
       qc_recalc_estatus_muestra: {
         Args: { _muestra_id: string }
         Returns: undefined
