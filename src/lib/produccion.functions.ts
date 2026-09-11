@@ -637,6 +637,7 @@ export const getDetalleRollo = createServerFn({ method: "GET" })
       .select(
         `id, numero_rollo, hora_muestreo, turno, operador, jefe_maquina, analista,
          dictamen, estatus_liberacion, defectos, observaciones_generales, lote_logistico,
+         sku_sap,
          variables_snapshot_json,
          producto_id, productos!muestras_calidad_producto_id_fkey(nombre, codigo),
          ordenes_fabricacion(folio, maquinas(codigo), plantas(nombre)),
