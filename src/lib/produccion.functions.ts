@@ -751,6 +751,7 @@ export const getDetalleRollo = createServerFn({ method: "GET" })
         folioOrden: ord?.folio ?? "—",
         producto: (m as any).productos?.nombre ?? "—",
         productoCodigo: (m as any).productos?.codigo ?? "—",
+        skuSap: (m as any).sku_sap ?? "",
         maquina: ord?.maquinas?.codigo ?? "—",
         planta: ord?.plantas?.nombre ?? "—",
         ncCount,
