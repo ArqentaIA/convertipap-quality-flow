@@ -71,6 +71,7 @@ export function DetalleCalidadModal({
   const [jefe, setJefe] = useState("");
   const [analista, setAnalista] = useState("");
   const [obs, setObs] = useState("");
+  const [sku, setSku] = useState("");
   const [dictamen, setDictamen] = useState("");
 
   const r = data?.rollo;
@@ -92,6 +93,7 @@ export function DetalleCalidadModal({
     setJefe(r.jefeMaquina === "—" ? "" : r.jefeMaquina);
     setAnalista(r.analista === "—" ? "" : r.analista);
     setObs(r.observaciones ?? "");
+    setSku(r.skuSap ?? "");
     setDictamen("");
     setMotivo("");
     setEditando(true);
