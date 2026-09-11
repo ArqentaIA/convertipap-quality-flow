@@ -276,7 +276,7 @@ export function DetalleCalidadModal({
                   <Field label="Orden" value={r.folioOrden} />
                   <Field label="Producto" value={`${r.producto}${r.productoCodigo !== "—" ? ` (${r.productoCodigo})` : ""}`} />
                   {editando ? (
-                    <EditField label="SKU SAP" value={sku} onChange={setSku} maxLength={64} />
+                    <EditField label="SKU SAP" value={sku} onChange={setSku} />
                   ) : (
                     <Field label="SKU SAP" value={r.skuSap || "—"} />
                   )}
