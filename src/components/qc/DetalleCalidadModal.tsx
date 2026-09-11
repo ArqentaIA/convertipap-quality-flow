@@ -129,6 +129,7 @@ export function DetalleCalidadModal({
           jefe_maquina: jefe,
           analista,
           observaciones_generales: obs,
+          sku_sap: sku.trim(),
           ...(dictamen ? { dictamen: dictamen as "liberada" | "concesion" | "rechazada" } : {}),
         },
       });
@@ -274,6 +275,11 @@ export function DetalleCalidadModal({
                   <Field label="Rollo" value={r.numero} strong />
                   <Field label="Orden" value={r.folioOrden} />
                   <Field label="Producto" value={`${r.producto}${r.productoCodigo !== "—" ? ` (${r.productoCodigo})` : ""}`} />
+                  {editando ? (
+                    <EditField label="SKU SAP" value={sku} onChange={setSku} maxLength={64} />
+                  ) : (
+                    <Field label="SKU SAP" value={r.skuSap || "—"} />
+                  )}
                   <Field label="Máquina / Planta" value={`${r.maquina} · ${r.planta}`} />
                   <Field label="Capturado" value={new Date(r.capturadoAt).toLocaleString("es-MX")} />
                   <Field label="Turno" value={r.turno} />
