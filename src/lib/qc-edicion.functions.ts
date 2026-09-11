@@ -24,6 +24,7 @@ const editarSchema = z.object({
   jefe_maquina: z.string().max(120).optional(),
   analista: z.string().max(120).optional(),
   observaciones_generales: z.string().max(500).optional(),
+  sku_sap: z.string().trim().max(64).optional(),
   dictamen: z.enum(["liberada", "concesion", "rechazada", "correccion_solicitada"]).optional(),
 });
 
@@ -58,6 +59,7 @@ export const editarRolloCalidad = createServerFn({ method: "POST" })
     if (data.analista !== undefined) cambios.analista = data.analista;
     if (data.observaciones_generales !== undefined)
       cambios.observaciones_generales = data.observaciones_generales;
+    if (data.sku_sap !== undefined) cambios.sku_sap = data.sku_sap;
     if (data.dictamen !== undefined) cambios.dictamen = data.dictamen;
 
     const { data: res, error } = await context.supabase.rpc("qc_editar_rollo", {

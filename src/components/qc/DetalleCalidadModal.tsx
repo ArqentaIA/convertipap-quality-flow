@@ -71,6 +71,7 @@ export function DetalleCalidadModal({
   const [jefe, setJefe] = useState("");
   const [analista, setAnalista] = useState("");
   const [obs, setObs] = useState("");
+  const [sku, setSku] = useState("");
   const [dictamen, setDictamen] = useState("");
 
   const r = data?.rollo;
@@ -92,6 +93,7 @@ export function DetalleCalidadModal({
     setJefe(r.jefeMaquina === "—" ? "" : r.jefeMaquina);
     setAnalista(r.analista === "—" ? "" : r.analista);
     setObs(r.observaciones ?? "");
+    setSku(r.skuSap ?? "");
     setDictamen("");
     setMotivo("");
     setEditando(true);
@@ -127,6 +129,7 @@ export function DetalleCalidadModal({
           jefe_maquina: jefe,
           analista,
           observaciones_generales: obs,
+          sku_sap: sku.trim(),
           ...(dictamen ? { dictamen: dictamen as "liberada" | "concesion" | "rechazada" } : {}),
         },
       });
@@ -272,6 +275,11 @@ export function DetalleCalidadModal({
                   <Field label="Rollo" value={r.numero} strong />
                   <Field label="Orden" value={r.folioOrden} />
                   <Field label="Producto" value={`${r.producto}${r.productoCodigo !== "—" ? ` (${r.productoCodigo})` : ""}`} />
+                  {editando ? (
+                    <EditField label="SKU SAP" value={sku} onChange={setSku} />
+                  ) : (
+                    <Field label="SKU SAP" value={r.skuSap || "—"} />
+                  )}
                   <Field label="Máquina / Planta" value={`${r.maquina} · ${r.planta}`} />
                   <Field label="Capturado" value={new Date(r.capturadoAt).toLocaleString("es-MX")} />
                   <Field label="Turno" value={r.turno} />
