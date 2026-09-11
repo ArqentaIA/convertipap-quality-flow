@@ -1,42 +1,69 @@
-# Colisión de números de rollo entre Tlaxcala e Ixtapaluca (Cortes de Bobina)
+# Propuesta: Aislar Cortes de Bobina por planta
 
-## Qué está pasando
+## Diagnóstico
 
-Los rollos 11319-4 y 11357-4 existen únicamente en **Tlaxcala (MP-04)**. Cuando en Ixtapaluca se abre ese mismo número, el módulo de Cortes de Bobina lo toma como si fuera el rollo de Tlaxcala y muestra los cortes ya registrados allá, impidiendo capturar los de Ixtapaluca.
+El módulo **Cortes de Bobina** identifica el rollo únicamente por `numero_rollo`, sin considerar la planta. Esto colisiona cuando Tlaxcala e Ixtapaluca tienen rollos con el mismo número.
 
-La causa es que Cortes de Bobina identifica el rollo **solo por su número**, sin considerar planta ni máquina:
+Evidencia en base de datos:
 
-- La búsqueda de contexto localiza la captura de Calidad por número de rollo, sin filtrar por planta.
-- El registro maestro de rollos de cintas tiene el número como valor **único global**, así que un mismo número no puede existir dos veces aunque pertenezca a plantas distintas.
-- El cierre de rollo y el listado de bajadas siguen la misma lógica por número.
+- `muestras_calidad` sí está aislada: índice único `(planta_id, maquina_id, numero_rollo)`.
+- `rollos_cintas` tiene índice único global `(numero_rollo)`.
+- `pesajes_cintas_lotes` tiene índice único global `(numero_rollo) WHERE estado = 'abierto'`.
+- Los RPCs `buscar_contexto_rollo_cintas`, `pc_bajadas_rollo`, `crear_lote_pesaje_cintas`, `crear_lote_pesaje_cintas_manual_v2`, `cerrar_rollo_cintas` y `pc_get_or_create_rollo` operan solo con `numero_rollo`.
 
-En cambio, Calidad y Pesaje de Rollo ya están correctos: cada uno permite el mismo número en plantas o máquinas distintas.
+Consecuencias actuales:
 
-## Riesgo actual
+- Un usuario de Ixtapaluca que busca `11319-4` ve los cortes de Tlaxcala.
+- Si Ixtapaluca intenta crear cortes, reutiliza el mismo registro maestro de Tlaxcala, mezclando bajadas, cierres y posiciones.
 
-- Ixtapaluca no puede capturar cortes de rollos cuyo número ya se usó en Tlaxcala.
-- Peor: si alguien lograra capturar, los cortes se colgarían del rollo equivocado y contaminarían reportes y trazabilidad de la otra planta.
+## Solución recomendada
 
-## Propuesta de solución
+Agregar `planta_id` a las entidades de Cortes de Bobina y cambiar la unicidad de `(numero_rollo)` a `(planta_id, numero_rollo)`, igual que en Control de Calidad.
 
-1. **Identificar el rollo por planta y máquina, no solo por número.**
-   Se agrega la máquina (y su planta) al registro maestro de rollos de cintas y se reemplaza la unicidad global por unicidad **por máquina + número**, igual que ya funciona Pesaje de Rollo.
+### Cambios en base de datos
 
-2. **Acotar la búsqueda a la planta del usuario.**
-   Al buscar un rollo en Cortes de Bobina, la plataforma considerará únicamente los rollos de las plantas a las que el usuario tiene acceso y de la planta activa seleccionada. Si el número existe en otra planta, simplemente no se toma.
+1. Agregar `planta_id uuid` a `rollos_cintas`.
+2. Rellenar `planta_id` de registros existentes a partir de `pesajes_cintas_lotes.muestra_calidad_id -> muestras_calidad.planta_id`.
+3. Si un mismo `numero_rollo` en `rollos_cintas` tiene cortes de ambas plantas, crear un segundo registro `rollos_cintas` para la segunda planta y reasignar `pesajes_cintas_lotes.rollo_id`.
+4. Cambiar índice único de `rollos_cintas` a `(planta_id, numero_rollo)`.
+5. Agregar `planta_id uuid` a `pesajes_cintas_lotes`.
+6. Rellenar `planta_id` de `pesajes_cintas_lotes` desde `muestra_calidad_id` o, para manuales, desde la planta del registro `rollos_cintas` relacionado.
+7. Cambiar `uq_pcl_abierto_por_rollo` a `(planta_id, numero_rollo) WHERE estado = 'abierto'`.
 
-3. **Ambigüedad controlada.**
-   Si dentro de la misma planta el número existiera en más de una máquina, se pedirá elegir la máquina en lugar de fallar o adivinar.
+### Cambios en funciones RPC
 
-4. **Regularizar los datos existentes.**
-   Los rollos de cintas ya creados se asocian a la máquina de su captura de Calidad correspondiente. No se borra ni se reasigna ningún corte ya registrado en Tlaxcala.
+Actualizar estas funciones para recibir `_planta_id uuid` y filtrar/crear por planta:
 
-5. **Verificación.**
-   Se comprueba que 11319-4 y 11357-4 conserven intactos sus cortes en Tlaxcala y que Ixtapaluca pueda abrir esos mismos números y capturar sus propios cortes de forma independiente.
+- `buscar_contexto_rollo_cintas(_numero_rollo, _planta_id)`
+- `pc_bajadas_rollo(_numero_rollo, _planta_id)`
+- `pc_get_or_create_rollo(_numero_rollo, _planta_id)`
+- `crear_lote_pesaje_cintas(..., _planta_id)`
+- `crear_lote_pesaje_cintas_manual_v2(..., _planta_id)`
+- `cerrar_rollo_cintas(_numero_rollo, _motivo, _planta_id)`
 
-## Detalle técnico
+Reglas de comportamiento:
 
-- `rollos_cintas`: nuevas columnas `maquina_id` / `planta_id`; se elimina `uq_rollos_cintas_numero` y se crea único `(maquina_id, numero_rollo)`. Backfill desde `muestras_calidad`.
-- `pc_get_or_create_rollo`, `cerrar_rollo_cintas`, `pc_bajadas_rollo`, `buscar_contexto_rollo_cintas`: reciben/resuelven máquina y filtran por `user_allowed_planta_ids(auth.uid())`; la selección de `muestras_calidad` deja de usar solo `numero_rollo`.
-- `crear_lote_pesaje_cintas*` reutiliza el rollo resuelto por máquina.
-- Frontend (`src/routes/pesaje.cintas.tsx`, `src/lib/pesaje-cintas.functions.ts`): envía la planta/máquina activa y maneja el caso de máquina ambigua.
+- Buscar solo dentro de la planta activa del usuario.
+- Si no hay muestra de Calidad en esa planta, permitir captura manual como hasta ahora.
+- Cierre de rollo y límite de 7 bajadas / 350 posiciones se cuentan por planta.
+
+### Cambios en frontend
+
+- `src/lib/pesaje-cintas.functions.ts`: agregar `planta_id` a los server functions expuestos.
+- `src/routes/pesaje.cintas.tsx`: enviar `plantaActiva.id` (de `useMaquinasVisibles`) en cada llamada.
+
+### Validación
+
+- Reimprimir/reimprimir etiquetas de Cortes de Bobina en ambas plantas.
+- Verificar que un rollo con el mismo número en TLX e IXT se maneje como dos rollos independientes.
+- Confirmar que los cortes históricos de Tlaxcala no aparecen en Ixtapaluca.
+
+## Alcance
+
+- Aplica a **ambas plantas**: Tlaxcala e Ixtapaluca.
+- No afecta Control de Calidad ni Pesaje de Rollo, que ya están aislados.
+- No elimina datos; solo reasigna registros maestro cuando sea necesario.
+
+## Riesgo principal
+
+La migración debe dividir registros de `rollos_cintas` que actualmente comparten número entre plantas. Se hará en SQL con trazabilidad completa y sin borrar registros.
