@@ -105,6 +105,10 @@ export function DetalleCalidadModal({
       toast.error("Escribe el motivo de la corrección (mínimo 10 caracteres).");
       return;
     }
+    if (obs.trim().length < 10) {
+      toast.error("Escribe las observaciones (mínimo 10 caracteres).");
+      return;
+    }
     const cambiosMed = meds
       .filter((m) => {
         const nuevo = (valores[m.clave] ?? "").trim();
