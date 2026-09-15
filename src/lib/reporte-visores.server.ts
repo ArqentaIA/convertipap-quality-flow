@@ -97,7 +97,7 @@ export async function construirReporteVisores(maquinas: readonly string[] = MAQU
         m.operador || "—",
         m.analista || "—",
         ...vars.map((v) => {
-          const med = m.mediciones.find((x) => x.clave === v.clave);
+          const med = (m.mediciones as Array<{ clave: string; valor: number | null }>).find((x) => x.clave === v.clave);
           return med?.valor ?? "";
         }),
         m.estatus ?? "—",
