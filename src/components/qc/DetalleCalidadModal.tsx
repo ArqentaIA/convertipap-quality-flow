@@ -105,6 +105,10 @@ export function DetalleCalidadModal({
       toast.error("Escribe el motivo de la corrección (mínimo 10 caracteres).");
       return;
     }
+    if (obs.trim().length < 10) {
+      toast.error("Escribe las observaciones (mínimo 10 caracteres).");
+      return;
+    }
     const cambiosMed = meds
       .filter((m) => {
         const nuevo = (valores[m.clave] ?? "").trim();
@@ -332,7 +336,7 @@ export function DetalleCalidadModal({
                 <div className="space-y-3 rounded-lg border border-primary/30 bg-primary/5 p-3">
                   <div>
                     <label className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                      Observaciones
+                      Observaciones (obligatorio, mínimo 10 caracteres)
                     </label>
                     <Textarea
                       value={obs}

@@ -23,7 +23,11 @@ const editarSchema = z.object({
   operador: z.string().max(120).optional(),
   jefe_maquina: z.string().max(120).optional(),
   analista: z.string().max(120).optional(),
-  observaciones_generales: z.string().max(500).optional(),
+  observaciones_generales: z
+    .string()
+    .trim()
+    .min(10, "Observaciones obligatorias (mínimo 10 caracteres).")
+    .max(500),
   sku_sap: z.string().trim().max(64).optional(),
   dictamen: z.enum(["liberada", "concesion", "rechazada", "correccion_solicitada"]).optional(),
 });
