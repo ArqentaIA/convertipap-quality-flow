@@ -7,7 +7,6 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 export async function fetchOperatorVisionData(maquinaCodigo: string) {
     const sb = supabaseAdmin;
-    const sb = supabaseAdmin;
 
     // 1) Resolver máquina por código
     const { data: maquina, error: eMaq } = await sb
