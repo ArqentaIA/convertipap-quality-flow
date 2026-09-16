@@ -102,6 +102,7 @@ export function UltimosLotesCintas({ planta }: { planta: string | null }) {
               <tr>
                 <th className="px-3 py-2 text-left">Rollo</th>
                 <th className="px-3 py-2 text-left">Producto</th>
+                <th className="px-3 py-2 text-left">SKU SAP</th>
                 <th className="px-3 py-2 text-right">Neto (kg)</th>
                 <th className="px-3 py-2 text-right">Cintas</th>
                 <th className="px-3 py-2 text-right">Cintas (kg)</th>
@@ -118,6 +119,7 @@ export function UltimosLotesCintas({ planta }: { planta: string | null }) {
                   <td className="px-3 py-2 text-muted-foreground">
                     {l.producto_codigo ? `${l.producto_codigo} — ${l.producto_nombre ?? ""}` : "—"}
                   </td>
+                  <td className="px-3 py-2 text-xs tabular-nums text-muted-foreground">{l.sku_sap ?? "—"}</td>
                   <td className="px-3 py-2 text-right">{n(l.peso_bobina_madre_neto_kg)}</td>
                   <td className="px-3 py-2 text-right">{l.cantidad_cintas}</td>
                   <td className="px-3 py-2 text-right">{n(l.peso_total_cintas_kg)}</td>
