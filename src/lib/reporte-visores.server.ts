@@ -56,12 +56,24 @@ export type ResumenMaquina = {
   estadoMaquina: string;
 };
 
+type RolloResumen = {
+  hora: string;
+  rollo: string;
+  turno: string;
+  operador: string;
+  analista: string;
+  estatus: string;
+  fuera: number;
+};
+
 type DetalleMaquina = {
   codigo: string;
   nombre: string;
   planta: string;
+  turno: string | null;
   head: string[];
   filas: Array<Array<{ v: string | number; ok: boolean }>>;
+  rollosResumen: RolloResumen[];
   fuera: number;
 };
 
