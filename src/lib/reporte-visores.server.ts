@@ -56,6 +56,15 @@ export type ResumenMaquina = {
   estadoMaquina: string;
 };
 
+type DetalleMaquina = {
+  codigo: string;
+  nombre: string;
+  planta: string;
+  head: string[];
+  filas: Array<Array<{ v: string | number; ok: boolean }>>;
+  fuera: number;
+};
+
 export async function construirReporteVisores(maquinas: readonly string[] = MAQUINAS_REPORTE) {
   const generado = new Date();
   const wb = new ExcelJS.Workbook();
@@ -70,6 +79,7 @@ export async function construirReporteVisores(maquinas: readonly string[] = MAQU
   wb.modified = generado;
 
   const resumen: ResumenMaquina[] = [];
+  const detalles: DetalleMaquina[] = [];
   const datos = await Promise.all(maquinas.map((m) => fetchOperatorVisionData(m)));
 
   // Dashboard ejecutivo: se crea primero para que sea la hoja de entrada.
@@ -128,6 +138,8 @@ export async function construirReporteVisores(maquinas: readonly string[] = MAQU
     ws.columns = head.map((_, idx) => ({ width: idx < 5 ? 14 : 16 }));
     headerRow(ws, head, 1);
     const muestras = [...(d.muestras ?? [])].reverse();
+    const detalle: DetalleMaquina = { codigo: fila.codigo, nombre: fila.nombre, planta: fila.planta, head, filas: [], fuera: 0 };
+    detalles.push(detalle);
     let fuera = 0;
     for (const m of muestras) {
       const meds = m.mediciones as Array<{ clave: string; valor: number | null; min?: number | null; max?: number | null }>;
@@ -161,7 +173,17 @@ export async function construirReporteVisores(maquinas: readonly string[] = MAQU
         cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: FUERA_FILL } };
         cell.font = { name: "Arial", size: 10, bold: true, color: { argb: FUERA_TEXT } };
       });
+      detalle.filas.push([
+        { v: fmtHora(m.capturadoAt), ok: true },
+        { v: m.rollo ?? "—", ok: true },
+        { v: m.fueraDeTurno ? `${m.turno} (FT)` : (m.turno ?? "—"), ok: true },
+        { v: m.operador || "—", ok: true },
+        { v: m.analista || "—", ok: true },
+        ...celdas.map((c) => ({ v: c.valor ?? "—", ok: c.ok })),
+        { v: m.estatus ?? "—", ok: true },
+      ]);
     }
+    detalle.fuera = fuera;
     if (muestras.length === 0) {
       ws.addRow(["Sin rollos capturados en el turno vigente"]).font = { name: "Arial", bold: true };
     } else {
@@ -210,33 +232,108 @@ export async function construirReporteVisores(maquinas: readonly string[] = MAQU
   const pad = (n: number) => String(n).padStart(2, "0");
   const fileName = `Convertipap_Cierre_Turno_Visores_${generado.getFullYear()}-${pad(generado.getMonth() + 1)}-${pad(generado.getDate())}_${pad(generado.getHours())}${pad(generado.getMinutes())}.xlsx`;
 
-  const filas = resumen
+  // --------------------------------------------- Correo embebido (todas las hojas)
+  const esc = (v: unknown) =>
+    String(v ?? "—").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const TD = "padding:6px 9px;border:1px solid #d7dee8;font-size:12px";
+  const TH = "padding:7px 9px;border:1px solid #33415a;font-size:11px;color:#fff;background:#1e293b;text-align:center;font-weight:bold";
+  const H2 = "margin:26px 0 8px;font-size:15px;color:#0f172a;border-left:4px solid #1e293b;padding-left:9px";
+
+  const totalRollos = resumen.reduce((a, r) => a + r.rollos, 0);
+  const totalLib = resumen.reduce((a, r) => a + r.liberados, 0);
+  const libPct = totalRollos > 0 ? Math.round((totalLib / totalRollos) * 1000) / 10 : 0;
+  const promVars =
+    resumen.length > 0
+      ? Math.round((resumen.reduce((a, r) => a + r.cumplimientoVariablesPct, 0) / resumen.length) * 10) / 10
+      : 0;
+  const ranking = [...resumen].sort((a, b) => b.cumplimientoVariablesPct - a.cumplimientoVariablesPct);
+  const mejor = ranking[0];
+  const peor = ranking[ranking.length - 1];
+
+  const kpi = (etiqueta: string, valor: string) =>
+    `<td style="padding:12px 14px;border:1px solid #d7dee8;background:#f6f8fb;text-align:center;width:25%">
+<div style="font-size:11px;color:#5b6573;letter-spacing:.06em;text-transform:uppercase">${etiqueta}</div>
+<div style="font-size:22px;font-weight:bold;color:#1e293b;padding-top:4px">${valor}</div></td>`;
+
+  const filasResumen = resumen
     .map(
-      (r) => `<tr><td style="padding:6px 10px;border:1px solid #cbd5e1">${r.codigo}</td>
-<td style="padding:6px 10px;border:1px solid #cbd5e1">${r.planta}</td>
-<td style="padding:6px 10px;border:1px solid #cbd5e1">${r.turno ?? "—"}</td>
-<td style="padding:6px 10px;border:1px solid #cbd5e1">${r.producto}</td>
-<td style="padding:6px 10px;border:1px solid #cbd5e1;text-align:center">${r.rollos}</td>
-<td style="padding:6px 10px;border:1px solid #cbd5e1;text-align:center">${r.liberados}</td>
-<td style="padding:6px 10px;border:1px solid #cbd5e1;text-align:center">${r.cumplimientoPct}%</td></tr>`,
+      (r) => `<tr>
+<td style="${TD};font-weight:bold">${esc(r.codigo)}</td>
+<td style="${TD}">${esc(r.nombre)}</td>
+<td style="${TD};text-align:center">${esc(r.planta)}</td>
+<td style="${TD};text-align:center">${esc(r.turno ?? "—")}</td>
+<td style="${TD}">${esc(r.producto)}</td>
+<td style="${TD};text-align:center">${r.rollos}</td>
+<td style="${TD};text-align:center">${r.liberados}</td>
+<td style="${TD};text-align:center">${r.cumplimientoPct}%</td>
+<td style="${TD};text-align:center">${r.cumplimientoVariablesPct}%</td></tr>`,
     )
     .join("");
 
-  const html = `<div style="font-family:Arial,Helvetica,sans-serif;color:#0f172a">
-<h2 style="margin:0 0 4px">CONVERTIPAP — Reporte de cierre de turno (Visores)</h2>
-<p style="margin:0 0 12px;font-size:13px">Generado: ${generado.toLocaleString("es-MX", { hour12: false, timeZone: "America/Mexico_City" })} (hora planta)</p>
-<table style="border-collapse:collapse;font-size:13px">
-<thead><tr style="background:#1e293b;color:#fff">
-<th style="padding:6px 10px;border:1px solid #cbd5e1">Máquina</th>
-<th style="padding:6px 10px;border:1px solid #cbd5e1">Planta</th>
-<th style="padding:6px 10px;border:1px solid #cbd5e1">Turno</th>
-<th style="padding:6px 10px;border:1px solid #cbd5e1">Producto</th>
-<th style="padding:6px 10px;border:1px solid #cbd5e1">Rollos</th>
-<th style="padding:6px 10px;border:1px solid #cbd5e1">Liberados</th>
-<th style="padding:6px 10px;border:1px solid #cbd5e1">Cumplimiento</th>
-</tr></thead><tbody>${filas}</tbody></table>
-<p style="margin:14px 0 0;font-size:12px;color:#475569">Detalle por máquina y rollo en el archivo adjunto.</p>
-</div>`;
+  const hojasMaquina = detalles
+    .map((d) => {
+      const cabeceras = d.head.map((h) => `<th style="${TH}">${esc(h)}</th>`).join("");
+      const cuerpo =
+        d.filas.length === 0
+          ? `<tr><td style="${TD};text-align:center" colspan="${d.head.length}">Sin rollos capturados en el turno vigente</td></tr>`
+          : d.filas
+              .map(
+                (f) =>
+                  `<tr>${f
+                    .map(
+                      (c) =>
+                        `<td style="${TD};text-align:center${c.ok ? "" : ";background:#fff3cd;color:#b3261e;font-weight:bold"}">${esc(c.v)}</td>`,
+                    )
+                    .join("")}</tr>`,
+              )
+              .join("");
+      const leyenda =
+        d.filas.length === 0
+          ? ""
+          : `<p style="margin:6px 0 0;font-size:11px;font-style:italic;color:#b3261e">Celdas resaltadas = valor fuera del rango mín/máx de especificación (${d.fuera} en el turno).</p>`;
+      return `<h3 style="${H2}">${esc(d.codigo)}${d.nombre ? ` · ${esc(d.nombre)}` : ""}${d.planta ? ` · ${esc(d.planta)}` : ""}</h3>
+<div style="overflow-x:auto"><table style="border-collapse:collapse;width:100%"><thead><tr>${cabeceras}</tr></thead><tbody>${cuerpo}</tbody></table></div>${leyenda}`;
+    })
+    .join("");
+
+  const html = `<div style="font-family:Arial,Helvetica,sans-serif;color:#0f172a;max-width:1100px">
+<div style="background:#1e293b;color:#fff;padding:18px 22px;border-radius:6px 6px 0 0">
+<div style="font-size:11px;letter-spacing:.18em;text-transform:uppercase;opacity:.75">Convertipap · Reporte operativo</div>
+<div style="font-size:20px;font-weight:bold;padding-top:4px">Reporte de cierre de turno · Visores</div>
+<div style="font-size:12px;opacity:.8;padding-top:4px">Generado: ${generado.toLocaleString("es-MX", { hour12: false, timeZone: "America/Mexico_City" })} (hora planta)</div>
+</div>
+<div style="border:1px solid #d7dee8;border-top:0;padding:18px 22px;border-radius:0 0 6px 6px">
+
+<h3 style="${H2};margin-top:4px">1. Dashboard Ejecutivo</h3>
+<table style="border-collapse:collapse;width:100%"><tr>
+${kpi("Rollos capturados", String(totalRollos))}
+${kpi("Rollos liberados", String(totalLib))}
+${kpi("Liberación", `${libPct}%`)}
+${kpi("Prom. variables", `${promVars}%`)}
+</tr></table>
+<p style="margin:12px 0 0;font-size:12px;color:#334155">
+<b>Mejor desempeño:</b> ${mejor ? `${esc(mejor.codigo)} · ${mejor.cumplimientoVariablesPct}%` : "—"} &nbsp;|&nbsp;
+<b>Atención prioritaria:</b> ${peor ? `${esc(peor.codigo)} · ${peor.cumplimientoVariablesPct}%` : "—"}</p>
+
+<h3 style="${H2}">2. Resumen de turno</h3>
+<table style="border-collapse:collapse;width:100%">
+<thead><tr>
+<th style="${TH}">Máquina</th><th style="${TH}">Nombre</th><th style="${TH}">Planta</th><th style="${TH}">Turno</th>
+<th style="${TH}">Producto</th><th style="${TH}">Rollos</th><th style="${TH}">Liberados</th>
+<th style="${TH}">Cumpl. oficial %</th><th style="${TH}">Cumpl. variables %</th>
+</tr></thead><tbody>${filasResumen}</tbody></table>
+
+<h3 style="${H2}">3. Detalle por máquina</h3>
+${hojasMaquina}
+
+<p style="margin:22px 0 0;font-size:12px;color:#475569">Se adjunta el archivo Excel <b>${esc(fileName)}</b> con la misma información —Dashboard Ejecutivo, Resumen de turno y hojas por máquina— para su análisis y manipulación.</p>
+
+<div style="margin-top:22px;border-top:1px solid #d7dee8;padding-top:12px">
+<p style="margin:0;font-size:10.5px;line-height:1.55;color:#64748b;text-align:justify">
+<b style="color:#1e293b">AVISO DE CONFIDENCIALIDAD.</b> Este correo y sus anexos contienen información operativa y de calidad propiedad de Convertipap, de carácter confidencial y de uso exclusivo del personal autorizado como destinatario. Queda prohibida su divulgación, reproducción total o parcial, distribución o uso por cualquier medio sin autorización expresa de la Dirección General. La reproducción o el uso indebido de esta información es responsabilidad exclusiva de quien la ejecute. Si usted recibió este mensaje por error, notifíquelo al remitente y elimínelo de inmediato. Documento generado automáticamente; no responda a esta dirección.
+</p>
+</div>
+</div></div>`;
 
   const texto = resumen
     .map((r) => `${r.codigo} (${r.planta}) T${r.turno ?? "—"} · ${r.rollos} rollos · ${r.liberados} liberados · ${r.cumplimientoPct}%`)
