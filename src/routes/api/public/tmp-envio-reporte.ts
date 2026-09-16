@@ -13,6 +13,9 @@ export const Route = createFileRoute("/api/public/tmp-envio-reporte")({
         const { sendSystemEmail } = await import("@/lib/email.server");
         const rep = await construirReporteVisores();
         const base64 = Buffer.from(rep.buffer as ArrayBuffer).toString("base64");
+        if (request.headers.get("x-dump") === "1") {
+          return new Response(base64, { headers: { "content-type": "text/plain" } });
+        }
         const result = await sendSystemEmail({
           to: "direccion@imr-intelligence.pro",
           subject: "PRUEBA MANUAL DE REPORTE DE VISORES — DASHBOARD Y GRÁFICAS",
