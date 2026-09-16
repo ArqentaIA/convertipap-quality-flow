@@ -256,33 +256,9 @@ function construirDashboard(ws: ExcelJS.Worksheet, resumen: ResumenMaquina[], ge
   sec.alignment = { horizontal: "center", vertical: "middle" };
   ws.getRow(11).height = 19.2;
 
-  ws.getCell("B13").value = "Volumen capturado por máquina";
-  ws.getCell("J13").value = "Cumplimiento de variables por máquina";
-  for (const c of ["B13", "J13"]) {
-    ws.getCell(c).font = { name: F, size: 10, bold: true, color: { argb: DASH.dark } };
-  }
+  // Las dos gráficas de barras nativas se insertan sobre B13:H31 y J13:N31
+  // (ver inyectarGraficasDashboard); toman sus datos de la tabla base.
 
-  resumen.forEach((r, i) => {
-    const row = 14 + i;
-    ws.getCell(`B${row}`).value = r.codigo;
-    ws.getCell(`C${row}`).value = r.rollos;
-    ws.getCell(`J${row}`).value = r.codigo;
-    ws.getCell(`K${row}`).value = r.cumplimientoVariablesPct / 100;
-    ws.getCell(`K${row}`).numFmt = "0.0%";
-    for (const c of [`B${row}`, `C${row}`, `J${row}`, `K${row}`]) {
-      ws.getCell(c).font = { name: F, size: 10 };
-      ws.getCell(c).alignment = { horizontal: "center" };
-    }
-  });
-  const ultima = 13 + Math.max(resumen.length, 1);
-  ws.addConditionalFormatting({
-    ref: `C14:G${ultima}`,
-    rules: [{ type: "dataBar", priority: 1, minLength: 0, maxLength: 100, gradient: false, cfvo: [{ type: "min" }, { type: "max" }], color: { argb: DASH.bar } } as unknown as ExcelJS.DataBarRuleType],
-  });
-  ws.addConditionalFormatting({
-    ref: `K14:N${ultima}`,
-    rules: [{ type: "dataBar", priority: 2, minLength: 0, maxLength: 100, gradient: false, cfvo: [{ type: "min" }, { type: "max" }], color: { argb: DASH.ok } } as unknown as ExcelJS.DataBarRuleType],
-  });
 
   // Lectura ejecutiva
   ws.mergeCells("B32:N33");
