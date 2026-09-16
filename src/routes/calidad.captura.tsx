@@ -333,10 +333,14 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
     setSkuSel(principal?.clave_sku_sap ?? "");
   }, [productoId, skusData]);
 
+  // El campo "Orden de Producción" está oculto: no consultamos órdenes activas
+  // (la llamada protegida fallaba con 401 y dejaba la pantalla en blanco).
+  // Para reactivarlo basta con volver a poner enabled: hasAuthToken.
   const ordenesQuery = useQuery({
     queryKey: ["ordenes-produccion", "activas"],
     queryFn: () => listOrdenesActivas(),
-    enabled: hasAuthToken,
+    enabled: false,
+    retry: false,
     staleTime: 60_000,
   });
   const ordenesActivas = ordenesQuery.data ?? [];
