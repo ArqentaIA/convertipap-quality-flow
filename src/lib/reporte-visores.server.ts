@@ -435,6 +435,8 @@ El detalle completo por máquina, con todas las variables medidas y sus gráfica
   return {
     buffer,
     fileName,
+    subject,
+    turno: turnoArchivo,
     logoCid: LOGO_CID,
     logoBase64: LOGO_BASE64,
     irmLogoCid: IRM_LOGO_CID,
