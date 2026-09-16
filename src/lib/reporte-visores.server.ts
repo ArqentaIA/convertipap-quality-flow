@@ -253,12 +253,18 @@ export async function construirReporteVisores(maquinas: readonly string[] = MAQU
   const pad = (n: number) => String(n).padStart(2, "0");
   const fileName = `Convertipap_Cierre_Turno_Visores_${generado.getFullYear()}-${pad(generado.getMonth() + 1)}-${pad(generado.getDate())}_${pad(generado.getHours())}${pad(generado.getMinutes())}.xlsx`;
 
-  // --------------------------------------------- Correo embebido (todas las hojas)
+  // ------------------------------------------------------ PDF adjunto
+  const pdf = construirPdfVisores(resumen, detalles, generado);
+  const pdfName = fileName.replace(/\.xlsx$/, ".pdf");
+
+  // ------------------------------- Correo embebido: resumen ejecutivo
+  // El correo NO reproduce el detalle del adjunto (variables de cada rollo):
+  // muestra indicadores, gráfica ejecutiva y los rollos del turno por máquina.
   const esc = (v: unknown) =>
     String(v ?? "—").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   const TD = "padding:6px 9px;border:1px solid #d7dee8;font-size:12px";
   const TH = "padding:7px 9px;border:1px solid #33415a;font-size:11px;color:#fff;background:#1e293b;text-align:center;font-weight:bold";
-  const H2 = "margin:26px 0 8px;font-size:15px;color:#0f172a;border-left:4px solid #1e293b;padding-left:9px";
+  const H2 = "margin:24px 0 8px;font-size:15px;color:#0f172a;border-left:4px solid #1e293b;padding-left:9px";
 
   const totalRollos = resumen.reduce((a, r) => a + r.rollos, 0);
   const totalLib = resumen.reduce((a, r) => a + r.liberados, 0);
@@ -267,14 +273,38 @@ export async function construirReporteVisores(maquinas: readonly string[] = MAQU
     resumen.length > 0
       ? Math.round((resumen.reduce((a, r) => a + r.cumplimientoVariablesPct, 0) / resumen.length) * 10) / 10
       : 0;
+  const totalFuera = detalles.reduce((a, d) => a + d.fuera, 0);
   const ranking = [...resumen].sort((a, b) => b.cumplimientoVariablesPct - a.cumplimientoVariablesPct);
   const mejor = ranking[0];
   const peor = ranking[ranking.length - 1];
+  const plantas = [...new Set(resumen.map((r) => r.planta).filter(Boolean))].join(" · ") || "—";
+  const turnos = [...new Set(resumen.map((r) => r.turno).filter(Boolean))].join(" · ") || "—";
+  const fechaLarga = generado.toLocaleDateString("es-MX", {
+    weekday: "long", day: "2-digit", month: "long", year: "numeric", timeZone: "America/Mexico_City",
+  });
 
   const kpi = (etiqueta: string, valor: string) =>
-    `<td style="padding:12px 14px;border:1px solid #d7dee8;background:#f6f8fb;text-align:center;width:25%">
-<div style="font-size:11px;color:#5b6573;letter-spacing:.06em;text-transform:uppercase">${etiqueta}</div>
+    `<td style="padding:12px 10px;border:1px solid #d7dee8;background:#f6f8fb;text-align:center;width:20%">
+<div style="font-size:10px;color:#5b6573;letter-spacing:.06em;text-transform:uppercase">${etiqueta}</div>
 <div style="font-size:22px;font-weight:bold;color:#1e293b;padding-top:4px">${valor}</div></td>`;
+
+  // Gráfica ejecutiva en HTML puro (sin imágenes): barras horizontales.
+  const maxRollos = Math.max(1, ...resumen.map((r) => r.rollos));
+  const barra = (pct: number, color: string) =>
+    `<table style="border-collapse:collapse;width:100%;background:#eef2f7"><tr>
+<td style="background:${color};height:12px;width:${Math.max(1, Math.round(pct))}%;font-size:0;line-height:0">&nbsp;</td>
+<td style="font-size:0;line-height:0">&nbsp;</td></tr></table>`;
+
+  const grafica = resumen
+    .map(
+      (r) => `<tr>
+<td style="padding:5px 8px;font-size:12px;font-weight:bold;color:#1e293b;width:70px">${esc(r.codigo)}</td>
+<td style="padding:5px 8px;width:42%">${barra((r.rollos / maxRollos) * 100, "#2d8a9e")}</td>
+<td style="padding:5px 6px;font-size:11px;color:#2d8a9e;width:56px">${r.rollos} rollos</td>
+<td style="padding:5px 8px;width:42%">${barra(Math.min(100, r.cumplimientoVariablesPct), "#1b7f5e")}</td>
+<td style="padding:5px 6px;font-size:11px;color:#1b7f5e;width:48px">${r.cumplimientoVariablesPct}%</td></tr>`,
+    )
+    .join("");
 
   const filasResumen = resumen
     .map(
@@ -291,52 +321,66 @@ export async function construirReporteVisores(maquinas: readonly string[] = MAQU
     )
     .join("");
 
-  const hojasMaquina = detalles
+  const bloquesMaquina = detalles
     .map((d) => {
-      const cabeceras = d.head.map((h) => `<th style="${TH}">${esc(h)}</th>`).join("");
       const cuerpo =
-        d.filas.length === 0
-          ? `<tr><td style="${TD};text-align:center" colspan="${d.head.length}">Sin rollos capturados en el turno vigente</td></tr>`
-          : d.filas
+        d.rollosResumen.length === 0
+          ? `<tr><td style="${TD};text-align:center" colspan="7">Sin rollos capturados en el turno vigente</td></tr>`
+          : d.rollosResumen
               .map(
-                (f) =>
-                  `<tr>${f
-                    .map(
-                      (c) =>
-                        `<td style="${TD};text-align:center${c.ok ? "" : ";background:#fff3cd;color:#b3261e;font-weight:bold"}">${esc(c.v)}</td>`,
-                    )
-                    .join("")}</tr>`,
+                (r) => `<tr>
+<td style="${TD};text-align:center">${esc(r.hora)}</td>
+<td style="${TD};text-align:center;font-weight:bold">${esc(r.rollo)}</td>
+<td style="${TD};text-align:center">${esc(r.turno)}</td>
+<td style="${TD}">${esc(r.operador)}</td>
+<td style="${TD}">${esc(r.analista)}</td>
+<td style="${TD};text-align:center">${esc(r.estatus)}</td>
+<td style="${TD};text-align:center${r.fuera > 0 ? ";background:#fff3cd;color:#b3261e;font-weight:bold" : ""}">${r.fuera}</td></tr>`,
               )
               .join("");
-      const leyenda =
-        d.filas.length === 0
-          ? ""
-          : `<p style="margin:6px 0 0;font-size:11px;font-style:italic;color:#b3261e">Celdas resaltadas = valor fuera del rango mín/máx de especificación (${d.fuera} en el turno).</p>`;
-      return `<h3 style="${H2}">${esc(d.codigo)}${d.nombre ? ` · ${esc(d.nombre)}` : ""}${d.planta ? ` · ${esc(d.planta)}` : ""}</h3>
-<div style="overflow-x:auto"><table style="border-collapse:collapse;width:100%"><thead><tr>${cabeceras}</tr></thead><tbody>${cuerpo}</tbody></table></div>${leyenda}`;
+      return `<h3 style="${H2}">${esc(d.codigo)}${d.nombre ? ` · ${esc(d.nombre)}` : ""}${d.planta ? ` · ${esc(d.planta)}` : ""} <span style="font-size:11px;font-weight:normal;color:#5b6573">Turno ${esc(d.turno ?? "—")} · ${d.rollosResumen.length} rollos · ${d.fuera} valores fuera de rango</span></h3>
+<table style="border-collapse:collapse;width:100%">
+<thead><tr><th style="${TH}">Hora</th><th style="${TH}">Rollo</th><th style="${TH}">Turno</th><th style="${TH}">Operador</th><th style="${TH}">Analista</th><th style="${TH}">Estatus</th><th style="${TH}">Fuera de rango</th></tr></thead>
+<tbody>${cuerpo}</tbody></table>`;
     })
     .join("");
 
-  const html = `<div style="font-family:Arial,Helvetica,sans-serif;color:#0f172a;max-width:1100px">
-<div style="background:#1e293b;color:#fff;padding:18px 22px;border-radius:6px 6px 0 0">
-<div style="font-size:11px;letter-spacing:.18em;text-transform:uppercase;opacity:.75">Convertipap · Reporte operativo</div>
-<div style="font-size:20px;font-weight:bold;padding-top:4px">Reporte de cierre de turno · Visores</div>
-<div style="font-size:12px;opacity:.8;padding-top:4px">Generado: ${generado.toLocaleString("es-MX", { hour12: false, timeZone: "America/Mexico_City" })} (hora planta)</div>
+  const html = `<div style="font-family:Arial,Helvetica,sans-serif;color:#0f172a;max-width:900px">
+<div style="background:#1e293b;color:#fff;padding:16px 22px;border-radius:6px 6px 0 0">
+<table style="border-collapse:collapse;width:100%"><tr>
+<td style="width:150px;vertical-align:middle"><img src="cid:${LOGO_CID}" alt="Convertipap" width="140" style="display:block;border:0;outline:none"></td>
+<td style="vertical-align:middle;text-align:right">
+<div style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;opacity:.75">Reporte ejecutivo de operación</div>
+<div style="font-size:20px;font-weight:bold;padding-top:3px">Cierre de turno · Visores</div>
+</td></tr></table>
 </div>
 <div style="border:1px solid #d7dee8;border-top:0;padding:18px 22px;border-radius:0 0 6px 6px">
 
-<h3 style="${H2};margin-top:4px">1. Dashboard Ejecutivo</h3>
+<table style="border-collapse:collapse;width:100%;margin-bottom:14px"><tr>
+<td style="${TD};background:#f6f8fb;width:33%"><b>Fecha:</b> ${esc(fechaLarga)}</td>
+<td style="${TD};background:#f6f8fb;width:33%"><b>Turno:</b> ${esc(turnos)}</td>
+<td style="${TD};background:#f6f8fb"><b>Planta:</b> ${esc(plantas)}</td>
+</tr></table>
+
+<h3 style="${H2};margin-top:4px">Indicadores del turno</h3>
 <table style="border-collapse:collapse;width:100%"><tr>
 ${kpi("Rollos capturados", String(totalRollos))}
 ${kpi("Rollos liberados", String(totalLib))}
-${kpi("Liberación", `${libPct}%`)}
+${kpi("Cumplimiento", `${libPct}%`)}
 ${kpi("Prom. variables", `${promVars}%`)}
+${kpi("Fuera de rango", String(totalFuera))}
 </tr></table>
 <p style="margin:12px 0 0;font-size:12px;color:#334155">
-<b>Mejor desempeño:</b> ${mejor ? `${esc(mejor.codigo)} · ${mejor.cumplimientoVariablesPct}%` : "—"} &nbsp;|&nbsp;
-<b>Atención prioritaria:</b> ${peor ? `${esc(peor.codigo)} · ${peor.cumplimientoVariablesPct}%` : "—"}</p>
+<b style="color:#1b7f5e">Mejor desempeño:</b> ${mejor ? `${esc(mejor.codigo)} · ${mejor.cumplimientoVariablesPct}%` : "—"} &nbsp;|&nbsp;
+<b style="color:#b3261e">Atención prioritaria:</b> ${peor ? `${esc(peor.codigo)} · ${peor.cumplimientoVariablesPct}%` : "—"}</p>
 
-<h3 style="${H2}">2. Resumen de turno</h3>
+<h3 style="${H2}">Volumen vs Cumplimiento</h3>
+<table style="border-collapse:collapse;width:100%;border:1px solid #d7dee8;background:#fcfdff">
+<tr><td colspan="5" style="padding:6px 8px;font-size:10px;color:#5b6573">
+<span style="color:#2d8a9e">&#9632;</span> Rollos capturados &nbsp;&nbsp; <span style="color:#1b7f5e">&#9632;</span> Cumplimiento de variables</td></tr>
+${grafica}</table>
+
+<h3 style="${H2}">Resumen por máquina</h3>
 <table style="border-collapse:collapse;width:100%">
 <thead><tr>
 <th style="${TH}">Máquina</th><th style="${TH}">Nombre</th><th style="${TH}">Planta</th><th style="${TH}">Turno</th>
@@ -344,12 +388,15 @@ ${kpi("Prom. variables", `${promVars}%`)}
 <th style="${TH}">Cumpl. oficial %</th><th style="${TH}">Cumpl. variables %</th>
 </tr></thead><tbody>${filasResumen}</tbody></table>
 
-<h3 style="${H2}">3. Detalle por máquina</h3>
-${hojasMaquina}
+${bloquesMaquina}
 
-<p style="margin:22px 0 0;font-size:12px;color:#475569">Se adjunta el archivo Excel <b>${esc(fileName)}</b> con la misma información —Dashboard Ejecutivo, Resumen de turno y hojas por máquina— para su análisis y manipulación.</p>
+<div style="margin-top:24px;background:#f6f8fb;border:1px solid #d7dee8;border-radius:5px;padding:14px 16px">
+<p style="margin:0;font-size:12.5px;color:#1e293b;line-height:1.6">
+<b>Cierre del turno.</b> Este resumen concentra la operación de MP-01, MP-04, MP-05, MP-06 y MP-07 con corte a las ${esc(generado.toLocaleTimeString("es-MX", { hour12: false, hour: "2-digit", minute: "2-digit", timeZone: "America/Mexico_City" }))} horas (hora planta).
+El detalle completo por máquina, con todas las variables medidas y sus gráficas, se incluye en el archivo PDF adjunto <b>${esc(pdfName)}</b>. Correo y adjunto se generan de la misma fuente de datos de los Visores.</p>
+</div>
 
-<div style="margin-top:22px;border-top:1px solid #d7dee8;padding-top:12px">
+<div style="margin-top:20px;border-top:1px solid #d7dee8;padding-top:12px">
 <p style="margin:0;font-size:10.5px;line-height:1.55;color:#64748b;text-align:justify">
 <b style="color:#1e293b">AVISO DE CONFIDENCIALIDAD.</b> Este correo y sus anexos contienen información operativa y de calidad propiedad de Convertipap, de carácter confidencial y de uso exclusivo del personal autorizado como destinatario. Queda prohibida su divulgación, reproducción total o parcial, distribución o uso por cualquier medio sin autorización expresa de la Dirección General. La reproducción o el uso indebido de esta información es responsabilidad exclusiva de quien la ejecute. Si usted recibió este mensaje por error, notifíquelo al remitente y elimínelo de inmediato. Documento generado automáticamente; no responda a esta dirección.
 </p>
@@ -360,7 +407,7 @@ ${hojasMaquina}
     .map((r) => `${r.codigo} (${r.planta}) T${r.turno ?? "—"} · ${r.rollos} rollos · ${r.liberados} liberados · ${r.cumplimientoPct}%`)
     .join("\n");
 
-  return { buffer, fileName, html, texto, resumen, generado };
+  return { buffer, fileName, pdf, pdfName, logoCid: LOGO_CID, logoBase64: LOGO_BASE64, html, texto, resumen, generado };
 }
 
 // =============================================================================
