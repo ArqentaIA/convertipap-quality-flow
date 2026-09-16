@@ -115,6 +115,11 @@ export async function construirReporteVisores(maquinas: readonly string[] = MAQU
       fila.rollos, fila.liberados, fila.cumplimientoPct, fila.cumplimientoVariablesPct, fila.estadoMaquina,
     ]);
     row.font = { name: "Arial", size: 10 };
+    row.height = 18;
+    row.eachCell((c, col) => {
+      c.alignment = { vertical: "middle", horizontal: col === 2 || col === 5 ? "left" : "center" };
+      c.border = { top: { style: "hair" }, left: { style: "hair" }, bottom: { style: "hair" }, right: { style: "hair" } };
+    });
 
     // --------------------------------------------------- Hoja por máquina
     const ws = wb.addWorksheet(fila.codigo);
