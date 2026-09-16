@@ -416,6 +416,14 @@ El detalle completo por máquina, con todas las variables medidas y sus gráfica
 <b style="color:#1e293b">AVISO DE CONFIDENCIALIDAD.</b> Este correo y sus anexos contienen información operativa y de calidad propiedad de Convertipap, de carácter confidencial y de uso exclusivo del personal autorizado como destinatario. Queda prohibida su divulgación, reproducción total o parcial, distribución o uso por cualquier medio sin autorización expresa de la Dirección General. La reproducción o el uso indebido de esta información es responsabilidad exclusiva de quien la ejecute. Si usted recibió este mensaje por error, notifíquelo al remitente y elimínelo de inmediato. Documento generado automáticamente; no responda a esta dirección.
 </p>
 </div>
+
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:18px auto 4px"><tr>
+<td style="border:1px solid #e2e8f0;border-radius:8px;background:#ffffff;padding:8px 16px">
+<a href="${IRM_URL}" target="_blank" style="text-decoration:none;display:block">
+<img src="cid:${IRM_LOGO_CID}" alt="IRM · circular intelligence" width="96" style="display:block;border:0;outline:none;opacity:0.9">
+</a>
+</td></tr></table>
+<p style="margin:0;text-align:center;font-size:9.5px;color:#94a3b8;letter-spacing:.3px">Plataforma desarrollada por IRM · circular intelligence</p>
 </div></div>`;
 
   const texto = resumen
