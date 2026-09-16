@@ -7,10 +7,16 @@ import ExcelJS from "exceljs";
 import { fetchOperatorVisionData } from "./operator-vision.server";
 import { inyectarGraficasDashboard } from "./reporte-visores-charts.server";
 import logoDataUrl from "@/assets/reporte-visores-logo.png?inline";
+import irmLogoDataUrl from "@/assets/irm-logo.png?inline";
 
 /** Logotipo embebido en el correo como imagen en línea (CID). */
 export const LOGO_CID = "logoconvertipap";
 const LOGO_BASE64 = String(logoDataUrl).split(",")[1] ?? "";
+
+/** Firma IRM al pie del correo, embebida como imagen en línea (CID). */
+export const IRM_LOGO_CID = "logoirm";
+const IRM_LOGO_BASE64 = String(irmLogoDataUrl).split(",")[1] ?? "";
+const IRM_URL = "https://imr-intelligence.pro";
 
 /** Inserta el logotipo Convertipap en la esquina superior izquierda de la hoja. */
 function ponerLogo(wb: ExcelJS.Workbook, ws: ExcelJS.Worksheet, col: number, row: number) {
