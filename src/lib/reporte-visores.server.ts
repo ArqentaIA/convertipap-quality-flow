@@ -122,6 +122,10 @@ export async function construirReporteVisores(maquinas: readonly string[] = MAQU
     ws.views = [{ state: "frozen", ySplit: 1 }];
   }
 
+  // ------------------------------------------------- Dashboard ejecutivo
+  construirDashboard(wsd, resumen, generado);
+
+
   const buffer = (await wb.xlsx.writeBuffer()) as ArrayBuffer;
   const pad = (n: number) => String(n).padStart(2, "0");
   const fileName = `Convertipap_Cierre_Turno_Visores_${generado.getFullYear()}-${pad(generado.getMonth() + 1)}-${pad(generado.getDate())}_${pad(generado.getHours())}${pad(generado.getMinutes())}.xlsx`;
