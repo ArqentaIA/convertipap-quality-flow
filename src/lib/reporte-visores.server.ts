@@ -56,6 +56,15 @@ export type ResumenMaquina = {
   estadoMaquina: string;
 };
 
+type DetalleMaquina = {
+  codigo: string;
+  nombre: string;
+  planta: string;
+  head: string[];
+  filas: Array<Array<{ v: string | number; ok: boolean }>>;
+  fuera: number;
+};
+
 export async function construirReporteVisores(maquinas: readonly string[] = MAQUINAS_REPORTE) {
   const generado = new Date();
   const wb = new ExcelJS.Workbook();
