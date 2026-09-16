@@ -516,8 +516,8 @@ export async function generarReporteMensualBobinadoras(
         const cell = hoja.getRow(rr).getCell(i);
         cell.border = thin();
         cell.font = { size: 10 };
-        cell.alignment = { horizontal: i === 1 ? "left" : "center", vertical: "middle" };
-        if (i >= 2) cell.numFmt = "#,##0.00";
+        cell.alignment = { horizontal: i === 1 ? "left" : "center", vertical: "middle", wrapText: typeof cell.value === "string" };
+        if (i >= 2) cell.numFmt = typeof cell.value === "string" ? "General" : "#,##0.00";
         if (i >= 4) {
           const p = i - 3;
           const c = it.cintas.find((x) => x.posicion === p && x.estado !== "sustituida");
