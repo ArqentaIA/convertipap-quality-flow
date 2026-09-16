@@ -267,13 +267,12 @@ function construirDashboard(wb: ExcelJS.Workbook, ws: ExcelJS.Worksheet, resumen
     { width: 12 }, { width: 12 }, { width: 12 }, { width: 12 },
   ];
 
-  // Banda superior + títulos
-  ws.mergeCells("A1:N1");
-  ws.getCell("A1").fill = { type: "pattern", pattern: "solid", fgColor: { argb: DASH.dark } };
-  ws.getRow(1).height = 21;
+  // Logotipo + títulos
+  ponerLogo(wb, ws, 0.6, 0.6);
+  ws.getRow(1).height = 10;
   ws.mergeCells("D2:N3");
   const tit = ws.getCell("D2");
-  tit.value = "CONVERTIPAP · DASHBOARD EJECUTIVO DE CIERRE DE TURNO";
+  tit.value = "DASHBOARD EJECUTIVO DE CIERRE DE TURNO";
   tit.font = { name: F, size: 18, bold: true, color: { argb: DASH.dark } };
   tit.alignment = { horizontal: "center", vertical: "middle" };
   ws.mergeCells("D4:N4");
