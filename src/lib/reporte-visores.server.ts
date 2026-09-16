@@ -128,24 +128,49 @@ export async function construirReporteVisores(maquinas: readonly string[] = MAQU
     ws.columns = head.map((_, idx) => ({ width: idx < 5 ? 14 : 16 }));
     headerRow(ws, head, 1);
     const muestras = [...(d.muestras ?? [])].reverse();
+    let fuera = 0;
     for (const m of muestras) {
+      const meds = m.mediciones as Array<{ clave: string; valor: number | null; min?: number | null; max?: number | null }>;
+      const celdas = vars.map((v) => {
+        const med = meds.find((x) => x.clave === v.clave);
+        const valor = med?.valor ?? null;
+        const min = med?.min ?? v.min;
+        const max = med?.max ?? v.max;
+        const ok =
+          valor === null ||
+          !Number.isFinite(valor) ||
+          ((min === null || min === undefined || !Number.isFinite(min) || valor >= min) &&
+            (max === null || max === undefined || !Number.isFinite(max) || valor <= max));
+        return { valor, ok };
+      });
       const r2 = ws.addRow([
         fmtHora(m.capturadoAt),
         m.rollo,
         m.fueraDeTurno ? `${m.turno} (FT)` : m.turno,
         m.operador || "—",
         m.analista || "—",
-        ...vars.map((v) => {
-          const med = (m.mediciones as Array<{ clave: string; valor: number | null }>).find((x) => x.clave === v.clave);
-          return med?.valor ?? "";
-        }),
+        ...celdas.map((c) => c.valor ?? ""),
         m.estatus ?? "—",
       ]);
       r2.font = { name: "Arial", size: 10 };
       r2.alignment = { horizontal: "center" };
+      celdas.forEach((c, idx) => {
+        if (c.ok) return;
+        fuera++;
+        const cell = r2.getCell(6 + idx);
+        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: FUERA_FILL } };
+        cell.font = { name: "Arial", size: 10, bold: true, color: { argb: FUERA_TEXT } };
+      });
     }
     if (muestras.length === 0) {
       ws.addRow(["Sin rollos capturados en el turno vigente"]).font = { name: "Arial", bold: true };
+    } else {
+      ws.addRow([]);
+      const leyenda = ws.addRow([
+        `Celdas resaltadas = valor fuera del rango mín/máx de especificación (${fuera} en el turno).`,
+      ]);
+      leyenda.font = { name: "Arial", size: 9, italic: true, color: { argb: FUERA_TEXT } };
+      leyenda.getCell(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: FUERA_FILL } };
     }
     ws.views = [{ state: "frozen", ySplit: 1 }];
   }
