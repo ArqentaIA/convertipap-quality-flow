@@ -221,10 +221,12 @@ export async function construirReporteVisores(maquinas: readonly string[] = MAQU
             (max === null || max === undefined || !Number.isFinite(max) || valor <= max));
         return { valor, ok };
       });
+      const idSap = idsSap.get(String(m.rollo ?? "")) ?? "—";
       const r2 = ws.addRow([
         fmtHora(m.capturadoAt),
         m.rollo,
         m.skuSap ?? "—",
+        idSap,
         m.fueraDeTurno ? `${m.turno} (FT)` : m.turno,
         m.operador || "—",
         m.analista || "—",
@@ -236,7 +238,7 @@ export async function construirReporteVisores(maquinas: readonly string[] = MAQU
       celdas.forEach((c, idx) => {
         if (c.ok) return;
         fuera++;
-        const cell = r2.getCell(7 + idx);
+        const cell = r2.getCell(8 + idx);
         cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: FUERA_FILL } };
         cell.font = { name: "Arial", size: 10, bold: true, color: { argb: FUERA_TEXT } };
       });
