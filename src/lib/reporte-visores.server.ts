@@ -6,8 +6,7 @@
 import ExcelJS from "exceljs";
 import { fetchOperatorVisionData } from "./operator-vision.server";
 import { inyectarGraficasDashboard } from "./reporte-visores-charts.server";
-import logoDataUrl from "@/assets/logo-convertipap.png?inline";
-import { construirPdfVisores } from "./reporte-visores-pdf.server";
+import logoDataUrl from "@/assets/reporte-visores-logo.png?inline";
 
 /** Logotipo embebido en el correo como imagen en línea (CID). */
 export const LOGO_CID = "logoconvertipap";
@@ -258,10 +257,6 @@ export async function construirReporteVisores(maquinas: readonly string[] = MAQU
   const pad = (n: number) => String(n).padStart(2, "0");
   const fileName = `Convertipap_Cierre_Turno_Visores_${generado.getFullYear()}-${pad(generado.getMonth() + 1)}-${pad(generado.getDate())}_${pad(generado.getHours())}${pad(generado.getMinutes())}.xlsx`;
 
-  // ------------------------------------------------------ PDF adjunto
-  const pdf = construirPdfVisores(resumen, detalles, generado);
-  const pdfName = fileName.replace(/\.xlsx$/, ".pdf");
-
   // ------------------------------- Correo embebido: resumen ejecutivo
   // El correo NO reproduce el detalle del adjunto (variables de cada rollo):
   // muestra indicadores, gráfica ejecutiva y los rollos del turno por máquina.
@@ -398,7 +393,7 @@ ${bloquesMaquina}
 <div style="margin-top:24px;background:#f6f8fb;border:1px solid #d7dee8;border-radius:5px;padding:14px 16px">
 <p style="margin:0;font-size:12.5px;color:#1e293b;line-height:1.6">
 <b>Cierre del turno.</b> Este resumen concentra la operación de MP-01, MP-04, MP-05, MP-06 y MP-07 con corte a las ${esc(generado.toLocaleTimeString("es-MX", { hour12: false, hour: "2-digit", minute: "2-digit", timeZone: "America/Mexico_City" }))} horas (hora planta).
-El detalle completo por máquina, con todas las variables medidas y sus gráficas, se incluye en el archivo PDF adjunto <b>${esc(pdfName)}</b>. Correo y adjunto se generan de la misma fuente de datos de los Visores.</p>
+El detalle completo por máquina, con todas las variables medidas y sus gráficas, se incluye en el archivo Excel adjunto <b>${esc(fileName)}</b>. Correo y adjunto se generan de la misma fuente de datos de los Visores.</p>
 </div>
 
 <div style="margin-top:20px;border-top:1px solid #d7dee8;padding-top:12px">
@@ -412,7 +407,7 @@ El detalle completo por máquina, con todas las variables medidas y sus gráfica
     .map((r) => `${r.codigo} (${r.planta}) T${r.turno ?? "—"} · ${r.rollos} rollos · ${r.liberados} liberados · ${r.cumplimientoPct}%`)
     .join("\n");
 
-  return { buffer, fileName, pdf, pdfName, logoCid: LOGO_CID, logoBase64: LOGO_BASE64, html, texto, resumen, generado };
+  return { buffer, fileName, logoCid: LOGO_CID, logoBase64: LOGO_BASE64, html, texto, resumen, generado };
 }
 
 // =============================================================================
