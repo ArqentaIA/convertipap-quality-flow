@@ -961,6 +961,33 @@ function DestinatariosTurnoCard() {
   const [edits, setEdits] = useState<Record<string, { destinatarios?: string; activo?: boolean }>>({});
   const [nuevos, setNuevos] = useState<Record<string, string>>({});
 
+  const agregarCorreo = (plantaId: string, correosActuales: string[]) => {
+    const raw = (nuevos[plantaId] ?? "").trim().toLowerCase();
+    if (!raw) return;
+    const nuevosCorreos = raw
+      .split(/[,;\s]+/)
+      .map((c) => c.trim())
+      .filter(Boolean);
+    const invalido = nuevosCorreos.find((c) => !EMAIL_RE.test(c));
+    if (invalido) {
+      toast.error(`Correo no válido: ${invalido}`);
+      return;
+    }
+    const combinados = [...correosActuales];
+    for (const c of nuevosCorreos) {
+      if (combinados.some((x) => x.toLowerCase() === c)) {
+        toast.info(`${c} ya está en la lista`);
+        continue;
+      }
+      combinados.push(c);
+    }
+    setEdits((prev) => ({
+      ...prev,
+      [plantaId]: { ...prev[plantaId], destinatarios: combinados.join(", ") },
+    }));
+    setNuevos((prev) => ({ ...prev, [plantaId]: "" }));
+  };
+
   const { data, isLoading, error } = useQuery({
     queryKey: ["reporte-turno-destinatarios"],
     queryFn: async (): Promise<PlantaDest[]> => {
