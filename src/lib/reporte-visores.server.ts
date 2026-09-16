@@ -479,13 +479,13 @@ El detalle completo por máquina, con todas las variables medidas y sus gráfica
 </p>
 </div>
 
-<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:18px auto 4px"><tr>
-<td style="border:1px solid #e2e8f0;border-radius:8px;background:#ffffff;padding:8px 16px">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:18px auto 2px"><tr>
+<td style="padding:4px 8px">
 <a href="${IRM_URL}" style="text-decoration:none;display:block">
-<img src="cid:${IRM_LOGO_CID}" alt="IRM · circular intelligence" width="96" style="display:block;border:0;outline:none;opacity:0.9">
+<img src="cid:${IRM_LOGO_CID}" alt="IRM" width="48" style="display:block;border:0;outline:none;opacity:0.9">
 </a>
 </td></tr></table>
-<p style="margin:0;text-align:center;font-size:9.5px;color:#94a3b8;letter-spacing:.3px">Plataforma desarrollada por IRM · circular intelligence</p>
+<p style="margin:0;text-align:center;font-size:4.75px;color:#94a3b8;letter-spacing:0">Consultoría en Transformación Digital e Inteligencia Artificial</p>
 </div></div>`;
 
   const texto = resumen
