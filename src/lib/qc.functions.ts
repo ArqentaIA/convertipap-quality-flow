@@ -370,7 +370,7 @@ export const listMisMuestrasRecientes = createServerFn({ method: "GET" })
       .select(
         `id, hora_muestreo, capturado_at, secuencia_captura, numero_rollo, estado, observaciones_generales, lote_logistico,
          defecto_visual_conversion, variable_tecnica_dimensional, criterio_defecto,
-         producto_id, maquina_id, capturado_por, turno,
+         producto_id, maquina_id, capturado_por, turno, sku_sap,
          jefe_maquina, operador, prensero, analista,
          estatus_liberacion, defectos,
          liberado_con_justificacion, liberacion_justificacion, liberado_por, liberado_at, variables_fuera_spec,
