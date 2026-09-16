@@ -56,6 +56,8 @@ export type CintaRow = {
   posicion: number;
   uniones: number;
   peso_cinta_kg: number;
+  sku_sap: string | null;
+  lote_logistico_pza: string | null;
   ancho_util: number;
   ancho_util_unidad: string | null;
   observaciones: string | null;

@@ -69,6 +69,7 @@ export type ResumenMaquina = {
 type RolloResumen = {
   hora: string;
   rollo: string;
+  skuSap: string;
   turno: string;
   operador: string;
   analista: string;
@@ -156,8 +157,8 @@ export async function construirReporteVisores(maquinas: readonly string[] = MAQU
     // --------------------------------------------------- Hoja por máquina
     const ws = wb.addWorksheet(fila.codigo);
     const vars = d.variables ?? [];
-    const head = ["Hora", "Rollo", "Turno", "Operador", "Analista", ...vars.map((v) => (v.unidad ? `${v.etiqueta} (${v.unidad})` : v.etiqueta)), "Estatus"];
-    ws.columns = head.map((_, idx) => ({ width: idx < 5 ? 14 : 16 }));
+    const head = ["Hora", "Rollo", "SKU SAP", "Turno", "Operador", "Analista", ...vars.map((v) => (v.unidad ? `${v.etiqueta} (${v.unidad})` : v.etiqueta)), "Estatus"];
+    ws.columns = head.map((_, idx) => ({ width: idx < 6 ? 14 : 16 }));
     headerRow(ws, head, 1);
     const muestras = [...(d.muestras ?? [])].reverse();
     const detalle: DetalleMaquina = { codigo: fila.codigo, nombre: fila.nombre, planta: fila.planta, turno: fila.turno, head, filas: [], rollosResumen: [], fuera: 0 };
@@ -180,6 +181,7 @@ export async function construirReporteVisores(maquinas: readonly string[] = MAQU
       const r2 = ws.addRow([
         fmtHora(m.capturadoAt),
         m.rollo,
+        m.skuSap ?? "—",
         m.fueraDeTurno ? `${m.turno} (FT)` : m.turno,
         m.operador || "—",
         m.analista || "—",
@@ -191,13 +193,14 @@ export async function construirReporteVisores(maquinas: readonly string[] = MAQU
       celdas.forEach((c, idx) => {
         if (c.ok) return;
         fuera++;
-        const cell = r2.getCell(6 + idx);
+        const cell = r2.getCell(7 + idx);
         cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: FUERA_FILL } };
         cell.font = { name: "Arial", size: 10, bold: true, color: { argb: FUERA_TEXT } };
       });
       detalle.filas.push([
         { v: fmtHora(m.capturadoAt), ok: true },
         { v: m.rollo ?? "—", ok: true },
+        { v: m.skuSap ?? "—", ok: true },
         { v: m.fueraDeTurno ? `${m.turno} (FT)` : (m.turno ?? "—"), ok: true },
         { v: m.operador || "—", ok: true },
         { v: m.analista || "—", ok: true },
@@ -207,6 +210,7 @@ export async function construirReporteVisores(maquinas: readonly string[] = MAQU
       detalle.rollosResumen.push({
         hora: fmtHora(m.capturadoAt),
         rollo: String(m.rollo ?? "—"),
+        skuSap: String(m.skuSap ?? "—"),
         turno: m.fueraDeTurno ? `${m.turno} (FT)` : String(m.turno ?? "—"),
         operador: m.operador || "—",
         analista: m.analista || "—",
@@ -342,12 +346,13 @@ export async function construirReporteVisores(maquinas: readonly string[] = MAQU
     .map((d) => {
       const cuerpo =
         d.rollosResumen.length === 0
-          ? `<tr><td style="${TD};text-align:center" colspan="7">Sin rollos capturados en el turno vigente</td></tr>`
+          ? `<tr><td style="${TD};text-align:center" colspan="8">Sin rollos capturados en el turno vigente</td></tr>`
           : d.rollosResumen
               .map(
                 (r) => `<tr>
 <td style="${TD};text-align:center">${esc(r.hora)}</td>
 <td style="${TD};text-align:center;font-weight:bold">${esc(r.rollo)}</td>
+<td style="${TD};text-align:center;white-space:nowrap">${esc(r.skuSap)}</td>
 <td style="${TD};text-align:center">${esc(r.turno)}</td>
 <td style="${TD}">${esc(r.operador)}</td>
 <td style="${TD}">${esc(r.analista)}</td>
@@ -357,7 +362,7 @@ export async function construirReporteVisores(maquinas: readonly string[] = MAQU
               .join("");
       return `<h3 style="${H2}">${esc(d.codigo)}${d.nombre ? ` · ${esc(d.nombre)}` : ""}${d.planta ? ` · ${esc(d.planta)}` : ""} <span style="font-size:11px;font-weight:normal;color:#5b6573">Turno ${esc(d.turno ?? "—")} · ${d.rollosResumen.length} rollos · ${d.fuera} valores fuera de rango</span></h3>
 <table style="border-collapse:collapse;width:100%">
-<thead><tr><th style="${TH}">Hora</th><th style="${TH}">Rollo</th><th style="${TH}">Turno</th><th style="${TH}">Operador</th><th style="${TH}">Analista</th><th style="${TH}">Estatus</th><th style="${TH}">Fuera de rango</th></tr></thead>
+<thead><tr><th style="${TH}">Hora</th><th style="${TH}">Rollo</th><th style="${TH}">SKU SAP</th><th style="${TH}">Turno</th><th style="${TH}">Operador</th><th style="${TH}">Analista</th><th style="${TH}">Estatus</th><th style="${TH}">Fuera de rango</th></tr></thead>
 <tbody>${cuerpo}</tbody></table>`;
     })
     .join("");

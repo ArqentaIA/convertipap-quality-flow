@@ -201,6 +201,7 @@ export function DetalleCalidadModal({
                         folioOrden: r.folioOrden,
                         producto: r.producto,
                         productoCodigo: r.productoCodigo,
+                        skuSap: r.skuSap ?? null,
                         maquina: r.maquina,
                         planta: r.planta,
                         capturadoAt: r.capturadoAt,

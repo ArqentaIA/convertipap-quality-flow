@@ -38,6 +38,7 @@ export type ConsolidadoRow = {
   turno: string; // "1" | "2" | "3"
   hora_muestreo: string; // ISO
   codigo_producto: string | null;
+  sku_sap: string | null;
   producto_id: string | null;
   numero_rollo: string;
   observaciones: string | null;
@@ -106,7 +107,7 @@ export const getConsolidado = createServerFn({ method: "GET" })
       supabase
         .from("muestras_calidad")
         .select(
-          "id, turno, hora_muestreo, numero_rollo, observaciones_generales, estado, estatus_liberacion, liberado_con_justificacion, liberacion_justificacion, defectos, defecto_visual_conversion, maquina_id, producto_id, producto:productos(codigo)",
+          "id, turno, hora_muestreo, numero_rollo, sku_sap, observaciones_generales, estado, estatus_liberacion, liberado_con_justificacion, liberacion_justificacion, defectos, defecto_visual_conversion, maquina_id, producto_id, producto:productos(codigo)",
         )
         .in("maquina_id", Array.from(maqMap.keys()))
         .gte("hora_muestreo", startIso)
@@ -184,6 +185,7 @@ export const getConsolidado = createServerFn({ method: "GET" })
         turno: String(mu.turno ?? ""),
         hora_muestreo: mu.hora_muestreo as string,
         codigo_producto: productoRel?.codigo ?? null,
+        sku_sap: ((mu as { sku_sap?: string | null }).sku_sap ?? null) || null,
         producto_id: prodId,
         numero_rollo: (mu.numero_rollo as string) ?? "",
         observaciones: (mu.observaciones_generales as string | null) ?? null,

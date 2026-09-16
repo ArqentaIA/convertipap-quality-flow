@@ -198,7 +198,7 @@ export async function exportarHistorialVisor(input: OperatorVisionExportInput): 
   // ------------------------------------------------- Historial del Turno
   const ws2 = wb.addWorksheet("Historial del Turno");
   const varCols = variablesParaMostrar;
-  const head2 = ["Hora", "Rollo", ...varCols.map((v) => (v.unidad ? `${v.etiqueta} (${v.unidad})` : v.etiqueta)), "Estado oficial", "Estado técnico"];
+  const head2 = ["Hora", "Rollo", ...varCols.map((v) => (v.unidad ? `${v.etiqueta} (${v.unidad})` : v.etiqueta)), "Estado oficial", "Estado técnico", "SKU SAP"];
   ws2.columns = head2.map((_, i) => ({ width: i < 2 ? 12 : 16 }));
   headerRow(ws2, head2, 1);
   const ordenados = [...muestras].reverse(); // más reciente primero (igual que el visor)
@@ -212,6 +212,7 @@ export async function exportarHistorialVisor(input: OperatorVisionExportInput): 
       }),
       getEstadoOficial({ estatus_liberacion: m.estatus }).estado_nombre,
       estadoTecnico(evalRollo(m)),
+      m.skuSap ?? "—",
     ]);
     row.font = { name: "Arial", size: 10 };
     row.alignment = { horizontal: "center" };

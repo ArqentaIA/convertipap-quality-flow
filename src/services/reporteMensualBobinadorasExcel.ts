@@ -42,6 +42,8 @@ export type CintaNorm = {
   estado: CintaRegistrada["estado"];
   observaciones: string | null;
   created_at: string;
+  skuSap: string | null;
+  idSap: string | null;
 };
 
 export type RolloNorm = {
@@ -106,6 +108,8 @@ export function normalizar(data: ReporteMensualCintasData): RolloNorm[] {
       estado: c.estado,
       observaciones: c.observaciones,
       created_at: c.created_at,
+      skuSap: c.sku_sap ?? null,
+      idSap: c.lote_logistico_pza ?? null,
     });
     porLote.set(c.lote_id, arr);
   }
@@ -584,7 +588,7 @@ export async function generarReporteMensualBobinadoras(
     "Peso neto rollo (kg)", "Diámetro", "Planta", "Turno", "Bobinadora", "Bobinador", "Conductor",
     "Operador", "Analista", "Supervisor", "Fabricación", "Clave producto", "Nombre producto",
     "ID cinta", "Posición", "Ancho", "Peso (kg)", "Uniones", "Estado cinta", "Motivo anulación",
-    "Registro (fecha/hora)", "Usuario registró", "Estado lote", "Finalización",
+    "SKU SAP", "ID SAP", "Registro (fecha/hora)", "Usuario registró", "Estado lote", "Finalización",
     "Peso producido rollo (kg)", "Merma por Sistema (kg)", "Merma por Sistema (%)", "Merma por Peso (kg)",
     "Diferencia merma (kg)", "Observación", "Generado", "Usuario que generó",
   ];
@@ -615,7 +619,7 @@ export async function generarReporteMensualBobinadoras(
       data.usuario,
     ];
     if (r.cintas.length === 0) {
-      filasTz.push([...base, "", "", "", "", "", "SIN CINTAS", "", "", "", ...cola]);
+      filasTz.push([...base, "", "", "", "", "", "SIN CINTAS", "", "", "", "", "", ...cola]);
       continue;
     }
     for (const c of r.cintas) {
@@ -623,6 +627,7 @@ export async function generarReporteMensualBobinadoras(
         ...base,
         c.id, c.posicion, c.ancho, Number(c.peso.toFixed(2)), c.uniones, c.estado,
         c.estado === "anulada" ? (c.observaciones ?? "") : "",
+        c.skuSap ?? "", c.idSap ?? "",
         c.created_at, "", ...cola,
       ]);
     }

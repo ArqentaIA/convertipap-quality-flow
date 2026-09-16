@@ -472,7 +472,7 @@ export const getReportes = createServerFn({ method: "POST" })
     const muestrasFull = await fetchAllPaged<any>(() => sb
       .from("muestras_calidad")
       .select(
-        `id, numero_rollo, hora_muestreo, turno, operador, jefe_maquina, prensero, analista,
+        `id, numero_rollo, sku_sap, hora_muestreo, turno, operador, jefe_maquina, prensero, analista,
          estatus_liberacion, dictamen, defectos, liberado_con_justificacion, liberacion_justificacion,
          fuera_de_turno, fuera_de_turno_motivo,
          maquina_id, planta_id, orden_id, producto_id,
@@ -563,6 +563,7 @@ export const getReportes = createServerFn({ method: "POST" })
         tipo_producto: txt(tipo?.nombre),
         tipo_codigo: txt(tipo?.codigo),
         codigo_producto: txt(producto?.codigo),
+        "SKU SAP": txt(m.sku_sap),
 
         rollo: txt(m.numero_rollo),
         operador: txt(m.operador),
@@ -664,6 +665,7 @@ export const getReportes = createServerFn({ method: "POST" })
           turno: m.turno ?? "—",
           orden: orden?.folio ?? "—",
           producto: (m as any).productos?.nombre ?? "—",
+          "SKU SAP": (m as any).sku_sap ?? "—",
           rollo: m.numero_rollo ?? "—",
           operador: m.operador ?? "—",
           analista: m.analista ?? "—",
@@ -691,6 +693,7 @@ export const getReportes = createServerFn({ method: "POST" })
           orden: orden?.folio ?? "—",
           producto: (m as any).productos?.nombre ?? "—",
           codigo_producto: (m as any).productos?.codigo ?? "—",
+          "SKU SAP": (m as any).sku_sap ?? "—",
           rollo: m.numero_rollo ?? "—",
           operador: m.operador ?? "—",
           analista: m.analista ?? "—",

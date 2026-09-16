@@ -52,6 +52,7 @@ export type ReporteMensualTrace = {
   maquina: string | null;
   turno: string;
   producto: string | null;
+  sku_sap: string | null;
   capturista: string | null;
   estado: string;
   dictamen: string | null;
@@ -126,6 +127,7 @@ export const getReporteMensual = createServerFn({ method: "POST" })
     const muestrasAll: Array<{
       id: string;
       numero_rollo: string;
+      sku_sap: string | null;
       capturado_at: string;
       maquina_id: string;
       producto_id: string | null;
@@ -148,7 +150,7 @@ export const getReporteMensual = createServerFn({ method: "POST" })
       for (let i = 0; i < 100; i++) {
         const { data: page, error } = await sb
           .from("muestras_calidad")
-          .select("id, numero_rollo, capturado_at, maquina_id, producto_id, turno, estado, dictamen, estatus_liberacion, capturado_por")
+          .select("id, numero_rollo, sku_sap, capturado_at, maquina_id, producto_id, turno, estado, dictamen, estatus_liberacion, capturado_por")
           .in("planta_id", plantaIdsScope)
           .gte("capturado_at", queryStart.toISOString())
           .lt("capturado_at", queryEnd.toISOString())
@@ -359,6 +361,7 @@ export const getReporteMensual = createServerFn({ method: "POST" })
           maquina: maqById.get(m.maquina_id)?.codigo ?? null,
           turno: m.turno,
           producto: m.producto_id ? (prodById.get(m.producto_id)?.nombre ?? null) : null,
+          sku_sap: ((m as { sku_sap?: string | null }).sku_sap ?? null) || null,
           capturista: u?.nombre ?? u?.email ?? null,
           estado: m.estado,
           dictamen: m.dictamen,

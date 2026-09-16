@@ -90,6 +90,7 @@ export async function exportReporteMensualXLSX(
       Máquina: t.maquina ?? "—",
       Turno: t.turno,
       Producto: t.producto ?? "—",
+      "SKU SAP": t.sku_sap ?? "—",
       Capturista: t.capturista ?? "—",
       Estado: t.estado,
       Dictamen: t.dictamen ?? "—",
