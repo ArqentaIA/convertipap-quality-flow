@@ -102,6 +102,7 @@ export function UltimosLotesCintas({ planta }: { planta: string | null }) {
               <tr>
                 <th className="px-3 py-2 text-left">Rollo</th>
                 <th className="px-3 py-2 text-left">Producto</th>
+                <th className="px-3 py-2 text-left">SKU SAP</th>
                 <th className="px-3 py-2 text-right">Neto (kg)</th>
                 <th className="px-3 py-2 text-right">Cintas</th>
                 <th className="px-3 py-2 text-right">Cintas (kg)</th>
@@ -118,6 +119,7 @@ export function UltimosLotesCintas({ planta }: { planta: string | null }) {
                   <td className="px-3 py-2 text-muted-foreground">
                     {l.producto_codigo ? `${l.producto_codigo} — ${l.producto_nombre ?? ""}` : "—"}
                   </td>
+                  <td className="px-3 py-2 text-xs tabular-nums text-muted-foreground">{l.sku_sap ?? "—"}</td>
                   <td className="px-3 py-2 text-right">{n(l.peso_bobina_madre_neto_kg)}</td>
                   <td className="px-3 py-2 text-right">{l.cantidad_cintas}</td>
                   <td className="px-3 py-2 text-right">{n(l.peso_total_cintas_kg)}</td>
@@ -194,6 +196,7 @@ function DetalleLoteDialog({ loteId, onClose }: { loteId: string | null; onClose
                     <th className="px-3 py-2 text-right">Peso (kg)</th>
                     <th className="px-3 py-2 text-right">Ancho útil</th>
                     <th className="px-3 py-2 text-right">Uniones</th>
+                    <th className="px-3 py-2 text-left">SKU SAP</th>
                     <th className="px-3 py-2 text-left">Estatus</th>
                     <th className="px-3 py-2 text-left">Observaciones</th>
                   </tr>
@@ -205,12 +208,13 @@ function DetalleLoteDialog({ loteId, onClose }: { loteId: string | null; onClose
                       <td className="px-3 py-2 text-right">{n(c.peso_cinta_kg)}</td>
                       <td className="px-3 py-2 text-right">{n(c.ancho_util, 3)} {c.ancho_util_unidad ?? "cm"}</td>
                       <td className="px-3 py-2 text-right">{c.uniones}</td>
+                      <td className="px-3 py-2 text-xs tabular-nums text-muted-foreground">{c.sku_sap ?? "—"}</td>
                       <td className="px-3 py-2">{c.estatus_liberacion ?? "—"}</td>
                       <td className="px-3 py-2 text-muted-foreground">{c.observaciones ?? "—"}</td>
                     </tr>
                   ))}
                   {cintas.length === 0 && (
-                    <tr><td colSpan={6} className="px-3 py-6 text-center text-muted-foreground">Sin cintas registradas.</td></tr>
+                    <tr><td colSpan={7} className="px-3 py-6 text-center text-muted-foreground">Sin cintas registradas.</td></tr>
                   )}
                 </tbody>
               </table>

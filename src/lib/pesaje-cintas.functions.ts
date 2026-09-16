@@ -866,6 +866,8 @@ export type LoteResumen = {
   bobinador_nombre: string | null;
   fecha_produccion: string | null;
   created_at: string;
+  /** SKU SAP del rollo (capturado en Calidad). Lotes sin muestra: null. */
+  sku_sap?: string | null;
 };
 
 export const listarUltimosLotesCintas = createServerFn({ method: "POST" })
@@ -906,7 +908,7 @@ export const listarUltimosLotesCintas = createServerFn({ method: "POST" })
 
     const [muestras, pesajes] = await Promise.all([
       muestraIds.length
-        ? context.supabase.from("muestras_calidad").select("id, planta_id").in("id", muestraIds)
+        ? context.supabase.from("muestras_calidad").select("id, planta_id, sku_sap").in("id", muestraIds)
         : Promise.resolve({ data: [], error: null }),
       pesajeIds.length
         ? context.supabase.from("pesajes_bobina_madre").select("id, maquina_id").in("id", pesajeIds)
@@ -914,8 +916,10 @@ export const listarUltimosLotesCintas = createServerFn({ method: "POST" })
     ]);
 
     const plantaPorMuestra = new Map<string, string>();
-    for (const m of (muestras.data ?? []) as { id: string; planta_id: string }[]) {
+    const skuPorMuestra = new Map<string, string | null>();
+    for (const m of (muestras.data ?? []) as { id: string; planta_id: string; sku_sap: string | null }[]) {
       plantaPorMuestra.set(m.id, m.planta_id);
+      skuPorMuestra.set(m.id, m.sku_sap);
     }
     const maquinaPorPesaje = new Map<string, string>();
     for (const p of (pesajes.data ?? []) as { id: string; maquina_id: string }[]) {
@@ -934,6 +938,10 @@ export const listarUltimosLotesCintas = createServerFn({ method: "POST" })
       const suf = (l.numero_rollo.split("-")[1] ?? "").replace(/^0+/, "");
       return suf ? sufijos.has(suf) : false;
     });
+
+    for (const l of visibles) {
+      l.sku_sap = l.muestra_calidad_id ? (skuPorMuestra.get(l.muestra_calidad_id) ?? null) : null;
+    }
 
     return visibles.slice(0, limite) as LoteResumen[];
   });
