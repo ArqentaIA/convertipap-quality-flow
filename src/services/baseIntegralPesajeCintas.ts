@@ -206,6 +206,8 @@ export async function generarBaseIntegralCintas(
   hoja(wb, "CINTAS", [
     { header: "No. rollo original", width: 16, key: "rollo", tipo: "texto" },
     { header: "No. derivado", width: 18, key: "derivado", tipo: "texto" },
+    { header: "SKU SAP", width: 16, key: "skuSap", tipo: "texto" },
+    { header: "ID SAP", width: 14, key: "idSap", tipo: "texto" },
     { header: "Posición", width: 9, key: "pos" },
     { header: "Turno", width: 8, key: "turno", tipo: "texto" },
     { header: "Peso real (kg)", width: 14, key: "peso", tipo: "num" },
@@ -224,6 +226,8 @@ export async function generarBaseIntegralCintas(
     return {
       rollo: l?.numero_rollo ?? "",
       derivado: l ? `${l.numero_rollo}-C${c.posicion}` : "",
+      skuSap: c.sku_sap ?? "",
+      idSap: c.lote_logistico_pza ?? "",
       pos: c.posicion,
       turno: String(snap(l?.datos_calidad_snapshot)["turno"] ?? ""),
       peso: round2(Number(c.peso_cinta_kg) || 0),
