@@ -293,6 +293,8 @@ function ConfigContent({ settings }: { settings: AppSettings }) {
 
           {isAdmin && <MonitorUrlsCard />}
 
+          {isAdmin && <DestinatariosTurnoCard />}
+
 
           <button
             onClick={handleSave}
