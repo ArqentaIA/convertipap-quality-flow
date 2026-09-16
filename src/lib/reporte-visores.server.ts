@@ -150,7 +150,7 @@ export async function construirReporteVisores(maquinas: readonly string[] = MAQU
     ws.columns = head.map((_, idx) => ({ width: idx < 5 ? 14 : 16 }));
     headerRow(ws, head, 1);
     const muestras = [...(d.muestras ?? [])].reverse();
-    const detalle: DetalleMaquina = { codigo: fila.codigo, nombre: fila.nombre, planta: fila.planta, head, filas: [], fuera: 0 };
+    const detalle: DetalleMaquina = { codigo: fila.codigo, nombre: fila.nombre, planta: fila.planta, turno: fila.turno, head, filas: [], rollosResumen: [], fuera: 0 };
     detalles.push(detalle);
     let fuera = 0;
     for (const m of muestras) {
