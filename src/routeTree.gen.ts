@@ -37,7 +37,6 @@ import { Route as CalidadCapturaFueraTurnoRouteImport } from './routes/calidad.c
 import { Route as CalidadCapturaRouteImport } from './routes/calidad.captura'
 import { Route as CalidadAjustesRouteImport } from './routes/calidad.ajustes'
 import { Route as QTipoValorRouteImport } from './routes/q.$tipo.$valor'
-import { Route as ApiPublicTmpEnvioReporteRouteImport } from './routes/api/public/tmp-envio-reporte'
 
 const VariablesCalidadRoute = VariablesCalidadRouteImport.update({
   id: '/variables-calidad',
@@ -180,12 +179,6 @@ const QTipoValorRoute = QTipoValorRouteImport.update({
   path: '/q/$tipo/$valor',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiPublicTmpEnvioReporteRoute =
-  ApiPublicTmpEnvioReporteRouteImport.update({
-    id: '/api/public/tmp-envio-reporte',
-    path: '/api/public/tmp-envio-reporte',
-    getParentRoute: () => rootRouteImport,
-  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -215,7 +208,6 @@ export interface FileRoutesByFullPath {
   '/pesaje/bobina-madre': typeof PesajeBobinaMadreRoute
   '/pesaje/cintas': typeof PesajeCintasRoute
   '/t/$folio': typeof TFolioRoute
-  '/api/public/tmp-envio-reporte': typeof ApiPublicTmpEnvioReporteRoute
   '/q/$tipo/$valor': typeof QTipoValorRoute
 }
 export interface FileRoutesByTo {
@@ -246,7 +238,6 @@ export interface FileRoutesByTo {
   '/pesaje/bobina-madre': typeof PesajeBobinaMadreRoute
   '/pesaje/cintas': typeof PesajeCintasRoute
   '/t/$folio': typeof TFolioRoute
-  '/api/public/tmp-envio-reporte': typeof ApiPublicTmpEnvioReporteRoute
   '/q/$tipo/$valor': typeof QTipoValorRoute
 }
 export interface FileRoutesById {
@@ -278,7 +269,6 @@ export interface FileRoutesById {
   '/pesaje/bobina-madre': typeof PesajeBobinaMadreRoute
   '/pesaje/cintas': typeof PesajeCintasRoute
   '/t/$folio': typeof TFolioRoute
-  '/api/public/tmp-envio-reporte': typeof ApiPublicTmpEnvioReporteRoute
   '/q/$tipo/$valor': typeof QTipoValorRoute
 }
 export interface FileRouteTypes {
@@ -311,7 +301,6 @@ export interface FileRouteTypes {
     | '/pesaje/bobina-madre'
     | '/pesaje/cintas'
     | '/t/$folio'
-    | '/api/public/tmp-envio-reporte'
     | '/q/$tipo/$valor'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -342,7 +331,6 @@ export interface FileRouteTypes {
     | '/pesaje/bobina-madre'
     | '/pesaje/cintas'
     | '/t/$folio'
-    | '/api/public/tmp-envio-reporte'
     | '/q/$tipo/$valor'
   id:
     | '__root__'
@@ -373,7 +361,6 @@ export interface FileRouteTypes {
     | '/pesaje/bobina-madre'
     | '/pesaje/cintas'
     | '/t/$folio'
-    | '/api/public/tmp-envio-reporte'
     | '/q/$tipo/$valor'
   fileRoutesById: FileRoutesById
 }
@@ -405,7 +392,6 @@ export interface RootRouteChildren {
   PesajeBobinaMadreRoute: typeof PesajeBobinaMadreRoute
   PesajeCintasRoute: typeof PesajeCintasRoute
   TFolioRoute: typeof TFolioRoute
-  ApiPublicTmpEnvioReporteRoute: typeof ApiPublicTmpEnvioReporteRoute
   QTipoValorRoute: typeof QTipoValorRoute
 }
 
@@ -607,13 +593,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof QTipoValorRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/tmp-envio-reporte': {
-      id: '/api/public/tmp-envio-reporte'
-      path: '/api/public/tmp-envio-reporte'
-      fullPath: '/api/public/tmp-envio-reporte'
-      preLoaderRoute: typeof ApiPublicTmpEnvioReporteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
   }
 }
 
@@ -645,7 +624,6 @@ const rootRouteChildren: RootRouteChildren = {
   PesajeBobinaMadreRoute: PesajeBobinaMadreRoute,
   PesajeCintasRoute: PesajeCintasRoute,
   TFolioRoute: TFolioRoute,
-  ApiPublicTmpEnvioReporteRoute: ApiPublicTmpEnvioReporteRoute,
   QTipoValorRoute: QTipoValorRoute,
 }
 export const routeTree = rootRouteImport
