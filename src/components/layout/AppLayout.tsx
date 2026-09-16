@@ -153,10 +153,16 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
   const canOrdenesProduccion =
     !esPesajeOperativo && (auth.user?.email ?? "").toLowerCase() === PERFILES_ROLES_EMAIL;
 
+  // Configuración: acceso exclusivo de adgral@convertipap.site (candado por
+  // correo, independiente del rol direccion_general).
+  const canConfiguracion =
+    !esPesajeOperativo && (auth.user?.email ?? "").toLowerCase() === PERFILES_ROLES_EMAIL;
+
   // Acceso efectivo por módulo (permiso global + excepciones por planta).
   const puedeVer = (mod: (typeof NAV)[number]["module"]) => {
     if (esPesajeOperativo) return mod === "pesaje_bobina_madre" || mod === "produccion" || mod === "dashboard";
     if (mod === "ordenes_produccion") return canOrdenesProduccion;
+    if (mod === "configuracion") return canConfiguracion;
     return mod === "variables_calidad" ? canVariablesCalidad : auth.canAccess(mod);
   };
 
