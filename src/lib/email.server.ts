@@ -12,6 +12,8 @@ export type SystemEmailAttachment = {
   /** Contenido en base64 */
   content: string;
   contentType?: string;
+  /** Identificador para imágenes en línea referenciadas como cid:... en el HTML */
+  contentId?: string;
 };
 
 export type SystemEmailInput = {
