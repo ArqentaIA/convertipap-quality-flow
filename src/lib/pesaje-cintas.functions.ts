@@ -939,6 +939,10 @@ export const listarUltimosLotesCintas = createServerFn({ method: "POST" })
       return suf ? sufijos.has(suf) : false;
     });
 
+    for (const l of visibles) {
+      l.sku_sap = l.muestra_calidad_id ? (skuPorMuestra.get(l.muestra_calidad_id) ?? null) : null;
+    }
+
     return visibles.slice(0, limite) as LoteResumen[];
   });
 
