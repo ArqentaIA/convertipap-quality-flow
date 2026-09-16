@@ -196,6 +196,7 @@ function DetalleLoteDialog({ loteId, onClose }: { loteId: string | null; onClose
                     <th className="px-3 py-2 text-right">Peso (kg)</th>
                     <th className="px-3 py-2 text-right">Ancho útil</th>
                     <th className="px-3 py-2 text-right">Uniones</th>
+                    <th className="px-3 py-2 text-left">SKU SAP</th>
                     <th className="px-3 py-2 text-left">Estatus</th>
                     <th className="px-3 py-2 text-left">Observaciones</th>
                   </tr>
@@ -207,6 +208,7 @@ function DetalleLoteDialog({ loteId, onClose }: { loteId: string | null; onClose
                       <td className="px-3 py-2 text-right">{n(c.peso_cinta_kg)}</td>
                       <td className="px-3 py-2 text-right">{n(c.ancho_util, 3)} {c.ancho_util_unidad ?? "cm"}</td>
                       <td className="px-3 py-2 text-right">{c.uniones}</td>
+                      <td className="px-3 py-2 text-xs tabular-nums text-muted-foreground">{c.sku_sap ?? "—"}</td>
                       <td className="px-3 py-2">{c.estatus_liberacion ?? "—"}</td>
                       <td className="px-3 py-2 text-muted-foreground">{c.observaciones ?? "—"}</td>
                     </tr>
