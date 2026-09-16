@@ -7,6 +7,11 @@ import ExcelJS from "exceljs";
 import { fetchOperatorVisionData } from "./operator-vision.server";
 import { inyectarGraficasDashboard } from "./reporte-visores-charts.server";
 import logoDataUrl from "@/assets/logo-convertipap.png?inline";
+import { construirPdfVisores } from "./reporte-visores-pdf.server";
+
+/** Logotipo embebido en el correo como imagen en línea (CID). */
+export const LOGO_CID = "logoconvertipap";
+const LOGO_BASE64 = String(logoDataUrl).split(",")[1] ?? "";
 
 /** Inserta el logotipo Convertipap en la esquina superior izquierda de la hoja. */
 function ponerLogo(wb: ExcelJS.Workbook, ws: ExcelJS.Worksheet, col: number, row: number) {
