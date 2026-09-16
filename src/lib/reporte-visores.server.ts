@@ -176,7 +176,7 @@ export async function construirReporteVisores(maquinas: readonly string[] = MAQU
   }
 
   // ------------------------------------------------- Dashboard ejecutivo
-  construirDashboard(wsd, resumen, generado);
+  construirDashboard(wb, wsd, resumen, generado);
 
 
   const bruto = (await wb.xlsx.writeBuffer()) as ArrayBuffer;
