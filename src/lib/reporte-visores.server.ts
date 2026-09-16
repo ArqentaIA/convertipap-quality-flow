@@ -313,11 +313,11 @@ export async function construirReporteVisores(maquinas: readonly string[] = MAQU
   const grafica = resumen
     .map(
       (r) => `<tr>
-<td style="padding:5px 8px;font-size:12px;font-weight:bold;color:#1e293b;width:70px">${esc(r.codigo)}</td>
-<td style="padding:5px 8px;width:42%">${barra((r.rollos / maxRollos) * 100, "#2d8a9e")}</td>
-<td style="padding:5px 6px;font-size:11px;color:#2d8a9e;width:56px">${r.rollos} rollos</td>
-<td style="padding:5px 8px;width:42%">${barra(Math.min(100, r.cumplimientoVariablesPct), "#1b7f5e")}</td>
-<td style="padding:5px 6px;font-size:11px;color:#1b7f5e;width:48px">${r.cumplimientoVariablesPct}%</td></tr>`,
+<td style="padding:5px 8px;font-size:12px;font-weight:bold;color:#1e293b;width:64px;white-space:nowrap">${esc(r.codigo)}</td>
+<td style="padding:5px 8px;width:40%">${barra((r.rollos / maxRollos) * 100, "#2d8a9e")}</td>
+<td style="padding:5px 8px;font-size:11px;color:#2d8a9e;width:70px;white-space:nowrap">${r.rollos} rollos</td>
+<td style="padding:5px 8px;width:40%">${barra(Math.min(100, r.cumplimientoVariablesPct), "#1b7f5e")}</td>
+<td style="padding:5px 8px;font-size:11px;color:#1b7f5e;width:52px;white-space:nowrap;text-align:right">${r.cumplimientoVariablesPct}%</td></tr>`,
     )
     .join("");
 
