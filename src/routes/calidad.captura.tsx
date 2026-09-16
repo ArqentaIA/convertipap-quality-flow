@@ -2761,6 +2761,7 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
                       <th className="py-2.5 px-3 text-left font-semibold">Fecha</th>
                       <th className="py-2.5 px-3 text-left font-semibold">Máquina</th>
                       <th className="py-2.5 px-3 text-left font-semibold">Producto</th>
+                      <th className="py-2.5 px-3 text-left font-semibold">SKU SAP</th>
                       <th className="py-2.5 px-3 text-right font-semibold">Rollo</th>
                       <th className="py-2.5 px-3 text-left font-semibold">Estatus</th>
                       <th className="py-2.5 px-3 text-right font-semibold">Etiqueta</th>
