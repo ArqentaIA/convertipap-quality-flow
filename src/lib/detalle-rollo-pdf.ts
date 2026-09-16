@@ -39,6 +39,7 @@ export type DetalleRolloPdfData = {
     folioOrden: string;
     producto: string;
     productoCodigo: string;
+    skuSap: string | null;
     maquina: string;
     planta: string;
     capturadoAt: string;
@@ -218,6 +219,7 @@ function buildHtml(d: DetalleRolloPdfData, logoDataUrl: string): string {
           <tr><td class="k">Máquina</td><td class="v">${esc(r.maquina)}</td><td class="k">Planta</td><td class="v">${esc(r.planta)}</td></tr>
           <tr><td class="k">Capturado</td><td class="v">${esc(fecha)}</td><td class="k">Turno</td><td class="v">${esc(r.turno)}</td></tr>
           <tr><td class="k">Operador</td><td class="v">${esc(r.operador)}</td><td class="k">Jefe de Máquina</td><td class="v">${esc(r.jefeMaquina)}</td></tr>
+          <tr><td class="k">SKU SAP</td><td class="v">${esc(r.skuSap || "—")}</td><td class="k">&nbsp;</td><td class="v">&nbsp;</td></tr>
           <tr><td class="k">Analista de Calidad</td><td class="v">${esc(r.analista)}</td><td class="k">Estatus Oficial</td><td class="v">${esc(r.estatus)}</td></tr>
         </tbody></table>
       </div>
