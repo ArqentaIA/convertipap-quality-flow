@@ -22,8 +22,8 @@ export const Route = createFileRoute("/api/public/_tmp-envio-reporte")({
         });
         return Response.json({
           ok: result.ok,
-          id: result.id ?? null,
-          error: result.error ?? null,
+          id: result.ok ? result.id : null,
+          error: result.ok ? null : result.error,
           fileName: rep.fileName,
           bytes: (rep.buffer as ArrayBuffer).byteLength,
           maquinas: rep.resumen.map((r) => r.codigo),
