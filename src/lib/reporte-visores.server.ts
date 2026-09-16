@@ -235,7 +235,7 @@ export async function construirReporteVisores(maquinas: readonly string[] = MAQU
         fmtHora(m.capturadoAt),
         m.rollo,
         m.skuSap ?? "—",
-        idSap,
+        ...(conIdSap ? [idSap] : []),
         m.fueraDeTurno ? `${m.turno} (FT)` : m.turno,
         m.operador || "—",
         m.analista || "—",
@@ -247,7 +247,7 @@ export async function construirReporteVisores(maquinas: readonly string[] = MAQU
       celdas.forEach((c, idx) => {
         if (c.ok) return;
         fuera++;
-        const cell = r2.getCell(8 + idx);
+        const cell = r2.getCell(leadingCols + 1 + idx);
         cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: FUERA_FILL } };
         cell.font = { name: "Arial", size: 10, bold: true, color: { argb: FUERA_TEXT } };
       });
@@ -255,7 +255,7 @@ export async function construirReporteVisores(maquinas: readonly string[] = MAQU
         { v: fmtHora(m.capturadoAt), ok: true },
         { v: m.rollo ?? "—", ok: true },
         { v: m.skuSap ?? "—", ok: true },
-        { v: idSap, ok: true },
+        ...(conIdSap ? [{ v: idSap, ok: true }] : []),
         { v: m.fueraDeTurno ? `${m.turno} (FT)` : (m.turno ?? "—"), ok: true },
         { v: m.operador || "—", ok: true },
         { v: m.analista || "—", ok: true },
