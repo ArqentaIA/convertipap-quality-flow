@@ -42,13 +42,24 @@ export async function construirReporteVisores(maquinas: readonly string[] = MAQU
   const generado = new Date();
   const wb = new ExcelJS.Workbook();
   wb.creator = "Convertipap";
+  wb.lastModifiedBy = "Convertipap";
+  wb.company = "Convertipap";
+  wb.title = "CONVERTIPAP · Reporte de cierre de turno";
+  wb.subject = "Cierre de turno · Visores de calidad";
+  wb.keywords = "Convertipap;cierre de turno;visores;calidad";
+  wb.category = "Reporte operativo";
   wb.created = generado;
+  wb.modified = generado;
 
   const resumen: ResumenMaquina[] = [];
   const datos = await Promise.all(maquinas.map((m) => fetchOperatorVisionData(m)));
 
+  // Dashboard ejecutivo: se crea primero para que sea la hoja de entrada.
+  const wsd = wb.addWorksheet("Dashboard Ejecutivo", { views: [{ showGridLines: false }] });
+
   // --------------------------------------------------------------- Portada
   const ws0 = wb.addWorksheet("Resumen de turno", { views: [{ showGridLines: false }] });
+
   ws0.columns = [{ width: 12 }, { width: 28 }, { width: 14 }, { width: 8 }, { width: 30 }, { width: 10 }, { width: 12 }, { width: 16 }, { width: 18 }, { width: 14 }];
   ws0.mergeCells("A1:J1");
   const t = ws0.getCell("A1");
@@ -111,6 +122,10 @@ export async function construirReporteVisores(maquinas: readonly string[] = MAQU
     ws.views = [{ state: "frozen", ySplit: 1 }];
   }
 
+  // ------------------------------------------------- Dashboard ejecutivo
+  construirDashboard(wsd, resumen, generado);
+
+
   const buffer = (await wb.xlsx.writeBuffer()) as ArrayBuffer;
   const pad = (n: number) => String(n).padStart(2, "0");
   const fileName = `Convertipap_Cierre_Turno_Visores_${generado.getFullYear()}-${pad(generado.getMonth() + 1)}-${pad(generado.getDate())}_${pad(generado.getHours())}${pad(generado.getMinutes())}.xlsx`;
@@ -148,4 +163,162 @@ export async function construirReporteVisores(maquinas: readonly string[] = MAQU
     .join("\n");
 
   return { buffer, fileName, html, texto, resumen, generado };
+}
+
+// =============================================================================
+// Dashboard Ejecutivo — replica el formato, organización y paleta del archivo
+// de referencia validado por Dirección (tarjetas KPI, lectura ejecutiva y
+// tabla base). Las barras se representan con formato condicional en celda.
+// =============================================================================
+const DASH = {
+  dark: "FF1F2F46",
+  card: "FFEAF2F8",
+  muted: "FF5B6573",
+  ok: "FF1B7F5E",
+  warn: "FFB3261E",
+  bar: "FF2D8A9E",
+};
+
+function construirDashboard(ws: ExcelJS.Worksheet, resumen: ResumenMaquina[], generado: Date) {
+  const F = "Calibri";
+  ws.columns = [
+    { width: 4 }, { width: 15 }, { width: 12 }, { width: 12 }, { width: 12 },
+    { width: 15 }, { width: 12 }, { width: 12 }, { width: 4 }, { width: 15 },
+    { width: 12 }, { width: 12 }, { width: 12 }, { width: 12 },
+  ];
+
+  // Banda superior + títulos
+  ws.mergeCells("A1:N1");
+  ws.getCell("A1").fill = { type: "pattern", pattern: "solid", fgColor: { argb: DASH.dark } };
+  ws.getRow(1).height = 21;
+  ws.mergeCells("D2:N3");
+  const tit = ws.getCell("D2");
+  tit.value = "CONVERTIPAP · DASHBOARD EJECUTIVO DE CIERRE DE TURNO";
+  tit.font = { name: F, size: 18, bold: true, color: { argb: DASH.dark } };
+  tit.alignment = { horizontal: "center", vertical: "middle" };
+  ws.mergeCells("D4:N4");
+  const sub = ws.getCell("D4");
+  sub.value = `Análisis · Volumen, liberación y cumplimiento por máquina · ${generado.toLocaleString("es-MX", { hour12: false, timeZone: "America/Mexico_City" })} (hora planta)`;
+  sub.font = { name: F, size: 10, color: { argb: DASH.muted } };
+  sub.alignment = { horizontal: "center", vertical: "middle" };
+  [2, 3, 4].forEach((r) => (ws.getRow(r).height = 19.2));
+
+  const totalRollos = resumen.reduce((a, r) => a + r.rollos, 0);
+  const totalLib = resumen.reduce((a, r) => a + r.liberados, 0);
+  const liberacion = totalRollos > 0 ? totalLib / totalRollos : 0;
+  const promVars = resumen.length > 0 ? resumen.reduce((a, r) => a + r.cumplimientoVariablesPct, 0) / resumen.length / 100 : 0;
+
+  // Tarjetas KPI
+  const cards: Array<[string, string, string, number | string, string]> = [
+    ["B6:D7", "B8:D8", "ROLLOS CAPTURADOS", totalRollos, "0"],
+    ["F6:H7", "F8:H8", "ROLLOS LIBERADOS", totalLib, "0"],
+    ["J6:L7", "J8:L8", "LIBERACIÓN", liberacion, "0.0%"],
+    ["M6:N7", "M8:N8", "PROM. VARIABLES", promVars, "0.0%"],
+  ];
+  for (const [rgVal, rgLbl, label, valor, fmt] of cards) {
+    ws.mergeCells(rgVal);
+    const cv = ws.getCell(rgVal.split(":")[0]!);
+    cv.value = valor;
+    cv.numFmt = fmt;
+    cv.font = { name: F, size: 17, bold: true, color: { argb: DASH.dark } };
+    cv.fill = { type: "pattern", pattern: "solid", fgColor: { argb: DASH.card } };
+    cv.alignment = { horizontal: "center", vertical: "middle" };
+    ws.mergeCells(rgLbl);
+    const cl = ws.getCell(rgLbl.split(":")[0]!);
+    cl.value = label;
+    cl.font = { name: F, size: 9, bold: true, color: { argb: DASH.muted } };
+    cl.fill = { type: "pattern", pattern: "solid", fgColor: { argb: DASH.card } };
+    cl.alignment = { horizontal: "center", vertical: "middle" };
+  }
+  [6, 7, 8, 9].forEach((r) => (ws.getRow(r).height = 21.6));
+
+  // Mejor desempeño / atención prioritaria
+  const orden = [...resumen].sort((a, b) => b.cumplimientoVariablesPct - a.cumplimientoVariablesPct);
+  const mejor = orden[0];
+  const peor = orden[orden.length - 1];
+  ws.mergeCells("B9:G9");
+  const cb = ws.getCell("B9");
+  cb.value = mejor ? `MEJOR DESEMPEÑO · ${mejor.codigo} · ${mejor.cumplimientoVariablesPct}%` : "MEJOR DESEMPEÑO · —";
+  cb.font = { name: F, size: 10, bold: true, color: { argb: DASH.ok } };
+  cb.alignment = { horizontal: "center", vertical: "middle" };
+  ws.mergeCells("H9:N9");
+  const cp = ws.getCell("H9");
+  cp.value = peor ? `ATENCIÓN PRIORITARIA · ${peor.codigo} · ${peor.cumplimientoVariablesPct}%` : "ATENCIÓN PRIORITARIA · —";
+  cp.font = { name: F, size: 10, bold: true, color: { argb: DASH.warn } };
+  cp.alignment = { horizontal: "center", vertical: "middle" };
+
+  // Sección gráfica (barras en celda)
+  ws.mergeCells("B11:N11");
+  const sec = ws.getCell("B11");
+  sec.value = "VOLUMEN VS CUMPLIMIENTO · LECTURA EJECUTIVA";
+  sec.font = { name: F, size: 11, bold: true, color: { argb: "FFFFFFFF" } };
+  sec.fill = { type: "pattern", pattern: "solid", fgColor: { argb: DASH.dark } };
+  sec.alignment = { horizontal: "center", vertical: "middle" };
+  ws.getRow(11).height = 19.2;
+
+  ws.getCell("B13").value = "Volumen capturado por máquina";
+  ws.getCell("J13").value = "Cumplimiento de variables por máquina";
+  for (const c of ["B13", "J13"]) {
+    ws.getCell(c).font = { name: F, size: 10, bold: true, color: { argb: DASH.dark } };
+  }
+
+  resumen.forEach((r, i) => {
+    const row = 14 + i;
+    ws.getCell(`B${row}`).value = r.codigo;
+    ws.getCell(`C${row}`).value = r.rollos;
+    ws.getCell(`J${row}`).value = r.codigo;
+    ws.getCell(`K${row}`).value = r.cumplimientoVariablesPct / 100;
+    ws.getCell(`K${row}`).numFmt = "0.0%";
+    for (const c of [`B${row}`, `C${row}`, `J${row}`, `K${row}`]) {
+      ws.getCell(c).font = { name: F, size: 10 };
+      ws.getCell(c).alignment = { horizontal: "center" };
+    }
+  });
+  const ultima = 13 + Math.max(resumen.length, 1);
+  ws.addConditionalFormatting({
+    ref: `C14:G${ultima}`,
+    rules: [{ type: "dataBar", priority: 1, minLength: 0, maxLength: 100, gradient: false, cfvo: [{ type: "min" }, { type: "max" }], color: { argb: DASH.bar } } as unknown as ExcelJS.DataBarRuleType],
+  });
+  ws.addConditionalFormatting({
+    ref: `K14:N${ultima}`,
+    rules: [{ type: "dataBar", priority: 2, minLength: 0, maxLength: 100, gradient: false, cfvo: [{ type: "min" }, { type: "max" }], color: { argb: DASH.ok } } as unknown as ExcelJS.DataBarRuleType],
+  });
+
+  // Lectura ejecutiva
+  ws.mergeCells("B32:N33");
+  const lec = ws.getCell("B32");
+  lec.value =
+    mejor && peor
+      ? `Lectura ejecutiva: a la izquierda se observa el volumen capturado por máquina; a la derecha, el cumplimiento de variables. ${peor.codigo} concentra la principal oportunidad de mejora (${peor.cumplimientoVariablesPct}%), mientras ${mejor.codigo} lidera el desempeño (${mejor.cumplimientoVariablesPct}%).`
+      : "Lectura ejecutiva: sin datos suficientes en el turno vigente.";
+  lec.font = { name: F, size: 10, color: { argb: DASH.dark } };
+  lec.alignment = { horizontal: "left", vertical: "middle", wrapText: true };
+
+  // Tabla base
+  const heads = ["Máquina", "Rollos", "Liberados", "Liberación %", "Cumpl. oficial %", "Cumpl. variables %", "Planta"];
+  heads.forEach((h, i) => {
+    const c = ws.getCell(36, 2 + i);
+    c.value = h;
+    c.font = { name: F, size: 10, bold: true, color: { argb: "FFFFFFFF" } };
+    c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: DASH.dark } };
+    c.alignment = { horizontal: "center", vertical: "middle" };
+    c.border = { top: { style: "thin" }, left: { style: "thin" }, bottom: { style: "thin" }, right: { style: "thin" } };
+  });
+  resumen.forEach((r, i) => {
+    const row = 37 + i;
+    const vals: Array<string | number> = [
+      r.codigo, r.rollos, r.liberados,
+      r.rollos > 0 ? r.liberados / r.rollos : 0,
+      r.cumplimientoPct / 100,
+      r.cumplimientoVariablesPct / 100,
+      r.planta,
+    ];
+    vals.forEach((v, j) => {
+      const c = ws.getCell(row, 2 + j);
+      c.value = v;
+      c.font = { name: F, size: 11 };
+      c.alignment = { horizontal: "center" };
+      if (j >= 3 && j <= 5) c.numFmt = "0.0%";
+    });
+  });
 }
