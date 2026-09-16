@@ -76,6 +76,7 @@ export async function sendSystemEmail(input: SystemEmailInput): Promise<SystemEm
       filename: a.filename,
       content: a.content,
       ...(a.contentType ? { content_type: a.contentType } : {}),
+      ...(a.contentId ? { content_id: a.contentId } : {}),
     }));
   }
 
