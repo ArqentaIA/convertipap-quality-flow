@@ -248,6 +248,7 @@ export function normalizarLotes(data: DatosReporteCintas): LoteNorm[] {
         ancho: Number(c.ancho_util) || 0,
         uniones: Number(c.uniones) || 0,
         observaciones: c.observaciones,
+        idSap: (c.lote_logistico_pza ?? "").trim() || null,
       }));
 
     for (const c of activas) {
