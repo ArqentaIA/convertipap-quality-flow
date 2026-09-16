@@ -126,6 +126,7 @@ export const getReporteMensual = createServerFn({ method: "POST" })
     const muestrasAll: Array<{
       id: string;
       numero_rollo: string;
+      sku_sap: string | null;
       capturado_at: string;
       maquina_id: string;
       producto_id: string | null;
