@@ -4,7 +4,7 @@ import { queryOptions, useQuery, useMutation, useQueryClient } from "@tanstack/r
 import { useServerFn } from "@tanstack/react-start";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { SessionGate } from "@/components/SessionGate";
-import { Save, Eye, X, Mail, Sliders, Bell, ShieldAlert, FileCheck2, Lock, Monitor, Cloud } from "lucide-react";
+import { Save, Eye, X, Mail, Sliders, Bell, ShieldAlert, FileCheck2, Lock, Monitor, Cloud, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import logoConvertipap from "@/assets/logo-convertipap.png";
 import { toast } from "sonner";
@@ -959,6 +959,34 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 function DestinatariosTurnoCard() {
   const qc = useQueryClient();
   const [edits, setEdits] = useState<Record<string, { destinatarios?: string; activo?: boolean }>>({});
+  const [nuevos, setNuevos] = useState<Record<string, string>>({});
+
+  const agregarCorreo = (plantaId: string, correosActuales: string[]) => {
+    const raw = (nuevos[plantaId] ?? "").trim().toLowerCase();
+    if (!raw) return;
+    const nuevosCorreos = raw
+      .split(/[,;\s]+/)
+      .map((c) => c.trim())
+      .filter(Boolean);
+    const invalido = nuevosCorreos.find((c) => !EMAIL_RE.test(c));
+    if (invalido) {
+      toast.error(`Correo no válido: ${invalido}`);
+      return;
+    }
+    const combinados = [...correosActuales];
+    for (const c of nuevosCorreos) {
+      if (combinados.some((x) => x.toLowerCase() === c)) {
+        toast.info(`${c} ya está en la lista`);
+        continue;
+      }
+      combinados.push(c);
+    }
+    setEdits((prev) => ({
+      ...prev,
+      [plantaId]: { ...prev[plantaId], destinatarios: combinados.join(", ") },
+    }));
+    setNuevos((prev) => ({ ...prev, [plantaId]: "" }));
+  };
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["reporte-turno-destinatarios"],
@@ -1050,26 +1078,73 @@ function DestinatariosTurnoCard() {
                   Activo
                 </label>
               </div>
-              <textarea
-                rows={1}
-                value={destinatarios}
-                onChange={(e) =>
-                  setEdits((prev) => ({
-                    ...prev,
-                    [p.planta_id]: { ...prev[p.planta_id], destinatarios: e.target.value },
-                  }))
-                }
-                placeholder="correo1@empresa.com, correo2@empresa.com"
-                className="mt-1.5 w-full resize-none rounded-md border border-input bg-background px-3 py-1.5 text-xs text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary"
-              />
+              <div className="mt-1.5 flex flex-wrap gap-1.5">
+                {correos.length === 0 && (
+                  <span className="text-[11px] italic text-muted-foreground">Sin destinatarios</span>
+                )}
+                {correos.map((c, i) => {
+                  const malo = !EMAIL_RE.test(c);
+                  return (
+                    <span
+                      key={`${c}-${i}`}
+                      className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] ${
+                        malo
+                          ? "border-destructive/40 bg-destructive/10 text-destructive"
+                          : "border-border bg-muted/60 text-foreground"
+                      }`}
+                    >
+                      {c}
+                      <button
+                        type="button"
+                        title="Quitar"
+                        onClick={() =>
+                          setEdits((prev) => ({
+                            ...prev,
+                            [p.planta_id]: {
+                              ...prev[p.planta_id],
+                              destinatarios: correos.filter((_, idx) => idx !== i).join(", "),
+                            },
+                          }))
+                        }
+                        className="rounded-full p-0.5 hover:bg-destructive/20 hover:text-destructive"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </span>
+                  );
+                })}
+              </div>
+              <div className="mt-1.5 flex items-center gap-1.5">
+                <input
+                  type="email"
+                  value={nuevos[p.planta_id] ?? ""}
+                  onChange={(e) => setNuevos((prev) => ({ ...prev, [p.planta_id]: e.target.value }))}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      agregarCorreo(p.planta_id, correos);
+                    }
+                  }}
+                  placeholder="nuevo@empresa.com"
+                  className="h-8 flex-1 rounded-md border border-input bg-background px-3 text-xs text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                />
+                <button
+                  type="button"
+                  onClick={() => agregarCorreo(p.planta_id, correos)}
+                  className="inline-flex h-8 shrink-0 items-center gap-1 rounded-md border border-primary/40 bg-primary/10 px-2.5 text-[11px] font-semibold text-primary hover:bg-primary/20"
+                >
+                  <Plus className="h-3 w-3" /> Agregar
+                </button>
+              </div>
               <div className="mt-1.5 flex items-center justify-between gap-2">
                 <p className="text-[10px] text-muted-foreground">
-                  {correos.length} destinatario(s). Separa varios correos con coma.
+                  {correos.length} destinatario(s).
                   {invalidos.length > 0 && (
                     <span className="ml-1 font-semibold text-destructive">
                       Revisa: {invalidos.join(", ")}
                     </span>
                   )}
+                  {dirty && <span className="ml-1 font-semibold text-amber-600">Cambios sin guardar</span>}
                 </p>
                 <button
                   type="button"
@@ -1090,7 +1165,7 @@ function DestinatariosTurnoCard() {
         <ShieldAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
         <span>
           Ixtapaluca recibe el reporte de MP-01 y Tlaxcala el de MP-04, MP-05, MP-06 y MP-07. El
-          envío automático se activará en una etapa posterior.
+          envío automático está activo: 14:59, 22:59 y 06:59 (hora planta).
         </span>
       </div>
     </Card>
