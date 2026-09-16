@@ -142,7 +142,7 @@ export async function fetchOperatorVisionData(maquinaCodigo: string) {
     let muestrasQ = sb
       .from("muestras_calidad")
       .select(
-        `id, numero_rollo, capturado_at, hora_muestreo, turno, estado, fuera_de_turno,
+        `id, numero_rollo, sku_sap, capturado_at, hora_muestreo, turno, estado, fuera_de_turno,
          operador, analista, estatus_liberacion, dictamen, producto_id, orden_id, crepado_pct,
          liberado_con_justificacion, liberacion_justificacion, autorizado_por,
          velocidad_maquina, velocidad_enrollador,
@@ -164,6 +164,7 @@ export async function fetchOperatorVisionData(maquinaCodigo: string) {
     const muestras = [...(muestrasRaw ?? [])].reverse().map((m: any) => ({
       id: m.id as string,
       rollo: m.numero_rollo as string,
+      skuSap: ((m.sku_sap as string | null) ?? null) || null,
       capturadoAt: m.capturado_at as string,
       turno: m.turno as string,
       fueraDeTurno: !!m.fuera_de_turno,
