@@ -7,6 +7,7 @@ const HEADERS = [
   "TURNO",
   "FECHA",
   "CALIDAD",
+  "SKU SAP",
   "ROLLO",
   "DEFECTO",
   "ESTATUS",
@@ -29,6 +30,7 @@ function rowToArr(r: NoConformeRow): (string | number)[] {
     r.turno,
     r.fechaOperativa,
     r.calidad,
+    r.skuSap ?? "—",
     r.rollo,
     r.defecto,
     r.estatus,
@@ -98,9 +100,9 @@ export async function exportReporteNoConformeXLSX(
     const row = ws.addRow(rowToArr(r));
     row.eachCell((c, col) => {
       c.alignment = {
-        horizontal: col === 5 ? "left" : "center",
+        horizontal: col === 6 ? "left" : "center",
         vertical: "middle",
-        wrapText: col === 5,
+        wrapText: col === 6,
       };
       c.border = {
         top: { style: "hair", color: { argb: "FFE2E8F0" } },
@@ -112,12 +114,12 @@ export async function exportReporteNoConformeXLSX(
     // Colores por estatus
     const colorBg = r.estatus === "NO CONFORME" ? "FFFEE2E2" : "FFFEF9C3";
     const colorTx = r.estatus === "NO CONFORME" ? "FF991B1B" : "FF854D0E";
-    const ec = row.getCell(6);
+    const ec = row.getCell(7);
     ec.fill = { type: "pattern", pattern: "solid", fgColor: { argb: colorBg } };
     ec.font = { bold: true, color: { argb: colorTx } };
   });
 
-  const widths = [12, 12, 12, 12, 50, 16, 8, 8, 10, 8, 8, 11, 12, 10, 36];
+  const widths = [12, 12, 12, 16, 12, 50, 16, 8, 8, 10, 8, 8, 11, 12, 10, 36];
   widths.forEach((w, i) => (ws.getColumn(i + 1).width = w));
   ws.views = [{ state: "frozen", ySplit: 3 }];
 

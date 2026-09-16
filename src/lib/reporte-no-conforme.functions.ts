@@ -27,6 +27,7 @@ export type NoConformeRow = {
   turnoNum: "1" | "2" | "3";
   fechaOperativa: string; // YYYY-MM-DD
   calidad: string; // codigo producto
+  skuSap: string | null;
   rollo: string;
   defecto: string;
   estatus: "NO CONFORME" | "CONDICIONADO";
@@ -160,7 +161,7 @@ export const getReporteNoConforme = createServerFn({ method: "POST" })
     const { data: muestras, error: eM } = await sb
       .from("muestras_calidad")
       .select(
-        "id, turno, numero_rollo, capturado_at, hora_muestreo, defectos, defecto_visual_conversion, destino, estatus_liberacion, liberado_con_justificacion, producto_id, maquina_id, capturado_por, mediciones_modificadas_at, mediciones_modificadas_por",
+        "id, turno, numero_rollo, sku_sap, capturado_at, hora_muestreo, defectos, defecto_visual_conversion, destino, estatus_liberacion, liberado_con_justificacion, producto_id, maquina_id, capturado_por, mediciones_modificadas_at, mediciones_modificadas_por",
       )
       .in("planta_id", plantaIdsNC)
       .gte("capturado_at", winStart.toISOString())
@@ -275,6 +276,7 @@ export const getReporteNoConforme = createServerFn({ method: "POST" })
         turnoNum: mu.turno as "1" | "2" | "3",
         fechaOperativa: opDate,
         calidad: prodById.get(mu.producto_id as string) ?? "—",
+        skuSap: ((mu as { sku_sap?: string | null }).sku_sap ?? null) || null,
         rollo: (mu.numero_rollo as string) || "—",
         defecto: defectoTxt,
         estatus,
