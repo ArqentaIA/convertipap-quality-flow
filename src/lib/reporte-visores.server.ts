@@ -6,6 +6,23 @@
 import ExcelJS from "exceljs";
 import { fetchOperatorVisionData } from "./operator-vision.server";
 import { inyectarGraficasDashboard } from "./reporte-visores-charts.server";
+import logoDataUrl from "@/assets/logo-convertipap.png?inline";
+
+/** Inserta el logotipo Convertipap en la esquina superior izquierda de la hoja. */
+function ponerLogo(wb: ExcelJS.Workbook, ws: ExcelJS.Worksheet, col: number, row: number) {
+  try {
+    const base64 = String(logoDataUrl).split(",")[1] ?? "";
+    if (!base64) return;
+    const id = wb.addImage({ base64, extension: "png" });
+    ws.addImage(id, { tl: { col, row }, ext: { width: 168, height: 72 } });
+  } catch {
+    /* el logotipo es decorativo: si falla, el reporte se genera igual */
+  }
+}
+
+/** Amarillo claro + texto rojo para valores fuera de especificación. */
+const FUERA_FILL = "FFFFF3CD";
+const FUERA_TEXT = "FFB3261E";
 
 export const MAQUINAS_REPORTE = ["MP-01", "MP-04", "MP-05", "MP-06", "MP-07"] as const;
 
@@ -62,15 +79,20 @@ export async function construirReporteVisores(maquinas: readonly string[] = MAQU
   const ws0 = wb.addWorksheet("Resumen de turno", { views: [{ showGridLines: false }] });
 
   ws0.columns = [{ width: 12 }, { width: 28 }, { width: 14 }, { width: 8 }, { width: 30 }, { width: 10 }, { width: 12 }, { width: 16 }, { width: 18 }, { width: 14 }];
-  ws0.mergeCells("A1:J1");
-  const t = ws0.getCell("A1");
-  t.value = "CONVERTIPAP · REPORTE DE CIERRE DE TURNO · VISORES";
-  t.font = { name: "Arial", bold: true, size: 15 };
+  ponerLogo(wb, ws0, 0.1, 0.2);
+  [1, 2, 3].forEach((r) => (ws0.getRow(r).height = 20));
+  ws0.mergeCells("C1:J2");
+  const t = ws0.getCell("C1");
+  t.value = "REPORTE DE CIERRE DE TURNO · VISORES";
+  t.font = { name: "Arial", bold: true, size: 16, color: { argb: HDR_FILL } };
   t.alignment = { horizontal: "center", vertical: "middle" };
-  ws0.getRow(1).height = 26;
-  ws0.getCell("A2").value = `Generado: ${generado.toLocaleString("es-MX", { hour12: false, timeZone: "America/Mexico_City" })} (hora planta)`;
-  ws0.getCell("A2").font = { name: "Arial", size: 10, italic: true };
-  headerRow(ws0, ["Máquina", "Nombre", "Planta", "Turno", "Producto", "Rollos", "Liberados", "Cumpl. oficial %", "Cumpl. variables %", "Estado"], 4);
+  ws0.mergeCells("C3:J3");
+  const st = ws0.getCell("C3");
+  st.value = `Generado: ${generado.toLocaleString("es-MX", { hour12: false, timeZone: "America/Mexico_City" })} (hora planta)`;
+  st.font = { name: "Arial", size: 10, italic: true, color: { argb: "FF5B6573" } };
+  st.alignment = { horizontal: "center", vertical: "middle" };
+  ws0.getRow(4).height = 6;
+  headerRow(ws0, ["Máquina", "Nombre", "Planta", "Turno", "Producto", "Rollos", "Liberados", "Cumpl. oficial %", "Cumpl. variables %", "Estado"], 5);
 
   for (let i = 0; i < maquinas.length; i++) {
     const codigo = maquinas[i]!;
@@ -93,6 +115,11 @@ export async function construirReporteVisores(maquinas: readonly string[] = MAQU
       fila.rollos, fila.liberados, fila.cumplimientoPct, fila.cumplimientoVariablesPct, fila.estadoMaquina,
     ]);
     row.font = { name: "Arial", size: 10 };
+    row.height = 18;
+    row.eachCell((c, col) => {
+      c.alignment = { vertical: "middle", horizontal: col === 2 || col === 5 ? "left" : "center" };
+      c.border = { top: { style: "hair" }, left: { style: "hair" }, bottom: { style: "hair" }, right: { style: "hair" } };
+    });
 
     // --------------------------------------------------- Hoja por máquina
     const ws = wb.addWorksheet(fila.codigo);
@@ -101,30 +128,55 @@ export async function construirReporteVisores(maquinas: readonly string[] = MAQU
     ws.columns = head.map((_, idx) => ({ width: idx < 5 ? 14 : 16 }));
     headerRow(ws, head, 1);
     const muestras = [...(d.muestras ?? [])].reverse();
+    let fuera = 0;
     for (const m of muestras) {
+      const meds = m.mediciones as Array<{ clave: string; valor: number | null; min?: number | null; max?: number | null }>;
+      const celdas = vars.map((v) => {
+        const med = meds.find((x) => x.clave === v.clave);
+        const valor = med?.valor ?? null;
+        const min = med?.min ?? v.min;
+        const max = med?.max ?? v.max;
+        const ok =
+          valor === null ||
+          !Number.isFinite(valor) ||
+          ((min === null || min === undefined || !Number.isFinite(min) || valor >= min) &&
+            (max === null || max === undefined || !Number.isFinite(max) || valor <= max));
+        return { valor, ok };
+      });
       const r2 = ws.addRow([
         fmtHora(m.capturadoAt),
         m.rollo,
         m.fueraDeTurno ? `${m.turno} (FT)` : m.turno,
         m.operador || "—",
         m.analista || "—",
-        ...vars.map((v) => {
-          const med = (m.mediciones as Array<{ clave: string; valor: number | null }>).find((x) => x.clave === v.clave);
-          return med?.valor ?? "";
-        }),
+        ...celdas.map((c) => c.valor ?? ""),
         m.estatus ?? "—",
       ]);
       r2.font = { name: "Arial", size: 10 };
       r2.alignment = { horizontal: "center" };
+      celdas.forEach((c, idx) => {
+        if (c.ok) return;
+        fuera++;
+        const cell = r2.getCell(6 + idx);
+        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: FUERA_FILL } };
+        cell.font = { name: "Arial", size: 10, bold: true, color: { argb: FUERA_TEXT } };
+      });
     }
     if (muestras.length === 0) {
       ws.addRow(["Sin rollos capturados en el turno vigente"]).font = { name: "Arial", bold: true };
+    } else {
+      ws.addRow([]);
+      const leyenda = ws.addRow([
+        `Celdas resaltadas = valor fuera del rango mín/máx de especificación (${fuera} en el turno).`,
+      ]);
+      leyenda.font = { name: "Arial", size: 9, italic: true, color: { argb: FUERA_TEXT } };
+      leyenda.getCell(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: FUERA_FILL } };
     }
     ws.views = [{ state: "frozen", ySplit: 1 }];
   }
 
   // ------------------------------------------------- Dashboard ejecutivo
-  construirDashboard(wsd, resumen, generado);
+  construirDashboard(wb, wsd, resumen, generado);
 
 
   const bruto = (await wb.xlsx.writeBuffer()) as ArrayBuffer;
@@ -207,7 +259,7 @@ const DASH = {
   bar: "FF2D8A9E",
 };
 
-function construirDashboard(ws: ExcelJS.Worksheet, resumen: ResumenMaquina[], generado: Date) {
+function construirDashboard(wb: ExcelJS.Workbook, ws: ExcelJS.Worksheet, resumen: ResumenMaquina[], generado: Date) {
   const F = "Calibri";
   ws.columns = [
     { width: 4 }, { width: 15 }, { width: 12 }, { width: 12 }, { width: 12 },
@@ -215,13 +267,12 @@ function construirDashboard(ws: ExcelJS.Worksheet, resumen: ResumenMaquina[], ge
     { width: 12 }, { width: 12 }, { width: 12 }, { width: 12 },
   ];
 
-  // Banda superior + títulos
-  ws.mergeCells("A1:N1");
-  ws.getCell("A1").fill = { type: "pattern", pattern: "solid", fgColor: { argb: DASH.dark } };
-  ws.getRow(1).height = 21;
+  // Logotipo + títulos
+  ponerLogo(wb, ws, 0.6, 0.6);
+  ws.getRow(1).height = 10;
   ws.mergeCells("D2:N3");
   const tit = ws.getCell("D2");
-  tit.value = "CONVERTIPAP · DASHBOARD EJECUTIVO DE CIERRE DE TURNO";
+  tit.value = "DASHBOARD EJECUTIVO DE CIERRE DE TURNO";
   tit.font = { name: F, size: 18, bold: true, color: { argb: DASH.dark } };
   tit.alignment = { horizontal: "center", vertical: "middle" };
   ws.mergeCells("D4:N4");
