@@ -126,7 +126,34 @@ export async function construirReporteVisores(maquinas: readonly string[] = MAQU
   construirDashboard(wsd, resumen, generado);
 
 
-  const buffer = (await wb.xlsx.writeBuffer()) as ArrayBuffer;
+  const bruto = (await wb.xlsx.writeBuffer()) as ArrayBuffer;
+  const n = Math.max(resumen.length, 1);
+  const buffer = inyectarGraficasDashboard(bruto, {
+    sheetNumber: 1,
+    puntos: n,
+    series: [
+      {
+        titulo: "Volumen capturado por máquina",
+        hoja: "Dashboard Ejecutivo",
+        catRef: `$B$37:$B$${36 + n}`,
+        valRef: `$C$37:$C$${36 + n}`,
+        color: "2D8A9E",
+        numFmt: "0",
+        from: { col: 1, row: 12 },
+        to: { col: 8, row: 30 },
+      },
+      {
+        titulo: "Cumplimiento de variables por máquina",
+        hoja: "Dashboard Ejecutivo",
+        catRef: `$B$37:$B$${36 + n}`,
+        valRef: `$G$37:$G$${36 + n}`,
+        color: "1B7F5E",
+        numFmt: "0.0%",
+        from: { col: 9, row: 12 },
+        to: { col: 14, row: 30 },
+      },
+    ],
+  });
   const pad = (n: number) => String(n).padStart(2, "0");
   const fileName = `Convertipap_Cierre_Turno_Visores_${generado.getFullYear()}-${pad(generado.getMonth() + 1)}-${pad(generado.getDate())}_${pad(generado.getHours())}${pad(generado.getMinutes())}.xlsx`;
 
