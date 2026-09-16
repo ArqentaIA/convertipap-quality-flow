@@ -2807,9 +2807,12 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
                             <span className="text-xs text-muted-foreground">
                               {m.productos?.nombre ?? ""}
                             </span>
-                          </td>
-                          <td className="py-2.5 px-3 align-middle text-right tabular-nums">
-                            {m.numero_rollo ?? "—"}
+                           </td>
+                           <td className="py-2.5 px-3 align-middle font-mono text-xs tabular-nums">
+                             {m.sku_sap ?? "—"}
+                           </td>
+                           <td className="py-2.5 px-3 align-middle text-right tabular-nums">
+                             {m.numero_rollo ?? "—"}
                           </td>
                           <td className="py-2.5 px-3 align-middle">
                             {eff.key === "NO_CONFORME" ? (
