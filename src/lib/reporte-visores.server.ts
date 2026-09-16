@@ -199,10 +199,11 @@ export async function construirReporteVisores(maquinas: readonly string[] = MAQU
     // --------------------------------------------------- Hoja por máquina
     const ws = wb.addWorksheet(fila.codigo);
     const vars = d.variables ?? [];
-    const head = ["Hora", "Rollo", "SKU SAP", "Turno", "Operador", "Analista", ...vars.map((v) => (v.unidad ? `${v.etiqueta} (${v.unidad})` : v.etiqueta)), "Estatus"];
-    ws.columns = head.map((_, idx) => ({ width: idx < 6 ? 14 : 16 }));
+    const head = ["Hora", "Rollo", "SKU SAP", "ID SAP", "Turno", "Operador", "Analista", ...vars.map((v) => (v.unidad ? `${v.etiqueta} (${v.unidad})` : v.etiqueta)), "Estatus"];
+    ws.columns = head.map((_, idx) => ({ width: idx < 7 ? 14 : 16 }));
     headerRow(ws, head, 1);
     const muestras = [...(d.muestras ?? [])].reverse();
+    const idsSap = await idsSapPorRollo(muestras.map((m) => String(m.rollo ?? "")));
     const detalle: DetalleMaquina = { codigo: fila.codigo, nombre: fila.nombre, planta: fila.planta, turno: fila.turno, head, filas: [], rollosResumen: [], fuera: 0 };
     detalles.push(detalle);
     let fuera = 0;
