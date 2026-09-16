@@ -270,7 +270,7 @@ export async function construirReporteVisores(maquinas: readonly string[] = MAQU
   const fechaPlanta = `${p("year")}${p("month")}${p("day")}`;
   const horaPlanta = Number(p("hour")) % 24;
   const turnoArchivo = horaPlanta >= 7 && horaPlanta < 15 ? "T1" : horaPlanta >= 15 && horaPlanta < 23 ? "T2" : "T3";
-  const fileName = `Convertipap_CierreTurno_${fechaPlanta}_${turnoArchivo}.xlsx`;
+  const fileName = `Convertipap_CierreTurno_${fechaPlanta}_${turnoArchivo} Python 3.12.10.xlsx`;
   // Asunto dinámico: "Cierre de Turno | DD-MM-YYYY | T1"
   const subject = `Cierre de Turno | ${p("day")}-${p("month")}-${p("year")} | ${turnoArchivo}`;
 
