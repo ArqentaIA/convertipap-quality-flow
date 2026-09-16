@@ -6,6 +6,23 @@
 import ExcelJS from "exceljs";
 import { fetchOperatorVisionData } from "./operator-vision.server";
 import { inyectarGraficasDashboard } from "./reporte-visores-charts.server";
+import logoDataUrl from "@/assets/logo-convertipap.png?inline";
+
+/** Inserta el logotipo Convertipap en la esquina superior izquierda de la hoja. */
+function ponerLogo(wb: ExcelJS.Workbook, ws: ExcelJS.Worksheet, col: number, row: number) {
+  try {
+    const base64 = String(logoDataUrl).split(",")[1] ?? "";
+    if (!base64) return;
+    const id = wb.addImage({ base64, extension: "png" });
+    ws.addImage(id, { tl: { col, row }, ext: { width: 168, height: 72 } });
+  } catch {
+    /* el logotipo es decorativo: si falla, el reporte se genera igual */
+  }
+}
+
+/** Amarillo claro + texto rojo para valores fuera de especificación. */
+const FUERA_FILL = "FFFFF3CD";
+const FUERA_TEXT = "FFB3261E";
 
 export const MAQUINAS_REPORTE = ["MP-01", "MP-04", "MP-05", "MP-06", "MP-07"] as const;
 
