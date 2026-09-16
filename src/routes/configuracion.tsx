@@ -1164,8 +1164,8 @@ function DestinatariosTurnoCard() {
       <div className="mt-2 flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-1.5 text-[11px] text-amber-800">
         <ShieldAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
         <span>
-          Ixtapaluca recibe el reporte de MP-01 y Tlaxcala el de MP-04, MP-05, MP-06 y MP-07. El
-          envío automático está activo: 14:59, 22:59 y 06:59 (hora planta).
+          Todos los destinatarios activos reciben el mismo reporte consolidado con MP-01, MP-04,
+          MP-05, MP-06 y MP-07. El envío automático está activo: 14:59, 22:59 y 06:59 (hora planta).
         </span>
       </div>
     </Card>
