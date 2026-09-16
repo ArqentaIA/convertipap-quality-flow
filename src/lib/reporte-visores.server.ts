@@ -173,7 +173,17 @@ export async function construirReporteVisores(maquinas: readonly string[] = MAQU
         cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: FUERA_FILL } };
         cell.font = { name: "Arial", size: 10, bold: true, color: { argb: FUERA_TEXT } };
       });
+      detalle.filas.push([
+        { v: fmtHora(m.capturadoAt), ok: true },
+        { v: m.rollo ?? "—", ok: true },
+        { v: m.fueraDeTurno ? `${m.turno} (FT)` : (m.turno ?? "—"), ok: true },
+        { v: m.operador || "—", ok: true },
+        { v: m.analista || "—", ok: true },
+        ...celdas.map((c) => ({ v: c.valor ?? "—", ok: c.ok })),
+        { v: m.estatus ?? "—", ok: true },
+      ]);
     }
+    detalle.fuera = fuera;
     if (muestras.length === 0) {
       ws.addRow(["Sin rollos capturados en el turno vigente"]).font = { name: "Arial", bold: true };
     } else {
