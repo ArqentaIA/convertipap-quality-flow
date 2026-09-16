@@ -78,54 +78,82 @@ export function inyectarGraficasDashboard(
   const bytes = xlsx instanceof Uint8Array ? xlsx : new Uint8Array(xlsx);
   const zip = unzipSync(bytes);
   const { sheetNumber, series, puntos } = opts;
-  const drawingName = "drawing1.xml";
 
-  series.forEach((s, i) => {
-    zip[`xl/charts/chart${i + 1}.xml`] = strToU8(chartXml(s, puntos));
+  // Nombres de parte libres (no pisar charts/drawings existentes de ExcelJS).
+  const libre = (plantilla: (n: number) => string) => {
+    let n = 1;
+    while (zip[plantilla(n)]) n++;
+    return n;
+  };
+  const chartPaths = series.map((s, i) => {
+    const n = libre((k) => `xl/charts/chart${k}.xml`) + i;
+    const path = `xl/charts/chart${n}.xml`;
+    zip[path] = strToU8(chartXml(s, puntos));
+    return path;
   });
-  zip[`xl/drawings/${drawingName}`] = strToU8(drawingXml(series));
-  zip[`xl/drawings/_rels/${drawingName}.rels`] = strToU8(
-    `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${series
-      .map(
-        (_, i) =>
-          `<Relationship Id="rId${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart" Target="../charts/chart${i + 1}.xml"/>`,
-      )
-      .join("")}</Relationships>`,
-  );
 
-  // Relación hoja -> drawing
-  const relPath = `xl/worksheets/_rels/sheet${sheetNumber}.xml.rels`;
-  const existente = zip[relPath] ? strFromU8(zip[relPath]) : null;
-  const relDrawing = `<Relationship Id="rIdDrawing1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing" Target="../drawings/${drawingName}"/>`;
-  zip[relPath] = strToU8(
-    existente
-      ? existente.replace("</Relationships>", `${relDrawing}</Relationships>`)
-      : `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${relDrawing}</Relationships>`,
-  );
-
-  // <drawing/> al final de la hoja (debe ir después de los demás elementos)
   const sheetPath = `xl/worksheets/sheet${sheetNumber}.xml`;
-  const sheetXml = strFromU8(zip[sheetPath]!);
-  if (!sheetXml.includes("<drawing ")) {
-    zip[sheetPath] = strToU8(sheetXml.replace("</worksheet>", `<drawing r:id="rIdDrawing1"/></worksheet>`));
+  const relPath = `xl/worksheets/_rels/sheet${sheetNumber}.xml.rels`;
+  const sheetRels = zip[relPath] ? strFromU8(zip[relPath]) : null;
+
+  // ¿La hoja ya tiene un drawing (p. ej. el logotipo)? Si sí, se reutiliza.
+  const drawingRel = sheetRels?.match(
+    /<Relationship[^>]*Type="[^"]*\/drawing"[^>]*Target="([^"]+)"[^>]*Id="([^"]+)"|<Relationship[^>]*Id="([^"]+)"[^>]*Type="[^"]*\/drawing"[^>]*Target="([^"]+)"/,
+  );
+  const targetExistente = drawingRel ? (drawingRel[1] ?? drawingRel[4]) : null;
+  const drawingPath = targetExistente
+    ? `xl/${targetExistente.replace(/^\.\.\//, "")}`
+    : `xl/drawings/drawing${libre((k) => `xl/drawings/drawing${k}.xml`)}.xml`;
+  const drawingFile = drawingPath.split("/").pop()!;
+  const drawingRelsPath = `xl/drawings/_rels/${drawingFile}.rels`;
+
+  // Relaciones del drawing: se conservan las existentes (imágenes).
+  let drawingRels = zip[drawingRelsPath]
+    ? strFromU8(zip[drawingRelsPath])
+    : `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>`;
+  const usados = [...drawingRels.matchAll(/Id="rId(\d+)"/g)].map((m) => Number(m[1]));
+  let siguiente = (usados.length ? Math.max(...usados) : 0) + 1;
+  const relIds = chartPaths.map(() => `rId${siguiente++}`);
+  drawingRels = drawingRels.replace(
+    "</Relationships>",
+    chartPaths
+      .map((p, i) => `<Relationship Id="${relIds[i]}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart" Target="../${p.replace("xl/", "")}"/>`)
+      .join("") + "</Relationships>",
+  );
+  zip[drawingRelsPath] = strToU8(drawingRels);
+
+  // Anclajes: se agregan al drawing existente o se crea uno nuevo.
+  const anchors = anchorsXml(series, relIds, 1000);
+  const previo = zip[drawingPath] ? strFromU8(zip[drawingPath]) : null;
+  zip[drawingPath] = strToU8(
+    previo ? previo.replace("</xdr:wsDr>", `${anchors}</xdr:wsDr>`) : drawingXml(anchors),
+  );
+
+  // Relación hoja -> drawing y elemento <drawing/> (solo si no existía).
+  if (!targetExistente) {
+    const relDrawing = `<Relationship Id="rIdDrawing1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing" Target="../drawings/${drawingFile}"/>`;
+    zip[relPath] = strToU8(
+      sheetRels
+        ? sheetRels.replace("</Relationships>", `${relDrawing}</Relationships>`)
+        : `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${relDrawing}</Relationships>`,
+    );
+    const sheetXml = strFromU8(zip[sheetPath]!);
+    if (!sheetXml.includes("<drawing ")) {
+      zip[sheetPath] = strToU8(sheetXml.replace("</worksheet>", `<drawing r:id="rIdDrawing1"/></worksheet>`));
+    }
   }
 
   // Content types
   const ctPath = "[Content_Types].xml";
   let ct = strFromU8(zip[ctPath]!);
-  if (!ct.includes('Extension="xml"')) {
-    ct = ct.replace("<Types", "<Types");
-  }
   const overrides =
-    series
-      .map(
-        (_, i) =>
-          `<Override PartName="/xl/charts/chart${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.chart+xml"/>`,
-      )
+    chartPaths
+      .map((p) => `<Override PartName="/${p}" ContentType="application/vnd.openxmlformats-officedocument.drawingml.chart+xml"/>`)
       .join("") +
-    `<Override PartName="/xl/drawings/${drawingName}" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/>`;
+    (ct.includes(`PartName="/${drawingPath}"`)
+      ? ""
+      : `<Override PartName="/${drawingPath}" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/>`);
   ct = ct.replace("</Types>", `${overrides}</Types>`);
   zip[ctPath] = strToU8(ct);
 
