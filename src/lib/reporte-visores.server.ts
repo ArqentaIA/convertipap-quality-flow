@@ -81,12 +81,12 @@ export async function construirReporteVisores(maquinas: readonly string[] = MAQU
   ws0.columns = [{ width: 12 }, { width: 28 }, { width: 14 }, { width: 8 }, { width: 30 }, { width: 10 }, { width: 12 }, { width: 16 }, { width: 18 }];
   ponerLogo(wb, ws0, 0.1, 0.2);
   [1, 2, 3].forEach((r) => (ws0.getRow(r).height = 20));
-  ws0.mergeCells("C1:J2");
+  ws0.mergeCells("C1:I2");
   const t = ws0.getCell("C1");
   t.value = "REPORTE DE CIERRE DE TURNO · VISORES";
   t.font = { name: "Arial", bold: true, size: 16, color: { argb: HDR_FILL } };
   t.alignment = { horizontal: "center", vertical: "middle" };
-  ws0.mergeCells("C3:J3");
+  ws0.mergeCells("C3:I3");
   const st = ws0.getCell("C3");
   st.value = `Generado: ${generado.toLocaleString("es-MX", { hour12: false, timeZone: "America/Mexico_City" })} (hora planta)`;
   st.font = { name: "Arial", size: 10, italic: true, color: { argb: "FF5B6573" } };
