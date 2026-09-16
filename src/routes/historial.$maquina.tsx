@@ -81,7 +81,7 @@ function HistorialPage() {
   const filtered = useMemo(
     () =>
       rollos.filter((r) => {
-        const matchTexto = [r.rollo, r.folioOrden, r.producto, r.operador, r.turno]
+        const matchTexto = [r.rollo, r.folioOrden, r.producto, r.skuSap ?? "", r.operador, r.turno]
           .join(" ")
           .toLowerCase()
           .includes(q.toLowerCase());
@@ -97,7 +97,7 @@ function HistorialPage() {
   const base = useMemo(
     () =>
       rollos.filter((r) =>
-        [r.rollo, r.folioOrden, r.producto, r.operador, r.turno]
+        [r.rollo, r.folioOrden, r.producto, r.skuSap ?? "", r.operador, r.turno]
           .join(" ")
           .toLowerCase()
           .includes(q.toLowerCase()),
@@ -263,6 +263,7 @@ function HistorialPage() {
                   <th className="px-4 py-3">Fecha / Hora</th>
                   <th className="px-4 py-3">Turno</th>
                   <th className="px-4 py-3">Producto</th>
+                  <th className="px-4 py-3">SKU SAP</th>
                   <th className="px-4 py-3">Operador</th>
                   <th className="px-4 py-3 text-right">Peso (kg)</th>
                   <th className="px-4 py-3 text-right">Cumpl.</th>
@@ -273,7 +274,7 @@ function HistorialPage() {
               <tbody>
                 {filtered.length === 0 && (
                   <tr>
-                    <td colSpan={11} className="px-4 py-10 text-center text-sm text-muted-foreground">
+                    <td colSpan={12} className="px-4 py-10 text-center text-sm text-muted-foreground">
                       Sin rollos capturados para {maquina.codigo} en el turno actual ni el anterior.
                     </td>
                   </tr>
@@ -297,6 +298,7 @@ function HistorialPage() {
                       </td>
                       <td className="px-4 py-3">{r.turno}</td>
                       <td className="px-4 py-3">{r.producto}</td>
+                      <td className="px-4 py-3 text-xs tabular-nums">{r.skuSap ?? "—"}</td>
                       <td className="px-4 py-3">{r.operador}</td>
                       <td className="px-4 py-3 text-right tabular-nums">
                         {r.pesoKg == null ? "—" : r.pesoKg.toFixed(1)}
