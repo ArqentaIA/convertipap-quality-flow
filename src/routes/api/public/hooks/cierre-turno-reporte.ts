@@ -8,7 +8,13 @@ import { createFileRoute } from "@tanstack/react-router";
 
 async function ejecutar(request: Request) {
   const token = request.headers.get("x-cron-token");
-  const esperado = process.env["CRON_REPORTE_TURNO_TOKEN"];
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data: secreto } = await supabaseAdmin
+    .from("cron_secrets")
+    .select("valor")
+    .eq("nombre", "reporte_turno")
+    .maybeSingle();
+  const esperado = secreto?.valor ?? process.env["CRON_REPORTE_TURNO_TOKEN"];
   if (!esperado || !token || token !== esperado) {
     return new Response(JSON.stringify({ error: "No autorizado" }), {
       status: 401,
@@ -16,7 +22,7 @@ async function ejecutar(request: Request) {
     });
   }
 
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
   const { data: rows, error } = await supabaseAdmin
     .from("reporte_turno_destinatarios")
     .select("destinatarios, activo")
