@@ -30,7 +30,7 @@ function chartXml(s: SerieChart, puntos: number) {
 <c:plotArea><c:layout/>
 <c:barChart><c:barDir val="col"/><c:grouping val="clustered"/><c:varyColors val="0"/>
 <c:ser><c:idx val="0"/><c:order val="0"/>
-<c:tx><c:strRef><c:f>${esc(ref(s.catRef))}</c:f></c:strRef></c:tx>
+<c:tx><c:v>${esc(s.titulo)}</c:v></c:tx>
 <c:spPr><a:solidFill><a:srgbClr val="${s.color}"/></a:solidFill><a:ln><a:noFill/></a:ln></c:spPr>
 <c:dLbls><c:numFmt formatCode="${esc(s.numFmt)}" sourceLinked="0"/><c:spPr><a:noFill/><a:ln><a:noFill/></a:ln></c:spPr><c:txPr><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr sz="900"><a:solidFill><a:srgbClr val="1F2F46"/></a:solidFill></a:defRPr></a:pPr><a:endParaRPr lang="es-MX"/></a:p></c:txPr><c:showLegendKey val="0"/><c:showVal val="1"/><c:showCatName val="0"/><c:showSerName val="0"/><c:showPercent val="0"/><c:showBubbleSize val="0"/></c:dLbls>
 <c:cat><c:strRef><c:f>${esc(ref(s.catRef))}</c:f><c:strCache><c:ptCount val="${puntos}"/></c:strCache></c:strRef></c:cat>
