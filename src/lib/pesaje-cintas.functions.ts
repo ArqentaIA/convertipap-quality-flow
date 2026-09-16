@@ -866,6 +866,8 @@ export type LoteResumen = {
   bobinador_nombre: string | null;
   fecha_produccion: string | null;
   created_at: string;
+  /** SKU SAP del rollo (capturado en Calidad). Lotes sin muestra: null. */
+  sku_sap?: string | null;
 };
 
 export const listarUltimosLotesCintas = createServerFn({ method: "POST" })
