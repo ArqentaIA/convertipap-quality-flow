@@ -42,13 +42,24 @@ export async function construirReporteVisores(maquinas: readonly string[] = MAQU
   const generado = new Date();
   const wb = new ExcelJS.Workbook();
   wb.creator = "Convertipap";
+  wb.lastModifiedBy = "Convertipap";
+  wb.company = "Convertipap";
+  wb.title = "CONVERTIPAP · Reporte de cierre de turno";
+  wb.subject = "Cierre de turno · Visores de calidad";
+  wb.keywords = "Convertipap;cierre de turno;visores;calidad";
+  wb.category = "Reporte operativo";
   wb.created = generado;
+  wb.modified = generado;
 
   const resumen: ResumenMaquina[] = [];
   const datos = await Promise.all(maquinas.map((m) => fetchOperatorVisionData(m)));
 
+  // Dashboard ejecutivo: se crea primero para que sea la hoja de entrada.
+  const wsd = wb.addWorksheet("Dashboard Ejecutivo", { views: [{ showGridLines: false }] });
+
   // --------------------------------------------------------------- Portada
   const ws0 = wb.addWorksheet("Resumen de turno", { views: [{ showGridLines: false }] });
+
   ws0.columns = [{ width: 12 }, { width: 28 }, { width: 14 }, { width: 8 }, { width: 30 }, { width: 10 }, { width: 12 }, { width: 16 }, { width: 18 }, { width: 14 }];
   ws0.mergeCells("A1:J1");
   const t = ws0.getCell("A1");
