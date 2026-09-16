@@ -430,7 +430,18 @@ El detalle completo por máquina, con todas las variables medidas y sus gráfica
     .map((r) => `${r.codigo} (${r.planta}) T${r.turno ?? "—"} · ${r.rollos} rollos · ${r.liberados} liberados · ${r.cumplimientoPct}%`)
     .join("\n");
 
-  return { buffer, fileName, logoCid: LOGO_CID, logoBase64: LOGO_BASE64, html, texto, resumen, generado };
+  return {
+    buffer,
+    fileName,
+    logoCid: LOGO_CID,
+    logoBase64: LOGO_BASE64,
+    irmLogoCid: IRM_LOGO_CID,
+    irmLogoBase64: IRM_LOGO_BASE64,
+    html,
+    texto,
+    resumen,
+    generado,
+  };
 }
 
 // =============================================================================
