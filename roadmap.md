@@ -1,4 +1,4 @@
 # Roadmap
 
 ## Pendiente (NO aplicar hasta confirmar alcance)
-_(sin tareas pendientes)_
+- [ ] Reacomodar las tarjetas de Configuración sin cambiar el diseño, para aprovechar una sola pantalla.
