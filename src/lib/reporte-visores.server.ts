@@ -255,7 +255,16 @@ export async function construirReporteVisores(maquinas: readonly string[] = MAQU
     ],
   });
   const pad = (n: number) => String(n).padStart(2, "0");
-  const fileName = `Convertipap_Cierre_Turno_Visores_${generado.getFullYear()}-${pad(generado.getMonth() + 1)}-${pad(generado.getDate())}_${pad(generado.getHours())}${pad(generado.getMinutes())}.xlsx`;
+  // Hora planta (America/Mexico_City) para fecha y turno del nombre de archivo.
+  const partesPlanta = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Mexico_City", year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", hour12: false,
+  }).formatToParts(generado);
+  const p = (t: string) => partesPlanta.find((x) => x.type === t)?.value ?? "00";
+  const fechaPlanta = `${p("year")}${p("month")}${p("day")}`;
+  const horaPlanta = Number(p("hour")) % 24;
+  const turnoArchivo = horaPlanta >= 7 && horaPlanta < 15 ? "T1" : horaPlanta >= 15 && horaPlanta < 23 ? "T2" : "T3";
+  const fileName = `Convertipap_CierreTurno_${fechaPlanta}_${turnoArchivo}.xlsx`;
 
   // ------------------------------- Correo embebido: resumen ejecutivo
   // El correo NO reproduce el detalle del adjunto (variables de cada rollo):
