@@ -908,7 +908,7 @@ export const listarUltimosLotesCintas = createServerFn({ method: "POST" })
 
     const [muestras, pesajes] = await Promise.all([
       muestraIds.length
-        ? context.supabase.from("muestras_calidad").select("id, planta_id").in("id", muestraIds)
+        ? context.supabase.from("muestras_calidad").select("id, planta_id, sku_sap").in("id", muestraIds)
         : Promise.resolve({ data: [], error: null }),
       pesajeIds.length
         ? context.supabase.from("pesajes_bobina_madre").select("id, maquina_id").in("id", pesajeIds)
