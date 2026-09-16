@@ -4,7 +4,7 @@ import { queryOptions, useQuery, useMutation, useQueryClient } from "@tanstack/r
 import { useServerFn } from "@tanstack/react-start";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { SessionGate } from "@/components/SessionGate";
-import { Save, Eye, X, Mail, Sliders, Bell, ShieldAlert, FileCheck2, Lock, Monitor, Cloud } from "lucide-react";
+import { Save, Eye, X, Mail, Sliders, Bell, ShieldAlert, FileCheck2, Lock, Monitor, Cloud, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import logoConvertipap from "@/assets/logo-convertipap.png";
 import { toast } from "sonner";
@@ -959,6 +959,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 function DestinatariosTurnoCard() {
   const qc = useQueryClient();
   const [edits, setEdits] = useState<Record<string, { destinatarios?: string; activo?: boolean }>>({});
+  const [nuevos, setNuevos] = useState<Record<string, string>>({});
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["reporte-turno-destinatarios"],
