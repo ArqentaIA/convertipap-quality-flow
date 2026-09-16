@@ -214,7 +214,7 @@ function DetalleLoteDialog({ loteId, onClose }: { loteId: string | null; onClose
                     </tr>
                   ))}
                   {cintas.length === 0 && (
-                    <tr><td colSpan={6} className="px-3 py-6 text-center text-muted-foreground">Sin cintas registradas.</td></tr>
+                    <tr><td colSpan={7} className="px-3 py-6 text-center text-muted-foreground">Sin cintas registradas.</td></tr>
                   )}
                 </tbody>
               </table>
