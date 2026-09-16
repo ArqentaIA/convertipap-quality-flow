@@ -246,6 +246,7 @@ export async function construirReporteVisores(maquinas: readonly string[] = MAQU
         { v: fmtHora(m.capturadoAt), ok: true },
         { v: m.rollo ?? "—", ok: true },
         { v: m.skuSap ?? "—", ok: true },
+        { v: idSap, ok: true },
         { v: m.fueraDeTurno ? `${m.turno} (FT)` : (m.turno ?? "—"), ok: true },
         { v: m.operador || "—", ok: true },
         { v: m.analista || "—", ok: true },
