@@ -183,6 +183,7 @@ export type CintaNorm = {
   ancho: number;
   uniones: number;
   observaciones: string | null;
+  idSap: string | null;
 };
 
 export type LoteNorm = {
