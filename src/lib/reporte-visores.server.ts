@@ -5,6 +5,7 @@
 // =============================================================================
 import ExcelJS from "exceljs";
 import { fetchOperatorVisionData } from "./operator-vision.server";
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { inyectarGraficasDashboard } from "./reporte-visores-charts.server";
 import logoDataUrl from "@/assets/reporte-visores-logo.png?inline";
 import irmLogoDataUrl from "@/assets/irm-logo.png?inline";
@@ -88,6 +89,47 @@ type DetalleMaquina = {
   fuera: number;
 };
 
+/**
+ * ID SAP (lote_logistico_pza) por número de rollo. El dato vive a nivel cinta:
+ * si el rollo tiene un único ID se muestra tal cual, si tiene varios se indica
+ * "Varios (n)" para no atribuir arbitrariamente uno solo. Solo lectura.
+ */
+async function idsSapPorRollo(rollos: string[]): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
+  const lista = [...new Set(rollos.filter(Boolean))];
+  if (lista.length === 0) return out;
+  try {
+    const { data: lotes } = await supabaseAdmin
+      .from("pesajes_cintas_lotes")
+      .select("id, numero_rollo")
+      .in("numero_rollo", lista);
+    const rolloPorLote = new Map<string, string>();
+    for (const l of lotes ?? []) rolloPorLote.set(l.id as string, l.numero_rollo as string);
+    if (rolloPorLote.size === 0) return out;
+    const { data: cintas } = await supabaseAdmin
+      .from("pesajes_cintas")
+      .select("lote_id, lote_logistico_pza, anulado_at")
+      .in("lote_id", [...rolloPorLote.keys()]);
+    const acc = new Map<string, Set<string>>();
+    for (const c of cintas ?? []) {
+      if (c.anulado_at) continue;
+      const id = (c.lote_logistico_pza as string | null)?.trim();
+      if (!id) continue;
+      const rollo = rolloPorLote.get(c.lote_id as string);
+      if (!rollo) continue;
+      if (!acc.has(rollo)) acc.set(rollo, new Set());
+      acc.get(rollo)!.add(id);
+    }
+    for (const [rollo, set] of acc) {
+      const vals = [...set];
+      out.set(rollo, vals.length === 1 ? vals[0]! : `Varios (${vals.length})`);
+    }
+  } catch {
+    /* el ID SAP es informativo: si falla la consulta el reporte se genera igual */
+  }
+  return out;
+}
+
 export async function construirReporteVisores(maquinas: readonly string[] = MAQUINAS_REPORTE) {
   const generado = new Date();
   const wb = new ExcelJS.Workbook();
@@ -157,10 +199,11 @@ export async function construirReporteVisores(maquinas: readonly string[] = MAQU
     // --------------------------------------------------- Hoja por máquina
     const ws = wb.addWorksheet(fila.codigo);
     const vars = d.variables ?? [];
-    const head = ["Hora", "Rollo", "SKU SAP", "Turno", "Operador", "Analista", ...vars.map((v) => (v.unidad ? `${v.etiqueta} (${v.unidad})` : v.etiqueta)), "Estatus"];
-    ws.columns = head.map((_, idx) => ({ width: idx < 6 ? 14 : 16 }));
+    const head = ["Hora", "Rollo", "SKU SAP", "ID SAP", "Turno", "Operador", "Analista", ...vars.map((v) => (v.unidad ? `${v.etiqueta} (${v.unidad})` : v.etiqueta)), "Estatus"];
+    ws.columns = head.map((_, idx) => ({ width: idx < 7 ? 14 : 16 }));
     headerRow(ws, head, 1);
     const muestras = [...(d.muestras ?? [])].reverse();
+    const idsSap = await idsSapPorRollo(muestras.map((m) => String(m.rollo ?? "")));
     const detalle: DetalleMaquina = { codigo: fila.codigo, nombre: fila.nombre, planta: fila.planta, turno: fila.turno, head, filas: [], rollosResumen: [], fuera: 0 };
     detalles.push(detalle);
     let fuera = 0;
@@ -178,10 +221,12 @@ export async function construirReporteVisores(maquinas: readonly string[] = MAQU
             (max === null || max === undefined || !Number.isFinite(max) || valor <= max));
         return { valor, ok };
       });
+      const idSap = idsSap.get(String(m.rollo ?? "")) ?? "—";
       const r2 = ws.addRow([
         fmtHora(m.capturadoAt),
         m.rollo,
         m.skuSap ?? "—",
+        idSap,
         m.fueraDeTurno ? `${m.turno} (FT)` : m.turno,
         m.operador || "—",
         m.analista || "—",
@@ -193,7 +238,7 @@ export async function construirReporteVisores(maquinas: readonly string[] = MAQU
       celdas.forEach((c, idx) => {
         if (c.ok) return;
         fuera++;
-        const cell = r2.getCell(7 + idx);
+        const cell = r2.getCell(8 + idx);
         cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: FUERA_FILL } };
         cell.font = { name: "Arial", size: 10, bold: true, color: { argb: FUERA_TEXT } };
       });
@@ -201,6 +246,7 @@ export async function construirReporteVisores(maquinas: readonly string[] = MAQU
         { v: fmtHora(m.capturadoAt), ok: true },
         { v: m.rollo ?? "—", ok: true },
         { v: m.skuSap ?? "—", ok: true },
+        { v: idSap, ok: true },
         { v: m.fueraDeTurno ? `${m.turno} (FT)` : (m.turno ?? "—"), ok: true },
         { v: m.operador || "—", ok: true },
         { v: m.analista || "—", ok: true },
