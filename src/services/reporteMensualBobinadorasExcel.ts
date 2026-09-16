@@ -508,6 +508,7 @@ export async function generarReporteMensualBobinadoras(
         if (!c) rowVals.push(null);
         else if (c.estado === "anulada") rowVals.push("ANULADA");
         else if (c.estado === "sustituida") rowVals.push(null);
+        else if (c.idSap) rowVals.push(`${c.peso.toFixed(2)}\nID ${c.idSap}`);
         else rowVals.push(Number(c.peso.toFixed(2)));
       }
       hoja.getRow(rr).values = rowVals as never;
@@ -515,8 +516,8 @@ export async function generarReporteMensualBobinadoras(
         const cell = hoja.getRow(rr).getCell(i);
         cell.border = thin();
         cell.font = { size: 10 };
-        cell.alignment = { horizontal: i === 1 ? "left" : "center", vertical: "middle" };
-        if (i >= 2) cell.numFmt = "#,##0.00";
+        cell.alignment = { horizontal: i === 1 ? "left" : "center", vertical: "middle", wrapText: typeof cell.value === "string" };
+        if (i >= 2) cell.numFmt = typeof cell.value === "string" ? "General" : "#,##0.00";
         if (i >= 4) {
           const p = i - 3;
           const c = it.cintas.find((x) => x.posicion === p && x.estado !== "sustituida");

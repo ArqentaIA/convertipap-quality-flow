@@ -232,7 +232,9 @@ export async function generarReporteMejoradoCintas(
       cp.numFmt = "#,##0.00";
       cp.font = { bold: true };
       const ca = ws.getCell(rAncho, col);
-      ca.value = c.ancho ? `${fmtNum(c.ancho)} cm` : "—";
+      const anchoTxt = c.ancho ? `${fmtNum(c.ancho)} cm` : "—";
+      ca.value = c.idSap ? `${anchoTxt} · ID ${c.idSap}` : anchoTxt;
+      ca.alignment = { ...(ca.alignment ?? {}), horizontal: "center", vertical: "middle", wrapText: true };
       ca.font = { italic: true, size: 10, color: { argb: "FF555555" } };
     }
 
