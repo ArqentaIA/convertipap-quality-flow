@@ -271,6 +271,8 @@ export async function construirReporteVisores(maquinas: readonly string[] = MAQU
   const horaPlanta = Number(p("hour")) % 24;
   const turnoArchivo = horaPlanta >= 7 && horaPlanta < 15 ? "T1" : horaPlanta >= 15 && horaPlanta < 23 ? "T2" : "T3";
   const fileName = `Convertipap_CierreTurno_${fechaPlanta}_${turnoArchivo}.xlsx`;
+  // Asunto dinámico: "Cierre de Turno | DD-MM-YYYY | T1"
+  const subject = `Cierre de Turno | ${p("day")}-${p("month")}-${p("year")} | ${turnoArchivo}`;
 
   // ------------------------------- Correo embebido: resumen ejecutivo
   // El correo NO reproduce el detalle del adjunto (variables de cada rollo):
@@ -433,6 +435,8 @@ El detalle completo por máquina, con todas las variables medidas y sus gráfica
   return {
     buffer,
     fileName,
+    subject,
+    turno: turnoArchivo,
     logoCid: LOGO_CID,
     logoBase64: LOGO_BASE64,
     irmLogoCid: IRM_LOGO_CID,

@@ -609,6 +609,24 @@ export type Database = {
         }
         Relationships: []
       }
+      cron_secrets: {
+        Row: {
+          nombre: string
+          updated_at: string
+          valor: string
+        }
+        Insert: {
+          nombre: string
+          updated_at?: string
+          valor: string
+        }
+        Update: {
+          nombre?: string
+          updated_at?: string
+          valor?: string
+        }
+        Relationships: []
+      }
       enlaces_pesaje_publico: {
         Row: {
           activo: boolean
