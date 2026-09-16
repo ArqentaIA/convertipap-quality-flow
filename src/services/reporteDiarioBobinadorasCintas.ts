@@ -124,7 +124,9 @@ function pintarHoja(
     }
     for (const c of l.activas) {
       const cell = ws.getCell(r, COL_POS_INI + c.posicion - 1);
-      cell.value = `${fmtNum(c.ancho)} cm\n${fmtNum(c.peso)} kg`;
+      cell.value = c.idSap
+        ? `${fmtNum(c.ancho)} cm\n${fmtNum(c.peso)} kg\nID ${c.idSap}`
+        : `${fmtNum(c.ancho)} cm\n${fmtNum(c.peso)} kg`;
       cell.alignment = { ...(cell.alignment ?? {}), wrapText: true, horizontal: "center", vertical: "middle" };
     }
   });
