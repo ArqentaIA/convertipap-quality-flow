@@ -194,6 +194,15 @@ export async function construirReporteVisores(maquinas: readonly string[] = MAQU
         ...celdas.map((c) => ({ v: c.valor ?? "—", ok: c.ok })),
         { v: m.estatus ?? "—", ok: true },
       ]);
+      detalle.rollosResumen.push({
+        hora: fmtHora(m.capturadoAt),
+        rollo: String(m.rollo ?? "—"),
+        turno: m.fueraDeTurno ? `${m.turno} (FT)` : String(m.turno ?? "—"),
+        operador: m.operador || "—",
+        analista: m.analista || "—",
+        estatus: m.estatus ?? "—",
+        fuera: celdas.filter((c) => !c.ok).length,
+      });
     }
     detalle.fuera = fuera;
     if (muestras.length === 0) {
