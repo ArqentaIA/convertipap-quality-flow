@@ -37,6 +37,7 @@ const COLS: ColDef[] = [
   { key: "turno", header: "TURNO", width: 14 },
   { key: "fecha", header: "FECHA", width: 12 },
   { key: "codigo", header: "CÓDIGO", width: 10 },
+  { key: "skuSap", header: "SKU SAP", width: 16 },
   { key: "rollo", header: "N.° ROLLO", width: 12 },
   { key: "observaciones", header: "OBSERVACIONES", width: 36 },
   { key: "estatus", header: "ESTATUS", width: 12 },
@@ -50,6 +51,7 @@ const COLS: ColDef[] = [
 ];
 
 const TOTAL_COLS = COLS.length;
+const IDX_OBS = COLS.findIndex((c) => c.key === "observaciones");
 
 function fmtFecha(iso: string): string {
   // Convertir a TZ México (UTC-6)
@@ -250,13 +252,14 @@ export async function exportConsolidadoXLSX(payload: ConsolidadoPayload): Promis
         TURNO_LABEL[row.turno] ?? row.turno,
         fmtFecha(row.hora_muestreo),
         row.codigo_producto ?? "",
+        row.sku_sap ?? "—",
         row.numero_rollo,
         obsParts.join(" | "),
         statusLabel(row),
         fmtHora(row.hora_muestreo),
       ];
-      // Variables numéricas (col 8 en adelante)
-      for (let i = 7; i < COLS.length; i++) {
+      // Variables numéricas (primera columna con variable en adelante)
+      for (let i = values.length; i < COLS.length; i++) {
         const def = COLS[i];
         if (!def.variable) { values.push(null); continue; }
         const v = row.mediciones[def.variable];
@@ -273,9 +276,9 @@ export async function exportConsolidadoXLSX(payload: ConsolidadoPayload): Promis
         cell.value = val;
         cell.border = styleBorder();
         cell.alignment = {
-          horizontal: i === 4 ? "left" : "center",
+          horizontal: i === IDX_OBS ? "left" : "center",
           vertical: "middle",
-          wrapText: i === 4,
+          wrapText: i === IDX_OBS,
         };
         cell.font = { name: "Calibri", size: 10 };
         const def = COLS[i];

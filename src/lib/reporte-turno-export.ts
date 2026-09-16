@@ -171,7 +171,7 @@ export async function exportReporteTurnoXLSX(
   const tablaRows = data.rows.length === 0
     ? [{
         "N° Captura": "—", "Fecha y hora": "—", "N° Rollo": "—", Máquina: "—",
-        Producto: "—", "Peso (kg)": "—", "Estado / Dictamen": "—", Capturista: "—",
+        Producto: "—", "SKU SAP": "—", "Peso (kg)": "—", "Estado / Dictamen": "—", Capturista: "—",
       }]
     : data.rows.map((row) => ({
         "N° Captura": row.secuencia_captura ?? "—",
@@ -179,6 +179,7 @@ export async function exportReporteTurnoXLSX(
         "N° Rollo": row.numero_rollo ?? "—",
         Máquina: row.maquina ?? "—",
         Producto: row.producto ?? "—",
+        "SKU SAP": row.sku_sap ?? "—",
         "Peso (kg)": row.peso_kg ?? "—",
         "Estado / Dictamen": estatusLabel(row),
         Capturista: row.analista ?? "—",
@@ -210,7 +211,7 @@ export async function exportReporteTurnoXLSX(
   const trazaRows = data.rows.length === 0
     ? [{
         "ID interno": "—", "N° Captura": "—", "Fecha y hora": "—",
-        "N° Rollo": "—", Máquina: "—", Turno: "—", Producto: "—",
+        "N° Rollo": "—", Máquina: "—", Turno: "—", Producto: "—", "SKU SAP": "—",
         Capturista: "—", "Estado/Dictamen": "—",
       }]
     : data.rows.map((row) => ({
@@ -221,6 +222,7 @@ export async function exportReporteTurnoXLSX(
         Máquina: row.maquina ?? "—",
         Turno: TURNO_LABEL[row.turno] ?? row.turno,
         Producto: row.producto ?? "—",
+        "SKU SAP": row.sku_sap ?? "—",
         Capturista: row.analista ?? "—",
         "Estado/Dictamen": estatusLabel(row),
       }));

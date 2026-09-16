@@ -26,6 +26,7 @@ export type UltimoRollo = {
   maquina: string | null;
   turno: string;
   producto: string | null;
+  sku_sap: string | null;
   peso_kg: number | null;
   estado: string;
   dictamen: string | null;
@@ -114,6 +115,7 @@ export type TablaRow = {
   maquina: string | null;
   turno: string;
   producto: string | null;
+  sku_sap: string | null;
   peso_kg: number | null;
   blancura_r457: number | null;
   blancura_a: number | null;
@@ -234,7 +236,7 @@ export const getProduccionCentro = createServerFn({ method: "POST" })
       sb
         .from("muestras_calidad")
         .select(
-          "id, secuencia_captura, numero_rollo, capturado_at, hora_muestreo, maquina_id, producto_id, turno, estado, dictamen, estatus_liberacion, liberado_con_justificacion, liberacion_justificacion, autorizado_por, analista, defectos",
+          "id, secuencia_captura, numero_rollo, sku_sap, capturado_at, hora_muestreo, maquina_id, producto_id, turno, estado, dictamen, estatus_liberacion, liberado_con_justificacion, liberacion_justificacion, autorizado_por, analista, defectos",
         )
         .in("planta_id", plantaIds)
         .gte("capturado_at", start.toISOString())
@@ -317,7 +319,7 @@ export const getProduccionCentro = createServerFn({ method: "POST" })
     const { data: ultimasGlobal } = await sb
       .from("muestras_calidad")
       .select(
-        "id, secuencia_captura, numero_rollo, capturado_at, maquina_id, producto_id, turno, estado, dictamen, estatus_liberacion, liberado_con_justificacion, liberacion_justificacion, autorizado_por, analista, defectos",
+        "id, secuencia_captura, numero_rollo, sku_sap, capturado_at, maquina_id, producto_id, turno, estado, dictamen, estatus_liberacion, liberado_con_justificacion, liberacion_justificacion, autorizado_por, analista, defectos",
       )
       .in("planta_id", plantaIds)
       .order("capturado_at", { ascending: false })
@@ -353,6 +355,7 @@ export const getProduccionCentro = createServerFn({ method: "POST" })
         maquina: maquinaById.get(last.maquina_id)?.codigo ?? null,
         turno: last.turno,
         producto: productoById.get(last.producto_id)?.nombre ?? null,
+        sku_sap: ((last as { sku_sap?: string | null }).sku_sap ?? null) || null,
         peso_kg: pesoLast,
         estado: last.estado,
         dictamen: last.dictamen,
@@ -616,6 +619,7 @@ export const getProduccionCentro = createServerFn({ method: "POST" })
         maquina: maquinaById.get(m.maquina_id)?.codigo ?? null,
         turno: m.turno,
         producto: productoById.get(m.producto_id)?.nombre ?? null,
+        sku_sap: ((m as { sku_sap?: string | null }).sku_sap ?? null) || null,
         peso_kg: pesoPorMuestra.get(m.id) ?? null,
         blancura_r457: blancuraR457PorMuestra.get(m.id) ?? null,
         blancura_a: blancuraAPorMuestra.get(m.id) ?? null,
