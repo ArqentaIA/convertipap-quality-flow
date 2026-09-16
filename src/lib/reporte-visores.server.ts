@@ -79,15 +79,20 @@ export async function construirReporteVisores(maquinas: readonly string[] = MAQU
   const ws0 = wb.addWorksheet("Resumen de turno", { views: [{ showGridLines: false }] });
 
   ws0.columns = [{ width: 12 }, { width: 28 }, { width: 14 }, { width: 8 }, { width: 30 }, { width: 10 }, { width: 12 }, { width: 16 }, { width: 18 }, { width: 14 }];
-  ws0.mergeCells("A1:J1");
-  const t = ws0.getCell("A1");
-  t.value = "CONVERTIPAP · REPORTE DE CIERRE DE TURNO · VISORES";
-  t.font = { name: "Arial", bold: true, size: 15 };
+  ponerLogo(wb, ws0, 0.1, 0.2);
+  [1, 2, 3].forEach((r) => (ws0.getRow(r).height = 20));
+  ws0.mergeCells("C1:J2");
+  const t = ws0.getCell("C1");
+  t.value = "REPORTE DE CIERRE DE TURNO · VISORES";
+  t.font = { name: "Arial", bold: true, size: 16, color: { argb: HDR_FILL } };
   t.alignment = { horizontal: "center", vertical: "middle" };
-  ws0.getRow(1).height = 26;
-  ws0.getCell("A2").value = `Generado: ${generado.toLocaleString("es-MX", { hour12: false, timeZone: "America/Mexico_City" })} (hora planta)`;
-  ws0.getCell("A2").font = { name: "Arial", size: 10, italic: true };
-  headerRow(ws0, ["Máquina", "Nombre", "Planta", "Turno", "Producto", "Rollos", "Liberados", "Cumpl. oficial %", "Cumpl. variables %", "Estado"], 4);
+  ws0.mergeCells("C3:J3");
+  const st = ws0.getCell("C3");
+  st.value = `Generado: ${generado.toLocaleString("es-MX", { hour12: false, timeZone: "America/Mexico_City" })} (hora planta)`;
+  st.font = { name: "Arial", size: 10, italic: true, color: { argb: "FF5B6573" } };
+  st.alignment = { horizontal: "center", vertical: "middle" };
+  ws0.getRow(4).height = 6;
+  headerRow(ws0, ["Máquina", "Nombre", "Planta", "Turno", "Producto", "Rollos", "Liberados", "Cumpl. oficial %", "Cumpl. variables %", "Estado"], 5);
 
   for (let i = 0; i < maquinas.length; i++) {
     const codigo = maquinas[i]!;
