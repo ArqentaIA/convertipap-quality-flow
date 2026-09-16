@@ -259,7 +259,7 @@ const DASH = {
   bar: "FF2D8A9E",
 };
 
-function construirDashboard(ws: ExcelJS.Worksheet, resumen: ResumenMaquina[], generado: Date) {
+function construirDashboard(wb: ExcelJS.Workbook, ws: ExcelJS.Worksheet, resumen: ResumenMaquina[], generado: Date) {
   const F = "Calibri";
   ws.columns = [
     { width: 4 }, { width: 15 }, { width: 12 }, { width: 12 }, { width: 12 },
