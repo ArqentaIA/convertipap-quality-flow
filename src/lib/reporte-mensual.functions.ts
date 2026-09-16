@@ -52,6 +52,7 @@ export type ReporteMensualTrace = {
   maquina: string | null;
   turno: string;
   producto: string | null;
+  sku_sap: string | null;
   capturista: string | null;
   estado: string;
   dictamen: string | null;
