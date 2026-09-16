@@ -89,6 +89,47 @@ type DetalleMaquina = {
   fuera: number;
 };
 
+/**
+ * ID SAP (lote_logistico_pza) por número de rollo. El dato vive a nivel cinta:
+ * si el rollo tiene un único ID se muestra tal cual, si tiene varios se indica
+ * "Varios (n)" para no atribuir arbitrariamente uno solo. Solo lectura.
+ */
+async function idsSapPorRollo(rollos: string[]): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
+  const lista = [...new Set(rollos.filter(Boolean))];
+  if (lista.length === 0) return out;
+  try {
+    const { data: lotes } = await supabaseAdmin
+      .from("pesajes_cintas_lotes")
+      .select("id, numero_rollo")
+      .in("numero_rollo", lista);
+    const rolloPorLote = new Map<string, string>();
+    for (const l of lotes ?? []) rolloPorLote.set(l.id as string, l.numero_rollo as string);
+    if (rolloPorLote.size === 0) return out;
+    const { data: cintas } = await supabaseAdmin
+      .from("pesajes_cintas")
+      .select("lote_id, lote_logistico_pza, anulado_at")
+      .in("lote_id", [...rolloPorLote.keys()]);
+    const acc = new Map<string, Set<string>>();
+    for (const c of cintas ?? []) {
+      if (c.anulado_at) continue;
+      const id = (c.lote_logistico_pza as string | null)?.trim();
+      if (!id) continue;
+      const rollo = rolloPorLote.get(c.lote_id as string);
+      if (!rollo) continue;
+      if (!acc.has(rollo)) acc.set(rollo, new Set());
+      acc.get(rollo)!.add(id);
+    }
+    for (const [rollo, set] of acc) {
+      const vals = [...set];
+      out.set(rollo, vals.length === 1 ? vals[0]! : `Varios (${vals.length})`);
+    }
+  } catch {
+    /* el ID SAP es informativo: si falla la consulta el reporte se genera igual */
+  }
+  return out;
+}
+
 export async function construirReporteVisores(maquinas: readonly string[] = MAQUINAS_REPORTE) {
   const generado = new Date();
   const wb = new ExcelJS.Workbook();
