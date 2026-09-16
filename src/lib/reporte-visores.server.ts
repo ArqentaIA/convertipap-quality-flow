@@ -70,6 +70,7 @@ export async function construirReporteVisores(maquinas: readonly string[] = MAQU
   wb.modified = generado;
 
   const resumen: ResumenMaquina[] = [];
+  const detalles: DetalleMaquina[] = [];
   const datos = await Promise.all(maquinas.map((m) => fetchOperatorVisionData(m)));
 
   // Dashboard ejecutivo: se crea primero para que sea la hoja de entrada.
