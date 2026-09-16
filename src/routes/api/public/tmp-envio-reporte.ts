@@ -13,7 +13,8 @@ export const Route = createFileRoute("/api/public/tmp-envio-reporte")({
         }
         try {
           const rep = await construirReporteVisores();
-          let id: string | undefined;
+          const base64 = Buffer.from(rep.buffer as ArrayBuffer).toString("base64");
+          let id: string | null = null;
           let error: string | undefined;
           if (request.headers.get("x-dump") !== "1") {
             const res = await sendSystemEmail({
@@ -21,19 +22,19 @@ export const Route = createFileRoute("/api/public/tmp-envio-reporte")({
               subject: "PRUEBA MANUAL DE REPORTE DE VISORES — DASHBOARD Y GRÁFICAS",
               html: rep.html,
               text: rep.texto,
-              attachments: [{ filename: rep.fileName, content: rep.buffer.toString("base64") }],
+              attachments: [{ filename: rep.fileName, content: base64 }],
             });
-            id = res.id;
-            error = res.error;
+            if (res.ok) id = res.id;
+            else error = res.error;
           }
           return Response.json({
             ok: !error,
             id,
             error,
             fileName: rep.fileName,
-            bytes: rep.buffer.length,
+            bytes: (rep.buffer as ArrayBuffer).byteLength,
             maquinas: MAQUINAS_REPORTE,
-            xlsxBase64: request.headers.get("x-dump") === "1" ? rep.buffer.toString("base64") : undefined,
+            xlsxBase64: request.headers.get("x-dump") === "1" ? base64 : undefined,
           });
         } catch (e) {
           return Response.json({ ok: false, error: e instanceof Error ? e.message : String(e) }, { status: 500 });
