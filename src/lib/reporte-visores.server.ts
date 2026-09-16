@@ -5,6 +5,7 @@
 // =============================================================================
 import ExcelJS from "exceljs";
 import { fetchOperatorVisionData } from "./operator-vision.server";
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { inyectarGraficasDashboard } from "./reporte-visores-charts.server";
 import logoDataUrl from "@/assets/reporte-visores-logo.png?inline";
 import irmLogoDataUrl from "@/assets/irm-logo.png?inline";
