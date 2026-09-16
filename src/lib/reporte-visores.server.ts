@@ -138,6 +138,8 @@ export async function construirReporteVisores(maquinas: readonly string[] = MAQU
     ws.columns = head.map((_, idx) => ({ width: idx < 5 ? 14 : 16 }));
     headerRow(ws, head, 1);
     const muestras = [...(d.muestras ?? [])].reverse();
+    const detalle: DetalleMaquina = { codigo: fila.codigo, nombre: fila.nombre, planta: fila.planta, head, filas: [], fuera: 0 };
+    detalles.push(detalle);
     let fuera = 0;
     for (const m of muestras) {
       const meds = m.mediciones as Array<{ clave: string; valor: number | null; min?: number | null; max?: number | null }>;
