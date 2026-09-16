@@ -916,8 +916,10 @@ export const listarUltimosLotesCintas = createServerFn({ method: "POST" })
     ]);
 
     const plantaPorMuestra = new Map<string, string>();
-    for (const m of (muestras.data ?? []) as { id: string; planta_id: string }[]) {
+    const skuPorMuestra = new Map<string, string | null>();
+    for (const m of (muestras.data ?? []) as { id: string; planta_id: string; sku_sap: string | null }[]) {
       plantaPorMuestra.set(m.id, m.planta_id);
+      skuPorMuestra.set(m.id, m.sku_sap);
     }
     const maquinaPorPesaje = new Map<string, string>();
     for (const p of (pesajes.data ?? []) as { id: string; maquina_id: string }[]) {
