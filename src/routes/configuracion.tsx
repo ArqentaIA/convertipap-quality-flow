@@ -293,6 +293,8 @@ function ConfigContent({ settings }: { settings: AppSettings }) {
 
           {isAdmin && <MonitorUrlsCard />}
 
+          {isAdmin && <DestinatariosTurnoCard />}
+
 
           <button
             onClick={handleSave}
@@ -921,6 +923,168 @@ function MonitorUrlsCard() {
         <span>
           Cada monitor recorre las máquinas en distinto orden para no repetir la misma al mismo
           tiempo. Mantén los PIN confidenciales.
+        </span>
+      </div>
+    </Card>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Destinatarios del reporte de cierre de turno (lista independiente por planta).
+// Solo administradores. No envía nada por sí solo: define a quién se enviará.
+// ---------------------------------------------------------------------------
+type PlantaDest = {
+  planta_id: string;
+  codigo: string;
+  nombre: string;
+  destinatarios: string;
+  activo: boolean;
+};
+
+function parseCorreos(texto: string): string[] {
+  return texto
+    .split(/[,;\n]/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function DestinatariosTurnoCard() {
+  const qc = useQueryClient();
+  const [edits, setEdits] = useState<Record<string, { destinatarios?: string; activo?: boolean }>>({});
+
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["reporte-turno-destinatarios"],
+    queryFn: async (): Promise<PlantaDest[]> => {
+      const [{ data: plantas, error: pErr }, { data: rows, error: rErr }] = await Promise.all([
+        supabase.from("plantas").select("id, codigo, nombre").order("codigo"),
+        supabase.from("reporte_turno_destinatarios").select("planta_id, destinatarios, activo"),
+      ]);
+      if (pErr) throw pErr;
+      if (rErr) throw rErr;
+      const byPlanta = new Map((rows ?? []).map((r) => [r.planta_id, r]));
+      return (plantas ?? []).map((p) => {
+        const row = byPlanta.get(p.id);
+        return {
+          planta_id: p.id,
+          codigo: p.codigo,
+          nombre: p.nombre,
+          destinatarios: row?.destinatarios ?? "",
+          activo: row?.activo ?? true,
+        };
+      });
+    },
+  });
+
+  const saveMutation = useMutation({
+    mutationFn: async (row: { planta_id: string; destinatarios: string; activo: boolean }) => {
+      const { error: err } = await supabase
+        .from("reporte_turno_destinatarios")
+        .upsert(
+          {
+            planta_id: row.planta_id,
+            destinatarios: row.destinatarios,
+            activo: row.activo,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "planta_id" },
+        );
+      if (err) throw err;
+    },
+    onSuccess: (_d, vars) => {
+      toast.success("Destinatarios guardados");
+      setEdits((e) => {
+        const { [vars.planta_id]: _omit, ...rest } = e;
+        return rest;
+      });
+      qc.invalidateQueries({ queryKey: ["reporte-turno-destinatarios"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <Card
+      icon={Mail}
+      title="Correos · Reporte de cierre de turno"
+      desc="Lista independiente por planta. Se enviará 1 minuto antes de cada cierre de turno (T1, T2, T3)."
+    >
+      {isLoading && <div className="text-xs text-muted-foreground">Cargando plantas…</div>}
+      {error && (
+        <div className="text-xs text-destructive">No se pudieron cargar los destinatarios: {error.message}</div>
+      )}
+      <div className="space-y-3">
+        {data?.map((p) => {
+          const edit = edits[p.planta_id] ?? {};
+          const destinatarios = edit.destinatarios ?? p.destinatarios;
+          const activo = edit.activo ?? p.activo;
+          const dirty = destinatarios !== p.destinatarios || activo !== p.activo;
+          const correos = parseCorreos(destinatarios);
+          const invalidos = correos.filter((c) => !EMAIL_RE.test(c));
+          return (
+            <div key={p.planta_id} className="rounded-md border border-border bg-background p-3">
+              <div className="flex items-center gap-2">
+                <span className="inline-flex h-7 min-w-[58px] items-center justify-center rounded-md bg-primary/10 px-2 text-[11px] font-bold text-primary">
+                  {p.codigo}
+                </span>
+                <span className="flex-1 truncate text-xs text-muted-foreground" title={p.nombre}>
+                  {p.nombre}
+                </span>
+                <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                  <input
+                    type="checkbox"
+                    checked={activo}
+                    onChange={(e) =>
+                      setEdits((prev) => ({
+                        ...prev,
+                        [p.planta_id]: { ...prev[p.planta_id], activo: e.target.checked },
+                      }))
+                    }
+                  />
+                  Activo
+                </label>
+              </div>
+              <textarea
+                rows={2}
+                value={destinatarios}
+                onChange={(e) =>
+                  setEdits((prev) => ({
+                    ...prev,
+                    [p.planta_id]: { ...prev[p.planta_id], destinatarios: e.target.value },
+                  }))
+                }
+                placeholder="correo1@empresa.com, correo2@empresa.com"
+                className="mt-2 w-full rounded-md border border-input bg-background px-3 py-2 text-xs text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+              />
+              <div className="mt-2 flex items-center justify-between gap-2">
+                <p className="text-[10px] text-muted-foreground">
+                  {correos.length} destinatario(s). Separa varios correos con coma.
+                  {invalidos.length > 0 && (
+                    <span className="ml-1 font-semibold text-destructive">
+                      Revisa: {invalidos.join(", ")}
+                    </span>
+                  )}
+                </p>
+                <button
+                  type="button"
+                  disabled={!dirty || invalidos.length > 0 || saveMutation.isPending}
+                  onClick={() =>
+                    saveMutation.mutate({ planta_id: p.planta_id, destinatarios, activo })
+                  }
+                  className="inline-flex h-8 shrink-0 items-center gap-1 rounded-md bg-primary px-3 text-[11px] font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-40"
+                >
+                  <Save className="h-3 w-3" /> Guardar
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <div className="mt-3 flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-[11px] text-amber-800">
+        <ShieldAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+        <span>
+          Ixtapaluca recibe el reporte de MP-01 y Tlaxcala el de MP-04, MP-05, MP-06 y MP-07. El
+          envío automático se activará en una etapa posterior.
         </span>
       </div>
     </Card>
