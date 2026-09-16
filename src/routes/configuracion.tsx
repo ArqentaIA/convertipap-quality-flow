@@ -16,6 +16,16 @@ import { useAuth } from "@/lib/auth";
 export const Route = createFileRoute("/configuracion")({
   component: ConfigGate,
   ssr: false,
+  head: () => ({
+    meta: [
+      { title: "Configuración del sistema | Convertipap" },
+      { name: "description", content: "Administración de parámetros, accesos, monitores y reportes de Convertipap." },
+      { property: "og:title", content: "Configuración del sistema | Convertipap" },
+      { property: "og:description", content: "Administración de parámetros, accesos, monitores y reportes de Convertipap." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   errorComponent: ({ error }) => (
     <AppLayout title="Configuración del sistema">
       <div role="alert" className="rounded-md border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
@@ -98,8 +108,8 @@ function ConfigContent({ settings }: { settings: AppSettings }) {
 
   return (
     <AppLayout title="Configuración del sistema">
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <div className="space-y-6">
+      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
+        <div className="space-y-4">
           <Card icon={Sliders} title="Parámetros generales" desc="Aplican a todas las máquinas">
             {false && (
             <Field
@@ -148,12 +158,11 @@ function ConfigContent({ settings }: { settings: AppSettings }) {
             />
             )}
           </Card>
+
+          {isAdmin && <MachineAccessCodesCard />}
         </div>
 
-
-
-
-        <div className="space-y-6">
+        <div className="space-y-4">
           {false && (
           <Card icon={Bell} title="Notificaciones" desc="Alertas automáticas del sistema">
             <Toggle
@@ -289,21 +298,18 @@ function ConfigContent({ settings }: { settings: AppSettings }) {
 
           <BackendInfoCard />
 
-          {isAdmin && <MachineAccessCodesCard />}
-
           {isAdmin && <MonitorUrlsCard />}
 
           {isAdmin && <DestinatariosTurnoCard />}
-
-
-          <button
-            onClick={handleSave}
-            disabled={mutation.isPending}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm hover:opacity-90 disabled:opacity-50"
-          >
-            <Save className="h-4 w-4" /> {mutation.isPending ? "Guardando…" : "Guardar cambios"}
-          </button>
         </div>
+
+        <button
+          onClick={handleSave}
+          disabled={mutation.isPending}
+          className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm hover:opacity-90 disabled:opacity-50 lg:col-span-2"
+        >
+          <Save className="h-4 w-4" /> {mutation.isPending ? "Guardando…" : "Guardar cambios"}
+        </button>
       </div>
     </AppLayout>
   );
@@ -311,10 +317,10 @@ function ConfigContent({ settings }: { settings: AppSettings }) {
 
 function Card({ icon: Icon, title, desc, children }: { icon?: React.ComponentType<{ className?: string }>; title: string; desc?: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
-      <div className="mb-4 flex items-start gap-3">
+    <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
+      <div className="mb-3 flex items-start gap-3">
         {Icon && (
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
             <Icon className="h-4 w-4" />
           </div>
         )}
@@ -323,7 +329,7 @@ function Card({ icon: Icon, title, desc, children }: { icon?: React.ComponentTyp
           {desc && <p className="text-xs text-muted-foreground">{desc}</p>}
         </div>
       </div>
-      <div className="space-y-3">{children}</div>
+      <div className="space-y-2">{children}</div>
     </div>
   );
 }
@@ -649,37 +655,37 @@ function BackendInfoCard() {
         <div className="text-xs text-destructive">No se pudo obtener la información: {error.message}</div>
       )}
       {data && (
-        <div className="space-y-3">
-          <div className="grid grid-cols-2 items-center gap-3">
+        <div className="grid grid-cols-2 gap-x-5 gap-y-2">
+          <div className="grid grid-cols-2 items-center gap-2">
             <span className="text-xs text-muted-foreground">Proveedor</span>
             <span className="text-sm font-medium text-foreground">{data.provider}</span>
           </div>
-          <div className="grid grid-cols-2 items-center gap-3">
+          <div className="grid grid-cols-2 items-center gap-2">
             <span className="text-xs text-muted-foreground">Servicio</span>
             <span className="text-sm font-medium text-foreground">{data.service}</span>
           </div>
-          <div className="grid grid-cols-2 items-center gap-3">
+          <div className="grid grid-cols-2 items-center gap-2">
             <span className="text-xs text-muted-foreground">Región</span>
             <span className="text-sm font-medium text-foreground">{data.region}</span>
           </div>
-          <div className="grid grid-cols-2 items-center gap-3">
+          <div className="grid grid-cols-2 items-center gap-2">
             <span className="text-xs text-muted-foreground">Entorno</span>
             <span className={`inline-flex w-fit rounded-full px-2.5 py-0.5 text-xs font-semibold ${envBadge(data.environment)}`}>
               {data.environmentLabel}
             </span>
           </div>
-          <div className="grid grid-cols-2 items-center gap-3">
+          <div className="grid grid-cols-2 items-center gap-2">
             <span className="text-xs text-muted-foreground">Host</span>
             <span className="text-sm font-medium text-foreground">{data.host}</span>
           </div>
-          <div className="grid grid-cols-2 items-center gap-3">
+          <div className="grid grid-cols-2 items-center gap-2">
             <span className="text-xs text-muted-foreground">Estado de la base de datos</span>
             <span className={`inline-flex items-center gap-1.5 text-xs font-semibold ${data.status === "conectado" ? "text-emerald-700" : "text-destructive"}`}>
               <span className={`h-2 w-2 rounded-full ${data.status === "conectado" ? "bg-emerald-500" : "bg-destructive"}`} />
               {data.status === "conectado" ? "Conectado" : "Desconectado"}
             </span>
           </div>
-          <div className="text-[10px] text-muted-foreground">
+          <div className="col-span-2 text-[10px] text-muted-foreground">
             Última verificación: {new Date(data.lastCheck).toLocaleString("es-MX")}
           </div>
         </div>
@@ -739,13 +745,13 @@ function MachineAccessCodesCard() {
       {error && (
         <div className="text-xs text-destructive">No se pudieron cargar las máquinas: {error.message}</div>
       )}
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         {data?.map((m) => {
           const current = edits[m.id] ?? m.access_code ?? "";
           const dirty = edits[m.id] !== undefined && edits[m.id] !== (m.access_code ?? "");
           const visible = reveal[m.id] ?? false;
           return (
-            <div key={m.id} className="flex items-center gap-2 rounded-md border border-border bg-background p-2">
+            <div key={m.id} className="flex items-center gap-2 rounded-md border border-border bg-background p-1.5">
               <span className="inline-flex h-7 min-w-[58px] items-center justify-center rounded-md bg-primary/10 px-2 text-[11px] font-bold text-primary">
                 {m.codigo}
               </span>
@@ -785,7 +791,7 @@ function MachineAccessCodesCard() {
           );
         })}
       </div>
-      <div className="mt-3 flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-[11px] text-amber-800">
+      <div className="mt-2 flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-1.5 text-[11px] text-amber-800">
         <ShieldAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
         <span>
           Mantén estos códigos confidenciales. Quienes ingresen por el menú con sesión válida no requieren PIN.
@@ -859,7 +865,7 @@ function MonitorUrlsCard() {
       {error && (
         <div className="text-xs text-destructive">No se pudieron cargar los códigos: {error.message}</div>
       )}
-      <div className="space-y-3">
+      <div className="space-y-2">
         {MONITORES.map((m) => {
           const url = `${OPERATOR_VISION_BASE}/operator-vision?maquina=${m.inicio}&auto=1&v=${m.id}`;
           const saved = data?.get(m.id) ?? "";
@@ -867,7 +873,7 @@ function MonitorUrlsCard() {
           const dirty = edits[m.id] !== undefined && edits[m.id] !== saved;
           const visible = reveal[m.id] ?? false;
           return (
-            <div key={m.id} className="rounded-md border border-border bg-background p-3">
+            <div key={m.id} className="rounded-md border border-border bg-background p-2">
               <div className="flex items-center gap-2">
                 <span className="inline-flex h-7 min-w-[84px] items-center justify-center rounded-md bg-primary/10 px-2 text-[11px] font-bold text-primary">
                   {m.label}
@@ -884,7 +890,7 @@ function MonitorUrlsCard() {
                   Copiar
                 </button>
               </div>
-              <div className="mt-2 flex items-center gap-2">
+              <div className="mt-1.5 flex items-center gap-2">
                 <span className="text-[11px] text-muted-foreground">PIN de acceso</span>
                 <input
                   type={visible ? "text" : "password"}
@@ -918,7 +924,7 @@ function MonitorUrlsCard() {
           );
         })}
       </div>
-      <div className="mt-3 flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-[11px] text-amber-800">
+      <div className="mt-2 flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-1.5 text-[11px] text-amber-800">
         <ShieldAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
         <span>
           Cada monitor recorre las máquinas en distinto orden para no repetir la misma al mismo
@@ -1013,7 +1019,7 @@ function DestinatariosTurnoCard() {
       {error && (
         <div className="text-xs text-destructive">No se pudieron cargar los destinatarios: {error.message}</div>
       )}
-      <div className="space-y-3">
+      <div className="space-y-2">
         {data?.map((p) => {
           const edit = edits[p.planta_id] ?? {};
           const destinatarios = edit.destinatarios ?? p.destinatarios;
@@ -1022,7 +1028,7 @@ function DestinatariosTurnoCard() {
           const correos = parseCorreos(destinatarios);
           const invalidos = correos.filter((c) => !EMAIL_RE.test(c));
           return (
-            <div key={p.planta_id} className="rounded-md border border-border bg-background p-3">
+            <div key={p.planta_id} className="rounded-md border border-border bg-background p-2">
               <div className="flex items-center gap-2">
                 <span className="inline-flex h-7 min-w-[58px] items-center justify-center rounded-md bg-primary/10 px-2 text-[11px] font-bold text-primary">
                   {p.codigo}
@@ -1045,7 +1051,7 @@ function DestinatariosTurnoCard() {
                 </label>
               </div>
               <textarea
-                rows={2}
+                rows={1}
                 value={destinatarios}
                 onChange={(e) =>
                   setEdits((prev) => ({
@@ -1054,9 +1060,9 @@ function DestinatariosTurnoCard() {
                   }))
                 }
                 placeholder="correo1@empresa.com, correo2@empresa.com"
-                className="mt-2 w-full rounded-md border border-input bg-background px-3 py-2 text-xs text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                className="mt-1.5 w-full resize-none rounded-md border border-input bg-background px-3 py-1.5 text-xs text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary"
               />
-              <div className="mt-2 flex items-center justify-between gap-2">
+              <div className="mt-1.5 flex items-center justify-between gap-2">
                 <p className="text-[10px] text-muted-foreground">
                   {correos.length} destinatario(s). Separa varios correos con coma.
                   {invalidos.length > 0 && (
@@ -1080,7 +1086,7 @@ function DestinatariosTurnoCard() {
           );
         })}
       </div>
-      <div className="mt-3 flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-[11px] text-amber-800">
+      <div className="mt-2 flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-1.5 text-[11px] text-amber-800">
         <ShieldAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
         <span>
           Ixtapaluca recibe el reporte de MP-01 y Tlaxcala el de MP-04, MP-05, MP-06 y MP-07. El
