@@ -277,11 +277,11 @@ function construirDashboard(ws: ExcelJS.Worksheet, resumen: ResumenMaquina[], ge
   const ultima = 13 + Math.max(resumen.length, 1);
   ws.addConditionalFormatting({
     ref: `C14:G${ultima}`,
-    rules: [{ type: "dataBar", priority: 1, minLength: 0, maxLength: 100, color: { argb: DASH.bar } } as ExcelJS.DataBarRule],
+    rules: [{ type: "dataBar", priority: 1, minLength: 0, maxLength: 100, color: { argb: DASH.bar } }],
   });
   ws.addConditionalFormatting({
     ref: `K14:N${ultima}`,
-    rules: [{ type: "dataBar", priority: 2, minLength: 0, maxLength: 100, color: { argb: DASH.ok } } as ExcelJS.DataBarRule],
+    rules: [{ type: "dataBar", priority: 2, minLength: 0, maxLength: 100, color: { argb: DASH.ok } }],
   });
 
   // Lectura ejecutiva
