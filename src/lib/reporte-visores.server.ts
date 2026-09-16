@@ -7,10 +7,16 @@ import ExcelJS from "exceljs";
 import { fetchOperatorVisionData } from "./operator-vision.server";
 import { inyectarGraficasDashboard } from "./reporte-visores-charts.server";
 import logoDataUrl from "@/assets/reporte-visores-logo.png?inline";
+import irmLogoDataUrl from "@/assets/irm-logo.png?inline";
 
 /** Logotipo embebido en el correo como imagen en línea (CID). */
 export const LOGO_CID = "logoconvertipap";
 const LOGO_BASE64 = String(logoDataUrl).split(",")[1] ?? "";
+
+/** Firma IRM al pie del correo, embebida como imagen en línea (CID). */
+export const IRM_LOGO_CID = "logoirm";
+const IRM_LOGO_BASE64 = String(irmLogoDataUrl).split(",")[1] ?? "";
+const IRM_URL = "https://imr-intelligence.pro";
 
 /** Inserta el logotipo Convertipap en la esquina superior izquierda de la hoja. */
 function ponerLogo(wb: ExcelJS.Workbook, ws: ExcelJS.Worksheet, col: number, row: number) {
@@ -410,13 +416,32 @@ El detalle completo por máquina, con todas las variables medidas y sus gráfica
 <b style="color:#1e293b">AVISO DE CONFIDENCIALIDAD.</b> Este correo y sus anexos contienen información operativa y de calidad propiedad de Convertipap, de carácter confidencial y de uso exclusivo del personal autorizado como destinatario. Queda prohibida su divulgación, reproducción total o parcial, distribución o uso por cualquier medio sin autorización expresa de la Dirección General. La reproducción o el uso indebido de esta información es responsabilidad exclusiva de quien la ejecute. Si usted recibió este mensaje por error, notifíquelo al remitente y elimínelo de inmediato. Documento generado automáticamente; no responda a esta dirección.
 </p>
 </div>
+
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:18px auto 4px"><tr>
+<td style="border:1px solid #e2e8f0;border-radius:8px;background:#ffffff;padding:8px 16px">
+<a href="${IRM_URL}" target="_blank" style="text-decoration:none;display:block">
+<img src="cid:${IRM_LOGO_CID}" alt="IRM · circular intelligence" width="96" style="display:block;border:0;outline:none;opacity:0.9">
+</a>
+</td></tr></table>
+<p style="margin:0;text-align:center;font-size:9.5px;color:#94a3b8;letter-spacing:.3px">Plataforma desarrollada por IRM · circular intelligence</p>
 </div></div>`;
 
   const texto = resumen
     .map((r) => `${r.codigo} (${r.planta}) T${r.turno ?? "—"} · ${r.rollos} rollos · ${r.liberados} liberados · ${r.cumplimientoPct}%`)
     .join("\n");
 
-  return { buffer, fileName, logoCid: LOGO_CID, logoBase64: LOGO_BASE64, html, texto, resumen, generado };
+  return {
+    buffer,
+    fileName,
+    logoCid: LOGO_CID,
+    logoBase64: LOGO_BASE64,
+    irmLogoCid: IRM_LOGO_CID,
+    irmLogoBase64: IRM_LOGO_BASE64,
+    html,
+    texto,
+    resumen,
+    generado,
+  };
 }
 
 // =============================================================================
