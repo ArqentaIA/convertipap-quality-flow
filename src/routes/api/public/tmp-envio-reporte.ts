@@ -1,7 +1,7 @@
 // TEMPORAL — envío manual de prueba del reporte de visores. Eliminar tras usar.
 import { createFileRoute } from "@tanstack/react-router";
 
-export const Route = createFileRoute("/api/public/_tmp-envio-reporte")({
+export const Route = createFileRoute("/api/public/tmp-envio-reporte")({
   server: {
     handlers: {
       POST: async ({ request }) => {
