@@ -2438,6 +2438,38 @@ export type Database = {
           },
         ]
       }
+      reporte_turno_destinatarios: {
+        Row: {
+          activo: boolean
+          destinatarios: string
+          planta_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          activo?: boolean
+          destinatarios?: string
+          planta_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          activo?: boolean
+          destinatarios?: string
+          planta_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reporte_turno_destinatarios_planta_id_fkey"
+            columns: ["planta_id"]
+            isOneToOne: true
+            referencedRelation: "plantas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rollos_cintas: {
         Row: {
           cerrado: boolean
