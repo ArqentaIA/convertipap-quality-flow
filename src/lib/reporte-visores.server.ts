@@ -16,7 +16,7 @@ const LOGO_BASE64 = String(logoDataUrl).split(",")[1] ?? "";
 /** Firma IRM al pie del correo, embebida como imagen en línea (CID). */
 export const IRM_LOGO_CID = "logoirm";
 const IRM_LOGO_BASE64 = String(irmLogoDataUrl).split(",")[1] ?? "";
-const IRM_URL = "https://imr-intelligence.pro";
+const IRM_URL = "mailto:direccion@imr-intelligence.pro?subject=Contacto%20desde%20reporte%20de%20cierre%20de%20turno";
 
 /** Inserta el logotipo Convertipap en la esquina superior izquierda de la hoja. */
 function ponerLogo(wb: ExcelJS.Workbook, ws: ExcelJS.Worksheet, col: number, row: number) {
@@ -419,7 +419,7 @@ El detalle completo por máquina, con todas las variables medidas y sus gráfica
 
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:18px auto 4px"><tr>
 <td style="border:1px solid #e2e8f0;border-radius:8px;background:#ffffff;padding:8px 16px">
-<a href="${IRM_URL}" target="_blank" style="text-decoration:none;display:block">
+<a href="${IRM_URL}" style="text-decoration:none;display:block">
 <img src="cid:${IRM_LOGO_CID}" alt="IRM · circular intelligence" width="96" style="display:block;border:0;outline:none;opacity:0.9">
 </a>
 </td></tr></table>
