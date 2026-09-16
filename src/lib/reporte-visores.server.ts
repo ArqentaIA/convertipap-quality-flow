@@ -479,10 +479,10 @@ El detalle completo por máquina, con todas las variables medidas y sus gráfica
 </p>
 </div>
 
-<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:18px auto 2px"><tr>
-<td style="padding:4px 8px">
-<a href="${IRM_URL}" style="text-decoration:none;display:block">
-<img src="cid:${IRM_LOGO_CID}" alt="IRM" width="48" style="display:block;border:0;outline:none;opacity:0.9">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:18px auto 4px"><tr>
+<td style="background:#ffffff;border-radius:7px;box-shadow:0 3px 10px rgba(15,23,42,.16),inset 0 -1px 0 rgba(15,23,42,.08);padding:0">
+<a href="${IRM_URL}" title="Contactar a IRM" style="text-decoration:none;display:block;padding:7px 14px;border-radius:7px">
+<img src="cid:${IRM_LOGO_CID}" alt="Contactar a IRM" width="48" style="display:block;border:0;outline:none;opacity:0.94">
 </a>
 </td></tr></table>
 <p style="margin:0;text-align:center;font-size:4.75px;color:#94a3b8;letter-spacing:0">Consultoría en Transformación Digital e Inteligencia Artificial</p>
