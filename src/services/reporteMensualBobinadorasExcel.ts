@@ -508,6 +508,7 @@ export async function generarReporteMensualBobinadoras(
         if (!c) rowVals.push(null);
         else if (c.estado === "anulada") rowVals.push("ANULADA");
         else if (c.estado === "sustituida") rowVals.push(null);
+        else if (c.idSap) rowVals.push(`${c.peso.toFixed(2)}\nID ${c.idSap}`);
         else rowVals.push(Number(c.peso.toFixed(2)));
       }
       hoja.getRow(rr).values = rowVals as never;
