@@ -5,6 +5,7 @@
 // =============================================================================
 import ExcelJS from "exceljs";
 import { fetchOperatorVisionData } from "./operator-vision.server";
+import { inyectarGraficasDashboard } from "./reporte-visores-charts.server";
 
 export const MAQUINAS_REPORTE = ["MP-01", "MP-04", "MP-05", "MP-06", "MP-07"] as const;
 
