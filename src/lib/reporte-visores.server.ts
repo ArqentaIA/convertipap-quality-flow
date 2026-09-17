@@ -94,7 +94,11 @@ type DetalleMaquina = {
   fuera: number;
 };
 
-export async function construirReporteVisores(maquinas: readonly string[] = MAQUINAS_REPORTE) {
+export async function construirReporteVisores(
+  maquinas: readonly string[] = MAQUINAS_REPORTE,
+  /** Solo para vista previa autorizada: fuerza el bloque consolidado de T3. */
+  opts?: { forzarConsolidado?: boolean },
+) {
   const generado = new Date();
   const wb = new ExcelJS.Workbook();
   wb.creator = "Convertipap";
