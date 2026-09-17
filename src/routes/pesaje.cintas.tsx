@@ -1090,89 +1090,70 @@ function PesajeCintasPage() {
         <div className="rounded-lg border border-border bg-card p-4">
           <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">3 · Conductor y {esIxtapaluca ? "máquina" : "bobinadora"}</div>
           <div className={esIxtapaluca ? "grid gap-3 md:grid-cols-4" : "grid gap-3 md:grid-cols-3"}>
-            <div>
-              <label className="mb-1 block text-xs text-muted-foreground">Conductor</label>
-              {esIxtapaluca ? (
-                <input
-                  type="text"
-                  maxLength={20}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  placeholder="Nombre (máx. 20)"
-                  value={conductorNombre}
-                  onChange={(e) => setConductorNombre(e.target.value)}
-                />
-              ) : (
-                <select
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  value={conductorId}
-                  onChange={(e) => setConductorId(e.target.value)}
-                >
-                  <option value="">— seleccionar —</option>
-                  {(conductoresQ.data ?? []).map((c) => (
-                    <option key={c.id} value={c.id}>{c.nombre}{c.puesto ? ` · ${c.puesto}` : ""}</option>
-                  ))}
-                </select>
-              )}
-            </div>
-            <div>
-              <label className="mb-1 block text-xs text-muted-foreground">{esIxtapaluca ? "Máquina" : "Bobinadora"}</label>
-              {esIxtapaluca ? (
-                <input
-                  type="text"
-                  maxLength={20}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  placeholder="Máquina (máx. 20)"
-                  value={maquinaNombre}
-                  onChange={(e) => setMaquinaNombre(e.target.value)}
-                />
-              ) : (
-                <select
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  value={bobinadoraId}
-                  onChange={(e) => setBobinadoraId(e.target.value)}
-                >
-                  <option value="">— seleccionar —</option>
-                  {bobinadorasVisibles.map((b) => (
-                    <option key={b.id} value={b.id}>{b.nombre}{b.codigo ? ` (${b.codigo})` : ""}</option>
-                  ))}
-                </select>
-              )}
-            </div>
-            {esIxtapaluca && (
-              <div>
-                <label className="mb-1 block text-xs text-muted-foreground">Nombre del bobinador</label>
-                <input
-                  type="text"
-                  maxLength={80}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  placeholder="Nombre completo"
-                  value={bobinadorNombre}
-                  onChange={(e) => setBobinadorNombre(e.target.value)}
-                />
-              </div>
+            {esIxtapaluca ? (
+              <SelectConAlta
+                label="Conductor"
+                value={conductorNombre}
+                opciones={opcionesPersonal}
+                onChange={setConductorNombre}
+                onCrear={crearPersonalNombre}
+                placeholderNuevo="Nombre del conductor"
+              />
+            ) : (
+              <SelectConAlta
+                label="Conductor"
+                value={conductorId}
+                opciones={opcionesPersonalId}
+                onChange={setConductorId}
+                onCrear={crearPersonalId}
+                placeholderNuevo="Nombre del conductor"
+              />
             )}
-            <div>
-              <label className="mb-1 block text-xs text-muted-foreground">Operador de cortes</label>
-              <input
-                type="text"
-                maxLength={40}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                placeholder="Nombre del operador"
-                value={operadorCortes}
-                onChange={(e) => setOperadorCortes(e.target.value)}
+            {esIxtapaluca ? (
+              <SelectConAlta
+                label="Máquina"
+                value={maquinaNombre}
+                opciones={opcionesBobinadorasNombre}
+                onChange={setMaquinaNombre}
+                onCrear={crearBobinadoraNombre}
+                placeholderNuevo="Nombre de la máquina"
               />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs text-muted-foreground">Analista que libera cortes</label>
-              <input
-                type="text"
-                maxLength={40}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                placeholder="Nombre del analista"
-                value={analistaCortes}
-                onChange={(e) => setAnalistaCortes(e.target.value)}
+            ) : (
+              <SelectConAlta
+                label="Bobinadora"
+                value={bobinadoraId}
+                opciones={opcionesBobinadoras}
+                onChange={setBobinadoraId}
+                onCrear={crearBobinadoraId}
+                placeholderNuevo="Nombre de la bobinadora"
               />
-            </div>
+            )}
+            {esIxtapaluca && (
+              <SelectConAlta
+                label="Nombre del bobinador"
+                value={bobinadorNombre}
+                opciones={opcionesPersonal}
+                onChange={setBobinadorNombre}
+                onCrear={crearPersonalNombre}
+                placeholderNuevo="Nombre del bobinador"
+              />
+            )}
+            <SelectConAlta
+              label="Operador de cortes"
+              value={operadorCortes}
+              opciones={opcionesPersonal}
+              onChange={setOperadorCortes}
+              onCrear={crearPersonalNombre}
+              placeholderNuevo="Nombre del operador"
+            />
+            <SelectConAlta
+              label="Analista que libera cortes"
+              value={analistaCortes}
+              opciones={opcionesPersonal}
+              onChange={setAnalistaCortes}
+              onCrear={crearPersonalNombre}
+              placeholderNuevo="Nombre del analista"
+            />
             <div className="flex items-end">
               <button
                 onClick={onCrearLote}
