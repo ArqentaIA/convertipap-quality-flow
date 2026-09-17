@@ -7,10 +7,14 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Camera, CheckCircle2, Loader2, RefreshCw, ImageIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { verificarRolloUtilizado, type PesajeBobina, type RolloYaUtilizado } from "@/lib/pesajes.functions";
+import {
+  verificarRolloUtilizado, asignarPersonalPesaje, listPersonalPlanta, crearPersonalPlanta,
+  type PesajeBobina, type RolloYaUtilizado,
+} from "@/lib/pesajes.functions";
 import { getEstadoNumeracionRollo } from "@/lib/qc.functions";
 import { fechaCortoMX, horaMX } from "@/lib/format";
-import { usePlantasPermitidas } from "@/hooks/usePlantasPermitidas";
+import { usePlantasPermitidas, usePlantaActivaCodigo } from "@/hooks/usePlantasPermitidas";
+import { SelectConAlta } from "@/components/common/SelectConAlta";
 
 export const Route = createFileRoute("/pesaje/bobina-madre")({
   head: () => ({
@@ -144,6 +148,54 @@ function PesajeBobinaPage() {
   const esIxtapaluca =
     (plantasPermitidas ?? []).length > 0 &&
     (plantasPermitidas ?? []).every((p) => p.codigo?.toUpperCase() === "IXT");
+
+  // Personal responsable del pesaje. Cada planta alimenta su propia lista.
+  const plantaActivaCodigo = usePlantaActivaCodigo();
+  const plantaActivaId = useMemo(() => {
+    const lista = plantasPermitidas ?? [];
+    const activa = lista.find(
+      (p) => (p.codigo ?? "").toUpperCase() === (plantaActivaCodigo ?? "").toUpperCase(),
+    );
+    return activa?.id ?? (lista.length === 1 ? lista[0].id : null);
+  }, [plantasPermitidas, plantaActivaCodigo]);
+
+  const traerPersonal = useServerFn(listPersonalPlanta);
+  const altaPersonal = useServerFn(crearPersonalPlanta);
+  const guardarPersonalPesaje = useServerFn(asignarPersonalPesaje);
+  const personalQ = useQuery({
+    queryKey: ["pesaje", "personal"],
+    queryFn: () => traerPersonal(),
+    staleTime: 5 * 60 * 1000,
+  });
+  const opcionesPersonal = useMemo(() => {
+    const todos = personalQ.data ?? [];
+    const dePlanta = plantaActivaId ? todos.filter((o) => o.planta_id === plantaActivaId) : todos;
+    return dePlanta.map((o) => ({ valor: o.nombre, etiqueta: o.nombre }));
+  }, [personalQ.data, plantaActivaId]);
+
+  const [operadorNombre, setOperadorNombre] = useState("");
+  const [jefeMaquinaNombre, setJefeMaquinaNombre] = useState("");
+
+  async function crearPersonalNombre(nombre: string): Promise<string | null> {
+    if (!plantaActivaId) throw new Error("Seleccione la planta activa en el encabezado.");
+    const row = await altaPersonal({ data: { nombre, planta_id: plantaActivaId } });
+    await personalQ.refetch();
+    return row?.nombre ?? nombre;
+  }
+
+  async function guardarPersonalDelPesaje(pesajeId: string | undefined) {
+    if (!pesajeId) return;
+    if (!operadorNombre.trim() && !jefeMaquinaNombre.trim()) return;
+    await guardarPersonalPesaje({
+      data: {
+        pesaje_id: pesajeId,
+        operador: operadorNombre.trim() || null,
+        jefe_maquina: jefeMaquinaNombre.trim() || null,
+      },
+    }).catch(() => {
+      toast.error("El pesaje se registró, pero no se pudo guardar el personal.");
+    });
+  }
 
   const [ordenSel, setOrdenSel] = useState<string>("");
   const [ordenOtro, setOrdenOtro] = useState("");
@@ -617,6 +669,7 @@ function PesajeBobinaPage() {
 
       if (data.status === "accepted" && data.registro) {
         registeringRequestRef.current = clientRequestId;
+        await guardarPersonalDelPesaje(data.registro.id);
         mostrarMensajeUnico("success", data.message || "Peso identificado y registrado correctamente.");
         qc.invalidateQueries({ queryKey: ["pesajes"] });
         resetForm(true);
@@ -682,6 +735,7 @@ function PesajeBobinaPage() {
       const data = (resp.data ?? {}) as EdgeResponse;
       if (data.status === "accepted" && data.registro) {
         registeringRequestRef.current = confirmData.idempotencyKey;
+        await guardarPersonalDelPesaje(data.registro.id);
         mostrarMensajeUnico("success", data.message || "Peso confirmado y registrado correctamente.");
         qc.invalidateQueries({ queryKey: ["pesajes"] });
         setConfirmData(null);
@@ -783,6 +837,24 @@ function PesajeBobinaPage() {
               </p>
             )}
           </div>
+
+          {/* Personal responsable (trazabilidad; no afecta peso ni numeración) */}
+          <SelectConAlta
+            label="Operador"
+            value={operadorNombre}
+            opciones={opcionesPersonal}
+            onChange={setOperadorNombre}
+            onCrear={crearPersonalNombre}
+            placeholderNuevo="Nombre del operador"
+          />
+          <SelectConAlta
+            label="Jefe de máquina"
+            value={jefeMaquinaNombre}
+            opciones={opcionesPersonal}
+            onChange={setJefeMaquinaNombre}
+            onCrear={crearPersonalNombre}
+            placeholderNuevo="Nombre del jefe de máquina"
+          />
         </div>
 
         {/* 3. Evidencia con OCR — oculto para capturistas */}

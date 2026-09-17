@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Loader2, Search, Printer, CheckCircle2, Ban, Lock, Pencil, UserCog } from "lucide-react";
 import {
-  buscarContextoRollo, listConductores, listBobinadoras,
+  buscarContextoRollo, listConductores, listBobinadoras, crearOperario, crearBobinadora,
   crearLote, crearLoteManualV2, iniciarBajadaHeredada, guardarOrdenManual, obtenerLoteYCintas, registrarCinta, corregirCinta, anularCinta,
   finalizarLote, prepararImpresion, actualizarDatosOperativos, asignarBobinadoraLote,
   asignarBobinadorNombre, asignarNombresOperativos, asignarEstatusCinta, asignarPersonalCortes,
@@ -20,6 +20,7 @@ import { abrirImpresionEtiquetas, type EtiquetaSnapshot } from "@/lib/etiqueta-c
 import { supabase } from "@/integrations/supabase/client";
 import { usePlantasPermitidas, usePlantaActivaCodigo } from "@/hooks/usePlantasPermitidas";
 import { UltimosLotesCintas } from "@/components/cintas/UltimosLotesCintas";
+import { SelectConAlta } from "@/components/common/SelectConAlta";
 
 export const Route = createFileRoute("/pesaje/cintas")({
   head: () => ({
@@ -143,12 +144,78 @@ function PesajeCintasPage() {
     ((plantasPermitidas ?? []).length > 0 &&
       (plantasPermitidas ?? []).every((p) => p.codigo?.toUpperCase() === "IXT"));
   const CODIGOS_IXT = ["JG01", "JG02", "RB01", "RB02"];
+
+  // Planta activa resuelta: el personal y las bobinadoras NO se comparten
+  // entre plantas, cada una alimenta su propio catálogo.
+  const plantaActivaId = useMemo(() => {
+    const lista = plantasPermitidas ?? [];
+    const activa = lista.find((p) => (p.codigo ?? "").toUpperCase() === (plantaActiva ?? "").toUpperCase());
+    return activa?.id ?? (lista.length === 1 ? lista[0].id : null);
+  }, [plantasPermitidas, plantaActiva]);
+
   const bobinadorasVisibles = useMemo(() => {
     const todas = bobinadorasQ.data ?? [];
+    if (plantaActivaId) {
+      const dePlanta = todas.filter((b) => b.planta_id === plantaActivaId);
+      if (dePlanta.length > 0) return dePlanta;
+    }
     return esIxtapaluca
       ? todas.filter((b) => CODIGOS_IXT.includes((b.codigo ?? "").toUpperCase()))
       : todas.filter((b) => !CODIGOS_IXT.includes((b.codigo ?? "").toUpperCase()));
-  }, [bobinadorasQ.data, esIxtapaluca]);
+  }, [bobinadorasQ.data, esIxtapaluca, plantaActivaId]);
+
+  const personalPlanta = useMemo(() => {
+    const todos = conductoresQ.data ?? [];
+    return plantaActivaId ? todos.filter((o) => o.planta_id === plantaActivaId) : todos;
+  }, [conductoresQ.data, plantaActivaId]);
+
+  const opcionesPersonal = useMemo(
+    () => personalPlanta.map((o) => ({ valor: o.nombre, etiqueta: o.nombre })),
+    [personalPlanta],
+  );
+  const opcionesPersonalId = useMemo(
+    () => personalPlanta.map((o) => ({ valor: o.id, etiqueta: o.puesto ? `${o.nombre} · ${o.puesto}` : o.nombre })),
+    [personalPlanta],
+  );
+  const opcionesBobinadoras = useMemo(
+    () => bobinadorasVisibles.map((b) => ({ valor: b.id, etiqueta: b.codigo ? `${b.nombre} (${b.codigo})` : b.nombre })),
+    [bobinadorasVisibles],
+  );
+  const opcionesBobinadorasNombre = useMemo(
+    () => bobinadorasVisibles.map((b) => ({ valor: b.nombre, etiqueta: b.nombre })),
+    [bobinadorasVisibles],
+  );
+
+  const altaOperario = useServerFn(crearOperario);
+  const altaBobinadora = useServerFn(crearBobinadora);
+
+  function exigePlanta(): string {
+    if (!plantaActivaId) throw new Error("Seleccione la planta activa en el encabezado.");
+    return plantaActivaId;
+  }
+
+  /** Alta de personal; devuelve el nombre (para campos de texto). */
+  async function crearPersonalNombre(nombre: string): Promise<string | null> {
+    const row = await altaOperario({ data: { nombre, planta_id: exigePlanta() } });
+    await conductoresQ.refetch();
+    return row?.nombre ?? nombre;
+  }
+  /** Alta de personal; devuelve el id (para el selector de conductor). */
+  async function crearPersonalId(nombre: string): Promise<string | null> {
+    const row = await altaOperario({ data: { nombre, planta_id: exigePlanta() } });
+    await conductoresQ.refetch();
+    return row?.id ?? null;
+  }
+  async function crearBobinadoraId(nombre: string): Promise<string | null> {
+    const row = await altaBobinadora({ data: { nombre, planta_id: exigePlanta() } });
+    await bobinadorasQ.refetch();
+    return row?.id ?? null;
+  }
+  async function crearBobinadoraNombre(nombre: string): Promise<string | null> {
+    const row = await altaBobinadora({ data: { nombre, planta_id: exigePlanta() } });
+    await bobinadorasQ.refetch();
+    return row?.nombre ?? nombre;
+  }
 
   const loteQ = useQuery({
     queryKey: ["cintas-lote", loteId],
@@ -922,66 +989,59 @@ function PesajeCintasPage() {
                   />
                 </div>
                 {esIxtapaluca && (
-                  <div>
-                    <label className="mb-1 block text-[11px] uppercase tracking-wide text-muted-foreground">Conductor *</label>
-                    <input
-                      type="text"
-                      maxLength={20}
-                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                      placeholder="Nombre (máx. 20)"
-                      value={conductorNombre}
-                      onChange={(e) => setConductorNombre(e.target.value)}
-                    />
-                  </div>
+                  <SelectConAlta
+                    compact
+                    requerido
+                    label="Conductor"
+                    value={conductorNombre}
+                    opciones={opcionesPersonal}
+                    onChange={setConductorNombre}
+                    onCrear={crearPersonalNombre}
+                    placeholderNuevo="Nombre del conductor"
+                  />
                 )}
                 {esIxtapaluca && (
-                  <div>
-                    <label className="mb-1 block text-[11px] uppercase tracking-wide text-muted-foreground">Máquina *</label>
-                    <input
-                      type="text"
-                      maxLength={20}
-                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                      placeholder="Máquina (máx. 20)"
-                      value={maquinaNombre}
-                      onChange={(e) => setMaquinaNombre(e.target.value)}
-                    />
-                  </div>
+                  <SelectConAlta
+                    compact
+                    requerido
+                    label="Máquina"
+                    value={maquinaNombre}
+                    opciones={opcionesBobinadorasNombre}
+                    onChange={setMaquinaNombre}
+                    onCrear={crearBobinadoraNombre}
+                    placeholderNuevo="Nombre de la máquina"
+                  />
                 )}
                 {esIxtapaluca && (
-                  <div>
-                    <label className="mb-1 block text-[11px] uppercase tracking-wide text-muted-foreground">Nombre del bobinador *</label>
-                    <input
-                      type="text"
-                      maxLength={80}
-                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                      placeholder="Nombre completo"
-                      value={bobinadorNombre}
-                      onChange={(e) => setBobinadorNombre(e.target.value)}
-                    />
-                  </div>
+                  <SelectConAlta
+                    compact
+                    requerido
+                    label="Nombre del bobinador"
+                    value={bobinadorNombre}
+                    opciones={opcionesPersonal}
+                    onChange={setBobinadorNombre}
+                    onCrear={crearPersonalNombre}
+                    placeholderNuevo="Nombre del bobinador"
+                  />
                 )}
-                <div>
-                  <label className="mb-1 block text-[11px] uppercase tracking-wide text-muted-foreground">Operador de cortes</label>
-                  <input
-                    type="text"
-                    maxLength={40}
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                    placeholder="Nombre del operador"
-                    value={operadorCortes}
-                    onChange={(e) => setOperadorCortes(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-[11px] uppercase tracking-wide text-muted-foreground">Analista que libera cortes</label>
-                  <input
-                    type="text"
-                    maxLength={40}
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                    placeholder="Nombre del analista"
-                    value={analistaCortes}
-                    onChange={(e) => setAnalistaCortes(e.target.value)}
-                  />
-                </div>
+                <SelectConAlta
+                  compact
+                  label="Operador de cortes"
+                  value={operadorCortes}
+                  opciones={opcionesPersonal}
+                  onChange={setOperadorCortes}
+                  onCrear={crearPersonalNombre}
+                  placeholderNuevo="Nombre del operador"
+                />
+                <SelectConAlta
+                  compact
+                  label="Analista que libera cortes"
+                  value={analistaCortes}
+                  opciones={opcionesPersonal}
+                  onChange={setAnalistaCortes}
+                  onCrear={crearPersonalNombre}
+                  placeholderNuevo="Nombre del analista"
+                />
               </div>
 
               <button
@@ -1030,89 +1090,70 @@ function PesajeCintasPage() {
         <div className="rounded-lg border border-border bg-card p-4">
           <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">3 · Conductor y {esIxtapaluca ? "máquina" : "bobinadora"}</div>
           <div className={esIxtapaluca ? "grid gap-3 md:grid-cols-4" : "grid gap-3 md:grid-cols-3"}>
-            <div>
-              <label className="mb-1 block text-xs text-muted-foreground">Conductor</label>
-              {esIxtapaluca ? (
-                <input
-                  type="text"
-                  maxLength={20}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  placeholder="Nombre (máx. 20)"
-                  value={conductorNombre}
-                  onChange={(e) => setConductorNombre(e.target.value)}
-                />
-              ) : (
-                <select
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  value={conductorId}
-                  onChange={(e) => setConductorId(e.target.value)}
-                >
-                  <option value="">— seleccionar —</option>
-                  {(conductoresQ.data ?? []).map((c) => (
-                    <option key={c.id} value={c.id}>{c.nombre}{c.puesto ? ` · ${c.puesto}` : ""}</option>
-                  ))}
-                </select>
-              )}
-            </div>
-            <div>
-              <label className="mb-1 block text-xs text-muted-foreground">{esIxtapaluca ? "Máquina" : "Bobinadora"}</label>
-              {esIxtapaluca ? (
-                <input
-                  type="text"
-                  maxLength={20}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  placeholder="Máquina (máx. 20)"
-                  value={maquinaNombre}
-                  onChange={(e) => setMaquinaNombre(e.target.value)}
-                />
-              ) : (
-                <select
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  value={bobinadoraId}
-                  onChange={(e) => setBobinadoraId(e.target.value)}
-                >
-                  <option value="">— seleccionar —</option>
-                  {bobinadorasVisibles.map((b) => (
-                    <option key={b.id} value={b.id}>{b.nombre}{b.codigo ? ` (${b.codigo})` : ""}</option>
-                  ))}
-                </select>
-              )}
-            </div>
-            {esIxtapaluca && (
-              <div>
-                <label className="mb-1 block text-xs text-muted-foreground">Nombre del bobinador</label>
-                <input
-                  type="text"
-                  maxLength={80}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  placeholder="Nombre completo"
-                  value={bobinadorNombre}
-                  onChange={(e) => setBobinadorNombre(e.target.value)}
-                />
-              </div>
+            {esIxtapaluca ? (
+              <SelectConAlta
+                label="Conductor"
+                value={conductorNombre}
+                opciones={opcionesPersonal}
+                onChange={setConductorNombre}
+                onCrear={crearPersonalNombre}
+                placeholderNuevo="Nombre del conductor"
+              />
+            ) : (
+              <SelectConAlta
+                label="Conductor"
+                value={conductorId}
+                opciones={opcionesPersonalId}
+                onChange={setConductorId}
+                onCrear={crearPersonalId}
+                placeholderNuevo="Nombre del conductor"
+              />
             )}
-            <div>
-              <label className="mb-1 block text-xs text-muted-foreground">Operador de cortes</label>
-              <input
-                type="text"
-                maxLength={40}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                placeholder="Nombre del operador"
-                value={operadorCortes}
-                onChange={(e) => setOperadorCortes(e.target.value)}
+            {esIxtapaluca ? (
+              <SelectConAlta
+                label="Máquina"
+                value={maquinaNombre}
+                opciones={opcionesBobinadorasNombre}
+                onChange={setMaquinaNombre}
+                onCrear={crearBobinadoraNombre}
+                placeholderNuevo="Nombre de la máquina"
               />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs text-muted-foreground">Analista que libera cortes</label>
-              <input
-                type="text"
-                maxLength={40}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                placeholder="Nombre del analista"
-                value={analistaCortes}
-                onChange={(e) => setAnalistaCortes(e.target.value)}
+            ) : (
+              <SelectConAlta
+                label="Bobinadora"
+                value={bobinadoraId}
+                opciones={opcionesBobinadoras}
+                onChange={setBobinadoraId}
+                onCrear={crearBobinadoraId}
+                placeholderNuevo="Nombre de la bobinadora"
               />
-            </div>
+            )}
+            {esIxtapaluca && (
+              <SelectConAlta
+                label="Nombre del bobinador"
+                value={bobinadorNombre}
+                opciones={opcionesPersonal}
+                onChange={setBobinadorNombre}
+                onCrear={crearPersonalNombre}
+                placeholderNuevo="Nombre del bobinador"
+              />
+            )}
+            <SelectConAlta
+              label="Operador de cortes"
+              value={operadorCortes}
+              opciones={opcionesPersonal}
+              onChange={setOperadorCortes}
+              onCrear={crearPersonalNombre}
+              placeholderNuevo="Nombre del operador"
+            />
+            <SelectConAlta
+              label="Analista que libera cortes"
+              value={analistaCortes}
+              opciones={opcionesPersonal}
+              onChange={setAnalistaCortes}
+              onCrear={crearPersonalNombre}
+              placeholderNuevo="Nombre del analista"
+            />
             <div className="flex items-end">
               <button
                 onClick={onCrearLote}
