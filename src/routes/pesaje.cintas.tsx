@@ -144,12 +144,78 @@ function PesajeCintasPage() {
     ((plantasPermitidas ?? []).length > 0 &&
       (plantasPermitidas ?? []).every((p) => p.codigo?.toUpperCase() === "IXT"));
   const CODIGOS_IXT = ["JG01", "JG02", "RB01", "RB02"];
+
+  // Planta activa resuelta: el personal y las bobinadoras NO se comparten
+  // entre plantas, cada una alimenta su propio catálogo.
+  const plantaActivaId = useMemo(() => {
+    const lista = plantasPermitidas ?? [];
+    const activa = lista.find((p) => (p.codigo ?? "").toUpperCase() === (plantaActiva ?? "").toUpperCase());
+    return activa?.id ?? (lista.length === 1 ? lista[0].id : null);
+  }, [plantasPermitidas, plantaActiva]);
+
   const bobinadorasVisibles = useMemo(() => {
     const todas = bobinadorasQ.data ?? [];
+    if (plantaActivaId) {
+      const dePlanta = todas.filter((b) => b.planta_id === plantaActivaId);
+      if (dePlanta.length > 0) return dePlanta;
+    }
     return esIxtapaluca
       ? todas.filter((b) => CODIGOS_IXT.includes((b.codigo ?? "").toUpperCase()))
       : todas.filter((b) => !CODIGOS_IXT.includes((b.codigo ?? "").toUpperCase()));
-  }, [bobinadorasQ.data, esIxtapaluca]);
+  }, [bobinadorasQ.data, esIxtapaluca, plantaActivaId]);
+
+  const personalPlanta = useMemo(() => {
+    const todos = conductoresQ.data ?? [];
+    return plantaActivaId ? todos.filter((o) => o.planta_id === plantaActivaId) : todos;
+  }, [conductoresQ.data, plantaActivaId]);
+
+  const opcionesPersonal = useMemo(
+    () => personalPlanta.map((o) => ({ valor: o.nombre, etiqueta: o.nombre })),
+    [personalPlanta],
+  );
+  const opcionesPersonalId = useMemo(
+    () => personalPlanta.map((o) => ({ valor: o.id, etiqueta: o.puesto ? `${o.nombre} · ${o.puesto}` : o.nombre })),
+    [personalPlanta],
+  );
+  const opcionesBobinadoras = useMemo(
+    () => bobinadorasVisibles.map((b) => ({ valor: b.id, etiqueta: b.codigo ? `${b.nombre} (${b.codigo})` : b.nombre })),
+    [bobinadorasVisibles],
+  );
+  const opcionesBobinadorasNombre = useMemo(
+    () => bobinadorasVisibles.map((b) => ({ valor: b.nombre, etiqueta: b.nombre })),
+    [bobinadorasVisibles],
+  );
+
+  const altaOperario = useServerFn(crearOperario);
+  const altaBobinadora = useServerFn(crearBobinadora);
+
+  function exigePlanta(): string {
+    if (!plantaActivaId) throw new Error("Seleccione la planta activa en el encabezado.");
+    return plantaActivaId;
+  }
+
+  /** Alta de personal; devuelve el nombre (para campos de texto). */
+  async function crearPersonalNombre(nombre: string): Promise<string | null> {
+    const row = await altaOperario({ data: { nombre, planta_id: exigePlanta() } });
+    await conductoresQ.refetch();
+    return row?.nombre ?? nombre;
+  }
+  /** Alta de personal; devuelve el id (para el selector de conductor). */
+  async function crearPersonalId(nombre: string): Promise<string | null> {
+    const row = await altaOperario({ data: { nombre, planta_id: exigePlanta() } });
+    await conductoresQ.refetch();
+    return row?.id ?? null;
+  }
+  async function crearBobinadoraId(nombre: string): Promise<string | null> {
+    const row = await altaBobinadora({ data: { nombre, planta_id: exigePlanta() } });
+    await bobinadorasQ.refetch();
+    return row?.id ?? null;
+  }
+  async function crearBobinadoraNombre(nombre: string): Promise<string | null> {
+    const row = await altaBobinadora({ data: { nombre, planta_id: exigePlanta() } });
+    await bobinadorasQ.refetch();
+    return row?.nombre ?? nombre;
+  }
 
   const loteQ = useQuery({
     queryKey: ["cintas-lote", loteId],
