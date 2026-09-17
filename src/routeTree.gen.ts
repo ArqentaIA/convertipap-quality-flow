@@ -37,8 +37,8 @@ import { Route as CalidadCapturaFueraTurnoRouteImport } from './routes/calidad.c
 import { Route as CalidadCapturaRouteImport } from './routes/calidad.captura'
 import { Route as CalidadAjustesRouteImport } from './routes/calidad.ajustes'
 import { Route as QTipoValorRouteImport } from './routes/q.$tipo.$valor'
+import { Route as ApiPublicHooksPreviewTempRouteImport } from './routes/api/public/hooks/preview-temp'
 import { Route as ApiPublicHooksCierreTurnoReporteRouteImport } from './routes/api/public/hooks/cierre-turno-reporte'
-import { Route as ApiPublicHooksPreviewCierreTurnoRouteImport } from './routes/api/public/hooks/_preview-cierre-turno'
 
 const VariablesCalidadRoute = VariablesCalidadRouteImport.update({
   id: '/variables-calidad',
@@ -181,16 +181,16 @@ const QTipoValorRoute = QTipoValorRouteImport.update({
   path: '/q/$tipo/$valor',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicHooksPreviewTempRoute =
+  ApiPublicHooksPreviewTempRouteImport.update({
+    id: '/api/public/hooks/preview-temp',
+    path: '/api/public/hooks/preview-temp',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksCierreTurnoReporteRoute =
   ApiPublicHooksCierreTurnoReporteRouteImport.update({
     id: '/api/public/hooks/cierre-turno-reporte',
     path: '/api/public/hooks/cierre-turno-reporte',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const ApiPublicHooksPreviewCierreTurnoRoute =
-  ApiPublicHooksPreviewCierreTurnoRouteImport.update({
-    id: '/api/public/hooks/_preview-cierre-turno',
-    path: '/api/public/hooks',
     getParentRoute: () => rootRouteImport,
   } as any)
 
@@ -223,8 +223,8 @@ export interface FileRoutesByFullPath {
   '/pesaje/cintas': typeof PesajeCintasRoute
   '/t/$folio': typeof TFolioRoute
   '/q/$tipo/$valor': typeof QTipoValorRoute
-  '/api/public/hooks': typeof ApiPublicHooksPreviewCierreTurnoRoute
   '/api/public/hooks/cierre-turno-reporte': typeof ApiPublicHooksCierreTurnoReporteRoute
+  '/api/public/hooks/preview-temp': typeof ApiPublicHooksPreviewTempRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -255,8 +255,8 @@ export interface FileRoutesByTo {
   '/pesaje/cintas': typeof PesajeCintasRoute
   '/t/$folio': typeof TFolioRoute
   '/q/$tipo/$valor': typeof QTipoValorRoute
-  '/api/public/hooks': typeof ApiPublicHooksPreviewCierreTurnoRoute
   '/api/public/hooks/cierre-turno-reporte': typeof ApiPublicHooksCierreTurnoReporteRoute
+  '/api/public/hooks/preview-temp': typeof ApiPublicHooksPreviewTempRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -288,8 +288,8 @@ export interface FileRoutesById {
   '/pesaje/cintas': typeof PesajeCintasRoute
   '/t/$folio': typeof TFolioRoute
   '/q/$tipo/$valor': typeof QTipoValorRoute
-  '/api/public/hooks/_preview-cierre-turno': typeof ApiPublicHooksPreviewCierreTurnoRoute
   '/api/public/hooks/cierre-turno-reporte': typeof ApiPublicHooksCierreTurnoReporteRoute
+  '/api/public/hooks/preview-temp': typeof ApiPublicHooksPreviewTempRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -322,8 +322,8 @@ export interface FileRouteTypes {
     | '/pesaje/cintas'
     | '/t/$folio'
     | '/q/$tipo/$valor'
-    | '/api/public/hooks'
     | '/api/public/hooks/cierre-turno-reporte'
+    | '/api/public/hooks/preview-temp'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -354,8 +354,8 @@ export interface FileRouteTypes {
     | '/pesaje/cintas'
     | '/t/$folio'
     | '/q/$tipo/$valor'
-    | '/api/public/hooks'
     | '/api/public/hooks/cierre-turno-reporte'
+    | '/api/public/hooks/preview-temp'
   id:
     | '__root__'
     | '/'
@@ -386,8 +386,8 @@ export interface FileRouteTypes {
     | '/pesaje/cintas'
     | '/t/$folio'
     | '/q/$tipo/$valor'
-    | '/api/public/hooks/_preview-cierre-turno'
     | '/api/public/hooks/cierre-turno-reporte'
+    | '/api/public/hooks/preview-temp'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -419,8 +419,8 @@ export interface RootRouteChildren {
   PesajeCintasRoute: typeof PesajeCintasRoute
   TFolioRoute: typeof TFolioRoute
   QTipoValorRoute: typeof QTipoValorRoute
-  ApiPublicHooksPreviewCierreTurnoRoute: typeof ApiPublicHooksPreviewCierreTurnoRoute
   ApiPublicHooksCierreTurnoReporteRoute: typeof ApiPublicHooksCierreTurnoReporteRoute
+  ApiPublicHooksPreviewTempRoute: typeof ApiPublicHooksPreviewTempRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -621,18 +621,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof QTipoValorRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/preview-temp': {
+      id: '/api/public/hooks/preview-temp'
+      path: '/api/public/hooks/preview-temp'
+      fullPath: '/api/public/hooks/preview-temp'
+      preLoaderRoute: typeof ApiPublicHooksPreviewTempRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/cierre-turno-reporte': {
       id: '/api/public/hooks/cierre-turno-reporte'
       path: '/api/public/hooks/cierre-turno-reporte'
       fullPath: '/api/public/hooks/cierre-turno-reporte'
       preLoaderRoute: typeof ApiPublicHooksCierreTurnoReporteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/hooks/_preview-cierre-turno': {
-      id: '/api/public/hooks/_preview-cierre-turno'
-      path: '/api/public/hooks'
-      fullPath: '/api/public/hooks'
-      preLoaderRoute: typeof ApiPublicHooksPreviewCierreTurnoRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -667,8 +667,8 @@ const rootRouteChildren: RootRouteChildren = {
   PesajeCintasRoute: PesajeCintasRoute,
   TFolioRoute: TFolioRoute,
   QTipoValorRoute: QTipoValorRoute,
-  ApiPublicHooksPreviewCierreTurnoRoute: ApiPublicHooksPreviewCierreTurnoRoute,
   ApiPublicHooksCierreTurnoReporteRoute: ApiPublicHooksCierreTurnoReporteRoute,
+  ApiPublicHooksPreviewTempRoute: ApiPublicHooksPreviewTempRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
