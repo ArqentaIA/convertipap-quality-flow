@@ -7,10 +7,14 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Camera, CheckCircle2, Loader2, RefreshCw, ImageIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { verificarRolloUtilizado, type PesajeBobina, type RolloYaUtilizado } from "@/lib/pesajes.functions";
+import {
+  verificarRolloUtilizado, asignarPersonalPesaje, listPersonalPlanta, crearPersonalPlanta,
+  type PesajeBobina, type RolloYaUtilizado,
+} from "@/lib/pesajes.functions";
 import { getEstadoNumeracionRollo } from "@/lib/qc.functions";
 import { fechaCortoMX, horaMX } from "@/lib/format";
-import { usePlantasPermitidas } from "@/hooks/usePlantasPermitidas";
+import { usePlantasPermitidas, usePlantaActivaCodigo } from "@/hooks/usePlantasPermitidas";
+import { SelectConAlta } from "@/components/common/SelectConAlta";
 
 export const Route = createFileRoute("/pesaje/bobina-madre")({
   head: () => ({
