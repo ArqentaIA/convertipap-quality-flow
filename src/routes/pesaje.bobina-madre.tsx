@@ -669,6 +669,7 @@ function PesajeBobinaPage() {
 
       if (data.status === "accepted" && data.registro) {
         registeringRequestRef.current = clientRequestId;
+        await guardarPersonalDelPesaje(data.registro.id);
         mostrarMensajeUnico("success", data.message || "Peso identificado y registrado correctamente.");
         qc.invalidateQueries({ queryKey: ["pesajes"] });
         resetForm(true);
@@ -734,6 +735,7 @@ function PesajeBobinaPage() {
       const data = (resp.data ?? {}) as EdgeResponse;
       if (data.status === "accepted" && data.registro) {
         registeringRequestRef.current = confirmData.idempotencyKey;
+        await guardarPersonalDelPesaje(data.registro.id);
         mostrarMensajeUnico("success", data.message || "Peso confirmado y registrado correctamente.");
         qc.invalidateQueries({ queryKey: ["pesajes"] });
         setConfirmData(null);
