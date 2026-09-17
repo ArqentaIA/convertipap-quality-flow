@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Loader2, Search, Printer, CheckCircle2, Ban, Lock, Pencil, UserCog } from "lucide-react";
 import {
-  buscarContextoRollo, listConductores, listBobinadoras,
+  buscarContextoRollo, listConductores, listBobinadoras, crearOperario, crearBobinadora,
   crearLote, crearLoteManualV2, iniciarBajadaHeredada, guardarOrdenManual, obtenerLoteYCintas, registrarCinta, corregirCinta, anularCinta,
   finalizarLote, prepararImpresion, actualizarDatosOperativos, asignarBobinadoraLote,
   asignarBobinadorNombre, asignarNombresOperativos, asignarEstatusCinta, asignarPersonalCortes,
@@ -20,6 +20,7 @@ import { abrirImpresionEtiquetas, type EtiquetaSnapshot } from "@/lib/etiqueta-c
 import { supabase } from "@/integrations/supabase/client";
 import { usePlantasPermitidas, usePlantaActivaCodigo } from "@/hooks/usePlantasPermitidas";
 import { UltimosLotesCintas } from "@/components/cintas/UltimosLotesCintas";
+import { SelectConAlta } from "@/components/common/SelectConAlta";
 
 export const Route = createFileRoute("/pesaje/cintas")({
   head: () => ({
