@@ -6,6 +6,24 @@
 
 import { createFileRoute } from "@tanstack/react-router";
 
+function fechaHoraPlanta(fecha: Date) {
+  const partes = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Mexico_City",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  }).formatToParts(fecha);
+  const p = (type: string) => partes.find((x) => x.type === type)?.value ?? "00";
+  return {
+    fecha: `${p("year")}-${p("month")}-${p("day")}`,
+    hora: `${p("hour")}:${p("minute")}:${p("second")}`.replace(/^24:/, "00:"),
+  };
+}
+
 async function ejecutar(request: Request) {
   const token = request.headers.get("x-cron-token");
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -55,6 +73,30 @@ async function ejecutar(request: Request) {
   const { construirReporteVisores } = await import("@/lib/reporte-visores.server");
   const reporte = await construirReporteVisores();
 
+  const { fecha, hora } = fechaHoraPlanta(reporte.generado);
+  const baseEnvio = {
+    generado_at: reporte.generado.toISOString(),
+    fecha,
+    hora,
+    turno: reporte.turno,
+    asunto: reporte.subject,
+  };
+
+  const { data: bitacora, error: bitacoraError } = await supabaseAdmin
+    .from("reporte_turno_envios")
+    .insert(
+      destinatarios.map((destinatario) => ({
+        ...baseEnvio,
+        destinatario,
+        estado: "pendiente",
+      })),
+    )
+    .select("id");
+  if (bitacoraError) {
+    console.error("[cierre-turno] No se pudo registrar la bitácora de envío:", bitacoraError.message);
+  }
+  const bitacoraIds = (bitacora ?? []).map((row) => row.id);
+
   const { sendSystemEmail } = await import("@/lib/email.server");
   const result = await sendSystemEmail({
     to: destinatarios,
@@ -84,10 +126,23 @@ async function ejecutar(request: Request) {
 
   if (!result.ok) {
     console.error("[cierre-turno] Envío rechazado:", result.error);
+    if (bitacoraIds.length > 0) {
+      await supabaseAdmin
+        .from("reporte_turno_envios")
+        .update({ estado: "fallido", error: result.error })
+        .in("id", bitacoraIds);
+    }
     return new Response(JSON.stringify({ error: result.error }), {
       status: 502,
       headers: { "Content-Type": "application/json" },
     });
+  }
+
+  if (bitacoraIds.length > 0) {
+    await supabaseAdmin
+      .from("reporte_turno_envios")
+      .update({ estado: "confirmado", proveedor_id: result.id, confirmado_at: new Date().toISOString(), error: null })
+      .in("id", bitacoraIds);
   }
 
   return new Response(

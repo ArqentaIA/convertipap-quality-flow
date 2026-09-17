@@ -4,13 +4,14 @@ import { queryOptions, useQuery, useMutation, useQueryClient } from "@tanstack/r
 import { useServerFn } from "@tanstack/react-start";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { SessionGate } from "@/components/SessionGate";
-import { Save, Eye, X, Mail, Sliders, Bell, ShieldAlert, FileCheck2, Lock, Monitor, Cloud, Plus } from "lucide-react";
+import { Save, Eye, X, Mail, Sliders, Bell, ShieldAlert, FileCheck2, Lock, Monitor, Cloud, Plus, Clock3 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import logoConvertipap from "@/assets/logo-convertipap.png";
 import { toast } from "sonner";
 import { getAppSettings, updateAppSettings, type AppSettings } from "@/lib/settings.functions";
 import { getBackendInfo, type BackendInfo } from "@/lib/backend-info.functions";
 import { getCEOReport } from "@/lib/ceo-report.functions";
+import { listEnviosCierreTurno, type ReporteTurnoEnvio } from "@/lib/reporte-turno-envios.functions";
 import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/configuracion")({
@@ -78,8 +79,9 @@ function ConfigPage() {
 }
 
 function ConfigContent({ settings }: { settings: AppSettings }) {
-  const { hasRole } = useAuth();
+  const { hasRole, user } = useAuth();
   const isAdmin = hasRole("administrador");
+  const isAdgral = (user?.email ?? "").toLowerCase() === "adgral@convertipap.site";
   const [previewCEO, setPreviewCEO] = useState(false);
   const [confirmEvidencia, setConfirmEvidencia] = useState(false);
   const [form, setForm] = useState<AppSettings>(settings);
@@ -301,6 +303,8 @@ function ConfigContent({ settings }: { settings: AppSettings }) {
           {isAdmin && <MonitorUrlsCard />}
 
           {isAdmin && <DestinatariosTurnoCard />}
+
+          {isAdgral && <HistorialEnviosTurnoCard />}
         </div>
 
         <button
@@ -955,6 +959,100 @@ function parseCorreos(texto: string): string[] {
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function fmtFechaEnvio(fecha: string) {
+  const [year, month, day] = fecha.split("-");
+  if (!year || !month || !day) return fecha;
+  return `${day}/${month}/${year}`;
+}
+
+function fmtHoraEnvio(hora: string) {
+  return hora.slice(0, 5);
+}
+
+function estadoEnvioCls(estado: ReporteTurnoEnvio["estado"]) {
+  if (estado === "confirmado") return "border-emerald-200 bg-emerald-50 text-emerald-700";
+  if (estado === "pendiente") return "border-amber-200 bg-amber-50 text-amber-700";
+  return "border-destructive/30 bg-destructive/10 text-destructive";
+}
+
+function estadoEnvioLabel(estado: ReporteTurnoEnvio["estado"]) {
+  if (estado === "confirmado") return "Confirmado";
+  if (estado === "pendiente") return "Pendiente";
+  return "Fallido";
+}
+
+function HistorialEnviosTurnoCard() {
+  const { session } = useAuth();
+  const listEnviosFn = useServerFn(listEnviosCierreTurno);
+  const { data, isLoading, error, refetch, isFetching } = useQuery({
+    queryKey: ["reporte-turno-envios"],
+    queryFn: () => listEnviosFn(),
+    enabled: !!session?.access_token,
+    retry: false,
+    refetchInterval: 60_000,
+  });
+
+  return (
+    <Card
+      icon={Clock3}
+      title="Historial · Envíos de cierre de turno"
+      desc="Últimos registros por destinatario, con estado confirmado, pendiente o fallido."
+    >
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-[11px] text-muted-foreground">Se actualiza automáticamente cada minuto.</p>
+        <button
+          type="button"
+          onClick={() => void refetch()}
+          disabled={isFetching}
+          className="inline-flex h-8 shrink-0 items-center rounded-md border border-border bg-background px-2.5 text-[11px] font-semibold text-muted-foreground hover:bg-accent disabled:opacity-50"
+        >
+          {isFetching ? "Actualizando…" : "Actualizar"}
+        </button>
+      </div>
+      {isLoading && <div className="text-xs text-muted-foreground">Cargando historial…</div>}
+      {error && <div className="text-xs text-destructive">No se pudo cargar el historial: {error.message}</div>}
+      {!isLoading && !error && (data?.length ?? 0) === 0 && (
+        <div className="rounded-md border border-dashed border-border bg-background p-3 text-xs text-muted-foreground">
+          Aún no hay envíos registrados. Los próximos cierres de turno aparecerán aquí.
+        </div>
+      )}
+      {(data?.length ?? 0) > 0 && (
+        <div className="max-h-80 overflow-auto rounded-md border border-border bg-background">
+          <table className="w-full min-w-[620px] text-xs">
+            <thead className="sticky top-0 bg-muted text-[10px] uppercase tracking-wide text-muted-foreground">
+              <tr>
+                <th className="px-2 py-2 text-left">Fecha</th>
+                <th className="px-2 py-2 text-left">Hora</th>
+                <th className="px-2 py-2 text-left">Turno</th>
+                <th className="px-2 py-2 text-left">Destinatario</th>
+                <th className="px-2 py-2 text-left">Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data?.map((envio) => (
+                <tr key={envio.id} className="border-t border-border align-top">
+                  <td className="px-2 py-2 tabular-nums text-foreground">{fmtFechaEnvio(envio.fecha)}</td>
+                  <td className="px-2 py-2 tabular-nums text-foreground">{fmtHoraEnvio(envio.hora)}</td>
+                  <td className="px-2 py-2 font-semibold text-foreground">{envio.turno}</td>
+                  <td className="px-2 py-2 text-foreground">{envio.destinatario}</td>
+                  <td className="px-2 py-2">
+                    <span
+                      className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold ${estadoEnvioCls(envio.estado)}`}
+                      title={envio.error ?? envio.proveedor_id ?? envio.asunto}
+                    >
+                      {estadoEnvioLabel(envio.estado)}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </Card>
+  );
+}
 
 function DestinatariosTurnoCard() {
   const qc = useQueryClient();
