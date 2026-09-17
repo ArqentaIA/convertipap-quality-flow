@@ -193,9 +193,10 @@ export async function construirConsolidadoDiario(
           : 0;
 
       // Kg: única fuente oficial = medición de calidad con clave 'peso'.
-      // Igual que el reporte por turno, se suman todos los rollos del turno
-      // (incluidas capturas fuera de turno) y nunca se estima un peso ausente.
-      const kg = (rows ?? []).reduce((acc: number, r: any) => {
+      // Se suma sobre EXACTAMENTE los mismos rollos válidos que cuentan para
+      // rollos/liberados/cumplimiento, para que el consolidado sea coherente
+      // consigo mismo. Un rollo sin peso de Calidad no se estima ni sustituye.
+      const kg = validos.reduce((acc: number, r: any) => {
         const peso = ((r.mediciones_calidad ?? []) as Array<any>).find((x) => x.variable_clave === "peso")?.valor;
         const n = peso === null || peso === undefined ? NaN : Number(peso);
         return Number.isFinite(n) ? acc + n : acc;
