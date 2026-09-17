@@ -96,8 +96,8 @@ type DetalleMaquina = {
 
 export async function construirReporteVisores(
   maquinas: readonly string[] = MAQUINAS_REPORTE,
-  /** Solo para vista previa autorizada: fuerza el bloque consolidado de T3. */
-  opts?: { forzarConsolidado?: boolean },
+  /** Solo para vista previa / reenvío autorizado: fuerza el bloque consolidado de T3. */
+  opts?: { forzarConsolidado?: boolean; consolidadoRef?: Date },
 ) {
   const generado = new Date();
   const wb = new ExcelJS.Workbook();
