@@ -37,6 +37,7 @@ import { Route as CalidadCapturaFueraTurnoRouteImport } from './routes/calidad.c
 import { Route as CalidadCapturaRouteImport } from './routes/calidad.captura'
 import { Route as CalidadAjustesRouteImport } from './routes/calidad.ajustes'
 import { Route as QTipoValorRouteImport } from './routes/q.$tipo.$valor'
+import { Route as ApiPublicHooksEnvioTempRouteImport } from './routes/api/public/hooks/envio-temp'
 import { Route as ApiPublicHooksCierreTurnoReporteRouteImport } from './routes/api/public/hooks/cierre-turno-reporte'
 
 const VariablesCalidadRoute = VariablesCalidadRouteImport.update({
@@ -180,6 +181,11 @@ const QTipoValorRoute = QTipoValorRouteImport.update({
   path: '/q/$tipo/$valor',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicHooksEnvioTempRoute = ApiPublicHooksEnvioTempRouteImport.update({
+  id: '/api/public/hooks/envio-temp',
+  path: '/api/public/hooks/envio-temp',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicHooksCierreTurnoReporteRoute =
   ApiPublicHooksCierreTurnoReporteRouteImport.update({
     id: '/api/public/hooks/cierre-turno-reporte',
@@ -217,6 +223,7 @@ export interface FileRoutesByFullPath {
   '/t/$folio': typeof TFolioRoute
   '/q/$tipo/$valor': typeof QTipoValorRoute
   '/api/public/hooks/cierre-turno-reporte': typeof ApiPublicHooksCierreTurnoReporteRoute
+  '/api/public/hooks/envio-temp': typeof ApiPublicHooksEnvioTempRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -248,6 +255,7 @@ export interface FileRoutesByTo {
   '/t/$folio': typeof TFolioRoute
   '/q/$tipo/$valor': typeof QTipoValorRoute
   '/api/public/hooks/cierre-turno-reporte': typeof ApiPublicHooksCierreTurnoReporteRoute
+  '/api/public/hooks/envio-temp': typeof ApiPublicHooksEnvioTempRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -280,6 +288,7 @@ export interface FileRoutesById {
   '/t/$folio': typeof TFolioRoute
   '/q/$tipo/$valor': typeof QTipoValorRoute
   '/api/public/hooks/cierre-turno-reporte': typeof ApiPublicHooksCierreTurnoReporteRoute
+  '/api/public/hooks/envio-temp': typeof ApiPublicHooksEnvioTempRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -313,6 +322,7 @@ export interface FileRouteTypes {
     | '/t/$folio'
     | '/q/$tipo/$valor'
     | '/api/public/hooks/cierre-turno-reporte'
+    | '/api/public/hooks/envio-temp'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -344,6 +354,7 @@ export interface FileRouteTypes {
     | '/t/$folio'
     | '/q/$tipo/$valor'
     | '/api/public/hooks/cierre-turno-reporte'
+    | '/api/public/hooks/envio-temp'
   id:
     | '__root__'
     | '/'
@@ -375,6 +386,7 @@ export interface FileRouteTypes {
     | '/t/$folio'
     | '/q/$tipo/$valor'
     | '/api/public/hooks/cierre-turno-reporte'
+    | '/api/public/hooks/envio-temp'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -407,6 +419,7 @@ export interface RootRouteChildren {
   TFolioRoute: typeof TFolioRoute
   QTipoValorRoute: typeof QTipoValorRoute
   ApiPublicHooksCierreTurnoReporteRoute: typeof ApiPublicHooksCierreTurnoReporteRoute
+  ApiPublicHooksEnvioTempRoute: typeof ApiPublicHooksEnvioTempRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -607,6 +620,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof QTipoValorRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/envio-temp': {
+      id: '/api/public/hooks/envio-temp'
+      path: '/api/public/hooks/envio-temp'
+      fullPath: '/api/public/hooks/envio-temp'
+      preLoaderRoute: typeof ApiPublicHooksEnvioTempRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/cierre-turno-reporte': {
       id: '/api/public/hooks/cierre-turno-reporte'
       path: '/api/public/hooks/cierre-turno-reporte'
@@ -647,6 +667,7 @@ const rootRouteChildren: RootRouteChildren = {
   TFolioRoute: TFolioRoute,
   QTipoValorRoute: QTipoValorRoute,
   ApiPublicHooksCierreTurnoReporteRoute: ApiPublicHooksCierreTurnoReporteRoute,
+  ApiPublicHooksEnvioTempRoute: ApiPublicHooksEnvioTempRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
