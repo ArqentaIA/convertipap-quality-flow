@@ -262,7 +262,9 @@ export async function construirReporteVisores(
   // la misma fuente que usan los visores. T1 y T2 no reciben consolidado.
   const ctxTurno = await resolverTurnoYDiaOperativo(generado);
   const consolidado =
-    ctxTurno.turno === "3" ? await construirConsolidadoDiario(maquinas, generado) : null;
+    ctxTurno.turno === "3" || opts?.forzarConsolidado
+      ? await construirConsolidadoDiario(maquinas, generado)
+      : null;
   let hojaConsolidadoNumero = 0;
   let nombreHojaConsolidado = "";
   if (consolidado) {
