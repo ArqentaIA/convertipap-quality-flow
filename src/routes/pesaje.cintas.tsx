@@ -680,11 +680,22 @@ function PesajeCintasPage() {
     if (conductores.length === 0 || bobinadoras.length === 0) {
       toast.error("Catálogos no disponibles."); return;
     }
-    const listaC = conductores.map((c, i) => `${i + 1}. ${c.nombre}`).join("\n");
-    const idxCStr = window.prompt(`Nuevo conductor (actual: ${lote.conductor_nombre_snapshot})\n${listaC}\n\nIngrese número:`);
-    if (idxCStr == null) return;
-    const idxC = Number(idxCStr) - 1;
-    if (!conductores[idxC]) { toast.error("Selección inválida."); return; }
+    // TLX: captura libre del conductor (alimenta el catálogo); IXT: selección del catálogo.
+    let nuevoConductorId = "";
+    if (esIxtapaluca) {
+      const listaC = conductores.map((c, i) => `${i + 1}. ${c.nombre}`).join("\n");
+      const idxCStr = window.prompt(`Nuevo conductor (actual: ${lote.conductor_nombre_snapshot})\n${listaC}\n\nIngrese número:`);
+      if (idxCStr == null) return;
+      const idxC = Number(idxCStr) - 1;
+      if (!conductores[idxC]) { toast.error("Selección inválida."); return; }
+      nuevoConductorId = conductores[idxC].id;
+    } else {
+      const nombreC = window.prompt(`Nuevo conductor (actual: ${lote.conductor_nombre_snapshot})\n\nCapture el nombre completo:`) ?? "";
+      if (nombreC.trim().length < 3) { toast.error("Nombre de conductor inválido."); return; }
+      const idC = await resolverConductorId(nombreC);
+      if (!idC) { toast.error("No fue posible registrar el conductor."); return; }
+      nuevoConductorId = idC;
+    }
     const listaB = bobinadoras.map((b, i) => `${i + 1}. ${b.nombre}`).join("\n");
     const idxBStr = window.prompt(`Nueva bobinadora (actual: ${lote.bobinadora_nombre_snapshot})\n${listaB}\n\nIngrese número:`);
     if (idxBStr == null) return;
