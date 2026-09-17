@@ -555,6 +555,7 @@ export type Database = {
           created_at: string
           id: string
           nombre: string
+          planta_id: string | null
           updated_at: string
         }
         Insert: {
@@ -565,6 +566,7 @@ export type Database = {
           created_at?: string
           id?: string
           nombre: string
+          planta_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -575,9 +577,18 @@ export type Database = {
           created_at?: string
           id?: string
           nombre?: string
+          planta_id?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "catalogo_bobinadoras_planta_id_fkey"
+            columns: ["planta_id"]
+            isOneToOne: false
+            referencedRelation: "plantas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       catalogo_sku_sap_cintas: {
         Row: {
@@ -1284,6 +1295,7 @@ export type Database = {
       operarios: {
         Row: {
           activo: boolean
+          creado_por: string | null
           created_at: string
           id: string
           nombre: string
@@ -1294,6 +1306,7 @@ export type Database = {
         }
         Insert: {
           activo?: boolean
+          creado_por?: string | null
           created_at?: string
           id?: string
           nombre: string
@@ -1304,6 +1317,7 @@ export type Database = {
         }
         Update: {
           activo?: boolean
+          creado_por?: string | null
           created_at?: string
           id?: string
           nombre?: string
@@ -1552,12 +1566,14 @@ export type Database = {
           evidencia_path: string
           fecha_hora_pesaje: string
           id: string
+          jefe_maquina_nombre: string | null
           maquina_codigo: string
           maquina_id: string
           numero_orden: string | null
           numero_rollo: string
           ocr_confianza: number | null
           ocr_raw: Json | null
+          operador_nombre: string | null
           orden_produccion_id: string | null
           peso_bruto_anterior_kg: number | null
           peso_bruto_kg: number
@@ -1579,12 +1595,14 @@ export type Database = {
           evidencia_path: string
           fecha_hora_pesaje?: string
           id?: string
+          jefe_maquina_nombre?: string | null
           maquina_codigo: string
           maquina_id: string
           numero_orden?: string | null
           numero_rollo: string
           ocr_confianza?: number | null
           ocr_raw?: Json | null
+          operador_nombre?: string | null
           orden_produccion_id?: string | null
           peso_bruto_anterior_kg?: number | null
           peso_bruto_kg: number
@@ -1606,12 +1624,14 @@ export type Database = {
           evidencia_path?: string
           fecha_hora_pesaje?: string
           id?: string
+          jefe_maquina_nombre?: string | null
           maquina_codigo?: string
           maquina_id?: string
           numero_orden?: string | null
           numero_rollo?: string
           ocr_confianza?: number | null
           ocr_raw?: Json | null
+          operador_nombre?: string | null
           orden_produccion_id?: string | null
           peso_bruto_anterior_kg?: number | null
           peso_bruto_kg?: number
@@ -3348,6 +3368,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      pb_set_personal: {
+        Args: { _jefe: string; _operador: string; _pesaje_id: string }
+        Returns: undefined
       }
       pc_bajadas_rollo: { Args: { _numero_rollo: string }; Returns: Json }
       pc_get_or_create_rollo: {
