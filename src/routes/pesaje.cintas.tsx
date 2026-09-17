@@ -206,6 +206,15 @@ function PesajeCintasPage() {
     await conductoresQ.refetch();
     return row?.id ?? null;
   }
+  /** TLX: conductor de captura libre. Busca por nombre en el catálogo de la planta;
+   *  si no existe, lo da de alta (alimentando el catálogo) y devuelve su id. */
+  async function resolverConductorId(nombre: string): Promise<string | null> {
+    const limpio = nombre.trim().replace(/\s+/g, " ");
+    if (limpio.length < 3) return null;
+    const existe = personalPlanta.find((o) => o.nombre.trim().toLowerCase() === limpio.toLowerCase());
+    if (existe) return existe.id;
+    return crearPersonalId(limpio);
+  }
   async function crearBobinadoraId(nombre: string): Promise<string | null> {
     const row = await altaBobinadora({ data: { nombre, planta_id: exigePlanta() } });
     await bobinadorasQ.refetch();
