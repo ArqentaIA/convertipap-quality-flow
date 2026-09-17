@@ -1019,6 +1019,7 @@ function PesajeCintasPage() {
                     onChange={setConductorNombre}
                     onCrear={crearPersonalNombre}
                     placeholderNuevo="Nombre del conductor"
+                    soloAlta
                   />
                 )}
                 {esIxtapaluca && (
@@ -1031,6 +1032,7 @@ function PesajeCintasPage() {
                     onChange={setMaquinaNombre}
                     onCrear={crearBobinadoraNombre}
                     placeholderNuevo="Nombre de la máquina"
+                    soloAlta
                   />
                 )}
                 {esIxtapaluca && (
@@ -1043,6 +1045,7 @@ function PesajeCintasPage() {
                     onChange={setBobinadorNombre}
                     onCrear={crearPersonalNombre}
                     placeholderNuevo="Nombre del bobinador"
+                    soloAlta
                   />
                 )}
                 <SelectConAlta
@@ -1053,6 +1056,7 @@ function PesajeCintasPage() {
                   onChange={setOperadorCortes}
                   onCrear={crearPersonalNombre}
                   placeholderNuevo="Nombre del operador"
+                  soloAlta
                 />
                 <SelectConAlta
                   compact
@@ -1062,6 +1066,7 @@ function PesajeCintasPage() {
                   onChange={setAnalistaCortes}
                   onCrear={crearPersonalNombre}
                   placeholderNuevo="Nombre del analista"
+                  soloAlta
                 />
               </div>
 
@@ -1111,27 +1116,15 @@ function PesajeCintasPage() {
         <div className="rounded-lg border border-border bg-card p-4">
           <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">3 · Conductor y {esIxtapaluca ? "máquina" : "bobinadora"}</div>
           <div className={esIxtapaluca ? "grid gap-3 md:grid-cols-4" : "grid gap-3 md:grid-cols-3"}>
-            {esIxtapaluca ? (
-              <SelectConAlta
-                label="Conductor"
-                value={conductorNombre}
-                opciones={opcionesPersonal}
-                onChange={setConductorNombre}
-                onCrear={crearPersonalNombre}
-                placeholderNuevo="Nombre del conductor"
-              />
-            ) : (
-              <div>
-                <label className="mb-1 block text-xs font-medium text-muted-foreground">Conductor <span className="text-destructive">*</span></label>
-                <input
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  maxLength={60}
-                  placeholder="Nombre del conductor"
-                  value={conductorNombre}
-                  onChange={(e) => setConductorNombre(e.target.value)}
-                />
-              </div>
-            )}
+            <SelectConAlta
+              label="Conductor"
+              value={conductorNombre}
+              opciones={opcionesPersonal}
+              onChange={setConductorNombre}
+              onCrear={crearPersonalNombre}
+              placeholderNuevo="Nombre del conductor"
+              soloAlta
+            />
             {esIxtapaluca ? (
               <SelectConAlta
                 label="Máquina"
@@ -1140,6 +1133,7 @@ function PesajeCintasPage() {
                 onChange={setMaquinaNombre}
                 onCrear={crearBobinadoraNombre}
                 placeholderNuevo="Nombre de la máquina"
+                soloAlta
               />
             ) : (
               <SelectConAlta
@@ -1149,6 +1143,14 @@ function PesajeCintasPage() {
                 onChange={setBobinadoraId}
                 onCrear={crearBobinadoraId}
                 placeholderNuevo="Nombre de la bobinadora"
+                soloAlta
+                etiquetaActual={
+                  bobinadoraActual
+                    ? bobinadoraActual.codigo
+                      ? `${bobinadoraActual.nombre} (${bobinadoraActual.codigo})`
+                      : bobinadoraActual.nombre
+                    : undefined
+                }
               />
             )}
             {esIxtapaluca && (
@@ -1159,6 +1161,7 @@ function PesajeCintasPage() {
                 onChange={setBobinadorNombre}
                 onCrear={crearPersonalNombre}
                 placeholderNuevo="Nombre del bobinador"
+                soloAlta
               />
             )}
             <SelectConAlta
@@ -1168,6 +1171,7 @@ function PesajeCintasPage() {
               onChange={setOperadorCortes}
               onCrear={crearPersonalNombre}
               placeholderNuevo="Nombre del operador"
+              soloAlta
             />
             <SelectConAlta
               label="Analista que libera cortes"
@@ -1176,6 +1180,7 @@ function PesajeCintasPage() {
               onChange={setAnalistaCortes}
               onCrear={crearPersonalNombre}
               placeholderNuevo="Nombre del analista"
+              soloAlta
             />
             <div className="flex items-end">
               <button
@@ -1184,7 +1189,7 @@ function PesajeCintasPage() {
                   saving ||
                   (esIxtapaluca
                     ? conductorNombre.trim().length < 3 || maquinaNombre.trim().length < 2 || bobinadorNombre.trim().length < 3
-                    : !conductorId || !bobinadoraId)
+                    : conductorNombre.trim().length < 3 || !bobinadoraId)
                 }
                 className="w-full rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground disabled:opacity-50"
               >
