@@ -6,6 +6,11 @@
 import ExcelJS from "exceljs";
 import { fetchOperatorVisionData } from "./operator-vision.server";
 import { inyectarGraficasDashboard } from "./reporte-visores-charts.server";
+import {
+  construirConsolidadoDiario,
+  resolverTurnoYDiaOperativo,
+  type ConsolidadoDiario,
+} from "./reporte-consolidado-diario.server";
 import logoDataUrl from "@/assets/reporte-visores-logo.png?inline";
 import irmLogoDataUrl from "@/assets/irm-logo.png?inline";
 
@@ -265,7 +270,7 @@ export async function construirReporteVisores(maquinas: readonly string[] = MAQU
 
   const bruto = (await wb.xlsx.writeBuffer()) as ArrayBuffer;
   const n = Math.max(resumen.length, 1);
-  const buffer = inyectarGraficasDashboard(bruto, {
+  let buffer = inyectarGraficasDashboard(bruto, {
     sheetNumber: 1,
     puntos: n,
     series: [
@@ -301,6 +306,47 @@ export async function construirReporteVisores(maquinas: readonly string[] = MAQU
       },
     ],
   });
+
+  // Gráficas nativas de la hoja Consolidado Diario (mismo estilo ejecutivo).
+  if (consolidado && hojaConsolidadoNumero > 0) {
+    const nc = Math.max(consolidado.maquinas.length, 1);
+    buffer = inyectarGraficasDashboard(buffer, {
+      sheetNumber: hojaConsolidadoNumero,
+      puntos: nc,
+      series: [
+        {
+          titulo: "Rollos producidos por máquina (T1+T2+T3)",
+          hoja: nombreHojaConsolidado,
+          catRef: `$B$59:$B$${58 + nc}`,
+          valRef: `$F$59:$F$${58 + nc}`,
+          color: "2D8A9E",
+          numFmt: "0",
+          from: { col: 1, row: 12 },
+          to: { col: 8, row: 30 },
+        },
+        {
+          titulo: "Cumplimiento diario de variables por máquina",
+          hoja: nombreHojaConsolidado,
+          catRef: `$B$59:$B$${58 + nc}`,
+          valRef: `$J$59:$J$${58 + nc}`,
+          color: "1B7F5E",
+          numFmt: "0.0%",
+          from: { col: 9, row: 12 },
+          to: { col: 14, row: 30 },
+        },
+        {
+          titulo: "Kg producidos por máquina (día operativo)",
+          hoja: nombreHojaConsolidado,
+          catRef: `$B$59:$B$${58 + nc}`,
+          valRef: `$H$59:$H$${58 + nc}`,
+          color: "2D8A9E",
+          numFmt: '#,##0 "kg"',
+          from: { col: 1, row: 33 },
+          to: { col: 14, row: 51 },
+        },
+      ],
+    });
+  }
   const pad = (n: number) => String(n).padStart(2, "0");
   // Hora planta (America/Mexico_City) para fecha y turno del nombre de archivo.
   const partesPlanta = new Intl.DateTimeFormat("en-CA", {
