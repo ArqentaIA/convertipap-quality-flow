@@ -462,6 +462,97 @@ export async function construirReporteVisores(maquinas: readonly string[] = MAQU
     })
     .join("");
 
+  // --------------------- Sección embebida: Consolidado diario (solo T3)
+  const htmlConsolidado = !consolidado
+    ? ""
+    : (() => {
+        const c = consolidado;
+        const maxR = Math.max(1, ...c.maquinas.map((m) => m.rollos));
+        const maxK = Math.max(1, ...c.maquinas.map((m) => m.kgProducidos));
+        const filas = c.maquinas
+          .map(
+            (m) => `<tr>
+<td style="${TD};font-weight:bold">${esc(m.codigo)}</td>
+<td style="${TD};text-align:center">${esc(m.planta)}</td>
+<td style="${TD};text-align:center">${m.rollosT1}</td>
+<td style="${TD};text-align:center">${m.rollosT2}</td>
+<td style="${TD};text-align:center">${m.rollosT3}</td>
+<td style="${TD};text-align:center;font-weight:bold">${m.rollos}</td>
+<td style="${TD};text-align:center">${m.liberados}</td>
+<td style="${TD};text-align:center">${Math.round(m.kgProducidos).toLocaleString("es-MX")} kg</td>
+<td style="${TD};text-align:center">${m.cumplimientoPct}%</td>
+<td style="${TD};text-align:center">${m.cumplimientoVariablesPct}%</td></tr>`,
+          )
+          .join("");
+        const t = c.totales;
+        const totalRow = `<tr>
+<td style="${TD};font-weight:bold;background:#f6f8fb">TOTAL DÍA</td>
+<td style="${TD};background:#f6f8fb"></td>
+<td style="${TD};text-align:center;font-weight:bold;background:#f6f8fb">${t.rollosT1}</td>
+<td style="${TD};text-align:center;font-weight:bold;background:#f6f8fb">${t.rollosT2}</td>
+<td style="${TD};text-align:center;font-weight:bold;background:#f6f8fb">${t.rollosT3}</td>
+<td style="${TD};text-align:center;font-weight:bold;background:#f6f8fb">${t.rollos}</td>
+<td style="${TD};text-align:center;font-weight:bold;background:#f6f8fb">${t.liberados}</td>
+<td style="${TD};text-align:center;font-weight:bold;background:#f6f8fb">${Math.round(t.kgProducidos).toLocaleString("es-MX")} kg</td>
+<td style="${TD};text-align:center;font-weight:bold;background:#f6f8fb">${t.cumplimientoPct}%</td>
+<td style="${TD};text-align:center;font-weight:bold;background:#f6f8fb">${t.cumplimientoVariablesPct}%</td></tr>`;
+        const gKg = c.maquinas
+          .map(
+            (m) => `<tr>
+<td style="padding:5px 8px;font-size:12px;font-weight:bold;color:#1e293b;width:64px;white-space:nowrap">${esc(m.codigo)}</td>
+<td style="padding:5px 8px">${barra((m.kgProducidos / maxK) * 100, "#2d8a9e")}</td>
+<td style="padding:5px 8px;font-size:11px;color:#2d8a9e;width:92px;white-space:nowrap;text-align:right">${Math.round(m.kgProducidos).toLocaleString("es-MX")} kg</td></tr>`,
+          )
+          .join("");
+        const gCum = c.maquinas
+          .map(
+            (m) => `<tr>
+<td style="padding:5px 8px;font-size:12px;font-weight:bold;color:#1e293b;width:64px;white-space:nowrap">${esc(m.codigo)}</td>
+<td style="padding:5px 8px;width:40%">${barra((m.rollos / maxR) * 100, "#2d8a9e")}</td>
+<td style="padding:5px 8px;font-size:11px;color:#2d8a9e;width:70px;white-space:nowrap">${m.rollos} rollos</td>
+<td style="padding:5px 8px;width:40%">${barra(Math.min(100, m.cumplimientoVariablesPct), "#1b7f5e")}</td>
+<td style="padding:5px 8px;font-size:11px;color:#1b7f5e;width:52px;white-space:nowrap;text-align:right">${m.cumplimientoVariablesPct}%</td></tr>`,
+          )
+          .join("");
+        return `
+<div style="margin-top:30px;border-top:3px solid #1e293b;padding-top:6px"></div>
+<div style="background:#1e293b;color:#fff;padding:12px 18px;border-radius:6px">
+<div style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;opacity:.75">Cierre completo del día operativo</div>
+<div style="font-size:18px;font-weight:bold;padding-top:3px">Consolidado diario — ${esc(c.etiquetaLarga)}</div>
+<div style="font-size:11px;opacity:.8;padding-top:2px">Turnos T1 + T2 + T3 · MP-01, MP-04, MP-05, MP-06 y MP-07</div>
+</div>
+
+<h3 style="${H2}">Indicadores del día</h3>
+<table style="border-collapse:collapse;width:100%"><tr>
+${kpi("Total rollos del día", String(t.rollos))}
+${kpi("Total liberados", String(t.liberados))}
+${kpi("Total kg producidos", `${Math.round(t.kgProducidos).toLocaleString("es-MX")} kg`)}
+${kpi("Cumpl. oficial diario", `${t.cumplimientoPct}%`)}
+${kpi("Cumpl. variables diario", `${t.cumplimientoVariablesPct}%`)}
+</tr></table>
+
+<h3 style="${H2}">Kg producidos por máquina · día operativo</h3>
+<table style="border-collapse:collapse;width:100%;border:1px solid #d7dee8;background:#fcfdff">
+<tr><td colspan="3" style="padding:6px 8px;font-size:10px;color:#5b6573">
+<span style="color:#2d8a9e">&#9632;</span> Peso oficial de Calidad · Total del día ${Math.round(t.kgProducidos).toLocaleString("es-MX")} kg</td></tr>
+${gKg}</table>
+
+<h3 style="${H2}">Cumplimiento diario por máquina</h3>
+<table style="border-collapse:collapse;width:100%;border:1px solid #d7dee8;background:#fcfdff">
+<tr><td colspan="5" style="padding:6px 8px;font-size:10px;color:#5b6573">
+<span style="color:#2d8a9e">&#9632;</span> Rollos del día &nbsp;&nbsp; <span style="color:#1b7f5e">&#9632;</span> Cumplimiento de variables diario</td></tr>
+${gCum}</table>
+
+<h3 style="${H2}">Resumen por máquina · T1 + T2 + T3</h3>
+<table style="border-collapse:collapse;width:100%">
+<thead><tr>
+<th style="${TH}">Máquina</th><th style="${TH}">Planta</th><th style="${TH}">Rollos T1</th><th style="${TH}">Rollos T2</th>
+<th style="${TH}">Rollos T3</th><th style="${TH}">Total rollos</th><th style="${TH}">Liberados</th>
+<th style="${TH}">Kg producidos</th><th style="${TH}">Cumpl. oficial diario</th><th style="${TH}">Cumpl. variables diario</th>
+</tr></thead><tbody>${filas}${totalRow}</tbody></table>
+<p style="margin:10px 0 0;font-size:11px;color:#5b6573">Día operativo ${esc(c.etiquetaLarga)}: del arranque de T1 al cierre de T3 (T3 cruza medianoche). Los porcentajes diarios se recalculan sobre todos los registros del día, no se promedian por turno. El detalle está en la hoja <b>Consolidado Diario ${esc(c.etiquetaCorta)}</b> del Excel adjunto.</p>`;
+      })();
+
   const html = `<div style="font-family:Arial,Helvetica,sans-serif;color:#0f172a;max-width:900px">
 <div style="background:#1e293b;color:#fff;padding:16px 22px;border-radius:6px 6px 0 0">
 <table style="border-collapse:collapse;width:100%"><tr>
