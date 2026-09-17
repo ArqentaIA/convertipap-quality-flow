@@ -96,8 +96,8 @@ type DetalleMaquina = {
 
 export async function construirReporteVisores(
   maquinas: readonly string[] = MAQUINAS_REPORTE,
-  /** Solo para vista previa autorizada: fuerza el bloque consolidado de T3. */
-  opts?: { forzarConsolidado?: boolean },
+  /** Solo para vista previa / reenvío autorizado: fuerza el bloque consolidado de T3. */
+  opts?: { forzarConsolidado?: boolean; consolidadoRef?: Date },
 ) {
   const generado = new Date();
   const wb = new ExcelJS.Workbook();
@@ -260,10 +260,11 @@ export async function construirReporteVisores(
   // ------------------------------------- Consolidado diario (solo en T3)
   // El turno se resuelve con la configuración vigente de turnos (app_settings),
   // la misma fuente que usan los visores. T1 y T2 no reciben consolidado.
-  const ctxTurno = await resolverTurnoYDiaOperativo(generado);
+  const refConsolidado = opts?.consolidadoRef ?? generado;
+  const ctxTurno = await resolverTurnoYDiaOperativo(refConsolidado);
   const consolidado =
     ctxTurno.turno === "3" || opts?.forzarConsolidado
-      ? await construirConsolidadoDiario(maquinas, generado)
+      ? await construirConsolidadoDiario(maquinas, refConsolidado)
       : null;
   let hojaConsolidadoNumero = 0;
   let nombreHojaConsolidado = "";
