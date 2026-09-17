@@ -14,6 +14,15 @@ async function ejecutar(request: Request) {
   if (!esperado || !token || token !== esperado) {
     return new Response("No autorizado", { status: 401 });
   }
+  const url = new URL(request.url);
+  const at = url.searchParams.get("at");
+  if (at) {
+    const { construirConsolidadoDiario, resolverTurnoYDiaOperativo } = await import("@/lib/reporte-consolidado-diario.server");
+    const cuando = new Date(at);
+    const ctx = await resolverTurnoYDiaOperativo(cuando);
+    const cons = await construirConsolidadoDiario(["MP-01", "MP-04", "MP-05", "MP-06", "MP-07"], cuando);
+    return new Response(JSON.stringify({ turno: ctx.turno, diaOperativo: ctx.diaOperativo, desde: ctx.desde, cons }, null, 1), { headers: { "Content-Type": "application/json" } });
+  }
   const { MAQUINAS_REPORTE, construirReporteVisores } = await import("@/lib/reporte-visores.server");
   const r = await construirReporteVisores(MAQUINAS_REPORTE, { forzarConsolidado: true });
   return new Response(
