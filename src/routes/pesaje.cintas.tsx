@@ -1114,14 +1114,16 @@ function PesajeCintasPage() {
                 placeholderNuevo="Nombre del conductor"
               />
             ) : (
-              <SelectConAlta
-                label="Conductor"
-                value={conductorId}
-                opciones={opcionesPersonalId}
-                onChange={setConductorId}
-                onCrear={crearPersonalId}
-                placeholderNuevo="Nombre del conductor"
-              />
+              <div>
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">Conductor <span className="text-destructive">*</span></label>
+                <input
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  maxLength={60}
+                  placeholder="Nombre del conductor"
+                  value={conductorNombre}
+                  onChange={(e) => setConductorNombre(e.target.value)}
+                />
+              </div>
             )}
             {esIxtapaluca ? (
               <SelectConAlta
