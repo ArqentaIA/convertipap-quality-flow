@@ -837,6 +837,24 @@ function PesajeBobinaPage() {
               </p>
             )}
           </div>
+
+          {/* Personal responsable (trazabilidad; no afecta peso ni numeración) */}
+          <SelectConAlta
+            label="Operador"
+            value={operadorNombre}
+            opciones={opcionesPersonal}
+            onChange={setOperadorNombre}
+            onCrear={crearPersonalNombre}
+            placeholderNuevo="Nombre del operador"
+          />
+          <SelectConAlta
+            label="Jefe de máquina"
+            value={jefeMaquinaNombre}
+            opciones={opcionesPersonal}
+            onChange={setJefeMaquinaNombre}
+            onCrear={crearPersonalNombre}
+            placeholderNuevo="Nombre del jefe de máquina"
+          />
         </div>
 
         {/* 3. Evidencia con OCR — oculto para capturistas */}
