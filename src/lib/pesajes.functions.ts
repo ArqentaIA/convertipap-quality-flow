@@ -34,6 +34,70 @@ export type PesajeBobina = {
 // validaciones estrictas, resta la tara según la máquina (MP-04=560, MP-05=750, MP-06=1160, MP-07=1260 kg) y persiste con service role.
 // El frontend sólo sube la evidencia y llama a esa función.
 
+/**
+ * Personal responsable del pesaje (operador y jefe de máquina). Dato
+ * ADICIONAL de trazabilidad: no altera pesos, evidencia ni numeración.
+ */
+export const asignarPersonalPesaje = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        pesaje_id: z.string().uuid(),
+        operador: z.string().trim().max(60).nullable().optional(),
+        jefe_maquina: z.string().trim().max(60).nullable().optional(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase.rpc("pb_set_personal", {
+      _pesaje_id: data.pesaje_id,
+      _operador: data.operador ?? null,
+      _jefe: data.jefe_maquina ?? null,
+    });
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+/** Catálogo de personal por planta (para los selectores de pesaje). */
+export const listPersonalPlanta = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data, error } = await context.supabase
+      .from("operarios")
+      .select("id, nombre, puesto, planta_id")
+      .eq("activo", true)
+      .order("nombre");
+    if (error) throw new Error(error.message);
+    return data ?? [];
+  });
+
+/** Alta de personal desde Pesaje de Rollo (queda ligado a la planta). */
+export const crearPersonalPlanta = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z.object({ nombre: z.string().trim().min(3).max(60), planta_id: z.string().uuid() }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const nombre = data.nombre.trim();
+    const { data: existente } = await context.supabase
+      .from("operarios")
+      .select("id, nombre, puesto, planta_id")
+      .eq("planta_id", data.planta_id)
+      .ilike("nombre", nombre)
+      .maybeSingle();
+    if (existente) return existente;
+    const { data: row, error } = await context.supabase
+      .from("operarios")
+      .insert({ nombre, planta_id: data.planta_id, activo: true, creado_por: context.userId })
+      .select("id, nombre, puesto, planta_id")
+      .single();
+    if (error) throw new Error(error.message);
+    return row;
+  });
+
+
+
 
 /** Lista los últimos pesajes. */
 export const listPesajes = createServerFn({ method: "GET" })
