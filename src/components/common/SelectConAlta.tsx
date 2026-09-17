@@ -18,6 +18,10 @@ export function SelectConAlta({
   disabled,
   requerido,
   compact,
+  /** No lista el catálogo: solo muestra el valor actual y "➕ Agregar nuevo…". */
+  soloAlta,
+  /** Etiqueta a mostrar para el valor actual cuando este no está en `opciones`. */
+  etiquetaActual,
 }: {
   label: string;
   /** Valor seleccionado (id u opción textual). */
@@ -32,6 +36,8 @@ export function SelectConAlta({
   disabled?: boolean;
   requerido?: boolean;
   compact?: boolean;
+  soloAlta?: boolean;
+  etiquetaActual?: string;
 }) {
   const [agregando, setAgregando] = useState(false);
   const [nuevo, setNuevo] = useState("");
@@ -121,7 +127,12 @@ export function SelectConAlta({
           }}
         >
           <option value="">{placeholder}</option>
-          {opciones.map((o) => (
+          {(soloAlta
+            ? value
+              ? [{ valor: value, etiqueta: etiquetaActual ?? value }]
+              : []
+            : opciones
+          ).map((o) => (
             <option key={o.valor} value={o.valor}>
               {o.etiqueta}
             </option>
