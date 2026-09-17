@@ -611,6 +611,8 @@ ${bloquesMaquina}
 El detalle completo por máquina, con todas las variables medidas y sus gráficas, se incluye en el archivo Excel adjunto <b>${esc(fileName)}</b>. Correo y adjunto se generan de la misma fuente de datos de los Visores.</p>
 </div>
 
+${htmlConsolidado}
+
 <div style="margin-top:20px;border-top:1px solid #d7dee8;padding-top:12px">
 <p style="margin:0;font-size:10.5px;line-height:1.55;color:#64748b;text-align:justify">
 <b style="color:#1e293b">AVISO DE CONFIDENCIALIDAD.</b> Este correo y sus anexos contienen información operativa y de calidad propiedad de Convertipap, de carácter confidencial y de uso exclusivo del personal autorizado como destinatario. Queda prohibida su divulgación, reproducción total o parcial, distribución o uso por cualquier medio sin autorización expresa de la Dirección General. La reproducción o el uso indebido de esta información es responsabilidad exclusiva de quien la ejecute. Si usted recibió este mensaje por error, notifíquelo al remitente y elimínelo de inmediato. Documento generado automáticamente; no responda a esta dirección.
