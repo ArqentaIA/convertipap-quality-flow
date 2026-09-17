@@ -149,6 +149,54 @@ function PesajeBobinaPage() {
     (plantasPermitidas ?? []).length > 0 &&
     (plantasPermitidas ?? []).every((p) => p.codigo?.toUpperCase() === "IXT");
 
+  // Personal responsable del pesaje. Cada planta alimenta su propia lista.
+  const plantaActivaCodigo = usePlantaActivaCodigo();
+  const plantaActivaId = useMemo(() => {
+    const lista = plantasPermitidas ?? [];
+    const activa = lista.find(
+      (p) => (p.codigo ?? "").toUpperCase() === (plantaActivaCodigo ?? "").toUpperCase(),
+    );
+    return activa?.id ?? (lista.length === 1 ? lista[0].id : null);
+  }, [plantasPermitidas, plantaActivaCodigo]);
+
+  const traerPersonal = useServerFn(listPersonalPlanta);
+  const altaPersonal = useServerFn(crearPersonalPlanta);
+  const guardarPersonalPesaje = useServerFn(asignarPersonalPesaje);
+  const personalQ = useQuery({
+    queryKey: ["pesaje", "personal"],
+    queryFn: () => traerPersonal(),
+    staleTime: 5 * 60 * 1000,
+  });
+  const opcionesPersonal = useMemo(() => {
+    const todos = personalQ.data ?? [];
+    const dePlanta = plantaActivaId ? todos.filter((o) => o.planta_id === plantaActivaId) : todos;
+    return dePlanta.map((o) => ({ valor: o.nombre, etiqueta: o.nombre }));
+  }, [personalQ.data, plantaActivaId]);
+
+  const [operadorNombre, setOperadorNombre] = useState("");
+  const [jefeMaquinaNombre, setJefeMaquinaNombre] = useState("");
+
+  async function crearPersonalNombre(nombre: string): Promise<string | null> {
+    if (!plantaActivaId) throw new Error("Seleccione la planta activa en el encabezado.");
+    const row = await altaPersonal({ data: { nombre, planta_id: plantaActivaId } });
+    await personalQ.refetch();
+    return row?.nombre ?? nombre;
+  }
+
+  async function guardarPersonalDelPesaje(pesajeId: string | undefined) {
+    if (!pesajeId) return;
+    if (!operadorNombre.trim() && !jefeMaquinaNombre.trim()) return;
+    await guardarPersonalPesaje({
+      data: {
+        pesaje_id: pesajeId,
+        operador: operadorNombre.trim() || null,
+        jefe_maquina: jefeMaquinaNombre.trim() || null,
+      },
+    }).catch(() => {
+      toast.error("El pesaje se registró, pero no se pudo guardar el personal.");
+    });
+  }
+
   const [ordenSel, setOrdenSel] = useState<string>("");
   const [ordenOtro, setOrdenOtro] = useState("");
   const [numeroOrden, setNumeroOrden] = useState("");
