@@ -156,7 +156,7 @@ export const listConductores = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { data, error } = await context.supabase
       .from("operarios")
-      .select("id, nombre, puesto")
+      .select("id, nombre, puesto, planta_id")
       .eq("activo", true)
       .order("nombre");
     if (error) throw new Error(error.message);
@@ -168,11 +168,106 @@ export const listBobinadoras = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { data, error } = await context.supabase
       .from("catalogo_bobinadoras")
-      .select("id, codigo, nombre")
+      .select("id, codigo, nombre, planta_id")
       .eq("activo", true)
       .order("nombre");
     if (error) throw new Error(error.message);
     return data ?? [];
+  });
+
+/**
+ * Alta de personal desde el propio módulo (el catálogo se alimenta conforme
+ * se captura). Siempre queda ligado a una planta: el personal NO se comparte
+ * entre Tlaxcala e Ixtapaluca.
+ */
+export const crearOperario = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        nombre: z.string().trim().min(3).max(60),
+        planta_id: z.string().uuid(),
+        puesto: z.string().trim().max(40).nullable().optional(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const nombre = data.nombre.trim();
+    const { data: existente } = await context.supabase
+      .from("operarios")
+      .select("id, nombre, puesto, planta_id")
+      .eq("planta_id", data.planta_id)
+      .ilike("nombre", nombre)
+      .maybeSingle();
+    if (existente) return existente;
+
+    const { data: row, error } = await context.supabase
+      .from("operarios")
+      .insert({
+        nombre,
+        planta_id: data.planta_id,
+        puesto: data.puesto ?? null,
+        activo: true,
+        creado_por: context.userId,
+      })
+      .select("id, nombre, puesto, planta_id")
+      .single();
+    if (error) throw new Error(error.message);
+    return row;
+  });
+
+/** Alta de bobinadora/máquina de cortes por planta. */
+export const crearBobinadora = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        nombre: z.string().trim().min(2).max(60),
+        planta_id: z.string().uuid(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const nombre = data.nombre.trim();
+    const { data: existente } = await context.supabase
+      .from("catalogo_bobinadoras")
+      .select("id, codigo, nombre, planta_id")
+      .eq("planta_id", data.planta_id)
+      .ilike("nombre", nombre)
+      .maybeSingle();
+    if (existente) return existente;
+
+    const base =
+      nombre
+        .toUpperCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^A-Z0-9]/g, "")
+        .slice(0, 8) || "BOB";
+    let codigo = base;
+    for (let i = 1; i < 50; i++) {
+      const { data: dup } = await context.supabase
+        .from("catalogo_bobinadoras")
+        .select("id")
+        .eq("codigo", codigo)
+        .maybeSingle();
+      if (!dup) break;
+      codigo = `${base}${i}`;
+    }
+
+    const { data: row, error } = await context.supabase
+      .from("catalogo_bobinadoras")
+      .insert({
+        nombre,
+        codigo,
+        planta_id: data.planta_id,
+        activo: true,
+        creado_por: context.userId,
+      })
+      .select("id, codigo, nombre, planta_id")
+      .single();
+    if (error) throw new Error(error.message);
+    return row;
   });
 
 // -------------------------------- Contexto -------------------------------- //
