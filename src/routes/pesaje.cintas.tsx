@@ -185,6 +185,10 @@ function PesajeCintasPage() {
     () => bobinadorasVisibles.map((b) => ({ valor: b.nombre, etiqueta: b.nombre })),
     [bobinadorasVisibles],
   );
+  const bobinadoraActual = useMemo(
+    () => bobinadorasVisibles.find((b) => b.id === bobinadoraId) ?? null,
+    [bobinadorasVisibles, bobinadoraId],
+  );
 
   const altaOperario = useServerFn(crearOperario);
   const altaBobinadora = useServerFn(crearBobinadora);
@@ -214,6 +218,14 @@ function PesajeCintasPage() {
     const existe = personalPlanta.find((o) => o.nombre.trim().toLowerCase() === limpio.toLowerCase());
     if (existe) return existe.id;
     return crearPersonalId(limpio);
+  }
+  /** Busca la bobinadora por nombre en la planta; si no existe, la da de alta. */
+  async function resolverBobinadoraId(nombre: string): Promise<string | null> {
+    const limpio = nombre.trim().replace(/\s+/g, " ");
+    if (limpio.length < 2) return null;
+    const existe = bobinadorasVisibles.find((b) => b.nombre.trim().toLowerCase() === limpio.toLowerCase());
+    if (existe) return existe.id;
+    return crearBobinadoraId(limpio);
   }
   async function crearBobinadoraId(nombre: string): Promise<string | null> {
     const row = await altaBobinadora({ data: { nombre, planta_id: exigePlanta() } });
@@ -675,39 +687,23 @@ function PesajeCintasPage() {
 
   async function onCambiarOperativos() {
     if (!lote) return;
-    const conductores = conductoresQ.data ?? [];
-    const bobinadoras = bobinadorasVisibles;
-    if (conductores.length === 0 || bobinadoras.length === 0) {
-      toast.error("Catálogos no disponibles."); return;
-    }
-    // TLX: captura libre del conductor (alimenta el catálogo); IXT: selección del catálogo.
-    let nuevoConductorId = "";
-    if (esIxtapaluca) {
-      const listaC = conductores.map((c, i) => `${i + 1}. ${c.nombre}`).join("\n");
-      const idxCStr = window.prompt(`Nuevo conductor (actual: ${lote.conductor_nombre_snapshot})\n${listaC}\n\nIngrese número:`);
-      if (idxCStr == null) return;
-      const idxC = Number(idxCStr) - 1;
-      if (!conductores[idxC]) { toast.error("Selección inválida."); return; }
-      nuevoConductorId = conductores[idxC].id;
-    } else {
-      const nombreC = window.prompt(`Nuevo conductor (actual: ${lote.conductor_nombre_snapshot})\n\nCapture el nombre completo:`) ?? "";
-      if (nombreC.trim().length < 3) { toast.error("Nombre de conductor inválido."); return; }
-      const idC = await resolverConductorId(nombreC);
-      if (!idC) { toast.error("No fue posible registrar el conductor."); return; }
-      nuevoConductorId = idC;
-    }
-    const listaB = bobinadoras.map((b, i) => `${i + 1}. ${b.nombre}`).join("\n");
-    const idxBStr = window.prompt(`Nueva bobinadora (actual: ${lote.bobinadora_nombre_snapshot})\n${listaB}\n\nIngrese número:`);
-    if (idxBStr == null) return;
-    const idxB = Number(idxBStr) - 1;
-    if (!bobinadoras[idxB]) { toast.error("Selección inválida."); return; }
+    // Ambas plantas: captura por nombre sin listar catálogos; el nombre se
+    // busca en el catálogo de la planta y, si no existe, se da de alta.
+    const nombreC = window.prompt(`Nuevo conductor (actual: ${lote.conductor_nombre_snapshot})\n\nCapture el nombre completo:`) ?? "";
+    if (nombreC.trim().length < 3) { toast.error("Nombre de conductor inválido."); return; }
+    const idC = await resolverConductorId(nombreC);
+    if (!idC) { toast.error("No fue posible registrar el conductor."); return; }
+    const nombreB = window.prompt(`Nueva bobinadora (actual: ${lote.bobinadora_nombre_snapshot})\n\nCapture el nombre:`) ?? "";
+    if (nombreB.trim().length < 2) { toast.error("Nombre de bobinadora inválido."); return; }
+    const idB = await resolverBobinadoraId(nombreB);
+    if (!idB) { toast.error("No fue posible registrar la bobinadora."); return; }
     const motivo = window.prompt("Motivo del cambio (mínimo 5 caracteres):") ?? "";
     if (motivo.trim().length < 5) { toast.error("Motivo requerido."); return; }
     try {
       await actualizarOp({ data: {
         lote_id: lote.id,
-        conductor_id: nuevoConductorId,
-        bobinadora_id: bobinadoras[idxB].id,
+        conductor_id: idC,
+        bobinadora_id: idB,
         motivo: motivo.trim(),
       }});
       await qc.invalidateQueries({ queryKey: ["cintas-lote", lote.id] });
