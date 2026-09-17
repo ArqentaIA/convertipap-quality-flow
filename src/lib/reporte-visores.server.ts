@@ -784,3 +784,132 @@ function construirDashboard(wb: ExcelJS.Workbook, ws: ExcelJS.Worksheet, resumen
     });
   });
 }
+
+// =============================================================================
+// Hoja "Consolidado Diario DD-MM-AA" (solo en el reporte de T3).
+// Mantiene el lenguaje visual del Dashboard Ejecutivo: logotipo, azul
+// institucional, tarjetas KPI, tipografía Calibri y tabla base que alimenta
+// las gráficas nativas de Excel.
+// =============================================================================
+function construirHojaConsolidado(
+  wb: ExcelJS.Workbook,
+  ws: ExcelJS.Worksheet,
+  c: ConsolidadoDiario,
+  generado: Date,
+) {
+  const F = "Calibri";
+  ws.columns = [
+    { width: 4 }, { width: 15 }, { width: 12 }, { width: 12 }, { width: 12 },
+    { width: 15 }, { width: 12 }, { width: 16 }, { width: 4 }, { width: 18 },
+    { width: 12 }, { width: 12 }, { width: 12 }, { width: 12 },
+  ];
+
+  ponerLogo(wb, ws, 0.6, 0.6);
+  ws.getRow(1).height = 10;
+  ws.mergeCells("D2:N3");
+  const tit = ws.getCell("D2");
+  tit.value = `CONSOLIDADO DIARIO · T1 + T2 + T3 · ${c.etiquetaLarga}`;
+  tit.font = { name: F, size: 18, bold: true, color: { argb: DASH.dark } };
+  tit.alignment = { horizontal: "center", vertical: "middle" };
+  ws.mergeCells("D4:N4");
+  const sub = ws.getCell("D4");
+  sub.value = `Día operativo ${c.etiquetaLarga} · del arranque de T1 al cierre de T3 · generado ${generado.toLocaleString("es-MX", { hour12: false, timeZone: "America/Mexico_City" })} (hora planta)`;
+  sub.font = { name: F, size: 10, color: { argb: DASH.muted } };
+  sub.alignment = { horizontal: "center", vertical: "middle" };
+  [2, 3, 4].forEach((r) => (ws.getRow(r).height = 19.2));
+
+  const t = c.totales;
+  const cards: Array<[string, string, string, number | string, string]> = [
+    ["B6:C7", "B8:C8", "TOTAL ROLLOS DEL DÍA", t.rollos, "0"],
+    ["D6:E7", "D8:E8", "TOTAL LIBERADOS", t.liberados, "0"],
+    ["F6:H7", "F8:H8", "TOTAL KG PRODUCIDOS", t.kgProducidos, '#,##0 "kg"'],
+    ["I6:K7", "I8:K8", "CUMPL. OFICIAL DIARIO", t.cumplimientoPct / 100, "0.0%"],
+    ["L6:N7", "L8:N8", "CUMPL. VARIABLES DIARIO", t.cumplimientoVariablesPct / 100, "0.0%"],
+  ];
+  for (const [rgVal, rgLbl, label, valor, fmt] of cards) {
+    ws.mergeCells(rgVal);
+    const cv = ws.getCell(rgVal.split(":")[0]!);
+    cv.value = valor;
+    cv.numFmt = fmt;
+    cv.font = { name: F, size: 17, bold: true, color: { argb: DASH.dark } };
+    cv.fill = { type: "pattern", pattern: "solid", fgColor: { argb: DASH.card } };
+    cv.alignment = { horizontal: "center", vertical: "middle" };
+    ws.mergeCells(rgLbl);
+    const cl = ws.getCell(rgLbl.split(":")[0]!);
+    cl.value = label;
+    cl.font = { name: F, size: 9, bold: true, color: { argb: DASH.muted } };
+    cl.fill = { type: "pattern", pattern: "solid", fgColor: { argb: DASH.card } };
+    cl.alignment = { horizontal: "center", vertical: "middle" };
+  }
+  [6, 7, 8, 9].forEach((r) => (ws.getRow(r).height = 21.6));
+
+  ws.mergeCells("B9:N9");
+  const det = ws.getCell("B9");
+  det.value = `ROLLOS POR TURNO · T1 ${t.rollosT1} · T2 ${t.rollosT2} · T3 ${t.rollosT3}`;
+  det.font = { name: F, size: 10, bold: true, color: { argb: DASH.dark } };
+  det.alignment = { horizontal: "center", vertical: "middle" };
+
+  ws.mergeCells("B11:N11");
+  const sec = ws.getCell("B11");
+  sec.value = "PRODUCCIÓN Y CUMPLIMIENTO DEL DÍA OPERATIVO · LECTURA EJECUTIVA";
+  sec.font = { name: F, size: 11, bold: true, color: { argb: "FFFFFFFF" } };
+  sec.fill = { type: "pattern", pattern: "solid", fgColor: { argb: DASH.dark } };
+  sec.alignment = { horizontal: "center", vertical: "middle" };
+  ws.getRow(11).height = 19.2;
+
+  // Las gráficas nativas se anclan en B13:H31, J13:N31 y B34:N52.
+  const orden = [...c.maquinas].sort((a, b) => b.cumplimientoVariablesPct - a.cumplimientoVariablesPct);
+  const mejor = orden[0];
+  const peor = orden[orden.length - 1];
+  ws.mergeCells("B54:N55");
+  const lec = ws.getCell("B54");
+  lec.value =
+    t.rollos > 0 && mejor && peor
+      ? `Lectura ejecutiva del día ${c.etiquetaLarga}: ${t.rollos} rollos capturados (T1 ${t.rollosT1} · T2 ${t.rollosT2} · T3 ${t.rollosT3}), ${t.liberados} liberados y ${Math.round(t.kgProducidos).toLocaleString("es-MX")} kg producidos con peso oficial de Calidad. Cumplimiento oficial diario ${t.cumplimientoPct}% y cumplimiento de variables diario ${t.cumplimientoVariablesPct}%, recalculados sobre todos los registros del día. ${mejor.codigo} lidera el desempeño (${mejor.cumplimientoVariablesPct}%) y ${peor.codigo} concentra la principal oportunidad (${peor.cumplimientoVariablesPct}%).`
+      : `Lectura ejecutiva del día ${c.etiquetaLarga}: sin rollos capturados en el día operativo.`;
+  lec.font = { name: F, size: 10, color: { argb: DASH.dark } };
+  lec.alignment = { horizontal: "left", vertical: "middle", wrapText: true };
+
+  // Tabla base (alimenta las gráficas)
+  const heads = [
+    "Máquina", "Rollos T1", "Rollos T2", "Rollos T3", "Total rollos",
+    "Liberados", "Kg producidos", "Cumpl. oficial diario", "Cumpl. variables diario",
+  ];
+  heads.forEach((h, i) => {
+    const cell = ws.getCell(58, 2 + i);
+    cell.value = h;
+    cell.font = { name: F, size: 10, bold: true, color: { argb: "FFFFFFFF" } };
+    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: DASH.dark } };
+    cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+    cell.border = { top: { style: "thin" }, left: { style: "thin" }, bottom: { style: "thin" }, right: { style: "thin" } };
+  });
+  c.maquinas.forEach((m, i) => {
+    const row = 59 + i;
+    const vals: Array<string | number> = [
+      m.codigo, m.rollosT1, m.rollosT2, m.rollosT3, m.rollos,
+      m.liberados, m.kgProducidos, m.cumplimientoPct / 100, m.cumplimientoVariablesPct / 100,
+    ];
+    vals.forEach((v, j) => {
+      const cell = ws.getCell(row, 2 + j);
+      cell.value = v;
+      cell.font = { name: F, size: 11 };
+      cell.alignment = { horizontal: "center" };
+      if (j === 6) cell.numFmt = '#,##0 "kg"';
+      if (j >= 7) cell.numFmt = "0.0%";
+    });
+  });
+  const totRow = 59 + c.maquinas.length;
+  const totales: Array<string | number> = [
+    "TOTAL DÍA", t.rollosT1, t.rollosT2, t.rollosT3, t.rollos,
+    t.liberados, t.kgProducidos, t.cumplimientoPct / 100, t.cumplimientoVariablesPct / 100,
+  ];
+  totales.forEach((v, j) => {
+    const cell = ws.getCell(totRow, 2 + j);
+    cell.value = v;
+    cell.font = { name: F, size: 11, bold: true, color: { argb: DASH.dark } };
+    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: DASH.card } };
+    cell.alignment = { horizontal: "center" };
+    if (j === 6) cell.numFmt = '#,##0 "kg"';
+    if (j >= 7) cell.numFmt = "0.0%";
+  });
+}
