@@ -989,66 +989,59 @@ function PesajeCintasPage() {
                   />
                 </div>
                 {esIxtapaluca && (
-                  <div>
-                    <label className="mb-1 block text-[11px] uppercase tracking-wide text-muted-foreground">Conductor *</label>
-                    <input
-                      type="text"
-                      maxLength={20}
-                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                      placeholder="Nombre (máx. 20)"
-                      value={conductorNombre}
-                      onChange={(e) => setConductorNombre(e.target.value)}
-                    />
-                  </div>
+                  <SelectConAlta
+                    compact
+                    requerido
+                    label="Conductor"
+                    value={conductorNombre}
+                    opciones={opcionesPersonal}
+                    onChange={setConductorNombre}
+                    onCrear={crearPersonalNombre}
+                    placeholderNuevo="Nombre del conductor"
+                  />
                 )}
                 {esIxtapaluca && (
-                  <div>
-                    <label className="mb-1 block text-[11px] uppercase tracking-wide text-muted-foreground">Máquina *</label>
-                    <input
-                      type="text"
-                      maxLength={20}
-                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                      placeholder="Máquina (máx. 20)"
-                      value={maquinaNombre}
-                      onChange={(e) => setMaquinaNombre(e.target.value)}
-                    />
-                  </div>
+                  <SelectConAlta
+                    compact
+                    requerido
+                    label="Máquina"
+                    value={maquinaNombre}
+                    opciones={opcionesBobinadorasNombre}
+                    onChange={setMaquinaNombre}
+                    onCrear={crearBobinadoraNombre}
+                    placeholderNuevo="Nombre de la máquina"
+                  />
                 )}
                 {esIxtapaluca && (
-                  <div>
-                    <label className="mb-1 block text-[11px] uppercase tracking-wide text-muted-foreground">Nombre del bobinador *</label>
-                    <input
-                      type="text"
-                      maxLength={80}
-                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                      placeholder="Nombre completo"
-                      value={bobinadorNombre}
-                      onChange={(e) => setBobinadorNombre(e.target.value)}
-                    />
-                  </div>
+                  <SelectConAlta
+                    compact
+                    requerido
+                    label="Nombre del bobinador"
+                    value={bobinadorNombre}
+                    opciones={opcionesPersonal}
+                    onChange={setBobinadorNombre}
+                    onCrear={crearPersonalNombre}
+                    placeholderNuevo="Nombre del bobinador"
+                  />
                 )}
-                <div>
-                  <label className="mb-1 block text-[11px] uppercase tracking-wide text-muted-foreground">Operador de cortes</label>
-                  <input
-                    type="text"
-                    maxLength={40}
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                    placeholder="Nombre del operador"
-                    value={operadorCortes}
-                    onChange={(e) => setOperadorCortes(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-[11px] uppercase tracking-wide text-muted-foreground">Analista que libera cortes</label>
-                  <input
-                    type="text"
-                    maxLength={40}
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                    placeholder="Nombre del analista"
-                    value={analistaCortes}
-                    onChange={(e) => setAnalistaCortes(e.target.value)}
-                  />
-                </div>
+                <SelectConAlta
+                  compact
+                  label="Operador de cortes"
+                  value={operadorCortes}
+                  opciones={opcionesPersonal}
+                  onChange={setOperadorCortes}
+                  onCrear={crearPersonalNombre}
+                  placeholderNuevo="Nombre del operador"
+                />
+                <SelectConAlta
+                  compact
+                  label="Analista que libera cortes"
+                  value={analistaCortes}
+                  opciones={opcionesPersonal}
+                  onChange={setAnalistaCortes}
+                  onCrear={crearPersonalNombre}
+                  placeholderNuevo="Nombre del analista"
+                />
               </div>
 
               <button
