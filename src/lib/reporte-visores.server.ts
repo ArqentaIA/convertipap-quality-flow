@@ -248,6 +248,20 @@ export async function construirReporteVisores(maquinas: readonly string[] = MAQU
   // ------------------------------------------------- Dashboard ejecutivo
   construirDashboard(wb, wsd, resumen, generado);
 
+  // ------------------------------------- Consolidado diario (solo en T3)
+  // El turno se resuelve con la configuración vigente de turnos (app_settings),
+  // la misma fuente que usan los visores. T1 y T2 no reciben consolidado.
+  const ctxTurno = await resolverTurnoYDiaOperativo(generado);
+  const consolidado =
+    ctxTurno.turno === "3" ? await construirConsolidadoDiario(maquinas, generado) : null;
+  let hojaConsolidadoNumero = 0;
+  let nombreHojaConsolidado = "";
+  if (consolidado) {
+    nombreHojaConsolidado = `Consolidado Diario ${consolidado.etiquetaCorta}`;
+    const wsc = wb.addWorksheet(nombreHojaConsolidado, { views: [{ showGridLines: false }] });
+    construirHojaConsolidado(wb, wsc, consolidado, generado);
+    hojaConsolidadoNumero = wb.worksheets.indexOf(wsc) + 1;
+  }
 
   const bruto = (await wb.xlsx.writeBuffer()) as ArrayBuffer;
   const n = Math.max(resumen.length, 1);
