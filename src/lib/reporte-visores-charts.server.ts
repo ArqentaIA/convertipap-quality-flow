@@ -18,7 +18,8 @@ type SerieChart = {
   to: { col: number; row: number };
 };
 
-const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+const esc = (s: string) =>
+  s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
 function chartXml(s: SerieChart, puntos: number) {
   const ref = (r: string) => `'${s.hoja}'!${r}`;
