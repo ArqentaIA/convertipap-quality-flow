@@ -206,6 +206,15 @@ function PesajeCintasPage() {
     await conductoresQ.refetch();
     return row?.id ?? null;
   }
+  /** TLX: conductor de captura libre. Busca por nombre en el catálogo de la planta;
+   *  si no existe, lo da de alta (alimentando el catálogo) y devuelve su id. */
+  async function resolverConductorId(nombre: string): Promise<string | null> {
+    const limpio = nombre.trim().replace(/\s+/g, " ");
+    if (limpio.length < 3) return null;
+    const existe = personalPlanta.find((o) => o.nombre.trim().toLowerCase() === limpio.toLowerCase());
+    if (existe) return existe.id;
+    return crearPersonalId(limpio);
+  }
   async function crearBobinadoraId(nombre: string): Promise<string | null> {
     const row = await altaBobinadora({ data: { nombre, planta_id: exigePlanta() } });
     await bobinadorasQ.refetch();
@@ -455,20 +464,25 @@ function PesajeCintasPage() {
     if (!contexto) return;
     // Ixtapaluca: conductor y máquina son texto libre; se usan referencias base
     // del catálogo solo para satisfacer el registro y luego se guardan los nombres.
-    const condRef = esIxtapaluca ? (conductoresQ.data ?? [])[0]?.id ?? "" : conductorId;
     const bobRef = esIxtapaluca ? bobinadorasVisibles[0]?.id ?? "" : bobinadoraId;
     if (esIxtapaluca) {
       if (conductorNombre.trim().length < 3) { toast.error("Capture el nombre del conductor."); return; }
       if (maquinaNombre.trim().length < 2) { toast.error("Capture la máquina."); return; }
-      if (!condRef || !bobRef) { toast.error("No fue posible iniciar el lote. Intente de nuevo."); return; }
-    } else if (!conductorId || !bobinadoraId) {
-      toast.error("Seleccione conductor y bobinadora."); return;
+      if (!(conductoresQ.data ?? [])[0]?.id || !bobRef) { toast.error("No fue posible iniciar el lote. Intente de nuevo."); return; }
+    } else {
+      if (conductorNombre.trim().length < 3) { toast.error("Capture el nombre del conductor."); return; }
+      if (!bobinadoraId) { toast.error("Seleccione la bobinadora."); return; }
     }
     if (esIxtapaluca && bobinadorNombre.trim().length < 3) { toast.error("Capture el nombre del bobinador."); return; }
     if (requestGuard.current) return;
     requestGuard.current = true;
     setSaving(true);
     try {
+      // TLX: el conductor es captura libre; se busca o registra en el catálogo de la planta.
+      const condRef = esIxtapaluca
+        ? (conductoresQ.data ?? [])[0]?.id ?? ""
+        : await resolverConductorId(conductorNombre);
+      if (!condRef) { toast.error("No fue posible registrar el conductor. Intente de nuevo."); return; }
       const { lote_id } = await crear({
         data: {
           numero_rollo: contexto.muestra.numero_rollo,
@@ -666,11 +680,22 @@ function PesajeCintasPage() {
     if (conductores.length === 0 || bobinadoras.length === 0) {
       toast.error("Catálogos no disponibles."); return;
     }
-    const listaC = conductores.map((c, i) => `${i + 1}. ${c.nombre}`).join("\n");
-    const idxCStr = window.prompt(`Nuevo conductor (actual: ${lote.conductor_nombre_snapshot})\n${listaC}\n\nIngrese número:`);
-    if (idxCStr == null) return;
-    const idxC = Number(idxCStr) - 1;
-    if (!conductores[idxC]) { toast.error("Selección inválida."); return; }
+    // TLX: captura libre del conductor (alimenta el catálogo); IXT: selección del catálogo.
+    let nuevoConductorId = "";
+    if (esIxtapaluca) {
+      const listaC = conductores.map((c, i) => `${i + 1}. ${c.nombre}`).join("\n");
+      const idxCStr = window.prompt(`Nuevo conductor (actual: ${lote.conductor_nombre_snapshot})\n${listaC}\n\nIngrese número:`);
+      if (idxCStr == null) return;
+      const idxC = Number(idxCStr) - 1;
+      if (!conductores[idxC]) { toast.error("Selección inválida."); return; }
+      nuevoConductorId = conductores[idxC].id;
+    } else {
+      const nombreC = window.prompt(`Nuevo conductor (actual: ${lote.conductor_nombre_snapshot})\n\nCapture el nombre completo:`) ?? "";
+      if (nombreC.trim().length < 3) { toast.error("Nombre de conductor inválido."); return; }
+      const idC = await resolverConductorId(nombreC);
+      if (!idC) { toast.error("No fue posible registrar el conductor."); return; }
+      nuevoConductorId = idC;
+    }
     const listaB = bobinadoras.map((b, i) => `${i + 1}. ${b.nombre}`).join("\n");
     const idxBStr = window.prompt(`Nueva bobinadora (actual: ${lote.bobinadora_nombre_snapshot})\n${listaB}\n\nIngrese número:`);
     if (idxBStr == null) return;
@@ -681,7 +706,7 @@ function PesajeCintasPage() {
     try {
       await actualizarOp({ data: {
         lote_id: lote.id,
-        conductor_id: conductores[idxC].id,
+        conductor_id: nuevoConductorId,
         bobinadora_id: bobinadoras[idxB].id,
         motivo: motivo.trim(),
       }});
@@ -1100,14 +1125,16 @@ function PesajeCintasPage() {
                 placeholderNuevo="Nombre del conductor"
               />
             ) : (
-              <SelectConAlta
-                label="Conductor"
-                value={conductorId}
-                opciones={opcionesPersonalId}
-                onChange={setConductorId}
-                onCrear={crearPersonalId}
-                placeholderNuevo="Nombre del conductor"
-              />
+              <div>
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">Conductor <span className="text-destructive">*</span></label>
+                <input
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  maxLength={60}
+                  placeholder="Nombre del conductor"
+                  value={conductorNombre}
+                  onChange={(e) => setConductorNombre(e.target.value)}
+                />
+              </div>
             )}
             {esIxtapaluca ? (
               <SelectConAlta
