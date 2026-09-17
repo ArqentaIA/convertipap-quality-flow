@@ -474,13 +474,9 @@ function PesajeCintasPage() {
 
   async function onCrearLote() {
     if (!contexto) return;
-    // Ixtapaluca: conductor y máquina son texto libre; se usan referencias base
-    // del catálogo solo para satisfacer el registro y luego se guardan los nombres.
-    const bobRef = esIxtapaluca ? bobinadorasVisibles[0]?.id ?? "" : bobinadoraId;
     if (esIxtapaluca) {
       if (conductorNombre.trim().length < 3) { toast.error("Capture el nombre del conductor."); return; }
       if (maquinaNombre.trim().length < 2) { toast.error("Capture la máquina."); return; }
-      if (!(conductoresQ.data ?? [])[0]?.id || !bobRef) { toast.error("No fue posible iniciar el lote. Intente de nuevo."); return; }
     } else {
       if (conductorNombre.trim().length < 3) { toast.error("Capture el nombre del conductor."); return; }
       if (!bobinadoraId) { toast.error("Seleccione la bobinadora."); return; }
@@ -490,11 +486,14 @@ function PesajeCintasPage() {
     requestGuard.current = true;
     setSaving(true);
     try {
-      // TLX: el conductor es captura libre; se busca o registra en el catálogo de la planta.
-      const condRef = esIxtapaluca
-        ? (conductoresQ.data ?? [])[0]?.id ?? ""
-        : await resolverConductorId(conductorNombre);
+      // Los nombres recién capturados se resuelven contra el catálogo antes de
+      // crear el lote; no se depende de que la consulta ya se haya refrescado.
+      const condRef = await resolverConductorId(conductorNombre);
       if (!condRef) { toast.error("No fue posible registrar el conductor. Intente de nuevo."); return; }
+      const bobRef = esIxtapaluca
+        ? await resolverBobinadoraId(maquinaNombre)
+        : bobinadoraActual?.id ?? bobinadoraId;
+      if (!bobRef) { toast.error("No fue posible registrar la bobinadora. Intente de nuevo."); return; }
       const { lote_id } = await crear({
         data: {
           numero_rollo: contexto.muestra.numero_rollo,
@@ -1185,12 +1184,7 @@ function PesajeCintasPage() {
             <div className="flex items-end">
               <button
                 onClick={onCrearLote}
-                disabled={
-                  saving ||
-                  (esIxtapaluca
-                    ? conductorNombre.trim().length < 3 || maquinaNombre.trim().length < 2 || bobinadorNombre.trim().length < 3
-                    : conductorNombre.trim().length < 3 || !bobinadoraId)
-                }
+                disabled={saving}
                 className="w-full rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground disabled:opacity-50"
               >
                 {saving ? "Iniciando…" : "Iniciar lote"}
