@@ -131,8 +131,8 @@ export async function construirReporteVisores(maquinas: readonly string[] = MAQU
   for (let i = 0; i < maquinas.length; i++) {
     const codigo = maquinas[i]!;
     const d = datos[i]!;
-    const kgProducidos = (d.muestras ?? []).reduce((acc, m) => {
-      const peso = m.mediciones.find((x) => x.clave === "peso")?.valor;
+    const kgProducidos = (d.muestras ?? []).reduce((acc: number, m: { mediciones: Array<{ clave: string; valor: number | null }> }) => {
+      const peso = m.mediciones.find((x: { clave: string; valor: number | null }) => x.clave === "peso")?.valor;
       return typeof peso === "number" && Number.isFinite(peso) ? acc + peso : acc;
     }, 0);
     const fila: ResumenMaquina = {
@@ -258,8 +258,8 @@ export async function construirReporteVisores(maquinas: readonly string[] = MAQU
       {
         titulo: "Volumen capturado por máquina",
         hoja: "Dashboard Ejecutivo",
-        catRef: `$B$37:$B$${36 + n}`,
-        valRef: `$C$37:$C$${36 + n}`,
+        catRef: `$B$59:$B$${58 + n}`,
+        valRef: `$C$59:$C$${58 + n}`,
         color: "2D8A9E",
         numFmt: "0",
         from: { col: 1, row: 12 },
@@ -268,8 +268,8 @@ export async function construirReporteVisores(maquinas: readonly string[] = MAQU
       {
         titulo: "Cumplimiento de variables por máquina",
         hoja: "Dashboard Ejecutivo",
-        catRef: `$B$37:$B$${36 + n}`,
-        valRef: `$H$37:$H$${36 + n}`,
+        catRef: `$B$59:$B$${58 + n}`,
+        valRef: `$H$59:$H$${58 + n}`,
         color: "1B7F5E",
         numFmt: "0.0%",
         from: { col: 9, row: 12 },
@@ -278,8 +278,8 @@ export async function construirReporteVisores(maquinas: readonly string[] = MAQU
       {
         titulo: "Kg producidos por máquina",
         hoja: "Dashboard Ejecutivo",
-        catRef: `$B$37:$B$${36 + n}`,
-        valRef: `$E$37:$E$${36 + n}`,
+        catRef: `$B$59:$B$${58 + n}`,
+        valRef: `$E$59:$E$${58 + n}`,
         color: "2D8A9E",
         numFmt: '#,##0 "kg"',
         from: { col: 1, row: 33 },
