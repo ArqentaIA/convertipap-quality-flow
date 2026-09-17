@@ -2508,6 +2508,57 @@ export type Database = {
           },
         ]
       }
+      reporte_turno_envios: {
+        Row: {
+          asunto: string
+          confirmado_at: string | null
+          created_at: string
+          destinatario: string
+          error: string | null
+          estado: string
+          fecha: string
+          generado_at: string
+          hora: string
+          id: string
+          proveedor: string
+          proveedor_id: string | null
+          turno: string
+          updated_at: string
+        }
+        Insert: {
+          asunto: string
+          confirmado_at?: string | null
+          created_at?: string
+          destinatario: string
+          error?: string | null
+          estado?: string
+          fecha?: string
+          generado_at?: string
+          hora?: string
+          id?: string
+          proveedor?: string
+          proveedor_id?: string | null
+          turno: string
+          updated_at?: string
+        }
+        Update: {
+          asunto?: string
+          confirmado_at?: string | null
+          created_at?: string
+          destinatario?: string
+          error?: string | null
+          estado?: string
+          fecha?: string
+          generado_at?: string
+          hora?: string
+          id?: string
+          proveedor?: string
+          proveedor_id?: string | null
+          turno?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       rollos_cintas: {
         Row: {
           cerrado: boolean
