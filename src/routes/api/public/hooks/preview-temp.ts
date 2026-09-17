@@ -28,6 +28,6 @@ async function ejecutar(request: Request) {
   );
 }
 
-export const Route = createFileRoute("/api/public/hooks/_preview-cierre-turno")({
+export const Route = createFileRoute("/api/public/hooks/preview-temp")({
   server: { handlers: { POST: ({ request }) => ejecutar(request) } },
 });
