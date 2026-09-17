@@ -706,7 +706,7 @@ function PesajeCintasPage() {
     try {
       await actualizarOp({ data: {
         lote_id: lote.id,
-        conductor_id: conductores[idxC].id,
+        conductor_id: nuevoConductorId,
         bobinadora_id: bobinadoras[idxB].id,
         motivo: motivo.trim(),
       }});
