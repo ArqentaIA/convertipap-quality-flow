@@ -464,20 +464,25 @@ function PesajeCintasPage() {
     if (!contexto) return;
     // Ixtapaluca: conductor y máquina son texto libre; se usan referencias base
     // del catálogo solo para satisfacer el registro y luego se guardan los nombres.
-    const condRef = esIxtapaluca ? (conductoresQ.data ?? [])[0]?.id ?? "" : conductorId;
     const bobRef = esIxtapaluca ? bobinadorasVisibles[0]?.id ?? "" : bobinadoraId;
     if (esIxtapaluca) {
       if (conductorNombre.trim().length < 3) { toast.error("Capture el nombre del conductor."); return; }
       if (maquinaNombre.trim().length < 2) { toast.error("Capture la máquina."); return; }
-      if (!condRef || !bobRef) { toast.error("No fue posible iniciar el lote. Intente de nuevo."); return; }
-    } else if (!conductorId || !bobinadoraId) {
-      toast.error("Seleccione conductor y bobinadora."); return;
+      if (!(conductoresQ.data ?? [])[0]?.id || !bobRef) { toast.error("No fue posible iniciar el lote. Intente de nuevo."); return; }
+    } else {
+      if (conductorNombre.trim().length < 3) { toast.error("Capture el nombre del conductor."); return; }
+      if (!bobinadoraId) { toast.error("Seleccione la bobinadora."); return; }
     }
     if (esIxtapaluca && bobinadorNombre.trim().length < 3) { toast.error("Capture el nombre del bobinador."); return; }
     if (requestGuard.current) return;
     requestGuard.current = true;
     setSaving(true);
     try {
+      // TLX: el conductor es captura libre; se busca o registra en el catálogo de la planta.
+      const condRef = esIxtapaluca
+        ? (conductoresQ.data ?? [])[0]?.id ?? ""
+        : await resolverConductorId(conductorNombre);
+      if (!condRef) { toast.error("No fue posible registrar el conductor. Intente de nuevo."); return; }
       const { lote_id } = await crear({
         data: {
           numero_rollo: contexto.muestra.numero_rollo,
