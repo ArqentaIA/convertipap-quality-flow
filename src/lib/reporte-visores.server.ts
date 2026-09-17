@@ -61,6 +61,7 @@ export type ResumenMaquina = {
   producto: string;
   rollos: number;
   liberados: number;
+  kgProducidos: number;
   cumplimientoPct: number;
   cumplimientoVariablesPct: number;
   estadoMaquina: string;
@@ -111,25 +112,29 @@ export async function construirReporteVisores(maquinas: readonly string[] = MAQU
   // --------------------------------------------------------------- Portada
   const ws0 = wb.addWorksheet("Resumen de turno", { views: [{ showGridLines: false }] });
 
-  ws0.columns = [{ width: 12 }, { width: 28 }, { width: 14 }, { width: 8 }, { width: 30 }, { width: 10 }, { width: 12 }, { width: 16 }, { width: 18 }];
+  ws0.columns = [{ width: 12 }, { width: 28 }, { width: 14 }, { width: 8 }, { width: 30 }, { width: 10 }, { width: 12 }, { width: 16 }, { width: 16 }, { width: 18 }];
   ponerLogo(wb, ws0, 0.1, 0.2);
   [1, 2, 3].forEach((r) => (ws0.getRow(r).height = 20));
-  ws0.mergeCells("C1:I2");
+  ws0.mergeCells("C1:J2");
   const t = ws0.getCell("C1");
   t.value = "REPORTE DE CIERRE DE TURNO · VISORES";
   t.font = { name: "Arial", bold: true, size: 16, color: { argb: HDR_FILL } };
   t.alignment = { horizontal: "center", vertical: "middle" };
-  ws0.mergeCells("C3:I3");
+  ws0.mergeCells("C3:J3");
   const st = ws0.getCell("C3");
   st.value = `Generado: ${generado.toLocaleString("es-MX", { hour12: false, timeZone: "America/Mexico_City" })} (hora planta)`;
   st.font = { name: "Arial", size: 10, italic: true, color: { argb: "FF5B6573" } };
   st.alignment = { horizontal: "center", vertical: "middle" };
   ws0.getRow(4).height = 6;
-  headerRow(ws0, ["Máquina", "Nombre", "Planta", "Turno", "Producto", "Rollos", "Liberados", "Cumpl. oficial %", "Cumpl. variables %"], 5);
+  headerRow(ws0, ["Máquina", "Nombre", "Planta", "Turno", "Producto", "Rollos", "Liberados", "Kg producidos", "Cumpl. oficial %", "Cumpl. variables %"], 5);
 
   for (let i = 0; i < maquinas.length; i++) {
     const codigo = maquinas[i]!;
     const d = datos[i]!;
+    const kgProducidos = (d.muestras ?? []).reduce((acc, m) => {
+      const peso = m.mediciones.find((x) => x.clave === "peso")?.valor;
+      return typeof peso === "number" && Number.isFinite(peso) ? acc + peso : acc;
+    }, 0);
     const fila: ResumenMaquina = {
       codigo: d.maquina?.codigo ?? codigo,
       nombre: d.maquina?.nombre ?? "",
@@ -138,6 +143,7 @@ export async function construirReporteVisores(maquinas: readonly string[] = MAQU
       producto: d.orden?.producto ? `${d.orden.productoCodigo} — ${d.orden.producto}` : "—",
       rollos: d.cumplimientoTurno?.capturados ?? 0,
       liberados: d.cumplimientoTurno?.liberados ?? 0,
+      kgProducidos: Number(kgProducidos.toFixed(2)),
       cumplimientoPct: d.cumplimientoTurno?.pct ?? 0,
       cumplimientoVariablesPct: d.cumplimientoVariables?.pct ?? 0,
       estadoMaquina: d.estadoMaquina?.estado ?? "—",
@@ -145,13 +151,14 @@ export async function construirReporteVisores(maquinas: readonly string[] = MAQU
     resumen.push(fila);
     const row = ws0.addRow([
       fila.codigo, fila.nombre, fila.planta, fila.turno ?? "—", fila.producto,
-      fila.rollos, fila.liberados, fila.cumplimientoPct, fila.cumplimientoVariablesPct,
+      fila.rollos, fila.liberados, fila.kgProducidos, fila.cumplimientoPct, fila.cumplimientoVariablesPct,
     ]);
     row.font = { name: "Arial", size: 10 };
     row.height = 18;
     row.eachCell((c, col) => {
       c.alignment = { vertical: "middle", horizontal: col === 2 || col === 5 ? "left" : "center" };
       c.border = { top: { style: "hair" }, left: { style: "hair" }, bottom: { style: "hair" }, right: { style: "hair" } };
+      if (col === 8) c.numFmt = '#,##0 "kg"';
     });
 
     // --------------------------------------------------- Hoja por máquina
@@ -262,11 +269,21 @@ export async function construirReporteVisores(maquinas: readonly string[] = MAQU
         titulo: "Cumplimiento de variables por máquina",
         hoja: "Dashboard Ejecutivo",
         catRef: `$B$37:$B$${36 + n}`,
-        valRef: `$G$37:$G$${36 + n}`,
+        valRef: `$H$37:$H$${36 + n}`,
         color: "1B7F5E",
         numFmt: "0.0%",
         from: { col: 9, row: 12 },
         to: { col: 14, row: 30 },
+      },
+      {
+        titulo: "Kg producidos por máquina",
+        hoja: "Dashboard Ejecutivo",
+        catRef: `$B$37:$B$${36 + n}`,
+        valRef: `$E$37:$E$${36 + n}`,
+        color: "2D8A9E",
+        numFmt: '#,##0 "kg"',
+        from: { col: 1, row: 33 },
+        to: { col: 14, row: 51 },
       },
     ],
   });
@@ -295,6 +312,7 @@ export async function construirReporteVisores(maquinas: readonly string[] = MAQU
 
   const totalRollos = resumen.reduce((a, r) => a + r.rollos, 0);
   const totalLib = resumen.reduce((a, r) => a + r.liberados, 0);
+  const totalKg = resumen.reduce((a, r) => a + r.kgProducidos, 0);
   const libPct = totalRollos > 0 ? Math.round((totalLib / totalRollos) * 1000) / 10 : 0;
   const promVars =
     resumen.length > 0
@@ -311,12 +329,13 @@ export async function construirReporteVisores(maquinas: readonly string[] = MAQU
   });
 
   const kpi = (etiqueta: string, valor: string) =>
-    `<td style="padding:12px 10px;border:1px solid #d7dee8;background:#f6f8fb;text-align:center;width:20%">
+    `<td style="padding:12px 8px;border:1px solid #d7dee8;background:#f6f8fb;text-align:center;width:16.66%">
 <div style="font-size:10px;color:#5b6573;letter-spacing:.06em;text-transform:uppercase">${etiqueta}</div>
 <div style="font-size:22px;font-weight:bold;color:#1e293b;padding-top:4px">${valor}</div></td>`;
 
   // Gráfica ejecutiva en HTML puro (sin imágenes): barras horizontales.
   const maxRollos = Math.max(1, ...resumen.map((r) => r.rollos));
+  const maxKg = Math.max(1, ...resumen.map((r) => r.kgProducidos));
   const barra = (pct: number, color: string) =>
     `<table style="border-collapse:collapse;width:100%;background:#eef2f7"><tr>
 <td style="background:${color};height:12px;width:${Math.max(1, Math.round(pct))}%;font-size:0;line-height:0">&nbsp;</td>
@@ -333,6 +352,15 @@ export async function construirReporteVisores(maquinas: readonly string[] = MAQU
     )
     .join("");
 
+  const graficaKg = resumen
+    .map(
+      (r) => `<tr>
+<td style="padding:5px 8px;font-size:12px;font-weight:bold;color:#1e293b;width:64px;white-space:nowrap">${esc(r.codigo)}</td>
+<td style="padding:5px 8px">${barra((r.kgProducidos / maxKg) * 100, "#2d8a9e")}</td>
+<td style="padding:5px 8px;font-size:11px;color:#2d8a9e;width:92px;white-space:nowrap;text-align:right">${Math.round(r.kgProducidos).toLocaleString("es-MX")} kg</td></tr>`,
+    )
+    .join("");
+
   const filasResumen = resumen
     .map(
       (r) => `<tr>
@@ -343,6 +371,7 @@ export async function construirReporteVisores(maquinas: readonly string[] = MAQU
 <td style="${TD}">${esc(r.producto)}</td>
 <td style="${TD};text-align:center">${r.rollos}</td>
 <td style="${TD};text-align:center">${r.liberados}</td>
+<td style="${TD};text-align:center">${Math.round(r.kgProducidos).toLocaleString("es-MX")} kg</td>
 <td style="${TD};text-align:center">${r.cumplimientoPct}%</td>
 <td style="${TD};text-align:center">${r.cumplimientoVariablesPct}%</td></tr>`,
     )
@@ -394,6 +423,7 @@ export async function construirReporteVisores(maquinas: readonly string[] = MAQU
 <table style="border-collapse:collapse;width:100%"><tr>
 ${kpi("Rollos capturados", String(totalRollos))}
 ${kpi("Rollos liberados", String(totalLib))}
+${kpi("Total kg producidos", `${Math.round(totalKg).toLocaleString("es-MX")} kg`)}
 ${kpi("Cumplimiento", `${libPct}%`)}
 ${kpi("Prom. variables", `${promVars}%`)}
 ${kpi("Fuera de rango", String(totalFuera))}
@@ -408,12 +438,18 @@ ${kpi("Fuera de rango", String(totalFuera))}
 <span style="color:#2d8a9e">&#9632;</span> Rollos capturados &nbsp;&nbsp; <span style="color:#1b7f5e">&#9632;</span> Cumplimiento de variables</td></tr>
 ${grafica}</table>
 
+<h3 style="${H2}">Kg producidos por máquina</h3>
+<table style="border-collapse:collapse;width:100%;border:1px solid #d7dee8;background:#fcfdff">
+<tr><td colspan="3" style="padding:6px 8px;font-size:10px;color:#5b6573">
+<span style="color:#2d8a9e">&#9632;</span> Peso oficial de Calidad</td></tr>
+${graficaKg}</table>
+
 <h3 style="${H2}">Resumen por máquina</h3>
 <table style="border-collapse:collapse;width:100%">
 <thead><tr>
 <th style="${TH}">Máquina</th><th style="${TH}">Nombre</th><th style="${TH}">Planta</th><th style="${TH}">Turno</th>
 <th style="${TH}">Producto</th><th style="${TH}">Rollos</th><th style="${TH}">Liberados</th>
-<th style="${TH}">Cumpl. oficial %</th><th style="${TH}">Cumpl. variables %</th>
+<th style="${TH}">Kg producidos</th><th style="${TH}">Cumpl. oficial %</th><th style="${TH}">Cumpl. variables %</th>
 </tr></thead><tbody>${filasResumen}</tbody></table>
 
 ${bloquesMaquina}
@@ -440,7 +476,7 @@ El detalle completo por máquina, con todas las variables medidas y sus gráfica
 </div></div>`;
 
   const texto = resumen
-    .map((r) => `${r.codigo} (${r.planta}) T${r.turno ?? "—"} · ${r.rollos} rollos · ${r.liberados} liberados · ${r.cumplimientoPct}%`)
+    .map((r) => `${r.codigo} (${r.planta}) T${r.turno ?? "—"} · ${r.rollos} rollos · ${r.liberados} liberados · ${Math.round(r.kgProducidos).toLocaleString("es-MX")} kg · ${r.cumplimientoPct}%`)
     .join("\n");
 
   return {
@@ -498,15 +534,17 @@ function construirDashboard(wb: ExcelJS.Workbook, ws: ExcelJS.Worksheet, resumen
 
   const totalRollos = resumen.reduce((a, r) => a + r.rollos, 0);
   const totalLib = resumen.reduce((a, r) => a + r.liberados, 0);
+  const totalKg = resumen.reduce((a, r) => a + r.kgProducidos, 0);
   const liberacion = totalRollos > 0 ? totalLib / totalRollos : 0;
   const promVars = resumen.length > 0 ? resumen.reduce((a, r) => a + r.cumplimientoVariablesPct, 0) / resumen.length / 100 : 0;
 
   // Tarjetas KPI
   const cards: Array<[string, string, string, number | string, string]> = [
-    ["B6:D7", "B8:D8", "ROLLOS CAPTURADOS", totalRollos, "0"],
-    ["F6:H7", "F8:H8", "ROLLOS LIBERADOS", totalLib, "0"],
-    ["J6:L7", "J8:L8", "LIBERACIÓN", liberacion, "0.0%"],
-    ["M6:N7", "M8:N8", "PROM. VARIABLES", promVars, "0.0%"],
+    ["B6:C7", "B8:C8", "ROLLOS CAPTURADOS", totalRollos, "0"],
+    ["D6:E7", "D8:E8", "ROLLOS LIBERADOS", totalLib, "0"],
+    ["F6:H7", "F8:H8", "TOTAL KG PRODUCIDOS", totalKg, '#,##0 "kg"'],
+    ["I6:K7", "I8:K8", "LIBERACIÓN", liberacion, "0.0%"],
+    ["L6:N7", "L8:N8", "PROM. VARIABLES", promVars, "0.0%"],
   ];
   for (const [rgVal, rgLbl, label, valor, fmt] of cards) {
     ws.mergeCells(rgVal);
@@ -549,24 +587,24 @@ function construirDashboard(wb: ExcelJS.Workbook, ws: ExcelJS.Worksheet, resumen
   sec.alignment = { horizontal: "center", vertical: "middle" };
   ws.getRow(11).height = 19.2;
 
-  // Las dos gráficas de barras nativas se insertan sobre B13:H31 y J13:N31
+  // Las gráficas de barras nativas se insertan sobre B13:H31, J13:N31 y B34:N52
   // (ver inyectarGraficasDashboard); toman sus datos de la tabla base.
 
 
   // Lectura ejecutiva
-  ws.mergeCells("B32:N33");
-  const lec = ws.getCell("B32");
+  ws.mergeCells("B54:N55");
+  const lec = ws.getCell("B54");
   lec.value =
     mejor && peor
-      ? `Lectura ejecutiva: a la izquierda se observa el volumen capturado por máquina; a la derecha, el cumplimiento de variables. ${peor.codigo} concentra la principal oportunidad de mejora (${peor.cumplimientoVariablesPct}%), mientras ${mejor.codigo} lidera el desempeño (${mejor.cumplimientoVariablesPct}%).`
+      ? `Lectura ejecutiva: arriba se observa el volumen capturado, el cumplimiento de variables y los kg producidos por máquina. ${peor.codigo} concentra la principal oportunidad de mejora (${peor.cumplimientoVariablesPct}%), mientras ${mejor.codigo} lidera el desempeño (${mejor.cumplimientoVariablesPct}%).`
       : "Lectura ejecutiva: sin datos suficientes en el turno vigente.";
   lec.font = { name: F, size: 10, color: { argb: DASH.dark } };
   lec.alignment = { horizontal: "left", vertical: "middle", wrapText: true };
 
   // Tabla base
-  const heads = ["Máquina", "Rollos", "Liberados", "Liberación %", "Cumpl. oficial %", "Cumpl. variables %", "Planta"];
+  const heads = ["Máquina", "Rollos", "Liberados", "Kg producidos", "Liberación %", "Cumpl. oficial %", "Cumpl. variables %", "Planta"];
   heads.forEach((h, i) => {
-    const c = ws.getCell(36, 2 + i);
+    const c = ws.getCell(58, 2 + i);
     c.value = h;
     c.font = { name: F, size: 10, bold: true, color: { argb: "FFFFFFFF" } };
     c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: DASH.dark } };
@@ -574,9 +612,10 @@ function construirDashboard(wb: ExcelJS.Workbook, ws: ExcelJS.Worksheet, resumen
     c.border = { top: { style: "thin" }, left: { style: "thin" }, bottom: { style: "thin" }, right: { style: "thin" } };
   });
   resumen.forEach((r, i) => {
-    const row = 37 + i;
+    const row = 59 + i;
     const vals: Array<string | number> = [
       r.codigo, r.rollos, r.liberados,
+      r.kgProducidos,
       r.rollos > 0 ? r.liberados / r.rollos : 0,
       r.cumplimientoPct / 100,
       r.cumplimientoVariablesPct / 100,
@@ -587,7 +626,8 @@ function construirDashboard(wb: ExcelJS.Workbook, ws: ExcelJS.Worksheet, resumen
       c.value = v;
       c.font = { name: F, size: 11 };
       c.alignment = { horizontal: "center" };
-      if (j >= 3 && j <= 5) c.numFmt = "0.0%";
+      if (j === 3) c.numFmt = '#,##0 "kg"';
+      if (j >= 4 && j <= 6) c.numFmt = "0.0%";
     });
   });
 }
