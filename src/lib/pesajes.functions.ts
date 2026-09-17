@@ -52,8 +52,8 @@ export const asignarPersonalPesaje = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase.rpc("pb_set_personal", {
       _pesaje_id: data.pesaje_id,
-      _operador: data.operador ?? null,
-      _jefe: data.jefe_maquina ?? null,
+      _operador: data.operador ?? "",
+      _jefe: data.jefe_maquina ?? "",
     });
     if (error) throw new Error(error.message);
     return { ok: true };
