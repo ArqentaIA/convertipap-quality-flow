@@ -3246,6 +3246,16 @@ export type Database = {
         Returns: string
       }
       _pc_require_access: { Args: { _uid: string }; Returns: undefined }
+      _qc_propagar_peso_rollo: {
+        Args: {
+          _email: string
+          _motivo: string
+          _muestra_id: string
+          _peso: number
+          _uid: string
+        }
+        Returns: undefined
+      }
       _spec_audit_estado: {
         Args: {
           _campo: Database["public"]["Enums"]["qc_spec_audit_field"]

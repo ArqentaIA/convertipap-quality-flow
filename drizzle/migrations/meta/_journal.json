@@ -8,6 +8,13 @@
       "when": 1789668888751,
       "tag": "0000_crear_historial_envios_cierre_turno",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1790212126776,
+      "tag": "0001_editar_peso_rollo_propagacion",
+      "breakpoints": true
     }
   ]
 }
