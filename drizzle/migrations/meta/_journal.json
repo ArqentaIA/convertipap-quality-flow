@@ -15,6 +15,13 @@
       "when": 1790212126776,
       "tag": "0001_editar_peso_rollo_propagacion",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790317707575,
+      "tag": "0002_editar_peso_valida_cintas_y_merma",
+      "breakpoints": true
     }
   ]
 }
