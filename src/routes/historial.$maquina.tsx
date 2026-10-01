@@ -23,7 +23,7 @@ export const Route = createFileRoute("/historial/$maquina")({
   errorComponent: ({ error }) => (
     <AppLayout title="Historial">
       <div role="alert" className="rounded-xl border border-destructive/40 bg-destructive/5 p-6 text-sm">
-        Error cargando historial: {error.message}
+        Error cargando historial: {(error as Error).message}
       </div>
     </AppLayout>
   ),

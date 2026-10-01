@@ -44,7 +44,7 @@ export const Route = createFileRoute("/calidad/revision")({
     <AppLayout title="Bandeja de Revisión de Calidad">
       <Alert variant="destructive">
         <AlertTitle>No se pudo cargar la bandeja</AlertTitle>
-        <AlertDescription>{error.message}</AlertDescription>
+        <AlertDescription>{(error as Error).message}</AlertDescription>
       </Alert>
     </AppLayout>
   ),

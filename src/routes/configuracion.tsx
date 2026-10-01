@@ -30,7 +30,7 @@ export const Route = createFileRoute("/configuracion")({
   errorComponent: ({ error }) => (
     <AppLayout title="Configuración del sistema">
       <div role="alert" className="rounded-md border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
-        No se pudo cargar la configuración: {error.message}
+        No se pudo cargar la configuración: {(error as Error).message}
       </div>
     </AppLayout>
   ),
@@ -656,7 +656,7 @@ function BackendInfoCard() {
     <Card icon={Cloud} title="Infraestructura y entorno" desc="Base de datos y entorno de despliegue">
       {isLoading && <div className="text-xs text-muted-foreground">Cargando información…</div>}
       {error && (
-        <div className="text-xs text-destructive">No se pudo obtener la información: {error.message}</div>
+        <div className="text-xs text-destructive">No se pudo obtener la información: {(error as Error).message}</div>
       )}
       {data && (
         <div className="grid grid-cols-2 gap-x-5 gap-y-2">
@@ -747,7 +747,7 @@ function MachineAccessCodesCard() {
         <div className="text-xs text-muted-foreground">Cargando máquinas…</div>
       )}
       {error && (
-        <div className="text-xs text-destructive">No se pudieron cargar las máquinas: {error.message}</div>
+        <div className="text-xs text-destructive">No se pudieron cargar las máquinas: {(error as Error).message}</div>
       )}
       <div className="space-y-1.5">
         {data?.map((m) => {
@@ -867,7 +867,7 @@ function MonitorUrlsCard() {
     >
       {isLoading && <div className="text-xs text-muted-foreground">Cargando…</div>}
       {error && (
-        <div className="text-xs text-destructive">No se pudieron cargar los códigos: {error.message}</div>
+        <div className="text-xs text-destructive">No se pudieron cargar los códigos: {(error as Error).message}</div>
       )}
       <div className="space-y-2">
         {MONITORES.map((m) => {
@@ -1011,7 +1011,7 @@ function HistorialEnviosTurnoCard() {
         </button>
       </div>
       {isLoading && <div className="text-xs text-muted-foreground">Cargando historial…</div>}
-      {error && <div className="text-xs text-destructive">No se pudo cargar el historial: {error.message}</div>}
+      {error && <div className="text-xs text-destructive">No se pudo cargar el historial: {(error as Error).message}</div>}
       {!isLoading && !error && (data?.length ?? 0) === 0 && (
         <div className="rounded-md border border-dashed border-border bg-background p-3 text-xs text-muted-foreground">
           Aún no hay envíos registrados. Los próximos cierres de turno aparecerán aquí.
@@ -1143,7 +1143,7 @@ function DestinatariosTurnoCard() {
     >
       {isLoading && <div className="text-xs text-muted-foreground">Cargando plantas…</div>}
       {error && (
-        <div className="text-xs text-destructive">No se pudieron cargar los destinatarios: {error.message}</div>
+        <div className="text-xs text-destructive">No se pudieron cargar los destinatarios: {(error as Error).message}</div>
       )}
       <div className="space-y-2">
         {data?.map((p) => {
