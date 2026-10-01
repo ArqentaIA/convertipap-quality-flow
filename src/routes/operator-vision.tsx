@@ -98,8 +98,8 @@ export const Route = createFileRoute("/operator-vision")({
     const auto = search.auto === "1" || search.auto === 1 ? ("1" as const) : undefined;
     if (!auto) return { maquina };
     const v = String(search.v ?? "a") === "b" ? ("b" as const) : ("a" as const);
-    const tNum = Number(search.t);
-    const t = Number.isFinite(tNum) && tNum >= 10 && tNum <= 600 ? Math.round(tNum) : 20;
+    // Ciclo fijo de 60 s (se ignora cualquier t heredado en URLs ya abiertas).
+    const t = 60;
     return { maquina, auto, v, t };
   },
   component: OperatorVisionGate,
@@ -611,7 +611,7 @@ function OperatorVisionPage() {
   // la "a", de modo que dos monitores nunca muestran la misma máquina.
   useEffect(() => {
     if (!auto) return;
-    const segundos = t ?? 45;
+    const segundos = t ?? 60;
     const id = setInterval(() => {
       const idx = MAQUINAS_VALIDAS.indexOf(maquina);
       const next = MAQUINAS_VALIDAS[(idx + 1) % MAQUINAS_VALIDAS.length];

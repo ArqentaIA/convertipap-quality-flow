@@ -863,7 +863,7 @@ function MonitorUrlsCard() {
     <Card
       icon={Monitor}
       title="URLs de monitores · Rotación automática"
-      desc="Cada monitor tiene su URL y su PIN de 4 dígitos independiente. Cambio de máquina cada 20 s (parámetro t)."
+      desc="Cada monitor tiene su URL y su PIN de 4 dígitos independiente. Cambio de máquina cada 60 s."
     >
       {isLoading && <div className="text-xs text-muted-foreground">Cargando…</div>}
       {error && (
