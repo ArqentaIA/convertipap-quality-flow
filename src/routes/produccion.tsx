@@ -33,7 +33,7 @@ export const Route = createFileRoute("/produccion")({
   errorComponent: ({ error }) => (
     <AppLayout title="Producción">
       <div role="alert" className="rounded-xl border border-destructive/40 bg-destructive/5 p-6 text-sm">
-        Error cargando producción: {error.message}
+        Error cargando producción: {(error as Error).message}
       </div>
     </AppLayout>
   ),

@@ -115,7 +115,7 @@ export const Route = createFileRoute("/calidad/captura")({
       <Alert variant="destructive">
         <AlertTriangle className="h-4 w-4" />
         <AlertTitle>Error al cargar</AlertTitle>
-        <AlertDescription>{error.message}</AlertDescription>
+        <AlertDescription>{(error as Error).message}</AlertDescription>
       </Alert>
     </AppLayout>
   ),

@@ -107,7 +107,7 @@ export const Route = createFileRoute("/calidad/ajustes")({
     <AppLayout title="Historial de Ajustes y Reprocesos">
       <Alert variant="destructive">
         <AlertTitle>No se pudo cargar el historial</AlertTitle>
-        <AlertDescription>{error.message}</AlertDescription>
+        <AlertDescription>{(error as Error).message}</AlertDescription>
       </Alert>
     </AppLayout>
   ),

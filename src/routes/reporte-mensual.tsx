@@ -15,7 +15,7 @@ export const Route = createFileRoute("/reporte-mensual")({
   errorComponent: ({ error }) => (
     <AppLayout title="Reporte Mensual">
       <div role="alert" className="rounded-md border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
-        Error: {error.message}
+        Error: {(error as Error).message}
       </div>
     </AppLayout>
   ),

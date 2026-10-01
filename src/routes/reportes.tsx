@@ -35,7 +35,7 @@ export const Route = createFileRoute("/reportes")({
   errorComponent: ({ error }) => (
     <AppLayout title="Reportes e Indicadores">
       <div role="alert" className="rounded-md border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
-        No se pudieron cargar los reportes: {error.message}
+        No se pudieron cargar los reportes: {(error as Error).message}
       </div>
     </AppLayout>
   ),
