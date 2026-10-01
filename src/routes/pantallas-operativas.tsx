@@ -182,8 +182,7 @@ function OperatorVisionUrls() {
             <h3 className="text-sm font-semibold text-foreground">Rotación automática · 2 monitores</h3>
             <p className="text-xs text-muted-foreground">
               Cada URL recorre las máquinas en distinto orden (nunca repiten la misma a la vez) y
-              desplaza el contenido hacia arriba automáticamente. Cambio de máquina cada 60 s
-              (ajustable con el parámetro t, en segundos).
+              desplaza el contenido hacia arriba automáticamente. Cambio de máquina cada 60 s.
             </p>
           </div>
         </div>
