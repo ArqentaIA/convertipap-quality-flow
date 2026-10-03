@@ -883,7 +883,7 @@ function construirHojaConsolidado(
   const F = "Calibri";
   ws.columns = [
     { width: 4 }, { width: 15 }, { width: 12 }, { width: 12 }, { width: 12 },
-    { width: 15 }, { width: 12 }, { width: 16 }, { width: 4 }, { width: 18 },
+    { width: 15 }, { width: 12 }, { width: 16 }, { width: 16 }, { width: 18 },
     { width: 12 }, { width: 12 }, { width: 12 }, { width: 12 },
   ];
 
