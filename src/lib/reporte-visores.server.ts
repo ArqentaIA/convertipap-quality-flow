@@ -530,7 +530,7 @@ function construirHojaMaquinaDiaria(wb: ExcelJS.Workbook, codigo: string, c: Con
   const head = ["Hora", "Rollo", "SKU SAP", "Turno", "Operador", "Analista",
     ...vars.map((v) => (v.unidad ? `${v.etiqueta} (${v.unidad})` : v.etiqueta)), "Estatus"];
   const lead = 6;
-  ws.columns = head.map((_, i) => ({ width: i < lead ? 14 : 16 }));
+  ws.columns = head.map((_, i) => ({ width: i === 0 ? 18 : i < lead ? 14 : 16 }));
   headerRow(ws, head, 1);
   const suma = vars.map(() => 0);
   const cuenta = vars.map(() => 0);

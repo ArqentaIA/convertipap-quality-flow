@@ -220,7 +220,7 @@ export async function construirConsolidadoDiario(
     if (maq?.id) {
       let q = sb
         .from("muestras_calidad")
-        .select("id, numero_rollo, sku_sap, capturado_at, operador, analista, turno, estatus_liberacion, fuera_de_turno, mediciones_calidad(variable_clave, valor, estado, min_snapshot, max_snapshot)")
+        .select("id, numero_rollo, sku_sap, capturado_at, operador, analista, turno, estatus_liberacion, fuera_de_turno, mediciones_calidad(variable_clave, valor, estado, min_snapshot, max_snapshot, observacion)")
         .eq("maquina_id", maq.id)
         .order("capturado_at", { ascending: true })
         .gte("capturado_at", ctx.desde.toISOString())
@@ -243,7 +243,15 @@ export async function construirConsolidadoDiario(
         operador: r.operador || "—",
         analista: r.analista || "—",
         estatus: r.estatus_liberacion ?? null,
-        mediciones: ((r.mediciones_calidad ?? []) as Array<any>).map((x) => ({
+        // Una medición por variable. Si existe el relleno automático ("Auto-relleno")
+        // y además la captura real, prevalece la captura real del analista.
+        mediciones: Object.values(
+          ((r.mediciones_calidad ?? []) as Array<any>).reduce((acc: Record<string, any>, x) => {
+            const auto = String(x.observacion ?? "").startsWith("Auto-relleno");
+            if (!acc[x.variable_clave] || (acc[x.variable_clave].auto && !auto)) acc[x.variable_clave] = { ...x, auto };
+            return acc;
+          }, {}),
+        ).map((x: any) => ({
           clave: x.variable_clave, valor: num(x.valor), min: num(x.min_snapshot), max: num(x.max_snapshot),
         })),
       }));
