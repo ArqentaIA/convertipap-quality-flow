@@ -620,6 +620,48 @@ export async function construirResumenEjecutivoDiario(
     cell.font = { name: "Calibri", size: 9, italic: true, color: { argb: FUERA_TEXT } };
     cell.alignment = { wrapText: true, vertical: "middle" };
   }
+  // ------------------------------------------- Resumen general del día
+  {
+    const ws = wb.addWorksheet("Resumen general del día", { views: [{ showGridLines: false }] });
+    ws.columns = [{ width: 12 }, { width: 22 }, { width: 10 }, { width: 11 }, { width: 11 }, { width: 11 }, { width: 12 }, { width: 12 }, { width: 16 }, { width: 18 }, { width: 20 }];
+    ponerLogo(wb, ws, 0.1, 0.2);
+    [1, 2, 3].forEach((r) => (ws.getRow(r).height = 20));
+    ws.mergeCells("C1:K2");
+    const t = ws.getCell("C1");
+    t.value = "RESUMEN GENERAL DEL DÍA · T1 + T2 + T3";
+    t.font = { name: "Arial", bold: true, size: 16, color: { argb: HDR_FILL } };
+    t.alignment = { horizontal: "center", vertical: "middle" };
+    ws.mergeCells("C3:K3");
+    const st = ws.getCell("C3");
+    st.value = `Día operativo: ${fechaTitulo} · Generado: ${generado.toLocaleString("es-MX", { hour12: false, timeZone: "America/Mexico_City" })} (hora planta)`;
+    st.font = { name: "Arial", size: 10, italic: true, color: { argb: "FF5B6573" } };
+    st.alignment = { horizontal: "center", vertical: "middle" };
+    ws.getRow(4).height = 6;
+    headerRow(ws, ["Máquina", "Nombre", "Planta", "Rollos T1", "Rollos T2", "Rollos T3", "Total rollos", "Liberados", "Kg producidos", "Cumpl. oficial %", "Cumpl. variables %"], 5);
+    const filas = [
+      ...c.maquinas.map((m) => ({ ...m, total: false })),
+      { codigo: "TOTAL DÍA", nombre: "", planta: "", ...c.totales, total: true },
+    ];
+    for (const f of filas) {
+      const row = ws.addRow([f.codigo, f.nombre, f.planta, f.rollosT1, f.rollosT2, f.rollosT3, f.rollos, f.liberados, f.kgProducidos, f.cumplimientoPct, f.cumplimientoVariablesPct]);
+      row.font = { name: "Arial", size: 10, bold: f.total };
+      row.height = 18;
+      row.eachCell({ includeEmpty: true }, (cell, col) => {
+        cell.alignment = { vertical: "middle", horizontal: col === 2 ? "left" : "center" };
+        cell.border = { top: { style: "hair" }, left: { style: "hair" }, bottom: { style: "hair" }, right: { style: "hair" } };
+        if (col === 9) cell.numFmt = '#,##0 "kg"';
+        if (f.total) cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFEEF2F7" } };
+      });
+    }
+    if (c.fueraDeTurno > 0) {
+      const r = 7 + filas.length;
+      ws.mergeCells(r, 1, r + 1, 11);
+      const cell = ws.getCell(r, 1);
+      cell.value = notaFueraTurno(c.fueraDeTurno, "del presente reporte");
+      cell.font = { name: "Calibri", size: 9, italic: true, color: { argb: FUERA_TEXT } };
+      cell.alignment = { wrapText: true, vertical: "middle" };
+    }
+  }
   for (const m of c.maquinas) construirHojaMaquinaDiaria(wb, m.codigo, c);
   const nc = Math.max(c.maquinas.length, 1);
   const buffer = inyectarGraficasDashboard((await wb.xlsx.writeBuffer()) as ArrayBuffer, {
