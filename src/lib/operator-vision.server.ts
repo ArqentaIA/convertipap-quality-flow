@@ -5,7 +5,7 @@
 // =============================================================================
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
-export async function fetchOperatorVisionData(maquinaCodigo: string) {
+export async function fetchOperatorVisionData(maquinaCodigo: string, opts?: { referencia?: Date }) {
     const sb = supabaseAdmin;
 
     // 1) Resolver máquina por código
@@ -82,7 +82,7 @@ export async function fetchOperatorVisionData(maquinaCodigo: string) {
     //    inicio_del_turno → ahora. Esto evita arrastrar rollos del T3 anterior
     //    durante la madrugada o al inicio del siguiente T3.
     const PLANT_TZ_OFFSET_HOURS = -6;
-    const nowUtc = new Date();
+    const nowUtc = opts?.referencia ?? new Date();
     const nowPlant = new Date(nowUtc.getTime() + PLANT_TZ_OFFSET_HOURS * 3600 * 1000);
 
     // Determinar turno vigente ESTRICTAMENTE por la hora del sistema (planta)
@@ -127,7 +127,7 @@ export async function fetchOperatorVisionData(maquinaCodigo: string) {
         break;
       }
     }
-    const endNowHist = nowUtc;
+    const endNowHist = opts?.referencia ? new Date() : nowUtc;
 
     // CRITERIO ÚNICO DE TURNO (unificado con Producción / Historial / Reportes):
     // un rollo pertenece al turno DECLARADO en la muestra, no al reloj de captura.
