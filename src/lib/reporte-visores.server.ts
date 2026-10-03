@@ -266,7 +266,7 @@ export async function construirReporteVisores(
     ws0.addRow([]);
     const nr = ws0.addRow([notaFueraTurno(totalFueraTurno, "del presente reporte")]);
     ws0.mergeCells(nr.number, 1, nr.number, 10);
-    nr.font = { name: "Arial", size: 9, italic: true, color: { argb: "FF5B6573" } };
+    nr.font = { name: "Arial", size: 9, italic: true, color: { argb: FUERA_TEXT } };
     nr.getCell(1).alignment = { wrapText: true, vertical: "middle" };
     nr.height = 28;
   }
@@ -483,7 +483,7 @@ ${bloquesMaquina}
 El detalle completo por máquina, con todas las variables medidas y sus gráficas, se incluye en el archivo Excel adjunto <b>${esc(fileName)}</b>. Correo y adjunto se generan de la misma fuente de datos de los Visores.</p>
 </div>
 
-${totalFueraTurno > 0 ? `<p style="margin:12px 0 0;font-size:11px;color:#5b6573;font-style:italic">${esc(notaFueraTurno(totalFueraTurno, "del presente reporte"))}</p>` : ""}
+${totalFueraTurno > 0 ? `<p style="margin:12px 0 0;font-size:11px;color:#b3261e;font-style:italic">${esc(notaFueraTurno(totalFueraTurno, "del presente reporte"))}</p>` : ""}
 
 <div style="margin-top:20px;border-top:1px solid #d7dee8;padding-top:12px">
 <p style="margin:0;font-size:10.5px;line-height:1.55;color:#64748b;text-align:justify">
@@ -557,7 +557,7 @@ export async function construirResumenEjecutivoDiario(
     wsc.mergeCells(r, 2, r + 1, 14);
     const cell = wsc.getCell(r, 2);
     cell.value = notaFueraTurno(c.fueraDeTurno, "del presente reporte");
-    cell.font = { name: "Calibri", size: 9, italic: true, color: { argb: DASH.muted } };
+    cell.font = { name: "Calibri", size: 9, italic: true, color: { argb: FUERA_TEXT } };
     cell.alignment = { wrapText: true, vertical: "middle" };
   }
   const nc = Math.max(c.maquinas.length, 1);
@@ -644,7 +644,7 @@ ${gCum}</table>
 <th style="${TH}">Kg producidos</th><th style="${TH}">Cumpl. oficial diario</th><th style="${TH}">Cumpl. variables diario</th></tr></thead>
 <tbody>${filas}${totalRow}</tbody></table>
 <p style="margin:10px 0 0;font-size:11px;color:#5b6573">Fecha operativa ${esc(c.etiquetaLarga)}: del arranque de T1 al cierre de T3 (T3 cruza medianoche). Los porcentajes diarios se recalculan sobre todos los registros del día, no se promedian por turno. Correo y Excel adjunto <b>${esc(fileName)}</b> se generan del mismo conjunto de datos.</p>
-${c.fueraDeTurno > 0 ? `<p style="margin:10px 0 0;font-size:11px;color:#5b6573;font-style:italic">${esc(notaFueraTurno(c.fueraDeTurno, "del presente reporte"))}</p>` : ""}
+${c.fueraDeTurno > 0 ? `<p style="margin:10px 0 0;font-size:11px;color:#b3261e;font-style:italic">${esc(notaFueraTurno(c.fueraDeTurno, "del presente reporte"))}</p>` : ""}
 <div style="margin-top:20px;border-top:1px solid #d7dee8;padding-top:12px">
 <p style="margin:0;font-size:10.5px;line-height:1.55;color:#64748b;text-align:justify">
 <b style="color:#1e293b">AVISO DE CONFIDENCIALIDAD.</b> Este correo y sus anexos contienen información operativa y de calidad propiedad de Convertipap, de carácter confidencial y de uso exclusivo del personal autorizado como destinatario. Queda prohibida su divulgación, reproducción total o parcial, distribución o uso por cualquier medio sin autorización expresa de la Dirección General. La reproducción o el uso indebido de esta información es responsabilidad exclusiva de quien la ejecute. Si usted recibió este mensaje por error, notifíquelo al remitente y elimínelo de inmediato. Documento generado automáticamente; no responda a esta dirección.
