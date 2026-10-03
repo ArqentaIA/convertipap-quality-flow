@@ -531,7 +531,12 @@ function construirHojaMaquinaDiaria(wb: ExcelJS.Workbook, codigo: string, c: Con
     ...vars.map((v) => (v.unidad ? `${v.etiqueta} (${v.unidad})` : v.etiqueta)), "Estatus"];
   const lead = 6;
   ws.columns = head.map((_, i) => ({ width: i === 0 ? 18 : i < lead ? 14 : 16 }));
-  headerRow(ws, head, 1);
+  // Espacio superior para el logotipo (filas 1-4); encabezado en la fila 5.
+  for (let r = 1; r <= 4; r++) ws.getRow(r).height = 20;
+  ponerLogo(wb, ws, 0.1, 0.1);
+  ws.getCell("C2").value = `${codigo} · Resumen Ejecutivo Diario`;
+  ws.getCell("C2").font = { name: "Arial", size: 13, bold: true };
+  headerRow(ws, head, 5);
   const suma = vars.map(() => 0);
   const cuenta = vars.map(() => 0);
   const fueraVar = vars.map(() => 0);
