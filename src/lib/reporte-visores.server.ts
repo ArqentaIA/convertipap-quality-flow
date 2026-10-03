@@ -96,8 +96,11 @@ type DetalleMaquina = {
 
 export async function construirReporteVisores(
   maquinas: readonly string[] = MAQUINAS_REPORTE,
+  opts?: { referencia?: Date },
 ) {
   const generado = new Date();
+  // Momento dentro del turno que se cierra (permite enviar justo al cierre, 07:00/15:00/23:00).
+  const referencia = opts?.referencia ?? generado;
   const wb = new ExcelJS.Workbook();
   wb.creator = "Convertipap";
   wb.lastModifiedBy = "Convertipap";
@@ -111,7 +114,7 @@ export async function construirReporteVisores(
 
   const resumen: ResumenMaquina[] = [];
   const detalles: DetalleMaquina[] = [];
-  const datos = await Promise.all(maquinas.map((m) => fetchOperatorVisionData(m)));
+  const datos = await Promise.all(maquinas.map((m) => fetchOperatorVisionData(m, { referencia })));
   // Capturas "Fuera de turno" del turno reportado: solo informativas.
   let totalFueraTurno = 0;
 
@@ -315,11 +318,16 @@ export async function construirReporteVisores(
   const partesPlanta = new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/Mexico_City", year: "numeric", month: "2-digit", day: "2-digit",
     hour: "2-digit", minute: "2-digit", hour12: false,
-  }).formatToParts(generado);
-  const p = (t: string) => partesPlanta.find((x) => x.type === t)?.value ?? "00";
-  const fechaPlanta = `${p("year")}${p("month")}${p("day")}`;
-  const horaPlanta = Number(p("hour")) % 24;
+  }).formatToParts(referencia);
+  const horaPlanta = Number((partesPlanta.find((x) => x.type === "hour")?.value ?? "0")) % 24;
   const turnoArchivo = horaPlanta >= 7 && horaPlanta < 15 ? "T1" : horaPlanta >= 15 && horaPlanta < 23 ? "T2" : "T3";
+  // T3 conserva la fecha del día en que arrancó (23:00): de 00:00 a 06:59 se toma el día anterior.
+  const fechaOperativa = new Date(referencia.getTime() - (horaPlanta < 7 ? 24 * 3600 * 1000 : 0));
+  const partesOp = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Mexico_City", year: "numeric", month: "2-digit", day: "2-digit",
+  }).formatToParts(fechaOperativa);
+  const p = (t: string) => partesOp.find((x) => x.type === t)?.value ?? "00";
+  const fechaPlanta = `${p("year")}${p("month")}${p("day")}`;
   const fileName = `Convertipap_CierreTurno_${fechaPlanta}_${turnoArchivo} Python 3.12.10.xlsx`;
   // Asunto dinámico: "Cierre de Turno | DD-MM-YYYY | T1"
   const subject = `Cierre de Turno | ${p("day")}-${p("month")}-${p("year")} | ${turnoArchivo}`;
@@ -347,7 +355,7 @@ export async function construirReporteVisores(
   const peor = ranking[ranking.length - 1];
   const plantas = [...new Set(resumen.map((r) => r.planta).filter(Boolean))].join(" · ") || "—";
   const turnos = [...new Set(resumen.map((r) => r.turno).filter(Boolean))].join(" · ") || "—";
-  const fechaLarga = generado.toLocaleDateString("es-MX", {
+  const fechaLarga = fechaOperativa.toLocaleDateString("es-MX", {
     weekday: "long", day: "2-digit", month: "long", year: "numeric", timeZone: "America/Mexico_City",
   });
 

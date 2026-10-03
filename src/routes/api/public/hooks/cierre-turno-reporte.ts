@@ -71,7 +71,7 @@ async function ejecutar(request: Request) {
   }
 
   const { construirReporteVisores } = await import("@/lib/reporte-visores.server");
-  const reporte = await construirReporteVisores();
+  const reporte = await construirReporteVisores(undefined, { referencia: new Date(Date.now() - 60_000) });
 
   const { fecha, hora } = fechaHoraPlanta(reporte.generado);
   const baseEnvio = {
