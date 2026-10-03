@@ -521,6 +521,61 @@ ${totalFueraTurno > 0 ? `<p style="margin:12px 0 0;font-size:11px;color:#b3261e;
   };
 }
 
+/** Hoja por máquina del Resumen Diario: todos los rollos válidos T1+T2+T3 y totales del día. */
+function construirHojaMaquinaDiaria(wb: ExcelJS.Workbook, codigo: string, c: ConsolidadoDiario) {
+  const rollos = c.rollosPorMaquina[codigo] ?? [];
+  const claves = new Set(rollos.flatMap((r) => r.mediciones.map((m) => m.clave)));
+  const vars = c.variables.filter((v) => claves.has(v.clave));
+  const ws = wb.addWorksheet(codigo);
+  const head = ["Hora", "Rollo", "SKU SAP", "Turno", "Operador", "Analista",
+    ...vars.map((v) => (v.unidad ? `${v.etiqueta} (${v.unidad})` : v.etiqueta)), "Estatus"];
+  const lead = 6;
+  ws.columns = head.map((_, i) => ({ width: i < lead ? 14 : 16 }));
+  headerRow(ws, head, 1);
+  const suma = vars.map(() => 0);
+  const cuenta = vars.map(() => 0);
+  const fueraVar = vars.map(() => 0);
+  let fuera = 0;
+  for (const r of rollos) {
+    const celdas = vars.map((v, i) => {
+      const med = r.mediciones.find((x) => x.clave === v.clave);
+      const valor = med?.valor ?? null;
+      if (valor !== null) { suma[i]! += valor; cuenta[i]!++; }
+      const ok = valor === null || ((med?.min == null || valor >= med.min) && (med?.max == null || valor <= med.max));
+      if (!ok) { fueraVar[i]!++; fuera++; }
+      return { valor, ok };
+    });
+    const row = ws.addRow([fmtHora(r.capturadoAt), r.rollo, r.skuSap, r.turno, r.operador, r.analista,
+      ...celdas.map((x) => x.valor ?? ""), r.estatus ?? "—"]);
+    row.font = { name: "Arial", size: 10 };
+    row.alignment = { horizontal: "center" };
+    celdas.forEach((x, i) => {
+      if (x.ok) return;
+      const cell = row.getCell(lead + 1 + i);
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: FUERA_FILL } };
+      cell.font = { name: "Arial", size: 10, bold: true, color: { argb: FUERA_TEXT } };
+    });
+  }
+  if (rollos.length === 0) {
+    ws.addRow(["Sin rollos capturados en el día operativo"]).font = { name: "Arial", bold: true };
+  } else {
+    const totales: Array<[string, Array<string | number>, string?]> = [
+      ["TOTAL DÍA", vars.map((v, i) => (v.clave === "peso" ? Number(suma[i]!.toFixed(2)) : cuenta[i]!)), `${rollos.length} rollos`],
+      ["PROMEDIO DÍA", vars.map((_, i) => (cuenta[i]! > 0 ? Number((suma[i]! / cuenta[i]!).toFixed(3)) : "—"))],
+      ["FUERA DE RANGO", vars.map((_, i) => fueraVar[i]!), String(fuera)],
+    ];
+    for (const [etq, vals, extra] of totales) {
+      const row = ws.addRow([etq, extra ?? "", "", "", "", "", ...vals, ""]);
+      row.font = { name: "Arial", size: 10, bold: true, color: { argb: HDR_FILL } };
+      row.alignment = { horizontal: "center" };
+      row.eachCell((cell) => (cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: DASH.card } }));
+    }
+    const nota = ws.addRow(["TOTAL DÍA: peso = suma de kg; resto de variables = número de mediciones. Celdas resaltadas = fuera del rango mín/máx de especificación."]);
+    nota.font = { name: "Arial", size: 9, italic: true, color: { argb: FUERA_TEXT } };
+  }
+  ws.views = [{ state: "frozen", ySplit: 1 }];
+}
+
 function notaFueraTurno(n: number, ambito: string) {
   return `Nota operativa: Se identificaron ${n} rollo${n === 1 ? "" : "s"} capturado${n === 1 ? "" : "s"} fuera de turno. Estos registros no están incluidos en los indicadores, totales de rollos ni kilogramos ${ambito}.`;
 }
@@ -560,6 +615,7 @@ export async function construirResumenEjecutivoDiario(
     cell.font = { name: "Calibri", size: 9, italic: true, color: { argb: FUERA_TEXT } };
     cell.alignment = { wrapText: true, vertical: "middle" };
   }
+  for (const m of c.maquinas) construirHojaMaquinaDiaria(wb, m.codigo, c);
   const nc = Math.max(c.maquinas.length, 1);
   const buffer = inyectarGraficasDashboard((await wb.xlsx.writeBuffer()) as ArrayBuffer, {
     sheetNumber: 1,

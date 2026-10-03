@@ -33,7 +33,22 @@ export type ConsolidadoMaquina = {
   variablesConformes: number;
 };
 
+export type RolloDiario = {
+  capturadoAt: string;
+  rollo: string;
+  skuSap: string;
+  turno: string;
+  operador: string;
+  analista: string;
+  estatus: string | null;
+  mediciones: Array<{ clave: string; valor: number | null; min: number | null; max: number | null }>;
+};
+
 export type ConsolidadoDiario = {
+  /** Rollos válidos del día (mismo universo que los KPIs) por código de máquina. */
+  rollosPorMaquina: Record<string, RolloDiario[]>;
+  /** Etiquetas de variables (clave → etiqueta/unidad/orden) para las hojas por máquina. */
+  variables: Array<{ clave: string; etiqueta: string; unidad: string | null; orden: number }>;
   /** Día operativo (inicio de T1) en formato YYYY-MM-DD, hora planta. */
   diaOperativo: string;
   /** Etiqueta DD-MM-AA usada en el nombre de la hoja. */
@@ -174,6 +189,7 @@ export async function construirConsolidadoDiario(
   const exclusivo = Boolean(diaOperativo);
   const sb = supabaseAdmin;
   let fueraDeTurno = 0;
+  const rollosPorMaquina: Record<string, RolloDiario[]> = {};
 
   const { data: maqs } = await sb
     .from("maquinas")
@@ -204,8 +220,9 @@ export async function construirConsolidadoDiario(
     if (maq?.id) {
       let q = sb
         .from("muestras_calidad")
-        .select("id, turno, estatus_liberacion, fuera_de_turno, mediciones_calidad(variable_clave, valor, estado)")
+        .select("id, numero_rollo, sku_sap, capturado_at, operador, analista, turno, estatus_liberacion, fuera_de_turno, mediciones_calidad(variable_clave, valor, estado, min_snapshot, max_snapshot)")
         .eq("maquina_id", maq.id)
+        .order("capturado_at", { ascending: true })
         .gte("capturado_at", ctx.desde.toISOString())
         .in("turno", ["1", "2", "3"]);
       q = exclusivo ? q.lt("capturado_at", hasta.toISOString()) : q.lte("capturado_at", hasta.toISOString());
@@ -217,6 +234,19 @@ export async function construirConsolidadoDiario(
       fila.rollosT2 = validos.filter((r: any) => String(r.turno) === "2").length;
       fila.rollosT3 = validos.filter((r: any) => String(r.turno) === "3").length;
       fila.rollos = validos.length;
+      const num = (v: unknown) => (v === null || v === undefined || !Number.isFinite(Number(v)) ? null : Number(v));
+      rollosPorMaquina[codigo] = validos.map((r: any) => ({
+        capturadoAt: r.capturado_at,
+        rollo: String(r.numero_rollo ?? "—"),
+        skuSap: r.sku_sap || "—",
+        turno: String(r.turno ?? "—"),
+        operador: r.operador || "—",
+        analista: r.analista || "—",
+        estatus: r.estatus_liberacion ?? null,
+        mediciones: ((r.mediciones_calidad ?? []) as Array<any>).map((x) => ({
+          clave: x.variable_clave, valor: num(x.valor), min: num(x.min_snapshot), max: num(x.max_snapshot),
+        })),
+      }));
       fila.liberados = validos.filter(
         (r: any) => r.estatus_liberacion === "L" || r.estatus_liberacion === "C",
       ).length;
@@ -263,6 +293,15 @@ export async function construirConsolidadoDiario(
     hasta,
     maquinas: filas,
     fueraDeTurno,
+    rollosPorMaquina,
+    variables: await (async () => {
+      const claves = new Set(Object.values(rollosPorMaquina).flat().flatMap((r) => r.mediciones.map((m) => m.clave)));
+      const { data } = await sb.from("variables_calidad").select("clave, etiqueta, unidad, orden");
+      return [...claves].map((clave) => {
+        const v = (data ?? []).find((x: any) => x.clave === clave) as any;
+        return { clave, etiqueta: v?.etiqueta ?? clave, unidad: v?.unidad ?? null, orden: Number(v?.orden ?? 999) };
+      }).sort((a, b) => a.orden - b.orden);
+    })(),
     totales: {
       rollosT1: sum((r) => r.rollosT1),
       rollosT2: sum((r) => r.rollosT2),
