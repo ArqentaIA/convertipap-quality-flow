@@ -8,7 +8,7 @@ import { fetchOperatorVisionData } from "./operator-vision.server";
 import { inyectarGraficasDashboard } from "./reporte-visores-charts.server";
 import {
   construirConsolidadoDiario,
-  resolverTurnoYDiaOperativo,
+  ventanaDiaOperativo,
   type ConsolidadoDiario,
 } from "./reporte-consolidado-diario.server";
 import logoDataUrl from "@/assets/reporte-visores-logo.png?inline";
@@ -96,8 +96,6 @@ type DetalleMaquina = {
 
 export async function construirReporteVisores(
   maquinas: readonly string[] = MAQUINAS_REPORTE,
-  /** Solo para vista previa / reenvío autorizado: fuerza el bloque consolidado de T3. */
-  opts?: { forzarConsolidado?: boolean; consolidadoRef?: Date },
 ) {
   const generado = new Date();
   const wb = new ExcelJS.Workbook();
@@ -114,6 +112,8 @@ export async function construirReporteVisores(
   const resumen: ResumenMaquina[] = [];
   const detalles: DetalleMaquina[] = [];
   const datos = await Promise.all(maquinas.map((m) => fetchOperatorVisionData(m)));
+  // Capturas "Fuera de turno" del turno reportado: solo informativas.
+  let totalFueraTurno = 0;
 
   // Dashboard ejecutivo: se crea primero para que sea la hoja de entrada.
   const wsd = wb.addWorksheet("Dashboard Ejecutivo", { views: [{ showGridLines: false }] });
@@ -140,7 +140,7 @@ export async function construirReporteVisores(
   for (let i = 0; i < maquinas.length; i++) {
     const codigo = maquinas[i]!;
     const d = datos[i]!;
-    const kgProducidos = (d.muestras ?? []).reduce((acc: number, m: { mediciones: Array<{ clave: string; valor: number | null }> }) => {
+    const kgProducidos = (d.muestras ?? []).filter((m: { fueraDeTurno?: boolean }) => !m.fueraDeTurno).reduce((acc: number, m: { mediciones: Array<{ clave: string; valor: number | null }> }) => {
       const peso = m.mediciones.find((x: { clave: string; valor: number | null }) => x.clave === "peso")?.valor;
       return typeof peso === "number" && Number.isFinite(peso) ? acc + peso : acc;
     }, 0);
@@ -187,6 +187,10 @@ export async function construirReporteVisores(
     detalles.push(detalle);
     let fuera = 0;
     for (const m of muestras) {
+      if (m.fueraDeTurno) {
+        totalFueraTurno++;
+        continue;
+      }
       const meds = m.mediciones as Array<{ clave: string; valor: number | null; min?: number | null; max?: number | null }>;
       const celdas = vars.map((v) => {
         const med = meds.find((x) => x.clave === v.clave);
@@ -241,7 +245,7 @@ export async function construirReporteVisores(
       });
     }
     detalle.fuera = fuera;
-    if (muestras.length === 0) {
+    if (detalle.filas.length === 0) {
       ws.addRow(["Sin rollos capturados en el turno vigente"]).font = { name: "Arial", bold: true };
     } else {
       ws.addRow([]);
@@ -257,27 +261,19 @@ export async function construirReporteVisores(
   // ------------------------------------------------- Dashboard ejecutivo
   construirDashboard(wb, wsd, resumen, generado);
 
-  // ------------------------------------- Consolidado diario (solo en T3)
-  // El turno se resuelve con la configuración vigente de turnos (app_settings),
-  // la misma fuente que usan los visores. T1 y T2 no reciben consolidado.
-  const refConsolidado = opts?.consolidadoRef ?? generado;
-  const ctxTurno = await resolverTurnoYDiaOperativo(refConsolidado);
-  const consolidado =
-    ctxTurno.turno === "3" || opts?.forzarConsolidado
-      ? await construirConsolidadoDiario(maquinas, refConsolidado)
-      : null;
-  let hojaConsolidadoNumero = 0;
-  let nombreHojaConsolidado = "";
-  if (consolidado) {
-    nombreHojaConsolidado = `Consolidado Diario ${consolidado.etiquetaCorta}`;
-    const wsc = wb.addWorksheet(nombreHojaConsolidado, { views: [{ showGridLines: false }] });
-    construirHojaConsolidado(wb, wsc, consolidado, generado);
-    hojaConsolidadoNumero = wb.worksheets.indexOf(wsc) + 1;
+  // Nota informativa de capturas fuera de turno (misma cifra que el correo).
+  if (totalFueraTurno > 0) {
+    ws0.addRow([]);
+    const nr = ws0.addRow([notaFueraTurno(totalFueraTurno, "del presente reporte")]);
+    ws0.mergeCells(nr.number, 1, nr.number, 10);
+    nr.font = { name: "Arial", size: 9, italic: true, color: { argb: "FF5B6573" } };
+    nr.getCell(1).alignment = { wrapText: true, vertical: "middle" };
+    nr.height = 28;
   }
 
   const bruto = (await wb.xlsx.writeBuffer()) as ArrayBuffer;
   const n = Math.max(resumen.length, 1);
-  let buffer = inyectarGraficasDashboard(bruto, {
+  const buffer = inyectarGraficasDashboard(bruto, {
     sheetNumber: 1,
     puntos: n,
     series: [
@@ -314,46 +310,6 @@ export async function construirReporteVisores(
     ],
   });
 
-  // Gráficas nativas de la hoja Consolidado Diario (mismo estilo ejecutivo).
-  if (consolidado && hojaConsolidadoNumero > 0) {
-    const nc = Math.max(consolidado.maquinas.length, 1);
-    buffer = inyectarGraficasDashboard(buffer, {
-      sheetNumber: hojaConsolidadoNumero,
-      puntos: nc,
-      series: [
-        {
-          titulo: "Rollos producidos por máquina (T1+T2+T3)",
-          hoja: nombreHojaConsolidado,
-          catRef: `$B$59:$B$${58 + nc}`,
-          valRef: `$F$59:$F$${58 + nc}`,
-          color: "2D8A9E",
-          numFmt: "0",
-          from: { col: 1, row: 12 },
-          to: { col: 8, row: 30 },
-        },
-        {
-          titulo: "Cumplimiento diario de variables por máquina",
-          hoja: nombreHojaConsolidado,
-          catRef: `$B$59:$B$${58 + nc}`,
-          valRef: `$J$59:$J$${58 + nc}`,
-          color: "1B7F5E",
-          numFmt: "0.0%",
-          from: { col: 9, row: 12 },
-          to: { col: 14, row: 30 },
-        },
-        {
-          titulo: "Kg producidos por máquina (día operativo)",
-          hoja: nombreHojaConsolidado,
-          catRef: `$B$59:$B$${58 + nc}`,
-          valRef: `$H$59:$H$${58 + nc}`,
-          color: "2D8A9E",
-          numFmt: '#,##0 "kg"',
-          from: { col: 1, row: 33 },
-          to: { col: 14, row: 51 },
-        },
-      ],
-    });
-  }
   const pad = (n: number) => String(n).padStart(2, "0");
   // Hora planta (America/Mexico_City) para fecha y turno del nombre de archivo.
   const partesPlanta = new Intl.DateTimeFormat("en-CA", {
@@ -469,97 +425,6 @@ export async function construirReporteVisores(
     })
     .join("");
 
-  // --------------------- Sección embebida: Consolidado diario (solo T3)
-  const htmlConsolidado = !consolidado
-    ? ""
-    : (() => {
-        const c = consolidado;
-        const maxR = Math.max(1, ...c.maquinas.map((m) => m.rollos));
-        const maxK = Math.max(1, ...c.maquinas.map((m) => m.kgProducidos));
-        const filas = c.maquinas
-          .map(
-            (m) => `<tr>
-<td style="${TD};font-weight:bold">${esc(m.codigo)}</td>
-<td style="${TD};text-align:center">${esc(m.planta)}</td>
-<td style="${TD};text-align:center">${m.rollosT1}</td>
-<td style="${TD};text-align:center">${m.rollosT2}</td>
-<td style="${TD};text-align:center">${m.rollosT3}</td>
-<td style="${TD};text-align:center;font-weight:bold">${m.rollos}</td>
-<td style="${TD};text-align:center">${m.liberados}</td>
-<td style="${TD};text-align:center">${Math.round(m.kgProducidos).toLocaleString("es-MX")} kg</td>
-<td style="${TD};text-align:center">${m.cumplimientoPct}%</td>
-<td style="${TD};text-align:center">${m.cumplimientoVariablesPct}%</td></tr>`,
-          )
-          .join("");
-        const t = c.totales;
-        const totalRow = `<tr>
-<td style="${TD};font-weight:bold;background:#f6f8fb">TOTAL DÍA</td>
-<td style="${TD};background:#f6f8fb"></td>
-<td style="${TD};text-align:center;font-weight:bold;background:#f6f8fb">${t.rollosT1}</td>
-<td style="${TD};text-align:center;font-weight:bold;background:#f6f8fb">${t.rollosT2}</td>
-<td style="${TD};text-align:center;font-weight:bold;background:#f6f8fb">${t.rollosT3}</td>
-<td style="${TD};text-align:center;font-weight:bold;background:#f6f8fb">${t.rollos}</td>
-<td style="${TD};text-align:center;font-weight:bold;background:#f6f8fb">${t.liberados}</td>
-<td style="${TD};text-align:center;font-weight:bold;background:#f6f8fb">${Math.round(t.kgProducidos).toLocaleString("es-MX")} kg</td>
-<td style="${TD};text-align:center;font-weight:bold;background:#f6f8fb">${t.cumplimientoPct}%</td>
-<td style="${TD};text-align:center;font-weight:bold;background:#f6f8fb">${t.cumplimientoVariablesPct}%</td></tr>`;
-        const gKg = c.maquinas
-          .map(
-            (m) => `<tr>
-<td style="padding:5px 8px;font-size:12px;font-weight:bold;color:#1e293b;width:64px;white-space:nowrap">${esc(m.codigo)}</td>
-<td style="padding:5px 8px">${barra((m.kgProducidos / maxK) * 100, "#2d8a9e")}</td>
-<td style="padding:5px 8px;font-size:11px;color:#2d8a9e;width:92px;white-space:nowrap;text-align:right">${Math.round(m.kgProducidos).toLocaleString("es-MX")} kg</td></tr>`,
-          )
-          .join("");
-        const gCum = c.maquinas
-          .map(
-            (m) => `<tr>
-<td style="padding:5px 8px;font-size:12px;font-weight:bold;color:#1e293b;width:64px;white-space:nowrap">${esc(m.codigo)}</td>
-<td style="padding:5px 8px;width:40%">${barra((m.rollos / maxR) * 100, "#2d8a9e")}</td>
-<td style="padding:5px 8px;font-size:11px;color:#2d8a9e;width:70px;white-space:nowrap">${m.rollos} rollos</td>
-<td style="padding:5px 8px;width:40%">${barra(Math.min(100, m.cumplimientoVariablesPct), "#1b7f5e")}</td>
-<td style="padding:5px 8px;font-size:11px;color:#1b7f5e;width:52px;white-space:nowrap;text-align:right">${m.cumplimientoVariablesPct}%</td></tr>`,
-          )
-          .join("");
-        return `
-<div style="margin-top:30px;border-top:3px solid #1e293b;padding-top:6px"></div>
-<div style="background:#1e293b;color:#fff;padding:12px 18px;border-radius:6px">
-<div style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;opacity:.75">Cierre completo del día operativo</div>
-<div style="font-size:18px;font-weight:bold;padding-top:3px">Consolidado diario — ${esc(c.etiquetaLarga)}</div>
-<div style="font-size:11px;opacity:.8;padding-top:2px">Turnos T1 + T2 + T3 · MP-01, MP-04, MP-05, MP-06 y MP-07</div>
-</div>
-
-<h3 style="${H2}">Indicadores del día</h3>
-<table style="border-collapse:collapse;width:100%"><tr>
-${kpi("Total rollos del día", String(t.rollos))}
-${kpi("Total liberados", String(t.liberados))}
-${kpi("Total kg producidos", `${Math.round(t.kgProducidos).toLocaleString("es-MX")} kg`)}
-${kpi("Cumpl. oficial diario", `${t.cumplimientoPct}%`)}
-${kpi("Cumpl. variables diario", `${t.cumplimientoVariablesPct}%`)}
-</tr></table>
-
-<h3 style="${H2}">Kg producidos por máquina · día operativo</h3>
-<table style="border-collapse:collapse;width:100%;border:1px solid #d7dee8;background:#fcfdff">
-<tr><td colspan="3" style="padding:6px 8px;font-size:10px;color:#5b6573">
-<span style="color:#2d8a9e">&#9632;</span> Peso oficial de Calidad · Total del día ${Math.round(t.kgProducidos).toLocaleString("es-MX")} kg</td></tr>
-${gKg}</table>
-
-<h3 style="${H2}">Cumplimiento diario por máquina</h3>
-<table style="border-collapse:collapse;width:100%;border:1px solid #d7dee8;background:#fcfdff">
-<tr><td colspan="5" style="padding:6px 8px;font-size:10px;color:#5b6573">
-<span style="color:#2d8a9e">&#9632;</span> Rollos del día &nbsp;&nbsp; <span style="color:#1b7f5e">&#9632;</span> Cumplimiento de variables diario</td></tr>
-${gCum}</table>
-
-<h3 style="${H2}">Resumen por máquina · T1 + T2 + T3</h3>
-<table style="border-collapse:collapse;width:100%">
-<thead><tr>
-<th style="${TH}">Máquina</th><th style="${TH}">Planta</th><th style="${TH}">Rollos T1</th><th style="${TH}">Rollos T2</th>
-<th style="${TH}">Rollos T3</th><th style="${TH}">Total rollos</th><th style="${TH}">Liberados</th>
-<th style="${TH}">Kg producidos</th><th style="${TH}">Cumpl. oficial diario</th><th style="${TH}">Cumpl. variables diario</th>
-</tr></thead><tbody>${filas}${totalRow}</tbody></table>
-<p style="margin:10px 0 0;font-size:11px;color:#5b6573">Día operativo ${esc(c.etiquetaLarga)}: del arranque de T1 al cierre de T3 (T3 cruza medianoche). Los porcentajes diarios se recalculan sobre todos los registros del día, no se promedian por turno. El detalle está en la hoja <b>Consolidado Diario ${esc(c.etiquetaCorta)}</b> del Excel adjunto.</p>`;
-      })();
-
   const html = `<div style="font-family:Arial,Helvetica,sans-serif;color:#0f172a;max-width:900px">
 <div style="background:#1e293b;color:#fff;padding:16px 22px;border-radius:6px 6px 0 0">
 <table style="border-collapse:collapse;width:100%"><tr>
@@ -618,7 +483,7 @@ ${bloquesMaquina}
 El detalle completo por máquina, con todas las variables medidas y sus gráficas, se incluye en el archivo Excel adjunto <b>${esc(fileName)}</b>. Correo y adjunto se generan de la misma fuente de datos de los Visores.</p>
 </div>
 
-${htmlConsolidado}
+${totalFueraTurno > 0 ? `<p style="margin:12px 0 0;font-size:11px;color:#5b6573;font-style:italic">${esc(notaFueraTurno(totalFueraTurno, "del presente reporte"))}</p>` : ""}
 
 <div style="margin-top:20px;border-top:1px solid #d7dee8;padding-top:12px">
 <p style="margin:0;font-size:10.5px;line-height:1.55;color:#64748b;text-align:justify">
@@ -652,6 +517,156 @@ ${htmlConsolidado}
     texto,
     resumen,
     generado,
+    fueraDeTurno: totalFueraTurno,
+  };
+}
+
+function notaFueraTurno(n: number, ambito: string) {
+  return `Nota operativa: Se identificaron ${n} rollo${n === 1 ? "" : "s"} capturado${n === 1 ? "" : "s"} fuera de turno. Estos registros no están incluidos en los indicadores, totales de rollos ni kilogramos ${ambito}.`;
+}
+
+const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+
+// =============================================================================
+// CUARTO REPORTE · Resumen Ejecutivo Diario (independiente de T1/T2/T3).
+// Un solo dataset (construirConsolidadoDiario) alimenta correo y Excel.
+// La fecha operativa se recibe EXPLÍCITA (el cron de 07:00 pasa el día anterior).
+// =============================================================================
+export async function construirResumenEjecutivoDiario(
+  diaOperativo: string,
+  maquinas: readonly string[] = MAQUINAS_REPORTE,
+) {
+  const generado = new Date();
+  const ventana = await ventanaDiaOperativo(diaOperativo);
+  const c = await construirConsolidadoDiario(maquinas, generado, ventana.diaOperativo);
+  const [yy, mm, dd] = c.diaOperativo.split("-");
+  const fechaTitulo = `${dd} de ${MESES[Number(mm) - 1]} de ${yy}`;
+  const fechaGuion = `${dd}-${mm}-${yy}`;
+
+  const wb = new ExcelJS.Workbook();
+  wb.creator = "Convertipap";
+  wb.company = "Convertipap";
+  wb.title = `CONVERTIPAP · Resumen Ejecutivo Diario ${fechaGuion}`;
+  wb.created = generado;
+  wb.modified = generado;
+  const nombreHoja = `Consolidado Diario ${c.etiquetaCorta}`;
+  const wsc = wb.addWorksheet(nombreHoja, { views: [{ showGridLines: false }] });
+  construirHojaConsolidado(wb, wsc, c, generado);
+  if (c.fueraDeTurno > 0) {
+    const r = 61 + c.maquinas.length;
+    wsc.mergeCells(r, 2, r + 1, 14);
+    const cell = wsc.getCell(r, 2);
+    cell.value = notaFueraTurno(c.fueraDeTurno, "del presente reporte");
+    cell.font = { name: "Calibri", size: 9, italic: true, color: { argb: DASH.muted } };
+    cell.alignment = { wrapText: true, vertical: "middle" };
+  }
+  const nc = Math.max(c.maquinas.length, 1);
+  const buffer = inyectarGraficasDashboard((await wb.xlsx.writeBuffer()) as ArrayBuffer, {
+    sheetNumber: 1,
+    puntos: nc,
+    series: [
+      { titulo: "Rollos producidos por máquina (T1+T2+T3)", hoja: nombreHoja, catRef: `$B$59:$B$${58 + nc}`, valRef: `$F$59:$F$${58 + nc}`, color: "2D8A9E", numFmt: "0", from: { col: 1, row: 12 }, to: { col: 8, row: 30 } },
+      { titulo: "Cumplimiento diario de variables por máquina", hoja: nombreHoja, catRef: `$B$59:$B$${58 + nc}`, valRef: `$J$59:$J$${58 + nc}`, color: "1B7F5E", numFmt: "0.0%", from: { col: 9, row: 12 }, to: { col: 14, row: 30 } },
+      { titulo: "Kg producidos por máquina (día operativo)", hoja: nombreHoja, catRef: `$B$59:$B$${58 + nc}`, valRef: `$H$59:$H$${58 + nc}`, color: "2D8A9E", numFmt: '#,##0 "kg"', from: { col: 1, row: 33 }, to: { col: 14, row: 51 } },
+    ],
+  });
+
+  const fileName = `Convertipap_ResumenEjecutivoDiario_${fechaGuion}.xlsx`;
+  const subject = `Resumen Ejecutivo Diario | ${fechaGuion}`;
+
+  const esc = (v: unknown) => String(v ?? "—").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const TD = "padding:6px 9px;border:1px solid #d7dee8;font-size:12px";
+  const TH = "padding:7px 9px;border:1px solid #33415a;font-size:11px;color:#fff;background:#1e293b;text-align:center;font-weight:bold";
+  const H2 = "margin:24px 0 8px;font-size:15px;color:#0f172a;border-left:4px solid #1e293b;padding-left:9px";
+  const kpi = (etiqueta: string, valor: string) =>
+    `<td style="padding:12px 8px;border:1px solid #d7dee8;background:#f6f8fb;text-align:center;width:20%">
+<div style="font-size:10px;color:#5b6573;letter-spacing:.06em;text-transform:uppercase">${etiqueta}</div>
+<div style="font-size:22px;font-weight:bold;color:#1e293b;padding-top:4px">${valor}</div></td>`;
+  const barra = (pct: number, color: string) =>
+    `<table style="border-collapse:collapse;width:100%;background:#eef2f7"><tr>
+<td style="background:${color};height:12px;width:${Math.max(1, Math.round(pct))}%;font-size:0;line-height:0">&nbsp;</td>
+<td style="font-size:0;line-height:0">&nbsp;</td></tr></table>`;
+  const kg = (n: number) => `${Math.round(n).toLocaleString("es-MX")} kg`;
+  const t = c.totales;
+  const maxR = Math.max(1, ...c.maquinas.map((m) => m.rollos));
+  const maxK = Math.max(1, ...c.maquinas.map((m) => m.kgProducidos));
+  const filas = c.maquinas.map((m) => `<tr>
+<td style="${TD};font-weight:bold">${esc(m.codigo)}</td><td style="${TD};text-align:center">${esc(m.planta)}</td>
+<td style="${TD};text-align:center">${m.rollosT1}</td><td style="${TD};text-align:center">${m.rollosT2}</td><td style="${TD};text-align:center">${m.rollosT3}</td>
+<td style="${TD};text-align:center;font-weight:bold">${m.rollos}</td><td style="${TD};text-align:center">${m.liberados}</td>
+<td style="${TD};text-align:center">${kg(m.kgProducidos)}</td><td style="${TD};text-align:center">${m.cumplimientoPct}%</td><td style="${TD};text-align:center">${m.cumplimientoVariablesPct}%</td></tr>`).join("");
+  const B = "background:#f6f8fb;font-weight:bold;text-align:center";
+  const totalRow = `<tr><td style="${TD};font-weight:bold;background:#f6f8fb">TOTAL DÍA</td><td style="${TD};background:#f6f8fb"></td>
+<td style="${TD};${B}">${t.rollosT1}</td><td style="${TD};${B}">${t.rollosT2}</td><td style="${TD};${B}">${t.rollosT3}</td><td style="${TD};${B}">${t.rollos}</td>
+<td style="${TD};${B}">${t.liberados}</td><td style="${TD};${B}">${kg(t.kgProducidos)}</td><td style="${TD};${B}">${t.cumplimientoPct}%</td><td style="${TD};${B}">${t.cumplimientoVariablesPct}%</td></tr>`;
+  const gKg = c.maquinas.map((m) => `<tr>
+<td style="padding:5px 8px;font-size:12px;font-weight:bold;color:#1e293b;width:64px">${esc(m.codigo)}</td>
+<td style="padding:5px 8px">${barra((m.kgProducidos / maxK) * 100, "#2d8a9e")}</td>
+<td style="padding:5px 8px;font-size:11px;color:#2d8a9e;width:92px;text-align:right">${kg(m.kgProducidos)}</td></tr>`).join("");
+  const gCum = c.maquinas.map((m) => `<tr>
+<td style="padding:5px 8px;font-size:12px;font-weight:bold;color:#1e293b;width:64px">${esc(m.codigo)}</td>
+<td style="padding:5px 8px;width:40%">${barra((m.rollos / maxR) * 100, "#2d8a9e")}</td>
+<td style="padding:5px 8px;font-size:11px;color:#2d8a9e;width:70px">${m.rollos} rollos</td>
+<td style="padding:5px 8px;width:40%">${barra(Math.min(100, m.cumplimientoVariablesPct), "#1b7f5e")}</td>
+<td style="padding:5px 8px;font-size:11px;color:#1b7f5e;width:52px;text-align:right">${m.cumplimientoVariablesPct}%</td></tr>`).join("");
+
+  const html = `<div style="font-family:Arial,Helvetica,sans-serif;color:#0f172a;max-width:900px">
+<div style="background:#1e293b;color:#fff;padding:16px 22px;border-radius:6px 6px 0 0">
+<table style="border-collapse:collapse;width:100%"><tr>
+<td style="width:150px;vertical-align:middle"><img src="cid:${LOGO_CID}" alt="Convertipap" width="140" style="display:block;border:0;outline:none"></td>
+<td style="vertical-align:middle;text-align:right">
+<div style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;opacity:.75">Cierre completo del día operativo</div>
+<div style="font-size:20px;font-weight:bold;padding-top:3px">Resumen Ejecutivo Diario — ${esc(fechaTitulo)}</div>
+<div style="font-size:11px;opacity:.8;padding-top:2px">Turnos T1 + T2 + T3 · MP-01, MP-04, MP-05, MP-06 y MP-07</div>
+</td></tr></table>
+</div>
+<div style="border:1px solid #d7dee8;border-top:0;padding:18px 22px;border-radius:0 0 6px 6px">
+<h3 style="${H2};margin-top:4px">Indicadores del día</h3>
+<table style="border-collapse:collapse;width:100%"><tr>
+${kpi("Total rollos del día", String(t.rollos))}
+${kpi("Total liberados", String(t.liberados))}
+${kpi("Total kg producidos", kg(t.kgProducidos))}
+${kpi("Cumpl. oficial diario", `${t.cumplimientoPct}%`)}
+${kpi("Cumpl. variables diario", `${t.cumplimientoVariablesPct}%`)}
+</tr></table>
+<h3 style="${H2}">Kg producidos por máquina · día operativo</h3>
+<table style="border-collapse:collapse;width:100%;border:1px solid #d7dee8;background:#fcfdff">
+<tr><td colspan="3" style="padding:6px 8px;font-size:10px;color:#5b6573"><span style="color:#2d8a9e">&#9632;</span> Peso oficial de Calidad · Total del día ${kg(t.kgProducidos)}</td></tr>
+${gKg}</table>
+<h3 style="${H2}">Cumplimiento diario por máquina</h3>
+<table style="border-collapse:collapse;width:100%;border:1px solid #d7dee8;background:#fcfdff">
+<tr><td colspan="5" style="padding:6px 8px;font-size:10px;color:#5b6573"><span style="color:#2d8a9e">&#9632;</span> Rollos del día &nbsp;&nbsp; <span style="color:#1b7f5e">&#9632;</span> Cumplimiento de variables diario</td></tr>
+${gCum}</table>
+<h3 style="${H2}">Resumen por máquina · T1 + T2 + T3</h3>
+<table style="border-collapse:collapse;width:100%">
+<thead><tr><th style="${TH}">Máquina</th><th style="${TH}">Planta</th><th style="${TH}">Rollos T1</th><th style="${TH}">Rollos T2</th>
+<th style="${TH}">Rollos T3</th><th style="${TH}">Total rollos</th><th style="${TH}">Liberados</th>
+<th style="${TH}">Kg producidos</th><th style="${TH}">Cumpl. oficial diario</th><th style="${TH}">Cumpl. variables diario</th></tr></thead>
+<tbody>${filas}${totalRow}</tbody></table>
+<p style="margin:10px 0 0;font-size:11px;color:#5b6573">Fecha operativa ${esc(c.etiquetaLarga)}: del arranque de T1 al cierre de T3 (T3 cruza medianoche). Los porcentajes diarios se recalculan sobre todos los registros del día, no se promedian por turno. Correo y Excel adjunto <b>${esc(fileName)}</b> se generan del mismo conjunto de datos.</p>
+${c.fueraDeTurno > 0 ? `<p style="margin:10px 0 0;font-size:11px;color:#5b6573;font-style:italic">${esc(notaFueraTurno(c.fueraDeTurno, "del presente reporte"))}</p>` : ""}
+<div style="margin-top:20px;border-top:1px solid #d7dee8;padding-top:12px">
+<p style="margin:0;font-size:10.5px;line-height:1.55;color:#64748b;text-align:justify">
+<b style="color:#1e293b">AVISO DE CONFIDENCIALIDAD.</b> Este correo y sus anexos contienen información operativa y de calidad propiedad de Convertipap, de carácter confidencial y de uso exclusivo del personal autorizado como destinatario. Queda prohibida su divulgación, reproducción total o parcial, distribución o uso por cualquier medio sin autorización expresa de la Dirección General. La reproducción o el uso indebido de esta información es responsabilidad exclusiva de quien la ejecute. Si usted recibió este mensaje por error, notifíquelo al remitente y elimínelo de inmediato. Documento generado automáticamente; no responda a esta dirección.
+</p></div>
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:18px auto 4px"><tr>
+<td style="background:#ffffff;border-radius:7px;box-shadow:0 3px 10px rgba(15,23,42,.16),inset 0 -1px 0 rgba(15,23,42,.08);padding:0">
+<a href="${IRM_URL}" title="Contactar a IRM" style="text-decoration:none;display:block;padding:7px 14px;border-radius:7px">
+<img src="cid:${IRM_LOGO_CID}" alt="Contactar a IRM" width="48" style="display:block;border:0;outline:none;opacity:0.94"></a>
+</td></tr></table>
+<p style="margin:0;text-align:center;font-size:4.75px;color:#94a3b8;letter-spacing:0">Consultoría en Transformación Digital e Inteligencia Artificial</p>
+</div></div>`;
+
+  const texto = [
+    `Resumen Ejecutivo Diario — ${fechaTitulo}`,
+    ...c.maquinas.map((m) => `${m.codigo} · T1 ${m.rollosT1} · T2 ${m.rollosT2} · T3 ${m.rollosT3} · ${m.rollos} rollos · ${m.liberados} liberados · ${kg(m.kgProducidos)} · ${m.cumplimientoPct}%`),
+    `TOTAL DÍA · ${t.rollos} rollos · ${t.liberados} liberados · ${kg(t.kgProducidos)} · ${t.cumplimientoPct}% · variables ${t.cumplimientoVariablesPct}%`,
+    ...(c.fueraDeTurno > 0 ? [notaFueraTurno(c.fueraDeTurno, "del presente reporte")] : []),
+  ].join("\n");
+
+  return {
+    buffer, fileName, subject, html, texto, generado, consolidado: c, nombreHoja,
+    logoCid: LOGO_CID, logoBase64: LOGO_BASE64, irmLogoCid: IRM_LOGO_CID, irmLogoBase64: IRM_LOGO_BASE64,
   };
 }
 

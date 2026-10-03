@@ -43,6 +43,8 @@ export type ConsolidadoDiario = {
   desde: Date;
   hasta: Date;
   maquinas: ConsolidadoMaquina[];
+  /** Capturas "Fuera de turno" del periodo: solo informativas, no entran en KPIs. */
+  fueraDeTurno: number;
   totales: {
     rollosT1: number;
     rollosT2: number;
@@ -127,13 +129,51 @@ export async function resolverTurnoYDiaOperativo(ahora: Date) {
   };
 }
 
-/** Consolidado T1+T2+T3 del día operativo vigente, por máquina. */
+/**
+ * Ventana completa de un día operativo explícito (YYYY-MM-DD, hora planta):
+ * desde el arranque de T1 de ese día hasta el arranque de T1 del día siguiente
+ * (exclusivo). Usa los horarios vigentes de app_settings.
+ */
+export async function ventanaDiaOperativo(diaOperativo: string) {
+  const rangos = await leerRangosTurno();
+  const t1Ini = hhmmToMin(rangos[0]!.ini) ?? 7 * 60;
+  const [y, m, d] = diaOperativo.split("-").map((x) => parseInt(x, 10)) as [number, number, number];
+  const desde = new Date(Date.UTC(y, m - 1, d, 0, t1Ini, 0, 0) - PLANT_TZ_OFFSET_HOURS * 3600 * 1000);
+  const hasta = new Date(desde.getTime() + 24 * 3600 * 1000);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return {
+    diaOperativo: `${y}-${pad(m)}-${pad(d)}`,
+    desde,
+    hasta,
+    etiquetaCorta: `${pad(d)}-${pad(m)}-${String(y).slice(2)}`,
+    etiquetaLarga: `${pad(d)}/${pad(m)}/${y}`,
+  };
+}
+
+/** Día operativo anterior a la fecha (hora planta) de `ahora`. */
+export function diaOperativoAnterior(ahora: Date): string {
+  const plant = new Date(ahora.getTime() + PLANT_TZ_OFFSET_HOURS * 3600 * 1000);
+  const base = new Date(Date.UTC(plant.getUTCFullYear(), plant.getUTCMonth(), plant.getUTCDate() - 1));
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${base.getUTCFullYear()}-${pad(base.getUTCMonth() + 1)}-${pad(base.getUTCDate())}`;
+}
+
+/**
+ * Consolidado T1+T2+T3 por máquina. Sin `diaOperativo` usa el día operativo
+ * vigente hasta `ahora`; con `diaOperativo` usa la ventana completa de ese día.
+ */
 export async function construirConsolidadoDiario(
   maquinas: readonly string[],
   ahora: Date,
+  diaOperativo?: string,
 ): Promise<ConsolidadoDiario> {
-  const ctx = await resolverTurnoYDiaOperativo(ahora);
+  const ctx = diaOperativo
+    ? await ventanaDiaOperativo(diaOperativo)
+    : { ...(await resolverTurnoYDiaOperativo(ahora)), hasta: ahora };
+  const hasta = ctx.hasta;
+  const exclusivo = Boolean(diaOperativo);
   const sb = supabaseAdmin;
+  let fueraDeTurno = 0;
 
   const { data: maqs } = await sb
     .from("maquinas")
@@ -162,14 +202,16 @@ export async function construirConsolidadoDiario(
     };
 
     if (maq?.id) {
-      const { data: rows } = await sb
+      let q = sb
         .from("muestras_calidad")
         .select("id, turno, estatus_liberacion, fuera_de_turno, mediciones_calidad(variable_clave, valor, estado)")
         .eq("maquina_id", maq.id)
         .gte("capturado_at", ctx.desde.toISOString())
-        .lte("capturado_at", ahora.toISOString())
         .in("turno", ["1", "2", "3"]);
+      q = exclusivo ? q.lt("capturado_at", hasta.toISOString()) : q.lte("capturado_at", hasta.toISOString());
+      const { data: rows } = await q;
 
+      fueraDeTurno += (rows ?? []).filter((r: any) => r.fuera_de_turno === true).length;
       const validos = (rows ?? []).filter((r: any) => r.fuera_de_turno === false);
       fila.rollosT1 = validos.filter((r: any) => String(r.turno) === "1").length;
       fila.rollosT2 = validos.filter((r: any) => String(r.turno) === "2").length;
@@ -218,8 +260,9 @@ export async function construirConsolidadoDiario(
     etiquetaCorta: ctx.etiquetaCorta,
     etiquetaLarga: ctx.etiquetaLarga,
     desde: ctx.desde,
-    hasta: ahora,
+    hasta,
     maquinas: filas,
+    fueraDeTurno,
     totales: {
       rollosT1: sum((r) => r.rollosT1),
       rollosT2: sum((r) => r.rollosT2),
