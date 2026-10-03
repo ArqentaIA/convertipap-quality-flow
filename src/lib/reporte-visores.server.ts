@@ -176,7 +176,8 @@ export async function construirReporteVisores(
     // --------------------------------------------------- Hoja por máquina
     const ws = wb.addWorksheet(fila.codigo);
     const vars = d.variables ?? [];
-    const muestras = [...(d.muestras ?? [])].reverse();
+    // Orden cronológico: de la más antigua a la más reciente (Excel y correo).
+    const muestras = [...(d.muestras ?? [])];
     const head = [
       "Hora", "Rollo", "SKU SAP",
       "Turno", "Operador", "Analista",
