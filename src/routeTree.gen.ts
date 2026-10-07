@@ -9,95 +9,40 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as VariablesCalidadRouteImport } from './routes/variables-calidad'
-import { Route as UsuariosRouteImport } from './routes/usuarios'
-import { Route as ReportesRouteImport } from './routes/reportes'
-import { Route as ReporteMensualRouteImport } from './routes/reporte-mensual'
-import { Route as ProduccionRouteImport } from './routes/produccion'
-import { Route as PantallasOperativasRouteImport } from './routes/pantallas-operativas'
-import { Route as OrdenesProduccionRouteImport } from './routes/ordenes-produccion'
-import { Route as OperatorVisionRouteImport } from './routes/operator-vision'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as ControlCalidadRouteImport } from './routes/control-calidad'
-import { Route as ConfiguracionRouteImport } from './routes/configuracion'
-import { Route as CatalogosRouteImport } from './routes/catalogos'
-import { Route as AuditoriaRouteImport } from './routes/auditoria'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as TFolioRouteImport } from './routes/t.$folio'
-import { Route as PesajeCintasRouteImport } from './routes/pesaje.cintas'
-import { Route as PesajeBobinaMadreRouteImport } from './routes/pesaje.bobina-madre'
-import { Route as PesajePublicoTokenRouteImport } from './routes/pesaje-publico.$token'
-import { Route as MuestraIdRouteImport } from './routes/muestra.$id'
-import { Route as LoteCintasIdRouteImport } from './routes/lote-cintas.$id'
-import { Route as HistorialMaquinaRouteImport } from './routes/historial.$maquina'
-import { Route as DiagnosticoPesajeV2RouteImport } from './routes/diagnostico.pesaje-v2'
-import { Route as CalidadRevisionRouteImport } from './routes/calidad.revision'
-import { Route as CalidadDashboardRouteImport } from './routes/calidad.dashboard'
-import { Route as CalidadCapturaFueraTurnoRouteImport } from './routes/calidad.captura-fuera-turno'
-import { Route as CalidadCapturaRouteImport } from './routes/calidad.captura'
+import { Route as AuditoriaRouteImport } from './routes/auditoria'
+import { Route as CatalogosRouteImport } from './routes/catalogos'
+import { Route as ConfiguracionRouteImport } from './routes/configuracion'
+import { Route as ControlCalidadRouteImport } from './routes/control-calidad'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as OperatorVisionRouteImport } from './routes/operator-vision'
+import { Route as OrdenesProduccionRouteImport } from './routes/ordenes-produccion'
+import { Route as PantallasOperativasRouteImport } from './routes/pantallas-operativas'
+import { Route as ProduccionRouteImport } from './routes/produccion'
+import { Route as ReporteMensualRouteImport } from './routes/reporte-mensual'
+import { Route as ReportesRouteImport } from './routes/reportes'
+import { Route as UsuariosRouteImport } from './routes/usuarios'
+import { Route as VariablesCalidadRouteImport } from './routes/variables-calidad'
 import { Route as CalidadAjustesRouteImport } from './routes/calidad.ajustes'
+import { Route as CalidadCapturaRouteImport } from './routes/calidad.captura'
+import { Route as CalidadCapturaFueraTurnoRouteImport } from './routes/calidad.captura-fuera-turno'
+import { Route as CalidadDashboardRouteImport } from './routes/calidad.dashboard'
+import { Route as CalidadRevisionRouteImport } from './routes/calidad.revision'
+import { Route as DiagnosticoPesajeV2RouteImport } from './routes/diagnostico.pesaje-v2'
+import { Route as HistorialMaquinaRouteImport } from './routes/historial.$maquina'
+import { Route as LoteCintasIdRouteImport } from './routes/lote-cintas.$id'
+import { Route as MuestraIdRouteImport } from './routes/muestra.$id'
+import { Route as PesajePublicoTokenRouteImport } from './routes/pesaje-publico.$token'
+import { Route as PesajeBobinaMadreRouteImport } from './routes/pesaje.bobina-madre'
+import { Route as PesajeCintasRouteImport } from './routes/pesaje.cintas'
+import { Route as TFolioRouteImport } from './routes/t.$folio'
 import { Route as QTipoValorRouteImport } from './routes/q.$tipo.$valor'
-import { Route as ApiPublicHooksResumenDiarioReporteRouteImport } from './routes/api/public/hooks/resumen-diario-reporte'
 import { Route as ApiPublicHooksCierreTurnoReporteRouteImport } from './routes/api/public/hooks/cierre-turno-reporte'
+import { Route as ApiPublicHooksResumenDiarioReporteRouteImport } from './routes/api/public/hooks/resumen-diario-reporte'
 
-const VariablesCalidadRoute = VariablesCalidadRouteImport.update({
-  id: '/variables-calidad',
-  path: '/variables-calidad',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const UsuariosRoute = UsuariosRouteImport.update({
-  id: '/usuarios',
-  path: '/usuarios',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ReportesRoute = ReportesRouteImport.update({
-  id: '/reportes',
-  path: '/reportes',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ReporteMensualRoute = ReporteMensualRouteImport.update({
-  id: '/reporte-mensual',
-  path: '/reporte-mensual',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ProduccionRoute = ProduccionRouteImport.update({
-  id: '/produccion',
-  path: '/produccion',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PantallasOperativasRoute = PantallasOperativasRouteImport.update({
-  id: '/pantallas-operativas',
-  path: '/pantallas-operativas',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OrdenesProduccionRoute = OrdenesProduccionRouteImport.update({
-  id: '/ordenes-produccion',
-  path: '/ordenes-produccion',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OperatorVisionRoute = OperatorVisionRouteImport.update({
-  id: '/operator-vision',
-  path: '/operator-vision',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ControlCalidadRoute = ControlCalidadRouteImport.update({
-  id: '/control-calidad',
-  path: '/control-calidad',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ConfiguracionRoute = ConfiguracionRouteImport.update({
-  id: '/configuracion',
-  path: '/configuracion',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CatalogosRoute = CatalogosRouteImport.update({
-  id: '/catalogos',
-  path: '/catalogos',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuditoriaRoute = AuditoriaRouteImport.update({
@@ -105,59 +50,74 @@ const AuditoriaRoute = AuditoriaRouteImport.update({
   path: '/auditoria',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const CatalogosRoute = CatalogosRouteImport.update({
+  id: '/catalogos',
+  path: '/catalogos',
   getParentRoute: () => rootRouteImport,
 } as any)
-const TFolioRoute = TFolioRouteImport.update({
-  id: '/t/$folio',
-  path: '/t/$folio',
+const ConfiguracionRoute = ConfiguracionRouteImport.update({
+  id: '/configuracion',
+  path: '/configuracion',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PesajeCintasRoute = PesajeCintasRouteImport.update({
-  id: '/pesaje/cintas',
-  path: '/pesaje/cintas',
+const ControlCalidadRoute = ControlCalidadRouteImport.update({
+  id: '/control-calidad',
+  path: '/control-calidad',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PesajeBobinaMadreRoute = PesajeBobinaMadreRouteImport.update({
-  id: '/pesaje/bobina-madre',
-  path: '/pesaje/bobina-madre',
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PesajePublicoTokenRoute = PesajePublicoTokenRouteImport.update({
-  id: '/pesaje-publico/$token',
-  path: '/pesaje-publico/$token',
+const OperatorVisionRoute = OperatorVisionRouteImport.update({
+  id: '/operator-vision',
+  path: '/operator-vision',
   getParentRoute: () => rootRouteImport,
 } as any)
-const MuestraIdRoute = MuestraIdRouteImport.update({
-  id: '/muestra/$id',
-  path: '/muestra/$id',
+const OrdenesProduccionRoute = OrdenesProduccionRouteImport.update({
+  id: '/ordenes-produccion',
+  path: '/ordenes-produccion',
   getParentRoute: () => rootRouteImport,
 } as any)
-const LoteCintasIdRoute = LoteCintasIdRouteImport.update({
-  id: '/lote-cintas/$id',
-  path: '/lote-cintas/$id',
+const PantallasOperativasRoute = PantallasOperativasRouteImport.update({
+  id: '/pantallas-operativas',
+  path: '/pantallas-operativas',
   getParentRoute: () => rootRouteImport,
 } as any)
-const HistorialMaquinaRoute = HistorialMaquinaRouteImport.update({
-  id: '/historial/$maquina',
-  path: '/historial/$maquina',
+const ProduccionRoute = ProduccionRouteImport.update({
+  id: '/produccion',
+  path: '/produccion',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DiagnosticoPesajeV2Route = DiagnosticoPesajeV2RouteImport.update({
-  id: '/diagnostico/pesaje-v2',
-  path: '/diagnostico/pesaje-v2',
+const ReporteMensualRoute = ReporteMensualRouteImport.update({
+  id: '/reporte-mensual',
+  path: '/reporte-mensual',
   getParentRoute: () => rootRouteImport,
 } as any)
-const CalidadRevisionRoute = CalidadRevisionRouteImport.update({
-  id: '/calidad/revision',
-  path: '/calidad/revision',
+const ReportesRoute = ReportesRouteImport.update({
+  id: '/reportes',
+  path: '/reportes',
   getParentRoute: () => rootRouteImport,
 } as any)
-const CalidadDashboardRoute = CalidadDashboardRouteImport.update({
-  id: '/calidad/dashboard',
-  path: '/calidad/dashboard',
+const UsuariosRoute = UsuariosRouteImport.update({
+  id: '/usuarios',
+  path: '/usuarios',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VariablesCalidadRoute = VariablesCalidadRouteImport.update({
+  id: '/variables-calidad',
+  path: '/variables-calidad',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CalidadAjustesRoute = CalidadAjustesRouteImport.update({
+  id: '/calidad/ajustes',
+  path: '/calidad/ajustes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CalidadCapturaRoute = CalidadCapturaRouteImport.update({
+  id: '/calidad/captura',
+  path: '/calidad/captura',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CalidadCapturaFueraTurnoRoute =
@@ -166,14 +126,54 @@ const CalidadCapturaFueraTurnoRoute =
     path: '/calidad/captura-fuera-turno',
     getParentRoute: () => rootRouteImport,
   } as any)
-const CalidadCapturaRoute = CalidadCapturaRouteImport.update({
-  id: '/calidad/captura',
-  path: '/calidad/captura',
+const CalidadDashboardRoute = CalidadDashboardRouteImport.update({
+  id: '/calidad/dashboard',
+  path: '/calidad/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
-const CalidadAjustesRoute = CalidadAjustesRouteImport.update({
-  id: '/calidad/ajustes',
-  path: '/calidad/ajustes',
+const CalidadRevisionRoute = CalidadRevisionRouteImport.update({
+  id: '/calidad/revision',
+  path: '/calidad/revision',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DiagnosticoPesajeV2Route = DiagnosticoPesajeV2RouteImport.update({
+  id: '/diagnostico/pesaje-v2',
+  path: '/diagnostico/pesaje-v2',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HistorialMaquinaRoute = HistorialMaquinaRouteImport.update({
+  id: '/historial/$maquina',
+  path: '/historial/$maquina',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoteCintasIdRoute = LoteCintasIdRouteImport.update({
+  id: '/lote-cintas/$id',
+  path: '/lote-cintas/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MuestraIdRoute = MuestraIdRouteImport.update({
+  id: '/muestra/$id',
+  path: '/muestra/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PesajePublicoTokenRoute = PesajePublicoTokenRouteImport.update({
+  id: '/pesaje-publico/$token',
+  path: '/pesaje-publico/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PesajeBobinaMadreRoute = PesajeBobinaMadreRouteImport.update({
+  id: '/pesaje/bobina-madre',
+  path: '/pesaje/bobina-madre',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PesajeCintasRoute = PesajeCintasRouteImport.update({
+  id: '/pesaje/cintas',
+  path: '/pesaje/cintas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TFolioRoute = TFolioRouteImport.update({
+  id: '/t/$folio',
+  path: '/t/$folio',
   getParentRoute: () => rootRouteImport,
 } as any)
 const QTipoValorRoute = QTipoValorRouteImport.update({
@@ -181,16 +181,16 @@ const QTipoValorRoute = QTipoValorRouteImport.update({
   path: '/q/$tipo/$valor',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiPublicHooksResumenDiarioReporteRoute =
-  ApiPublicHooksResumenDiarioReporteRouteImport.update({
-    id: '/api/public/hooks/resumen-diario-reporte',
-    path: '/api/public/hooks/resumen-diario-reporte',
-    getParentRoute: () => rootRouteImport,
-  } as any)
 const ApiPublicHooksCierreTurnoReporteRoute =
   ApiPublicHooksCierreTurnoReporteRouteImport.update({
     id: '/api/public/hooks/cierre-turno-reporte',
     path: '/api/public/hooks/cierre-turno-reporte',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicHooksResumenDiarioReporteRoute =
+  ApiPublicHooksResumenDiarioReporteRouteImport.update({
+    id: '/api/public/hooks/resumen-diario-reporte',
+    path: '/api/public/hooks/resumen-diario-reporte',
     getParentRoute: () => rootRouteImport,
   } as any)
 
@@ -425,88 +425,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/variables-calidad': {
-      id: '/variables-calidad'
-      path: '/variables-calidad'
-      fullPath: '/variables-calidad'
-      preLoaderRoute: typeof VariablesCalidadRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/usuarios': {
-      id: '/usuarios'
-      path: '/usuarios'
-      fullPath: '/usuarios'
-      preLoaderRoute: typeof UsuariosRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/reportes': {
-      id: '/reportes'
-      path: '/reportes'
-      fullPath: '/reportes'
-      preLoaderRoute: typeof ReportesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/reporte-mensual': {
-      id: '/reporte-mensual'
-      path: '/reporte-mensual'
-      fullPath: '/reporte-mensual'
-      preLoaderRoute: typeof ReporteMensualRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/produccion': {
-      id: '/produccion'
-      path: '/produccion'
-      fullPath: '/produccion'
-      preLoaderRoute: typeof ProduccionRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/pantallas-operativas': {
-      id: '/pantallas-operativas'
-      path: '/pantallas-operativas'
-      fullPath: '/pantallas-operativas'
-      preLoaderRoute: typeof PantallasOperativasRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/ordenes-produccion': {
-      id: '/ordenes-produccion'
-      path: '/ordenes-produccion'
-      fullPath: '/ordenes-produccion'
-      preLoaderRoute: typeof OrdenesProduccionRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/operator-vision': {
-      id: '/operator-vision'
-      path: '/operator-vision'
-      fullPath: '/operator-vision'
-      preLoaderRoute: typeof OperatorVisionRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/control-calidad': {
-      id: '/control-calidad'
-      path: '/control-calidad'
-      fullPath: '/control-calidad'
-      preLoaderRoute: typeof ControlCalidadRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/configuracion': {
-      id: '/configuracion'
-      path: '/configuracion'
-      fullPath: '/configuracion'
-      preLoaderRoute: typeof ConfiguracionRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/catalogos': {
-      id: '/catalogos'
-      path: '/catalogos'
-      fullPath: '/catalogos'
-      preLoaderRoute: typeof CatalogosRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auditoria': {
@@ -516,95 +439,88 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuditoriaRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/catalogos': {
+      id: '/catalogos'
+      path: '/catalogos'
+      fullPath: '/catalogos'
+      preLoaderRoute: typeof CatalogosRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/t/$folio': {
-      id: '/t/$folio'
-      path: '/t/$folio'
-      fullPath: '/t/$folio'
-      preLoaderRoute: typeof TFolioRouteImport
+    '/configuracion': {
+      id: '/configuracion'
+      path: '/configuracion'
+      fullPath: '/configuracion'
+      preLoaderRoute: typeof ConfiguracionRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/pesaje/cintas': {
-      id: '/pesaje/cintas'
-      path: '/pesaje/cintas'
-      fullPath: '/pesaje/cintas'
-      preLoaderRoute: typeof PesajeCintasRouteImport
+    '/control-calidad': {
+      id: '/control-calidad'
+      path: '/control-calidad'
+      fullPath: '/control-calidad'
+      preLoaderRoute: typeof ControlCalidadRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/pesaje/bobina-madre': {
-      id: '/pesaje/bobina-madre'
-      path: '/pesaje/bobina-madre'
-      fullPath: '/pesaje/bobina-madre'
-      preLoaderRoute: typeof PesajeBobinaMadreRouteImport
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/pesaje-publico/$token': {
-      id: '/pesaje-publico/$token'
-      path: '/pesaje-publico/$token'
-      fullPath: '/pesaje-publico/$token'
-      preLoaderRoute: typeof PesajePublicoTokenRouteImport
+    '/operator-vision': {
+      id: '/operator-vision'
+      path: '/operator-vision'
+      fullPath: '/operator-vision'
+      preLoaderRoute: typeof OperatorVisionRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/muestra/$id': {
-      id: '/muestra/$id'
-      path: '/muestra/$id'
-      fullPath: '/muestra/$id'
-      preLoaderRoute: typeof MuestraIdRouteImport
+    '/ordenes-produccion': {
+      id: '/ordenes-produccion'
+      path: '/ordenes-produccion'
+      fullPath: '/ordenes-produccion'
+      preLoaderRoute: typeof OrdenesProduccionRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/lote-cintas/$id': {
-      id: '/lote-cintas/$id'
-      path: '/lote-cintas/$id'
-      fullPath: '/lote-cintas/$id'
-      preLoaderRoute: typeof LoteCintasIdRouteImport
+    '/pantallas-operativas': {
+      id: '/pantallas-operativas'
+      path: '/pantallas-operativas'
+      fullPath: '/pantallas-operativas'
+      preLoaderRoute: typeof PantallasOperativasRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/historial/$maquina': {
-      id: '/historial/$maquina'
-      path: '/historial/$maquina'
-      fullPath: '/historial/$maquina'
-      preLoaderRoute: typeof HistorialMaquinaRouteImport
+    '/produccion': {
+      id: '/produccion'
+      path: '/produccion'
+      fullPath: '/produccion'
+      preLoaderRoute: typeof ProduccionRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/diagnostico/pesaje-v2': {
-      id: '/diagnostico/pesaje-v2'
-      path: '/diagnostico/pesaje-v2'
-      fullPath: '/diagnostico/pesaje-v2'
-      preLoaderRoute: typeof DiagnosticoPesajeV2RouteImport
+    '/reporte-mensual': {
+      id: '/reporte-mensual'
+      path: '/reporte-mensual'
+      fullPath: '/reporte-mensual'
+      preLoaderRoute: typeof ReporteMensualRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/calidad/revision': {
-      id: '/calidad/revision'
-      path: '/calidad/revision'
-      fullPath: '/calidad/revision'
-      preLoaderRoute: typeof CalidadRevisionRouteImport
+    '/reportes': {
+      id: '/reportes'
+      path: '/reportes'
+      fullPath: '/reportes'
+      preLoaderRoute: typeof ReportesRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/calidad/dashboard': {
-      id: '/calidad/dashboard'
-      path: '/calidad/dashboard'
-      fullPath: '/calidad/dashboard'
-      preLoaderRoute: typeof CalidadDashboardRouteImport
+    '/usuarios': {
+      id: '/usuarios'
+      path: '/usuarios'
+      fullPath: '/usuarios'
+      preLoaderRoute: typeof UsuariosRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/calidad/captura-fuera-turno': {
-      id: '/calidad/captura-fuera-turno'
-      path: '/calidad/captura-fuera-turno'
-      fullPath: '/calidad/captura-fuera-turno'
-      preLoaderRoute: typeof CalidadCapturaFueraTurnoRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/calidad/captura': {
-      id: '/calidad/captura'
-      path: '/calidad/captura'
-      fullPath: '/calidad/captura'
-      preLoaderRoute: typeof CalidadCapturaRouteImport
+    '/variables-calidad': {
+      id: '/variables-calidad'
+      path: '/variables-calidad'
+      fullPath: '/variables-calidad'
+      preLoaderRoute: typeof VariablesCalidadRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/calidad/ajustes': {
@@ -614,6 +530,90 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CalidadAjustesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/calidad/captura': {
+      id: '/calidad/captura'
+      path: '/calidad/captura'
+      fullPath: '/calidad/captura'
+      preLoaderRoute: typeof CalidadCapturaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/calidad/captura-fuera-turno': {
+      id: '/calidad/captura-fuera-turno'
+      path: '/calidad/captura-fuera-turno'
+      fullPath: '/calidad/captura-fuera-turno'
+      preLoaderRoute: typeof CalidadCapturaFueraTurnoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/calidad/dashboard': {
+      id: '/calidad/dashboard'
+      path: '/calidad/dashboard'
+      fullPath: '/calidad/dashboard'
+      preLoaderRoute: typeof CalidadDashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/calidad/revision': {
+      id: '/calidad/revision'
+      path: '/calidad/revision'
+      fullPath: '/calidad/revision'
+      preLoaderRoute: typeof CalidadRevisionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/diagnostico/pesaje-v2': {
+      id: '/diagnostico/pesaje-v2'
+      path: '/diagnostico/pesaje-v2'
+      fullPath: '/diagnostico/pesaje-v2'
+      preLoaderRoute: typeof DiagnosticoPesajeV2RouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/historial/$maquina': {
+      id: '/historial/$maquina'
+      path: '/historial/$maquina'
+      fullPath: '/historial/$maquina'
+      preLoaderRoute: typeof HistorialMaquinaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lote-cintas/$id': {
+      id: '/lote-cintas/$id'
+      path: '/lote-cintas/$id'
+      fullPath: '/lote-cintas/$id'
+      preLoaderRoute: typeof LoteCintasIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/muestra/$id': {
+      id: '/muestra/$id'
+      path: '/muestra/$id'
+      fullPath: '/muestra/$id'
+      preLoaderRoute: typeof MuestraIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pesaje-publico/$token': {
+      id: '/pesaje-publico/$token'
+      path: '/pesaje-publico/$token'
+      fullPath: '/pesaje-publico/$token'
+      preLoaderRoute: typeof PesajePublicoTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pesaje/bobina-madre': {
+      id: '/pesaje/bobina-madre'
+      path: '/pesaje/bobina-madre'
+      fullPath: '/pesaje/bobina-madre'
+      preLoaderRoute: typeof PesajeBobinaMadreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pesaje/cintas': {
+      id: '/pesaje/cintas'
+      path: '/pesaje/cintas'
+      fullPath: '/pesaje/cintas'
+      preLoaderRoute: typeof PesajeCintasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/t/$folio': {
+      id: '/t/$folio'
+      path: '/t/$folio'
+      fullPath: '/t/$folio'
+      preLoaderRoute: typeof TFolioRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/q/$tipo/$valor': {
       id: '/q/$tipo/$valor'
       path: '/q/$tipo/$valor'
@@ -621,18 +621,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof QTipoValorRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/hooks/resumen-diario-reporte': {
-      id: '/api/public/hooks/resumen-diario-reporte'
-      path: '/api/public/hooks/resumen-diario-reporte'
-      fullPath: '/api/public/hooks/resumen-diario-reporte'
-      preLoaderRoute: typeof ApiPublicHooksResumenDiarioReporteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/public/hooks/cierre-turno-reporte': {
       id: '/api/public/hooks/cierre-turno-reporte'
       path: '/api/public/hooks/cierre-turno-reporte'
       fullPath: '/api/public/hooks/cierre-turno-reporte'
       preLoaderRoute: typeof ApiPublicHooksCierreTurnoReporteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/hooks/resumen-diario-reporte': {
+      id: '/api/public/hooks/resumen-diario-reporte'
+      path: '/api/public/hooks/resumen-diario-reporte'
+      fullPath: '/api/public/hooks/resumen-diario-reporte'
+      preLoaderRoute: typeof ApiPublicHooksResumenDiarioReporteRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
