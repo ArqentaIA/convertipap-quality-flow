@@ -38,6 +38,8 @@ const editarSchema = z.object({
     .max(500),
   sku_sap: z.string().trim().max(64).optional(),
   dictamen: z.enum(["liberada", "concesion", "rechazada", "correccion_solicitada"]).optional(),
+  producto_id: z.string().uuid().optional(),
+  producto_esperado: z.string().uuid().optional(),
 });
 
 export type PermisoEdicionRollo = {
@@ -78,6 +80,10 @@ export const editarRolloCalidad = createServerFn({ method: "POST" })
       cambios.observaciones_generales = data.observaciones_generales;
     if (data.sku_sap !== undefined) cambios.sku_sap = data.sku_sap;
     if (data.dictamen !== undefined) cambios.dictamen = data.dictamen;
+    if (data.producto_id) {
+      cambios.producto_id = data.producto_id;
+      if (data.producto_esperado) cambios.producto_esperado = data.producto_esperado;
+    }
 
     const { data: res, error } = await context.supabase.rpc("qc_editar_rollo", {
       _muestra_id: data.muestra_id,
@@ -108,4 +114,60 @@ export const listEdicionesRollo = createServerFn({ method: "GET" })
       usuario: (r.usuario_email as string) ?? "—",
       fecha: r.created_at as string,
     }));
+  });
+
+/** Productos activos con especificación vigente (para cambio de producto). */
+export const listProductosCambio = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data: specs, error } = await context.supabase
+      .from("producto_especificaciones")
+      .select("producto_id, productos!inner(id, codigo, nombre, activo)")
+      .eq("estado", "vigente");
+    if (error) throw new Error(error.message);
+    const map = new Map<string, { id: string; codigo: string; nombre: string }>();
+    for (const s of specs ?? []) {
+      const p = (s as unknown as { productos: { id: string; codigo: string; nombre: string; activo: boolean } }).productos;
+      if (p?.activo && !map.has(p.id)) map.set(p.id, { id: p.id, codigo: p.codigo, nombre: p.nombre });
+    }
+    return [...map.values()].sort((a, b) => a.codigo.localeCompare(b.codigo));
+  });
+
+/** Variables y límites que aplicarían al rollo con el producto indicado. */
+export const previewSpecProducto = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({ producto_id: z.string().uuid(), maquina_id: z.string().uuid().nullable() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const sb = context.supabase;
+    const { data: specId, error: e1 } = await sb.rpc("qc_resolver_spec_producto", {
+      _producto_id: data.producto_id,
+      _maquina_id: data.maquina_id,
+    } as never);
+    if (e1) throw new Error(e1.message);
+    if (!specId) throw new Error("El producto seleccionado no tiene especificación vigente.");
+    const [{ data: vars, error: e2 }, { data: skus }] = await Promise.all([
+      sb
+        .from("producto_variables")
+        .select("min_valor, objetivo, max_valor, variables_calidad(clave, etiqueta, unidad, orden)")
+        .eq("especificacion_id", specId as string),
+      sb.from("producto_skus_sap").select("clave_sku_sap").eq("producto_id", data.producto_id),
+    ]);
+    if (e2) throw new Error(e2.message);
+    const variables = (vars ?? [])
+      .map((v) => {
+        const vc = (v as unknown as { variables_calidad: { clave: string; etiqueta: string; unidad: string | null; orden: number } }).variables_calidad;
+        return {
+          clave: vc.clave,
+          etiqueta: vc.etiqueta,
+          unidad: vc.unidad ?? "",
+          orden: vc.orden ?? 0,
+          min: Number(v.min_valor),
+          objetivo: Number(v.objetivo),
+          max: Number(v.max_valor),
+        };
+      })
+      .sort((a, b) => a.orden - b.orden);
+    return { variables, skus: (skus ?? []).map((s) => s.clave_sku_sap as string) };
   });

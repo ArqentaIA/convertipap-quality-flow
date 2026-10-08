@@ -639,7 +639,7 @@ export const getDetalleRollo = createServerFn({ method: "GET" })
          dictamen, estatus_liberacion, defectos, observaciones_generales, lote_logistico,
          sku_sap,
          variables_snapshot_json,
-         producto_id, productos!muestras_calidad_producto_id_fkey(nombre, codigo),
+         producto_id, maquina_id, productos!muestras_calidad_producto_id_fkey(nombre, codigo),
          ordenes_fabricacion(folio, maquinas(codigo), plantas(nombre)),
          mediciones_calidad(variable_clave, valor, min_snapshot, objetivo_snapshot, max_snapshot, estado, observacion)`,
       )
@@ -751,6 +751,8 @@ export const getDetalleRollo = createServerFn({ method: "GET" })
         folioOrden: ord?.folio ?? "—",
         producto: (m as any).productos?.nombre ?? "—",
         productoCodigo: (m as any).productos?.codigo ?? "—",
+        productoId: ((m as any).producto_id as string | null) ?? null,
+        maquinaId: ((m as any).maquina_id as string | null) ?? null,
         skuSap: (m as any).sku_sap ?? "",
         maquina: ord?.maquinas?.codigo ?? "—",
         planta: ord?.plantas?.nombre ?? "—",

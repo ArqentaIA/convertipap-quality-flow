@@ -57,6 +57,27 @@
       "when": 1791430859582,
       "tag": "0007_fix_rol_administrador_edicion_bobina",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791431403767,
+      "tag": "0008_qc_cambio_producto_rollo",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791431458659,
+      "tag": "0009_fix_sku_cambio_producto",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791431631263,
+      "tag": "0010_evitar_duplicado_uniones_cambio_producto",
+      "breakpoints": true
     }
   ]
 }

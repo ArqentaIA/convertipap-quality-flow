@@ -2332,6 +2332,88 @@ export type Database = {
         }
         Relationships: []
       }
+      qc_cambios_producto_rollo: {
+        Row: {
+          created_at: string
+          especificacion_anterior_id: string | null
+          especificacion_nueva_id: string | null
+          especificacion_version_anterior: string | null
+          especificacion_version_nueva: string | null
+          evento_id: string
+          id: string
+          mediciones_originales: Json
+          motivo: string
+          muestra_id: string
+          numero_rollo: string | null
+          producto_anterior_id: string | null
+          producto_nuevo_id: string
+          sku_sap_anterior: string | null
+          usuario_email: string | null
+          usuario_id: string | null
+          variables_snapshot_anterior: Json
+        }
+        Insert: {
+          created_at?: string
+          especificacion_anterior_id?: string | null
+          especificacion_nueva_id?: string | null
+          especificacion_version_anterior?: string | null
+          especificacion_version_nueva?: string | null
+          evento_id: string
+          id?: string
+          mediciones_originales?: Json
+          motivo: string
+          muestra_id: string
+          numero_rollo?: string | null
+          producto_anterior_id?: string | null
+          producto_nuevo_id: string
+          sku_sap_anterior?: string | null
+          usuario_email?: string | null
+          usuario_id?: string | null
+          variables_snapshot_anterior?: Json
+        }
+        Update: {
+          created_at?: string
+          especificacion_anterior_id?: string | null
+          especificacion_nueva_id?: string | null
+          especificacion_version_anterior?: string | null
+          especificacion_version_nueva?: string | null
+          evento_id?: string
+          id?: string
+          mediciones_originales?: Json
+          motivo?: string
+          muestra_id?: string
+          numero_rollo?: string | null
+          producto_anterior_id?: string | null
+          producto_nuevo_id?: string
+          sku_sap_anterior?: string | null
+          usuario_email?: string | null
+          usuario_id?: string | null
+          variables_snapshot_anterior?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "qc_cambios_producto_rollo_muestra_id_fkey"
+            columns: ["muestra_id"]
+            isOneToOne: false
+            referencedRelation: "muestras_calidad"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "qc_cambios_producto_rollo_muestra_id_fkey"
+            columns: ["muestra_id"]
+            isOneToOne: false
+            referencedRelation: "v_muestra_kpis_v2"
+            referencedColumns: ["muestra_id"]
+          },
+          {
+            foreignKeyName: "qc_cambios_producto_rollo_muestra_id_fkey"
+            columns: ["muestra_id"]
+            isOneToOne: false
+            referencedRelation: "vw_muestras_calidad_estado_oficial"
+            referencedColumns: ["muestra_id"]
+          },
+        ]
+      }
       qc_edicion_permisos: {
         Row: {
           activo: boolean
@@ -3249,6 +3331,10 @@ export type Database = {
         Returns: string
       }
       _pc_require_access: { Args: { _uid: string }; Returns: undefined }
+      _qc_eval_medicion: {
+        Args: { _clave: string; _max: number; _min: number; _v: number }
+        Returns: Database["public"]["Enums"]["qc_medicion_estado"]
+      }
       _qc_propagar_peso_rollo: {
         Args: {
           _email: string
@@ -3484,6 +3570,10 @@ export type Database = {
       qc_recalc_estatus_muestra: {
         Args: { _muestra_id: string }
         Returns: undefined
+      }
+      qc_resolver_spec_producto: {
+        Args: { _maquina_id: string; _producto_id: string }
+        Returns: string
       }
       qc_tiene_defecto: { Args: { _muestra_id: string }; Returns: boolean }
       reabrir_lote_cintas: {
