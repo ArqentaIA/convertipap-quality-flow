@@ -1,3 +1,4 @@
+import { readAllReportPages, readReportIdChunks } from "@/lib/report-query-pages";
 // =====================================================================
 // REPORTE MENSUAL / ANUAL — agregaciones reales contra BD
 // - Filtros: año (obligatorio) y mes (opcional).
@@ -144,26 +145,15 @@ export const getReporteMensual = createServerFn({ method: "POST" })
     const queryEnd = new Date(endDate.getTime() + 24 * 60 * 60 * 1000);
     const scope = await resolvePlantaScope(sb, context.userId, data.planta);
     const plantaIdsScope = scope.plantaIds.length > 0 ? scope.plantaIds : ["00000000-0000-0000-0000-000000000000"];
-    {
-      const pageSize = 1000;
-      let from = 0;
-      for (let i = 0; i < 100; i++) {
-        const { data: page, error } = await sb
-          .from("muestras_calidad")
-          .select("id, numero_rollo, sku_sap, capturado_at, maquina_id, producto_id, turno, estado, dictamen, estatus_liberacion, capturado_por")
-          .in("planta_id", plantaIdsScope)
-          .gte("capturado_at", queryStart.toISOString())
-          .lt("capturado_at", queryEnd.toISOString())
-          .neq("estado", "borrador")
-          .order("capturado_at", { ascending: true })
-          .range(from, from + pageSize - 1);
-        if (error) throw error;
-        const chunk = (page ?? []) as typeof muestrasAll;
-        muestrasAll.push(...chunk);
-        if (chunk.length < pageSize) break;
-        from += pageSize;
-      }
-    }
+    muestrasAll.push(...await readAllReportPages((from, to) => sb
+      .from("muestras_calidad")
+      .select("id, numero_rollo, sku_sap, capturado_at, maquina_id, producto_id, turno, estado, dictamen, estatus_liberacion, capturado_por")
+      .in("planta_id", plantaIdsScope)
+      .gte("capturado_at", queryStart.toISOString())
+      .lt("capturado_at", queryEnd.toISOString())
+      .neq("estado", "borrador")
+      .order("capturado_at", { ascending: true }).order("id").range(from, to)));
+
 
     // 2) Filtrar por DÍA OPERATIVO (regla shift_op_date) dentro del periodo
     //    y aplicar "último día del mes → solo Primer Turno" sobre el op_date.
@@ -206,29 +196,16 @@ export const getReporteMensual = createServerFn({ method: "POST" })
     // 4) Peso por muestra (mediciones_calidad, variable_clave="peso") paginado
     const pesoPorMuestra = new Map<string, number>();
     if (muestraIds.length) {
-      // chunk pequeño para evitar UND_ERR_HEADERS_OVERFLOW (URL > 16KB) con `.in()` de UUIDs
-      const chunkSize = 100;
-      for (let i = 0; i < muestraIds.length; i += chunkSize) {
-        const slice = muestraIds.slice(i, i + chunkSize);
-        let from = 0;
-        for (let p = 0; p < 50; p++) {
-          const { data: meds, error } = await sb
-            .from("mediciones_calidad")
-            .select("muestra_id, valor")
-            .eq("variable_clave", "peso")
-            .in("muestra_id", slice)
-            .range(from, from + 999);
-          if (error) throw error;
-          for (const m of meds ?? []) {
-            if (m.valor == null) continue;
-            const v = Number(m.valor);
-            if (!Number.isNaN(v)) pesoPorMuestra.set(m.muestra_id as string, v);
-          }
-          if ((meds ?? []).length < 1000) break;
-          from += 1000;
-        }
+      const meds = await readReportIdChunks(muestraIds, (slice, from, to) => sb
+        .from("mediciones_calidad").select("muestra_id, valor")
+        .eq("variable_clave", "peso").in("muestra_id", slice).order("id").range(from, to));
+      for (const m of meds) {
+        if (m.valor == null) continue;
+        const v = Number(m.valor);
+        if (!Number.isNaN(v)) pesoPorMuestra.set(m.muestra_id, v);
       }
     }
+
 
     // 5) Helpers conformidad
     // Canónico: conforme/liberado = L + C; no conforme = NC; resto pendiente.
