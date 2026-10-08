@@ -757,49 +757,51 @@ function MachineAccessCodesCard() {
           const dirty = edits[m.id] !== undefined && edits[m.id] !== (m.access_code ?? "");
           const visible = reveal[m.id] ?? false;
           return (
-            <div key={m.id} className="flex items-center gap-2 rounded-md border border-border bg-background p-1.5">
-              <span className="inline-flex h-7 min-w-[58px] items-center justify-center rounded-md bg-primary/10 px-2 text-[11px] font-bold text-primary">
-                {m.codigo}
-              </span>
-              <span className="flex-1 truncate text-xs text-muted-foreground" title={m.nombre}>
-                {m.nombre}
-              </span>
-              <div className="relative">
-                <input
-                  type={visible ? "text" : "password"}
-                  inputMode="numeric"
-                  maxLength={8}
-                  value={current}
-                  onChange={(e) =>
-                    setEdits((prev) => ({ ...prev, [m.id]: e.target.value.replace(/\s/g, "") }))
-                  }
-                  placeholder="••••"
-                  className="h-8 w-28 rounded-md border border-input bg-background px-2 text-center font-mono text-sm tracking-widest text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary"
-                />
+            <div key={m.id} className="rounded-md border border-border bg-background p-1.5">
+              <div className="flex items-center gap-2">
+                <span className="inline-flex h-7 min-w-[58px] items-center justify-center rounded-md bg-primary/10 px-2 text-[11px] font-bold text-primary">
+                  {m.codigo}
+                </span>
+                <span className="flex-1 truncate text-xs text-muted-foreground" title={m.nombre}>
+                  {m.nombre}
+                </span>
+                <div className="relative">
+                  <input
+                    type={visible ? "text" : "password"}
+                    inputMode="numeric"
+                    maxLength={8}
+                    value={current}
+                    onChange={(e) =>
+                      setEdits((prev) => ({ ...prev, [m.id]: e.target.value.replace(/\s/g, "") }))
+                    }
+                    placeholder="••••"
+                    className="h-8 w-28 rounded-md border border-input bg-background px-2 text-center font-mono text-sm tracking-widest text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setReveal((r) => ({ ...r, [m.id]: !visible }))}
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background text-muted-foreground hover:bg-accent"
+                  title={visible ? "Ocultar" : "Mostrar"}
+                >
+                  <Eye className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  type="button"
+                  disabled={!dirty || current.length < 4 || saveMutation.isPending}
+                  onClick={() => saveMutation.mutate({ id: m.id, code: current })}
+                  className="inline-flex h-8 items-center gap-1 rounded-md bg-primary px-3 text-[11px] font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-40"
+                >
+                  <Lock className="h-3 w-3" /> Guardar
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => setReveal((r) => ({ ...r, [m.id]: !visible }))}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background text-muted-foreground hover:bg-accent"
-                title={visible ? "Ocultar" : "Mostrar"}
-              >
-                <Eye className="h-3.5 w-3.5" />
-              </button>
-              <button
-                type="button"
-                disabled={!dirty || current.length < 4 || saveMutation.isPending}
-                onClick={() => saveMutation.mutate({ id: m.id, code: current })}
-                className="inline-flex h-8 items-center gap-1 rounded-md bg-primary px-3 text-[11px] font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-40"
-              >
-                <Lock className="h-3 w-3" /> Guardar
-              </button>
               {(MAQUINAS_CON_VISOR as readonly string[]).includes(m.codigo) ? (
-                <div className="flex items-center gap-1">
+                <div className="mt-1 flex items-center gap-1.5 pl-[66px]">
                   <code
-                    className="hidden max-w-[220px] truncate font-mono text-[10px] text-muted-foreground md:inline"
+                    className="flex-1 truncate font-mono text-[10px] text-muted-foreground"
                     title={`${OPERATOR_VISION_BASE}/operator-vision?maquina=${m.codigo}`}
                   >
-                    /operator-vision?maquina={m.codigo}
+                    {OPERATOR_VISION_BASE}/operator-vision?maquina={m.codigo}
                   </code>
                   <button
                     type="button"
@@ -812,16 +814,16 @@ function MachineAccessCodesCard() {
                         toast.error("No se pudo copiar");
                       }
                     }}
-                    className="inline-flex h-8 items-center gap-1 rounded-md border border-border bg-background px-2 text-[11px] font-semibold text-muted-foreground hover:bg-accent hover:text-foreground"
+                    className="inline-flex h-7 items-center gap-1 rounded-md border border-border bg-background px-2 text-[11px] font-semibold text-muted-foreground hover:bg-accent hover:text-foreground"
                     title="Copiar URL de la pantalla de esta máquina"
                   >
-                    <Copy className="h-3 w-3" /> URL
+                    <Copy className="h-3 w-3" /> Copiar URL
                   </button>
                 </div>
               ) : (
-                <span className="text-[10px] text-muted-foreground" title="Máquina de pruebas: sin visor operativo">
-                  Sin visor
-                </span>
+                <div className="mt-1 pl-[66px] text-[10px] text-muted-foreground" title="Máquina de pruebas: sin visor operativo">
+                  Sin visor operativo (máquina de pruebas)
+                </div>
               )}
             </div>
           );
