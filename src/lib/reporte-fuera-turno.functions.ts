@@ -55,6 +55,7 @@ export const getReporteFueraTurno = createServerFn({ method: "POST" })
       motivo: m.fuera_de_turno_motivo ?? "—", mediciones: measurements.get(m.id) ?? {},
     })).sort((a, b) => a.capturadoAt.localeCompare(b.capturadoAt) || a.id.localeCompare(b.id));
     return { rows, periodo: data.mode === "mes" ? data.fecha.slice(0, 7) : data.fecha,
+      inicio: window.start, finExclusivo: window.end,
       planta: scope.plantaNombre ?? "Plantas autorizadas", generadoAt: new Date().toISOString() };
   });
 

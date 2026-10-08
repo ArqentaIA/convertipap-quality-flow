@@ -10,5 +10,6 @@
 - [x] Ampliar columnas de bobinadoras hasta C350; verificar los tres formatos y recalcular subtotales SAP en Excel sin errores.
 - [x] Verificar producción dinámica julio/agosto/septiembre en ambas plantas contra pantalla, Excel y base; comprobar descargas anual/mensual, no conformes, general y consolidado con administrador. Sin enviar correos.
 - [x] Probar bloqueo de descarga anual/mensual ante fallo de red y ejecutar pruebas de paginación y fechas. La verificación no certifica todos los reportes ni todos los periodos.
-- [ ] Confirmar con el usuario si los reportes históricos deben incorporar capturas posteriores al cierre; conservar la ventana vigente mientras no se autorice una regla distinta.
+- [x] Alcance confirmado: cambiar solo el reporte independiente de capturas fuera de turno; otros reportes conservan sus reglas.
+- [ ] Ajustar y verificar el reporte diario fuera de turno de 07:00 de la fecha seleccionada hasta cierre T3 a las 07:00 del día siguiente; mensual sin cambios.
 - [x] Crear y probar reporte independiente de capturas fuera de turno por día y mes, agrupado por fecha real de captura en México; sin modificar cierres ni históricos.
