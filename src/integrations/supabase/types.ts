@@ -3591,6 +3591,7 @@ export type Database = {
         Args: { _uid: string }
         Returns: boolean
       }
+      puede_ver_modulo_variables: { Args: never; Returns: boolean }
       qc_editar_rollo: {
         Args: { _cambios: Json; _motivo: string; _muestra_id: string }
         Returns: Json

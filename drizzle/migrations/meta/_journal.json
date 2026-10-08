@@ -99,6 +99,13 @@
       "when": 1791434011185,
       "tag": "0013_app_settings_lectura_autenticados",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1791434209255,
+      "tag": "0014_variables_docs_exclusivo_calidad",
+      "breakpoints": true
     }
   ]
 }

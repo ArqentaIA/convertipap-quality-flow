@@ -145,10 +145,14 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
   const canPerfilesRoles =
     !esPesajeOperativo && (auth.user?.email ?? "").toLowerCase() === PERFILES_ROLES_EMAIL;
 
-  // Variables de Calidad: habilitado para todos los usuarios de Planta
-  // Ixtapaluca (IXT), además de los roles con el permiso global.
+  // Variables de Calidad y documentos de especificación: exclusivo de los
+  // 2 usuarios de Calidad y adgral@ (candado por correo).
+  void esIxtapaluca;
   const canVariablesCalidad =
-    !esPesajeOperativo && (auth.canAccess("variables_calidad") || esIxtapaluca);
+    !esPesajeOperativo &&
+    ["adgral@convertipap.site", "gcalidad@convertipap.site", "msramosixt@convertipap.site"].includes(
+      (auth.user?.email ?? "").toLowerCase(),
+    );
 
   // Órdenes de Producción: visible únicamente para adgral@convertipap.site
   // (se conserva el módulo y sus datos; solo se oculta la pantalla al resto).
