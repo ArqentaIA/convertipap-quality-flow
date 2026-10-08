@@ -77,9 +77,14 @@ const MAQUINAS_VALIDAS = ["MP-01", "MP-04", "MP-05", "MP-06", "MP-07"] as const;
 type MaquinaValida = (typeof MAQUINAS_VALIDAS)[number];
 
 export const Route = createFileRoute("/operator-vision")({
-  head: ({ search }) => ({
+  head: () => ({
     meta: [
-      { title: `Visión ${search.maquina} · Convertipap` },
+      { title: "Visión Operativa · Convertipap" },
+      { name: "description", content: "Producción y calidad por máquina en los visores operativos de Convertipap." },
+      { property: "og:title", content: "Visión Operativa · Convertipap" },
+      { property: "og:description", content: "Consulta de producción y calidad por máquina en Convertipap." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   validateSearch: (
