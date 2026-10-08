@@ -71,6 +71,13 @@
       "when": 1791431458659,
       "tag": "0009_fix_sku_cambio_producto",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791431631263,
+      "tag": "0010_evitar_duplicado_uniones_cambio_producto",
+      "breakpoints": true
     }
   ]
 }
