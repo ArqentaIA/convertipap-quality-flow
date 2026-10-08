@@ -201,12 +201,7 @@ function ConfigContent({ settings }: { settings: AppSettings }) {
               <div className="mt-3 space-y-3">
                 <div className="grid grid-cols-[140px_1fr] items-center gap-3">
                   <label className="text-xs text-muted-foreground">Hora de envío</label>
-                  <input
-                    type="time"
-                    value={form.ceo_report_hora}
-                    onChange={(e) => set("ceo_report_hora", e.target.value)}
-                    className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                  />
+                  <Hora24Input value={form.ceo_report_hora} onChange={(v) => set("ceo_report_hora", v)} />
                 </div>
                 <div className="grid grid-cols-[140px_1fr] items-start gap-3">
                   <label className="pt-1.5 text-xs text-muted-foreground">Destinatarios</label>
@@ -360,21 +355,11 @@ function ShiftRange({ label, inicio, fin, onInicio, onFin }: { label: string; in
     <div className="grid grid-cols-[1fr_1fr_1fr] items-center gap-3">
       <label className="text-xs text-muted-foreground">{label}</label>
       <div className="relative">
-        <input
-          type="time"
-          value={inicio}
-          onChange={(e) => onInicio(e.target.value)}
-          className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-        />
+        <Hora24Input value={inicio} onChange={(v) => onInicio(v)} />
         <span className="pointer-events-none absolute -top-2 left-2 bg-card px-1 text-[9px] uppercase tracking-wider text-muted-foreground">Inicio</span>
       </div>
       <div className="relative">
-        <input
-          type="time"
-          value={fin}
-          onChange={(e) => onFin(e.target.value)}
-          className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-        />
+        <Hora24Input value={fin} onChange={(v) => onFin(v)} />
         <span className="pointer-events-none absolute -top-2 left-2 bg-card px-1 text-[9px] uppercase tracking-wider text-muted-foreground">Término</span>
       </div>
     </div>
@@ -1301,5 +1286,24 @@ function DestinatariosTurnoCard() {
         </span>
       </div>
     </Card>
+  );
+}
+
+const HORAS_24 = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"));
+const MINUTOS_60 = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, "0"));
+function Hora24Input({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [hh = "00", mm = "00"] = (value || "00:00").split(":");
+  const cls = "flex-1 rounded-md border border-input bg-background px-2 py-1.5 text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-ring";
+  return (
+    <div className="flex w-full items-center gap-1">
+      <select aria-label="Hora (24 h)" value={hh.padStart(2, "0")} onChange={(e) => onChange(`${e.target.value}:${mm.slice(0, 2)}`)} className={cls}>
+        {HORAS_24.map((h) => <option key={h} value={h}>{h}</option>)}
+      </select>
+      <span className="text-sm text-muted-foreground">:</span>
+      <select aria-label="Minutos" value={mm.slice(0, 2)} onChange={(e) => onChange(`${hh.padStart(2, "0")}:${e.target.value}`)} className={cls}>
+        {MINUTOS_60.map((m) => <option key={m} value={m}>{m}</option>)}
+      </select>
+      <span className="text-xs text-muted-foreground">h</span>
+    </div>
   );
 }
