@@ -152,7 +152,7 @@ export const getReporteBobinasEditadas = createServerFn({ method: "POST" })
         )
         .in("id", chunk);
       for (const m of ms ?? []) {
-        const mq = (m as Record<string, never>)["maquinas"] as
+        const mq = (m as unknown as Record<string, never>)["maquinas"] as
           | { codigo?: string; plantas?: { nombre?: string; codigo?: string } }
           | null;
         muestraMap.set(m.id as string, {

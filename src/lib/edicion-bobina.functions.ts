@@ -100,12 +100,12 @@ export const buscarBobinasEditables = createServerFn({ method: "POST" })
     const ahora = Date.now();
     const lista = (rows ?? [])
       .map((m) => {
-        const mq = (m as Record<string, never>)["maquinas"] as
+        const mq = (m as unknown as Record<string, never>)["maquinas"] as
           | { codigo?: string; plantas?: { nombre?: string; codigo?: string } }
           | null;
         const codigo = mq?.codigo ?? "";
         if (!maquinas.includes(codigo)) return null;
-        const ord = (m as Record<string, never>)["ordenes_fabricacion"] as
+        const ord = (m as unknown as Record<string, never>)["ordenes_fabricacion"] as
           | { folio?: string }
           | null;
         const cap = (m.capturado_at ?? m.hora_muestreo) as string;
@@ -122,7 +122,7 @@ export const buscarBobinasEditables = createServerFn({ method: "POST" })
             ((m.estatus_liberacion ?? m.dictamen) as string) ?? "pendiente",
           folio_orden: ord?.folio ?? "—",
           producto:
-            ((m as Record<string, never>)["productos"] as { nombre?: string } | null)
+            ((m as unknown as Record<string, never>)["productos"] as { nombre?: string } | null)
               ?.nombre ?? "—",
           dentro_ventana: ahora <= expira.getTime(),
           expira_at: expira.toISOString(),
@@ -221,7 +221,7 @@ export const getEtiquetaBobina = createServerFn({ method: "POST" })
       .single();
     if (error) throw new Error(error.message);
 
-    const mq = (m as Record<string, never>)["maquinas"] as
+    const mq = (m as unknown as Record<string, never>)["maquinas"] as
       | { codigo?: string; nombre?: string; plantas?: { codigo?: string } }
       | null;
     const codigo = mq?.codigo ?? "";
@@ -233,7 +233,7 @@ export const getEtiquetaBobina = createServerFn({ method: "POST" })
       { min?: number; obj?: number; max?: number; unidad?: string; etiqueta?: string }
     >;
     const mediciones = (
-      ((m as Record<string, never>)["mediciones_calidad"] as
+      ((m as unknown as Record<string, never>)["mediciones_calidad"] as
         | {
             variable_clave: string;
             valor: number | null;
@@ -270,10 +270,10 @@ export const getEtiquetaBobina = createServerFn({ method: "POST" })
             ? "NO CONFORME"
             : "PENDIENTE";
 
-    const prod = (m as Record<string, never>)["productos"] as
+    const prod = (m as unknown as Record<string, never>)["productos"] as
       | { nombre?: string; codigo?: string }
       | null;
-    const ord = (m as Record<string, never>)["ordenes_fabricacion"] as
+    const ord = (m as unknown as Record<string, never>)["ordenes_fabricacion"] as
       | { folio?: string }
       | null;
 
