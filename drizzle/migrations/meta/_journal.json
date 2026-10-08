@@ -22,6 +22,13 @@
       "when": 1790317707575,
       "tag": "0002_editar_peso_valida_cintas_y_merma",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1791421863268,
+      "tag": "0003_migration",
+      "breakpoints": true
     }
   ]
 }
