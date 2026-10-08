@@ -91,7 +91,7 @@ function lastDayOfMonth(year: number, month0: number): number {
 // Replica en JS de la función SQL public.shift_op_date:
 // si turno = '3' y la hora local MX < 23, el día operativo es el día MX - 1.
 // Devuelve un Date en UTC a medianoche del día operativo (para comparar y agrupar).
-function shiftOpDateUTC(iso: string, turno: string): Date {
+export function shiftOpDateUTC(iso: string, turno: string): Date {
   const d = new Date(iso);
   const fmt = new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/Mexico_City",
