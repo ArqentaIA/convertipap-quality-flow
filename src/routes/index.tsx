@@ -19,7 +19,16 @@ import { usePlantaActivaCodigo } from "@/hooks/usePlantasPermitidas";
 import { supabase } from "@/integrations/supabase/client";
 
 
-export const Route = createFileRoute("/")({ component: DashboardGate, ssr: false });
+export const Route = createFileRoute("/")({ component: DashboardGate, ssr: false,
+  head: () => ({ meta: [
+    { title: "Convertipap | Calidad y producción" },
+    { name: "description", content: "Acceso al control de calidad y producción de Convertipap." },
+    { property: "og:title", content: "Convertipap | Calidad y producción" },
+    { property: "og:description", content: "Control industrial de calidad y producción de Convertipap." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
+});
 
 function mexicoMidnight(now: Date): Date {
   // Devuelve el instante UTC correspondiente a las 00:00 de la fecha actual en CDMX.

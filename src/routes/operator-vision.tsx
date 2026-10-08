@@ -79,8 +79,12 @@ type MaquinaValida = (typeof MAQUINAS_VALIDAS)[number];
 export const Route = createFileRoute("/operator-vision")({
   head: () => ({
     meta: [
-      { title: "Visión Operador · Convertipap" },
-      { name: "description", content: "Pantalla industrial de monitoreo en tiempo real" },
+      { title: "Visión Operativa · Convertipap" },
+      { name: "description", content: "Producción y calidad por máquina en los visores operativos de Convertipap." },
+      { property: "og:title", content: "Visión Operativa · Convertipap" },
+      { property: "og:description", content: "Consulta de producción y calidad por máquina en Convertipap." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   validateSearch: (

@@ -15,6 +15,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Json } from "@/lib/pesaje-cintas.functions";
+import { readAllReportPages, readReportIdChunks } from "@/lib/report-query-pages";
 import { resolvePlantaScope } from "@/lib/planta-scope";
 
 export type LoteCintasRow = {
@@ -124,20 +125,14 @@ async function filtrarLotesPorPlanta(
 
   const muestraIds = todas.map((l) => l.muestra_calidad_id).filter((v): v is string => !!v);
   const pesajeIds = todas.map((l) => l.pesaje_bobina_madre_id).filter((v): v is string => !!v);
-  const [muestrasRes, pesajesRes] = await Promise.all([
-    muestraIds.length
-      ? sb.from("muestras_calidad").select("id, planta_id").in("id", muestraIds)
-      : Promise.resolve({ data: [] as { id: string; planta_id: string }[] }),
-    pesajeIds.length
-      ? sb.from("pesajes_bobina_madre").select("id, maquina_id").in("id", pesajeIds)
-      : Promise.resolve({ data: [] as { id: string; maquina_id: string }[] }),
+  const [muestras, pesajes] = await Promise.all([
+    readReportIdChunks<{ id: string; planta_id: string }>(muestraIds, (ids, from, to) =>
+      sb.from("muestras_calidad").select("id, planta_id").in("id", ids).order("id").range(from, to)),
+    readReportIdChunks<{ id: string; maquina_id: string }>(pesajeIds, (ids, from, to) =>
+      sb.from("pesajes_bobina_madre").select("id, maquina_id").in("id", ids).order("id").range(from, to)),
   ]);
-  const plantaPorMuestra = new Map<string, string>(
-    ((muestrasRes.data ?? []) as { id: string; planta_id: string }[]).map((m) => [m.id, m.planta_id]),
-  );
-  const maquinaPorPesaje = new Map<string, string>(
-    ((pesajesRes.data ?? []) as { id: string; maquina_id: string }[]).map((p) => [p.id, p.maquina_id]),
-  );
+  const plantaPorMuestra = new Map(muestras.map(m => [m.id, m.planta_id]));
+  const maquinaPorPesaje = new Map(pesajes.map(p => [p.id, p.maquina_id]));
 
   const filas = todas.filter((l) => {
     if (l.muestra_calidad_id) {
@@ -162,6 +157,7 @@ export const getDatosReporteCintas = createServerFn({ method: "POST" })
     await assertAcceso(context.supabase as never, context.userId);
     const turno = (data.turno ?? "").trim();
 
+    const lotes = await readAllReportPages((from, to) => {
     let q = context.supabase
       .from("pesajes_cintas_lotes")
       .select("*")
@@ -172,8 +168,8 @@ export const getDatosReporteCintas = createServerFn({ method: "POST" })
       .order("numero_rollo");
     if (turno) q = q.filter("datos_calidad_snapshot->>turno", "eq", turno);
 
-    const { data: lotes, error } = await q;
-    if (error) throw new Error(error.message);
+    return q.order("id").range(from, to);
+    });
 
     const todas = (lotes ?? []) as unknown as LoteCintasRow[];
 
@@ -201,28 +197,14 @@ export type JsonRow = Record<string, Json>;
 type SB = { from: (t: string) => any }; // eslint-disable-line @typescript-eslint/no-explicit-any
 
 async function cintasDeLotes(supabase: SB, ids: string[]): Promise<CintaRow[]> {
-  if (ids.length === 0) return [];
-  const out: CintaRow[] = [];
-  for (let i = 0; i < ids.length; i += 200) {
-    const chunk = ids.slice(i, i + 200);
-    const { data, error } = await supabase
-      .from("pesajes_cintas").select("*").in("lote_id", chunk).order("posicion");
-    if (error) throw new Error(error.message);
-    out.push(...((data ?? []) as CintaRow[]));
-  }
-  return out;
+  const rows = await readReportIdChunks<CintaRow>(ids, (chunk, from, to) => supabase
+    .from("pesajes_cintas").select("*").in("lote_id", chunk).order("id").range(from, to));
+  return rows.sort((a, b) => a.posicion - b.posicion);
 }
 
 async function porLotes(supabase: SB, tabla: string, columna: string, ids: string[], select = "*") {
-  if (ids.length === 0) return [] as JsonRow[];
-  const out: JsonRow[] = [];
-  for (let i = 0; i < ids.length; i += 200) {
-    const chunk = ids.slice(i, i + 200);
-    const { data, error } = await supabase.from(tabla).select(select).in(columna, chunk);
-    if (error) throw new Error(error.message);
-    out.push(...((data ?? []) as JsonRow[]));
-  }
-  return out;
+  return readReportIdChunks<JsonRow>(ids, (chunk, from, to) => supabase
+    .from(tabla).select(select).in(columna, chunk).order("id").range(from, to));
 }
 
 export type BaseIntegralCintas = DatosReporteCintas & {
@@ -246,6 +228,7 @@ export const getBaseIntegralCintas = createServerFn({ method: "POST" })
     const turno = (data.turno ?? "").trim();
     const sb = context.supabase as unknown as SB;
 
+    const lotes = await readAllReportPages((from, to) => {
     let q = context.supabase
       .from("pesajes_cintas_lotes")
       .select("*")
@@ -254,8 +237,8 @@ export const getBaseIntegralCintas = createServerFn({ method: "POST" })
       .order("fecha_produccion")
       .order("numero_rollo");
     if (turno) q = q.filter("datos_calidad_snapshot->>turno", "eq", turno);
-    const { data: lotes, error } = await q;
-    if (error) throw new Error(error.message);
+    return q.order("id").range(from, to);
+    });
 
     const todas = (lotes ?? []) as unknown as LoteCintasRow[];
     const { filas, plantaNombre } = await filtrarLotesPorPlanta(

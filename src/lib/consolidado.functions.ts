@@ -6,7 +6,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { fetchAllPaged, fetchInChunks } from "@/lib/paginate";
+import { readAllReportPages as fetchAllPaged, readReportIdChunks } from "@/lib/report-query-pages";
 import { resolvePlantaScope } from "@/lib/planta-scope";
 
 /** Orden histórico de referencia (Tlaxcala). Las máquinas reales se resuelven
@@ -112,7 +112,7 @@ export const getConsolidado = createServerFn({ method: "GET" })
         .in("maquina_id", Array.from(maqMap.keys()))
         .gte("hora_muestreo", startIso)
         .lt("hora_muestreo", endIso)
-        .range(from, to),
+        .order("id").range(from, to),
     );
 
     const muestraIds = muestras.map((m) => m.id as string);
@@ -120,15 +120,14 @@ export const getConsolidado = createServerFn({ method: "GET" })
     // 3) Mediciones para esas muestras (paginado en lotes de 200 ids)
     let mediciones: { muestra_id: string; variable_clave: string; valor: number | null }[] = [];
     if (muestraIds.length > 0) {
-      mediciones = await fetchInChunks<{ muestra_id: string; variable_clave: string; valor: number | null }>(
+      mediciones = await readReportIdChunks<{ muestra_id: string; variable_clave: string; valor: number | null }>(
         muestraIds,
-        200,
         (slice, from, to) =>
           supabase
             .from("mediciones_calidad")
             .select("muestra_id, variable_clave, valor")
             .in("muestra_id", slice)
-            .range(from, to),
+            .order("id").range(from, to),
       );
     }
 
@@ -146,19 +145,19 @@ export const getConsolidado = createServerFn({ method: "GET" })
     );
     const aplicablesPorProducto = new Map<string, VariableClave[]>();
     if (productoIds.length > 0) {
-      const { data: specs } = await supabase
+      const specs = await readReportIdChunks(productoIds, (ids, from, to) => supabase
         .from("producto_especificaciones")
         .select("id, producto_id")
-        .in("producto_id", productoIds);
+        .in("producto_id", ids).order("id").range(from, to));
       const specIds = (specs ?? []).map((s) => s.id as string);
       const specToProducto = new Map<string, string>(
         (specs ?? []).map((s) => [s.id as string, s.producto_id as string]),
       );
       if (specIds.length > 0) {
-        const { data: pvars } = await supabase
+        const pvars = await readReportIdChunks(specIds, (ids, from, to) => supabase
           .from("producto_variables")
           .select("especificacion_id, variables_calidad(clave)")
-          .in("especificacion_id", specIds);
+          .in("especificacion_id", ids).order("id").range(from, to));
         for (const pv of pvars ?? []) {
           const prodId = specToProducto.get(pv.especificacion_id as string);
           if (!prodId) continue;

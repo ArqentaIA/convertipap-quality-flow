@@ -13,6 +13,7 @@
 //                          (única fuente oficial; sin báscula, OCR, QR ni estimados)
 // No escribe en base de datos ni altera el comportamiento de T1 / T2.
 // =============================================================================
+import { readAllReportPages } from "@/lib/report-query-pages";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 const PLANT_TZ_OFFSET_HOURS = -6;
@@ -218,6 +219,7 @@ export async function construirConsolidadoDiario(
     };
 
     if (maq?.id) {
+      const rows = await readAllReportPages((from, to) => {
       let q = sb
         .from("muestras_calidad")
         .select("id, numero_rollo, sku_sap, capturado_at, operador, analista, turno, estatus_liberacion, fuera_de_turno, mediciones_calidad(variable_clave, valor, estado, min_snapshot, max_snapshot, observacion)")
@@ -226,7 +228,8 @@ export async function construirConsolidadoDiario(
         .gte("capturado_at", ctx.desde.toISOString())
         .in("turno", ["1", "2", "3"]);
       q = exclusivo ? q.lt("capturado_at", hasta.toISOString()) : q.lte("capturado_at", hasta.toISOString());
-      const { data: rows } = await q;
+      return q.order("id").range(from, to);
+      });
 
       fueraDeTurno += (rows ?? []).filter((r: any) => r.fuera_de_turno === true).length;
       const validos = (rows ?? []).filter((r: any) => r.fuera_de_turno === false);

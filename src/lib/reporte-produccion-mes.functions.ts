@@ -7,6 +7,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { resolvePlantaScope } from "@/lib/planta-scope";
+import { readAllReportPages, readReportIdChunks } from "@/lib/report-query-pages";
 
 const input = z.object({
   year: z.number().int().min(2020).max(2100),
@@ -149,12 +150,18 @@ export const getReporteProduccionMes = createServerFn({ method: "POST" })
     for (const d of dias) diasDetalle[d] = { turnos: [] };
     for (const p of pairs) diasDetalle[p.opDate].turnos.push(p.turno);
 
-    // Ventana amplia para query: desde inicio del último día del mes anterior (MX) hasta now+1día
+    // Preserva el día previo y termina en el último cierre incluido (también T3).
     const prevMonth = month === 1 ? 12 : month - 1;
     const prevYear = month === 1 ? year - 1 : year;
     const lastPrev = daysInMonth(prevYear, prevMonth);
     const winStart = localToUtc(prevYear, prevMonth, lastPrev, 0);
-    const winEnd = new Date(now.getTime() + 24 * 3600_000);
+    const lastPair = pairs[pairs.length - 1];
+    if (!lastPair) {
+      return { year, month, dias, diasDetalle, ultimoTurnoCerrado, maquinas: [], totalGeneral: 0, generadoAt: now.toISOString() };
+    }
+    // Preserve the previous boundary's one-hour tolerance for late orders;
+    // allowedSet still decides which operational dates and shifts contribute.
+    const winEnd = new Date(lastPair.finTs.getTime() + 60 * 60 * 1000);
 
     // 1) Catálogos máquinas (todas para orden estable)
     const scopeProd = await resolvePlantaScope(sb, context.userId, data.planta);
@@ -169,13 +176,14 @@ export const getReporteProduccionMes = createServerFn({ method: "POST" })
     if (eMaq) throw new Error(eMaq.message);
 
     // 2) Órdenes en la ventana
-    const { data: ordenes, error: eOrd } = await sb
+    const ordenes = await readAllReportPages((from, to) => sb
       .from("ordenes_fabricacion")
       .select("id, turno, fecha_inicio, maquina_id, producto_id")
       .in("maquina_id", maquinaIdsProd)
       .gte("fecha_inicio", winStart.toISOString())
-      .lt("fecha_inicio", winEnd.toISOString());
-    if (eOrd) throw new Error(eOrd.message);
+      .lt("fecha_inicio", winEnd.toISOString())
+      .order("id")
+      .range(from, to));
     if (!ordenes || ordenes.length === 0) {
       return {
         year, month, dias, diasDetalle, ultimoTurnoCerrado,
@@ -189,18 +197,20 @@ export const getReporteProduccionMes = createServerFn({ method: "POST" })
     const productoIds = Array.from(new Set(ordenes.map((o) => o.producto_id)));
 
     // 3) Rollos de esas órdenes
-    const { data: rollos, error: eRol } = await sb
+    const rollos = await readReportIdChunks(ordenIds, (ids, from, to) => sb
       .from("rollos_producidos")
       .select("orden_id, peso_kg")
-      .in("orden_id", ordenIds);
-    if (eRol) throw new Error(eRol.message);
+      .in("orden_id", ids)
+      .order("id")
+      .range(from, to));
 
     // 4) Catálogo productos
-    const { data: productos, error: eProd } = await sb
+    const productos = await readReportIdChunks(productoIds, (ids, from, to) => sb
       .from("productos")
       .select("id, codigo, nombre")
-      .in("id", productoIds);
-    if (eProd) throw new Error(eProd.message);
+      .in("id", ids)
+      .order("id")
+      .range(from, to));
     const productoById = new Map(productos?.map((p) => [p.id, p]) ?? []);
     const maquinaById = new Map(maquinasRaw?.map((m) => [m.id, m]) ?? []);
 

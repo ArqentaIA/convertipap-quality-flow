@@ -7,6 +7,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { readAllReportPages } from "@/lib/report-query-pages";
 import { resolvePlantaScope } from "@/lib/planta-scope";
 import { esLiberadoOficial, esNoConformeOficial, esConcesionOficial } from "@/lib/qc-estado-oficial";
 
@@ -201,23 +202,12 @@ export const getProduccionCentro = createServerFn({ method: "POST" })
     // Paginado de mediciones: PostgREST limita a 1000 filas por defecto.
     // Con varias variables × muestras se superan los 1000 fácilmente.
     async function fetchAllMediciones() {
-      const pageSize = 1000;
-      const out: Array<{ muestra_id: string; variable_clave: string; valor: number | null; estado: string; created_at: string }> = [];
-      let from = 0;
-      for (let i = 0; i < 50; i++) {
-        const { data, error } = await sb
-          .from("mediciones_calidad")
-          .select("muestra_id, variable_clave, valor, estado, created_at")
-          .gte("created_at", start.toISOString())
-          .lte("created_at", end.toISOString())
-          .range(from, from + pageSize - 1);
-        if (error) throw error;
-        const chunk = (data ?? []) as typeof out;
-        out.push(...chunk);
-        if (chunk.length < pageSize) break;
-        from += pageSize;
-      }
-      return out;
+      return readAllReportPages((from, to) => sb
+        .from("mediciones_calidad")
+        .select("muestra_id, variable_clave, valor, estado, created_at")
+        .gte("created_at", start.toISOString())
+        .lte("created_at", end.toISOString())
+        .order("id").range(from, to));
     }
 
 
@@ -225,15 +215,15 @@ export const getProduccionCentro = createServerFn({ method: "POST" })
     const [
       { data: maquinas },
       { data: productos },
-      { data: muestras },
+      muestras,
       medicionesAll,
-      { data: paros },
+      paros,
       { data: estados },
       settingsResp,
     ] = await Promise.all([
       sb.from("maquinas").select("id, codigo, nombre").in("planta_id", plantaIds).order("codigo"),
       sb.from("productos").select("id, codigo, nombre"),
-      sb
+      readAllReportPages((from, to) => sb
         .from("muestras_calidad")
         .select(
           "id, secuencia_captura, numero_rollo, sku_sap, capturado_at, hora_muestreo, maquina_id, producto_id, turno, estado, dictamen, estatus_liberacion, liberado_con_justificacion, liberacion_justificacion, autorizado_por, analista, defectos",
@@ -241,14 +231,14 @@ export const getProduccionCentro = createServerFn({ method: "POST" })
         .in("planta_id", plantaIds)
         .gte("capturado_at", start.toISOString())
         .lte("capturado_at", end.toISOString())
-        .order("capturado_at", { ascending: false }),
+        .order("capturado_at", { ascending: false }).order("id").range(from, to)),
       fetchAllMediciones(),
-      sb
+      readAllReportPages((from, to) => sb
         .from("paros_maquina")
         .select("id, maquina_id, duracion_min, inicio, fin, descripcion")
         .in("maquina_id", maquinaIds)
         .gte("inicio", start.toISOString())
-        .lte("inicio", end.toISOString()),
+        .lte("inicio", end.toISOString()).order("id").range(from, to)),
       sb.from("maquina_estado_actual").select("maquina_id, estado, ultimo_cambio").in("maquina_id", maquinaIds),
       sb.from("app_settings").select("costo_no_calidad_kg").limit(1).maybeSingle(),
     ]);

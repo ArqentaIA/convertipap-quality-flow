@@ -9,6 +9,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { readAllReportPages, readReportIdChunks } from "@/lib/report-query-pages";
 import { resolvePlantaScope } from "@/lib/planta-scope";
 import {
   esLiberadoOficial as _esLiberadoOficial,
@@ -72,19 +73,7 @@ export const getReportes = createServerFn({ method: "POST" })
     async function fetchAllPaged<T>(
       builder: () => any,
     ): Promise<T[]> {
-      const PAGE = 1000;
-      const out: T[] = [];
-      let from = 0;
-      // eslint-disable-next-line no-constant-condition
-      while (true) {
-        const { data, error } = await builder().range(from, from + PAGE - 1);
-        if (error) throw error;
-        const rows = (data ?? []) as T[];
-        out.push(...rows);
-        if (rows.length < PAGE) break;
-        from += PAGE;
-      }
-      return out;
+      return readAllReportPages<T>((from, to) => builder().order("id").range(from, to));
     }
 
     const muestras = plantaIds.length === 0 ? [] : await fetchAllPaged<{
@@ -124,28 +113,10 @@ export const getReportes = createServerFn({ method: "POST" })
     const muestraIds = (muestras ?? []).map((m) => m.id);
     const mediciones: MedRow[] = [];
     if (muestraIds.length > 0) {
-      const PAGE = 1000;
-      const ID_CHUNK = 100; // chunk pequeño para que cada slice quepa en una sola página (≈1500 meds máx)
-      for (let i = 0; i < muestraIds.length; i += ID_CHUNK) {
-        const idsSlice = muestraIds.slice(i, i + ID_CHUNK);
-        let from = 0;
-        // eslint-disable-next-line no-constant-condition
-        while (true) {
-          const { data: page, error } = await sb
-            .from("mediciones_calidad")
-            .select(
-              "id, muestra_id, variable_clave, valor, min_snapshot, max_snapshot, estado, created_at",
-            )
-            .in("muestra_id", idsSlice)
-            .order("id", { ascending: true }) // orden estable para que range() no duplique ni omita filas
-            .range(from, from + PAGE - 1);
-          if (error) throw error;
-          const rows = (page ?? []) as MedRow[];
-          mediciones.push(...rows);
-          if (rows.length < PAGE) break;
-          from += PAGE;
-        }
-      }
+      mediciones.push(...await readReportIdChunks<MedRow>(muestraIds, (ids, from, to) => sb
+        .from("mediciones_calidad")
+        .select("id, muestra_id, variable_clave, valor, min_snapshot, max_snapshot, estado, created_at")
+        .in("muestra_id", ids).order("id").range(from, to)));
     }
 
     // --------- Rollos del periodo (paginado) ---------
@@ -156,19 +127,20 @@ export const getReportes = createServerFn({ method: "POST" })
         .lte("registrado_at", end),
     );
 
-    const { data: ordenes } = await sb
+    const ordenes = await readAllReportPages((from, to) => sb
       .from("ordenes_fabricacion")
       .select("id, planta_id, maquina_id")
-      .in("planta_id", plantaIds.length > 0 ? plantaIds : ["00000000-0000-0000-0000-000000000000"]);
+      .in("planta_id", plantaIds.length > 0 ? plantaIds : ["00000000-0000-0000-0000-000000000000"])
+      .order("id").range(from, to));
     const ordenById = new Map((ordenes ?? []).map((o) => [o.id, o]));
 
     // --------- Paros (para OEE) ---------
-    const { data: paros } = await sb
+    const paros = await readAllReportPages((from, to) => sb
       .from("paros_maquina")
       .select("id, maquina_id, inicio, fin, duracion_min")
       .in("maquina_id", maquinaIds.length > 0 ? maquinaIds : ["00000000-0000-0000-0000-000000000000"])
       .gte("inicio", start)
-      .lte("inicio", end);
+      .lte("inicio", end).order("id").range(from, to));
 
 
     // ====================================================
@@ -510,17 +482,17 @@ export const getReportes = createServerFn({ method: "POST" })
     );
     const aplicablesPorProducto = new Map<string, Set<string>>();
     if (productoIdsScope.length > 0) {
-      const { data: specs } = await sb
+      const specs = await readReportIdChunks(productoIdsScope, (ids, from, to) => sb
         .from("producto_especificaciones")
         .select("id, producto_id")
-        .in("producto_id", productoIdsScope);
+        .in("producto_id", ids).order("id").range(from, to));
       const specIds = (specs ?? []).map((s) => s.id as string);
       const specToProd = new Map<string, string>((specs ?? []).map((s) => [s.id as string, s.producto_id as string]));
       if (specIds.length > 0) {
-        const { data: pvars } = await sb
+        const pvars = await readReportIdChunks(specIds, (ids, from, to) => sb
           .from("producto_variables")
           .select("especificacion_id, variables_calidad(clave)")
-          .in("especificacion_id", specIds);
+          .in("especificacion_id", ids).order("id").range(from, to));
         for (const pv of (pvars ?? []) as any[]) {
           const prodId = specToProd.get(pv.especificacion_id);
           const clave = pv.variables_calidad?.clave;

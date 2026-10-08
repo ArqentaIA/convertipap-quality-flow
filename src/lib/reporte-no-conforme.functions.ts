@@ -7,6 +7,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { readAllReportPages, readReportIdChunks } from "@/lib/report-query-pages";
 import { resolvePlantaScope } from "@/lib/planta-scope";
 
 const input = z
@@ -158,7 +159,7 @@ export const getReporteNoConforme = createServerFn({ method: "POST" })
     // 1) Muestras NC o liberadas con justificación dentro de la ventana
     const scopeNC = await resolvePlantaScope(sb, context.userId, data?.planta);
     const plantaIdsNC = scopeNC.plantaIds.length > 0 ? scopeNC.plantaIds : ["00000000-0000-0000-0000-000000000000"];
-    const { data: muestras, error: eM } = await sb
+    const muestras = await readAllReportPages((from, to) => sb
       .from("muestras_calidad")
       .select(
         "id, turno, numero_rollo, sku_sap, capturado_at, hora_muestreo, defectos, defecto_visual_conversion, destino, estatus_liberacion, liberado_con_justificacion, producto_id, maquina_id, capturado_por, mediciones_modificadas_at, mediciones_modificadas_por",
@@ -166,8 +167,7 @@ export const getReporteNoConforme = createServerFn({ method: "POST" })
       .in("planta_id", plantaIdsNC)
       .gte("capturado_at", winStart.toISOString())
       .lt("capturado_at", winEnd.toISOString())
-      .or("estatus_liberacion.eq.NC,liberado_con_justificacion.eq.true");
-    if (eM) throw new Error(eM.message);
+      .or("estatus_liberacion.eq.NC,liberado_con_justificacion.eq.true").order("id").range(from, to));
 
     const muestrasFiltradas = (muestras ?? []).filter((mu) => {
       if (!mu.turno || !mu.capturado_at) return false;
@@ -203,27 +203,11 @@ export const getReporteNoConforme = createServerFn({ method: "POST" })
     // muestraIds en lotes para evitar truncamiento silencioso de mediciones.
     async function fetchMedicionesPaged(ids: string[]) {
       const VARS = ["pesoBase", "blancuraR457", "blancuraA", "blancuraB", "peso", "anchoUtil"];
-      const ID_CHUNK = 150; // ~150 muestras × 6 vars ≈ 900 filas/lote (margen vs 1000)
-      const PAGE = 1000;
-      const out: { muestra_id: string; variable_clave: string; valor: number | null }[] = [];
-      for (let i = 0; i < ids.length; i += ID_CHUNK) {
-        const slice = ids.slice(i, i + ID_CHUNK);
-        let from = 0;
-        for (let p = 0; p < 50; p++) {
-          const { data, error } = await sb
-            .from("mediciones_calidad")
-            .select("muestra_id, variable_clave, valor")
-            .in("muestra_id", slice)
-            .in("variable_clave", VARS)
-            .range(from, from + PAGE - 1);
-          if (error) throw new Error(error.message);
-          const chunk = (data ?? []) as typeof out;
-          out.push(...chunk);
-          if (chunk.length < PAGE) break;
-          from += PAGE;
-        }
-      }
-      return out;
+      return readReportIdChunks(ids, (slice, from, to) => sb
+        .from("mediciones_calidad")
+        .select("muestra_id, variable_clave, valor")
+        .in("muestra_id", slice).in("variable_clave", VARS)
+        .order("id").range(from, to));
     }
 
     const [medsRaw, { data: prods }, { data: maqs }, { data: profs }] = await Promise.all([
