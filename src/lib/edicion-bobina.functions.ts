@@ -136,7 +136,10 @@ export const buscarBobinasEditables = createServerFn({ method: "POST" })
           .range(desde, desde + PAGE - 1);
         if (data.maquina) q = q.eq("maquinas.codigo", data.maquina);
         if (data.planta) q = q.eq("maquinas.plantas.codigo", data.planta);
-        q = aplicarFolio(q);
+        if (patronFolio && modoFolio === "rollo")
+          q = q.ilike("numero_rollo", patronFolio);
+        if (patronFolio && modoFolio === "orden")
+          q = q.ilike("ordenes_fabricacion.folio", patronFolio);
         if (inicioDiaUtc && finDiaUtc)
           q = q.gte("capturado_at", inicioDiaUtc).lt("capturado_at", finDiaUtc);
         const { data: page, error } = await q;
@@ -147,12 +150,11 @@ export const buscarBobinasEditables = createServerFn({ method: "POST" })
         if ((page ?? []).length < PAGE) break;
       }
     };
-    if (folioLimpio) {
-      const patron = `*${folioLimpio}*`;
-      await runPaginado((q) => q.ilike("numero_rollo", patron));
-      await runPaginado((q) => q.ilike("ordenes_fabricacion.folio", patron));
+    if (patronFolio) {
+      await runPaginado("rollo");
+      await runPaginado("orden");
     } else {
-      await runPaginado((q) => q);
+      await runPaginado(null);
     }
     const rows = Array.from(porId.values()).sort((a, b) => {
       const fa = String(a.capturado_at ?? "");
