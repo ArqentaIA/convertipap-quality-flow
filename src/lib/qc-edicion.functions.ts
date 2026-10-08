@@ -152,7 +152,7 @@ export const previewSpecProducto = createServerFn({ method: "GET" })
         .from("producto_variables")
         .select("min_valor, objetivo, max_valor, variables_calidad(clave, etiqueta, unidad, orden)")
         .eq("especificacion_id", specId as string),
-      sb.from("producto_skus_sap").select("sku_sap").eq("producto_id", data.producto_id),
+      sb.from("producto_skus_sap").select("clave_sku_sap").eq("producto_id", data.producto_id),
     ]);
     if (e2) throw new Error(e2.message);
     const variables = (vars ?? [])
@@ -169,5 +169,5 @@ export const previewSpecProducto = createServerFn({ method: "GET" })
         };
       })
       .sort((a, b) => a.orden - b.orden);
-    return { variables, skus: (skus ?? []).map((s) => s.sku_sap as string) };
+    return { variables, skus: (skus ?? []).map((s) => s.clave_sku_sap as string) };
   });
