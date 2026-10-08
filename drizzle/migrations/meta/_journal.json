@@ -120,6 +120,13 @@
       "when": 1791434656515,
       "tag": "0016_module_permissions_solo_propios",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1791434852753,
+      "tag": "0017_lectura_solo_usuarios_con_rol",
+      "breakpoints": true
     }
   ]
 }
