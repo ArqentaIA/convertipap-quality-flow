@@ -437,7 +437,7 @@ function RevisionPage() {
                           </div>
                           <div className="mt-0.5 flex items-center justify-between text-xs text-muted-foreground">
                             <span>Rollo #{m.numero_rollo ?? "—"} · T{m.turno}</span>
-                            <span>{new Date(m.capturado_at).toLocaleString()}</span>
+                            <span>{new Date(m.capturado_at).toLocaleString("es-MX", { timeZone: "America/Mexico_City" })}</span>
                           </div>
                           {fuera > 0 && (
                             <div className="mt-1 flex items-center gap-1 text-xs text-amber-600">
@@ -480,7 +480,7 @@ function RevisionPage() {
                   <AlertTitle className="text-sm">Especificación congelada</AlertTitle>
                   <AlertDescription className="text-xs">
                     Versión <Badge variant="secondary" className="ml-1">{selected.especificacion_version}</Badge>{" "}
-                    capturada el {new Date(selected.capturado_at).toLocaleString()}. Las mediciones se evalúan contra esta
+                    capturada el {new Date(selected.capturado_at).toLocaleString("es-MX", { timeZone: "America/Mexico_City" })}. Las mediciones se evalúan contra esta
                     versión, no contra la spec vigente actual.
                   </AlertDescription>
                 </Alert>
@@ -570,17 +570,17 @@ function RevisionPage() {
                 <div className="grid grid-cols-1 gap-3 border-t pt-3 text-xs md:grid-cols-2">
                   <TrazaItem icon={<User className="h-3.5 w-3.5" />} label="Capturado por">
                     {selected.capturado_por}
-                    <span className="text-muted-foreground"> · {new Date(selected.capturado_at).toLocaleString()}</span>
+                    <span className="text-muted-foreground"> · {new Date(selected.capturado_at).toLocaleString("es-MX", { timeZone: "America/Mexico_City" })}</span>
                   </TrazaItem>
                   <TrazaItem icon={<Clock className="h-3.5 w-3.5" />} label="Hora de muestreo">
-                    {new Date(selected.hora_muestreo).toLocaleString()}
+                    {new Date(selected.hora_muestreo).toLocaleString("es-MX", { timeZone: "America/Mexico_City" })}
                   </TrazaItem>
                   <TrazaItem icon={<ClipboardCheck className="h-3.5 w-3.5" />} label="Revisado por">
                     {selected.revisado_por ? (
                       <>
                         {selected.revisado_por}
                         <span className="text-muted-foreground">
-                          {" "}· {selected.revisado_at && new Date(selected.revisado_at).toLocaleString()}
+                          {" "}· {selected.revisado_at && new Date(selected.revisado_at).toLocaleString("es-MX", { timeZone: "America/Mexico_City" })}
                         </span>
                       </>
                     ) : (

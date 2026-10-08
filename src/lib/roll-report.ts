@@ -126,7 +126,7 @@ export async function printRollReport(data: RollReportData) {
   ${data.notas ? `<div class="notas"><strong>Notas:</strong> ${data.notas}</div>` : ""}
 
   <footer>
-    <span>Documento generado: ${new Date().toLocaleString()}</span>
+    <span>Documento generado: ${new Date().toLocaleString("es-MX", { timeZone: "America/Mexico_City" })}</span>
     <span>QR ligado a folio interno · uso para auditoría y trazabilidad</span>
   </footer>
 </div>

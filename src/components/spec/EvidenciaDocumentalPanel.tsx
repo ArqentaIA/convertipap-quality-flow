@@ -333,7 +333,7 @@ export function EvidenciaDocumentalPanel({
                     {(d as { subido_por_nombre?: string | null }).subido_por_nombre ?? "—"}
                   </td>
                   <td className="px-4 py-2 text-xs">
-                    {new Date(d.subido_at).toLocaleString("es-MX")}
+                    {new Date(d.subido_at).toLocaleString("es-MX", { timeZone: "America/Mexico_City" })}
                   </td>
                   <td className="px-4 py-2 text-right text-xs">
                     <div className="inline-flex gap-1.5">
@@ -372,7 +372,7 @@ export function EvidenciaDocumentalPanel({
                 <span>
                   {d.nombre_archivo} · {formatBytes(Number(d.tamano_bytes))} ·{" "}
                   {d.archivado_at
-                    ? new Date(d.archivado_at).toLocaleString("es-MX")
+                    ? new Date(d.archivado_at).toLocaleString("es-MX", { timeZone: "America/Mexico_City" })
                     : ""}
                   {d.motivo_archivado ? ` — ${d.motivo_archivado}` : ""}
                 </span>

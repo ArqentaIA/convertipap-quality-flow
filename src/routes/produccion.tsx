@@ -88,7 +88,7 @@ function ProduccionPage() {
     maquinas.find((m) => m.planta && m.planta !== "—")?.planta ?? "Todas las plantas";
 
   // hora removida: solo se muestra el indicador de auto-refresh
-  const fecha = new Date().toLocaleDateString("es-MX", {
+  const fecha = new Date().toLocaleDateString("es-MX", { timeZone: "America/Mexico_City", 
     weekday: "long",
     day: "2-digit",
     month: "long",
@@ -410,7 +410,7 @@ function MaquinaCard({
               <strong className="text-destructive">Paro activo:</strong> {m.paroActivo.tipo}
               {m.paroActivo.descripcion && <div className="text-muted-foreground">{m.paroActivo.descripcion}</div>}
               <div className="mt-1 text-[10px] text-muted-foreground">
-                Desde {new Date(m.paroActivo.inicio).toLocaleString("es-MX")}
+                Desde {new Date(m.paroActivo.inicio).toLocaleString("es-MX", { timeZone: "America/Mexico_City" })}
               </div>
             </div>
           </div>

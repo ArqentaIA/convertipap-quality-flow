@@ -5,6 +5,7 @@
 // =====================================================================
 import ExcelJS from "exceljs";
 import logoUrl from "@/assets/logo-convertipap.png";
+import { fechaCortoMX, horaMX } from "./format";
 import {
   MAQUINAS_CONSOLIDADO,
   VARIABLES_PROMEDIO,
@@ -53,21 +54,12 @@ const COLS: ColDef[] = [
 const TOTAL_COLS = COLS.length;
 const IDX_OBS = COLS.findIndex((c) => c.key === "observaciones");
 
+// Conversión única UTC → America/Mexico_City (sin restas manuales).
 function fmtFecha(iso: string): string {
-  // Convertir a TZ México (UTC-6)
-  const d = new Date(iso);
-  const local = new Date(d.getTime() - 6 * 60 * 60 * 1000);
-  const dd = String(local.getUTCDate()).padStart(2, "0");
-  const mm = String(local.getUTCMonth() + 1).padStart(2, "0");
-  const yyyy = local.getUTCFullYear();
-  return `${dd}/${mm}/${yyyy}`;
+  return fechaCortoMX(iso);
 }
 function fmtHora(iso: string): string {
-  const d = new Date(iso);
-  const local = new Date(d.getTime() - 6 * 60 * 60 * 1000);
-  const hh = String(local.getUTCHours()).padStart(2, "0");
-  const mi = String(local.getUTCMinutes()).padStart(2, "0");
-  return `${hh}:${mi}`;
+  return horaMX(iso);
 }
 
 function statusLabel(row: ConsolidadoRow): string {
