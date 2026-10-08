@@ -3,7 +3,7 @@
 // =============================================================================
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { fetchAllPaged } from "@/lib/paginate";
+import { readAllReportPages as fetchAllPaged, readReportIdChunks } from "@/lib/report-query-pages";
 import { esLiberadoOficial, esNoConformeOficial, esConcesionOficial } from "@/lib/qc-estado-oficial";
 
 export type CEOReportMaquina = {
@@ -67,13 +67,13 @@ export const getCEOReport = createServerFn({ method: "GET" })
     const startIso = start.toISOString();
     const endIso = end.toISOString();
 
-    const [maquinas, estados, muestras, mediciones, rollosProd, ordenes, paros] =
+    const [maquinas, estados, muestras, mediciones, rollosProd, paros] =
       await Promise.all([
         fetchAllPaged<any>((from, to) =>
-          sb.from("maquinas").select("id, codigo, plantas(nombre)").eq("activo", true).order("codigo").range(from, to),
+          sb.from("maquinas").select("id, codigo, plantas(nombre)").eq("activo", true).order("codigo").order("id").range(from, to),
         ),
         fetchAllPaged<any>((from, to) =>
-          sb.from("maquina_estado_actual").select("maquina_id, estado").range(from, to),
+          sb.from("maquina_estado_actual").select("maquina_id, estado").order("maquina_id").range(from, to),
         ),
         fetchAllPaged<any>((from, to) =>
           sb
@@ -84,6 +84,7 @@ export const getCEOReport = createServerFn({ method: "GET" })
             .gte("hora_muestreo", startIso)
             .lte("hora_muestreo", endIso)
             .order("hora_muestreo", { ascending: false })
+            .order("id")
             .range(from, to),
         ),
         fetchAllPaged<any>((from, to) =>
@@ -92,6 +93,7 @@ export const getCEOReport = createServerFn({ method: "GET" })
             .select("muestra_id, variable_clave, valor, estado")
             .gte("created_at", startIso)
             .lte("created_at", endIso)
+            .order("id")
             .range(from, to),
         ),
         fetchAllPaged<any>((from, to) =>
@@ -100,10 +102,8 @@ export const getCEOReport = createServerFn({ method: "GET" })
             .select("id, orden_id, peso_kg, registrado_at")
             .gte("registrado_at", startIso)
             .lte("registrado_at", endIso)
+            .order("id")
             .range(from, to),
-        ),
-        fetchAllPaged<any>((from, to) =>
-          sb.from("ordenes_fabricacion").select("id, maquina_id").range(from, to),
         ),
         fetchAllPaged<any>((from, to) =>
           sb
@@ -111,9 +111,13 @@ export const getCEOReport = createServerFn({ method: "GET" })
             .select("maquina_id, inicio, fin, duracion_min")
             .gte("inicio", startIso)
             .lte("inicio", endIso)
+            .order("id")
             .range(from, to),
         ),
       ]);
+    const ordenIds = rollosProd.map((r: any) => r.orden_id as string);
+    const ordenes = await readReportIdChunks(ordenIds, (ids, from, to) =>
+      sb.from("ordenes_fabricacion").select("id, maquina_id").in("id", ids).order("id").range(from, to));
 
     const codigoById = new Map((maquinas ?? []).map((m: any) => [m.id, m.codigo]));
     const plantaById = new Map(

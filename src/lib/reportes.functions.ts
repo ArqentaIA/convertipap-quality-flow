@@ -62,9 +62,9 @@ export const getReportes = createServerFn({ method: "POST" })
     const maquinaIds = scope.maquinaIds;
 
     // --------- Catálogos (recortados a la planta activa) ---------
-    const [{ data: plantas }, { data: maquinas }] = await Promise.all([
-      sb.from("plantas").select("id, codigo, nombre").in("id", plantaIds),
-      sb.from("maquinas").select("id, codigo, nombre, planta_id").in("planta_id", plantaIds),
+    const [plantas, maquinas] = await Promise.all([
+      readReportIdChunks(plantaIds, (ids, from, to) => sb.from("plantas").select("id, codigo, nombre").in("id", ids).order("id").range(from, to)),
+      readReportIdChunks(plantaIds, (ids, from, to) => sb.from("maquinas").select("id, codigo, nombre, planta_id").in("planta_id", ids).order("id").range(from, to)),
     ]);
     const plantaById = new Map((plantas ?? []).map((p) => [p.id, p]));
     const maquinaById = new Map((maquinas ?? []).map((m) => [m.id, m]));

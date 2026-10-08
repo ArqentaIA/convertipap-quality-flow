@@ -10,6 +10,14 @@ import { getReporteMensual, type ReporteMensualPayload } from "@/lib/reporte-men
 import { exportReporteMensualXLSX } from "@/lib/reporte-mensual-export";
 
 export const Route = createFileRoute("/reporte-mensual")({
+  head: () => ({ meta: [
+    { title: "Reporte mensual y anual | Convertipap" },
+    { name: "description", content: "Producción y calidad mensual o anual por planta en Convertipap." },
+    { property: "og:title", content: "Reporte mensual y anual | Convertipap" },
+    { property: "og:description", content: "Producción y calidad mensual o anual por planta en Convertipap." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: Gate,
   ssr: false,
   errorComponent: ({ error }) => (
@@ -65,7 +73,7 @@ function ReporteMensualPage() {
   const usuario = auth.profile?.nombre ?? auth.user?.email ?? "—";
 
   const handleExport = async () => {
-    if (!data) return;
+    if (!data || query.isError || query.isFetching) return;
     setBusy("xlsx");
     try {
       await exportReporteMensualXLSX(data, { usuario });
@@ -122,7 +130,7 @@ function ReporteMensualPage() {
               </div>
               <button
                 onClick={handleExport}
-                disabled={!data || busy !== null}
+                disabled={!data || busy !== null || query.isError || query.isFetching}
                 className="inline-flex items-center gap-2 rounded-md border border-emerald-300/40 bg-emerald-400/20 px-3 py-2 text-xs font-semibold text-emerald-100 hover:bg-emerald-400/30 disabled:opacity-50"
               >
                 <FileSpreadsheet className="h-3.5 w-3.5" /> {busy === "xlsx" ? "Generando…" : "XLSX"}

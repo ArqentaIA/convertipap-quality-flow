@@ -210,17 +210,11 @@ export const getReporteNoConforme = createServerFn({ method: "POST" })
         .order("id").range(from, to));
     }
 
-    const [medsRaw, { data: prods }, { data: maqs }, { data: profs }] = await Promise.all([
+    const [medsRaw, prods, maqs, profs] = await Promise.all([
       fetchMedicionesPaged(muestraIds),
-      productoIds.length
-        ? sb.from("productos").select("id, codigo").in("id", productoIds)
-        : Promise.resolve({ data: [] as { id: string; codigo: string }[] }),
-      maquinaIds.length
-        ? sb.from("maquinas").select("id, codigo").in("id", maquinaIds)
-        : Promise.resolve({ data: [] as { id: string; codigo: string }[] }),
-      userIds.length
-        ? sb.from("profiles").select("id, nombre, email").in("id", userIds)
-        : Promise.resolve({ data: [] as { id: string; nombre: string | null; email: string | null }[] }),
+      readReportIdChunks(productoIds, (ids, from, to) => sb.from("productos").select("id, codigo").in("id", ids).order("id").range(from, to)),
+      readReportIdChunks(maquinaIds, (ids, from, to) => sb.from("maquinas").select("id, codigo").in("id", ids).order("id").range(from, to)),
+      readReportIdChunks(userIds, (ids, from, to) => sb.from("profiles").select("id, nombre, email").in("id", ids).order("id").range(from, to)),
     ]);
 
     const prodById = new Map((prods ?? []).map((p) => [p.id, p.codigo]));
