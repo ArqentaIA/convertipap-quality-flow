@@ -99,7 +99,7 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
     plantas[0] ??
     null;
   const now = new Date();
-  const dateStr = now.toLocaleDateString("es-MX", { timeZone: "America/Mexico_City",  weekday: "long", day: "2-digit", month: "long", year: "numeric" });
+  const dateStr = now.toLocaleDateString("es-MX", { timeZone: "America/Mexico_City", weekday: "long", day: "2-digit", month: "long", year: "numeric" });
 
   // Compartir la planta activa con el resto de pantallas (reglas por planta).
   useEffect(() => {

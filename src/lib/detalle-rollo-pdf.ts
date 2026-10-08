@@ -67,8 +67,8 @@ function estadoBadge(estado: string, valorNull: boolean): string {
 function buildHtml(d: DetalleRolloPdfData, logoDataUrl: string): string {
   const r = d.rollo;
   const fmt = (n: number | null) => (n == null || !Number.isFinite(n) ? "—" : String(n));
-  const fecha = new Date(r.capturadoAt).toLocaleString("es-MX", { timeZone: "America/Mexico_City",  timeZone: "America/Mexico_City" });
-  const fechaImpresion = new Date().toLocaleString("es-MX", { timeZone: "America/Mexico_City",  timeZone: "America/Mexico_City" });
+  const fecha = new Date(r.capturadoAt).toLocaleString("es-MX", { timeZone: "America/Mexico_City" });
+  const fechaImpresion = new Date().toLocaleString("es-MX", { timeZone: "America/Mexico_City" });
 
   const tieneAviso =
     r.ncCount > 0 &&

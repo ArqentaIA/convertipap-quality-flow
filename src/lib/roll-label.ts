@@ -50,7 +50,7 @@ export async function printRollLabel(data: RollLabelData) {
   });
   const notas = parseNotas(m.notas || "");
   const has = (k: string) => notas.some((n) => n.includes(k));
-  const fechaImpresion = new Date().toLocaleDateString("es-MX", { timeZone: "America/Mexico_City",  timeZone: "America/Mexico_City" });
+  const fechaImpresion = new Date().toLocaleDateString("es-MX", { timeZone: "America/Mexico_City" });
 
   const traceUrl = buildTraceUrl(folio);
   const [qrDataUrl, logoDataUrl] = await Promise.all([

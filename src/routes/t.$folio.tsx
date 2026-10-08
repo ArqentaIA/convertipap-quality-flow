@@ -46,9 +46,9 @@ function buildContext(folio: string): TraceContext {
     operador: "Operador asignado",
     jefeMaquina: "Jefe de máquina asignado",
     fecha: now.toISOString().slice(0, 10),
-    hora: now.toLocaleTimeString([], { timeZone: "America/Mexico_City",  hour: "2-digit", minute: "2-digit" }),
+    hora: now.toLocaleTimeString([], { timeZone: "America/Mexico_City", hour: "2-digit", minute: "2-digit" }),
     producto: "Papel tissue · registro de rollo",
-    emitido: now.toLocaleString("es-MX", { timeZone: "America/Mexico_City",  timeZone: "America/Mexico_City" }),
+    emitido: now.toLocaleString("es-MX", { timeZone: "America/Mexico_City" }),
     validadoPor: "Control de Calidad Convertipap",
     simulado: true,
     metricas: [

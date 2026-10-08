@@ -49,8 +49,8 @@ export type VariablesPrintData = {
 };
 
 function buildHtml(data: VariablesPrintData, logoDataUrl: string): string {
-  const fechaImpresion = new Date().toLocaleString("es-MX", { timeZone: "America/Mexico_City",  timeZone: "America/Mexico_City" });
-  const fechaDoc = esc(data.fechaActualizacion ?? new Date().toLocaleDateString("es-MX", { timeZone: "America/Mexico_City",  timeZone: "America/Mexico_City" }));
+  const fechaImpresion = new Date().toLocaleString("es-MX", { timeZone: "America/Mexico_City" });
+  const fechaDoc = esc(data.fechaActualizacion ?? new Date().toLocaleDateString("es-MX", { timeZone: "America/Mexico_City" }));
   const vars = data.variables;
 
   const varRows = vars.map((v) => `

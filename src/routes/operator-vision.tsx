@@ -835,7 +835,7 @@ function OperatorVisionPage() {
   const fechaStr = now
     .toLocaleDateString("es-MX", { weekday: "long", day: "2-digit", month: "long" })
     .toUpperCase();
-  const horaStr = now.toLocaleTimeString("es-MX", { timeZone: "America/Mexico_City",  hour12: false });
+  const horaStr = now.toLocaleTimeString("es-MX", { timeZone: "America/Mexico_City", hour12: false });
 
   function goFullscreen() {
     const el = document.documentElement;

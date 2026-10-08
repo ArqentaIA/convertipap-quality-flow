@@ -412,7 +412,7 @@ function CEOReportPreview({ onClose }: { onClose: () => void }) {
   const fecha = now.toLocaleDateString("es-MX", { timeZone: "America/Mexico_City", 
     weekday: "long", year: "numeric", month: "long", day: "numeric",
   });
-  const hora = now.toLocaleTimeString("es-MX", { timeZone: "America/Mexico_City",  hour: "2-digit", minute: "2-digit", hour12: true });
+  const hora = now.toLocaleTimeString("es-MX", { timeZone: "America/Mexico_City", hour: "2-digit", minute: "2-digit", hour12: true });
 
   if (reportQuery.error) {
     return (
@@ -438,7 +438,7 @@ function CEOReportPreview({ onClose }: { onClose: () => void }) {
       : s === "Retenido" ? "bg-amber-100 text-amber-700"
       : "bg-gray-100 text-gray-600";
   const fmtFecha = (iso: string) =>
-    new Date(iso).toLocaleString("es-MX", { timeZone: "America/Mexico_City",  day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false });
+    new Date(iso).toLocaleString("es-MX", { timeZone: "America/Mexico_City", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false });
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
@@ -690,7 +690,7 @@ function BackendInfoCard() {
             </span>
           </div>
           <div className="col-span-2 text-[10px] text-muted-foreground">
-            Última verificación: {new Date(data.lastCheck).toLocaleString("es-MX", { timeZone: "America/Mexico_City",  timeZone: "America/Mexico_City" })}
+            Última verificación: {new Date(data.lastCheck).toLocaleString("es-MX", { timeZone: "America/Mexico_City" })}
           </div>
         </div>
       )}

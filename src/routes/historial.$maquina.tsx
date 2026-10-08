@@ -161,7 +161,7 @@ function HistorialPage() {
         captura: formatCaptura(r.secuenciaCaptura),
         rollo: r.rollo,
         orden: r.folioOrden,
-        fecha: new Date(r.capturadoAt).toLocaleString("es-MX", { timeZone: "America/Mexico_City",  timeZone: "America/Mexico_City" }),
+        fecha: new Date(r.capturadoAt).toLocaleString("es-MX", { timeZone: "America/Mexico_City" }),
         turno: r.turno,
         producto: r.producto,
         skuSap: r.skuSap ?? "—",
@@ -294,7 +294,7 @@ function HistorialPage() {
                       <td className="px-4 py-3 font-semibold text-primary">{r.rollo}</td>
                       <td className="px-4 py-3 text-xs text-muted-foreground">{r.folioOrden}</td>
                       <td className="px-4 py-3 tabular-nums text-xs">
-                        {new Date(r.capturadoAt).toLocaleString("es-MX", { timeZone: "America/Mexico_City",  timeZone: "America/Mexico_City" })}
+                        {new Date(r.capturadoAt).toLocaleString("es-MX", { timeZone: "America/Mexico_City" })}
                       </td>
                       <td className="px-4 py-3">{r.turno}</td>
                       <td className="px-4 py-3">{r.producto}</td>

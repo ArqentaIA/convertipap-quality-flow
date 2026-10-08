@@ -264,7 +264,7 @@ export function DetalleCalidadModal({
                     <>
                       Edición autorizada hasta{" "}
                       <strong>
-                        {permiso.expira_at ? new Date(permiso.expira_at).toLocaleString("es-MX", { timeZone: "America/Mexico_City",  timeZone: "America/Mexico_City" }) : "—"}
+                        {permiso.expira_at ? new Date(permiso.expira_at).toLocaleString("es-MX", { timeZone: "America/Mexico_City" }) : "—"}
                       </strong>{" "}
                       (12 h desde la captura). Todo cambio requiere motivo y queda registrado.
                     </>
@@ -286,7 +286,7 @@ export function DetalleCalidadModal({
                     <Field label="SKU SAP" value={r.skuSap || "—"} />
                   )}
                   <Field label="Máquina / Planta" value={`${r.maquina} · ${r.planta}`} />
-                  <Field label="Capturado" value={new Date(r.capturadoAt).toLocaleString("es-MX", { timeZone: "America/Mexico_City",  timeZone: "America/Mexico_City" })} />
+                  <Field label="Capturado" value={new Date(r.capturadoAt).toLocaleString("es-MX", { timeZone: "America/Mexico_City" })} />
                   <Field label="Turno" value={r.turno} />
                   {editando ? (
                     <>
@@ -471,7 +471,7 @@ export function DetalleCalidadModal({
                             {b.valorAnterior} → <strong className="text-foreground">{b.valorNuevo}</strong>
                           </span>
                           <span className="ml-auto text-[10px] text-muted-foreground">
-                            {new Date(b.fecha).toLocaleString("es-MX", { timeZone: "America/Mexico_City",  timeZone: "America/Mexico_City" })} · {b.usuario}
+                            {new Date(b.fecha).toLocaleString("es-MX", { timeZone: "America/Mexico_City" })} · {b.usuario}
                           </span>
                         </div>
                         <div className="text-[11px] text-muted-foreground">Motivo: {b.motivo}</div>
