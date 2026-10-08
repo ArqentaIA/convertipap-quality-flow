@@ -201,12 +201,7 @@ function ConfigContent({ settings }: { settings: AppSettings }) {
               <div className="mt-3 space-y-3">
                 <div className="grid grid-cols-[140px_1fr] items-center gap-3">
                   <label className="text-xs text-muted-foreground">Hora de envío</label>
-                  <input
-                    type="time"
-                    value={form.ceo_report_hora}
-                    onChange={(e) => set("ceo_report_hora", e.target.value)}
-                    className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                  />
+                  <Hora24Input value={form.ceo_report_hora} onChange={(v) => set("ceo_report_hora", v)} />
                 </div>
                 <div className="grid grid-cols-[140px_1fr] items-start gap-3">
                   <label className="pt-1.5 text-xs text-muted-foreground">Destinatarios</label>
