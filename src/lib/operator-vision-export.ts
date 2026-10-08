@@ -154,7 +154,7 @@ export async function exportarHistorialVisor(input: OperatorVisionExportInput): 
     ["Producto", data.orden?.producto ? `${data.orden.productoCodigo} — ${data.orden.producto}` : "—"],
     ["Orden de fabricación", data.orden?.folio || "—"],
     ["Estado de máquina", data.estadoMaquina?.estado ?? "—"],
-    ["Generado", `${fmtFecha(generado.toISOString())} ${generado.toLocaleTimeString("es-MX", { hour12: false })}`],
+    ["Generado", `${fmtFecha(generado.toISOString())} ${generado.toLocaleTimeString("es-MX", { hour12: false, timeZone: "America/Mexico_City" })}`],
   ];
   for (const [l, v] of generales) { labelValue(ws1, r, 1, l, v); r += 1; }
 
