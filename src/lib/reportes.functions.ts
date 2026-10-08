@@ -9,6 +9,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { readAllReportPages, readReportIdChunks } from "@/lib/report-query-pages";
 import { resolvePlantaScope } from "@/lib/planta-scope";
 import {
   esLiberadoOficial as _esLiberadoOficial,
@@ -72,19 +73,7 @@ export const getReportes = createServerFn({ method: "POST" })
     async function fetchAllPaged<T>(
       builder: () => any,
     ): Promise<T[]> {
-      const PAGE = 1000;
-      const out: T[] = [];
-      let from = 0;
-      // eslint-disable-next-line no-constant-condition
-      while (true) {
-        const { data, error } = await builder().range(from, from + PAGE - 1);
-        if (error) throw error;
-        const rows = (data ?? []) as T[];
-        out.push(...rows);
-        if (rows.length < PAGE) break;
-        from += PAGE;
-      }
-      return out;
+      return readAllReportPages<T>((from, to) => builder().order("id").range(from, to));
     }
 
     const muestras = plantaIds.length === 0 ? [] : await fetchAllPaged<{
@@ -156,19 +145,20 @@ export const getReportes = createServerFn({ method: "POST" })
         .lte("registrado_at", end),
     );
 
-    const { data: ordenes } = await sb
+    const ordenes = await readAllReportPages((from, to) => sb
       .from("ordenes_fabricacion")
       .select("id, planta_id, maquina_id")
-      .in("planta_id", plantaIds.length > 0 ? plantaIds : ["00000000-0000-0000-0000-000000000000"]);
+      .in("planta_id", plantaIds.length > 0 ? plantaIds : ["00000000-0000-0000-0000-000000000000"])
+      .order("id").range(from, to));
     const ordenById = new Map((ordenes ?? []).map((o) => [o.id, o]));
 
     // --------- Paros (para OEE) ---------
-    const { data: paros } = await sb
+    const paros = await readAllReportPages((from, to) => sb
       .from("paros_maquina")
       .select("id, maquina_id, inicio, fin, duracion_min")
       .in("maquina_id", maquinaIds.length > 0 ? maquinaIds : ["00000000-0000-0000-0000-000000000000"])
       .gte("inicio", start)
-      .lte("inicio", end);
+      .lte("inicio", end).order("id").range(from, to));
 
 
     // ====================================================
