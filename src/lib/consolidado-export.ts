@@ -23,9 +23,9 @@ const TURNO_LABEL: Record<string, string> = {
 const TURNOS = ["1", "2", "3"] as const;
 
 // Columnas: TURNO, FECHA, CÓDIGO, N.° ROLLO, OBSERVACIONES, ESTATUS, HORA,
-// PESO BASE, BLANCURA (R457), a*, b*, PESO BOBINA (Kg), ANCHO ÚTIL,
-// CALIBRE, DIÁMETRO, ELONG MD, HUMEDAD, REL MD/CD, TENSIÓN CD, TENSIÓN MD,
-// TENSIÓN RH, UNIONES
+// HORA DE REGISTRO, PESO BASE, BLANCURA (R457), a*, b*, PESO BOBINA (Kg),
+// ANCHO ÚTIL, CALIBRE, DIÁMETRO, ELONG MD, HUMEDAD, REL MD/CD, TENSIÓN CD,
+// TENSIÓN MD, TENSIÓN RH, UNIONES
 type ColDef = {
   key: string;
   header: string;
@@ -43,6 +43,7 @@ const COLS: ColDef[] = [
   { key: "observaciones", header: "OBSERVACIONES", width: 36 },
   { key: "estatus", header: "ESTATUS", width: 12 },
   { key: "hora", header: "HORA", width: 9 },
+  { key: "horaRegistro", header: "HORA DE REGISTRO", width: 12 },
   { key: "pesoBase", header: "PESO BASE", variable: "pesoBase", width: 11, numFmt: "0.00" },
   { key: "blancuraR457", header: "BLANCURA (R457)", variable: "blancuraR457", width: 14, numFmt: "0.00" },
   { key: "blancuraA", header: "a*", variable: "blancuraA", width: 8, numFmt: "0.00" },
@@ -249,6 +250,7 @@ export async function exportConsolidadoXLSX(payload: ConsolidadoPayload): Promis
         obsParts.join(" | "),
         statusLabel(row),
         fmtHora(row.hora_muestreo),
+        row.capturado_at ? fmtHora(row.capturado_at) : "—",
       ];
       // Variables numéricas (primera columna con variable en adelante)
       for (let i = values.length; i < COLS.length; i++) {
