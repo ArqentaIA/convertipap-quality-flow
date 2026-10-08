@@ -55,9 +55,9 @@ const HDR_FILL = "FF1E293B";
 const SUB_FILL = "FFE2E8F0";
 
 const fmtFecha = (iso?: string | null) =>
-  iso ? new Date(iso).toLocaleDateString("es-MX", { day: "2-digit", month: "2-digit", year: "numeric" }) : "";
+  iso ? new Date(iso).toLocaleDateString("es-MX", { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "America/Mexico_City" }) : "";
 const fmtHora = (iso?: string | null) =>
-  iso ? new Date(iso).toLocaleTimeString("es-MX", { hour12: false, hour: "2-digit", minute: "2-digit" }) : "";
+  iso ? new Date(iso).toLocaleTimeString("es-MX", { hour12: false, hour: "2-digit", minute: "2-digit", timeZone: "America/Mexico_City" }) : "";
 
 const estadoTecnico = (s: string) =>
   s === "ok" ? "EN SPEC" : s === "bad" ? "FUERA DE SPEC" : s === "warn" ? "CON JUSTIFICACIÓN" : "SIN DATO";
@@ -154,7 +154,7 @@ export async function exportarHistorialVisor(input: OperatorVisionExportInput): 
     ["Producto", data.orden?.producto ? `${data.orden.productoCodigo} — ${data.orden.producto}` : "—"],
     ["Orden de fabricación", data.orden?.folio || "—"],
     ["Estado de máquina", data.estadoMaquina?.estado ?? "—"],
-    ["Generado", `${fmtFecha(generado.toISOString())} ${generado.toLocaleTimeString("es-MX", { hour12: false })}`],
+    ["Generado", `${fmtFecha(generado.toISOString())} ${generado.toLocaleTimeString("es-MX", { hour12: false, timeZone: "America/Mexico_City" })}`],
   ];
   for (const [l, v] of generales) { labelValue(ws1, r, 1, l, v); r += 1; }
 
