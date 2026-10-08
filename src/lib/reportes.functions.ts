@@ -482,17 +482,17 @@ export const getReportes = createServerFn({ method: "POST" })
     );
     const aplicablesPorProducto = new Map<string, Set<string>>();
     if (productoIdsScope.length > 0) {
-      const { data: specs } = await sb
+      const specs = await readReportIdChunks(productoIdsScope, (ids, from, to) => sb
         .from("producto_especificaciones")
         .select("id, producto_id")
-        .in("producto_id", productoIdsScope);
+        .in("producto_id", ids).order("id").range(from, to));
       const specIds = (specs ?? []).map((s) => s.id as string);
       const specToProd = new Map<string, string>((specs ?? []).map((s) => [s.id as string, s.producto_id as string]));
       if (specIds.length > 0) {
-        const { data: pvars } = await sb
+        const pvars = await readReportIdChunks(specIds, (ids, from, to) => sb
           .from("producto_variables")
           .select("especificacion_id, variables_calidad(clave)")
-          .in("especificacion_id", specIds);
+          .in("especificacion_id", ids).order("id").range(from, to));
         for (const pv of (pvars ?? []) as any[]) {
           const prodId = specToProd.get(pv.especificacion_id);
           const clave = pv.variables_calidad?.clave;

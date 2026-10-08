@@ -4,6 +4,7 @@
 // poder reutilizarla desde reportes de correo. NO modifica datos.
 // =============================================================================
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { readAllReportPages } from "@/lib/report-query-pages";
 
 export async function fetchOperatorVisionData(maquinaCodigo: string, opts?: { referencia?: Date }) {
     const sb = supabaseAdmin;
@@ -139,6 +140,7 @@ export async function fetchOperatorVisionData(maquinaCodigo: string, opts?: { re
       (inicioTurnoVigente ?? nowUtc).getTime() - 8 * 3600 * 1000,
     );
 
+    const buildMuestras = () => {
     let muestrasQ = sb
       .from("muestras_calidad")
       .select(
@@ -152,10 +154,19 @@ export async function fetchOperatorVisionData(maquinaCodigo: string, opts?: { re
       .eq("maquina_id", maquina.id)
       .gte("capturado_at", ventanaDesde.toISOString())
       .lte("capturado_at", endNowHist.toISOString())
-      .order("capturado_at", { ascending: false })
-      .limit(50);
+      .order("capturado_at", { ascending: false }).order("id");
     if (turnoVigente) muestrasQ = muestrasQ.eq("turno", turnoVigente);
-    const { data: muestrasRaw } = await muestrasQ;
+    return muestrasQ;
+    };
+    // Closing reports require all rows; retain the live visor's history size.
+    let muestrasRaw;
+    if (opts?.referencia) {
+      muestrasRaw = await readAllReportPages((from, to) => buildMuestras().range(from, to));
+    } else {
+      const response = await buildMuestras().limit(50);
+      if (response.error) throw new Error(response.error.message);
+      muestrasRaw = response.data;
+    }
 
     // Mantener orden descendente (más reciente primero) en el payload.
     // El frontend espera el arreglo en orden ascendente (oldest→newest):
@@ -311,6 +322,7 @@ export async function fetchOperatorVisionData(maquinaCodigo: string, opts?: { re
       texto: "0 variables conformes de 0 evaluadas (0%)",
     };
     {
+      const rows = await readAllReportPages((from, to) => {
       let cq = sb
         .from("muestras_calidad")
         .select("id, estatus_liberacion, mediciones_calidad(estado)")
@@ -319,7 +331,8 @@ export async function fetchOperatorVisionData(maquinaCodigo: string, opts?: { re
         .gte("capturado_at", startToday.toISOString())
         .lte("capturado_at", endNow.toISOString());
       if (turnoRef) cq = cq.eq("turno", turnoRef);
-      const { data: rows } = await cq;
+      return cq.order("id").range(from, to);
+      });
       const capturados = rows?.length ?? 0;
       const liberados = (rows ?? []).filter(
         (r: any) => r.estatus_liberacion === "L" || r.estatus_liberacion === "C",
