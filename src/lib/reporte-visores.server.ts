@@ -357,7 +357,7 @@ export async function construirReporteVisores(
   const plantas = [...new Set(resumen.map((r) => r.planta).filter(Boolean))].join(" · ") || "—";
   const turnos = [...new Set(resumen.map((r) => r.turno).filter(Boolean))].join(" · ") || "—";
   const fechaLarga = fechaOperativa.toLocaleDateString("es-MX", { timeZone: "America/Mexico_City", 
-    weekday: "long", day: "2-digit", month: "long", year: "numeric", timeZone: "America/Mexico_City",
+    weekday: "long", day: "2-digit", month: "long", year: "numeric",
   });
 
   const kpi = (etiqueta: string, valor: string) =>
