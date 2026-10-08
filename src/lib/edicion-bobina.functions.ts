@@ -96,18 +96,98 @@ export const buscarBobinasEditables = createServerFn({ method: "POST" })
     // se ignora el filtro y se devuelve vacío (no se confía en el cliente).
     if (data.maquina && !maquinas.includes(data.maquina)) return [];
 
-    const { data: rows, error } = await sb
-      .from("muestras_calidad")
-      .select(
-        `id, numero_rollo, capturado_at, hora_muestreo, turno,
-         dictamen, estatus_liberacion,
-         maquinas(codigo, plantas(nombre, codigo)),
-         ordenes_fabricacion(folio),
-         productos!muestras_calidad_producto_id_fkey(nombre)`,
-      )
-      .order("capturado_at", { ascending: false })
-      .limit(200);
-    if (error) throw new Error(error.message);
+    // Los filtros se aplican EN BASE DE DATOS (no en JS sobre un lote fijo
+    // de filas recientes) para que la búsqueda encuentre bobinas de
+    // cualquier fecha, folio antiguo o máquinas con poca actividad.
+    // Día operativo: 07:00 en México = 13:00 UTC (México es UTC-6 todo el año).
+    const inicioDiaUtc = data.fecha
+      ? new Date(`${data.fecha}T13:00:00Z`).toISOString()
+      : null;
+    const finDiaUtc = inicioDiaUtc
+      ? new Date(
+          new Date(inicioDiaUtc).getTime() + 24 * 3600 * 1000,
+        ).toISOString()
+      : null;
+    const folioLimpio = data.folio?.replace(/[,()"]/g, "");
+    if (data.folio && !folioLimpio) return [];
+
+    // Paginación en orden estable (capturado_at + id) hasta agotar resultados.
+    // Nota: PostgREST no admite filtros embebidos (ordenes_fabricacion.folio)
+    // dentro de .or(); por eso la búsqueda por folio se divide en dos
+    // consultas (número de rollo y folio de orden) y se unen los resultados.
+    const PAGE = 1000;
+    const MAX_FILAS = 5000;
+    const porId = new Map<string, Record<string, unknown>>();
+    const patronFolio = folioLimpio ? `*${folioLimpio}*` : null;
+    const runPaginado = async (
+      modoFolio: "rollo" | null,
+      ordenIds?: string[],
+    ) => {
+      for (let desde = 0; desde < MAX_FILAS; desde += PAGE) {
+        let q = sb
+          .from("muestras_calidad")
+          .select(
+            `id, numero_rollo, capturado_at, hora_muestreo, turno,
+           dictamen, estatus_liberacion,
+           maquinas(codigo, plantas(nombre, codigo)),
+           ordenes_fabricacion(folio),
+           productos!muestras_calidad_producto_id_fkey(nombre)`,
+          )
+          .in("maquinas.codigo", maquinas)
+          .order("capturado_at", { ascending: false })
+          .order("id", { ascending: false })
+          .range(desde, desde + PAGE - 1);
+        if (data.maquina) q = q.eq("maquinas.codigo", data.maquina);
+        if (data.planta) q = q.eq("maquinas.plantas.codigo", data.planta);
+        if (patronFolio && modoFolio === "rollo")
+          q = q.ilike("numero_rollo", patronFolio);
+        if (ordenIds) q = q.in("orden_id", ordenIds);
+        if (inicioDiaUtc && finDiaUtc)
+          q = q.gte("capturado_at", inicioDiaUtc).lt("capturado_at", finDiaUtc);
+        const { data: page, error } = await q;
+        if (error) throw new Error(error.message);
+        for (const row of (page ?? []) as Record<string, unknown>[]) {
+          porId.set(row.id as string, row);
+        }
+        if ((page ?? []).length < PAGE) break;
+      }
+    };
+    if (patronFolio) {
+      await runPaginado("rollo");
+      // El filtro embebido ordenes_fabricacion.folio=ilike.* es ignorado por
+      // PostgREST (devuelve todas las filas), así que se resuelven primero los
+      // IDs de órdenes cuyo folio coincide y se filtra por orden_id.
+      const ordenIds: string[] = [];
+      for (let desde = 0; desde < MAX_FILAS && ordenIds.length < MAX_FILAS; desde += PAGE) {
+        const { data: ordenes, error } = await sb
+          .from("ordenes_fabricacion")
+          .select("id")
+          .ilike("folio", patronFolio)
+          .range(desde, desde + PAGE - 1);
+        if (error) throw new Error(error.message);
+        for (const o of (ordenes ?? []) as { id: string }[]) ordenIds.push(o.id);
+        if ((ordenes ?? []).length < PAGE) break;
+      }
+      if (ordenIds.length > 0) {
+        for (let i = 0; i < ordenIds.length; i += 500) {
+          const bloque = ordenIds.slice(i, i + 500);
+          await runPaginado(null, bloque);
+        }
+      }
+    } else {
+      await runPaginado(null);
+    }
+    const rows = Array.from(porId.values()).sort((a, b) => {
+      const fa = String(a.capturado_at ?? "");
+      const fb = String(b.capturado_at ?? "");
+      if (fa !== fb) return fb.localeCompare(fa);
+      return String(b.id ?? "").localeCompare(String(a.id ?? ""));
+    });
+    if (rows.length >= MAX_FILAS) {
+      throw new Error(
+        "La búsqueda superó el máximo de registros permitido; afina los filtros (máquina, folio o fecha).",
+      );
+    }
 
     const ahora = Date.now();
     const lista = (rows ?? [])
