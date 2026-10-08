@@ -3542,6 +3542,14 @@ export type Database = {
         Args: { _maquina_id: string; _user_id: string }
         Returns: boolean
       }
+      user_sees_maquina: {
+        Args: { _maquina_id: string; _uid: string }
+        Returns: boolean
+      }
+      user_sees_planta: {
+        Args: { _planta_id: string; _uid: string }
+        Returns: boolean
+      }
       validate_maquina_access: {
         Args: { _codigo: string; _pin: string }
         Returns: boolean
