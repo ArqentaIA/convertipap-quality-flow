@@ -23,8 +23,7 @@ const _fmtFechaHoraMX = new Intl.DateTimeFormat("es-MX", {
   hour: "2-digit", minute: "2-digit", hour12: false,
 });
 const _fmtFechaHoraLargaMX = new Intl.DateTimeFormat("es-MX", {
-  timeZone: MX_TZ, dateStyle: "long", timeStyle: "short",
-});
+  timeZone: MX_TZ, dateStyle: "long", timeStyle: "short", hour12: false });
 
 function _toDate(iso: string | number | Date | null | undefined): Date | null {
   if (iso === null || iso === undefined || iso === "") return null;

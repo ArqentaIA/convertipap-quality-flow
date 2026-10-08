@@ -412,7 +412,7 @@ function CEOReportPreview({ onClose }: { onClose: () => void }) {
   const fecha = now.toLocaleDateString("es-MX", { timeZone: "America/Mexico_City", 
     weekday: "long", year: "numeric", month: "long", day: "numeric",
   });
-  const hora = now.toLocaleTimeString("es-MX", { timeZone: "America/Mexico_City", hour: "2-digit", minute: "2-digit", hour12: true });
+  const hora = now.toLocaleTimeString("es-MX", { timeZone: "America/Mexico_City", hour: "2-digit", minute: "2-digit", hour12: false });
 
   if (reportQuery.error) {
     return (
