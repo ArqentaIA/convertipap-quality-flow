@@ -116,19 +116,42 @@ export const listEdicionesRollo = createServerFn({ method: "GET" })
     }));
   });
 
-/** Productos activos con especificación vigente (para cambio de producto). */
+/** Productos activos con especificación vigente disponibles para la máquina indicada
+ *  (especificación ligada a esa máquina o genérica sin ligas de máquina). */
 export const listProductosCambio = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    const { data: specs, error } = await context.supabase
+  .inputValidator((input) =>
+    z.object({ maquina_id: z.string().uuid().nullable() }).parse(input ?? {}),
+  )
+  .handler(async ({ data, context }) => {
+    const sb = context.supabase;
+    const { data: specs, error } = await sb
       .from("producto_especificaciones")
-      .select("producto_id, productos!inner(id, codigo, nombre, activo)")
+      .select("id, producto_id, productos!inner(id, codigo, nombre, activo)")
       .eq("estado", "vigente");
     if (error) throw new Error(error.message);
+    const specIds = (specs ?? []).map((s) => s.id as string);
+    const ligasPorSpec = new Map<string, Set<string>>();
+    if (specIds.length > 0) {
+      const { data: ligas, error: eL } = await sb
+        .from("producto_especificacion_maquinas")
+        .select("especificacion_id, maquina_id")
+        .in("especificacion_id", specIds);
+      if (eL) throw new Error(eL.message);
+      for (const l of ligas ?? []) {
+        const set = ligasPorSpec.get(l.especificacion_id as string) ?? new Set<string>();
+        set.add(l.maquina_id as string);
+        ligasPorSpec.set(l.especificacion_id as string, set);
+      }
+    }
     const map = new Map<string, { id: string; codigo: string; nombre: string }>();
     for (const s of specs ?? []) {
       const p = (s as unknown as { productos: { id: string; codigo: string; nombre: string; activo: boolean } }).productos;
-      if (p?.activo && !map.has(p.id)) map.set(p.id, { id: p.id, codigo: p.codigo, nombre: p.nombre });
+      if (!p?.activo || map.has(p.id)) continue;
+      const ligas = ligasPorSpec.get(s.id as string);
+      // Sin ligas = especificación genérica, disponible en cualquier máquina.
+      if (data.maquina_id && ligas && ligas.size > 0 && !ligas.has(data.maquina_id)) continue;
+      map.set(p.id, { id: p.id, codigo: p.codigo, nombre: p.nombre });
     }
     return [...map.values()].sort((a, b) => a.codigo.localeCompare(b.codigo));
   });

@@ -84,8 +84,8 @@ export function DetalleCalidadModal({
   const cambiaProducto = editando && !!r && !!productoSel && productoSel !== (r.productoId ?? "");
 
   const { data: productos = [] } = useQuery({
-    queryKey: ["productos-cambio"],
-    queryFn: () => productosFn(),
+    queryKey: ["productos-cambio", r?.maquinaId ?? null],
+    queryFn: () => productosFn({ data: { maquina_id: r?.maquinaId ?? null } }),
     enabled: editando,
     staleTime: 5 * 60_000,
   });
