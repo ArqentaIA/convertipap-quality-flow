@@ -159,7 +159,7 @@ export const getReporteProduccionMes = createServerFn({ method: "POST" })
     if (!lastPair) {
       return { year, month, dias, diasDetalle, ultimoTurnoCerrado, maquinas: [], totalGeneral: 0, generadoAt: now.toISOString() };
     }
-    const winEnd = lastPair.finTs;
+    const winEnd = new Date(lastPair.finTs.getTime() + 60 * 60 * 1000);
 
     // 1) Catálogos máquinas (todas para orden estable)
     const scopeProd = await resolvePlantaScope(sb, context.userId, data.planta);

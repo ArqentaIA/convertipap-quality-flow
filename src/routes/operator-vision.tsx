@@ -77,10 +77,9 @@ const MAQUINAS_VALIDAS = ["MP-01", "MP-04", "MP-05", "MP-06", "MP-07"] as const;
 type MaquinaValida = (typeof MAQUINAS_VALIDAS)[number];
 
 export const Route = createFileRoute("/operator-vision")({
-  head: () => ({
+  head: ({ search }) => ({
     meta: [
-      { title: "Visión Operador · Convertipap" },
-      { name: "description", content: "Pantalla industrial de monitoreo en tiempo real" },
+      { title: `Visión ${search.maquina} · Convertipap` },
     ],
   }),
   validateSearch: (
