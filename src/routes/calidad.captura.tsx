@@ -2994,9 +2994,40 @@ function EstadoMedicionBadge({ estado }: { estado: MedicionEstadoUI }) {
   );
 }
 
+// La hora de muestreo se maneja siempre en zona America/Mexico_City,
+// independientemente de la zona horaria de la computadora del capturista.
+const MX_TZ = "America/Mexico_City";
+
+function mxParts(d: Date): { y: number; m: number; dd: number; hh: number; mm: number } {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: MX_TZ,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(d);
+  const get = (t: string) => Number(parts.find((p) => p.type === t)?.value);
+  return { y: get("year"), m: get("month"), dd: get("day"), hh: get("hour") % 24, mm: get("minute") };
+}
+
 function toLocalDateTimeInputValue(d: Date): string {
   const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  const p = mxParts(d);
+  return `${p.y}-${pad(p.m)}-${pad(p.dd)}T${pad(p.hh)}:${pad(p.mm)}`;
+}
+
+// Interpreta "YYYY-MM-DDTHH:mm" como hora de Mexico City y devuelve el instante UTC.
+function fromMexicoDateTimeInputValue(s: string): Date {
+  const [datePart, timePart = "00:00"] = s.split("T");
+  const [y, m, dd] = datePart.split("-").map(Number);
+  const [hh, mm] = timePart.split(":").map(Number);
+  const guess = new Date(Date.UTC(y, m - 1, dd, hh, mm));
+  const p = mxParts(guess);
+  const wallAsUtc = Date.UTC(p.y, p.m - 1, p.dd, p.hh, p.mm);
+  const offsetMs = wallAsUtc - guess.getTime();
+  return new Date(guess.getTime() - offsetMs);
 }
 
 type MuestraReciente = Awaited<ReturnType<typeof listMisMuestrasRecientes>>[number];
