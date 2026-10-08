@@ -118,9 +118,8 @@ export const buscarBobinasEditables = createServerFn({ method: "POST" })
     const PAGE = 1000;
     const MAX_FILAS = 5000;
     const porId = new Map<string, Record<string, unknown>>();
-    const runPaginado = async (
-      aplicarFolio: (q: ReturnType<typeof sb.from>) => ReturnType<typeof sb.from>,
-    ) => {
+    const patronFolio = folioLimpio ? `*${folioLimpio}*` : null;
+    const runPaginado = async (modoFolio: "rollo" | "orden" | null) => {
       for (let desde = 0; desde < MAX_FILAS; desde += PAGE) {
         let q = sb
           .from("muestras_calidad")
