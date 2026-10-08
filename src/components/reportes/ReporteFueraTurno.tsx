@@ -1,51 +1,43 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { FileSpreadsheet, Search } from "lucide-react";
+import { FileSpreadsheet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePlantaEfectivaCodigo } from "@/hooks/usePlantasPermitidas";
 import { useLabFilter } from "@/lib/lab";
 import { getReporteFueraTurno } from "@/lib/reporte-fuera-turno.functions";
 import { exportReporteFueraTurno } from "@/lib/reporte-fuera-turno-export";
-import { fechaMX, fechaCortoMX, horaMX } from "@/lib/format";
+import { fechaMX } from "@/lib/format";
 
 export function ReporteFueraTurnoSection({ enabled }: { enabled: boolean }) {
   const planta = usePlantaEfectivaCodigo();
   const lab = useLabFilter();
   const [mode, setMode] = useState<"dia" | "mes">("dia");
   const [fecha, setFecha] = useState(() => fechaMX(new Date()));
-  const [consulta, setConsulta] = useState<{ mode: "dia" | "mes"; fecha: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const query = useQuery({
-    queryKey: ["reporte-fuera-turno", consulta, planta],
-    queryFn: () => {
-      if (!consulta) throw new Error("Selecciona un periodo");
-      return getReporteFueraTurno({ data: { ...consulta, planta } });
-    }, enabled: enabled && !!consulta, retry: false, staleTime: 0,
-  });
-  const data = query.data ? { ...query.data, rows: query.data.rows.filter((r) => lab.isMachineAllowed(r.maquina)) } : null;
   const download = async () => {
-    if (!data || query.isError || query.isFetching) return;
+    if (!enabled || !fecha || busy) return;
     setBusy(true); setError(null);
-    try { await exportReporteFueraTurno(data); }
+    try {
+      const data = await getReporteFueraTurno({ data: { mode, fecha, planta } });
+      await exportReporteFueraTurno({ ...data, rows: data.rows.filter((r) => lab.isMachineAllowed(r.maquina)) });
+    }
     catch (e) { setError(e instanceof Error ? e.message : "No se pudo descargar el reporte"); }
     finally { setBusy(false); }
   };
-  return <section aria-label="Capturas fuera de turno" className="space-y-4 border-y border-border py-6">
-    <div className="flex flex-wrap items-center justify-between gap-4">
-      <h2 className="text-sm font-bold">Capturas fuera de turno</h2>
-      <div className="flex flex-wrap items-center gap-2">
-        <label className="text-xs">Periodo <select aria-label="Periodo fuera de turno" className="rounded-md border border-input bg-background p-2" value={mode} onChange={(e) => setMode(e.target.value as "dia" | "mes")}><option value="dia">Día</option><option value="mes">Mes</option></select></label>
-        <input aria-label="Fecha fuera de turno" className="rounded-md border border-input bg-background p-2 text-xs" type={mode === "dia" ? "date" : "month"} value={mode === "dia" ? fecha : fecha.slice(0, 7)} onChange={(e) => setFecha(mode === "mes" ? `${e.target.value}-01` : e.target.value)} />
-        <Button variant="outline" size="sm" disabled={!enabled || !fecha || query.isFetching} onClick={() => { setError(null); if (consulta?.mode === mode && consulta.fecha === fecha) void query.refetch(); else setConsulta({ mode, fecha }); }}><Search className="h-4 w-4" />Consultar</Button>
-        <Button variant="outline" size="sm" disabled={!data || !data.rows.length || query.isError || query.isFetching || busy} onClick={download}><FileSpreadsheet className="h-4 w-4" />{busy ? "Generando…" : "XLSX"}</Button>
+  return <section aria-label="Capturas fuera de turno" aria-busy={busy} className="space-y-4 border-y border-border bg-accent/20 p-6">
+    <div className="flex flex-wrap items-start gap-4">
+      <div className="flex flex-col gap-2">
+        <label className="text-[10px] font-semibold uppercase text-primary">Periodo / Fecha</label>
+        <div className="flex flex-wrap items-center gap-2">
+          <select aria-label="Periodo fuera de turno" className="rounded-md border border-input bg-background px-2 py-1.5 text-xs" disabled={busy} value={mode} onChange={(e) => { setError(null); setMode(e.target.value as "dia" | "mes"); }}><option value="dia">Día</option><option value="mes">Mes</option></select>
+          <input aria-label="Fecha fuera de turno" className="min-w-0 rounded-md border border-input bg-background px-2 py-1.5 text-xs" disabled={busy} type={mode === "dia" ? "date" : "month"} value={mode === "dia" ? fecha : fecha.slice(0, 7)} onChange={(e) => { setError(null); setFecha(mode === "mes" && e.target.value ? `${e.target.value}-01` : e.target.value); }} />
+        </div>
       </div>
+      <h2 className="text-sm font-bold uppercase text-foreground">Capturas fuera de turno</h2>
     </div>
-    {query.isFetching ? <p className="text-xs text-muted-foreground">Cargando reporte completo…</p> : query.isError ? <p role="alert" className="text-sm text-destructive">No se pudo cargar el reporte: {query.error.message}</p> : data ? <>
-      <p className="text-xs text-muted-foreground">{data.periodo} · {data.rows.length} registros · Fecha de captura · Hora de México</p>
-      <p className="text-xs text-muted-foreground">Del {fechaCortoMX(data.inicio)} {horaMX(data.inicio)} al {fechaCortoMX(data.finExclusivo)} {horaMX(data.finExclusivo)}</p>
-      {data.rows.length === 0 ? <p className="text-sm text-muted-foreground">Sin capturas fuera de turno en el periodo solicitado.</p> : <div className="max-h-96 overflow-auto"><table className="w-full text-left text-xs"><thead className="sticky top-0 bg-background"><tr>{["Rollo", "Fecha de captura", "Hora", "Máquina", "Turno declarado", "SKU SAP", "Capturado por", "Motivo"].map((h) => <th key={h} className="whitespace-nowrap border-b border-border p-2">{h}</th>)}</tr></thead><tbody>{data.rows.map((r) => <tr key={r.id}>{[r.rollo, fechaCortoMX(r.capturadoAt), horaMX(r.capturadoAt), r.maquina, r.turno, r.skuSap ?? "—", r.capturadoPor, r.motivo].map((v, i) => <td key={i} className="border-b border-border p-2 align-top">{v}</td>)}</tr>)}</tbody></table></div>}
-    </> : null}
-    {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+    <div className="flex flex-wrap items-center justify-end gap-3">
+      {error && <p role="alert" className="mr-auto text-sm text-destructive">No se pudo generar el reporte: {error}</p>}
+      <Button variant="outline" size="sm" title="Generar y descargar Excel de capturas fuera de turno" disabled={!enabled || !fecha || busy} onClick={download}><FileSpreadsheet className="h-3.5 w-3.5" />{busy ? "Generando…" : "XLSX"}</Button>
+    </div>
   </section>;
 }
