@@ -5,6 +5,7 @@ import {
   LayoutDashboard, Factory, ClipboardCheck, FileBarChart2,
   Settings, ChevronLeft, ChevronRight, Bell, ChevronDown, SlidersHorizontal,
   LogOut, Lock, Loader2, BookOpen, Users, Monitor, Tv, ClipboardList, Scale, Scissors,
+  Pencil,
 } from "lucide-react";
 
 import logo from "@/assets/logo.png";
@@ -34,6 +35,7 @@ const NAV: NavItem[] = [
   { to: "/pesaje/cintas", label: "CORTES BOBINA", icon: Scissors, module: "pesaje_cintas", pathPrefixes: ["/pesaje/cintas"] },
 
   { to: "/calidad/captura", label: "Control de Calidad", icon: ClipboardCheck, module: "control_calidad" },
+  { to: "/calidad/edicion-bobina", label: "Edición de Bobina Madre", icon: Pencil, module: "control_calidad" },
   { to: "/calidad/captura-fuera-turno", label: "Captura fuera de turno", icon: ClipboardCheck, module: "control_calidad" },
   { to: "/variables-calidad", label: "Variables de Calidad", icon: SlidersHorizontal, module: "variables_calidad" },
   // { to: "/catalogos", label: "Catálogos", icon: BookOpen, module: "configuracion" }, // Oculto temporalmente
