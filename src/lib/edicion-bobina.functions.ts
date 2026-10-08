@@ -119,7 +119,10 @@ export const buscarBobinasEditables = createServerFn({ method: "POST" })
     const MAX_FILAS = 5000;
     const porId = new Map<string, Record<string, unknown>>();
     const patronFolio = folioLimpio ? `*${folioLimpio}*` : null;
-    const runPaginado = async (modoFolio: "rollo" | "orden" | null) => {
+    const runPaginado = async (
+      modoFolio: "rollo" | null,
+      ordenIds?: string[],
+    ) => {
       for (let desde = 0; desde < MAX_FILAS; desde += PAGE) {
         let q = sb
           .from("muestras_calidad")
@@ -138,8 +141,7 @@ export const buscarBobinasEditables = createServerFn({ method: "POST" })
         if (data.planta) q = q.eq("maquinas.plantas.codigo", data.planta);
         if (patronFolio && modoFolio === "rollo")
           q = q.ilike("numero_rollo", patronFolio);
-        if (patronFolio && modoFolio === "orden")
-          q = q.ilike("ordenes_fabricacion.folio", patronFolio);
+        if (ordenIds) q = q.in("orden_id", ordenIds);
         if (inicioDiaUtc && finDiaUtc)
           q = q.gte("capturado_at", inicioDiaUtc).lt("capturado_at", finDiaUtc);
         const { data: page, error } = await q;
@@ -169,7 +171,7 @@ export const buscarBobinasEditables = createServerFn({ method: "POST" })
       if (ordenIds.length > 0) {
         for (let i = 0; i < ordenIds.length; i += 500) {
           const bloque = ordenIds.slice(i, i + 500);
-          await runPaginadoFolioOrden(bloque);
+          await runPaginado(null, bloque);
         }
       }
     } else {
