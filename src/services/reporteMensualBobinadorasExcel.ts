@@ -417,7 +417,7 @@ export async function generarReporteMensualBobinadoras(
       views: [{ state: "frozen", xSplit: 3, ySplit: 9, showGridLines: false }],
     });
 
-    const posiciones = Math.max(POSICIONES, ...items.flatMap((i) => i.cintas.map((c) => c.posicion)));
+    const posiciones = items.reduce((max, item) => item.cintas.reduce((n, c) => Math.max(n, c.posicion), max), POSICIONES);
     const nCols = 3 + posiciones;
     const lastCol = colLetter(nCols);
     hoja.getColumn(1).width = 16;
@@ -512,7 +512,6 @@ export async function generarReporteMensualBobinadoras(
         if (!c) rowVals.push(null);
         else if (c.estado === "anulada") rowVals.push("ANULADA");
         else if (c.estado === "sustituida") rowVals.push(null);
-        else if (c.idSap) rowVals.push(`${c.peso.toFixed(2)}\nID ${c.idSap}`);
         else rowVals.push(Number(c.peso.toFixed(2)));
       }
       hoja.getRow(rr).values = rowVals as never;
@@ -525,6 +524,12 @@ export async function generarReporteMensualBobinadoras(
         if (i >= 4) {
           const p = i - 3;
           const c = it.cintas.find((x) => x.posicion === p && x.estado !== "sustituida");
+          if (c?.estado === "registrada" && c.idSap) {
+            // Keep weights numeric so Excel recalculation includes SAP-labelled cells.
+            cell.numFmt = `0.00"\nID ${c.idSap.replace(/"/g, '""')}"`;
+            cell.alignment = { ...cell.alignment, wrapText: true };
+            hoja.getRow(rr).height = Math.max(30, hoja.getRow(rr).height ?? 0);
+          }
           if (c?.estado === "anulada") {
             cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: COLOR.grisAnulada } };
             cell.numFmt = "General";

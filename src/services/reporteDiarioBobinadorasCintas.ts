@@ -2,7 +2,7 @@
 // Reporte 1 — Reporte Diario de Bobinadoras (Cintas)
 // Plantilla real: public/plantillas/plantilla-diario-bobinadoras.xlsx
 // Hoja base: "Reporte Diario" (A1:W37 · encabezados de posición en fila 9,
-// posiciones en columnas D:W = 20 posiciones máximo).
+// posiciones base D:W, ampliables hasta la última posición registrada).
 // =============================================================================
 import {
   cargarPlantilla,
@@ -162,7 +162,7 @@ function pintarHoja(
     v.font = { bold: true };
   });
 
-  ws.pageSetup.printArea = `A1:${colLetterLocal(3 + g.maxPos)}${rTot + totales.length - 1}`;
+  ws.pageSetup.printArea = `A1:${colLetterLocal(Math.max(23, 3 + g.maxPos))}${rTot + totales.length - 1}`;
 }
 
 function colLetterLocal(n: number): string {
