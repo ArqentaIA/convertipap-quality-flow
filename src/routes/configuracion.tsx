@@ -4,7 +4,7 @@ import { queryOptions, useQuery, useMutation, useQueryClient } from "@tanstack/r
 import { useServerFn } from "@tanstack/react-start";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { SessionGate } from "@/components/SessionGate";
-import { Save, Eye, X, Mail, Sliders, Bell, ShieldAlert, FileCheck2, Lock, Monitor, Cloud, Plus, Clock3 } from "lucide-react";
+import { Save, Eye, X, Mail, Sliders, Bell, ShieldAlert, FileCheck2, Lock, Monitor, Cloud, Plus, Clock3, Copy } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import logoConvertipap from "@/assets/logo-convertipap.png";
 import { toast } from "sonner";
@@ -698,6 +698,10 @@ function BackendInfoCard() {
 }
 
 type MaquinaRow = { id: string; codigo: string; nombre: string; access_code: string | null };
+
+/** Máquinas con visor Operator Vision (debe coincidir con MAQUINAS_VALIDAS del visor). */
+const MAQUINAS_CON_VISOR = ["MP-01", "MP-04", "MP-05", "MP-06", "MP-07"] as const;
+const OPERATOR_VISION_BASE = "https://www.convertipap.site";
 
 function MachineAccessCodesCard() {
   const qc = useQueryClient();
