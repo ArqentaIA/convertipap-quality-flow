@@ -13,4 +13,4 @@
 - [x] Alcance confirmado: cambiar solo el reporte independiente de capturas fuera de turno; otros reportes conservan sus reglas.
 - [x] Ajustar reporte diario fuera de turno de 07:00 de la fecha seleccionada hasta cierre T3 a las 07:00 del día siguiente; verificar 06/10 en pantalla, Excel y base (3 registros TLX), pruebas y mensual sin cambios.
 - [x] Crear y probar reporte independiente de capturas fuera de turno por día y mes, agrupado por fecha real de captura en México; sin modificar cierres ni históricos.
-- [ ] Ajustar solo el menú del reporte fuera de turno y descarga directa sin tabla en pantalla; Excel plano sin titulares. Verificar descarga y errores.
+- [x] Ajustar solo el menú del reporte fuera de turno y descarga directa sin tabla en pantalla; Excel plano sin titulares. Descargas verificadas: diario 06/10 (3 registros TLX), mensual septiembre (211 registros); aviso ante fallo de red, menú compacto y 7 pruebas aprobadas. Sin cambiar capturas ni enviar correos.
