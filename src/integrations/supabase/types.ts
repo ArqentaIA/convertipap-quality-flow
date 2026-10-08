@@ -3510,6 +3510,7 @@ export type Database = {
         Args: { _motivo: string; _spec_id: string }
         Returns: undefined
       }
+      es_admin_config: { Args: never; Returns: boolean }
       estado_numeracion_rollo: { Args: { _maquina_id: string }; Returns: Json }
       finalizar_lote_cintas:
         | { Args: { _lote_id: string }; Returns: Json }
