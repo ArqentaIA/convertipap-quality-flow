@@ -1007,7 +1007,7 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
       }, 150);
       setTimeout(() => setMuestraRecienId(null), 4000);
       // Construir snapshot de etiqueta antes de limpiar el formulario
-      const fechaMuestreo = new Date(horaMuestreo);
+      const fechaMuestreo = fromMexicoDateTimeInputValue(horaMuestreo);
       const fueraSpecAlguno = variablesFueraDeSpec.length > 0;
       const etiqueta: EtiquetaData = {
         muestraId: res.muestra_id,
@@ -1229,7 +1229,7 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
         return;
       }
       if (horaMuestreo) {
-        const hm = new Date(horaMuestreo).getTime();
+        const hm = fromMexicoDateTimeInputValue(horaMuestreo).getTime();
         const ahora = Date.now();
         const horasAtras = (ahora - hm) / 3_600_000;
         if (!Number.isFinite(hm) || hm > ahora || horasAtras > 24) {
@@ -1359,7 +1359,7 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
             : null,
         defectos,
         tipo_muestreo: "por_rollo" as const,
-        hora_muestreo: horaMuestreo ? new Date(horaMuestreo).toISOString() : undefined,
+        hora_muestreo: horaMuestreo ? fromMexicoDateTimeInputValue(horaMuestreo).toISOString() : undefined,
         observaciones_generales: observaciones,
         defecto_visual_conversion: defectoVisual?.trim() ? defectoVisual : "SIN DEFECTO",
         variable_tecnica_dimensional: variableTecnica?.trim() ? variableTecnica : "SIN DEFECTO",
