@@ -109,11 +109,17 @@ export function DetalleCalidadModal({
       toast.error("Escribe las observaciones (mínimo 10 caracteres).");
       return;
     }
+    const vistos = new Set<string>();
     const cambiosMed = meds
       .filter((m) => {
+        // Algunas bobinas tienen la misma variable duplicada (ej. uniones):
+        // solo se envía una vez por clave para no pisar el propio cambio.
+        if (vistos.has(m.clave)) return false;
         const nuevo = (valores[m.clave] ?? "").trim();
         if (nuevo === "") return false;
-        return Number(nuevo) !== (m.valor ?? NaN);
+        if (Number(nuevo) === (m.valor ?? NaN)) return false;
+        vistos.add(m.clave);
+        return true;
       })
       .map((m) => ({ clave: m.clave, valor: Number(valores[m.clave]), esperado: m.valor ?? null }));
 
