@@ -58,7 +58,6 @@ export async function fetchOperatorVisionData(maquinaCodigo: string, opts?: { re
           `min_valor, objetivo, max_valor,
            variables_calidad(clave, etiqueta, unidad)`,
         )
-        .range(0, 999);
         .eq("especificacion_id", ordenActiva.especificacion_id);
       variables =
         (vars ?? [])
@@ -240,7 +239,6 @@ export async function fetchOperatorVisionData(maquinaCodigo: string, opts?: { re
         .from("producto_especificaciones")
         .select("id")
         .eq("producto_id", productoFallbackId)
-          .range(0, 999);
         .eq("estado", "vigente")
         .order("vigente_desde", { ascending: false, nullsFirst: false })
         .limit(1)

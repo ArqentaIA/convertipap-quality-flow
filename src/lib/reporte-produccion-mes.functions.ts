@@ -159,6 +159,8 @@ export const getReporteProduccionMes = createServerFn({ method: "POST" })
     if (!lastPair) {
       return { year, month, dias, diasDetalle, ultimoTurnoCerrado, maquinas: [], totalGeneral: 0, generadoAt: now.toISOString() };
     }
+    // Preserve the previous boundary's one-hour tolerance for late orders;
+    // allowedSet still decides which operational dates and shifts contribute.
     const winEnd = new Date(lastPair.finTs.getTime() + 60 * 60 * 1000);
 
     // 1) Catálogos máquinas (todas para orden estable)
