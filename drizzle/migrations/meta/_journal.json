@@ -134,6 +134,13 @@
       "when": 1791483591030,
       "tag": "0018_audit_permitir_variables_calidad",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1791484649443,
+      "tag": "0019_sku_compartido_si_version_difiere",
+      "breakpoints": true
     }
   ]
 }
