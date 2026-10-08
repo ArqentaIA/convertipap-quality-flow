@@ -556,7 +556,7 @@ function AjustesPage() {
                         <td className="px-3 py-2">{TIPO_LABEL[a.tipo_ajuste as TipoAjuste] ?? a.tipo_ajuste}</td>
                         <td className="px-3 py-2 max-w-xs truncate" title={a.motivo}>{a.motivo}</td>
                         <td className="px-3 py-2 text-xs text-muted-foreground">
-                          {new Date(a.solicitado_at).toLocaleString()}
+                          {new Date(a.solicitado_at).toLocaleString("es-MX", { timeZone: "America/Mexico_City",  timeZone: "America/Mexico_City" })}
                         </td>
                         <td className="px-3 py-2"><FlujoBadge flujo={a.estado_flujo as FlujoAjuste} /></td>
                         <td className="px-3 py-2"><ResultadoBadge r={a.resultado as ResultadoAjuste} /></td>
@@ -716,7 +716,7 @@ function AjustesPage() {
                     <SelectItem value="none">Sin vincular</SelectItem>
                     {muestrasVerif.map((m) => (
                       <SelectItem key={m.id} value={m.id}>
-                        Rollo #{m.numero_rollo ?? "—"} · {new Date(m.capturado_at).toLocaleString()}
+                        Rollo #{m.numero_rollo ?? "—"} · {new Date(m.capturado_at).toLocaleString("es-MX", { timeZone: "America/Mexico_City",  timeZone: "America/Mexico_City" })}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -836,7 +836,7 @@ function TimelineRow({ label, by, at }: { label: string; by: string | null; at: 
       <span className="text-muted-foreground">{label}:</span>
       <span>
         {by ? <span className="font-mono text-xs">{by.slice(0, 8)}…</span> : <span className="text-muted-foreground">— pendiente —</span>}
-        {at && <span className="text-muted-foreground ml-1">· {new Date(at).toLocaleString()}</span>}
+        {at && <span className="text-muted-foreground ml-1">· {new Date(at).toLocaleString("es-MX", { timeZone: "America/Mexico_City",  timeZone: "America/Mexico_City" })}</span>}
       </span>
     </div>
   );

@@ -370,7 +370,7 @@ function TrazabilidadDrawer({ payload, onClose }: { payload: ReporteMensualPaylo
                 <tr><td colSpan={9} className="px-3 py-6 text-center text-muted-foreground">—</td></tr>
               ) : payload.trazabilidad.map((t) => (
                 <tr key={t.id} className="border-t border-border">
-                  <td className="px-3 py-1.5 whitespace-nowrap">{new Date(t.fecha).toLocaleString("es-MX")}</td>
+                  <td className="px-3 py-1.5 whitespace-nowrap">{new Date(t.fecha).toLocaleString("es-MX", { timeZone: "America/Mexico_City",  timeZone: "America/Mexico_City" })}</td>
                   <td className="px-3 py-1.5 font-mono">{t.numero_rollo}</td>
                   <td className="px-3 py-1.5">{dash(t.maquina)}</td>
                   <td className="px-3 py-1.5 text-center">{t.turno}</td>

@@ -835,7 +835,7 @@ function OperatorVisionPage() {
   const fechaStr = now
     .toLocaleDateString("es-MX", { weekday: "long", day: "2-digit", month: "long" })
     .toUpperCase();
-  const horaStr = now.toLocaleTimeString("es-MX", { hour12: false });
+  const horaStr = now.toLocaleTimeString("es-MX", { timeZone: "America/Mexico_City",  hour12: false });
 
   function goFullscreen() {
     const el = document.documentElement;
@@ -952,7 +952,7 @@ function OperatorVisionPage() {
           id: m.id,
           rollo: m.rollo,
           fueraDeTurno: !!(m as { fueraDeTurno?: boolean }).fueraDeTurno,
-          hora: new Date(m.capturadoAt).toLocaleTimeString("es-MX", {
+          hora: new Date(m.capturadoAt).toLocaleTimeString("es-MX", { timeZone: "America/Mexico_City", 
             hour12: false,
             hour: "2-digit",
             minute: "2-digit",
@@ -970,7 +970,7 @@ function OperatorVisionPage() {
 
   // Hora del rollo actual
   const horaRolloActual = current
-    ? new Date(current.capturadoAt).toLocaleTimeString("es-MX", {
+    ? new Date(current.capturadoAt).toLocaleTimeString("es-MX", { timeZone: "America/Mexico_City", 
         hour12: false,
         hour: "2-digit",
         minute: "2-digit",
@@ -1678,7 +1678,7 @@ function OperatorVisionPage() {
               Última actualización:{" "}
               <span className="font-mono normal-case tracking-normal text-slate-700">
                 {dataUpdatedAt
-                  ? new Date(dataUpdatedAt).toLocaleString("es-MX", {
+                  ? new Date(dataUpdatedAt).toLocaleString("es-MX", { timeZone: "America/Mexico_City", 
                       day: "2-digit",
                       month: "2-digit",
                       year: "numeric",

@@ -332,7 +332,7 @@ function ReporteProduccionItem(props: {
           {dataQuery.isLoading
             ? "Cargando datos…"
             : data
-              ? `${data.tabla.length} registros disponibles · Última actualización: ${new Date(data.ultimaActualizacion).toLocaleString("es-MX")}`
+              ? `${data.tabla.length} registros disponibles · Última actualización: ${new Date(data.ultimaActualizacion).toLocaleString("es-MX", { timeZone: "America/Mexico_City",  timeZone: "America/Mexico_City" })}`
               : "Sin datos disponibles"}
           {error && <span className="ml-2 text-destructive">· {error}</span>}
         </div>
@@ -585,7 +585,7 @@ function ReporteTurnoItem({ usuario, enabled }: { usuario: string; enabled: bool
               : dataQuery.error
                 ? <span className="text-destructive">{(dataQuery.error as Error).message}</span>
                 : filtered
-                  ? `${filtered.rows.length} registros · Última actualización: ${new Date(filtered.ultimaActualizacion).toLocaleString("es-MX")}`
+                  ? `${filtered.rows.length} registros · Última actualización: ${new Date(filtered.ultimaActualizacion).toLocaleString("es-MX", { timeZone: "America/Mexico_City",  timeZone: "America/Mexico_City" })}`
                   : "Sin datos disponibles"}
           {error && <span className="ml-2 text-destructive">· {error}</span>}
         </div>

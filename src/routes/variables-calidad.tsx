@@ -637,7 +637,7 @@ function VariablesCalidad() {
             </div>
             <div>
               {log.length > 0
-                ? `Última modificación: ${new Date(log[0].modificado_at).toLocaleString("es-MX")} · ${log[0].modificado_por_nombre ?? "—"}`
+                ? `Última modificación: ${new Date(log[0].modificado_at).toLocaleString("es-MX", { timeZone: "America/Mexico_City",  timeZone: "America/Mexico_City" })} · ${log[0].modificado_por_nombre ?? "—"}`
                 : "Sin modificaciones registradas"}
             </div>
           </div>
@@ -753,7 +753,7 @@ function VariablesCalidad() {
                     : (r.valor_nuevo ?? "—");
                   return (
                     <tr key={r.id} className="border-t border-border">
-                      <td className="px-4 py-2 text-xs">{new Date(r.modificado_at).toLocaleString("es-MX")}</td>
+                      <td className="px-4 py-2 text-xs">{new Date(r.modificado_at).toLocaleString("es-MX", { timeZone: "America/Mexico_City",  timeZone: "America/Mexico_City" })}</td>
                       <td className="px-4 py-2 text-xs">{r.modificado_por_nombre ?? "—"}</td>
                       <td className="px-4 py-2 text-xs uppercase">{r.modificado_por_rol ?? "—"}</td>
                       <td className="px-4 py-2 text-xs">{r.variable_etiqueta}</td>
