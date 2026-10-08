@@ -112,36 +112,55 @@ export const buscarBobinasEditables = createServerFn({ method: "POST" })
     if (data.folio && !folioLimpio) return [];
 
     // Paginación en orden estable (capturado_at + id) hasta agotar resultados.
+    // Nota: PostgREST no admite filtros embebidos (ordenes_fabricacion.folio)
+    // dentro de .or(); por eso la búsqueda por folio se divide en dos
+    // consultas (número de rollo y folio de orden) y se unen los resultados.
     const PAGE = 1000;
     const MAX_FILAS = 5000;
-    const rows: Record<string, unknown>[] = [];
-    for (let desde = 0; desde < MAX_FILAS; desde += PAGE) {
-      let q = sb
-        .from("muestras_calidad")
-        .select(
-          `id, numero_rollo, capturado_at, hora_muestreo, turno,
-         dictamen, estatus_liberacion,
-         maquinas(codigo, plantas(nombre, codigo)),
-         ordenes_fabricacion(folio),
-         productos!muestras_calidad_producto_id_fkey(nombre)`,
-        )
-        .in("maquinas.codigo", maquinas)
-        .order("capturado_at", { ascending: false })
-        .order("id", { ascending: false })
-        .range(desde, desde + PAGE - 1);
-      if (data.maquina) q = q.eq("maquinas.codigo", data.maquina);
-      if (data.planta) q = q.eq("maquinas.plantas.codigo", data.planta);
-      if (folioLimpio)
-        q = q.or(
-          `numero_rollo.ilike.*${folioLimpio}*,ordenes_fabricacion.folio.ilike.*${folioLimpio}*`,
-        );
-      if (inicioDiaUtc && finDiaUtc)
-        q = q.gte("capturado_at", inicioDiaUtc).lt("capturado_at", finDiaUtc);
-      const { data: page, error } = await q;
-      if (error) throw new Error(error.message);
-      rows.push(...((page ?? []) as Record<string, unknown>[]));
-      if ((page ?? []).length < PAGE) break;
+    const porId = new Map<string, Record<string, unknown>>();
+    const runPaginado = async (
+      aplicarFolio: (q: ReturnType<typeof sb.from>) => ReturnType<typeof sb.from>,
+    ) => {
+      for (let desde = 0; desde < MAX_FILAS; desde += PAGE) {
+        let q = sb
+          .from("muestras_calidad")
+          .select(
+            `id, numero_rollo, capturado_at, hora_muestreo, turno,
+           dictamen, estatus_liberacion,
+           maquinas(codigo, plantas(nombre, codigo)),
+           ordenes_fabricacion(folio),
+           productos!muestras_calidad_producto_id_fkey(nombre)`,
+          )
+          .in("maquinas.codigo", maquinas)
+          .order("capturado_at", { ascending: false })
+          .order("id", { ascending: false })
+          .range(desde, desde + PAGE - 1);
+        if (data.maquina) q = q.eq("maquinas.codigo", data.maquina);
+        if (data.planta) q = q.eq("maquinas.plantas.codigo", data.planta);
+        q = aplicarFolio(q);
+        if (inicioDiaUtc && finDiaUtc)
+          q = q.gte("capturado_at", inicioDiaUtc).lt("capturado_at", finDiaUtc);
+        const { data: page, error } = await q;
+        if (error) throw new Error(error.message);
+        for (const row of (page ?? []) as Record<string, unknown>[]) {
+          porId.set(row.id as string, row);
+        }
+        if ((page ?? []).length < PAGE) break;
+      }
+    };
+    if (folioLimpio) {
+      const patron = `*${folioLimpio}*`;
+      await runPaginado((q) => q.ilike("numero_rollo", patron));
+      await runPaginado((q) => q.ilike("ordenes_fabricacion.folio", patron));
+    } else {
+      await runPaginado((q) => q);
     }
+    const rows = Array.from(porId.values()).sort((a, b) => {
+      const fa = String(a.capturado_at ?? "");
+      const fb = String(b.capturado_at ?? "");
+      if (fa !== fb) return fb.localeCompare(fa);
+      return String(b.id ?? "").localeCompare(String(a.id ?? ""));
+    });
     if (rows.length >= MAX_FILAS) {
       throw new Error(
         "La búsqueda superó el máximo de registros permitido; afina los filtros (máquina, folio o fecha).",
