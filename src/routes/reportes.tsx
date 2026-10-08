@@ -515,9 +515,10 @@ function ReporteTurnoItem({ usuario, enabled }: { usuario: string; enabled: bool
   const [error, setError] = useState<string | null>(null);
   
 
-  const startISO = consultaKey ? new Date(`${consultaKey.fecha}T00:00:00`).toISOString() : "";
+  // Día operativo: 07:00 (México) del día elegido → 07:00 del día siguiente (incluye T3 completo).
+  const startISO = consultaKey ? new Date(`${consultaKey.fecha}T07:00:00-06:00`).toISOString() : "";
   const endISO = consultaKey
-    ? new Date(new Date(`${consultaKey.fecha}T00:00:00`).getTime() + 24 * 3600_000).toISOString()
+    ? new Date(new Date(`${consultaKey.fecha}T07:00:00-06:00`).getTime() + 24 * 3600_000).toISOString()
     : "";
 
   const dataQuery = useQuery({
