@@ -794,6 +794,36 @@ function MachineAccessCodesCard() {
               >
                 <Lock className="h-3 w-3" /> Guardar
               </button>
+              {(MAQUINAS_CON_VISOR as readonly string[]).includes(m.codigo) ? (
+                <div className="flex items-center gap-1">
+                  <code
+                    className="hidden max-w-[220px] truncate font-mono text-[10px] text-muted-foreground md:inline"
+                    title={`${OPERATOR_VISION_BASE}/operator-vision?maquina=${m.codigo}`}
+                  >
+                    /operator-vision?maquina={m.codigo}
+                  </code>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const url = `${OPERATOR_VISION_BASE}/operator-vision?maquina=${m.codigo}`;
+                      try {
+                        await navigator.clipboard.writeText(url);
+                        toast.success(`URL ${m.codigo} copiada`);
+                      } catch {
+                        toast.error("No se pudo copiar");
+                      }
+                    }}
+                    className="inline-flex h-8 items-center gap-1 rounded-md border border-border bg-background px-2 text-[11px] font-semibold text-muted-foreground hover:bg-accent hover:text-foreground"
+                    title="Copiar URL de la pantalla de esta máquina"
+                  >
+                    <Copy className="h-3 w-3" /> URL
+                  </button>
+                </div>
+              ) : (
+                <span className="text-[10px] text-muted-foreground" title="Máquina de pruebas: sin visor operativo">
+                  Sin visor
+                </span>
+              )}
             </div>
           );
         })}
