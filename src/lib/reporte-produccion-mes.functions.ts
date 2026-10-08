@@ -198,15 +198,17 @@ export const getReporteProduccionMes = createServerFn({ method: "POST" })
     const rollos = await readReportIdChunks(ordenIds, (ids, from, to) => sb
       .from("rollos_producidos")
       .select("orden_id, peso_kg")
-      .in("orden_id", ordenIds);
-    if (eRol) throw new Error(eRol.message);
+      .in("orden_id", ids)
+      .order("id")
+      .range(from, to));
 
     // 4) Catálogo productos
-    const { data: productos, error: eProd } = await sb
+    const productos = await readReportIdChunks(productoIds, (ids, from, to) => sb
       .from("productos")
       .select("id, codigo, nombre")
-      .in("id", productoIds);
-    if (eProd) throw new Error(eProd.message);
+      .in("id", ids)
+      .order("id")
+      .range(from, to));
     const productoById = new Map(productos?.map((p) => [p.id, p]) ?? []);
     const maquinaById = new Map(maquinasRaw?.map((m) => [m.id, m]) ?? []);
 
