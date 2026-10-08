@@ -24,7 +24,7 @@ const DICTAMENES = [
 
 /**
  * Detalle de calidad de un rollo.
- * Consulta para todos; edición autorizada (usuario + máquina + ventana de 12 h)
+ * Consulta para todos; edición autorizada (usuario + máquina + ventana de 24 h)
  * con motivo obligatorio y trazabilidad completa.
  */
 export function DetalleCalidadModal({
@@ -115,7 +115,7 @@ export function DetalleCalidadModal({
         if (nuevo === "") return false;
         return Number(nuevo) !== (m.valor ?? NaN);
       })
-      .map((m) => ({ clave: m.clave, valor: Number(valores[m.clave]) }));
+      .map((m) => ({ clave: m.clave, valor: Number(valores[m.clave]), esperado: m.valor ?? null }));
 
     if (cambiosMed.some((c) => !Number.isFinite(c.valor))) {
       toast.error("Hay valores numéricos inválidos.");
@@ -266,7 +266,7 @@ export function DetalleCalidadModal({
                       <strong>
                         {permiso.expira_at ? new Date(permiso.expira_at).toLocaleString("es-MX", { timeZone: "America/Mexico_City", hour12: false }) : "—"}
                       </strong>{" "}
-                      (12 h desde la captura). Todo cambio requiere motivo y queda registrado.
+                      (24 h desde la captura). Todo cambio requiere motivo y queda registrado.
                     </>
                   ) : (
                     <>Solo consulta. {permiso.motivo}</>
