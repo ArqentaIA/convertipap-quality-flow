@@ -113,28 +113,10 @@ export const getReportes = createServerFn({ method: "POST" })
     const muestraIds = (muestras ?? []).map((m) => m.id);
     const mediciones: MedRow[] = [];
     if (muestraIds.length > 0) {
-      const PAGE = 1000;
-      const ID_CHUNK = 100; // chunk pequeño para que cada slice quepa en una sola página (≈1500 meds máx)
-      for (let i = 0; i < muestraIds.length; i += ID_CHUNK) {
-        const idsSlice = muestraIds.slice(i, i + ID_CHUNK);
-        let from = 0;
-        // eslint-disable-next-line no-constant-condition
-        while (true) {
-          const { data: page, error } = await sb
-            .from("mediciones_calidad")
-            .select(
-              "id, muestra_id, variable_clave, valor, min_snapshot, max_snapshot, estado, created_at",
-            )
-            .in("muestra_id", idsSlice)
-            .order("id", { ascending: true }) // orden estable para que range() no duplique ni omita filas
-            .range(from, from + PAGE - 1);
-          if (error) throw error;
-          const rows = (page ?? []) as MedRow[];
-          mediciones.push(...rows);
-          if (rows.length < PAGE) break;
-          from += PAGE;
-        }
-      }
+      mediciones.push(...await readReportIdChunks<MedRow>(muestraIds, (ids, from, to) => sb
+        .from("mediciones_calidad")
+        .select("id, muestra_id, variable_clave, valor, min_snapshot, max_snapshot, estado, created_at")
+        .in("muestra_id", ids).order("id").range(from, to)));
     }
 
     // --------- Rollos del periodo (paginado) ---------
