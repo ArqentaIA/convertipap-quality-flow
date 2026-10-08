@@ -40,6 +40,15 @@ export function ventanaOperativa(mode: "dia" | "mes", fecha: string) {
 }
 
 async function maquinasPermitidas(sb: SB, userId: string): Promise<string[]> {
+  // El administrador tiene acceso libre: ve las ediciones de todas las máquinas.
+  const { data: esAdmin } = await sb.rpc("has_role", {
+    _user_id: userId,
+    _role: "administrador",
+  });
+  if (esAdmin) {
+    const { data: mqs } = await sb.from("maquinas").select("codigo");
+    return [...new Set((mqs ?? []).map((m) => m.codigo as string))];
+  }
   const { data: prof } = await sb
     .from("profiles")
     .select("email")

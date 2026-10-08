@@ -15,8 +15,20 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 type SB = typeof import("@/integrations/supabase/client").supabase;
 
-/** Máquinas para las que el usuario actual tiene permiso de edición. */
+/**
+ * Máquinas para las que el usuario actual tiene permiso de edición.
+ * El administrador tiene acceso libre a cualquier área: se le devuelven
+ * todas las máquinas activas del sistema.
+ */
 async function misMaquinasEdicion(sb: SB, userId: string): Promise<string[]> {
+  const { data: esAdmin } = await sb.rpc("has_role", {
+    _user_id: userId,
+    _role: "administrador",
+  });
+  if (esAdmin) {
+    const { data: mqs } = await sb.from("maquinas").select("codigo");
+    return [...new Set((mqs ?? []).map((m) => m.codigo as string))];
+  }
   const { data: prof } = await sb
     .from("profiles")
     .select("email")
