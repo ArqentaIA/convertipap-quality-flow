@@ -1,7 +1,7 @@
 import { MX_TZ } from "./format";
 
 /** Interpret a Mexico wall-clock time using the zone, not a fixed UTC offset. */
-function timeMX(date: string, hour: string): Date {
+export function timeMX(date: string, hour: string): Date {
   const guess = new Date(`${date}T${hour}:00:00Z`);
   const parts = new Intl.DateTimeFormat("en-US", {
     timeZone: MX_TZ, year: "numeric", month: "2-digit", day: "2-digit",
