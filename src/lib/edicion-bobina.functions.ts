@@ -23,7 +23,7 @@ type SB = typeof import("@/integrations/supabase/client").supabase;
 async function misMaquinasEdicion(sb: SB, userId: string): Promise<string[]> {
   const { data: esAdmin } = await sb.rpc("has_role", {
     _user_id: userId,
-    _role: "admin",
+    _role: "administrador",
   });
   if (esAdmin) {
     const { data: mqs } = await sb.from("maquinas").select("codigo");
