@@ -37,6 +37,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAuth } from "@/lib/auth";
+import { fechaHoraMX } from "@/lib/format";
 import {
   listMaquinasCaptura,
   listProductosConSpec,
