@@ -26,6 +26,7 @@ import {
 } from "@/lib/reporte-no-conforme-export";
 import { ReportesCintasSection } from "@/components/reportes/ReportesCintas";
 import { usePlantaEfectivaCodigo } from "@/hooks/usePlantasPermitidas";
+import { ReporteFueraTurnoSection } from "@/components/reportes/ReporteFueraTurno";
 
 
 
@@ -204,6 +205,7 @@ function ReportesPage() {
         <ReporteProduccionMesItem enabled={!!auth.session?.access_token} />
 
         <ReporteNoConformeItem enabled={!!auth.session?.access_token} />
+        <ReporteFueraTurnoSection enabled={!!auth.session?.access_token} />
 
         <ReporteGeneralItem enabled={!!auth.session?.access_token} />
 

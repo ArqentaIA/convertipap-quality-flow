@@ -12,7 +12,8 @@ import type {
 } from "@/lib/reportes-cintas.functions";
 import type { Json } from "@/lib/pesaje-cintas.functions";
 
-export const MAX_POSICIONES = 20;
+export const MAX_POSICIONES = 350;
+export const POSICIONES_PLANTILLA = 20;
 
 export class ReporteCintasError extends Error {}
 
@@ -252,7 +253,7 @@ export function normalizarLotes(data: DatosReporteCintas): LoteNorm[] {
       }));
 
     for (const c of activas) {
-      if (c.posicion < 1 || c.posicion > MAX_POSICIONES) {
+      if (!Number.isInteger(c.posicion) || c.posicion < 1 || c.posicion > MAX_POSICIONES) {
         throw new ReporteCintasError(
           `Posición inválida (${c.posicion}) en el rollo ${lote.numero_rollo}. Máximo permitido: ${MAX_POSICIONES}.`,
         );
