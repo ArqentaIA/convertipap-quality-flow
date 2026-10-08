@@ -15,7 +15,7 @@ import {
   descargarLibro,
   fmtFechaLegible,
   ReporteCintasError,
-  MAX_POSICIONES,
+  POSICIONES_PLANTILLA,
   type Grupo,
 } from "./cintas-plantilla-base";
 import type { DatosReporteCintas } from "@/lib/reportes-cintas.functions";
@@ -76,6 +76,15 @@ function pintarHoja(
   const extra = Math.max(0, g.lotes.length - FILAS_DATO_TPL);
   const mapRow = (r: number) => (r < FILA_TOTALES ? r : r + extra);
   const ws = clonarHoja(wb, model, nombre, (c) => c, mapRow);
+  const posiciones = Math.max(POSICIONES_PLANTILLA, g.maxPos);
+  // Extend the existing position style without moving institutional cells.
+  for (let p = POSICIONES_PLANTILLA + 1; p <= posiciones; p++) {
+    const col = COL_POS_INI + p - 1;
+    ws.getColumn(col).width = ws.getColumn(COL_POS_INI + POSICIONES_PLANTILLA - 1).width;
+    for (let r = FILA_ENCABEZADO; r < FILA_TOTALES + extra; r++) {
+      ws.getCell(r, col).style = JSON.parse(JSON.stringify(ws.getCell(r, COL_POS_INI + POSICIONES_PLANTILLA - 1).style)) as never;
+    }
+  }
 
   // Filas de datos adicionales: clonan formato de la primera fila de datos.
   if (extra > 0) {
@@ -98,7 +107,7 @@ function pintarHoja(
   ws.getCell("S5").value = `Turno: ${g.turno}`;
 
   // Encabezados de posición corregidos y consecutivos (Medida 1..N).
-  for (let p = 1; p <= MAX_POSICIONES; p++) {
+  for (let p = 1; p <= posiciones; p++) {
     const col = COL_POS_INI + p - 1;
     ws.getCell(FILA_ENCABEZADO, col).value = `Medida ${p}\nPeso`;
     const cell = ws.getCell(FILA_ENCABEZADO, col);
@@ -106,7 +115,7 @@ function pintarHoja(
   }
 
   // Columnas dinámicas: ocultar posiciones posteriores al máximo del grupo.
-  for (let p = g.maxPos + 1; p <= MAX_POSICIONES; p++) {
+  for (let p = g.maxPos + 1; p <= posiciones; p++) {
     ws.getColumn(COL_POS_INI + p - 1).hidden = true;
   }
 

@@ -17,6 +17,7 @@ const MESES = [
 ];
 
 const POSICIONES = 20;
+const MAX_POSICIONES = 350;
 
 const COLOR = {
   azulOscuro: "FF0B2D5B",
@@ -133,7 +134,7 @@ export function normalizar(data: ReporteMensualCintasData): RolloNorm[] {
           `Posición activa duplicada · Rollo ${lote.numero_rollo} · Posición ${pos} · IDs: ${ids.join(", ")}`,
         );
       }
-      if (pos < 1 || pos > POSICIONES) {
+      if (!Number.isInteger(pos) || pos < 1 || pos > MAX_POSICIONES) {
         throw new ReporteError(`Posición inválida (${pos}) en el rollo ${lote.numero_rollo}.`);
       }
     }
@@ -401,7 +402,8 @@ export async function generarReporteMensualBobinadoras(
   const keysOrdenadas = [...grupos.keys()].sort();
 
   for (const key of keysOrdenadas) {
-    const items = grupos.get(key)!;
+    const items = grupos.get(key);
+    if (!items?.length) continue;
     const g = items[0];
     const dd = (g.fecha.split("-")[2] ?? "00");
     const base = `${dd}_${g.bobinadora.replace(/\s+/g, "")}_T${g.turno}_${g.productoCodigo}`;
@@ -415,7 +417,8 @@ export async function generarReporteMensualBobinadoras(
       views: [{ state: "frozen", xSplit: 3, ySplit: 9, showGridLines: false }],
     });
 
-    const nCols = 3 + POSICIONES; // 23
+    const posiciones = Math.max(POSICIONES, ...items.flatMap((i) => i.cintas.map((c) => c.posicion)));
+    const nCols = 3 + posiciones;
     const lastCol = colLetter(nCols);
     hoja.getColumn(1).width = 16;
     hoja.getColumn(2).width = 14;
@@ -456,7 +459,8 @@ export async function generarReporteMensualBobinadoras(
     // Nivel 1 (fila 5)
     hoja.mergeCells("A5:C5");
     hoja.getCell("A5").value = "ROLLO MADRE";
-    const bloques: [number, number][] = [[4, 8], [9, 13], [14, 18], [19, 23]];
+    const bloques: [number, number][] = [];
+    for (let a = 4; a <= nCols; a += 5) bloques.push([a, Math.min(a + 4, nCols)]);
     for (const [a, b] of bloques) {
       hoja.mergeCells(`${colLetter(a)}5:${colLetter(b)}5`);
       hoja.getCell(`${colLetter(a)}5`).value = "MEDIDA";
@@ -474,14 +478,14 @@ export async function generarReporteMensualBobinadoras(
     const anchoPorPos = new Map<number, number>();
     for (const it of items) for (const c of it.activas) if (!anchoPorPos.has(c.posicion)) anchoPorPos.set(c.posicion, c.ancho);
     const nivel2: (string | number)[] = ["NÚM. DE ROLLO", "PESO ROLLO (kg)", "DIÁMETRO"];
-    for (let p = 1; p <= POSICIONES; p++) {
+    for (let p = 1; p <= posiciones; p++) {
       const w = anchoPorPos.get(p);
       nivel2.push(w ? `P${String(p).padStart(2, "0")} · ${w} cm` : `P${String(p).padStart(2, "0")}`);
     }
     hoja.getRow(6).values = nivel2;
     // Nivel 3 (fila 7)
     const nivel3: (string | number)[] = ["", "", ""];
-    for (let p = 1; p <= POSICIONES; p++) nivel3.push("Peso (kg)");
+    for (let p = 1; p <= posiciones; p++) nivel3.push("Peso (kg)");
     hoja.getRow(7).values = nivel3;
     for (const rn of [6, 7]) {
       for (let i = 1; i <= nCols; i++) {
@@ -503,7 +507,7 @@ export async function generarReporteMensualBobinadoras(
         Number(it.netoKg.toFixed(2)),
         it.diametro ?? "",
       ];
-      for (let p = 1; p <= POSICIONES; p++) {
+      for (let p = 1; p <= posiciones; p++) {
         const c = it.cintas.find((x) => x.posicion === p);
         if (!c) rowVals.push(null);
         else if (c.estado === "anulada") rowVals.push("ANULADA");
@@ -562,6 +566,14 @@ export async function generarReporteMensualBobinadoras(
       ["Total de uniones", items.reduce((a, i) => a + i.uniones, 0)],
       ["Estado de la información", [...new Set(items.map((i) => i.estadoInfo))].join(" / ")],
     ];
+    for (let a = 21; a <= posiciones; a += 5) {
+      const b = Math.min(a + 4, posiciones);
+      totalesHoja.splice(2 + Math.ceil((a - 1) / 5), 0, [
+        `Subtotal posiciones ${a}–${b} (kg)`,
+        { formula: `SUM(${colLetter(a + 3)}${firstData}:${colLetter(b + 3)}${lastData})`, result: Number(sub(a, b).toFixed(2)) },
+        "#,##0.00",
+      ]);
+    }
     for (const [k, v, fmt] of totalesHoja) {
       hoja.mergeCells(`A${rr}:C${rr}`);
       const kc = hoja.getCell(`A${rr}`);
