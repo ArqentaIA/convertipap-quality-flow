@@ -12,6 +12,8 @@ import {
   puedeEditarRollo,
   editarRolloCalidad,
   listEdicionesRollo,
+  listProductosCambio,
+  previewSpecProducto,
 } from "@/lib/qc-edicion.functions";
 import { imprimirDetalleRollo } from "@/lib/detalle-rollo-pdf";
 
@@ -42,6 +44,8 @@ export function DetalleCalidadModal({
   const permisoFn = useServerFn(puedeEditarRollo);
   const editarFn = useServerFn(editarRolloCalidad);
   const bitacoraFn = useServerFn(listEdicionesRollo);
+  const productosFn = useServerFn(listProductosCambio);
+  const previewFn = useServerFn(previewSpecProducto);
   const qc = useQueryClient();
 
   const { data, isLoading, isError, error } = useQuery({
@@ -73,9 +77,52 @@ export function DetalleCalidadModal({
   const [obs, setObs] = useState("");
   const [sku, setSku] = useState("");
   const [dictamen, setDictamen] = useState("");
+  const [productoSel, setProductoSel] = useState("");
 
   const r = data?.rollo;
   const meds = useMemo(() => data?.mediciones ?? [], [data]);
+  const cambiaProducto = editando && !!r && !!productoSel && productoSel !== (r.productoId ?? "");
+
+  const { data: productos = [] } = useQuery({
+    queryKey: ["productos-cambio"],
+    queryFn: () => productosFn(),
+    enabled: editando,
+    staleTime: 5 * 60_000,
+  });
+
+  const { data: preview, isFetching: cargandoPreview, error: errorPreview } = useQuery({
+    queryKey: ["preview-spec-producto", productoSel, r?.maquinaId ?? null],
+    queryFn: () => previewFn({ data: { producto_id: productoSel, maquina_id: r?.maquinaId ?? null } }),
+    enabled: cambiaProducto,
+  });
+
+  // Filas que se muestran: con cambio de producto, las variables del nuevo
+  // producto (precargando los valores ya medidos); si no, las actuales.
+  const filas = useMemo(() => {
+    if (!cambiaProducto || !preview) return meds;
+    const porClave = new Map(meds.map((m) => [m.clave, m]));
+    return preview.variables.map((v) => {
+      const prev = porClave.get(v.clave);
+      return {
+        clave: v.clave,
+        etiqueta: v.etiqueta,
+        unidad: v.unidad,
+        valor: prev?.valor ?? null,
+        min: v.min,
+        objetivo: v.objetivo,
+        max: v.max,
+        estado: prev?.valor == null ? "pendiente" : prev.estado,
+        observacion: "",
+        nueva: prev?.valor == null,
+      };
+    });
+  }, [cambiaProducto, preview, meds]);
+
+  const retiradas = useMemo(() => {
+    if (!cambiaProducto || !preview) return [];
+    const nuevas = new Set(preview.variables.map((v) => v.clave));
+    return meds.filter((m) => m.valor != null && !nuevas.has(m.clave));
+  }, [cambiaProducto, preview, meds]);
 
   // Reset al cerrar / cambiar de rollo
   useEffect(() => {
@@ -96,6 +143,7 @@ export function DetalleCalidadModal({
     setSku(r.skuSap ?? "");
     setDictamen("");
     setMotivo("");
+    setProductoSel(r.productoId ?? "");
     setEditando(true);
   };
 
@@ -109,8 +157,12 @@ export function DetalleCalidadModal({
       toast.error("Escribe las observaciones (mínimo 10 caracteres).");
       return;
     }
+    if (cambiaProducto && (!preview || cargandoPreview)) {
+      toast.error("Espera a que carguen las variables del nuevo producto.");
+      return;
+    }
     const vistos = new Set<string>();
-    const cambiosMed = meds
+    const cambiosMed = (cambiaProducto ? filas : meds)
       .filter((m) => {
         // Algunas bobinas tienen la misma variable duplicada (ej. uniones):
         // solo se envía una vez por clave para no pisar el propio cambio.
@@ -122,6 +174,13 @@ export function DetalleCalidadModal({
         return true;
       })
       .map((m) => ({ clave: m.clave, valor: Number(valores[m.clave]), esperado: m.valor ?? null }));
+    if (
+      cambiaProducto &&
+      !window.confirm(
+        `Se cambiará el producto del rollo. ${retiradas.length} variable(s) que no aplican al nuevo producto se retirarán del rollo. Los datos originales quedan respaldados en la bitácora. ¿Continuar?`,
+      )
+    )
+      return;
 
     if (cambiosMed.some((c) => !Number.isFinite(c.valor))) {
       toast.error("Hay valores numéricos inválidos.");
@@ -141,6 +200,9 @@ export function DetalleCalidadModal({
           observaciones_generales: obs,
           sku_sap: sku.trim(),
           ...(dictamen ? { dictamen: dictamen as "liberada" | "concesion" | "rechazada" } : {}),
+          ...(cambiaProducto
+            ? { producto_id: productoSel, ...(r.productoId ? { producto_esperado: r.productoId } : {}) }
+            : {}),
         },
       });
       if (res.cambios === 0) {
@@ -157,6 +219,7 @@ export function DetalleCalidadModal({
         qc.invalidateQueries({ queryKey: ["buscar-rollo"] }),
         qc.invalidateQueries({ queryKey: ["qc"] }),
         qc.invalidateQueries({ queryKey: ["reportes"] }),
+        qc.invalidateQueries({ queryKey: ["reporte-bobinas-editadas"] }),
       ]);
     } catch (e) {
       toast.error((e as Error).message);
@@ -285,9 +348,47 @@ export function DetalleCalidadModal({
                 <div className="grid grid-cols-2 gap-3 text-xs md:grid-cols-4">
                   <Field label="Rollo" value={r.numero} strong />
                   <Field label="Orden" value={r.folioOrden} />
-                  <Field label="Producto" value={`${r.producto}${r.productoCodigo !== "—" ? ` (${r.productoCodigo})` : ""}`} />
                   {editando ? (
-                    <EditField label="SKU SAP" value={sku} onChange={setSku} />
+                    <div>
+                      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Producto</div>
+                      <select
+                        value={productoSel}
+                        onChange={(e) => {
+                          setProductoSel(e.target.value);
+                          if (e.target.value !== (r.productoId ?? "")) setSku("");
+                          else setSku(r.skuSap ?? "");
+                        }}
+                        className="mt-1 w-full rounded-md border border-border bg-background px-2 py-1 text-xs"
+                      >
+                        {!productos.some((p) => p.id === r.productoId) && r.productoId && (
+                          <option value={r.productoId}>{`${r.productoCodigo} · ${r.producto}`}</option>
+                        )}
+                        {productos.map((p) => (
+                          <option key={p.id} value={p.id}>{`${p.codigo} · ${p.nombre}`}</option>
+                        ))}
+                      </select>
+                    </div>
+                  ) : (
+                    <Field label="Producto" value={`${r.producto}${r.productoCodigo !== "—" ? ` (${r.productoCodigo})` : ""}`} />
+                  )}
+                  {editando ? (
+                    <div>
+                      <EditField label="SKU SAP" value={sku} onChange={setSku} />
+                      {cambiaProducto && preview && preview.skus.length > 0 && (
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {preview.skus.map((k) => (
+                            <button
+                              key={k}
+                              type="button"
+                              onClick={() => setSku(k)}
+                              className="rounded border border-border px-1.5 py-0.5 text-[10px] hover:bg-muted"
+                            >
+                              {k}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   ) : (
                     <Field label="SKU SAP" value={r.skuSap || "—"} />
                   )}
@@ -369,8 +470,27 @@ export function DetalleCalidadModal({
                 </div>
               )}
 
+              {cambiaProducto && (
+                <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-[11px] text-amber-700 dark:text-amber-300">
+                  {cargandoPreview ? (
+                    <span className="inline-flex items-center"><Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> Cargando variables del nuevo producto…</span>
+                  ) : errorPreview ? (
+                    <span>{(errorPreview as Error).message}</span>
+                  ) : (
+                    <>
+                      <strong>Cambio de producto:</strong> se muestran las variables y límites del nuevo producto.
+                      Los valores ya medidos se conservan; las variables nuevas son opcionales.
+                      {retiradas.length > 0 && (
+                        <> No aplican y se retirarán: {retiradas.map((m) => `${m.etiqueta} (${m.valor})`).join(", ")}.</>
+                      )}{" "}
+                      Los datos originales del rollo quedan respaldados.
+                    </>
+                  )}
+                </div>
+              )}
+
               {/* Tabla de variables */}
-              {meds.length === 0 ? (
+              {filas.length === 0 ? (
                 <div className="rounded-md border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
                   Este rollo no tiene variables de calidad registradas.
                 </div>
@@ -390,7 +510,7 @@ export function DetalleCalidadModal({
                       </tr>
                     </thead>
                     <tbody>
-                      {meds.map((m, i) => {
+                      {filas.map((m, i) => {
                         const malo = m.estado === "no_conforme" || m.estado === "fuera_rango_critico";
                         const pendiente = m.estado === "pendiente" || m.valor == null;
                         return (
@@ -407,7 +527,7 @@ export function DetalleCalidadModal({
                             <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">{m.objetivo ?? "—"}</td>
                             <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">{m.max ?? "—"}</td>
                             <td className={`px-3 py-2 text-right tabular-nums font-semibold ${malo ? "text-destructive" : pendiente ? "text-muted-foreground" : "text-foreground"}`}>
-                              {editando && m.valor != null ? (
+                              {editando && (m.valor != null || ("nueva" in m && m.nueva)) ? (
                                 <Input
                                   type="number"
                                   step="any"
