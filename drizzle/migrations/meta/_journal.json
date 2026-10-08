@@ -127,6 +127,13 @@
       "when": 1791434852753,
       "tag": "0017_lectura_solo_usuarios_con_rol",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1791483591030,
+      "tag": "0018_audit_permitir_variables_calidad",
+      "breakpoints": true
     }
   ]
 }
