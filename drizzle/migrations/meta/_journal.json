@@ -78,6 +78,13 @@
       "when": 1791431631263,
       "tag": "0010_evitar_duplicado_uniones_cambio_producto",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1791432820309,
+      "tag": "0011_catalogo_productos_calidad",
+      "breakpoints": true
     }
   ]
 }
