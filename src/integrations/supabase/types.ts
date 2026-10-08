@@ -3399,6 +3399,32 @@ export type Database = {
         }
         Returns: boolean
       }
+      catalogo_crear_producto: {
+        Args: {
+          _codigo: string
+          _motivo: string
+          _nombre: string
+          _sku: string
+          _tipo_id: string
+          _variables: Json
+          _version: string
+        }
+        Returns: Json
+      }
+      catalogo_desactivar_producto: {
+        Args: { _motivo: string; _producto_id: string }
+        Returns: Json
+      }
+      catalogo_editar_producto: {
+        Args: {
+          _descripcion_sku: string
+          _motivo: string
+          _producto_id: string
+          _sku: string
+          _version: string
+        }
+        Returns: Json
+      }
       cerrar_rollo_cintas: {
         Args: { _motivo: string; _numero_rollo: string }
         Returns: Json
@@ -3559,6 +3585,10 @@ export type Database = {
       publicar_especificacion: {
         Args: { _motivo: string; _spec_id: string }
         Returns: undefined
+      }
+      puede_gestionar_catalogo_calidad: {
+        Args: { _uid: string }
+        Returns: boolean
       }
       qc_editar_rollo: {
         Args: { _cambios: Json; _motivo: string; _muestra_id: string }

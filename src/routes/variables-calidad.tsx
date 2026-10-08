@@ -24,6 +24,7 @@ import {
   descartarBorrador,
 } from "@/lib/spec-publicacion.functions";
 import { EvidenciaDocumentalPanel } from "@/components/spec/EvidenciaDocumentalPanel";
+import { CatalogoProductoAcciones } from "@/components/spec/CatalogoProductoAcciones";
 import { imprimirVariablesCalidad } from "@/lib/variables-imprimir";
 import { useAuth } from "@/lib/auth";
 import {
@@ -501,6 +502,19 @@ function VariablesCalidad() {
                   >
                     <Pencil className="h-4 w-4" /> Editar variables
                   </Button>
+                  <CatalogoProductoAcciones
+                    codigo={activeSpec?.code}
+                    nombre={activeSpec?.name}
+                    versionVigente={(activeSpec as unknown as { specVersion?: string | null })?.specVersion ?? null}
+                    versionBorrador={borrador?.version ?? null}
+                    onCambio={async (nuevo) => {
+                      await invalidateAll();
+                      if (nuevo !== undefined) {
+                        setFamily("all");
+                        setSelected(nuevo);
+                      }
+                    }}
+                  />
                   <Button
                     size="sm"
                     onClick={handleImprimir}
