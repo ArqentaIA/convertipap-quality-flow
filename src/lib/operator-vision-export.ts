@@ -55,7 +55,7 @@ const HDR_FILL = "FF1E293B";
 const SUB_FILL = "FFE2E8F0";
 
 const fmtFecha = (iso?: string | null) =>
-  iso ? new Date(iso).toLocaleDateString("es-MX", { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "America/Mexico_City" }) : "";
+  iso ? new Date(iso).toLocaleDateString("es-MX", { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "America/Mexico_City", hour12: false }) : "";
 const fmtHora = (iso?: string | null) =>
   iso ? new Date(iso).toLocaleTimeString("es-MX", { hour12: false, hour: "2-digit", minute: "2-digit", timeZone: "America/Mexico_City" }) : "";
 

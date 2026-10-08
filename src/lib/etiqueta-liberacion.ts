@@ -173,7 +173,7 @@ function buildHtml(
   sapLogoDataUrl: string,
   payloads: { rollo: string; peso: string; lote: string; producto: string; sku: string },
 ): string {
-  const fechaImpresion = new Date().toLocaleString("es-MX", { timeZone: "America/Mexico_City" });
+  const fechaImpresion = new Date().toLocaleString("es-MX", { timeZone: "America/Mexico_City", hour12: false });
   const estatusColor =
     data.estatus === "CONFORME" || data.estatus === "LIBERADO"
       ? "#15803d"

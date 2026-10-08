@@ -236,7 +236,7 @@ function TrazabilidadView({
   status: StatusKind;
   pesoMostrado: number | null;
 }) {
-  const fecha = new Date(trace.capturado_at || trace.hora_muestreo).toLocaleString("es-MX", { timeZone: "America/Mexico_City" });
+  const fecha = new Date(trace.capturado_at || trace.hora_muestreo).toLocaleString("es-MX", { timeZone: "America/Mexico_City", hour12: false });
 
   return (
     <Shell subtitle="Trazabilidad completa">

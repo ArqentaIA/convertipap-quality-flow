@@ -48,7 +48,7 @@ function buildContext(folio: string): TraceContext {
     fecha: now.toISOString().slice(0, 10),
     hora: now.toLocaleTimeString([], { timeZone: "America/Mexico_City", hour: "2-digit", minute: "2-digit", hour12: false }),
     producto: "Papel tissue · registro de rollo",
-    emitido: now.toLocaleString("es-MX", { timeZone: "America/Mexico_City" }),
+    emitido: now.toLocaleString("es-MX", { timeZone: "America/Mexico_City", hour12: false }),
     validadoPor: "Control de Calidad Convertipap",
     simulado: true,
     metricas: [
