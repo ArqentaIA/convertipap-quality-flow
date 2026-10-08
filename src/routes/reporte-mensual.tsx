@@ -143,7 +143,11 @@ function ReporteMensualPage() {
           </p>
         </div>
 
-        {query.isLoading || !data ? (
+        {query.isError ? (
+          <div role="alert" className="rounded-md border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
+            No se pudo cargar el reporte. Intenta nuevamente.
+          </div>
+        ) : query.isLoading || !data ? (
           <div className="rounded-md border border-border bg-card p-4 text-sm text-muted-foreground">
             Cargando datos reales desde la base de datos…
           </div>
