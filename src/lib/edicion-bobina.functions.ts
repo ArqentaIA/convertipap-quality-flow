@@ -96,18 +96,57 @@ export const buscarBobinasEditables = createServerFn({ method: "POST" })
     // se ignora el filtro y se devuelve vacío (no se confía en el cliente).
     if (data.maquina && !maquinas.includes(data.maquina)) return [];
 
-    const { data: rows, error } = await sb
-      .from("muestras_calidad")
-      .select(
-        `id, numero_rollo, capturado_at, hora_muestreo, turno,
+    // Los filtros se aplican EN BASE DE DATOS (no en JS sobre un lote fijo
+    // de filas recientes) para que la búsqueda encuentre bobinas de
+    // cualquier fecha, folio antiguo o máquinas con poca actividad.
+    // Día operativo: 07:00 en México = 13:00 UTC (México es UTC-6 todo el año).
+    const inicioDiaUtc = data.fecha
+      ? new Date(`${data.fecha}T13:00:00Z`).toISOString()
+      : null;
+    const finDiaUtc = inicioDiaUtc
+      ? new Date(
+          new Date(inicioDiaUtc).getTime() + 24 * 3600 * 1000,
+        ).toISOString()
+      : null;
+    const folioLimpio = data.folio?.replace(/[,()"]/g, "");
+    if (data.folio && !folioLimpio) return [];
+
+    // Paginación en orden estable (capturado_at + id) hasta agotar resultados.
+    const PAGE = 1000;
+    const MAX_FILAS = 5000;
+    const rows: Record<string, unknown>[] = [];
+    for (let desde = 0; desde < MAX_FILAS; desde += PAGE) {
+      let q = sb
+        .from("muestras_calidad")
+        .select(
+          `id, numero_rollo, capturado_at, hora_muestreo, turno,
          dictamen, estatus_liberacion,
          maquinas(codigo, plantas(nombre, codigo)),
          ordenes_fabricacion(folio),
          productos!muestras_calidad_producto_id_fkey(nombre)`,
-      )
-      .order("capturado_at", { ascending: false })
-      .limit(200);
-    if (error) throw new Error(error.message);
+        )
+        .in("maquinas.codigo", maquinas)
+        .order("capturado_at", { ascending: false })
+        .order("id", { ascending: false })
+        .range(desde, desde + PAGE - 1);
+      if (data.maquina) q = q.eq("maquinas.codigo", data.maquina);
+      if (data.planta) q = q.eq("maquinas.plantas.codigo", data.planta);
+      if (folioLimpio)
+        q = q.or(
+          `numero_rollo.ilike.*${folioLimpio}*,ordenes_fabricacion.folio.ilike.*${folioLimpio}*`,
+        );
+      if (inicioDiaUtc && finDiaUtc)
+        q = q.gte("capturado_at", inicioDiaUtc).lt("capturado_at", finDiaUtc);
+      const { data: page, error } = await q;
+      if (error) throw new Error(error.message);
+      rows.push(...((page ?? []) as Record<string, unknown>[]));
+      if ((page ?? []).length < PAGE) break;
+    }
+    if (rows.length >= MAX_FILAS) {
+      throw new Error(
+        "La búsqueda superó el máximo de registros permitido; afina los filtros (máquina, folio o fecha).",
+      );
+    }
 
     const ahora = Date.now();
     const lista = (rows ?? [])
