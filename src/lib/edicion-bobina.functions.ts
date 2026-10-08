@@ -152,7 +152,26 @@ export const buscarBobinasEditables = createServerFn({ method: "POST" })
     };
     if (patronFolio) {
       await runPaginado("rollo");
-      await runPaginado("orden");
+      // El filtro embebido ordenes_fabricacion.folio=ilike.* es ignorado por
+      // PostgREST (devuelve todas las filas), así que se resuelven primero los
+      // IDs de órdenes cuyo folio coincide y se filtra por orden_id.
+      const ordenIds: string[] = [];
+      for (let desde = 0; desde < MAX_FILAS && ordenIds.length < MAX_FILAS; desde += PAGE) {
+        const { data: ordenes, error } = await sb
+          .from("ordenes_fabricacion")
+          .select("id")
+          .ilike("folio", patronFolio)
+          .range(desde, desde + PAGE - 1);
+        if (error) throw new Error(error.message);
+        for (const o of (ordenes ?? []) as { id: string }[]) ordenIds.push(o.id);
+        if ((ordenes ?? []).length < PAGE) break;
+      }
+      if (ordenIds.length > 0) {
+        for (let i = 0; i < ordenIds.length; i += 500) {
+          const bloque = ordenIds.slice(i, i + 500);
+          await runPaginadoFolioOrden(bloque);
+        }
+      }
     } else {
       await runPaginado(null);
     }
