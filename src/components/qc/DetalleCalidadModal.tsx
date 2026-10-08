@@ -111,7 +111,7 @@ export function DetalleCalidadModal({
         min: v.min,
         objetivo: v.objetivo,
         max: v.max,
-        estado: prev?.valor == null ? "pendiente" : prev.estado,
+        estado: evalEstado(prev?.valor ?? null, v.min, v.max, v.clave),
         observacion: "",
         nueva: prev?.valor == null,
       };
@@ -663,4 +663,15 @@ function EditField({
       />
     </div>
   );
+}
+
+// Mismo criterio que el formulario de captura (y que el servidor).
+function evalEstado(v: number | null, min: number, max: number, clave: string): string {
+  if (v == null || !Number.isFinite(v)) return "pendiente";
+  const k = clave.toLowerCase().replace(/[\s_-]/g, "");
+  const sinTope = k === "tensionmd" || k === "tensioncd" || k.includes("blancura") || k.includes("r457");
+  const tol = Math.abs(max - min) * 0.2;
+  if (v < min - tol || (!sinTope && v > max + tol)) return "fuera_rango_critico";
+  if (v < min || (!sinTope && v > max)) return "no_conforme";
+  return "conforme";
 }
