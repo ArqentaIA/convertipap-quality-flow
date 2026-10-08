@@ -7,8 +7,8 @@
 
 ## Revisión integral solicitada
 - [x] Auditar reportes y descargas; corregir lecturas auxiliares y paginación de ejecutivo, anual, no conformes y mensual de bobinadoras sin cambiar cálculos.
-- [ ] Ampliar columnas de bobinadoras para incluir todas las posiciones registradas; autorizado por el usuario.
+- [x] Ampliar columnas de bobinadoras hasta C350; verificar los tres formatos y recalcular subtotales SAP en Excel sin errores.
 - [x] Verificar producción dinámica julio/agosto/septiembre en ambas plantas contra pantalla, Excel y base; comprobar descargas anual/mensual, no conformes, general y consolidado con administrador. Sin enviar correos.
 - [x] Probar bloqueo de descarga anual/mensual ante fallo de red y ejecutar pruebas de paginación y fechas. La verificación no certifica todos los reportes ni todos los periodos.
-- [ ] Confirmar tratamiento de capturas posteriores al cierre en reportes históricos antes de cambiar la ventana actual del visor reutilizado.
-- [ ] Crear reporte independiente de capturas fuera de turno por día y mes; pendiente precisar alcance y fecha de agrupación.
+- [ ] Confirmar con el usuario si los reportes históricos deben incorporar capturas posteriores al cierre; conservar la ventana vigente mientras no se autorice una regla distinta.
+- [x] Crear y probar reporte independiente de capturas fuera de turno por día y mes, agrupado por fecha real de captura en México; sin modificar cierres ni históricos.
