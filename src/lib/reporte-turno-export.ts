@@ -102,7 +102,7 @@ export function filterCentroByTurnoFecha(
   fecha: string,
   turno: string,
 ): ReporteTurnoData {
-  const dayStart = new Date(`${fecha}T00:00:00`);
+  const dayStart = new Date(`${fecha}T07:00:00-06:00`); // día operativo 07:00→07:00
   const dayEnd = new Date(dayStart.getTime() + 24 * 3600_000);
   const rows = payload.tabla.filter((r) => {
     if (r.turno !== turno) return false;

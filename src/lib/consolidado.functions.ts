@@ -76,10 +76,10 @@ const inputSchema = z.object({
 const MX_OFFSET_HOURS = -6;
 
 function diaMexicoToUtcRange(fecha: string): { startIso: string; endIso: string } {
-  // Inicio local 00:00 en CDMX = 06:00 UTC del mismo día.
-  // Fin = inicio + 24h.
+  // Día operativo: inicio T1 07:00 CDMX del día elegido → 07:00 del día siguiente
+  // (incluye T3 completo, 23:00→07:00). Fin = inicio + 24h.
   const [y, m, d] = fecha.split("-").map(Number);
-  const startUtc = new Date(Date.UTC(y, m - 1, d, -MX_OFFSET_HOURS, 0, 0, 0));
+  const startUtc = new Date(Date.UTC(y, m - 1, d, 7 - MX_OFFSET_HOURS, 0, 0, 0));
   const endUtc = new Date(startUtc.getTime() + 24 * 60 * 60 * 1000);
   return { startIso: startUtc.toISOString(), endIso: endUtc.toISOString() };
 }
