@@ -2363,6 +2363,7 @@ export type Database = {
         Row: {
           campo: string
           created_at: string
+          evento_id: string | null
           id: string
           maquina_codigo: string | null
           motivo: string
@@ -2376,6 +2377,7 @@ export type Database = {
         Insert: {
           campo: string
           created_at?: string
+          evento_id?: string | null
           id?: string
           maquina_codigo?: string | null
           motivo: string
@@ -2389,6 +2391,7 @@ export type Database = {
         Update: {
           campo?: string
           created_at?: string
+          evento_id?: string | null
           id?: string
           maquina_codigo?: string | null
           motivo?: string
