@@ -64,6 +64,13 @@
       "when": 1791431403767,
       "tag": "0008_qc_cambio_producto_rollo",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791431458659,
+      "tag": "0009_fix_sku_cambio_producto",
+      "breakpoints": true
     }
   ]
 }
