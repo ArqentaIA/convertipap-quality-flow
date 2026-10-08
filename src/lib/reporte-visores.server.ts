@@ -329,7 +329,7 @@ export async function construirReporteVisores(
   }).formatToParts(fechaOperativa);
   const p = (t: string) => partesOp.find((x) => x.type === t)?.value ?? "00";
   const fechaPlanta = `${p("year")}${p("month")}${p("day")}`;
-  const fileName = `Convertipap_CierreTurno_${fechaPlanta}_${turnoArchivo} Python 3.12.10.xlsx`;
+  const fileName = `Convertipap_CierreTurno_${fechaPlanta}_${turnoArchivo}.xlsx`;
   // Asunto dinámico: "Cierre de Turno | DD-MM-YYYY | T1"
   const subject = `Cierre de Turno | ${p("day")}-${p("month")}-${p("year")} | ${turnoArchivo}`;
 
