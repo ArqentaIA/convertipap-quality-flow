@@ -4,6 +4,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { readAllReportPages, readReportIdChunks } from "@/lib/report-query-pages";
 
 // ---------------------------- Tipos de dominio ---------------------------- //
 
@@ -880,44 +881,29 @@ export const obtenerReporteMensualCintas = createServerFn({ method: "POST" })
     const finM = data.month === 12 ? 1 : data.month + 1;
     const finExcl = `${finY}-${pad(finM)}-01`;
 
-    const { data: lotes, error } = await context.supabase
+    const lotes = await readAllReportPages((from, to) => context.supabase
       .from("pesajes_cintas_lotes")
       .select("*")
       .gte("fecha_produccion", inicio)
       .lt("fecha_produccion", finExcl)
       .neq("estado", "anulado")
       .order("fecha_produccion")
-      .order("numero_rollo");
-    if (error) throw new Error(error.message);
+      .order("numero_rollo").order("id").range(from, to));
 
     const filas = (lotes ?? []) as unknown as (LoteCintas & { datos_calidad_snapshot: Json })[];
     const ids = filas.map((l) => l.id);
 
-    let cintas: CintaRegistrada[] = [];
-    if (ids.length > 0) {
-      const chunks: string[][] = [];
-      for (let i = 0; i < ids.length; i += 200) chunks.push(ids.slice(i, i + 200));
-      const res = await Promise.all(
-        chunks.map((c) =>
-          context.supabase
-            .from("pesajes_cintas")
-            .select("*")
-            .in("lote_id", c)
-            .order("posicion"),
-        ),
-      );
-      for (const r of res) {
-        if (r.error) throw new Error(r.error.message);
-        cintas = cintas.concat((r.data ?? []) as unknown as CintaRegistrada[]);
-      }
-    }
+    const cintas = await readReportIdChunks(ids, (chunk, from, to) => context.supabase
+      .from("pesajes_cintas").select("*").in("lote_id", chunk)
+      .order("posicion").order("id").range(from, to)) as unknown as CintaRegistrada[];
 
-    const { data: plantas } = await context.supabase
+    const { data: plantas, error: plantasError } = await context.supabase
       .from("plantas")
       .select("nombre")
       .eq("activo", true)
       .order("nombre")
       .limit(1);
+    if (plantasError) throw new Error(plantasError.message);
 
     const snapshots: Record<string, Json> = {};
     for (const l of filas) snapshots[l.id] = l.datos_calidad_snapshot;

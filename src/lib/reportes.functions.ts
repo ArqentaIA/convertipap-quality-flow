@@ -575,11 +575,12 @@ export const getReportes = createServerFn({ method: "POST" })
     // ====================================================
     // Costo de No Calidad
     // ====================================================
-    const { data: cfgRow } = await sb
+    const { data: cfgRow, error: cfgError } = await sb
       .from("app_settings")
       .select("costo_no_calidad_kg")
       .limit(1)
       .maybeSingle();
+    if (cfgError) throw new Error(cfgError.message);
     const costoKg = Number((cfgRow as any)?.costo_no_calidad_kg ?? 18.0);
 
     const pesoPorMuestra = new Map<string, number>();
