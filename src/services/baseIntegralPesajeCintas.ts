@@ -30,7 +30,7 @@ function d(v: unknown): Date | null {
 function jstr(v: unknown): string {
   if (v == null) return "";
   if (typeof v === "string") return v;
-  try { return JSON.stringify(v); } catch { return String(v); }
+  try { return JSON.stringify(v); } catch (e) { console.error("[base-integral] JSON error:", e); return String(v); }
 }
 
 function hoja(

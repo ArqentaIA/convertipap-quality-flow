@@ -91,7 +91,7 @@ function lastDayOfMonth(year: number, month0: number): number {
 // Replica en JS de la función SQL public.shift_op_date:
 // si turno = '3' y la hora local MX < 23, el día operativo es el día MX - 1.
 // Devuelve un Date en UTC a medianoche del día operativo (para comparar y agrupar).
-function shiftOpDateUTC(iso: string, turno: string): Date {
+export function shiftOpDateUTC(iso: string, turno: string): Date {
   const d = new Date(iso);
   const fmt = new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/Mexico_City",
@@ -174,24 +174,15 @@ export const getReporteMensual = createServerFn({ method: "POST" })
     const productoIds = Array.from(new Set(muestras.map((m) => m.producto_id).filter((v): v is string => !!v)));
     const userIds = Array.from(new Set(muestras.map((m) => m.capturado_por).filter((v): v is string => !!v)));
 
-    const [maqRes, prodRes, profRes] = await Promise.all([
-      maquinaIds.length
-        ? sb.from("maquinas").select("id, codigo, nombre").in("id", maquinaIds)
-        : Promise.resolve({ data: [] as Array<{ id: string; codigo: string; nombre: string }>, error: null }),
-      productoIds.length
-        ? sb.from("productos").select("id, codigo, nombre").in("id", productoIds)
-        : Promise.resolve({ data: [] as Array<{ id: string; codigo: string; nombre: string }>, error: null }),
-      userIds.length
-        ? sb.from("profiles").select("id, nombre, email").in("id", userIds)
-        : Promise.resolve({ data: [] as Array<{ id: string; nombre: string | null; email: string | null }>, error: null }),
+    const [maquinas, productos, perfiles] = await Promise.all([
+      readReportIdChunks(maquinaIds, (ids, from, to) => sb.from("maquinas").select("id, codigo, nombre").in("id", ids).order("id").range(from, to)),
+      readReportIdChunks(productoIds, (ids, from, to) => sb.from("productos").select("id, codigo, nombre").in("id", ids).order("id").range(from, to)),
+      readReportIdChunks(userIds, (ids, from, to) => sb.from("profiles").select("id, nombre, email").in("id", ids).order("id").range(from, to)),
     ]);
-    if (maqRes.error) throw maqRes.error;
-    if (prodRes.error) throw prodRes.error;
-    if (profRes.error) throw profRes.error;
 
-    const maqById = new Map((maqRes.data ?? []).map((r) => [r.id, r]));
-    const prodById = new Map((prodRes.data ?? []).map((r) => [r.id, r]));
-    const userById = new Map((profRes.data ?? []).map((r) => [r.id, r]));
+    const maqById = new Map(maquinas.map((r) => [r.id, r]));
+    const prodById = new Map(productos.map((r) => [r.id, r]));
+    const userById = new Map(perfiles.map((r) => [r.id, r]));
 
     // 4) Peso por muestra (mediciones_calidad, variable_clave="peso") paginado
     const pesoPorMuestra = new Map<string, number>();

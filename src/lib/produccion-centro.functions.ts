@@ -213,16 +213,16 @@ export const getProduccionCentro = createServerFn({ method: "POST" })
 
 
     const [
-      { data: maquinas },
-      { data: productos },
+      maquinas,
+      productos,
       muestras,
       medicionesAll,
       paros,
-      { data: estados },
+      estados,
       settingsResp,
     ] = await Promise.all([
-      sb.from("maquinas").select("id, codigo, nombre").in("planta_id", plantaIds).order("codigo"),
-      sb.from("productos").select("id, codigo, nombre"),
+      readAllReportPages((from, to) => sb.from("maquinas").select("id, codigo, nombre").in("planta_id", plantaIds).order("codigo").order("id").range(from, to)),
+      readAllReportPages((from, to) => sb.from("productos").select("id, codigo, nombre").order("id").range(from, to)),
       readAllReportPages((from, to) => sb
         .from("muestras_calidad")
         .select(
@@ -239,9 +239,10 @@ export const getProduccionCentro = createServerFn({ method: "POST" })
         .in("maquina_id", maquinaIds)
         .gte("inicio", start.toISOString())
         .lte("inicio", end.toISOString()).order("id").range(from, to)),
-      sb.from("maquina_estado_actual").select("maquina_id, estado, ultimo_cambio").in("maquina_id", maquinaIds),
+      readAllReportPages((from, to) => sb.from("maquina_estado_actual").select("maquina_id, estado, ultimo_cambio").in("maquina_id", maquinaIds).order("maquina_id").range(from, to)),
       sb.from("app_settings").select("costo_no_calidad_kg").limit(1).maybeSingle(),
     ]);
+    if (settingsResp.error) throw new Error(settingsResp.error.message);
 
     // Mediciones recortadas a las muestras de la planta activa.
     const muestraIdsScope = new Set((muestras ?? []).map((m) => m.id));

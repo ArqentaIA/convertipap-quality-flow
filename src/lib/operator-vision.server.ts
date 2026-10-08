@@ -28,7 +28,7 @@ export async function fetchOperatorVisionData(maquinaCodigo: string, opts?: { re
     }
 
     // 2) Orden de fabricación activa en esa máquina (más reciente en proceso)
-    const { data: ordenActiva } = await sb
+    const { data: ordenActiva, error: ordenError } = await sb
       .from("ordenes_fabricacion")
       .select(
         `id, folio, estado, turno, producido_kg, producido_rollos,
@@ -41,6 +41,7 @@ export async function fetchOperatorVisionData(maquinaCodigo: string, opts?: { re
       .order("fecha_inicio", { ascending: false, nullsFirst: false })
       .limit(1)
       .maybeSingle();
+    if (ordenError) throw new Error(ordenError.message);
 
     // 3) Variables de la especificación activa (rangos min/obj/max)
     let variables: Array<{
@@ -52,13 +53,13 @@ export async function fetchOperatorVisionData(maquinaCodigo: string, opts?: { re
       max: number;
     }> = [];
     if (ordenActiva?.especificacion_id) {
-      const { data: vars } = await sb
+      const vars = await readAllReportPages((from, to) => sb
         .from("producto_variables")
         .select(
           `min_valor, objetivo, max_valor,
            variables_calidad(clave, etiqueta, unidad)`,
         )
-        .eq("especificacion_id", ordenActiva.especificacion_id);
+        .eq("especificacion_id", ordenActiva.especificacion_id).order("id").range(from, to));
       variables =
         (vars ?? [])
           .map((v: any) => {
@@ -91,11 +92,12 @@ export async function fetchOperatorVisionData(maquinaCodigo: string, opts?: { re
     // la orden activa ni a la última muestra: si el reloj entró a un turno
     // donde aún no hay capturas, el historial debe quedar vacío en lugar de
     // arrastrar rollos del turno anterior (preserva trazabilidad header↔datos).
-    const { data: turnosCfg } = await sb
+    const { data: turnosCfg, error: turnosError } = await sb
       .from("app_settings")
       .select("turno1_inicio, turno1_fin, turno2_inicio, turno2_fin, turno3_inicio, turno3_fin")
       .limit(1)
       .maybeSingle();
+    if (turnosError) throw new Error(turnosError.message);
     const hhmmToMin = (s?: string | null): number | null => {
       if (!s) return null;
       const [h, m] = s.split(":").map((x) => parseInt(x, 10));
@@ -214,14 +216,18 @@ export async function fetchOperatorVisionData(maquinaCodigo: string, opts?: { re
       const ultima = muestrasRaw?.[0]; // muestrasRaw está desc, [0] = más reciente
       if (ultima) {
         productoFallbackId = (ultima.producto_id as string) ?? null;
-        const [{ data: prod }, { data: ord }] = await Promise.all([
+        const [prodRes, ordRes] = await Promise.all([
           ultima.producto_id
             ? sb.from("productos").select("codigo, nombre").eq("id", ultima.producto_id).maybeSingle()
-            : Promise.resolve({ data: null }),
+             : Promise.resolve({ data: null, error: null }),
           ultima.orden_id
             ? sb.from("ordenes_fabricacion").select("folio, turno").eq("id", ultima.orden_id).maybeSingle()
-            : Promise.resolve({ data: null }),
-        ] as any);
+             : Promise.resolve({ data: null, error: null }),
+        ]);
+        if (prodRes.error) throw new Error(prodRes.error.message);
+        if (ordRes.error) throw new Error(ordRes.error.message);
+        const prod = prodRes.data;
+        const ord = ordRes.data;
         ordenFallback = {
           folio: (ord?.folio as string) ?? "",
           turno: (ord?.turno as string) ?? (ultima.turno as string) ?? "",
@@ -235,7 +241,7 @@ export async function fetchOperatorVisionData(maquinaCodigo: string, opts?: { re
     // tomar la especificación vigente del producto para mostrar el universo completo
     // de variables con sus rangos min/obj/max, aunque aún no se hayan medido.
     if (variables.length === 0 && productoFallbackId) {
-      const { data: specVig } = await sb
+      const { data: specVig, error: specError } = await sb
         .from("producto_especificaciones")
         .select("id")
         .eq("producto_id", productoFallbackId)
@@ -243,14 +249,15 @@ export async function fetchOperatorVisionData(maquinaCodigo: string, opts?: { re
         .order("vigente_desde", { ascending: false, nullsFirst: false })
         .limit(1)
         .maybeSingle();
+      if (specError) throw new Error(specError.message);
       if (specVig?.id) {
-        const { data: vars } = await sb
+        const vars = await readAllReportPages((from, to) => sb
           .from("producto_variables")
           .select(
             `min_valor, objetivo, max_valor,
              variables_calidad(clave, etiqueta, unidad)`,
           )
-          .eq("especificacion_id", specVig.id);
+          .eq("especificacion_id", specVig.id).order("id").range(from, to));
         variables =
           (vars ?? [])
             .map((v: any) => {
@@ -274,11 +281,12 @@ export async function fetchOperatorVisionData(maquinaCodigo: string, opts?: { re
 
 
     // 5) Estado actual de máquina
-    const { data: estadoActual } = await sb
+    const { data: estadoActual, error: estadoError } = await sb
       .from("maquina_estado_actual")
       .select("estado, ultimo_cambio")
       .eq("maquina_id", maquina.id)
       .maybeSingle();
+    if (estadoError) throw new Error(estadoError.message);
 
     // 6) Cumplimiento del turno vigente (último estatus de cada rollo).
     //    Ventana: hoy (00:00 → ahora) y filtrado por turno de la orden
