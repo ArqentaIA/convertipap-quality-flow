@@ -185,6 +185,7 @@ export const getConsolidado = createServerFn({ method: "GET" })
         muestra_id: mu.id as string,
         turno: String(mu.turno ?? ""),
         hora_muestreo: mu.hora_muestreo as string,
+        capturado_at: ((mu as { capturado_at?: string | null }).capturado_at ?? null) || null,
         codigo_producto: productoRel?.codigo ?? null,
         sku_sap: ((mu as { sku_sap?: string | null }).sku_sap ?? null) || null,
         producto_id: prodId,
