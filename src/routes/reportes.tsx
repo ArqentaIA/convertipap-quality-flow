@@ -339,7 +339,9 @@ function ReporteProduccionItem(props: {
         <div className="text-[11px] text-muted-foreground">
           {dataQuery.isLoading
             ? "Cargando datos…"
-            : data
+            : dataQuery.isError
+              ? "No se pudo cargar el reporte. Intenta nuevamente."
+              : data
               ? `${data.tabla.length} registros disponibles · Última actualización: ${new Date(data.ultimaActualizacion).toLocaleString("es-MX", { timeZone: "America/Mexico_City", hour12: false })}`
               : "Sin datos disponibles"}
           {error && <span className="ml-2 text-destructive">· {error}</span>}
@@ -347,7 +349,7 @@ function ReporteProduccionItem(props: {
         <div className="flex items-center gap-2">
           <button
             onClick={() => handle("xlsx")}
-            disabled={!data || busy !== null}
+            disabled={!data || busy !== null || dataQuery.isError || dataQuery.isFetching}
             className={XLSX_BTN_CLS}
             title="Descargar XLSX detallado"
           >
@@ -464,7 +466,9 @@ function ReporteMensualItem({ usuario, enabled }: { usuario: string; enabled: bo
         <div className="text-[11px] text-muted-foreground">
           {query.isLoading
             ? "Cargando datos…"
-            : data
+            : query.isError
+              ? "No se pudo cargar el reporte. Intenta nuevamente."
+              : data
               ? `${data.resumen.rollosTotal.toLocaleString("es-MX")} rollos · ${data.trazabilidad.length} registros trazables`
               : "Sin datos disponibles"}
           {error && <span className="ml-2 text-destructive">· {error}</span>}
@@ -472,7 +476,7 @@ function ReporteMensualItem({ usuario, enabled }: { usuario: string; enabled: bo
         <div className="flex items-center gap-2">
           <button
             onClick={() => handle("xlsx")}
-            disabled={!data || busy !== null}
+            disabled={!data || busy !== null || query.isError || query.isFetching}
             className={XLSX_BTN_CLS}
             title="Descargar XLSX detallado con trazabilidad"
           >
@@ -600,7 +604,7 @@ function ReporteTurnoItem({ usuario, enabled }: { usuario: string; enabled: bool
         <div className="flex items-center gap-2">
           <button
             onClick={() => handle("xlsx")}
-            disabled={!filtered || busy !== null}
+            disabled={!filtered || busy !== null || dataQuery.isError || dataQuery.isFetching}
             className={XLSX_BTN_CLS}
             title="Exportar Excel"
           >
@@ -964,7 +968,7 @@ function ReporteNoConformeItem({ enabled }: { enabled: boolean }) {
           {error && <span className="ml-2 text-destructive">· {error}</span>}
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={() => handle("xlsx")} disabled={!data || busy !== null} className={XLSX_BTN_CLS}
+          <button onClick={() => handle("xlsx")} disabled={!data || busy !== null || query.isError || query.isFetching} className={XLSX_BTN_CLS}
             title="Descargar Excel del seguimiento de rollos no conformes">
             <FileSpreadsheet className="h-3.5 w-3.5" /> {busy === "xlsx" ? "Generando…" : "XLSX"}
           </button>
