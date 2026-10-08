@@ -2001,21 +2001,40 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
                     <span className="ml-1 text-muted-foreground">(automática · hora actual)</span>
                   )}
                 </Label>
-                <Input
-                  id="hora"
-                  type="datetime-local"
-                  className="h-11 text-base"
-                  value={horaMuestreo}
-                  min={horaMinMax.min}
-                  max={horaMinMax.max}
-                  readOnly={!modoFueraTurno}
-                  disabled={!modoFueraTurno}
-                  onChange={(e) => setHoraMuestreo(e.target.value)}
-                />
-                {!modoFueraTurno && (
-                  <p className="text-[11px] text-muted-foreground">
-                    La hora se fija automáticamente al momento de la captura y no es editable.
-                  </p>
+                {modoFueraTurno ? (
+                  <>
+                    <Input
+                      id="hora"
+                      type="datetime-local"
+                      className="h-11 text-base"
+                      value={horaMuestreo}
+                      min={horaMinMax.min}
+                      max={horaMinMax.max}
+                      onChange={(e) => setHoraMuestreo(e.target.value)}
+                    />
+                    <p className="text-[11px] text-muted-foreground">
+                      Hora de México (24 h):{" "}
+                      <span className="font-medium text-foreground">
+                        {horaMuestreo
+                          ? fechaHoraMX(fromMexicoDateTimeInputValue(horaMuestreo))
+                          : "—"}
+                      </span>
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <Input
+                      id="hora"
+                      type="text"
+                      className="h-11 text-base"
+                      value={fechaHoraMX(fromMexicoDateTimeInputValue(horaMuestreo))}
+                      readOnly
+                      disabled
+                    />
+                    <p className="text-[11px] text-muted-foreground">
+                      La hora se fija automáticamente al momento de la captura y no es editable.
+                    </p>
+                  </>
                 )}
               </div>
 
