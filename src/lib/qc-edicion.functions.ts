@@ -4,7 +4,7 @@
 //
 // Reglas de negocio (validadas en base de datos):
 //  - Solo usuarios dados de alta en qc_edicion_permisos, por máquina.
-//  - Solo dentro de las 12 horas posteriores a la captura del rollo.
+//  - Solo dentro de las 24 horas posteriores a la captura del rollo.
 //  - Motivo obligatorio (mínimo 10 caracteres) y bitácora completa.
 // =====================================================================
 import { createServerFn } from "@tanstack/react-start";
@@ -17,7 +17,15 @@ const editarSchema = z.object({
   muestra_id: z.string().uuid(),
   motivo: z.string().trim().min(10, "El motivo debe tener al menos 10 caracteres."),
   mediciones: z
-    .array(z.object({ clave: z.string().min(1), valor: z.number().finite() }))
+    .array(
+      z.object({
+        clave: z.string().min(1),
+        valor: z.number().finite(),
+        // Valor que el cliente vio al abrir el formulario: si en el servidor
+        // ya no coincide, otro usuario editó la bobina (control de concurrencia).
+        esperado: z.number().finite().nullable().optional(),
+      }),
+    )
     .max(60)
     .optional(),
   operador: z.string().max(120).optional(),
@@ -57,7 +65,12 @@ export const editarRolloCalidad = createServerFn({ method: "POST" })
   .inputValidator((input) => editarSchema.parse(input))
   .handler(async ({ data, context }) => {
     const cambios: Record<string, unknown> = {};
-    if (data.mediciones?.length) cambios.mediciones = data.mediciones;
+    if (data.mediciones?.length)
+      cambios.mediciones = data.mediciones.map((m) => ({
+        clave: m.clave,
+        valor: m.valor,
+        ...(m.esperado != null ? { esperado: m.esperado } : {}),
+      }));
     if (data.operador !== undefined) cambios.operador = data.operador;
     if (data.jefe_maquina !== undefined) cambios.jefe_maquina = data.jefe_maquina;
     if (data.analista !== undefined) cambios.analista = data.analista;
