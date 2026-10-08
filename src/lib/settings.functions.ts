@@ -131,6 +131,7 @@ export const updateAppSettings = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) => updateSchema.parse(data))
   .handler(async ({ data, context }): Promise<AppSettings> => {
+    assertConfigAutorizado(context.claims as Record<string, unknown>);
     const sb = context.supabase;
     const { data: updated, error } = await sb
       .from("app_settings")
