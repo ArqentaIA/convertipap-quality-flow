@@ -56,7 +56,7 @@ const IDX_OBS = COLS.findIndex((c) => c.key === "observaciones");
 function fmtFecha(iso: string): string {
   // Convertir a TZ México (UTC-6)
   const d = new Date(iso);
-  const local = new Date(d.getTime() + -6 * 60 * 60 * 1000 - d.getTimezoneOffset() * 60 * 1000);
+  const local = new Date(d.getTime() - 6 * 60 * 60 * 1000);
   const dd = String(local.getUTCDate()).padStart(2, "0");
   const mm = String(local.getUTCMonth() + 1).padStart(2, "0");
   const yyyy = local.getUTCFullYear();
@@ -64,7 +64,7 @@ function fmtFecha(iso: string): string {
 }
 function fmtHora(iso: string): string {
   const d = new Date(iso);
-  const local = new Date(d.getTime() + -6 * 60 * 60 * 1000 - d.getTimezoneOffset() * 60 * 1000);
+  const local = new Date(d.getTime() - 6 * 60 * 60 * 1000);
   const hh = String(local.getUTCHours()).padStart(2, "0");
   const mi = String(local.getUTCMinutes()).padStart(2, "0");
   return `${hh}:${mi}`;
