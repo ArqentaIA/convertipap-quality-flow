@@ -701,7 +701,6 @@ type MaquinaRow = { id: string; codigo: string; nombre: string; access_code: str
 
 /** Máquinas con visor Operator Vision (debe coincidir con MAQUINAS_VALIDAS del visor). */
 const MAQUINAS_CON_VISOR = ["MP-01", "MP-04", "MP-05", "MP-06", "MP-07"] as const;
-const OPERATOR_VISION_BASE = "https://www.convertipap.site";
 
 function MachineAccessCodesCard() {
   const qc = useQueryClient();
