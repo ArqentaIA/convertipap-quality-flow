@@ -43,6 +43,7 @@ export function ReporteFueraTurnoSection({ enabled }: { enabled: boolean }) {
     </div>
     {query.isFetching ? <p className="text-xs text-muted-foreground">Cargando reporte completo…</p> : query.isError ? <p role="alert" className="text-sm text-destructive">No se pudo cargar el reporte: {query.error.message}</p> : data ? <>
       <p className="text-xs text-muted-foreground">{data.periodo} · {data.rows.length} registros · Fecha de captura · Hora de México</p>
+      <p className="text-xs text-muted-foreground">Del {fechaCortoMX(data.inicio)} {horaMX(data.inicio)} al {fechaCortoMX(data.finExclusivo)} {horaMX(data.finExclusivo)}</p>
       {data.rows.length === 0 ? <p className="text-sm text-muted-foreground">Sin capturas fuera de turno en el periodo solicitado.</p> : <div className="max-h-96 overflow-auto"><table className="w-full text-left text-xs"><thead className="sticky top-0 bg-background"><tr>{["Rollo", "Fecha de captura", "Hora", "Máquina", "Turno declarado", "SKU SAP", "Capturado por", "Motivo"].map((h) => <th key={h} className="whitespace-nowrap border-b border-border p-2">{h}</th>)}</tr></thead><tbody>{data.rows.map((r) => <tr key={r.id}>{[r.rollo, fechaCortoMX(r.capturadoAt), horaMX(r.capturadoAt), r.maquina, r.turno, r.skuSap ?? "—", r.capturadoPor, r.motivo].map((v, i) => <td key={i} className="border-b border-border p-2 align-top">{v}</td>)}</tr>)}</tbody></table></div>}
     </> : null}
     {error && <p role="alert" className="text-sm text-destructive">{error}</p>}

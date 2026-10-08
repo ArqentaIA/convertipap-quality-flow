@@ -1,8 +1,11 @@
 import { describe, it, expect } from "vitest";
 import { fueraTurnoWindow } from "./reporte-fuera-turno.dates";
 describe("Fuera de turno por fecha de captura mexicana", () => {
-  it("incluye medianoche y excluye el día siguiente", () => {
-    expect(fueraTurnoWindow("dia", "2026-10-06")).toEqual({ start: "2026-10-06T06:00:00.000Z", end: "2026-10-07T06:00:00.000Z" });
+  it("incluye T1, T2 y T3 de la fecha seleccionada hasta el cierre del día siguiente", () => {
+    expect(fueraTurnoWindow("dia", "2026-10-06")).toEqual({ start: "2026-10-06T13:00:00.000Z", end: "2026-10-07T13:00:00.000Z" });
+    const w = fueraTurnoWindow("dia", "2026-10-06");
+    expect("2026-10-07T12:59:59.999Z" < w.end).toBe(true);
+    expect(fueraTurnoWindow("dia", "2026-10-07").start).toBe(w.end);
   });
   it("lee el mes completo sin regla de cierres productivos", () => {
     expect(fueraTurnoWindow("mes", "2026-09-15")).toEqual({ start: "2026-09-01T06:00:00.000Z", end: "2026-10-01T06:00:00.000Z" });
