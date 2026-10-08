@@ -92,6 +92,13 @@
       "when": 1791433963071,
       "tag": "0012_config_exclusiva_adgral",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1791434011185,
+      "tag": "0013_app_settings_lectura_autenticados",
+      "breakpoints": true
     }
   ]
 }
