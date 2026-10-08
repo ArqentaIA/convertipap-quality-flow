@@ -93,9 +93,20 @@ const updateSchema = z.object({
 });
 
 
+// Acceso exclusivo a la configuración del sistema: solo adgral@convertipap.site.
+const EMAIL_CONFIG = "adgral@convertipap.site";
+
+function assertConfigAutorizado(claims: Record<string, unknown>) {
+  const email = String(claims["email"] ?? "").toLowerCase();
+  if (email !== EMAIL_CONFIG) {
+    throw new Error("Acceso denegado. La configuración del sistema es exclusiva del administrador autorizado.");
+  }
+}
+
 export const getAppSettings = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<AppSettings> => {
+    assertConfigAutorizado(context.claims as Record<string, unknown>);
     const sb = context.supabase;
     const { data, error } = await sb
       .from("app_settings")
@@ -120,6 +131,7 @@ export const updateAppSettings = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) => updateSchema.parse(data))
   .handler(async ({ data, context }): Promise<AppSettings> => {
+    assertConfigAutorizado(context.claims as Record<string, unknown>);
     const sb = context.supabase;
     const { data: updated, error } = await sb
       .from("app_settings")
