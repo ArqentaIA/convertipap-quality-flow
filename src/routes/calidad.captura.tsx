@@ -1608,8 +1608,7 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
                                 {p.numero_rollo} · {p.peso_neto_kg} kg ·{" "}
                                 {new Date(p.fecha_hora_pesaje).toLocaleString("es-MX", {
                                   dateStyle: "short",
-                                  timeStyle: "short",
-                                })}
+                                  timeStyle: "short", timeZone: "America/Mexico_City", hour12: false })}
                               </option>
                             ))}
                           </select>
@@ -1707,8 +1706,7 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
                       Fecha/hora:{" "}
                       {new Date(pesajeVinculado.fecha_hora_pesaje).toLocaleString("es-MX", {
                         dateStyle: "short",
-                        timeStyle: "short",
-                      })}
+                        timeStyle: "short", timeZone: "America/Mexico_City", hour12: false })}
                     </div>
                     {pesajeVinculado.numero_orden && (
                       <div>
@@ -2180,7 +2178,7 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
                               title={
                                 vs.clave === "peso"
                                   ? pesajeVinculado
-                                    ? `Peso neto tomado del pesaje registrado (${new Date(pesajeVinculado.fecha_hora_pesaje).toLocaleTimeString("es-MX")}).`
+                                    ? `Peso neto tomado del pesaje registrado (${new Date(pesajeVinculado.fecha_hora_pesaje).toLocaleTimeString("es-MX", { timeZone: "America/Mexico_City", hour12: false })}).`
                                     : "El peso se toma automáticamente del Pesaje de Rollo."
                                   : undefined
                               }
@@ -2349,7 +2347,7 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
                         title={
                           vs.clave === "peso"
                             ? pesajeVinculado
-                              ? `Peso neto tomado del pesaje registrado (${new Date(pesajeVinculado.fecha_hora_pesaje).toLocaleTimeString("es-MX")}).`
+                              ? `Peso neto tomado del pesaje registrado (${new Date(pesajeVinculado.fecha_hora_pesaje).toLocaleTimeString("es-MX", { timeZone: "America/Mexico_City", hour12: false })}).`
                               : "El peso se toma automáticamente del Pesaje de Rollo."
                             : undefined
                         }
@@ -2783,8 +2781,7 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
                           month: "2-digit",
                           year: "numeric",
                           hour: "2-digit",
-                          minute: "2-digit",
-                        },
+                          minute: "2-digit", timeZone: "America/Mexico_City", hour12: false },
                       );
                       return (
                         <tr

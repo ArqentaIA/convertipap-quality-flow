@@ -410,9 +410,8 @@ function CEOReportPreview({ onClose }: { onClose: () => void }) {
 
   const now = new Date();
   const fecha = now.toLocaleDateString("es-MX", { timeZone: "America/Mexico_City", 
-    weekday: "long", year: "numeric", month: "long", day: "numeric",
-  });
-  const hora = now.toLocaleTimeString("es-MX", { timeZone: "America/Mexico_City", hour: "2-digit", minute: "2-digit", hour12: true });
+    weekday: "long", year: "numeric", month: "long", day: "numeric", hour12: false });
+  const hora = now.toLocaleTimeString("es-MX", { timeZone: "America/Mexico_City", hour: "2-digit", minute: "2-digit", hour12: false });
 
   if (reportQuery.error) {
     return (
@@ -690,7 +689,7 @@ function BackendInfoCard() {
             </span>
           </div>
           <div className="col-span-2 text-[10px] text-muted-foreground">
-            Última verificación: {new Date(data.lastCheck).toLocaleString("es-MX", { timeZone: "America/Mexico_City" })}
+            Última verificación: {new Date(data.lastCheck).toLocaleString("es-MX", { timeZone: "America/Mexico_City", hour12: false })}
           </div>
         </div>
       )}

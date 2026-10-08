@@ -118,7 +118,7 @@ export async function generarBaseIntegralCintas(
     ["Total de impresiones", impresionesOrig],
     ["Total de reimpresiones", reimpresiones],
     ["Generado por", data.usuario],
-    ["Generado el", new Date(data.generadoAt).toLocaleString("es-MX", { timeZone: "America/Mexico_City" })],
+    ["Generado el", new Date(data.generadoAt).toLocaleString("es-MX", { timeZone: "America/Mexico_City", hour12: false })],
   ];
   kpis.forEach(([k, v], i) => {
     const r = ws0.getRow(3 + i);

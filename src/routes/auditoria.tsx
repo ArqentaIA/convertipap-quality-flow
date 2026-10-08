@@ -241,7 +241,7 @@ function AuditoriaPage() {
                     {rows.map((r) => (
                       <tr key={r.id} className="border-t border-border hover:bg-accent/30">
                         <td className="px-3 py-2 whitespace-nowrap tabular-nums text-xs">
-                          {new Date(r.timestamp).toLocaleString("es-MX", { timeZone: "America/Mexico_City" })}
+                          {new Date(r.timestamp).toLocaleString("es-MX", { timeZone: "America/Mexico_City", hour12: false })}
                         </td>
                         <td className="px-3 py-2 text-xs">{r.usuario_email ?? "—"}</td>
                         <td className="px-3 py-2 text-xs capitalize">{(r.rol ?? "").replace(/_/g, " ")}</td>

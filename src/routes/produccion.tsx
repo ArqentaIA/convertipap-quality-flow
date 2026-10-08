@@ -92,8 +92,7 @@ function ProduccionPage() {
     weekday: "long",
     day: "2-digit",
     month: "long",
-    year: "numeric",
-  });
+    year: "numeric", hour12: false });
 
   return (
     <AppLayout title="Producción · Estado de máquinas">
@@ -410,7 +409,7 @@ function MaquinaCard({
               <strong className="text-destructive">Paro activo:</strong> {m.paroActivo.tipo}
               {m.paroActivo.descripcion && <div className="text-muted-foreground">{m.paroActivo.descripcion}</div>}
               <div className="mt-1 text-[10px] text-muted-foreground">
-                Desde {new Date(m.paroActivo.inicio).toLocaleString("es-MX", { timeZone: "America/Mexico_City" })}
+                Desde {new Date(m.paroActivo.inicio).toLocaleString("es-MX", { timeZone: "America/Mexico_City", hour12: false })}
               </div>
             </div>
           </div>

@@ -357,8 +357,7 @@ export async function construirReporteVisores(
   const plantas = [...new Set(resumen.map((r) => r.planta).filter(Boolean))].join(" · ") || "—";
   const turnos = [...new Set(resumen.map((r) => r.turno).filter(Boolean))].join(" · ") || "—";
   const fechaLarga = fechaOperativa.toLocaleDateString("es-MX", { timeZone: "America/Mexico_City", 
-    weekday: "long", day: "2-digit", month: "long", year: "numeric",
-  });
+    weekday: "long", day: "2-digit", month: "long", year: "numeric", hour12: false });
 
   const kpi = (etiqueta: string, valor: string) =>
     `<td style="padding:12px 8px;border:1px solid #d7dee8;background:#f6f8fb;text-align:center;width:16.66%">
