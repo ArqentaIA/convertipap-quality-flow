@@ -1104,9 +1104,12 @@ function OperatorVisionPage() {
                 "diametro",
               ];
               const varByKey = new Map(variablesParaMostrar.map((v) => [v.clave, v]));
+              // Tensión RH: solo se muestra si la especificación del producto la incluye.
+              const conRH = varByKey.has("tensionRH");
+              if (conRH) ORDER.push("tensionRH");
               return (
                 <div
-                  className="grid grid-cols-8 gap-2 [grid-auto-rows:135px] xl:[grid-auto-rows:150px] 2xl:[grid-auto-rows:160px]"
+                  className={`grid ${conRH ? "grid-cols-9" : "grid-cols-8"} gap-2 [grid-auto-rows:135px] xl:[grid-auto-rows:150px] 2xl:[grid-auto-rows:160px]`}
                 >
                   {/* 1. Rollo Actual */}
                   <RolloActualCard
@@ -1239,7 +1242,10 @@ function OperatorVisionPage() {
                 { key: "pesoBase", label: "Peso Base", unit: "g/m²", digits: 2 },
                 { key: "anchoUtil", label: "Ancho Útil", unit: "cm", digits: 0 },
                 { key: "diametro", label: "Diámetro", unit: "u", digits: 0 },
-              ] as const;
+                { key: "tensionRH", label: "T. RH", unit: "g/in", digits: 2 },
+              ].filter(
+                (c) => c.key !== "tensionRH" || variablesParaMostrar.some((v) => v.clave === "tensionRH"),
+              );
               const filas = historial.length;
               const fz =
                 filas <= 8 ? 12 : filas <= 14 ? 11 : filas <= 20 ? 10 : 9;

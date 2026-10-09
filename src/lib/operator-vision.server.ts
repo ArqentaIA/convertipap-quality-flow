@@ -241,15 +241,13 @@ export async function fetchOperatorVisionData(maquinaCodigo: string, opts?: { re
     // tomar la especificación vigente del producto para mostrar el universo completo
     // de variables con sus rangos min/obj/max, aunque aún no se hayan medido.
     if (variables.length === 0 && productoFallbackId) {
-      const { data: specVig, error: specError } = await sb
-        .from("producto_especificaciones")
-        .select("id")
-        .eq("producto_id", productoFallbackId)
-        .eq("estado", "vigente")
-        .order("vigente_desde", { ascending: false, nullsFirst: false })
-        .limit(1)
-        .maybeSingle();
+      // Especificación correcta POR MÁQUINA (misma regla que la captura).
+      const { data: specId, error: specError } = await sb.rpc("qc_resolver_spec_producto", {
+        _producto_id: productoFallbackId,
+        _maquina_id: maquina.id,
+      } as never);
       if (specError) throw new Error(specError.message);
+      const specVig = specId ? { id: specId as unknown as string } : null;
       if (specVig?.id) {
         const vars = await readAllReportPages((from, to) => sb
           .from("producto_variables")
