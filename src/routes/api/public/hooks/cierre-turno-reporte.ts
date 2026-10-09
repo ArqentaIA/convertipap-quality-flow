@@ -107,6 +107,15 @@ async function ejecutar(request: Request) {
   let body: { modo?: string; referencia?: string; destinatarios?: string[] } = {};
   try { body = (await request.json()) as typeof body; } catch { body = {}; }
   if (body.modo === "reintento") return reintentar(supabaseAdmin);
+  if (body.modo === "reenvio") {
+    const ref = body.referencia ? new Date(body.referencia) : null;
+    const dest = (body.destinatarios ?? []).map((e) => e.trim().toLowerCase()).filter((e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e));
+    if (!ref || Number.isNaN(ref.getTime()) || dest.length === 0) return json({ error: "Reenvío requiere referencia y destinatarios válidos" }, 400);
+    const { construirReporteVisores } = await import("@/lib/reporte-visores.server");
+    const reporte = await construirReporteVisores(undefined, { referencia: ref });
+    const r = await enviarReporte(dest, reporte, reporte.subject);
+    return json(r.ok ? { ok: true, id: r.id, asunto: reporte.subject } : { error: r.error }, r.ok ? 200 : 502);
+  }
   if (body.modo === "prueba") {
     const ref = body.referencia ? new Date(body.referencia) : new Date(Date.now() - 60_000);
     const dest = (body.destinatarios ?? []).map((e) => e.trim().toLowerCase()).filter((e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e));
