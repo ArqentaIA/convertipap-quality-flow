@@ -19,6 +19,7 @@ import {
   getEtiquetaBobina,
   puedeUsarEdicionBobina,
   type BobinaEditable,
+  PAGINA_VENTANA,
 } from "@/lib/edicion-bobina.functions";
 import { printEtiquetaLiberacion } from "@/lib/etiqueta-liberacion";
 import { fechaHoraMX } from "@/lib/format";
@@ -46,18 +47,24 @@ function EdicionBobinaPage() {
   const [imprimiendo, setImprimiendo] = useState<string | null>(null);
   const [detalle, setDetalle] = useState<{ id: string; folio: string } | null>(null);
 
-  const buscar = async () => {
+  const [hayMas, setHayMas] = useState(false);
+  const buscar = async (mas = false) => {
     setBuscando(true);
     try {
+      const sinFiltros = !folio.trim() && !fecha;
+      const offset = mas ? (resultados?.length ?? 0) : 0;
       const res = await buscarFn({
         data: {
           ...(folio.trim() ? { folio: folio.trim() } : {}),
           ...(fecha ? { fecha } : {}),
           ...(maquina ? { maquina } : {}),
+          ...(sinFiltros ? { offset } : {}),
         },
       });
-      setResultados(res);
-      if (res.length === 0) toast.info("Sin bobinas que coincidan con los filtros.");
+      const lista = mas ? [...(resultados ?? []), ...res] : res;
+      setResultados(lista);
+      setHayMas(sinFiltros && res.length === PAGINA_VENTANA);
+      if (lista.length === 0) toast.info("Sin bobinas que coincidan con los filtros.");
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
