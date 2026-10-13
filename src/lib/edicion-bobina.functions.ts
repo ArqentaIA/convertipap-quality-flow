@@ -3,7 +3,7 @@
 //
 // Reglas:
 //  - Solo usuarios dados de alta en qc_edicion_permisos (por máquina).
-//  - La edición de datos sigue pasando por qc_editar_rollo (ventana 24 h,
+//  - La edición de datos sigue pasando por qc_editar_rollo (ventana 36 h,
 //    motivo obligatorio, trazabilidad completa, un evento por guardado).
 //  - La reimpresión de etiqueta NO genera evento ni requiere motivo.
 //  - Los filtros de planta/máquina se validan en servidor: nunca se
@@ -66,10 +66,13 @@ export type BobinaEditable = {
   estatus: string;
   folio_orden: string;
   producto: string;
-  /** true si aún está dentro de la ventana de edición de 24 h. */
+  /** true si aún está dentro de la ventana de edición de 36 h. */
   dentro_ventana: boolean;
   expira_at: string;
 };
+
+/** Tamaño de página de la búsqueda sin filtros (ventana de 36 h). */
+export const PAGINA_VENTANA = 200;
 
 /** Busca bobinas capturadas en las máquinas autorizadas del usuario. */
 export const buscarBobinasEditables = createServerFn({ method: "POST" })
@@ -84,6 +87,7 @@ export const buscarBobinasEditables = createServerFn({ method: "POST" })
           .optional(),
         maquina: z.string().trim().max(20).optional(),
         planta: z.string().trim().max(10).optional(),
+        offset: z.number().int().min(0).max(100000).optional(),
       })
       .parse(d),
   )
@@ -175,7 +179,30 @@ export const buscarBobinasEditables = createServerFn({ method: "POST" })
         }
       }
     } else {
-      await runPaginado(null);
+      // Sin folio ni fecha: solo bobinas dentro de la ventana autorizada de
+      // 36 h (hora de captura), en páginas de 200 (botón «Cargar más»).
+      const desdeVentana = new Date(Date.now() - 36 * 3600 * 1000).toISOString();
+      const off = data.offset ?? 0;
+      let q = sb
+        .from("muestras_calidad")
+        .select(
+          `id, numero_rollo, capturado_at, hora_muestreo, turno,
+           dictamen, estatus_liberacion,
+           maquinas!inner(codigo, plantas(nombre, codigo)),
+           ordenes_fabricacion(folio),
+           productos!muestras_calidad_producto_id_fkey(nombre)`,
+        )
+        .in("maquinas.codigo", data.maquina ? [data.maquina] : maquinas)
+        .gte("capturado_at", desdeVentana)
+        .order("capturado_at", { ascending: false })
+        .order("id", { ascending: false })
+        .range(off, off + PAGINA_VENTANA - 1);
+      if (data.planta) q = q.eq("maquinas.plantas.codigo", data.planta);
+      const { data: page, error } = await q;
+      if (error) throw new Error(error.message);
+      for (const row of (page ?? []) as Record<string, unknown>[]) {
+        porId.set(row.id as string, row);
+      }
     }
     const rows = Array.from(porId.values()).sort((a, b) => {
       const fa = String(a.capturado_at ?? "");
@@ -201,7 +228,7 @@ export const buscarBobinasEditables = createServerFn({ method: "POST" })
           | { folio?: string }
           | null;
         const cap = (m.capturado_at ?? m.hora_muestreo) as string;
-        const expira = new Date(new Date(cap).getTime() + 24 * 3600 * 1000);
+        const expira = new Date(new Date(cap).getTime() + 36 * 3600 * 1000);
         return {
           muestra_id: m.id as string,
           numero_rollo: (m.numero_rollo as string) ?? "—",
@@ -287,7 +314,7 @@ export type EtiquetaBobinaPayload = {
 /**
  * Datos actuales de la bobina para imprimir/reimprimir la etiqueta de
  * liberación. Reimpresión: no genera evento ni requiere motivo ni ventana
- * de 24 h, pero sí exige permiso de edición sobre la máquina.
+ * de 36 h, pero sí exige permiso de edición sobre la máquina.
  */
 export const getEtiquetaBobina = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

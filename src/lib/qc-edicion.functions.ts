@@ -4,7 +4,7 @@
 //
 // Reglas de negocio (validadas en base de datos):
 //  - Solo usuarios dados de alta en qc_edicion_permisos, por máquina.
-//  - Solo dentro de las 24 horas posteriores a la captura del rollo.
+//  - Solo dentro de las 36 horas posteriores a la captura del rollo.
 //  - Motivo obligatorio (mínimo 10 caracteres) y bitácora completa.
 // =====================================================================
 import { createServerFn } from "@tanstack/react-start";

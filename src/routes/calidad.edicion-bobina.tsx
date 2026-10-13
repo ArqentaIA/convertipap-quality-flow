@@ -1,7 +1,7 @@
 // =====================================================================
 // Edición de bobina madre — menú para Jefe de Calidad.
 // Permite localizar bobinas capturadas en Control de Calidad / Captura
-// fuera de turno, corregir sus valores (ventana de 24 h, motivo
+// fuera de turno, corregir sus valores (ventana de 36 h, motivo
 // obligatorio, trazabilidad completa) e imprimir la etiqueta actualizada.
 // =====================================================================
 import { createFileRoute } from "@tanstack/react-router";
@@ -19,6 +19,7 @@ import {
   getEtiquetaBobina,
   puedeUsarEdicionBobina,
   type BobinaEditable,
+  PAGINA_VENTANA,
 } from "@/lib/edicion-bobina.functions";
 import { printEtiquetaLiberacion } from "@/lib/etiqueta-liberacion";
 import { fechaHoraMX } from "@/lib/format";
@@ -46,18 +47,24 @@ function EdicionBobinaPage() {
   const [imprimiendo, setImprimiendo] = useState<string | null>(null);
   const [detalle, setDetalle] = useState<{ id: string; folio: string } | null>(null);
 
-  const buscar = async () => {
+  const [hayMas, setHayMas] = useState(false);
+  const buscar = async (mas = false) => {
     setBuscando(true);
     try {
+      const sinFiltros = !folio.trim() && !fecha;
+      const offset = mas ? (resultados?.length ?? 0) : 0;
       const res = await buscarFn({
         data: {
           ...(folio.trim() ? { folio: folio.trim() } : {}),
           ...(fecha ? { fecha } : {}),
           ...(maquina ? { maquina } : {}),
+          ...(sinFiltros ? { offset } : {}),
         },
       });
-      setResultados(res);
-      if (res.length === 0) toast.info("Sin bobinas que coincidan con los filtros.");
+      const lista = mas ? [...(resultados ?? []), ...res] : res;
+      setResultados(lista);
+      setHayMas(sinFiltros && res.length === PAGINA_VENTANA);
+      if (lista.length === 0) toast.info("Sin bobinas que coincidan con los filtros.");
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -150,7 +157,7 @@ function EdicionBobinaPage() {
                 ))}
               </select>
             </div>
-            <Button onClick={buscar} disabled={buscando}>
+            <Button onClick={() => buscar()} disabled={buscando}>
               {buscando ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
@@ -162,7 +169,7 @@ function EdicionBobinaPage() {
           <p className="mt-2 text-[11px] text-muted-foreground">
             Solo se muestran bobinas de tus máquinas autorizadas (
             {permiso.maquinas.join(", ")}). La edición está disponible durante
-            las 24 horas posteriores a la captura; la impresión de etiqueta no
+            las 36 horas posteriores a la captura; la impresión de etiqueta no
             modifica datos.
           </p>
         </div>
@@ -215,7 +222,7 @@ function EdicionBobinaPage() {
                           title={
                             b.dentro_ventana
                               ? `Editable hasta ${fechaHoraMX(b.expira_at)}`
-                              : "La ventana de edición de 24 h ya venció"
+                              : "La ventana de edición de 36 h ya venció"
                           }
                           onClick={() =>
                             setDetalle({ id: b.muestra_id, folio: b.numero_rollo })
@@ -243,6 +250,14 @@ function EdicionBobinaPage() {
                 ))}
               </tbody>
             </table>
+            {hayMas && (
+              <div className="flex justify-center border-t border-border p-3">
+                <Button variant="outline" onClick={() => buscar(true)} disabled={buscando}>
+                  {buscando && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Cargar más
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </div>
