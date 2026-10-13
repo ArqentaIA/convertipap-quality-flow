@@ -26,7 +26,7 @@ const DICTAMENES = [
 
 /**
  * Detalle de calidad de un rollo.
- * Consulta para todos; edición autorizada (usuario + máquina + ventana de 24 h)
+ * Consulta para todos; edición autorizada (usuario + máquina + ventana de 36 h)
  * con motivo obligatorio y trazabilidad completa.
  */
 export function DetalleCalidadModal({
@@ -335,7 +335,7 @@ export function DetalleCalidadModal({
                       <strong>
                         {permiso.expira_at ? new Date(permiso.expira_at).toLocaleString("es-MX", { timeZone: "America/Mexico_City", hour12: false }) : "—"}
                       </strong>{" "}
-                      (24 h desde la captura). Todo cambio requiere motivo y queda registrado.
+                      (36 h desde la captura). Todo cambio requiere motivo y queda registrado.
                     </>
                   ) : (
                     <>Solo consulta. {permiso.motivo}</>

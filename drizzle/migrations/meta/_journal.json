@@ -141,6 +141,13 @@
       "when": 1791484649443,
       "tag": "0019_sku_compartido_si_version_difiere",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1791901131624,
+      "tag": "0020_edicion_bobina_ventana_36h",
+      "breakpoints": true
     }
   ]
 }

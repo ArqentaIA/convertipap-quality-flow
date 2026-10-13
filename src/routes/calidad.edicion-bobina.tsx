@@ -1,7 +1,7 @@
 // =====================================================================
 // Edición de bobina madre — menú para Jefe de Calidad.
 // Permite localizar bobinas capturadas en Control de Calidad / Captura
-// fuera de turno, corregir sus valores (ventana de 24 h, motivo
+// fuera de turno, corregir sus valores (ventana de 36 h, motivo
 // obligatorio, trazabilidad completa) e imprimir la etiqueta actualizada.
 // =====================================================================
 import { createFileRoute } from "@tanstack/react-router";
@@ -162,7 +162,7 @@ function EdicionBobinaPage() {
           <p className="mt-2 text-[11px] text-muted-foreground">
             Solo se muestran bobinas de tus máquinas autorizadas (
             {permiso.maquinas.join(", ")}). La edición está disponible durante
-            las 24 horas posteriores a la captura; la impresión de etiqueta no
+            las 36 horas posteriores a la captura; la impresión de etiqueta no
             modifica datos.
           </p>
         </div>
@@ -215,7 +215,7 @@ function EdicionBobinaPage() {
                           title={
                             b.dentro_ventana
                               ? `Editable hasta ${fechaHoraMX(b.expira_at)}`
-                              : "La ventana de edición de 24 h ya venció"
+                              : "La ventana de edición de 36 h ya venció"
                           }
                           onClick={() =>
                             setDetalle({ id: b.muestra_id, folio: b.numero_rollo })
