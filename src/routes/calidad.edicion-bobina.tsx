@@ -250,6 +250,14 @@ function EdicionBobinaPage() {
                 ))}
               </tbody>
             </table>
+            {hayMas && (
+              <div className="flex justify-center border-t border-border p-3">
+                <Button variant="outline" onClick={() => buscar(true)} disabled={buscando}>
+                  {buscando && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Cargar más
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </div>
