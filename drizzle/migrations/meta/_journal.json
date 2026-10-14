@@ -148,6 +148,13 @@
       "when": 1791901131624,
       "tag": "0020_edicion_bobina_ventana_36h",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1791996566120,
+      "tag": "0021_editar_cinta_corte",
+      "breakpoints": true
     }
   ]
 }
