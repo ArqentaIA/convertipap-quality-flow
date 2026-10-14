@@ -593,30 +593,75 @@ export type Database = {
       catalogo_sku_sap_cintas: {
         Row: {
           activo: boolean
+          actualizado_por: string | null
+          ancho_corte_cm: number | null
           clave: string
+          creado_por: string | null
           created_at: string
           descripcion: string
           id: string
+          planta_codigo: string | null
           producto_codigo: string
           updated_at: string
         }
         Insert: {
           activo?: boolean
+          actualizado_por?: string | null
+          ancho_corte_cm?: number | null
           clave: string
+          creado_por?: string | null
           created_at?: string
           descripcion: string
           id?: string
+          planta_codigo?: string | null
           producto_codigo: string
           updated_at?: string
         }
         Update: {
           activo?: boolean
+          actualizado_por?: string | null
+          ancho_corte_cm?: number | null
           clave?: string
+          creado_por?: string | null
           created_at?: string
           descripcion?: string
           id?: string
+          planta_codigo?: string | null
           producto_codigo?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      catalogo_sku_sap_cintas_auditoria: {
+        Row: {
+          accion: string
+          created_at: string
+          id: string
+          motivo: string
+          realizado_por: string | null
+          sku_id: string
+          valores_anteriores: Json | null
+          valores_nuevos: Json | null
+        }
+        Insert: {
+          accion: string
+          created_at?: string
+          id?: string
+          motivo: string
+          realizado_por?: string | null
+          sku_id: string
+          valores_anteriores?: Json | null
+          valores_nuevos?: Json | null
+        }
+        Update: {
+          accion?: string
+          created_at?: string
+          id?: string
+          motivo?: string
+          realizado_por?: string | null
+          sku_id?: string
+          valores_anteriores?: Json | null
+          valores_nuevos?: Json | null
         }
         Relationships: []
       }
@@ -3668,6 +3713,23 @@ export type Database = {
         Returns: Json
       }
       shift_op_date: { Args: { _ts: string; _turno: string }; Returns: string }
+      sku_cintas_guardar: {
+        Args: {
+          _ancho_corte_cm: number
+          _clave: string
+          _descripcion: string
+          _id: string
+          _motivo: string
+          _planta_codigo: string
+          _producto_codigo: string
+        }
+        Returns: Json
+      }
+      sku_cintas_planta_gestion: { Args: never; Returns: string }
+      sku_cintas_set_activo: {
+        Args: { _activo: boolean; _id: string; _motivo: string }
+        Returns: undefined
+      }
       spec_tiene_evidencia_vigente: {
         Args: { _spec_id: string }
         Returns: boolean

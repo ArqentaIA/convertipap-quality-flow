@@ -35,6 +35,7 @@ import { Route as LoteCintasIdRouteImport } from './routes/lote-cintas.$id'
 import { Route as MuestraIdRouteImport } from './routes/muestra.$id'
 import { Route as PesajePublicoTokenRouteImport } from './routes/pesaje-publico.$token'
 import { Route as PesajeBobinaMadreRouteImport } from './routes/pesaje.bobina-madre'
+import { Route as PesajeCatalogoSkuRouteImport } from './routes/pesaje.catalogo-sku'
 import { Route as PesajeCintasRouteImport } from './routes/pesaje.cintas'
 import { Route as TFolioRouteImport } from './routes/t.$folio'
 import { Route as QTipoValorRouteImport } from './routes/q.$tipo.$valor'
@@ -172,6 +173,11 @@ const PesajeBobinaMadreRoute = PesajeBobinaMadreRouteImport.update({
   path: '/pesaje/bobina-madre',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PesajeCatalogoSkuRoute = PesajeCatalogoSkuRouteImport.update({
+  id: '/pesaje/catalogo-sku',
+  path: '/pesaje/catalogo-sku',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PesajeCintasRoute = PesajeCintasRouteImport.update({
   id: '/pesaje/cintas',
   path: '/pesaje/cintas',
@@ -227,6 +233,7 @@ export interface FileRoutesByFullPath {
   '/muestra/$id': typeof MuestraIdRoute
   '/pesaje-publico/$token': typeof PesajePublicoTokenRoute
   '/pesaje/bobina-madre': typeof PesajeBobinaMadreRoute
+  '/pesaje/catalogo-sku': typeof PesajeCatalogoSkuRoute
   '/pesaje/cintas': typeof PesajeCintasRoute
   '/t/$folio': typeof TFolioRoute
   '/q/$tipo/$valor': typeof QTipoValorRoute
@@ -260,6 +267,7 @@ export interface FileRoutesByTo {
   '/muestra/$id': typeof MuestraIdRoute
   '/pesaje-publico/$token': typeof PesajePublicoTokenRoute
   '/pesaje/bobina-madre': typeof PesajeBobinaMadreRoute
+  '/pesaje/catalogo-sku': typeof PesajeCatalogoSkuRoute
   '/pesaje/cintas': typeof PesajeCintasRoute
   '/t/$folio': typeof TFolioRoute
   '/q/$tipo/$valor': typeof QTipoValorRoute
@@ -294,6 +302,7 @@ export interface FileRoutesById {
   '/muestra/$id': typeof MuestraIdRoute
   '/pesaje-publico/$token': typeof PesajePublicoTokenRoute
   '/pesaje/bobina-madre': typeof PesajeBobinaMadreRoute
+  '/pesaje/catalogo-sku': typeof PesajeCatalogoSkuRoute
   '/pesaje/cintas': typeof PesajeCintasRoute
   '/t/$folio': typeof TFolioRoute
   '/q/$tipo/$valor': typeof QTipoValorRoute
@@ -329,6 +338,7 @@ export interface FileRouteTypes {
     | '/muestra/$id'
     | '/pesaje-publico/$token'
     | '/pesaje/bobina-madre'
+    | '/pesaje/catalogo-sku'
     | '/pesaje/cintas'
     | '/t/$folio'
     | '/q/$tipo/$valor'
@@ -362,6 +372,7 @@ export interface FileRouteTypes {
     | '/muestra/$id'
     | '/pesaje-publico/$token'
     | '/pesaje/bobina-madre'
+    | '/pesaje/catalogo-sku'
     | '/pesaje/cintas'
     | '/t/$folio'
     | '/q/$tipo/$valor'
@@ -395,6 +406,7 @@ export interface FileRouteTypes {
     | '/muestra/$id'
     | '/pesaje-publico/$token'
     | '/pesaje/bobina-madre'
+    | '/pesaje/catalogo-sku'
     | '/pesaje/cintas'
     | '/t/$folio'
     | '/q/$tipo/$valor'
@@ -429,6 +441,7 @@ export interface RootRouteChildren {
   MuestraIdRoute: typeof MuestraIdRoute
   PesajePublicoTokenRoute: typeof PesajePublicoTokenRoute
   PesajeBobinaMadreRoute: typeof PesajeBobinaMadreRoute
+  PesajeCatalogoSkuRoute: typeof PesajeCatalogoSkuRoute
   PesajeCintasRoute: typeof PesajeCintasRoute
   TFolioRoute: typeof TFolioRoute
   QTipoValorRoute: typeof QTipoValorRoute
@@ -620,6 +633,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PesajeBobinaMadreRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/pesaje/catalogo-sku': {
+      id: '/pesaje/catalogo-sku'
+      path: '/pesaje/catalogo-sku'
+      fullPath: '/pesaje/catalogo-sku'
+      preLoaderRoute: typeof PesajeCatalogoSkuRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/pesaje/cintas': {
       id: '/pesaje/cintas'
       path: '/pesaje/cintas'
@@ -685,6 +705,7 @@ const rootRouteChildren: RootRouteChildren = {
   MuestraIdRoute: MuestraIdRoute,
   PesajePublicoTokenRoute: PesajePublicoTokenRoute,
   PesajeBobinaMadreRoute: PesajeBobinaMadreRoute,
+  PesajeCatalogoSkuRoute: PesajeCatalogoSkuRoute,
   PesajeCintasRoute: PesajeCintasRoute,
   TFolioRoute: TFolioRoute,
   QTipoValorRoute: QTipoValorRoute,

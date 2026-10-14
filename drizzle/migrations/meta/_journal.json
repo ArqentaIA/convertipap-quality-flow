@@ -155,6 +155,13 @@
       "when": 1791996566120,
       "tag": "0021_editar_cinta_corte",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1791997860386,
+      "tag": "0022_catalogo_sku_cintas_gestion",
+      "breakpoints": true
     }
   ]
 }

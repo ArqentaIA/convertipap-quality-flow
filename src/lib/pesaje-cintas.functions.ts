@@ -1032,7 +1032,7 @@ export const listarUltimosLotesCintas = createServerFn({ method: "POST" })
 // Se filtra por el código de producto del rollo (p. ej. PSC01). Si ese
 // producto no tiene claves cargadas, se devuelve el catálogo completo para
 // no bloquear la captura. Aplica a Tlaxcala e Ixtapaluca.
-export type SkuSapCinta = { clave: string; descripcion: string; producto_codigo: string };
+export type SkuSapCinta = { clave: string; descripcion: string; producto_codigo: string; ancho_corte_cm?: number | null };
 
 export const listarSkuSapCintas = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -1042,7 +1042,7 @@ export const listarSkuSapCintas = createServerFn({ method: "POST" })
     const base = () =>
       context.supabase
         .from("catalogo_sku_sap_cintas")
-        .select("clave, descripcion, producto_codigo")
+        .select("clave, descripcion, producto_codigo, ancho_corte_cm")
         .eq("activo", true)
         .order("clave");
 
