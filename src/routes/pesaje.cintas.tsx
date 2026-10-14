@@ -73,7 +73,7 @@ function PesajeCintasPage() {
 
 
   // Catálogo SKU SAP por cinta, filtrado por el producto del rollo abierto.
-  const [skusSap, setSkusSap] = useState<Array<{ clave: string; descripcion: string }>>([]);
+  const [skusSap, setSkusSap] = useState<Array<{ clave: string; descripcion: string; ancho_corte_cm?: number | null }>>([]);
 
   const [rolMe, setRolMe] = useState<string | null>(null);
   const [authReady, setAuthReady] = useState(false);
@@ -1377,7 +1377,7 @@ type CintaCardProps = {
   habilitada: boolean;
   disponibleKg: number;
   onRegistrar: (peso: number, uniones: number, ancho: number, obs: string, pza: string, sku: string) => Promise<void>;
-  skus: Array<{ clave: string; descripcion: string }>;
+  skus: Array<{ clave: string; descripcion: string; ancho_corte_cm?: number | null }>;
   onAnular?: () => void;
   onCorregir?: () => void;
   onReimprimir?: () => void;
@@ -1542,7 +1542,12 @@ function CintaCard({ pos, cinta, habilitada, disponibleKg, onRegistrar, skus, on
           <label className="mb-0.5 block text-[11px] text-muted-foreground">SKU SAP *</label>
           <select
             value={sku}
-            onChange={(e) => setSku(e.target.value)}
+            onChange={(e) => {
+              const v = e.target.value;
+              setSku(v);
+              const a = skus.find((s) => s.clave === v)?.ancho_corte_cm;
+              if (a != null && Number(a) > 0) setAncho(String(a));
+            }}
             className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm"
           >
             <option value="">Seleccione…</option>

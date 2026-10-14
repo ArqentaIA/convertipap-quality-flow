@@ -33,6 +33,7 @@ const NAV: NavItem[] = [
   { to: "/ordenes-produccion", label: "Órdenes de Producción", icon: ClipboardList, module: "ordenes_produccion" },
   { to: "/pesaje/bobina-madre", label: "Control de Pesaje", icon: Scale, module: "pesaje_bobina_madre", pathPrefixes: ["/pesaje"] },
   { to: "/pesaje/cintas", label: "CORTES BOBINA", icon: Scissors, module: "pesaje_cintas", pathPrefixes: ["/pesaje/cintas"] },
+  { to: "/pesaje/catalogo-sku", label: "Catálogo SKU Cintas", icon: Scissors, module: "control_calidad", pathPrefixes: ["/pesaje/catalogo-sku"] },
 
   { to: "/calidad/captura", label: "Control de Calidad", icon: ClipboardCheck, module: "control_calidad" },
   { to: "/calidad/edicion-bobina", label: "Edición de Bobina Madre", icon: Pencil, module: "control_calidad" },
@@ -54,6 +55,7 @@ const ROUTE_MODULE: Array<{ prefix: string; module: AppModule }> = [
   { prefix: "/historial", module: "produccion" },
   { prefix: "/ordenes-produccion", module: "ordenes_produccion" },
   { prefix: "/pesaje/cintas", module: "pesaje_cintas" },
+  { prefix: "/pesaje/catalogo-sku", module: "control_calidad" },
   { prefix: "/pesaje", module: "pesaje_bobina_madre" },
 
   { prefix: "/control-calidad", module: "control_calidad" },
@@ -200,6 +202,10 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
     () =>
       NAV.filter((item) => {
         if (item.to === "/usuarios") return canPerfilesRoles;
+        if (item.to === "/pesaje/catalogo-sku") {
+          const em = (auth.user?.email ?? "").toLowerCase();
+          return !esPesajeOperativo && (auth.roles.includes("administrador") || em === "gcalidad@convertipap.site" || em === "msramosixt@convertipap.site");
+        }
         if (!puedeVer(item.module)) return false;
         // Oculta "Control de Pesaje" si el usuario no puede usar Pesaje de Rollo
         if (item.to === "/pesaje/bobina-madre" && !puedePesajeRollo) {
