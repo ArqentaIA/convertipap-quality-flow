@@ -96,7 +96,7 @@ export function UltimosLotesCintas({ planta }: { planta: string | null }) {
       ) : lotes.length === 0 ? (
         <div className="px-4 py-8 text-sm text-muted-foreground">Sin rollos cortados para esta planta.</div>
       ) : (
-        <div className="max-h-[420px] overflow-auto">
+        <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="sticky top-0 bg-muted/60 text-[11px] uppercase text-muted-foreground">
               <tr>
