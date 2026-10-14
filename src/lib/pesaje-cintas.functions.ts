@@ -1055,3 +1055,42 @@ export const listarSkuSapCintas = createServerFn({ method: "POST" })
     if (e2) throw new Error(e2.message);
     return { filtrado: false, items: (todos ?? []) as SkuSapCinta[] };
   });
+
+// ---------- Edición desde el detalle de Cortes de Bobina (36 h, autorizados) ---------- //
+export const puedeEditarCorte = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ lote_id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { data: res, error } = await context.supabase.rpc("pc_puede_editar_corte", { _lote_id: data.lote_id });
+    if (error) throw new Error(error.message);
+    return res as unknown as { puede: boolean; motivo?: string; expira_at?: string; maquina?: string };
+  });
+
+export const editarCintaCorte = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({
+    cinta_id: z.string().uuid(),
+    peso_cinta_kg: z.number().positive(),
+    ancho_util: z.number().positive(),
+    sku_sap: z.string().max(40).nullable(),
+    uniones: z.number().int().min(0),
+    observaciones: z.string().max(500).nullable(),
+    estatus: z.enum(["L", "C", "NC"]).nullable(),
+    motivo: z.string().trim().min(10).max(500),
+    idempotency_key: z.string().uuid(),
+  }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { data: res, error } = await context.supabase.rpc("pc_editar_cinta_corte", {
+      _cinta_id: data.cinta_id,
+      _peso_cinta_kg: data.peso_cinta_kg,
+      _ancho_util: data.ancho_util,
+      _sku_sap: (data.sku_sap ?? "") as string,
+      _uniones: data.uniones,
+      _observaciones: (data.observaciones ?? "") as string,
+      _estatus: data.estatus as unknown as string,
+      _motivo: data.motivo,
+      _idempotency: data.idempotency_key,
+    });
+    if (error) throw new Error(error.message);
+    return res as unknown as { cinta_id: string; version_etiqueta: number };
+  });
