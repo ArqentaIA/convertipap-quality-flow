@@ -427,7 +427,7 @@ function renderEtiqueta(d: CintaLabelData, snap: EtiquetaSnapshot, assets: Asset
         </div>
         <div class="qr-sap"><img src="${assets.sapLogo}" alt="SAP HANA" /></div>
       </div>
-      <div class="lbl-ver">Versión de Etiqueta 2.1</div>
+      <div class="lbl-ver">${d.version_etiqueta > 1 ? `<b style="color:#b91c1c;margin-right:6px">Ver ${d.version_etiqueta}.0 · Corregida</b>` : ""}Versión de Etiqueta 2.1</div>
     </div>
   </div>`;
 }

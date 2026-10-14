@@ -3551,10 +3551,25 @@ export type Database = {
         Returns: undefined
       }
       pc_bajadas_rollo: { Args: { _numero_rollo: string }; Returns: Json }
+      pc_editar_cinta_corte: {
+        Args: {
+          _ancho_util: number
+          _cinta_id: string
+          _estatus: string
+          _idempotency: string
+          _motivo: string
+          _observaciones: string
+          _peso_cinta_kg: number
+          _sku_sap: string
+          _uniones: number
+        }
+        Returns: Json
+      }
       pc_get_or_create_rollo: {
         Args: { _numero_rollo: string }
         Returns: string
       }
+      pc_puede_editar_corte: { Args: { _lote_id: string }; Returns: Json }
       pc_set_bobinador_nombre: {
         Args: { _lote_id: string; _nombre: string }
         Returns: undefined

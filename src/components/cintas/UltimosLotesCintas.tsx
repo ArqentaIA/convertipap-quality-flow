@@ -4,14 +4,21 @@
 // activa del encabezado: TLX e IXT nunca mezclan información.
 // =============================================================================
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Loader2, Search, Eye } from "lucide-react";
+import { Loader2, Search, Eye, Pencil, Printer } from "lucide-react";
+import { toast } from "sonner";
 import {
   listarUltimosLotesCintas,
   obtenerLoteYCintas,
+  puedeEditarCorte,
+  editarCintaCorte,
+  prepararImpresion,
+  listarSkuSapCintas,
   type LoteResumen,
+  type CintaRegistrada,
 } from "@/lib/pesaje-cintas.functions";
+import { abrirImpresionEtiquetas, type EtiquetaSnapshot } from "@/lib/etiqueta-cinta";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 function n(v: number | null | undefined, d = 2): string {
@@ -147,20 +154,124 @@ export function UltimosLotesCintas({ planta }: { planta: string | null }) {
   );
 }
 
+type Borrador = {
+  peso: string; ancho: string; sku: string; uniones: string; obs: string; estatus: "" | "L" | "C" | "NC";
+};
+
 function DetalleLoteDialog({ loteId, onClose }: { loteId: string | null; onClose: () => void }) {
   const traer = useServerFn(obtenerLoteYCintas);
+  const permisoFn = useServerFn(puedeEditarCorte);
+  const editarFn = useServerFn(editarCintaCorte);
+  const prepararFn = useServerFn(prepararImpresion);
+  const skusFn = useServerFn(listarSkuSapCintas);
+  const qc = useQueryClient();
+
   const q = useQuery({
     queryKey: ["detalle-lote-cintas", loteId],
     enabled: !!loteId,
     queryFn: () => traer({ data: { lote_id: loteId! } }),
   });
+  const permQ = useQuery({
+    queryKey: ["puede-editar-corte", loteId],
+    enabled: !!loteId,
+    queryFn: () => permisoFn({ data: { lote_id: loteId! } }),
+  });
 
   const lote = q.data?.lote ?? null;
-  const cintas = (q.data?.cintas ?? []).filter((c) => c.estado !== "anulada");
+  const cintas = (q.data?.cintas ?? []).filter((c) => c.estado === "registrada");
+  const skusQ = useQuery({
+    queryKey: ["skus-cintas", lote?.producto_codigo ?? ""],
+    enabled: !!lote,
+    queryFn: () => skusFn({ data: { producto_codigo: lote?.producto_codigo ?? null } }),
+  });
+
+  const [editando, setEditando] = useState(false);
+  const [borr, setBorr] = useState<Record<string, Borrador>>({});
+  const [motivo, setMotivo] = useState("");
+  const [guardando, setGuardando] = useState(false);
+  const [imprimiendo, setImprimiendo] = useState<string | null>(null);
+
+  const puede = permQ.data?.puede === true;
+
+  function iniciar() {
+    const b: Record<string, Borrador> = {};
+    for (const c of cintas) {
+      b[c.id] = {
+        peso: String(c.peso_cinta_kg ?? ""), ancho: String(c.ancho_util ?? ""), sku: c.sku_sap ?? "",
+        uniones: String(c.uniones ?? 0), obs: c.observaciones ?? "", estatus: (c.estatus_liberacion ?? "") as Borrador["estatus"],
+      };
+    }
+    setBorr(b); setMotivo(""); setEditando(true);
+  }
+
+  function cambiada(c: CintaRegistrada): boolean {
+    const b = borr[c.id];
+    if (!b) return false;
+    return Number(b.peso) !== Number(c.peso_cinta_kg) || Number(b.ancho) !== Number(c.ancho_util)
+      || (b.sku || null) !== (c.sku_sap ?? null) || Number(b.uniones) !== Number(c.uniones)
+      || (b.obs.trim() || null) !== (c.observaciones ?? null) || (b.estatus || null) !== (c.estatus_liberacion ?? null);
+  }
+
+  async function guardar() {
+    const mod = cintas.filter(cambiada);
+    if (mod.length === 0) { toast.info("No hay cambios por guardar."); return; }
+    if (motivo.trim().length < 10) { toast.error("Escribe el motivo (mínimo 10 caracteres)."); return; }
+    for (const c of mod) {
+      const b = borr[c.id];
+      if (!(Number(b.peso) > 0) || !(Number(b.ancho) > 0) || !Number.isInteger(Number(b.uniones)) || Number(b.uniones) < 0) {
+        toast.error(`Posición ${c.posicion}: revisa peso, ancho y uniones.`); return;
+      }
+    }
+    setGuardando(true);
+    let ok = 0;
+    try {
+      for (const c of mod) {
+        const b = borr[c.id];
+        await editarFn({ data: {
+          cinta_id: c.id, peso_cinta_kg: Number(b.peso), ancho_util: Number(b.ancho), sku_sap: b.sku || null,
+          uniones: Number(b.uniones), observaciones: b.obs.trim() || null, estatus: b.estatus || null,
+          motivo: motivo.trim(), idempotency_key: crypto.randomUUID(),
+        } });
+        ok++;
+      }
+      toast.success(`${ok} cinta(s) actualizada(s). Ya puedes imprimir la etiqueta Ver 2.0.`);
+      setEditando(false);
+    } catch (e) {
+      toast.error(`${ok > 0 ? `${ok} guardada(s). ` : ""}${e instanceof Error ? e.message : "Error al guardar."}`);
+    } finally {
+      setGuardando(false);
+      await q.refetch();
+      void qc.invalidateQueries({ queryKey: ["ultimos-lotes-cintas"] });
+    }
+  }
+
+  async function imprimir(cintaId: string | null) {
+    if (!lote) return;
+    setImprimiendo(cintaId ?? "todas");
+    try {
+      const fresh = await q.refetch();
+      const vigentes = (fresh.data?.cintas ?? []).filter((c) => c.estado === "registrada");
+      const res = await prepararFn({ data: { lote_id: lote.id, motivo: null, cinta_id: cintaId } });
+      const snap = res.snapshot as unknown as EtiquetaSnapshot;
+      snap.cintas = (snap.cintas ?? []).map((c) => ({
+        ...c,
+        estatus_liberacion: vigentes.find((v) => v.id === c.id)?.estatus_liberacion ?? null,
+      }));
+      await abrirImpresionEtiquetas(snap);
+      toast.success(`Impresión ${res.folio} · ${res.cantidad_etiquetas} etiqueta(s)`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Error al imprimir.");
+    } finally {
+      setImprimiendo(null);
+    }
+  }
+
+  const skus = skusQ.data?.items ?? [];
+  const inp = "h-8 w-full rounded border bg-background px-2 text-sm";
 
   return (
-    <Dialog open={!!loteId} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="max-h-[85vh] max-w-3xl overflow-auto">
+    <Dialog open={!!loteId} onOpenChange={(o) => { if (!o) { setEditando(false); onClose(); } }}>
+      <DialogContent className="max-h-[90vh] max-w-5xl overflow-auto">
         <DialogHeader>
           <DialogTitle>Detalle del rollo {lote?.numero_rollo ?? ""}</DialogTitle>
         </DialogHeader>
@@ -188,7 +299,28 @@ function DetalleLoteDialog({ loteId, onClose }: { loteId: string | null; onClose
               <Dato k="Origen" v={lote.es_manual ? "Captura manual" : "Sistema"} />
             </div>
 
-            <div className="overflow-hidden rounded-lg border">
+            {puede && (
+              <div className="flex flex-wrap items-center justify-end gap-2">
+                {!editando ? (
+                  <>
+                    <button type="button" onClick={iniciar}
+                      className="inline-flex h-9 items-center gap-1 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground">
+                      <Pencil className="h-4 w-4" /> Editar cintas
+                    </button>
+                    <button type="button" disabled={!!imprimiendo} onClick={() => void imprimir(null)}
+                      className="inline-flex h-9 items-center gap-1 rounded-md border px-3 text-sm font-medium hover:bg-muted disabled:opacity-50">
+                      {imprimiendo === "todas" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Printer className="h-4 w-4" />} Imprimir todas
+                    </button>
+                  </>
+                ) : (
+                  <span className="text-xs text-muted-foreground">
+                    Editable hasta {permQ.data?.expira_at ? fechaCorta(permQ.data.expira_at) : "—"}
+                  </span>
+                )}
+              </div>
+            )}
+
+            <div className="overflow-x-auto rounded-lg border">
               <table className="w-full text-sm">
                 <thead className="bg-muted/60 text-[11px] uppercase text-muted-foreground">
                   <tr>
@@ -199,26 +331,81 @@ function DetalleLoteDialog({ loteId, onClose }: { loteId: string | null; onClose
                     <th className="px-3 py-2 text-left">SKU SAP</th>
                     <th className="px-3 py-2 text-left">Estatus</th>
                     <th className="px-3 py-2 text-left">Observaciones</th>
+                    <th className="px-3 py-2 text-left">Ver.</th>
+                    {puede && !editando && <th className="px-3 py-2" />}
                   </tr>
                 </thead>
                 <tbody>
-                  {cintas.map((c) => (
-                    <tr key={c.id} className="border-t">
-                      <td className="px-3 py-2 font-semibold">{c.posicion}</td>
-                      <td className="px-3 py-2 text-right">{n(c.peso_cinta_kg)}</td>
-                      <td className="px-3 py-2 text-right">{n(c.ancho_util, 3)} {c.ancho_util_unidad ?? "cm"}</td>
-                      <td className="px-3 py-2 text-right">{c.uniones}</td>
-                      <td className="px-3 py-2 text-xs tabular-nums text-muted-foreground">{c.sku_sap ?? "—"}</td>
-                      <td className="px-3 py-2">{c.estatus_liberacion ?? "—"}</td>
-                      <td className="px-3 py-2 text-muted-foreground">{c.observaciones ?? "—"}</td>
-                    </tr>
-                  ))}
+                  {cintas.map((c) => {
+                    const b = borr[c.id];
+                    const set = (k: keyof Borrador, v: string) => setBorr((p) => ({ ...p, [c.id]: { ...p[c.id], [k]: v } }));
+                    return editando && b ? (
+                      <tr key={c.id} className={`border-t ${cambiada(c) ? "bg-warning/10" : ""}`}>
+                        <td className="px-3 py-2 font-semibold">{c.posicion}</td>
+                        <td className="px-2 py-1"><input className={`${inp} w-24 text-right`} type="number" step="0.01" value={b.peso} onChange={(e) => set("peso", e.target.value)} /></td>
+                        <td className="px-2 py-1"><input className={`${inp} w-20 text-right`} type="number" step="0.001" value={b.ancho} onChange={(e) => set("ancho", e.target.value)} /></td>
+                        <td className="px-2 py-1"><input className={`${inp} w-16 text-right`} type="number" step="1" min="0" value={b.uniones} onChange={(e) => set("uniones", e.target.value)} /></td>
+                        <td className="px-2 py-1">
+                          <select className={`${inp} w-40`} value={b.sku} onChange={(e) => set("sku", e.target.value)}>
+                            <option value="">—</option>
+                            {b.sku && !skus.some((s) => s.clave === b.sku) && <option value={b.sku}>{b.sku}</option>}
+                            {skus.map((s) => <option key={s.clave} value={s.clave}>{s.clave}</option>)}
+                          </select>
+                        </td>
+                        <td className="px-2 py-1">
+                          <select className={`${inp} w-20`} value={b.estatus} onChange={(e) => set("estatus", e.target.value)}>
+                            <option value="">—</option><option value="L">L</option><option value="C">C</option><option value="NC">NC</option>
+                          </select>
+                        </td>
+                        <td className="px-2 py-1"><input className={`${inp} w-48`} maxLength={500} value={b.obs} onChange={(e) => set("obs", e.target.value)} /></td>
+                        <td className="px-3 py-2 text-muted-foreground">{c.version_etiqueta ?? 1}.0</td>
+                      </tr>
+                    ) : (
+                      <tr key={c.id} className="border-t">
+                        <td className="px-3 py-2 font-semibold">{c.posicion}</td>
+                        <td className="px-3 py-2 text-right">{n(c.peso_cinta_kg)}</td>
+                        <td className="px-3 py-2 text-right">{n(c.ancho_util, 3)} {c.ancho_util_unidad ?? "cm"}</td>
+                        <td className="px-3 py-2 text-right">{c.uniones}</td>
+                        <td className="px-3 py-2 text-xs tabular-nums text-muted-foreground">{c.sku_sap ?? "—"}</td>
+                        <td className="px-3 py-2">{c.estatus_liberacion ?? "—"}</td>
+                        <td className="px-3 py-2 text-muted-foreground">{c.observaciones ?? "—"}</td>
+                        <td className="px-3 py-2">
+                          {(c.version_etiqueta ?? 1) > 1
+                            ? <span className="rounded bg-destructive/15 px-1.5 py-0.5 text-[11px] font-semibold text-destructive">Ver {c.version_etiqueta}.0</span>
+                            : <span className="text-muted-foreground">1.0</span>}
+                        </td>
+                        {puede && !editando && (
+                          <td className="px-3 py-2 text-right">
+                            <button type="button" disabled={!!imprimiendo} onClick={() => void imprimir(c.id)}
+                              className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium hover:bg-muted disabled:opacity-50">
+                              {imprimiendo === c.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Printer className="h-3.5 w-3.5" />} Etiqueta
+                            </button>
+                          </td>
+                        )}
+                      </tr>
+                    );
+                  })}
                   {cintas.length === 0 && (
-                    <tr><td colSpan={7} className="px-3 py-6 text-center text-muted-foreground">Sin cintas registradas.</td></tr>
+                    <tr><td colSpan={9} className="px-3 py-6 text-center text-muted-foreground">Sin cintas registradas.</td></tr>
                   )}
                 </tbody>
               </table>
             </div>
+
+            {editando && (
+              <div className="space-y-2 rounded-lg border bg-muted/20 p-3">
+                <label className="text-xs font-semibold uppercase text-muted-foreground">Motivo de la corrección (mínimo 10 caracteres)</label>
+                <textarea value={motivo} onChange={(e) => setMotivo(e.target.value)} maxLength={500} rows={2}
+                  className="w-full rounded-md border bg-background px-3 py-2 text-sm" />
+                <div className="flex justify-end gap-2">
+                  <button type="button" disabled={guardando} onClick={() => setEditando(false)} className="h-9 rounded-md border px-3 text-sm">Cancelar</button>
+                  <button type="button" disabled={guardando} onClick={() => void guardar()}
+                    className="inline-flex h-9 items-center gap-1 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground disabled:opacity-50">
+                    {guardando && <Loader2 className="h-4 w-4 animate-spin" />} Guardar cambios
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </DialogContent>
