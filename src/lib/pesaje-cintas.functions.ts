@@ -968,20 +968,40 @@ export const listarUltimosLotesCintas = createServerFn({ method: "POST" })
     if (scope.plantaIds.length === 0) return [];
 
     const limite = data.limite ?? 50;
-    let q = context.supabase
+    const term = (data.buscar ?? "").trim();
+    // Filtra por planta en la base (vía muestra de calidad) para que una planta
+    // con mucho volumen no desplace a la otra; los lotes sin muestra se
+    // resuelven después por bobina madre o sufijo del rollo.
+    let qPlanta = context.supabase
+      .from("pesajes_cintas_lotes")
+      .select("*, muestras_calidad!pesajes_cintas_lotes_muestra_calidad_id_fkey!inner(planta_id)")
+      .in("muestras_calidad.planta_id", scope.plantaIds)
+      .order("created_at", { ascending: false })
+      .limit(limite);
+    let qSinMuestra = context.supabase
       .from("pesajes_cintas_lotes")
       .select("*")
+      .is("muestra_calidad_id", null)
       .order("created_at", { ascending: false })
-      .limit(Math.max(limite * 6, 300));
-    const term = (data.buscar ?? "").trim();
-    if (term) q = q.ilike("numero_rollo", `%${term}%`);
+      .limit(Math.max(limite * 4, 200));
+    if (term) {
+      qPlanta = qPlanta.ilike("numero_rollo", `%${term}%`);
+      qSinMuestra = qSinMuestra.ilike("numero_rollo", `%${term}%`);
+    }
 
-    const { data: rows, error } = await q;
-    if (error) throw new Error(error.message);
-    const lotes = (rows ?? []) as unknown as (LoteResumen & {
+    const [rPlanta, rSin] = await Promise.all([qPlanta, qSinMuestra]);
+    if (rPlanta.error) throw new Error(rPlanta.error.message);
+    if (rSin.error) throw new Error(rSin.error.message);
+    const lotes = ([...(rPlanta.data ?? []), ...(rSin.data ?? [])] as unknown as (LoteResumen & {
       muestra_calidad_id: string | null;
       pesaje_bobina_madre_id: string | null;
-    })[];
+      muestras_calidad?: unknown;
+    })[])
+      .map((l) => {
+        delete l.muestras_calidad;
+        return l;
+      })
+      .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
     if (lotes.length === 0) return [];
 
     const muestraIds = [...new Set(lotes.map((l) => l.muestra_calidad_id).filter(Boolean))] as string[];
