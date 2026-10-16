@@ -3447,6 +3447,7 @@ export type Database = {
       catalogo_crear_producto: {
         Args: {
           _codigo: string
+          _descripcion_sku?: string
           _motivo: string
           _nombre: string
           _sku: string
