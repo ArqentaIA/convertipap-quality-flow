@@ -87,6 +87,7 @@ export const crearProductoCatalogo = createServerFn({ method: "POST" })
         tipo_id: z.string().uuid(),
         version: z.string().trim().max(20).optional(),
         sku: z.string().trim().max(64).optional(),
+        descripcion_sku: z.string().trim().max(200).optional(),
         variables: z
           .array(
             z.object({
@@ -111,6 +112,7 @@ export const crearProductoCatalogo = createServerFn({ method: "POST" })
       _sku: data.sku ?? "",
       _variables: data.variables,
       _motivo: data.motivo,
+      _descripcion_sku: data.descripcion_sku ?? "",
     } as never);
     if (error) throw new Error(error.message);
     return res as { ok: boolean; producto_id: string };
