@@ -96,6 +96,7 @@ function EditarDialog({
     if (motivo.trim().length < 10) return toast.error("Motivo obligatorio (mínimo 10 caracteres).");
     const cambiaVersion = version.trim() !== "" && version.trim() !== versionActual;
     if (!cambiaVersion && !sku.trim()) return toast.info("No hay cambios que guardar.");
+    if (sku.trim() && desc.trim().length < 3) return toast.error("Descripción SAP obligatoria al asignar un SKU (mínimo 3 caracteres).");
     setGuardando(true);
     try {
       const res = await editarFn({
@@ -148,7 +149,7 @@ function EditarDialog({
               <Input value={sku} maxLength={64} onChange={(e) => setSku(e.target.value)} className="mt-1" placeholder="Ej. SSC101101232" />
             </div>
             <div>
-              <div className={lbl}>Descripción SAP (opcional)</div>
+              <div className={lbl}>Descripción SAP (obligatoria con SKU)</div>
               <Input value={desc} maxLength={200} onChange={(e) => setDesc(e.target.value)} className="mt-1" />
             </div>
           </div>
@@ -182,6 +183,7 @@ function AgregarDialog({ onClose, onCambio }: { onClose: () => void; onCambio: P
   const [tipo, setTipo] = useState("");
   const [version, setVersion] = useState("1.0");
   const [sku, setSku] = useState("");
+  const [descSku, setDescSku] = useState("");
   const [motivo, setMotivo] = useState("");
   const [filas, setFilas] = useState<Record<string, FilaVar>>({});
   const [guardando, setGuardando] = useState(false);
@@ -199,6 +201,7 @@ function AgregarDialog({ onClose, onCambio }: { onClose: () => void; onCambio: P
   const guardar = async () => {
     if (!codigo.trim() || !nombre.trim() || !tipo) return toast.error("Código, nombre y familia son obligatorios.");
     if (seleccionadas.length === 0) return toast.error("Selecciona al menos una variable.");
+    if (sku.trim() && descSku.trim().length < 3) return toast.error("Descripción SAP obligatoria al capturar un SKU (mínimo 3 caracteres).");
     if (motivo.trim().length < 10) return toast.error("Motivo obligatorio (mínimo 10 caracteres).");
     const variables = [];
     for (const v of seleccionadas) {
@@ -217,7 +220,7 @@ function AgregarDialog({ onClose, onCambio }: { onClose: () => void; onCambio: P
           nombre: nombre.trim(),
           tipo_id: tipo,
           version: version.trim() || "1.0",
-          ...(sku.trim() ? { sku: sku.trim() } : {}),
+          ...(sku.trim() ? { sku: sku.trim(), descripcion_sku: descSku.trim() } : {}),
           variables,
           motivo: motivo.trim(),
         },
@@ -257,6 +260,12 @@ function AgregarDialog({ onClose, onCambio }: { onClose: () => void; onCambio: P
               <Input value={sku} maxLength={64} onChange={(e) => setSku(e.target.value)} className="mt-1" />
             </div>
           </div>
+          {sku.trim() && (
+            <div>
+              <div className={lbl}>Descripción SAP (obligatoria con SKU)</div>
+              <Input value={descSku} maxLength={200} onChange={(e) => setDescSku(e.target.value)} className="mt-1" />
+            </div>
+          )}
           <div>
             <div className={lbl}>Familia / tipo</div>
             <select

@@ -169,6 +169,13 @@
       "when": 1792157928895,
       "tag": "0023_fix_descripcion_sku_catalogo",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1792158396523,
+      "tag": "0024_crear_producto_descripcion_sku",
+      "breakpoints": true
     }
   ]
 }
