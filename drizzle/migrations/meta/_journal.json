@@ -162,6 +162,13 @@
       "when": 1791997860386,
       "tag": "0022_catalogo_sku_cintas_gestion",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1792157928895,
+      "tag": "0023_fix_descripcion_sku_catalogo",
+      "breakpoints": true
     }
   ]
 }
