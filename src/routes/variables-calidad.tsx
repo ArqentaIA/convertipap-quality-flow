@@ -565,6 +565,31 @@ function VariablesCalidad() {
             </div>
           )}
 
+          {puedeEditar && !isEditing && activeSpec?.hasSpec && (
+            <div className="flex flex-wrap items-center gap-2 border-b border-border bg-muted/10 px-5 py-2.5">
+              {!hayBorrador && (
+                <Button size="sm" variant="default" onClick={handleCrearBorrador}>
+                  <FilePlus2 className="h-4 w-4" /> Crear borrador
+                </Button>
+              )}
+              {hayBorrador && !enRevision && (
+                <Button size="sm" variant="default" onClick={handleEnviarRevision}>
+                  <Send className="h-4 w-4" /> Enviar a revisión
+                </Button>
+              )}
+              {enRevision && (
+                <Button size="sm" variant="default" onClick={handlePublicar}>
+                  <CheckCircle2 className="h-4 w-4" /> Publicar versión {borrador!.version}
+                </Button>
+              )}
+              {hayBorrador && (
+                <Button size="sm" variant="outline" onClick={handleDescartar}>
+                  <Trash2 className="h-4 w-4" /> Descartar borrador
+                </Button>
+              )}
+            </div>
+          )}
+
           {!activeSpec?.hasSpec && (
             <div className="border-b border-border bg-warning/10 px-5 py-2 text-[11px] text-warning flex items-center gap-2">
               <ShieldAlert className="h-3.5 w-3.5" />
