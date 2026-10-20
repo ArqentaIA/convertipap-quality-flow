@@ -176,6 +176,13 @@
       "when": 1792158396523,
       "tag": "0024_crear_producto_descripcion_sku",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1792532749121,
+      "tag": "0025_spec_borrador_calidad_write_and_publish_per_machine",
+      "breakpoints": true
     }
   ]
 }
