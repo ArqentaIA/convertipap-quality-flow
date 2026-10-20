@@ -1,5 +1,9 @@
 # Roadmap
 
+## PSC01: variable RH duplicada
+- [ ] Retirar RH de especificaciones actuales de PSC01, conservando Tensión RH e históricos.
+- [ ] Verificar PSC01 en Control de Calidad y Captura fuera de turno.
+
 ## Reportes completos
 - [x] Corregir consulta mensual: grupos de órdenes, páginas completas y periodo acotado.
 - [x] Revisar y corregir el mismo riesgo en otros reportes sin alterar cálculos ni formatos.
