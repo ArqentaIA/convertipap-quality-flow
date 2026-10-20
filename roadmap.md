@@ -1,5 +1,9 @@
 # Roadmap
 
+## PSC01: variable RH duplicada
+- [x] Retirar RH únicamente de los dos perfiles vigentes de PSC01, conservando Tensión RH; respaldo y motivo en bitácora. 1,937 muestras y 32,268 mediciones históricas sin cambios (huellas verificadas).
+- [x] Verificar PSC01 MP-04 con administrador en Control de Calidad y Captura fuera de turno: Tensión RH visible, RH ausente; verificar ambos perfiles vigentes y prueba SQL de regresión.
+
 ## Reportes completos
 - [x] Corregir consulta mensual: grupos de órdenes, páginas completas y periodo acotado.
 - [x] Revisar y corregir el mismo riesgo en otros reportes sin alterar cálculos ni formatos.
