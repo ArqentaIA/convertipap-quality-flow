@@ -3585,6 +3585,10 @@ export type Database = {
           variables_no_conformes: number
         }[]
       }
+      guardar_variables_borrador: {
+        Args: { _motivo: string; _spec_id: string; _variables: Json }
+        Returns: number
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

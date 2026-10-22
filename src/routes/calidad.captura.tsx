@@ -78,6 +78,7 @@ import {
 } from "@/lib/hallazgo";
 import { DefectosMultiSelect } from "@/components/qc/DefectosMultiSelect";
 import { usePlantasPermitidas } from "@/hooks/usePlantasPermitidas";
+import { useSpecPublicacionRealtime } from "@/hooks/use-spec-publicacion-realtime";
 
 const ROLLO_REGEX = /^[A-Za-z0-9-]{1,30}$/;
 
@@ -110,6 +111,14 @@ const specQO = (productoId: string, maquinaId?: string) =>
 
 
 export const Route = createFileRoute("/calidad/captura")({
+  head: () => ({ meta: [
+    { title: "Captura de Calidad | Convertipap" },
+    { name: "description", content: "Registro de muestras de calidad con especificaciones vigentes de Convertipap." },
+    { property: "og:title", content: "Captura de Calidad | Convertipap" },
+    { property: "og:description", content: "Captura de muestras y mediciones por máquina en Convertipap." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: () => <CapturaCalidadPage modoFueraTurno={false} />,
   errorComponent: ({ error }) => (
     <AppLayout title="Captura de Muestra de Calidad">
@@ -223,6 +232,7 @@ function inferirTurno(
 export function CapturaCalidadPage({ modoFueraTurno = false }: { modoFueraTurno?: boolean } = {}) {
   const auth = useAuth();
   const hasAuthToken = auth.isAuthenticated && !!auth.session?.access_token;
+  useSpecPublicacionRealtime(hasAuthToken);
   const maquinasQuery = useQuery({ ...maquinasQO, enabled: hasAuthToken, retry: false });
   const productosQuery = useQuery({ ...productosQO, enabled: hasAuthToken, retry: false });
   const maquinas = maquinasQuery.data ?? [];
@@ -623,14 +633,18 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
   const [variableTecnica, setVariableTecnica] = useState<string>("");
   const [criterioDefecto, setCriterioDefecto] = useState<"" | "MENOR" | "MAYOR" | "CRÍTICO">("");
 
-  // Reinicializar mediciones cuando cambia el producto / spec
+  const productoMedicionesRef = useRef(productoId);
+  const variablesFirma = variables.map((v) => v.variable_id).join("|");
+  // Cambiar de producto limpia valores; publicar conserva los de variables que siguen aplicando.
   useEffect(() => {
-    const base: MedicionInputState = {};
-    variables.forEach((v) => {
-      base[v.variable_id] = { valor: "" };
+    const cambioProducto = productoMedicionesRef.current !== productoId;
+    productoMedicionesRef.current = productoId;
+    setMediciones((prev) => {
+      const base: MedicionInputState = {};
+      variables.forEach((v) => { base[v.variable_id] = (!cambioProducto && prev[v.variable_id]) || { valor: "" }; });
+      return base;
     });
-    setMediciones(base);
-  }, [productoId, variables.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [productoId, variablesFirma]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Cálculo automático de Relación MD/CD = tensionMD / tensionCD
   const mdVarId = useMemo(

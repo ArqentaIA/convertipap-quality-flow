@@ -1,5 +1,10 @@
 # Roadmap
 
+## Actualización de Variables de Calidad
+- [x] Corregir guardado completo de límites y auditoría en una transacción con control de concurrencia; error PSK01 reproducido y corregido, Tensión RH 270/300/330 guardada únicamente en su borrador.
+- [x] Conservar revisión/publicación y actualizar lecturas de ambos módulos y plantas con Realtime y respaldo de conexión, sin borrar valores ingresados.
+- [x] Verificar con adgral guardado, revisión y publicación de producto temporal: cuatro capturas abiertas (ambos módulos × TLX/IXT) cambian 135/150/165 → 270/300/330 sin recarga, conservando el valor 150. Producto temporal desactivado; PSK01 real no publicado. Dos pruebas aprobadas, sin errores de pantalla. Cuentas Karina/Sinay no probadas; app aún no publicada.
+
 ## PSC01: variable RH duplicada
 - [x] Retirar RH únicamente de los dos perfiles vigentes de PSC01, conservando Tensión RH; respaldo y motivo en bitácora. 1,937 muestras y 32,268 mediciones históricas sin cambios (huellas verificadas).
 - [x] Verificar PSC01 MP-04 con administrador en Control de Calidad y Captura fuera de turno: Tensión RH visible, RH ausente; verificar ambos perfiles vigentes y prueba SQL de regresión.

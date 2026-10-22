@@ -1,5 +1,8 @@
 # Architecture rules
 
+- Save specification limits as complete variable triples in one authenticated SECURITY INVOKER transaction, targeting the explicit draft ID with expected-value concurrency checks; audit and values must commit together to prevent partial saves and transient invalid ranges.
+- Publishing invalidates capture specification queries locally and emits database Realtime changes; both capture modes share the subscription with polling/focus fallback and preserve entered values for unchanged variables.
+
 - Report data reads must paginate in unique-key order and chunk large identifier filters, assembling every page before returning or exporting; transport limits must never become report totals.
 - Report retrieval changes preserve existing weight sources, operational-day rules, plant authorization and export layouts; completeness fixes are not business-rule changes.
 - Standalone late-capture reports filter the persisted late-capture flag and capture timestamp; daily windows follow the Mexico operational day through next-day T3 closure, monthly windows remain calendar-based, and other closing-report rules stay unchanged.
