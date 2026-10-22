@@ -1,5 +1,10 @@
 # Roadmap
 
+## Actualización de Variables de Calidad
+- [ ] Corregir guardado completo de límites y auditoría sin estados intermedios inválidos.
+- [ ] Conservar revisión/publicación y actualizar lecturas de ambos módulos y plantas.
+- [ ] Verificar guardado, revisión, publicación y lectura en pantalla con cuenta autorizada.
+
 ## PSC01: variable RH duplicada
 - [x] Retirar RH únicamente de los dos perfiles vigentes de PSC01, conservando Tensión RH; respaldo y motivo en bitácora. 1,937 muestras y 32,268 mediciones históricas sin cambios (huellas verificadas).
 - [x] Verificar PSC01 MP-04 con administrador en Control de Calidad y Captura fuera de turno: Tensión RH visible, RH ausente; verificar ambos perfiles vigentes y prueba SQL de regresión.
