@@ -6,6 +6,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { publicarBorradoresProducto } from "./spec-auto-publicar";
 
 type SB = typeof import("@/integrations/supabase/client").supabase;
 
@@ -74,6 +75,8 @@ export const editarProductoCatalogo = createServerFn({ method: "POST" })
       _motivo: data.motivo,
     } as never);
     if (error) throw new Error(error.message);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await publicarBorradoresProducto(sb as any, id, data.motivo);
     return res as { ok: boolean; cambios: number };
   });
 
@@ -115,7 +118,10 @@ export const crearProductoCatalogo = createServerFn({ method: "POST" })
       _descripcion_sku: data.descripcion_sku ?? "",
     } as never);
     if (error) throw new Error(error.message);
-    return res as { ok: boolean; producto_id: string };
+    const out = res as { ok: boolean; producto_id: string };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if (out?.producto_id) await publicarBorradoresProducto(context.supabase as any, out.producto_id, data.motivo);
+    return out;
   });
 
 export const eliminarProductoCatalogo = createServerFn({ method: "POST" })
