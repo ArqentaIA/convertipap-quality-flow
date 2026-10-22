@@ -12,11 +12,11 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { SessionGate } from "@/components/SessionGate";
 import {
   listSpecAuditByProductCode,
-  registrarSpecAuditByCode,
   listEspecsActivasConVariables,
   updateCaracteristicasByCode,
 } from "@/lib/qc.functions";
 import { getEvidenciaFlag } from "@/lib/spec-documentos.functions";
+import { guardarVariablesBorrador } from "@/lib/spec-limites.functions";
 import {
   crearBorrador,
   enviarARevision,
@@ -41,6 +41,14 @@ const especsQueryOptions = queryOptions({
 export const Route = createFileRoute("/variables-calidad")({
   component: VariablesCalidadGate,
   ssr: false,
+  head: () => ({ meta: [
+    { title: "Variables de Calidad | Convertipap" },
+    { name: "description", content: "Catálogo y revisión de especificaciones de calidad por máquina en Convertipap." },
+    { property: "og:title", content: "Variables de Calidad | Convertipap" },
+    { property: "og:description", content: "Gestión autorizada de versiones y límites de calidad de Convertipap." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
 });
 
 function VariablesCalidadGate() {
@@ -72,7 +80,7 @@ function VariablesCalidad() {
   const auth = useAuth();
   const queryClient = useQueryClient();
   const listAuditFn = useServerFn(listSpecAuditByProductCode);
-  const registrarFn = useServerFn(registrarSpecAuditByCode);
+  const registrarFn = useServerFn(guardarVariablesBorrador);
   const updateCaracFn = useServerFn(updateCaracteristicasByCode);
   const crearBorradorFn = useServerFn(crearBorrador);
   const enviarRevisionFn = useServerFn(enviarARevision);
@@ -260,8 +268,13 @@ function VariablesCalidad() {
     if (!motivo || motivo.trim().length < 5) return;
     try {
       await publicarFn({ data: { spec_id: borrador.id, motivo: motivo.trim() } });
-      toast.success("Versión publicada. La vigente anterior pasó a obsoleta.");
       await invalidateAll();
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["qc", "productos-con-spec"] }),
+        queryClient.invalidateQueries({ queryKey: ["qc", "spec-por-producto"] }),
+        queryClient.invalidateQueries({ queryKey: ["qc", "skus-por-producto"] }),
+      ]);
+      toast.success("Versión publicada. Los nuevos límites ya están vigentes para captura.");
     } catch (e) {
       toast.error((e as Error).message);
     }
@@ -305,47 +318,19 @@ function VariablesCalidad() {
     if (!activeSpec || !borrador) return;
     if (!reason.trim()) { toast.warning("Indique el motivo del cambio."); return; }
 
-    const changes: Array<{
-      variable_clave: string; variable_etiqueta: string;
-      campo: "min" | "objetivo" | "max";
-      valor_anterior: number; valor_nuevo: number;
-    }> = [];
-
-    variablesEditadas.forEach((v) => {
+    const variables = variablesEditadas.flatMap((v) => {
       const d = draft[v.key];
-      if (!d) return;
-      (["min", "objective", "max"] as const).forEach((field) => {
-        if (d[field] !== v[field]) {
-          changes.push({
-            variable_clave: v.key,
-            variable_etiqueta: v.label,
-            campo: field === "objective" ? "objetivo" : (field as "min" | "max"),
-            valor_anterior: v[field],
-            valor_nuevo: d[field],
-          });
-        }
-      });
+      if (!d || (d.min === v.min && d.objective === v.objective && d.max === v.max)) return [];
+      return [{ clave: v.key, min: d.min, objetivo: d.objective, max: d.max,
+        esperado: { min: v.min, objetivo: v.objective, max: v.max } }];
     });
-
-    if (changes.length === 0) { toast.info("No hay cambios para guardar."); return; }
+    if (variables.length === 0) { toast.info("No hay cambios para guardar."); return; }
 
     try {
-      for (const c of changes) {
-        await saveMut.mutateAsync({
-          data: {
-            producto_codigo: activeSpec.code,
-            variable_clave: c.variable_clave,
-            variable_etiqueta: c.variable_etiqueta,
-            campo: c.campo,
-            valor_anterior: c.valor_anterior,
-            valor_nuevo: c.valor_nuevo,
-            motivo: reason.trim(),
-          },
-        });
-      }
-      toast.success(`${changes.length} cambio(s) guardados en el borrador.`);
+      const result = await saveMut.mutateAsync({ data: { spec_id: borrador.id, variables, motivo: reason.trim() } });
       await invalidateAll();
       cancelEdit();
+      toast.success(`${result.cambios} cambio(s) guardados en el borrador.`);
     } catch {
       /* ya notificado */
     }
@@ -529,16 +514,16 @@ function VariablesCalidad() {
                   <span className="rounded-md border border-warning/40 bg-warning/10 px-2 py-1 text-[10px] font-semibold text-warning">
                     Editando borrador como {auth.profile?.nombre ?? auth.user?.email} ({auth.roles.join(", ")})
                   </span>
-                  <button
+                  <Button
                     onClick={saveEdit}
                     disabled={saveMut.isPending}
                     className="inline-flex items-center gap-1.5 rounded-md bg-primary px-2.5 py-1.5 text-[11px] font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
                   >
                     <Save className="h-3.5 w-3.5" /> {saveMut.isPending ? "Guardando…" : "Guardar"}
-                  </button>
-                  <button onClick={cancelEdit} className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-2.5 py-1.5 text-[11px] font-semibold text-foreground hover:bg-accent">
+                  </Button>
+                  <Button variant="outline" disabled={saveMut.isPending} onClick={cancelEdit} className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-2.5 py-1.5 text-[11px] font-semibold text-foreground hover:bg-accent">
                     <X className="h-3.5 w-3.5" /> Cancelar
-                  </button>
+                  </Button>
                 </>
               )}
             </div>
