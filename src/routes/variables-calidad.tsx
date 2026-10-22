@@ -329,8 +329,13 @@ function VariablesCalidad() {
     try {
       const result = await saveMut.mutateAsync({ data: { spec_id: borrador.id, variables, motivo: reason.trim() } });
       await invalidateAll();
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["qc", "productos-con-spec"] }),
+        queryClient.invalidateQueries({ queryKey: ["qc", "spec-por-producto"] }),
+        queryClient.invalidateQueries({ queryKey: ["qc", "skus-por-producto"] }),
+      ]);
       cancelEdit();
-      toast.success(`${result.cambios} cambio(s) guardados en el borrador.`);
+      toast.success(`${result.cambios} cambio(s) guardados y publicados. Ya aplican en captura.`);
     } catch {
       /* ya notificado */
     }

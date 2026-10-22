@@ -108,7 +108,7 @@ function EditarDialog({
         },
       });
       if (res.cambios === 0) toast.info("Sin cambios que aplicar.");
-      else toast.success("Producto actualizado. La versión queda en borrador hasta publicarse.");
+      else toast.success("Producto actualizado y publicado. Ya aplica en captura.");
       void qc.invalidateQueries({ queryKey: ["catalogo-calidad-form", codigo] });
       await onCambio();
       onClose();
@@ -131,7 +131,7 @@ function EditarDialog({
             <div className={lbl}>Versión {tieneBorrador ? "del borrador" : "(se creará un borrador)"}</div>
             <Input value={version} maxLength={20} onChange={(e) => setVersion(e.target.value)} className="mt-1" placeholder="Ej. 2.0" />
             <p className="mt-1 text-[11px] text-muted-foreground">
-              La versión vigente no se modifica: el cambio aplica al borrador y entra en producción al publicarse.
+              Al guardar, el cambio se publica de inmediato con su motivo en la bitácora.
             </p>
           </div>
           <div>
@@ -225,7 +225,7 @@ function AgregarDialog({ onClose, onCambio }: { onClose: () => void; onCambio: P
           motivo: motivo.trim(),
         },
       });
-      toast.success("Producto creado en borrador. Publícalo para habilitarlo en captura.");
+      toast.success("Producto creado y publicado. Ya está disponible en captura.");
       await onCambio(codigo.trim().toUpperCase());
       onClose();
     } catch (e) {
@@ -332,7 +332,7 @@ function AgregarDialog({ onClose, onCambio }: { onClose: () => void; onCambio: P
             <Textarea value={motivo} maxLength={300} onChange={(e) => setMotivo(e.target.value)} rows={2} className="mt-1" />
           </div>
           <p className="text-[11px] text-muted-foreground">
-            El producto se crea en borrador; se habilita en captura al enviarlo a revisión y publicarlo (con evidencia si aplica).
+            Al guardar, el producto se publica y queda disponible en captura.
           </p>
         </div>
         <DialogFooter>
