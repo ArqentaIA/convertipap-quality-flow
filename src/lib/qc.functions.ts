@@ -19,6 +19,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { MOTIVOS_NO_VALIDOS, MOTIVO_MIN_LEN } from "./motivo-estatus";
+import { criterioDefectoPersistido } from "./catalogo-identificadores";
 import {
   resolveRolloStatusFrom,
   type ResolveRolloInput,
@@ -758,7 +759,7 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
       })(),
       defecto_visual_conversion: data.defecto_visual_conversion ?? null,
       variable_tecnica_dimensional: data.variable_tecnica_dimensional ?? null,
-      criterio_defecto: data.criterio_defecto === "SIN DEFECTO" ? null : data.criterio_defecto ?? null,
+      criterio_defecto: criterioDefectoPersistido(data.criterio_defecto),
       variables_snapshot_json: data.variables_snapshot_json as never,
       estado: estadoMuestra,
       capturado_por: userId,
