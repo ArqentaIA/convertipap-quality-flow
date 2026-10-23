@@ -1,5 +1,10 @@
 # Roadmap
 
+## Código y trazabilidad SKU
+- [ ] Alinear validación de código con espacios y símbolos y duplicados SKU solo entre versiones distintas.
+- [ ] Alinear SKU guardado en ambos módulos con etiqueta y QR, sin modificar históricos.
+- [ ] Verificar alta/edición y registro/etiqueta con pruebas y navegador.
+
 ## Actualización de Variables de Calidad
 - [x] Corregir guardado completo de límites y auditoría en una transacción con control de concurrencia; error PSK01 reproducido y corregido, Tensión RH 270/300/330 guardada únicamente en su borrador.
 - [x] Conservar revisión/publicación y actualizar lecturas de ambos módulos y plantas con Realtime y respaldo de conexión, sin borrar valores ingresados.
