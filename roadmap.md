@@ -1,9 +1,9 @@
 # Roadmap
 
 ## Código y trazabilidad SKU
-- [ ] Alinear validación de código con espacios y símbolos y duplicados SKU solo entre versiones distintas.
-- [ ] Alinear SKU guardado en ambos módulos con etiqueta y QR, sin modificar históricos.
-- [ ] Verificar alta/edición y registro/etiqueta con pruebas y navegador.
+- [x] Alinear validación de código con espacios y símbolos; verificar RPC autenticada: SKU en versión distinta permitido, misma versión bloqueada con mensaje claro.
+- [x] Alinear SKU guardado en ambos módulos con etiqueta y QR; admitir SKU manual sin catálogo, hasta 64 caracteres; históricos operativos intactos.
+- [x] Verificar con adgral alta/edición de QA_SKU+231026, captura en MP-10 del rollo 164-10 y lectura/reimpresión: SKU SSK101101285 igual al QR decodificado. 15 pruebas pasan. Campo manual fuera de turno visible; no se guardó allí ni se probó con Karina/Sinay. Producto temporal desactivado, rollo de pruebas conservado; app no publicada.
 
 ## Actualización de Variables de Calidad
 - [x] Corregir guardado completo de límites y auditoría en una transacción con control de concurrencia; error PSK01 reproducido y corregido, Tensión RH 270/300/330 guardada únicamente en su borrador.
