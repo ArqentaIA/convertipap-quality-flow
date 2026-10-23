@@ -190,6 +190,13 @@
       "when": 1792704986619,
       "tag": "0026_guardar_limites_borrador_atomico",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1792787104849,
+      "tag": "0027_align_product_code_and_sku_traceability",
+      "breakpoints": true
     }
   ]
 }
