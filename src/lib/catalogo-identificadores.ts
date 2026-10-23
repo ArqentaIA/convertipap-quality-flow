@@ -14,3 +14,7 @@ export function mensajeErrorCatalogo(error: unknown): string {
   }
   return message;
 }
+
+export function criterioDefectoPersistido(value: string | null | undefined) {
+  return value === 'MENOR' || value === 'MAYOR' || value === 'CRÍTICO' ? value : null;
+}

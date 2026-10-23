@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { codigoProductoSchema, skuSapSchema, mensajeErrorCatalogo } from '../catalogo-identificadores';
+import { codigoProductoSchema, skuSapSchema, mensajeErrorCatalogo, criterioDefectoPersistido } from '../catalogo-identificadores';
 
 describe('Identificadores de producto y SKU independientes', () => {
   it('acepta los códigos compuestos solicitados y espacios/símbolos', () => {
@@ -19,5 +19,9 @@ describe('Identificadores de producto y SKU independientes', () => {
   });
   it('un duplicado de versión no se confunde con un guardado exitoso', () => {
     expect(mensajeErrorCatalogo(new Error('SKU_VERSION_DUPLICADA'))).toContain('versión distinta');
+  });
+  it('sin criterio no inventa un defecto para poder guardar el SKU', () => {
+    expect(criterioDefectoPersistido('SIN DEFECTO')).toBeNull();
+    expect(criterioDefectoPersistido('MENOR')).toBe('MENOR');
   });
 });

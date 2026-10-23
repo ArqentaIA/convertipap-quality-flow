@@ -758,7 +758,7 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
       })(),
       defecto_visual_conversion: data.defecto_visual_conversion ?? null,
       variable_tecnica_dimensional: data.variable_tecnica_dimensional ?? null,
-      criterio_defecto: data.criterio_defecto ?? null,
+      criterio_defecto: data.criterio_defecto === "SIN DEFECTO" ? null : data.criterio_defecto ?? null,
       variables_snapshot_json: data.variables_snapshot_json as never,
       estado: estadoMuestra,
       capturado_por: userId,
