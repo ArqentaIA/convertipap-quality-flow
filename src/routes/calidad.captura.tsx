@@ -1847,6 +1847,21 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
                 </p>
               </div>
             )}
+            {!modoFueraTurno && skusProducto.length === 0 && productoId && (
+              <div className="space-y-1.5">
+                <Label className="text-base">SKU SAP del rollo</Label>
+                <Input
+                  className="h-11 text-base font-mono"
+                  value={skuSel}
+                  maxLength={40}
+                  placeholder="Escribe la clave SKU SAP"
+                  onChange={(e) => setSkuSel(e.target.value.toUpperCase().replace(/\s+/g, ""))}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Este producto no tiene SKU registrado. Captura la clave del rollo; se guarda en la muestra, la etiqueta y el QR.
+                </p>
+              </div>
+            )}
             <div className="space-y-1.5">
               <Label htmlFor="vel-maq" className="text-base">
                 Vel. Máquina{" "}
