@@ -14,6 +14,7 @@ import {
   Printer,
 } from "lucide-react";
 import { printEtiquetaLiberacion, type EtiquetaData } from "@/lib/etiqueta-liberacion";
+import { skuSapSchema } from "@/lib/catalogo-identificadores";
 import { auditAction } from "@/lib/audit";
 import { getEffectiveStatus } from "@/lib/qc-effective-status";
 import { toEtiquetaEstatusOficial } from "@/lib/qc-estado-oficial";
@@ -1201,6 +1202,8 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
 
     // Validación (usa el valor normalizado para sufijo).
     if (!spec) { toast.error("Selecciona un producto con especificación vigente"); return; }
+    const skuValido = skuSapSchema.safeParse(skuSel);
+    if (!skuValido.success) { toast.error(skuValido.error.issues[0]?.message); return; }
     if (skusProducto.length > 0 && !skuSel) {
       toast.error("Selecciona la clave SKU SAP (ancho) que corresponde al rollo"); return;
     }
@@ -1398,7 +1401,7 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
         fuera_de_turno: modoFueraTurno,
         fuera_de_turno_motivo: modoFueraTurno ? motivoFueraTurno.trim() : null,
         lote_logistico: null,
-        sku_sap: (skusProducto.length > 0 || !modoFueraTurno) ? skuSel.trim() || null : null,
+        sku_sap: skuSel.trim() || null,
         // Estatus del rollo elegido por el capturista (solo Ixtapaluca).
         estatus_capturista: esIxtapaluca && estatusManual ? estatusManual : null,
         estatus_capturista_motivo:
@@ -1847,15 +1850,15 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
                 </p>
               </div>
             )}
-            {!modoFueraTurno && skusProducto.length === 0 && productoId && (
+            {skusProducto.length === 0 && productoId && !skusQuery.isPending && !skusQuery.isError && (
               <div className="space-y-1.5">
                 <Label className="text-base">SKU SAP del rollo</Label>
                 <Input
                   className="h-11 text-base font-mono"
                   value={skuSel}
-                  maxLength={40}
+                  maxLength={64}
                   placeholder="Escribe la clave SKU SAP"
-                  onChange={(e) => setSkuSel(e.target.value.toUpperCase().replace(/\s+/g, ""))}
+                  onChange={(e) => setSkuSel(e.target.value.toUpperCase())}
                 />
                 <p className="text-xs text-muted-foreground">
                   Este producto no tiene SKU registrado. Captura la clave del rollo; se guarda en la muestra, la etiqueta y el QR.
@@ -3118,6 +3121,7 @@ function buildEtiquetaFromMuestra(m: MuestraReciente): EtiquetaData {
     maquinaNombre: m.maquinas?.nombre ?? "",
     productoCodigo: m.productos?.codigo ?? "",
     productoNombre: m.productos?.nombre ?? "",
+    skuSap: (m as { sku_sap?: string | null }).sku_sap ?? null,
     observacionesGenerales: (() => {
       const base = m.observaciones_generales ?? "";
       const plantaCodigoMuestra = (

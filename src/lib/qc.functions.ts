@@ -19,6 +19,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { MOTIVOS_NO_VALIDOS, MOTIVO_MIN_LEN } from "./motivo-estatus";
+import { criterioDefectoPersistido } from "./catalogo-identificadores";
 import {
   resolveRolloStatusFrom,
   type ResolveRolloInput,
@@ -543,7 +544,7 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
         // SKU SAP elegido por el capturista (productos con varios anchos, TLX).
         // La RPC lo valida contra el catálogo del producto; si no viene, la BD
         // aplica el autollenado vigente (principal o primero alfabético, solo TLX).
-        sku_sap: z.string().trim().max(40).nullable().optional(),
+        sku_sap: z.string().trim().max(64).regex(/^[\p{L}\p{N}\p{P}\p{S} ]*$/u, "SKU inválido").nullable().optional(),
         // Idempotencia del alta: la genera el cliente por intento de captura.
         // Un reintento (doble clic, timeout, refresh) con la misma clave devuelve
         // la misma muestra y el mismo consecutivo, sin consumir otro número.
@@ -758,7 +759,7 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
       })(),
       defecto_visual_conversion: data.defecto_visual_conversion ?? null,
       variable_tecnica_dimensional: data.variable_tecnica_dimensional ?? null,
-      criterio_defecto: data.criterio_defecto ?? null,
+      criterio_defecto: criterioDefectoPersistido(data.criterio_defecto),
       variables_snapshot_json: data.variables_snapshot_json as never,
       estado: estadoMuestra,
       capturado_por: userId,

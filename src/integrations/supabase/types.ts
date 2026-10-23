@@ -3471,6 +3471,10 @@ export type Database = {
         }
         Returns: Json
       }
+      catalogo_validar_sku_version: {
+        Args: { _producto_id: string; _sku: string; _version: string }
+        Returns: undefined
+      }
       cerrar_rollo_cintas: {
         Args: { _motivo: string; _numero_rollo: string }
         Returns: Json

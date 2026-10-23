@@ -7,6 +7,7 @@ import {
   buildPayloadPeso,
   buildPayloadLote,
   buildPayloadProducto,
+  buildPayloadSkuSap,
   type EtiquetaMedicion,
 } from '../etiqueta-liberacion'
 
@@ -30,6 +31,13 @@ const medPeso = (valor: number | null): EtiquetaMedicion => ({
 })
 
 describe('QR etiqueta — payload texto plano (lo que recibe el handheld)', () => {
+  it('SKU del rollo es literal e independiente del código compuesto', async () => {
+    const sku = buildPayloadSkuSap('SSK101101285');
+    expect(sku).toBe('SSK101101285');
+    expect(await decodePayload(sku)).toBe('SSK101101285');
+    expect(buildPayloadProducto('11_SSK101101285')).toBe('11_SSK101101285');
+    expect(buildPayloadSkuSap(null)).toBe('');
+  });
   it('QR rollo: solo el número de rollo', async () => {
     const p = buildPayloadRollo({ numeroRollo: '10454-4' })
     expect(p).toBe('10454-4')

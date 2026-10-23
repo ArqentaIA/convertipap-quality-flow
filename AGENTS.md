@@ -1,5 +1,7 @@
 # Architecture rules
 
+- Product code and SKU use shared client/server identifier schemas; catalog RPCs enforce cross-product SKU/version compatibility and roll labels/QR use the persisted sample SKU, never the current catalog SKU, to preserve traceability.
+
 - Save specification limits as complete variable triples in one authenticated SECURITY INVOKER transaction, targeting the explicit draft ID with expected-value concurrency checks; audit and values must commit together to prevent partial saves and transient invalid ranges.
 - Publishing invalidates capture specification queries locally and emits database Realtime changes; both capture modes share the subscription with polling/focus fallback and preserve entered values for unchanged variables.
 
