@@ -190,6 +190,10 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
       }
       return;
     }
+    if (pathname.startsWith("/calidad/captura-fuera-turno") && !canConfiguracion) {
+      void navigate({ to: "/calidad/captura", replace: true });
+      return;
+    }
     const mod = moduleForPath(pathname);
     if (puedeVer(mod)) return;
     const firstAllowed = NAV.find((n) => puedeVer(n.module));
@@ -206,6 +210,8 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
           const em = (auth.user?.email ?? "").toLowerCase();
           return !esPesajeOperativo && (auth.roles.includes("administrador") || em === "gcalidad@convertipap.site" || em === "msramosixt@convertipap.site");
         }
+        // Captura fuera de turno: visible solo para adgral@.
+        if (item.to === "/calidad/captura-fuera-turno") return canConfiguracion;
         if (!puedeVer(item.module)) return false;
         // Oculta "Control de Pesaje" si el usuario no puede usar Pesaje de Rollo
         if (item.to === "/pesaje/bobina-madre" && !puedePesajeRollo) {
