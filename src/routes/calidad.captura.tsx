@@ -1398,7 +1398,7 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
         fuera_de_turno: modoFueraTurno,
         fuera_de_turno_motivo: modoFueraTurno ? motivoFueraTurno.trim() : null,
         lote_logistico: null,
-        sku_sap: skusProducto.length > 0 ? skuSel || null : null,
+        sku_sap: (skusProducto.length > 0 || !modoFueraTurno) ? skuSel.trim() || null : null,
         // Estatus del rollo elegido por el capturista (solo Ixtapaluca).
         estatus_capturista: esIxtapaluca && estatusManual ? estatusManual : null,
         estatus_capturista_motivo:
@@ -1844,6 +1844,21 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
                 </Select>
                 <p className="text-xs text-muted-foreground">
                   Elige la clave SAP que corresponde al ancho real del rollo. Se guarda en la muestra, la etiqueta y el QR.
+                </p>
+              </div>
+            )}
+            {!modoFueraTurno && skusProducto.length === 0 && productoId && (
+              <div className="space-y-1.5">
+                <Label className="text-base">SKU SAP del rollo</Label>
+                <Input
+                  className="h-11 text-base font-mono"
+                  value={skuSel}
+                  maxLength={40}
+                  placeholder="Escribe la clave SKU SAP"
+                  onChange={(e) => setSkuSel(e.target.value.toUpperCase().replace(/\s+/g, ""))}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Este producto no tiene SKU registrado. Captura la clave del rollo; se guarda en la muestra, la etiqueta y el QR.
                 </p>
               </div>
             )}
