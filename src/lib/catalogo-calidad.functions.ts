@@ -7,6 +7,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { publicarBorradoresProducto } from "./spec-auto-publicar";
+import { codigoProductoSchema, skuSapSchema } from "./catalogo-identificadores";
 
 type SB = typeof import("@/integrations/supabase/client").supabase;
 
@@ -58,7 +59,7 @@ export const editarProductoCatalogo = createServerFn({ method: "POST" })
       .object({
         codigo: z.string().min(1).max(30),
         version: z.string().trim().max(20).optional(),
-        sku: z.string().trim().max(64).optional(),
+        sku: skuSapSchema.optional(),
         descripcion_sku: z.string().trim().max(200).optional(),
         motivo: z.string().trim().min(10, "Motivo obligatorio (mínimo 10 caracteres)."),
       })
@@ -85,11 +86,11 @@ export const crearProductoCatalogo = createServerFn({ method: "POST" })
   .inputValidator((i) =>
     z
       .object({
-        codigo: z.string().trim().min(2).max(30),
+        codigo: codigoProductoSchema,
         nombre: z.string().trim().min(3).max(200),
         tipo_id: z.string().uuid(),
         version: z.string().trim().max(20).optional(),
-        sku: z.string().trim().max(64).optional(),
+        sku: skuSapSchema.optional(),
         descripcion_sku: z.string().trim().max(200).optional(),
         variables: z
           .array(

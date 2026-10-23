@@ -543,7 +543,7 @@ export const upsertMuestraConMediciones = createServerFn({ method: "POST" })
         // SKU SAP elegido por el capturista (productos con varios anchos, TLX).
         // La RPC lo valida contra el catálogo del producto; si no viene, la BD
         // aplica el autollenado vigente (principal o primero alfabético, solo TLX).
-        sku_sap: z.string().trim().max(40).nullable().optional(),
+        sku_sap: z.string().trim().max(64).regex(/^[\p{L}\p{N}\p{P}\p{S} ]*$/u, "SKU inválido").nullable().optional(),
         // Idempotencia del alta: la genera el cliente por intento de captura.
         // Un reintento (doble clic, timeout, refresh) con la misma clave devuelve
         // la misma muestra y el mismo consecutivo, sin consumir otro número.

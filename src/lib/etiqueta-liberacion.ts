@@ -71,7 +71,7 @@ export type EtiquetaData = {
   loteLogistico?: string | null;
   /** Código de planta (TLX/IXT) — define el juego de QR inferiores. */
   plantaCodigo?: string | null;
-  /** SKU SAP principal guardado en la captura (solo TLX). */
+  /** SKU SAP guardado con el rollo, en ambas plantas y modos de captura. */
   skuSap?: string | null;
 };
 
@@ -135,7 +135,7 @@ export function buildPayloadLote(loteLogistico: string | null | undefined): stri
   return (loteLogistico ?? "").trim();
 }
 
-/** QR SKU SAP (TLX): texto plano con la clave SKU SAP de la muestra. */
+/** QR SKU SAP: texto plano con la clave SKU SAP de la muestra. */
 export function buildPayloadSkuSap(skuSap: string | null | undefined): string {
   return (skuSap ?? "").trim();
 }
@@ -433,6 +433,10 @@ function buildHtml(
       <div class="sap-qr">
         ${qrProductoDataUrl ? `<img src="${qrProductoDataUrl}" alt="QR Código de Producto" />` : `<div class="qr-na">Dato no disponible</div>`}
         <div class="cap">Código de Producto</div>
+      </div>
+      <div class="sap-qr">
+        ${qrSkuDataUrl ? `<img src="${qrSkuDataUrl}" alt="QR SKU SAP" />` : `<div class="qr-na">Dato no disponible</div>`}
+        <div class="cap">SKU SAP</div>
       </div>
       <div class="sap-qr">
         ${qrPesoDataUrl ? `<img src="${qrPesoDataUrl}" alt="QR Peso" />` : `<div class="qr-na">Dato no disponible</div>`}

@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Loader2, PackagePlus, PencilLine, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { codigoProductoSchema, skuSapSchema, mensajeErrorCatalogo } from "@/lib/catalogo-identificadores";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import {
@@ -94,6 +95,8 @@ function EditarDialog({
 
   const guardar = async () => {
     if (motivo.trim().length < 10) return toast.error("Motivo obligatorio (mínimo 10 caracteres).");
+    const skuValido = skuSapSchema.safeParse(sku);
+    if (!skuValido.success) return toast.error(skuValido.error.issues[0]?.message);
     const cambiaVersion = version.trim() !== "" && version.trim() !== versionActual;
     if (!cambiaVersion && !sku.trim()) return toast.info("No hay cambios que guardar.");
     if (sku.trim() && desc.trim().length < 3) return toast.error("Descripción SAP obligatoria al asignar un SKU (mínimo 3 caracteres).");
@@ -113,7 +116,7 @@ function EditarDialog({
       await onCambio();
       onClose();
     } catch (e) {
-      toast.error((e as Error).message);
+      toast.error(mensajeErrorCatalogo(e));
     } finally {
       setGuardando(false);
     }
@@ -200,6 +203,10 @@ function AgregarDialog({ onClose, onCambio }: { onClose: () => void; onCambio: P
 
   const guardar = async () => {
     if (!codigo.trim() || !nombre.trim() || !tipo) return toast.error("Código, nombre y familia son obligatorios.");
+    const codigoValido = codigoProductoSchema.safeParse(codigo);
+    if (!codigoValido.success) return toast.error(codigoValido.error.issues[0]?.message);
+    const skuValido = skuSapSchema.safeParse(sku);
+    if (!skuValido.success) return toast.error(skuValido.error.issues[0]?.message);
     if (seleccionadas.length === 0) return toast.error("Selecciona al menos una variable.");
     if (sku.trim() && descSku.trim().length < 3) return toast.error("Descripción SAP obligatoria al capturar un SKU (mínimo 3 caracteres).");
     if (motivo.trim().length < 10) return toast.error("Motivo obligatorio (mínimo 10 caracteres).");
@@ -229,7 +236,7 @@ function AgregarDialog({ onClose, onCambio }: { onClose: () => void; onCambio: P
       await onCambio(codigo.trim().toUpperCase());
       onClose();
     } catch (e) {
-      toast.error((e as Error).message);
+      toast.error(mensajeErrorCatalogo(e));
     } finally {
       setGuardando(false);
     }
