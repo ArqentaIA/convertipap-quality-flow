@@ -5,8 +5,8 @@
 - [x] Validar Excel: 759 bobinas 1–759 sin duplicados; 622 folios numéricos y 137 -0; celda aislada 284 sin folio. Documentado en docs/bobinas-madre-imp-validacion.md.
 - [x] Resolver numeración actualizada tras validación: todos los folios internos -00 con original respaldado; nuevas desde 00760-00 o después del máximo si ocupado; folios no anulables ni repetibles. Autorizados registros separados en la misma base, sin órdenes/límites ficticios.
 - [x] Confirmar que todos los capturistas actuales pueden elegir estado y agregar proveedores únicamente en Bobinas Madre Imp; sin ampliar permisos de otros módulos.
-- [ ] Resolver administración de productos importados y ventana de edición antes de implementar; falta autorización del Ing. Óscar. Histórico conservará fecha sin inventar hora/planta/turno/analista, y QR requerirá sesión por defecto.
-- [ ] Implementar e importar únicamente tras resolver precisiones y aprobar propuesta; fabricación propia permanece sin cambios.
+- [x] Resolver administración de productos importados (Karina/Sinay/adgral) y edición (36 h desde captura). Histórico conserva fecha sin inventar hora/planta/turno/analista; QR requiere sesión por defecto.
+- [x] Implementar módulo e importar 759 bobinas sin duplicados; captura/edición y permisos verificados con transacción autenticada y reversión total. Excel completo y etiqueta revisados; QR decodificados. 9 pruebas aprobadas y vista móvil comprobada. Verificación temporal retirada. No se publicó; impresión física y guardado desde pantalla con Karina/Sinay no certificados. Contador disponible 00760-00 según decisión posterior documentada.
 
 ## Código y trazabilidad SKU
 - [x] Alinear validación de código con espacios y símbolos; verificar RPC autenticada: SKU en versión distinta permitido, misma versión bloqueada con mensaje claro.

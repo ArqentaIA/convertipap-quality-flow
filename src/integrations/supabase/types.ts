@@ -757,6 +757,212 @@ export type Database = {
         }
         Relationships: []
       }
+      imp_bobinas: {
+        Row: {
+          analista: string | null
+          capturado_at: string | null
+          capturado_por: string | null
+          datos_originales: Json | null
+          estado: string
+          estado_original: string | null
+          fecha: string
+          folio: string | null
+          folio_original: string | null
+          fuente_fila: number | null
+          fuente_sha256: string | null
+          id: string
+          maquina: string
+          numero: number
+          observaciones: string | null
+          origen: string
+          planta_codigo: string | null
+          producto_codigo: string
+          producto_id: string
+          proveedor_id: string
+          proveedor_nombre: string
+          registrado_at: string
+          revision: number
+          sku: string | null
+          sku_referencia: string | null
+          turno: string | null
+          valores: Json
+        }
+        Insert: {
+          analista?: string | null
+          capturado_at?: string | null
+          capturado_por?: string | null
+          datos_originales?: Json | null
+          estado: string
+          estado_original?: string | null
+          fecha: string
+          folio?: string | null
+          folio_original?: string | null
+          fuente_fila?: number | null
+          fuente_sha256?: string | null
+          id?: string
+          maquina?: string
+          numero: number
+          observaciones?: string | null
+          origen?: string
+          planta_codigo?: string | null
+          producto_codigo: string
+          producto_id: string
+          proveedor_id: string
+          proveedor_nombre: string
+          registrado_at?: string
+          revision?: number
+          sku?: string | null
+          sku_referencia?: string | null
+          turno?: string | null
+          valores?: Json
+        }
+        Update: {
+          analista?: string | null
+          capturado_at?: string | null
+          capturado_por?: string | null
+          datos_originales?: Json | null
+          estado?: string
+          estado_original?: string | null
+          fecha?: string
+          folio?: string | null
+          folio_original?: string | null
+          fuente_fila?: number | null
+          fuente_sha256?: string | null
+          id?: string
+          maquina?: string
+          numero?: number
+          observaciones?: string | null
+          origen?: string
+          planta_codigo?: string | null
+          producto_codigo?: string
+          producto_id?: string
+          proveedor_id?: string
+          proveedor_nombre?: string
+          registrado_at?: string
+          revision?: number
+          sku?: string | null
+          sku_referencia?: string | null
+          turno?: string | null
+          valores?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "imp_bobinas_producto_id_fkey"
+            columns: ["producto_id"]
+            isOneToOne: false
+            referencedRelation: "imp_productos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "imp_bobinas_proveedor_id_fkey"
+            columns: ["proveedor_id"]
+            isOneToOne: false
+            referencedRelation: "imp_proveedores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      imp_contador: {
+        Row: {
+          id: boolean
+          siguiente: number
+        }
+        Insert: {
+          id?: boolean
+          siguiente?: number
+        }
+        Update: {
+          id?: boolean
+          siguiente?: number
+        }
+        Relationships: []
+      }
+      imp_eventos: {
+        Row: {
+          accion: string
+          antes: Json | null
+          bobina_id: string | null
+          created_at: string
+          despues: Json | null
+          id: string
+          motivo: string
+          usuario_id: string
+        }
+        Insert: {
+          accion: string
+          antes?: Json | null
+          bobina_id?: string | null
+          created_at?: string
+          despues?: Json | null
+          id?: string
+          motivo: string
+          usuario_id: string
+        }
+        Update: {
+          accion?: string
+          antes?: Json | null
+          bobina_id?: string | null
+          created_at?: string
+          despues?: Json | null
+          id?: string
+          motivo?: string
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "imp_eventos_bobina_id_fkey"
+            columns: ["bobina_id"]
+            isOneToOne: false
+            referencedRelation: "imp_bobinas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      imp_productos: {
+        Row: {
+          codigo: string
+          created_at: string
+          id: string
+          revision: number
+          sku_referencia: string | null
+        }
+        Insert: {
+          codigo: string
+          created_at?: string
+          id?: string
+          revision?: number
+          sku_referencia?: string | null
+        }
+        Update: {
+          codigo?: string
+          created_at?: string
+          id?: string
+          revision?: number
+          sku_referencia?: string | null
+        }
+        Relationships: []
+      }
+      imp_proveedores: {
+        Row: {
+          creado_por: string | null
+          created_at: string
+          id: string
+          nombre: string
+        }
+        Insert: {
+          creado_por?: string | null
+          created_at?: string
+          id?: string
+          nombre: string
+        }
+        Update: {
+          creado_por?: string | null
+          created_at?: string
+          id?: string
+          nombre?: string
+        }
+        Relationships: []
+      }
       impresiones_etiquetas_cintas: {
         Row: {
           cantidad_etiquetas: number
@@ -3600,6 +3806,32 @@ export type Database = {
         }
         Returns: boolean
       }
+      imp_catalogo_guardar: {
+        Args: {
+          _id?: string
+          _nombre: string
+          _revision?: number
+          _sku?: string
+          _tipo: string
+        }
+        Returns: string
+      }
+      imp_guardar: {
+        Args: {
+          _datos: Json
+          _id: string
+          _motivo?: string
+          _revision?: number
+        }
+        Returns: string
+      }
+      imp_importar_excel: {
+        Args: { _excepciones: Json; _filas: Json; _sha: string }
+        Returns: number
+      }
+      imp_permiso: { Args: { _accion: string }; Returns: boolean }
+      imp_validar_valores: { Args: { _v: Json }; Returns: undefined }
+      imp_verificar_transaccion: { Args: never; Returns: string }
       pb_set_personal: {
         Args: { _jefe: string; _operador: string; _pesaje_id: string }
         Returns: undefined

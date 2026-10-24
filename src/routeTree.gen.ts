@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuditoriaRouteImport } from './routes/auditoria'
+import { Route as BobinasMadreImpRouteImport } from './routes/bobinas-madre-imp'
 import { Route as CatalogosRouteImport } from './routes/catalogos'
 import { Route as ConfiguracionRouteImport } from './routes/configuracion'
 import { Route as ControlCalidadRouteImport } from './routes/control-calidad'
@@ -50,6 +51,11 @@ const IndexRoute = IndexRouteImport.update({
 const AuditoriaRoute = AuditoriaRouteImport.update({
   id: '/auditoria',
   path: '/auditoria',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BobinasMadreImpRoute = BobinasMadreImpRouteImport.update({
+  id: '/bobinas-madre-imp',
+  path: '/bobinas-madre-imp',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CatalogosRoute = CatalogosRouteImport.update({
@@ -209,6 +215,7 @@ const ApiPublicHooksResumenDiarioReporteRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auditoria': typeof AuditoriaRoute
+  '/bobinas-madre-imp': typeof BobinasMadreImpRoute
   '/catalogos': typeof CatalogosRoute
   '/configuracion': typeof ConfiguracionRoute
   '/control-calidad': typeof ControlCalidadRoute
@@ -243,6 +250,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auditoria': typeof AuditoriaRoute
+  '/bobinas-madre-imp': typeof BobinasMadreImpRoute
   '/catalogos': typeof CatalogosRoute
   '/configuracion': typeof ConfiguracionRoute
   '/control-calidad': typeof ControlCalidadRoute
@@ -278,6 +286,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/auditoria': typeof AuditoriaRoute
+  '/bobinas-madre-imp': typeof BobinasMadreImpRoute
   '/catalogos': typeof CatalogosRoute
   '/configuracion': typeof ConfiguracionRoute
   '/control-calidad': typeof ControlCalidadRoute
@@ -314,6 +323,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auditoria'
+    | '/bobinas-madre-imp'
     | '/catalogos'
     | '/configuracion'
     | '/control-calidad'
@@ -348,6 +358,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auditoria'
+    | '/bobinas-madre-imp'
     | '/catalogos'
     | '/configuracion'
     | '/control-calidad'
@@ -382,6 +393,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/auditoria'
+    | '/bobinas-madre-imp'
     | '/catalogos'
     | '/configuracion'
     | '/control-calidad'
@@ -417,6 +429,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuditoriaRoute: typeof AuditoriaRoute
+  BobinasMadreImpRoute: typeof BobinasMadreImpRoute
   CatalogosRoute: typeof CatalogosRoute
   ConfiguracionRoute: typeof ConfiguracionRoute
   ControlCalidadRoute: typeof ControlCalidadRoute
@@ -463,6 +476,13 @@ declare module '@tanstack/react-router' {
       path: '/auditoria'
       fullPath: '/auditoria'
       preLoaderRoute: typeof AuditoriaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/bobinas-madre-imp': {
+      id: '/bobinas-madre-imp'
+      path: '/bobinas-madre-imp'
+      fullPath: '/bobinas-madre-imp'
+      preLoaderRoute: typeof BobinasMadreImpRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/catalogos': {
@@ -681,6 +701,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuditoriaRoute: AuditoriaRoute,
+  BobinasMadreImpRoute: BobinasMadreImpRoute,
   CatalogosRoute: CatalogosRoute,
   ConfiguracionRoute: ConfiguracionRoute,
   ControlCalidadRoute: ControlCalidadRoute,

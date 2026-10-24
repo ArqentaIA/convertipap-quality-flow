@@ -197,6 +197,34 @@
       "when": 1792787104849,
       "tag": "0027_align_product_code_and_sku_traceability",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1792853510793,
+      "tag": "0028_bobinas_madre_imp_isolated_quality",
+      "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1792853911631,
+      "tag": "0029_imp_transactional_verification",
+      "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1792853977272,
+      "tag": "0030_imp_verify_anonymous_claims",
+      "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1792854268278,
+      "tag": "0031_retire_imp_transaction_verifier",
+      "breakpoints": true
     }
   ]
 }
