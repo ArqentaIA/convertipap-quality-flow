@@ -90,6 +90,9 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
   const auth = useAuth();
   const labFilter = useLabFilter();
   const [collapsed, setCollapsed] = useState(false);
+  useEffect(() => {
+    if (window.innerWidth < 768 && window.location.pathname.startsWith('/bobinas-madre-imp')) setCollapsed(true);
+  }, []);
   const { data: plantasPermitidas } = usePlantasPermitidas();
   const [plantId, setPlantId] = useState<string | null>(null);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -236,7 +239,9 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
   const currentModule = moduleForPath(pathname);
   const allowedHere = pathname.startsWith("/usuarios")
     ? canPerfilesRoles
-    : puedeVer(currentModule);
+    : pathname.startsWith('/bobinas-madre-imp')
+      ? auth.canAccess('reportes') || ((auth.hasRole('capturista') || auth.hasRole('calidad') || auth.hasRole('calidad_operativo')) && auth.canAccess('control_calidad')) || canConfiguracion
+      : puedeVer(currentModule);
 
   if (auth.loading || !auth.isAuthenticated) {
     return (
@@ -410,7 +415,7 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
         </header>
 
         <main className="flex-1 overflow-auto industrial-bg">
-          <div className="mx-auto max-w-[1600px] p-6">
+          <div className={`mx-auto max-w-[1600px] ${pathname.startsWith('/bobinas-madre-imp') ? 'p-1 sm:p-6' : 'p-6'}`}>
             {allowedHere ? (
               children
             ) : (

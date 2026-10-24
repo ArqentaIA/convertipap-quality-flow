@@ -1,6 +1,6 @@
 # Bobinas Madre Imp — validación previa
 
-No se ha importado ni modificado información de producción.
+Histórico importado en registros separados de calidad. No se agregaron bobinas ni órdenes a fabricación.
 
 ## Excel verificado
 
@@ -22,8 +22,16 @@ La captura actual utiliza referencias a orden, especificación y planta, además
 
 - El usuario cambia el inicio a **00760-00** y confirma que todos los folios internos deben llevar **-00**, no -0 ni -1. El original se conserva por separado.
 - Autoriza registros externos separados dentro de la misma base de calidad, sin órdenes ni límites ficticios.
-- La respuesta «capturistas?» no confirma por sí sola que todos los capturistas puedan elegir estado y agregar proveedores; aclarar esa identidad.
+- Confirmado: capturistas actuales pueden elegir estado y agregar proveedores solo en este módulo.
+- Edición por Calidad/adgral limitada a las 36 horas siguientes a captura; catálogo de productos por Karina, Sinay y adgral.
 
-## Bloqueos de importación
+## Resultado verificado
 
-Confirmar tratamiento de la celda aislada, cuentas/roles de analistas, campos obligatorios, fecha/planta y ventana de edición. QR sin exposición pública por defecto. Las reglas confirmadas no autorizan completar datos históricos ausentes.
+- 759 bobinas importadas, 759 números únicos, máximo 759; contador siguiente 760. Segunda importación creó cero bobinas.
+- 45 fechas de texto `24/082026` y `25/082026` se interpretaron como 24 y 25 de agosto de 2026; el texto original permanece intacto. Espacios vacíos se conservaron como nulos, nunca cero.
+- La celda 284 sin folio está respaldada como excepción del archivo, no se inventó una bobina.
+- Histórico sin hora de captura, planta, turno, SKU ni analista inventados. Fecha de importación separada de fecha original.
+- Prueba autenticada transaccional aprobada con reversión total: primera captura 00760-00, SKU distinto, valores vacíos, concesión/rechazo, reintento idempotente, fallo sin consumir folio, permisos por acción, edición auditada, conflicto de revisión y vencimiento 36 h. Sin productos/proveedores/bobinas de prueba persistidos.
+- Excel descargado con 759 filas, orden 1–759 y hojas Resumen/Detalle; etiqueta PDF generada y revisada visualmente. QR de trazabilidad requiere sesión; QR de SKU usa el valor persistido.
+- Fabricación siguió recibiendo capturas operativas concurrentes; no se puede afirmar igualdad de totales globales entre horas diferentes. La prueba transaccional comprobó que su flujo no altera muestras de fabricación.
+- No se publicó la aplicación. No se guardó una bobina ficticia desde la pantalla ni se verificó impresión física ni sesiones de Karina/Sinay en navegador; los permisos se probaron en la transacción autenticada.
