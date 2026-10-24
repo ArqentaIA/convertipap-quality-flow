@@ -3862,6 +3862,7 @@ export type Database = {
         Args: { _excepciones: Json; _filas: Json; _sha: string }
         Returns: number
       }
+      imp_lote_access: { Args: { _id: string }; Returns: undefined }
       imp_permiso: { Args: { _accion: string }; Returns: boolean }
       imp_validar_valores: { Args: { _v: Json }; Returns: undefined }
       imp_verificar_transaccion: { Args: never; Returns: string }
