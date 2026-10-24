@@ -2,7 +2,8 @@
 
 ## Bobinas Madre Imp — propuesta previa a implementación
 - [x] Incorporar precisiones: nuevas capturas desde 00761-00, contador automático compartido, elección de estado por analista/Calidad, alta de proveedores por analistas, edición solo Calidad/adgral y SKU distinto con alerta sin bloqueo.
-- [x] Resolver numeración: histórico interno -00 con original respaldado; nuevas desde 00761-00 o después del máximo si ocupado; folios no anulables ni repetibles.
+- [x] Validar Excel: 759 bobinas 1–759 sin duplicados; 622 folios numéricos y 137 -0; celda aislada 284 sin folio. Documentado en docs/bobinas-madre-imp-validacion.md.
+- [x] Resolver numeración actualizada tras validación: todos los folios internos -00 con original respaldado; nuevas desde 00760-00 o después del máximo si ocupado; folios no anulables ni repetibles. Autorizados registros separados en la misma base, sin órdenes/límites ficticios.
 - [ ] Presentar propuesta revisada y resolver cuentas/administración de productos, fecha/planta, obligatoriedad, ventana de edición y privacidad QR antes de implementar. Pendiente de precisiones del Ing. Óscar.
 - [ ] Implementar e importar únicamente tras resolver precisiones y aprobar propuesta; fabricación propia permanece sin cambios.
 

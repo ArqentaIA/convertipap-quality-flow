@@ -18,6 +18,12 @@ No se ha importado ni modificado información de producción.
 
 La captura actual utiliza referencias a orden, especificación y planta, además de límites por variable. Las bobinas externas sin esos datos no deben recibir órdenes, límites, turnos ni horas inventados para encajar en ese flujo. Antes de crear la estructura definitiva se debe resolver el alcance de «misma base de calidad»: registros externos separados en esa misma base o adaptación explícita del registro actual. No activar MP-00 ni productos externos en selectores de fabricación.
 
+## Decisiones posteriores a la validación
+
+- El usuario cambia el inicio a **00760-00** y confirma que todos los folios internos deben llevar **-00**, no -0 ni -1. El original se conserva por separado.
+- Autoriza registros externos separados dentro de la misma base de calidad, sin órdenes ni límites ficticios.
+- La respuesta «capturistas?» no confirma por sí sola que todos los capturistas puedan elegir estado y agregar proveedores; aclarar esa identidad.
+
 ## Bloqueos de importación
 
-Confirmar conversión de folios numéricos y -0 a -00, tratamiento de la celda aislada, ausencia de 760, cuentas/roles de analistas, campos obligatorios, fecha/planta y ventana de edición. QR sin exposición pública por defecto. Las reglas confirmadas no autorizan completar datos históricos ausentes.
+Confirmar tratamiento de la celda aislada, cuentas/roles de analistas, campos obligatorios, fecha/planta y ventana de edición. QR sin exposición pública por defecto. Las reglas confirmadas no autorizan completar datos históricos ausentes.
