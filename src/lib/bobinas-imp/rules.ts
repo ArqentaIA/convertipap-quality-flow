@@ -12,3 +12,5 @@ export function impCanEdit(captured: string | null, now = Date.now()) { if (!cap
 export function impSkuMismatch(reference: string | null, entered: string) { return Boolean(reference && reference !== entered.trim()); }
 export function impSkuQr(sku: string | null) { return sku ?? ''; }
 export function impDateLabel(date: string) { const [y, m, d] = date.split('-'); return `${d}/${m}/${y}`; }
+export function impNormalizeLookup(folio: string) { const m=/^(\d+)-00$/.exec(folio.trim()); return m ? impFolio(Number(m[1])) : null; }
+export function impCanContinue(sku: string | null) { return Boolean(sku?.trim()); }

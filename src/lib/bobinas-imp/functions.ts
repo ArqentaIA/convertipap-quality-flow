@@ -2,7 +2,7 @@ import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
 import { readAllReportPages } from '@/lib/report-query-pages';
-import { impFormSchema } from './rules';
+import { impFormSchema, impNormalizeLookup } from './rules';
 import type { Database } from '@/integrations/supabase/types';
 export type ImpBobina = Database['public']['Tables']['imp_bobinas']['Row'];
 export type ImpProducto = Database['public']['Tables']['imp_productos']['Row'];
@@ -33,4 +33,11 @@ export const impCatalogoGuardar = createServerFn({method:'POST'}).middleware([re
 });
 export const impImportar = createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator((d)=>z.object({sha:z.string().regex(/^[a-f0-9]{64}$/),filas:z.array(z.record(z.string(),z.unknown())).length(759),excepciones:z.array(z.record(z.string(),z.unknown()))}).parse(d)).handler(async({data,context})=> {
  const {data:n,error}=await context.supabase.rpc('imp_importar_excel',{_sha:data.sha,_filas:data.filas as Database['public']['Functions']['imp_importar_excel']['Args']['_filas'],_excepciones:data.excepciones as Database['public']['Functions']['imp_importar_excel']['Args']['_excepciones']}); if(error) throw new Error(error.message); return n;
+});
+export const impBuscarFolio=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator((d)=>z.object({folio:z.string().trim().max(64)}).parse(d)).handler(async({data,context})=>{
+ const folio=impNormalizeLookup(data.folio); if(!folio)return null;
+ const {data:row,error}=await context.supabase.from('imp_bobinas').select('*').eq('folio',folio).maybeSingle(); if(error)throw new Error(error.message); return row;
+});
+export const impAsignarSku=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator((d)=>z.object({id:z.string().uuid(),sku:z.string().trim().min(1).max(64),revision:z.number().int(),motivo:z.string().trim().min(10).max(2000)}).parse(d)).handler(async({data,context})=>{
+ const {data:id,error}=await context.supabase.rpc('imp_asignar_sku',{_id:data.id,_sku:data.sku,_revision:data.revision,_motivo:data.motivo});if(error)throw new Error(error.message);return id;
 });
