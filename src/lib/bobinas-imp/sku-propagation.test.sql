@@ -11,10 +11,11 @@ BEGIN
  SELECT * INTO seed FROM public.imp_bobinas ORDER BY numero LIMIT 1;
  SELECT max(numero)+100 INTO n FROM public.imp_bobinas;
  fixture:=to_jsonb(seed)||jsonb_build_object('producto_id',p,'producto_codigo','QA_SKU_PROPAGATION','sku',null,'revision',1,'fuente_sha256',null,'fuente_fila',null);
- INSERT INTO public.imp_bobinas SELECT (jsonb_populate_record(NULL::public.imp_bobinas,fixture||jsonb_build_object('id',first_id,'numero',n,'folio',n::text||'-00'))).*;
- INSERT INTO public.imp_bobinas SELECT (jsonb_populate_record(NULL::public.imp_bobinas,fixture||jsonb_build_object('id',gen_random_uuid(),'numero',n+1,'folio',(n+1)::text||'-00','sku','  '))).*;
- INSERT INTO public.imp_bobinas SELECT (jsonb_populate_record(NULL::public.imp_bobinas,fixture||jsonb_build_object('id',old_sku_id,'numero',n+2,'folio',(n+2)::text||'-00','sku','EXISTING_SKU'))).*;
- INSERT INTO public.imp_bobinas SELECT (jsonb_populate_record(NULL::public.imp_bobinas,fixture||jsonb_build_object('id',gen_random_uuid(),'numero',n+3,'folio',(n+3)::text||'-00','producto_id',other_p))).*;
+ INSERT INTO public.imp_bobinas(id,numero,proveedor_id,producto_id,producto_codigo,proveedor_nombre,fecha,estado,sku)
+ VALUES(first_id,n,seed.proveedor_id,p,'QA_SKU_PROPAGATION',seed.proveedor_nombre,seed.fecha,seed.estado,null),
+ (gen_random_uuid(),n+1,seed.proveedor_id,p,'QA_SKU_PROPAGATION',seed.proveedor_nombre,seed.fecha,seed.estado,'  '),
+ (old_sku_id,n+2,seed.proveedor_id,p,'QA_SKU_PROPAGATION',seed.proveedor_nombre,seed.fecha,seed.estado,'EXISTING_SKU'),
+ (gen_random_uuid(),n+3,seed.proveedor_id,other_p,'QA_SKU_OTHER',seed.proveedor_nombre,seed.fecha,seed.estado,null);
  SELECT jsonb_object_agg(id::text,to_jsonb(b)-'sku'-'revision') INTO baseline FROM public.imp_bobinas b WHERE producto_id=p;
  IF (public.imp_sku_pendientes(p)->>'cantidad')::int<>2 THEN RAISE EXCEPTION 'Wrong pending count'; END IF;
  token:=public.imp_sku_pendientes(p)->>'esperado';
