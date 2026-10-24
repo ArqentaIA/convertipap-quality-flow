@@ -2,7 +2,7 @@ import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
 import { readAllReportPages } from '@/lib/report-query-pages';
-import { impFormSchema, impNormalizeLookup } from './rules';
+import { impFormSchema, impNormalizeLookup, impSkuConfirmationSchema } from './rules';
 import type { Database } from '@/integrations/supabase/types';
 export type ImpBobina = Database['public']['Tables']['imp_bobinas']['Row'];
 export type ImpProducto = Database['public']['Tables']['imp_productos']['Row'];
@@ -61,4 +61,10 @@ export const impBuscarFolio=createServerFn({method:'POST'}).middleware([requireS
 });
 export const impAsignarSku=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator((d)=>z.object({id:z.string().uuid(),sku:z.string().trim().min(1).max(64),revision:z.number().int(),motivo:z.string().trim().min(10).max(2000)}).parse(d)).handler(async({data,context})=>{
  const {data:id,error}=await context.supabase.rpc('imp_asignar_sku',{_id:data.id,_sku:data.sku,_revision:data.revision,_motivo:data.motivo});if(error)throw new Error(error.message);return id;
+});
+export const impSkuPendientes=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator((d)=>z.object({producto_id:z.string().uuid()}).parse(d)).handler(async({data,context})=>{
+ const {data:result,error}=await context.supabase.rpc('imp_sku_pendientes',{_producto_id:data.producto_id});if(error)throw new Error(error.message);return z.object({cantidad:z.number().int().min(0),esperado:z.string()}).parse(result);
+});
+export const impSkuConfirmar=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator((d)=>impSkuConfirmationSchema.parse(d)).handler(async({data,context})=>{
+ const {data:count,error}=await context.supabase.rpc('imp_sku_confirmado',{_producto_id:data.producto_id,_sku:data.sku,_esperado:data.esperado,_motivo:data.motivo,_bobina_id:data.bobina_id,_revision:data.revision,_codigo:data.codigo,_catalogo_revision:data.catalogo_revision});if(error)throw new Error(error.message);return count;
 });

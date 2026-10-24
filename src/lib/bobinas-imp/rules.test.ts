@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { impFolio, impCanEdit, impFormSchema, impSkuMismatch, impSkuQr, impValoresSchema, impNormalizeLookup, impCanContinue, impCanAssignSku } from './rules';
+import { impFolio, impCanEdit, impFormSchema, impSkuMismatch, impSkuQr, impValoresSchema, impNormalizeLookup, impCanContinue, impCanAssignSku, impSkuConfirmationSchema } from './rules';
 describe('Bobinas Madre Imp: reglas autorizadas', () => {
+ it('requiere aceptar la confirmación y el conjunto esperado antes de aplicar SKU al resto',()=>{const d={producto_id:'11111111-1111-4111-8111-111111111111',sku:'SSK103132260',esperado:'a'.repeat(32),motivo:'Asignación autorizada',confirmado:true};expect(impSkuConfirmationSchema.safeParse(d).success).toBe(true);expect(impSkuConfirmationSchema.safeParse({...d,confirmado:false}).success).toBe(false);expect(impSkuConfirmationSchema.safeParse({...d,esperado:''}).success).toBe(false);});
  it('Calidad puede asignar SKU faltante en históricos sin abrir edición de otros datos',()=>{expect(impCanEdit(null)).toBe(false);expect(impCanAssignSku(true,null)).toBe(true);expect(impCanAssignSku(false,null)).toBe(false);expect(impCanAssignSku(true,'SSK103132260')).toBe(false);});
  it('busca solo el segmento importado -00 sin confundir producción',()=>{expect(impNormalizeLookup('756-00')).toBe('00756-00');expect(impNormalizeLookup('00756-0')).toBe(null);expect(impNormalizeLookup('756-4')).toBe(null);});
  it('solo continúa con SKU registrado',()=>{expect(impCanContinue(null)).toBe(false);expect(impCanContinue('  ')).toBe(false);expect(impCanContinue('SSM103133260')).toBe(true);});
