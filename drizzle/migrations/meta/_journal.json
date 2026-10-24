@@ -253,6 +253,13 @@
       "when": 1792857127715,
       "tag": "0035_explicit_imported_cut_plant_read_guard",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1792857583718,
+      "tag": "0036_guard_imported_lot_operations_and_finish",
+      "breakpoints": true
     }
   ]
 }
