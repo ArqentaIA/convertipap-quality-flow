@@ -3864,6 +3864,20 @@ export type Database = {
       }
       imp_lote_access: { Args: { _id: string }; Returns: undefined }
       imp_permiso: { Args: { _accion: string }; Returns: boolean }
+      imp_sku_confirmado: {
+        Args: {
+          _bobina_id?: string
+          _catalogo_revision?: number
+          _codigo?: string
+          _esperado: string
+          _motivo: string
+          _producto_id: string
+          _revision?: number
+          _sku: string
+        }
+        Returns: number
+      }
+      imp_sku_pendientes: { Args: { _producto_id: string }; Returns: Json }
       imp_validar_valores: { Args: { _v: Json }; Returns: undefined }
       imp_verificar_transaccion: { Args: never; Returns: string }
       pb_set_personal: {
