@@ -889,6 +889,7 @@ export const obtenerReporteMensualCintas = createServerFn({ method: "POST" })
     const lotes = await readAllReportPages((from, to) => context.supabase
       .from("pesajes_cintas_lotes")
       .select("*")
+      .is('imp_bobina_id',null)
       .gte("fecha_produccion", inicio)
       .lt("fecha_produccion", finExcl)
       .neq("estado", "anulado")

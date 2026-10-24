@@ -14,7 +14,10 @@ export const impGetCatalogos = createServerFn({ method:'POST' }).middleware([req
   context.supabase.from('imp_proveedores').select('*').order('nombre'), context.supabase.from('imp_productos').select('*').order('codigo'), context.supabase.from('imp_contador').select('siguiente').eq('id',true).maybeSingle()
  ]);
  for(const r of [proveedores,productos,contador]) if(r.error) throw new Error(r.error.message);
- return {permisos,proveedores:proveedores.data??[],productos:productos.data??[],siguiente:contador.data?.siguiente??760};
+ const alineados=await context.supabase.from('productos').select('id,codigo');if(alineados.error)throw new Error(alineados.error.message);
+ const skus=await context.supabase.from('producto_skus_sap').select('producto_id,clave_sku_sap');if(skus.error)throw new Error(skus.error.message);
+ const productosConSku=(productos.data??[]).map(p=>{if(p.sku_referencia)return p;const ids=(alineados.data??[]).filter(x=>x.codigo===p.codigo).map(x=>x.id);const candidatos=[...new Set((skus.data??[]).filter(x=>ids.includes(x.producto_id)).map(x=>x.clave_sku_sap).filter(Boolean))];return {...p,sku_referencia:candidatos.length===1?candidatos[0]??null:null};});
+ return {permisos,proveedores:proveedores.data??[],productos:productosConSku,siguiente:contador.data?.siguiente??760};
 });
 const filters = z.object({desde:z.string().optional(),hasta:z.string().optional(),folio:z.string().trim().max(40).optional(),estado:z.enum(['liberada','rechazada','concesion']).optional()});
 export const impListar = createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator((d)=>filters.parse(d)).handler(async({data,context})=> {
