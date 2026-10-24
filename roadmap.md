@@ -1,5 +1,10 @@
 # Roadmap
 
+## Bobinas Madre Imp — propuesta previa a implementación
+- [x] Incorporar precisiones: nuevas capturas desde 00761-00, contador automático compartido, elección de estado por analista/Calidad, alta de proveedores por analistas, edición solo Calidad/adgral y SKU distinto con alerta sin bloqueo.
+- [ ] Resolver sufijo del histórico, coincidencias de folio -00 y alcance de «sin huecos»; presentar propuesta revisada para aprobación. Pendiente de respuesta del Ing. Óscar.
+- [ ] Implementar e importar únicamente tras resolver precisiones y aprobar propuesta; fabricación propia permanece sin cambios.
+
 ## Código y trazabilidad SKU
 - [x] Alinear validación de código con espacios y símbolos; verificar RPC autenticada: SKU en versión distinta permitido, misma versión bloqueada con mensaje claro.
 - [x] Alinear SKU guardado en ambos módulos con etiqueta y QR; admitir SKU manual sin catálogo, hasta 64 caracteres; históricos operativos intactos.
