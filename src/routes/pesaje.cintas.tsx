@@ -441,7 +441,6 @@ function PesajeCintasPage() {
           uniones: v.uniones,
           orden_manual: manualOrden.trim() || null,
           idempotency_key: uuid(),
-          imp_bobina_id: contexto.imp_bobina_id,
         },
       });
       if (esIxtapaluca && bobinadorNombre.trim()) {
@@ -515,6 +514,7 @@ function PesajeCintasPage() {
           conductor_id: condRef,
           bobinadora_id: bobRef,
           idempotency_key: uuid(),
+          imp_bobina_id: contexto.imp_bobina_id,
         },
       });
       if (esIxtapaluca) {
@@ -529,7 +529,7 @@ function PesajeCintasPage() {
           toast.warning("El lote se creó, pero no se pudo registrar el nombre del bobinador.");
         });
       }
-      if (ordenSistema.trim()) {
+      if (!importada && ordenSistema.trim()) {
         await guardarOrden({ data: { lote_id, orden: ordenSistema.trim() } }).catch(() => null);
       }
       if (operadorCortes.trim() || analistaCortes.trim()) {
@@ -1201,7 +1201,7 @@ function PesajeCintasPage() {
             <div className="flex items-end">
               <button
                 onClick={onCrearLote}
-                disabled={saving}
+                disabled={saving || Boolean(importada&&!impCanContinue(importada.sku))}
                 className="w-full rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground disabled:opacity-50"
               >
                 {saving ? "Iniciando…" : "Iniciar lote"}
