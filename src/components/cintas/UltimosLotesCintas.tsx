@@ -109,7 +109,7 @@ export function UltimosLotesCintas({ planta }: { planta: string | null }) {
               <tr>
                 <th className="px-3 py-2 text-left">Rollo</th>
                 <th className="px-3 py-2 text-left">Producto</th>
-                <th className="px-3 py-2 text-left">SKU SAP</th>
+                <th className="px-3 py-2 text-left">SKU SAP bobina</th>
                 <th className="px-3 py-2 text-right">Neto (kg)</th>
                 <th className="px-3 py-2 text-right">Cintas</th>
                 <th className="px-3 py-2 text-right">Cintas (kg)</th>
@@ -296,7 +296,7 @@ function DetalleLoteDialog({ loteId, onClose }: { loteId: string | null; onClose
               <Dato k="Conductor" v={lote.conductor_nombre_snapshot || "—"} />
               <Dato k="Bobinadora" v={lote.bobinadora_nombre_snapshot || "—"} />
               <Dato k="Fecha producción" v={lote.fecha_produccion ?? "—"} />
-              <Dato k="Origen" v={lote.es_manual ? "Captura manual" : "Sistema"} />
+              <Dato k="Origen" v={lote.imp_bobina_id ? "Bobina importada" : lote.es_manual ? "Captura manual" : "Sistema"} />
             </div>
 
             {puede && (

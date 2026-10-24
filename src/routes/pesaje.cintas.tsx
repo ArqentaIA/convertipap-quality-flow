@@ -299,7 +299,7 @@ function PesajeCintasPage() {
       if(impNormalizeLookup(rollo)){
         const row=await buscarImp({data:{folio:rollo}});if(!row){toast.error('Bobina importada no encontrada.');return;}setImportada(row);setRolloActual(row.folio);
         const peso=Number((row.valores as Record<string,unknown>).peso_bobina??0);
-        const bajadas=await traerBajadas({data:{numero_rollo:row.folio}});if(bajadas.lote_abierto_id)setLoteId(bajadas.lote_abierto_id);
+        const bajadas=await traerBajadas({data:{numero_rollo:row.folio}});const previo=bajadas.lote_abierto_id??[...bajadas.bajadas].sort((a,b)=>b.numero_bajada-a.numero_bajada).find(b=>b.estado!=='anulado')?.lote_id;if(previo)setLoteId(previo);
         if(!impCanContinue(row.sku)){toast.warning('necesita atención Calidad SKU');return;}
         setContexto({imp_bobina_id:row.id,muestra:{id:row.id,numero_rollo:row.folio??rollo,fabricacion:'MP-00 · Importada',producto_id:row.producto_id,producto_codigo:row.producto_codigo,producto_nombre:row.producto_codigo,turno:row.turno??'—',jefe_maquina:null,operador:null,prensero:null,analista:row.analista,capturado_at:row.capturado_at??'',observaciones:row.observaciones??'',mediciones:{}},pesaje:{id:row.id,peso_neto_kg:peso,fecha_hora_pesaje:row.capturado_at??'',orden_produccion_id:null,numero_orden:null,maquina_id:'',maquina_codigo:'MP-00'},lote:null});return;
       }
