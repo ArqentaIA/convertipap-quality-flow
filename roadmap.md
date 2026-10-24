@@ -1,12 +1,12 @@
 # Roadmap
 
 ## Consulta transversal de Bobinas Madre Imp y SKU
-- [ ] Revisar correspondencias PHR31/PSK32/PTC31 y solicitar confirmación del Ing. Óscar antes de asignarlas.
-- [ ] Después de la confirmación, verificar permisos de Karina/Sinay, consulta, etiqueta y reporte independiente; comparar producción y visores antes de publicar.
+- [x] Revisar correspondencias y solicitar confirmación: PSK32=SSK103132260 autorizado; PHR31/PTC31 sin clave hasta captura de Calidad con aviso.
+- [x] Verificar en navegador Karina (catálogo PSK32), Sinay (asignación individual real 00247-00 auditada), consulta y PDF/QR; ambos descargan reporte de 759 filas. jrivera consulta sin catálogo ni asignación. Totales de producción y huella de estado de visores idénticos antes/después; importadas sin enlaces de fabricación. No publicado ni impresión física verificada.
 - [x] Autorizar consulta y cortes de importadas en ambas plantas, fuera de visores y reportes de fabricación.
 - [x] Sin SKU mostrar «necesita atención Calidad SKU» y bloquear continuar; asignación individual solo Calidad/adgral, sin deducir ni completar masivamente correspondencias.
 - [x] Implementar consulta por -00, detalle/historial/etiqueta y reporte independiente; 759 filas y SKU PSM33 verificados con adgral en navegador. Asignado individualmente a 00756-00 con bitácora; sin cortes reales ni cambios de producción. Pruebas de cortes/cierre/aislamiento revertidas y 7 pruebas unitarias aprobadas. No publicado; navegador Karina/Sinay e impresión física no verificados.
-- [ ] Calidad debe confirmar SKU de PHR31, PSK32 y PTC31: sin correspondencia en catálogo, no se inventan claves ni se asignan en masa.
+- [ ] Calidad debe capturar las claves autorizadas de PHR31 y PTC31: pendiente de dato real; aviso activo. PSK32 tiene referencia confirmada, sin asignación masiva a históricos.
 
 ## Bobinas Madre Imp — propuesta previa a implementación
 - [x] Incorporar precisiones: nuevas capturas desde 00761-00, contador automático compartido, elección de estado por analista/Calidad, alta de proveedores por analistas, edición solo Calidad/adgral y SKU distinto con alerta sin bloqueo.

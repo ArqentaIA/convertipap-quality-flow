@@ -3,6 +3,7 @@ import { impFolio, impCanEdit, impFormSchema, impSkuMismatch, impSkuQr, impValor
 describe('Bobinas Madre Imp: reglas autorizadas', () => {
  it('busca solo el segmento importado -00 sin confundir producción',()=>{expect(impNormalizeLookup('756-00')).toBe('00756-00');expect(impNormalizeLookup('00756-0')).toBe(null);expect(impNormalizeLookup('756-4')).toBe(null);});
  it('solo continúa con SKU registrado',()=>{expect(impCanContinue(null)).toBe(false);expect(impCanContinue('  ')).toBe(false);expect(impCanContinue('SSM103133260')).toBe(true);});
+ it('conserva el SKU confirmado PSK32 en el QR y permite continuar',()=>{expect(impSkuQr('SSK103132260')).toBe('SSK103132260');expect(impCanContinue('SSK103132260')).toBe(true);});
  it('inicia en 00760-00 y convierte folios históricos al segmento -00', () => { expect(impFolio(760)).toBe('00760-00'); expect(impFolio(1)).toBe('00001-00'); expect(impFolio(759)).toBe('00759-00'); });
  it('permite edición solo hasta 36 horas desde captura', () => { const t=Date.parse('2026-10-24T14:48:00Z'); expect(impCanEdit('2026-10-24T14:48:00Z',t+36*3600000)).toBe(true); expect(impCanEdit('2026-10-24T14:48:00Z',t+36*3600000+1)).toBe(false); expect(impCanEdit(null,t)).toBe(false); });
  it('acepta solo las seis variables del Excel y conserva vacíos', () => { expect(impValoresSchema.parse({peso_base:null,a:-0.82})).toEqual({peso_base:null,a:-0.82}); expect(impValoresSchema.safeParse({rh:20}).success).toBe(false); expect(impValoresSchema.safeParse({peso_base:NaN}).success).toBe(false); });
