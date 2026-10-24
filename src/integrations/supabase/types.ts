@@ -3831,6 +3831,7 @@ export type Database = {
       }
       imp_permiso: { Args: { _accion: string }; Returns: boolean }
       imp_validar_valores: { Args: { _v: Json }; Returns: undefined }
+      imp_verificar_transaccion: { Args: never; Returns: string }
       pb_set_personal: {
         Args: { _jefe: string; _operador: string; _pesaje_id: string }
         Returns: undefined

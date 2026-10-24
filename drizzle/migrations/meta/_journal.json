@@ -204,6 +204,13 @@
       "when": 1792853510793,
       "tag": "0028_bobinas_madre_imp_isolated_quality",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1792853911631,
+      "tag": "0029_imp_transactional_verification",
+      "breakpoints": true
     }
   ]
 }
