@@ -36,6 +36,7 @@ const NAV: NavItem[] = [
   { to: "/pesaje/catalogo-sku", label: "Catálogo SKU Cintas", icon: Scissors, module: "control_calidad", pathPrefixes: ["/pesaje/catalogo-sku"] },
 
   { to: "/calidad/captura", label: "Control de Calidad", icon: ClipboardCheck, module: "control_calidad" },
+  { to: "/bobinas-madre-imp", label: "Bobinas Madre Imp", icon: ClipboardCheck, module: "control_calidad" },
   { to: "/calidad/edicion-bobina", label: "Edición de Bobina Madre", icon: Pencil, module: "control_calidad" },
   { to: "/calidad/captura-fuera-turno", label: "Captura fuera de turno", icon: ClipboardCheck, module: "control_calidad" },
   { to: "/variables-calidad", label: "Variables de Calidad", icon: SlidersHorizontal, module: "variables_calidad" },
@@ -59,6 +60,7 @@ const ROUTE_MODULE: Array<{ prefix: string; module: AppModule }> = [
   { prefix: "/pesaje", module: "pesaje_bobina_madre" },
 
   { prefix: "/control-calidad", module: "control_calidad" },
+  { prefix: "/bobinas-madre-imp", module: "control_calidad" },
   { prefix: "/calidad", module: "control_calidad" },
   { prefix: "/variables-calidad", module: "variables_calidad" },
   { prefix: "/reportes", module: "reportes" },
@@ -178,6 +180,12 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
   // 2) Si está en una ruta sin permisos, mandarlo al primer módulo permitido.
   useEffect(() => {
     if (auth.loading || !auth.isAuthenticated) return;
+    if (pathname.startsWith("/bobinas-madre-imp")) {
+      if (!(auth.canAccess("reportes") || auth.hasRole("capturista") || auth.hasRole("calidad") || auth.hasRole("calidad_operativo") || canConfiguracion)) {
+        void navigate({ to: "/login", replace: true });
+      }
+      return;
+    }
     if (pathname.startsWith("/pesaje/bobina-madre") && !puedePesajeRollo) {
       void navigate({ to: auth.canAccess("pesaje_cintas") ? "/pesaje/cintas" : "/", replace: true });
       return;
@@ -205,6 +213,7 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
   const visibleNav = useMemo(
     () =>
       NAV.filter((item) => {
+        if (item.to === "/bobinas-madre-imp") return auth.canAccess("reportes") || ((auth.hasRole("capturista") || auth.hasRole("calidad") || auth.hasRole("calidad_operativo")) && auth.canAccess("control_calidad")) || canConfiguracion;
         if (item.to === "/usuarios") return canPerfilesRoles;
         if (item.to === "/pesaje/catalogo-sku") {
           const em = (auth.user?.email ?? "").toLowerCase();

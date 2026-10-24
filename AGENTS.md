@@ -1,5 +1,7 @@
 # Architecture rules
 
+- Imported mother rolls use isolated `imp_*` records in the quality database, transactional gapless numbering and immutable source snapshots; never create manufacturing orders/specifications or reuse manufacturing tables for imports. Dedicated authenticated RPCs enforce action permissions, edit concurrency and the capture-time window; report/label reads use persisted snapshots rather than current catalog values.
+
 - Product code and SKU use shared client/server identifier schemas; catalog RPCs enforce cross-product SKU/version compatibility and roll labels/QR use the persisted sample SKU, never the current catalog SKU, to preserve traceability.
 
 - Save specification limits as complete variable triples in one authenticated SECURITY INVOKER transaction, targeting the explicit draft ID with expected-value concurrency checks; audit and values must commit together to prevent partial saves and transient invalid ranges.
