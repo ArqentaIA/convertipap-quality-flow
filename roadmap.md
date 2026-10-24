@@ -1,5 +1,10 @@
 # Roadmap
 
+## Consulta transversal de Bobinas Madre Imp y SKU
+- [ ] Precisar consultas por folio autorizadas: consulta de trazabilidad sin cortes, sin visores y sin mezclar reportes de fabricación.
+- [ ] Confirmar SKU de PSM33 y proporcionar alineación de PHR31, PSK32 y PTC31; definir si alcanza al histórico mediante ajuste auditado o solo nuevas capturas.
+- [ ] Implementar y verificar después de resolver alcance y correspondencias pendientes, conservando permisos y registros originales.
+
 ## Bobinas Madre Imp — propuesta previa a implementación
 - [x] Incorporar precisiones: nuevas capturas desde 00761-00, contador automático compartido, elección de estado por analista/Calidad, alta de proveedores por analistas, edición solo Calidad/adgral y SKU distinto con alerta sin bloqueo.
 - [x] Validar Excel: 759 bobinas 1–759 sin duplicados; 622 folios numéricos y 137 -0; celda aislada 284 sin folio. Documentado en docs/bobinas-madre-imp-validacion.md.
