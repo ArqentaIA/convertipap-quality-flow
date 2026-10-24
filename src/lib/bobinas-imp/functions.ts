@@ -6,6 +6,24 @@ import { impFormSchema, impNormalizeLookup } from './rules';
 import type { Database } from '@/integrations/supabase/types';
 export type ImpBobina = Database['public']['Tables']['imp_bobinas']['Row'];
 export type ImpProducto = Database['public']['Tables']['imp_productos']['Row'];
+export const impBuscarEdicion = createServerFn({method:'POST'})
+ .middleware([requireSupabaseAuth])
+ .inputValidator((d)=>z.object({folio:z.string().trim().max(64).optional(),fecha:z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),maquina:z.string().max(20).optional(),offset:z.number().int().min(0).max(100000).default(0)}).parse(d))
+ .handler(async({data,context})=>{
+  const permiso=await context.supabase.rpc('imp_permiso',{_accion:'editar'});
+  if(permiso.error)throw new Error(permiso.error.message);
+  if(!permiso.data)throw new Error('Consulta exclusiva de Calidad y adgral.');
+  if(data.maquina&&data.maquina!=='MP-00')return {rows:[] as ImpBobina[],hayMas:false};
+  let q=context.supabase.from('imp_bobinas').select('*').order('numero',{ascending:false}).range(data.offset,data.offset+200);
+  if(data.folio){
+   if(!/^\d+(?:-00)?$/.test(data.folio))return {rows:[] as ImpBobina[],hayMas:false};
+   q=q.eq('numero',Number(data.folio.split('-')[0]));
+  }
+  if(data.fecha)q=q.eq('fecha',data.fecha);
+  const {data:rows,error}=await q;
+  if(error)throw new Error(error.message);
+  return {rows:(rows??[]).slice(0,200),hayMas:(rows??[]).length>200};
+ });
 export const impGetCatalogos = createServerFn({ method:'POST' }).middleware([requireSupabaseAuth]).handler(async ({context}) => {
  const permissions = await Promise.all(['leer','capturar','editar','catalogo','importar'].map(async a => { const {data,error}=await context.supabase.rpc('imp_permiso',{_accion:a}); if(error) throw new Error(error.message); return [a,Boolean(data)] as const; }));
  const permisos=Object.fromEntries(permissions);

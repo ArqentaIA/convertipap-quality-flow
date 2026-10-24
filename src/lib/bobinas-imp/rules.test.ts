@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { impFolio, impCanEdit, impFormSchema, impSkuMismatch, impSkuQr, impValoresSchema, impNormalizeLookup, impCanContinue } from './rules';
+import { impFolio, impCanEdit, impFormSchema, impSkuMismatch, impSkuQr, impValoresSchema, impNormalizeLookup, impCanContinue, impCanAssignSku } from './rules';
 describe('Bobinas Madre Imp: reglas autorizadas', () => {
+ it('Calidad puede asignar SKU faltante en históricos sin abrir edición de otros datos',()=>{expect(impCanEdit(null)).toBe(false);expect(impCanAssignSku(true,null)).toBe(true);expect(impCanAssignSku(false,null)).toBe(false);expect(impCanAssignSku(true,'SSK103132260')).toBe(false);});
  it('busca solo el segmento importado -00 sin confundir producción',()=>{expect(impNormalizeLookup('756-00')).toBe('00756-00');expect(impNormalizeLookup('00756-0')).toBe(null);expect(impNormalizeLookup('756-4')).toBe(null);});
  it('solo continúa con SKU registrado',()=>{expect(impCanContinue(null)).toBe(false);expect(impCanContinue('  ')).toBe(false);expect(impCanContinue('SSM103133260')).toBe(true);});
  it('conserva el SKU confirmado PSK32 en el QR y permite continuar',()=>{expect(impSkuQr('SSK103132260')).toBe('SSK103132260');expect(impCanContinue('SSK103132260')).toBe(true);});

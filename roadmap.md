@@ -1,5 +1,9 @@
 # Roadmap
 
+## Importadas en Edición de Bobina Madre
+- [x] Mostrar bobinas -00 en la búsqueda con paginación propia y reutilizar la asignación auditada de SKU faltante sin ampliar edición histórica.
+- [x] Verificado con adgral: 00248-00 encontrado, SKU confirmado SSK103132260 guardado y releído, etiqueta PDF generada, auditoría confirma los demás datos idénticos. Pruebas unitarias del permiso/SKU y 36 h; no se repitió navegador con Karina/Sinay. No publicado. Prueba SQL revertida no ejecutable por limitación del servicio de consultas.
+
 ## Consulta transversal de Bobinas Madre Imp y SKU
 - [x] Revisar correspondencias y solicitar confirmación: PSK32=SSK103132260 autorizado; PHR31/PTC31 sin clave hasta captura de Calidad con aviso.
 - [x] Verificar en navegador Karina (catálogo PSK32), Sinay (asignación individual real 00247-00 auditada), consulta y PDF/QR; ambos descargan reporte de 759 filas. jrivera consulta sin catálogo ni asignación. Totales de producción y huella de estado de visores idénticos antes/después; importadas sin enlaces de fabricación. No publicado ni impresión física verificada.

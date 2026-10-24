@@ -23,8 +23,21 @@ import {
 } from "@/lib/edicion-bobina.functions";
 import { printEtiquetaLiberacion } from "@/lib/etiqueta-liberacion";
 import { fechaHoraMX } from "@/lib/format";
+import { impBuscarEdicion, impDetalle, type ImpBobina } from "@/lib/bobinas-imp/functions";
+import { impPrint } from "@/lib/bobinas-imp/export";
+import { IMP_ESTADOS, impDateLabel } from "@/lib/bobinas-imp/rules";
+import { ImportedRollContext } from "@/components/cintas/ImportedRollContext";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/calidad/edicion-bobina")({
+  head: () => ({ meta: [
+    {title: "Edición de Bobina Madre · Convertipap"},
+    {name: "description", content: "Consulta de bobinas fabricadas e importadas y asignación trazable del SKU faltante por Calidad."},
+    {property: "og:title", content: "Edición de Bobina Madre · Convertipap"},
+    {property: "og:description", content: "Edición autorizada y trazabilidad de bobinas madre en Convertipap."},
+    {property: "og:type", content: "website"},
+    {name: "twitter:card", content: "summary"},
+  ] }),
   component: EdicionBobinaPage,
 });
 
@@ -32,6 +45,19 @@ function EdicionBobinaPage() {
   const permisoFn = useServerFn(puedeUsarEdicionBobina);
   const buscarFn = useServerFn(buscarBobinasEditables);
   const etiquetaFn = useServerFn(getEtiquetaBobina);
+  const buscarImpFn = useServerFn(impBuscarEdicion);
+  const detalleImpFn = useServerFn(impDetalle);
+  const [importadas, setImportadas] = useState<ImpBobina[]>([]);
+  const [hayMasImp, setHayMasImp] = useState(false);
+  const [importadaSeleccionada, setImportadaSeleccionada] = useState<string | null>(null);
+  const impDetail = useQuery({
+    queryKey: ["imp-detalle", importadaSeleccionada],
+    enabled: Boolean(importadaSeleccionada),
+    queryFn: () => {
+      if (!importadaSeleccionada) throw new Error("Seleccione una bobina.");
+      return detalleImpFn({data: {id: importadaSeleccionada}});
+    },
+  });
 
   const { data: permiso, isLoading: cargandoPermiso } = useQuery({
     queryKey: ["permiso-edicion-bobina"],
@@ -48,23 +74,34 @@ function EdicionBobinaPage() {
   const [detalle, setDetalle] = useState<{ id: string; folio: string } | null>(null);
 
   const [hayMas, setHayMas] = useState(false);
-  const buscar = async (mas = false) => {
+  const buscar = async (mas = false, masImp = false) => {
     setBuscando(true);
     try {
       const sinFiltros = !folio.trim() && !fecha;
       const offset = mas ? (resultados?.length ?? 0) : 0;
-      const res = await buscarFn({
+      const [res, imp] = await Promise.all([
+        masImp || maquina === "MP-00" ? Promise.resolve(masImp ? resultados ?? [] : []) : buscarFn({
         data: {
           ...(folio.trim() ? { folio: folio.trim() } : {}),
           ...(fecha ? { fecha } : {}),
           ...(maquina ? { maquina } : {}),
           ...(sinFiltros ? { offset } : {}),
         },
-      });
+        }),
+        mas ? Promise.resolve({rows: importadas, hayMas: hayMasImp}) : buscarImpFn({data: {
+          ...(folio.trim() ? {folio: folio.trim()} : {}),
+          ...(fecha ? {fecha} : {}),
+          ...(maquina ? {maquina} : {}),
+          offset: masImp ? importadas.length : 0,
+        }}),
+      ]);
       const lista = mas ? [...(resultados ?? []), ...res] : res;
       setResultados(lista);
-      setHayMas(sinFiltros && res.length === PAGINA_VENTANA);
-      if (lista.length === 0) toast.info("Sin bobinas que coincidan con los filtros.");
+      if (!masImp) setHayMas(sinFiltros && res.length === PAGINA_VENTANA);
+      const listaImp = masImp ? [...importadas, ...imp.rows] : imp.rows;
+      setImportadas(listaImp);
+      setHayMasImp(imp.hayMas);
+      if (lista.length === 0 && listaImp.length === 0) toast.info("Sin bobinas que coincidan con los filtros.");
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -123,8 +160,9 @@ function EdicionBobinaPage() {
               </label>
               <Input
                 value={folio}
+                aria-label="Folio / N.º de rollo"
                 onChange={(e) => setFolio(e.target.value)}
-                placeholder="Ej. 12671-4"
+                placeholder="Ej. 12671-4 / 00248-00"
                 className="mt-1 w-44"
                 onKeyDown={(e) => e.key === "Enter" && buscar()}
               />
@@ -150,7 +188,7 @@ function EdicionBobinaPage() {
                 className="mt-1 h-9 w-32 rounded-md border border-border bg-background px-2 text-sm"
               >
                 <option value="">Todas</option>
-                {permiso.maquinas.map((m) => (
+                {[...new Set([...permiso.maquinas, "MP-00"])].map((m) => (
                   <option key={m} value={m}>
                     {m}
                   </option>
@@ -190,7 +228,7 @@ function EdicionBobinaPage() {
                 </tr>
               </thead>
               <tbody>
-                {resultados.length === 0 && (
+                {resultados.length === 0 && importadas.length === 0 && (
                   <tr>
                     <td
                       colSpan={8}
@@ -248,6 +286,26 @@ function EdicionBobinaPage() {
                     </td>
                   </tr>
                 ))}
+                {importadas.map((b) => (
+                  <tr key={`imp-${b.id}`} className="border-t border-border">
+                    <td className="px-3 py-2 font-semibold tabular-nums">{b.folio}</td>
+                    <td className="px-3 py-2">MP-00</td>
+                    <td className="px-3 py-2">{b.planta_codigo ?? "Compartida TLX / IXT"}</td>
+                    <td className="px-3 py-2">{b.producto_codigo}<p className="text-xs text-muted-foreground">Importada · {b.proveedor_nombre}</p></td>
+                    <td className="px-3 py-2">{b.capturado_at ? fechaHoraMX(b.capturado_at) : <><span>{impDateLabel(b.fecha)}</span><p className="text-xs text-muted-foreground">Hora de captura no registrada</p></>}</td>
+                    <td className="px-3 py-2">{b.turno ?? "—"}</td>
+                    <td className="px-3 py-2">{IMP_ESTADOS[b.estado as keyof typeof IMP_ESTADOS]}<p className="text-xs text-muted-foreground">{b.sku ?? "necesita atención Calidad SKU"}</p></td>
+                    <td className="px-3 py-2"><div className="flex flex-wrap justify-end gap-2">
+                      <Button size="sm" variant="outline" onClick={() => setImportadaSeleccionada(b.id)}><Pencil className="mr-1 h-3.5 w-3.5"/>{b.sku?.trim() ? "Detalle / SKU" : "Asignar SKU"}</Button>
+                      <Button size="sm" variant="outline" disabled={imprimiendo === b.id} onClick={async () => {
+                        setImprimiendo(b.id);
+                        try { const actual = await detalleImpFn({data: {id: b.id}}); await impPrint(actual.row); }
+                        catch (e) { toast.error((e as Error).message); }
+                        finally { setImprimiendo(null); }
+                      }}><Printer className="mr-1 h-3.5 w-3.5"/>Imprimir etiqueta</Button>
+                    </div></td>
+                  </tr>
+                ))}
               </tbody>
             </table>
             {hayMas && (
@@ -258,6 +316,7 @@ function EdicionBobinaPage() {
                 </Button>
               </div>
             )}
+            {hayMasImp && <div className="flex justify-center border-t border-border p-3"><Button variant="outline" disabled={buscando} onClick={() => buscar(false, true)}>Cargar más importadas</Button></div>}
           </div>
         )}
       </div>
@@ -274,6 +333,12 @@ function EdicionBobinaPage() {
           }
         }}
       />
+      <Dialog open={Boolean(importadaSeleccionada)} onOpenChange={(open) => {if (!open) setImportadaSeleccionada(null);}}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>SKU de bobina importada · {impDetail.data?.row.folio ?? "MP-00"}</DialogTitle><DialogDescription>Asignación del SKU faltante con motivo y bitácora. Los demás datos históricos se conservan.</DialogDescription></DialogHeader>
+          {impDetail.isError ? <p className="text-destructive">{impDetail.error.message}</p> : impDetail.data ? <ImportedRollContext row={impDetail.data.row} onUpdated={() => {void impDetail.refetch(); void buscar();}}/> : <p>Cargando bobina…</p>}
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 }
