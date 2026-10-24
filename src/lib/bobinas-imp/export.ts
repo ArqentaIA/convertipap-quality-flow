@@ -20,7 +20,7 @@ export async function impPrint(row: ImpBobina) {
  for(const l of lines){doc.text(l,8,y);y+=6;}
  for(const v of IMP_VARIABLES){doc.text(`${v.label}: ${values[v.key]??'—'}`,8,y);y+=6;}
  const obs=doc.splitTextToSize(`Observaciones: ${row.observaciones??'—'}`,185);doc.text(obs.slice(0,2),8,118);
- const payloads=[['Trazabilidad',`https://www.convertipap.site/bobinas-madre-imp?bobina=${row.id}`],['Rollo',row.folio],['SKU SAP',impSkuQr(row.sku)]];
+ const payloads: [string,string][]=[['Trazabilidad',`https://www.convertipap.site/bobinas-madre-imp?bobina=${row.id}`],['Rollo',row.folio??''],['SKU SAP',impSkuQr(row.sku)]];
  for(let i=0;i<payloads.length;i++){const [label,payload]=payloads[i]; const x=112+(i%2)*43; const top=i===2?76:34;doc.setFontSize(8);doc.text(label,x,top);if(payload) doc.addImage(await QR.toDataURL(payload),'PNG',x,top+2,29,29);else doc.text('Sin SKU',x,top+8);}
  const url=URL.createObjectURL(doc.output('blob')); w.location.href=url;setTimeout(()=>URL.revokeObjectURL(url),120000);
  }catch(e){w.close();throw e;}
