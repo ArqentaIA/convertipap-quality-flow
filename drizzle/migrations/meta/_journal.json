@@ -239,6 +239,13 @@
       "when": 1792856705786,
       "tag": "0033_imported_cut_sku_labels_and_privacy",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1792856905757,
+      "tag": "0034_separate_imported_mother_sku_from_cut_sku",
+      "breakpoints": true
     }
   ]
 }
