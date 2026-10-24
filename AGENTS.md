@@ -3,6 +3,7 @@
 - Imported mother rolls use isolated `imp_*` quality records, gapless numbering and immutable source snapshots; never create manufacturing orders/specifications for imports. Authorized cuts link existing cinta lots explicitly to the imported UUID and cutting plant, with no manufacturing sample/product IDs; missing-SKU assignment is a separate audited Quality/admin action, not an exception for editing other historic fields. Import report/label reads use persisted snapshots and stay outside production totals and visors.
 - Mother-roll SKU remains in the imported snapshot, while tape SKU remains in `pesajes_cintas.sku_sap` under the existing tape catalogue rules; never substitute one for the other because they identify different materials.
 - Mother-roll editing searches imports independently through authenticated `imp_*` reads with separate pagination and reuses the missing-SKU action and imported label; imports never enter the manufacturing edit modal or its 36-hour override path, preserving source isolation.
+- Imported SKU propagation previews a fingerprinted pending set and commits missing-only updates with per-roll audit in one authenticated RPC, including catalogue edits; stale confirmations fail atomically to prevent unapproved scope changes.
 
 - Product code and SKU use shared client/server identifier schemas; catalog RPCs enforce cross-product SKU/version compatibility and roll labels/QR use the persisted sample SKU, never the current catalog SKU, to preserve traceability.
 

@@ -15,3 +15,4 @@ export function impDateLabel(date: string) { const [y, m, d] = date.split('-'); 
 export function impNormalizeLookup(folio: string) { const m=/^(\d+)-00$/.exec(folio.trim()); return m ? impFolio(Number(m[1])) : null; }
 export function impCanContinue(sku: string | null) { return Boolean(sku?.trim()); }
 export function impCanAssignSku(allowed: boolean, sku: string | null) { return allowed && !impCanContinue(sku); }
+export const impSkuConfirmationSchema = z.object({producto_id:z.string().uuid(),sku:z.string().trim().min(1).max(64),esperado:z.string().regex(/^[a-f0-9]{32}$/),confirmado:z.literal(true),motivo:z.string().trim().min(10).max(2000),bobina_id:z.string().uuid().optional(),revision:z.number().int().optional(),codigo:z.string().trim().min(2).max(64).optional(),catalogo_revision:z.number().int().optional()});

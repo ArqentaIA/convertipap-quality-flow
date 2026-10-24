@@ -1,5 +1,9 @@
 # Roadmap
 
+## SKU compartido en importadas
+- [ ] Completar únicamente SKU faltantes del mismo producto mediante confirmación del conteo y transacción auditada; conservar claves existentes y demás campos.
+- [ ] Verificar cancelar/confirmar, permisos, concurrencia, etiqueta y lectura posterior sin afectar fabricación ni visores; no publicar.
+
 ## Importadas en Edición de Bobina Madre
 - [x] Mostrar bobinas -00 en la búsqueda con paginación propia y reutilizar la asignación auditada de SKU faltante sin ampliar edición histórica.
 - [x] Verificado con adgral: 00248-00 encontrado, SKU confirmado SSK103132260 guardado y releído, etiqueta PDF generada, auditoría confirma los demás datos idénticos. Pruebas unitarias del permiso/SKU y 36 h; no se repitió navegador con Karina/Sinay. No publicado. Prueba SQL revertida no ejecutable por limitación del servicio de consultas.
