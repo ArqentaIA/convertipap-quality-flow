@@ -218,6 +218,13 @@
       "when": 1792853977272,
       "tag": "0030_imp_verify_anonymous_claims",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1792854268278,
+      "tag": "0031_retire_imp_transaction_verifier",
+      "breakpoints": true
     }
   ]
 }

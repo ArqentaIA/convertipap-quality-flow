@@ -1,0 +1,3 @@
+CREATE OR REPLACE FUNCTION public.imp_verificar_transaccion() RETURNS text LANGUAGE plpgsql SECURITY INVOKER SET search_path=public AS $$ BEGIN RAISE EXCEPTION 'Verificación temporal retirada; consulte el resultado documentado.' USING ERRCODE='42501'; END $$;
+REVOKE ALL ON FUNCTION public.imp_verificar_transaccion() FROM PUBLIC, anon, authenticated, service_role;
+COMMENT ON FUNCTION public.imp_verificar_transaccion() IS 'DEPRECATED: temporary rollback verification completed; body disabled and execution revoked. Evidence in docs/bobinas-madre-imp-validacion.md.';
