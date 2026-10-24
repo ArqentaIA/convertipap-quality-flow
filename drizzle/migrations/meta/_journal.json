@@ -232,6 +232,13 @@
       "when": 1792856627421,
       "tag": "0032_imported_roll_cut_traceability_and_sku",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1792856705786,
+      "tag": "0033_imported_cut_sku_labels_and_privacy",
+      "breakpoints": true
     }
   ]
 }
