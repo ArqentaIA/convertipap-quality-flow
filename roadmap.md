@@ -1,8 +1,8 @@
 # Roadmap
 
 ## SKU compartido en importadas
-- [ ] Completar únicamente SKU faltantes del mismo producto mediante confirmación del conteo y transacción auditada; conservar claves existentes y demás campos.
-- [ ] Verificar cancelar/confirmar, permisos, concurrencia, etiqueta y lectura posterior sin afectar fabricación ni visores; no publicar.
+- [x] Completar únicamente SKU faltantes del mismo producto mediante confirmación del conteo y transacción auditada desde catálogo o asignación en rollo; conservar claves existentes y demás campos.
+- [x] Con adgral: aviso PSK32 con 113 pendientes y cancelación sin cambios en ambas entradas; confirmar guardado de producto temporal, lectura posterior y etiqueta PDF. Prueba transaccional revertida cubre solo vacíos, claves existentes, otro producto, concurrencia, auditoría y permiso capturista. 10 pruebas unitarias aprobadas; 759 importadas, huellas de datos/SKU y totales de fabricación idénticos tras limpiar la prueba; visores sin cambios de código. No publicado ni repetido navegador con Karina/Sinay.
 
 ## Importadas en Edición de Bobina Madre
 - [x] Mostrar bobinas -00 en la búsqueda con paginación propia y reutilizar la asignación auditada de SKU faltante sin ampliar edición histórica.
