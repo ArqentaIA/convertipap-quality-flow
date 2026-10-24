@@ -559,7 +559,6 @@ function PesajeCintasPage() {
   const productoRollo = lote?.producto_codigo ?? contexto?.muestra?.producto_codigo ?? null;
   useEffect(() => {
     let vivo = true;
-    if(importada){setSkusSap(importada.sku?[{clave:importada.sku,descripcion:importada.producto_codigo}]:[]);return()=>{vivo=false;};}
     void traerSkus({ data: { producto_codigo: productoRollo } })
       .then((r) => { if (vivo) setSkusSap(r.items ?? []); })
       .catch(() => { if (vivo) setSkusSap([]); });
