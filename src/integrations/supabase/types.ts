@@ -2086,6 +2086,7 @@ export type Database = {
           finalizado_por: string | null
           id: string
           idempotency_key: string
+          imp_bobina_id: string | null
           merma_kg: number | null
           merma_porcentaje: number | null
           merma_real_kg: number | null
@@ -2101,6 +2102,7 @@ export type Database = {
           peso_mermas_kg: number | null
           peso_pendiente_kg: number
           peso_total_cintas_kg: number
+          planta_corte_id: string | null
           producto_codigo: string | null
           producto_id: string | null
           producto_nombre: string | null
@@ -2130,6 +2132,7 @@ export type Database = {
           finalizado_por?: string | null
           id?: string
           idempotency_key: string
+          imp_bobina_id?: string | null
           merma_kg?: number | null
           merma_porcentaje?: number | null
           merma_real_kg?: number | null
@@ -2145,6 +2148,7 @@ export type Database = {
           peso_mermas_kg?: number | null
           peso_pendiente_kg: number
           peso_total_cintas_kg?: number
+          planta_corte_id?: string | null
           producto_codigo?: string | null
           producto_id?: string | null
           producto_nombre?: string | null
@@ -2174,6 +2178,7 @@ export type Database = {
           finalizado_por?: string | null
           id?: string
           idempotency_key?: string
+          imp_bobina_id?: string | null
           merma_kg?: number | null
           merma_porcentaje?: number | null
           merma_real_kg?: number | null
@@ -2189,6 +2194,7 @@ export type Database = {
           peso_mermas_kg?: number | null
           peso_pendiente_kg?: number
           peso_total_cintas_kg?: number
+          planta_corte_id?: string | null
           producto_codigo?: string | null
           producto_id?: string | null
           producto_nombre?: string | null
@@ -2208,6 +2214,13 @@ export type Database = {
             columns: ["conductor_id"]
             isOneToOne: false
             referencedRelation: "operarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pesajes_cintas_lotes_imp_bobina_id_fkey"
+            columns: ["imp_bobina_id"]
+            isOneToOne: false
+            referencedRelation: "imp_bobinas"
             referencedColumns: ["id"]
           },
           {
@@ -2243,6 +2256,13 @@ export type Database = {
             columns: ["pesaje_bobina_madre_id"]
             isOneToOne: false
             referencedRelation: "pesajes_bobina_madre"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pesajes_cintas_lotes_planta_corte_id_fkey"
+            columns: ["planta_corte_id"]
+            isOneToOne: false
+            referencedRelation: "plantas"
             referencedColumns: ["id"]
           },
           {
@@ -3806,6 +3826,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      imp_asignar_sku: {
+        Args: { _id: string; _motivo: string; _revision: number; _sku: string }
+        Returns: string
+      }
       imp_catalogo_guardar: {
         Args: {
           _id?: string
@@ -3813,6 +3837,15 @@ export type Database = {
           _revision?: number
           _sku?: string
           _tipo: string
+        }
+        Returns: string
+      }
+      imp_crear_lote_cintas: {
+        Args: {
+          _bobinadora: string
+          _conductor: string
+          _id: string
+          _idempotency: string
         }
         Returns: string
       }

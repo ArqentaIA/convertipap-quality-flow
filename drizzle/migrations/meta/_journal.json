@@ -225,6 +225,13 @@
       "when": 1792854268278,
       "tag": "0031_retire_imp_transaction_verifier",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1792856627421,
+      "tag": "0032_imported_roll_cut_traceability_and_sku",
+      "breakpoints": true
     }
   ]
 }
