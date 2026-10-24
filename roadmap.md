@@ -1,6 +1,8 @@
 # Roadmap
 
 ## Consulta transversal de Bobinas Madre Imp y SKU
+- [ ] Revisar correspondencias PHR31/PSK32/PTC31 y solicitar confirmación del Ing. Óscar antes de asignarlas.
+- [ ] Después de la confirmación, verificar permisos de Karina/Sinay, consulta, etiqueta y reporte independiente; comparar producción y visores antes de publicar.
 - [x] Autorizar consulta y cortes de importadas en ambas plantas, fuera de visores y reportes de fabricación.
 - [x] Sin SKU mostrar «necesita atención Calidad SKU» y bloquear continuar; asignación individual solo Calidad/adgral, sin deducir ni completar masivamente correspondencias.
 - [x] Implementar consulta por -00, detalle/historial/etiqueta y reporte independiente; 759 filas y SKU PSM33 verificados con adgral en navegador. Asignado individualmente a 00756-00 con bitácora; sin cortes reales ni cambios de producción. Pruebas de cortes/cierre/aislamiento revertidas y 7 pruebas unitarias aprobadas. No publicado; navegador Karina/Sinay e impresión física no verificados.
