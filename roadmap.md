@@ -1,8 +1,8 @@
 # Roadmap
 
 ## Consulta transversal de Bobinas Madre Imp y SKU
-- [ ] Precisar consultas por folio autorizadas: consulta de trazabilidad sin cortes, sin visores y sin mezclar reportes de fabricación.
-- [ ] Confirmar SKU de PSM33 y proporcionar alineación de PHR31, PSK32 y PTC31; definir si alcanza al histórico mediante ajuste auditado o solo nuevas capturas.
+- [x] Autorizar consulta y cortes de importadas en ambas plantas, fuera de visores y reportes de fabricación.
+- [x] Sin SKU mostrar «necesita atención Calidad SKU» y bloquear continuar; asignación individual solo Calidad/adgral, sin deducir ni completar masivamente correspondencias.
 - [ ] Implementar y verificar después de resolver alcance y correspondencias pendientes, conservando permisos y registros originales.
 
 ## Bobinas Madre Imp — propuesta previa a implementación

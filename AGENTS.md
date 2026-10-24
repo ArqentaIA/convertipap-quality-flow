@@ -1,6 +1,7 @@
 # Architecture rules
 
-- Imported mother rolls use isolated `imp_*` records in the quality database, transactional gapless numbering and immutable source snapshots; never create manufacturing orders/specifications or reuse manufacturing tables for imports. Dedicated authenticated RPCs enforce action permissions, edit concurrency and the capture-time window; report/label reads use persisted snapshots rather than current catalog values.
+- Imported mother rolls use isolated `imp_*` quality records, gapless numbering and immutable source snapshots; never create manufacturing orders/specifications for imports. Authorized cuts link existing cinta lots explicitly to the imported UUID and cutting plant, with no manufacturing sample/product IDs; missing-SKU assignment is a separate audited Quality/admin action, not an exception for editing other historic fields. Import report/label reads use persisted snapshots and stay outside production totals and visors.
+- Mother-roll SKU remains in the imported snapshot, while tape SKU remains in `pesajes_cintas.sku_sap` under the existing tape catalogue rules; never substitute one for the other because they identify different materials.
 
 - Product code and SKU use shared client/server identifier schemas; catalog RPCs enforce cross-product SKU/version compatibility and roll labels/QR use the persisted sample SKU, never the current catalog SKU, to preserve traceability.
 

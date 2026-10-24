@@ -60,6 +60,7 @@ const ESTATUS_CINTA_COLOR: Record<string, string> = {
 };
 
 export type EtiquetaSnapshot = {
+  imp_bobina_id?: string | null;
   lote_id: string;
   muestra_calidad_id?: string | null;
   lote_logistico?: string | null;
@@ -71,7 +72,7 @@ export type EtiquetaSnapshot = {
   fecha_produccion: string | null;
   conductor: string;
   bobinadora: string;
-  origen_rollo?: "sistema" | "captura_manual";
+  origen_rollo?: "sistema" | "captura_manual" | "importada";
   peso_neto_rollo_kg?: number | null;
   diametro_rollo_cm?: number | null;
   uniones_rollo?: number | null;
@@ -96,7 +97,7 @@ export type EtiquetaSnapshot = {
 // Fuente única de datos de etiqueta: vista previa, impresión, reimpresión,
 // contenido del QR y snapshot de auditoría usan SIEMPRE esta función.
 export type CintaLabelData = {
-  origen_rollo: "sistema" | "captura_manual";
+  origen_rollo: "sistema" | "captura_manual" | "importada";
   es_manual: boolean;
   numero_rollo: string;
   numero_rollo_etiqueta: string;
@@ -188,11 +189,11 @@ export function calcularTotalUniones(cintas: EtiquetaCinta[]): number {
 
 export function buildCintaLabelData(snap: EtiquetaSnapshot, cinta: EtiquetaCinta): CintaLabelData {
   const dc = snap.datos_calidad ?? {};
-  const origen: "sistema" | "captura_manual" =
+  const origen: "sistema" | "captura_manual" | "importada" =
     snap.origen_rollo ?? (snap.muestra_calidad_id ? "sistema" : "captura_manual");
   const esManual = origen === "captura_manual";
   const muestraId = snap.muestra_calidad_id ?? null;
-  const traceBase = muestraId
+  const traceBase = snap.imp_bobina_id ? `${TRACE_BASE_URL}/bobinas-madre-imp?bobina=${snap.imp_bobina_id}` : muestraId
     ? `${TRACE_BASE_URL}/muestra/${muestraId}`
     : (snap.lote_id ? `${TRACE_BASE_URL}/lote-cintas/${snap.lote_id}` : null);
   const version = cinta.version_etiqueta ?? snap.version_etiqueta ?? 1;

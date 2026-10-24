@@ -21,6 +21,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { usePlantasPermitidas, usePlantaActivaCodigo } from "@/hooks/usePlantasPermitidas";
 import { UltimosLotesCintas } from "@/components/cintas/UltimosLotesCintas";
 import { SelectConAlta } from "@/components/common/SelectConAlta";
+import { impBuscarFolio, type ImpBobina } from '@/lib/bobinas-imp/functions';
+import { impNormalizeLookup, impCanContinue } from '@/lib/bobinas-imp/rules';
+import { ImportedRollContext } from '@/components/cintas/ImportedRollContext';
 
 export const Route = createFileRoute("/pesaje/cintas")({
   head: () => ({
@@ -29,6 +32,7 @@ export const Route = createFileRoute("/pesaje/cintas")({
       { name: "description", content: "Registro y etiquetado de cintas obtenidas del rollo de origen" },
       { property: "og:title", content: "Pesaje de Cintas · Convertipap" },
       { property: "og:description", content: "Registro y etiquetado de cintas obtenidas del rollo de origen" },
+      {property:'og:type',content:'website'},{name:'twitter:card',content:'summary'},
     ],
   }),
   component: () => (
@@ -50,6 +54,8 @@ function n(v: number | null | undefined, d = 2): string {
 function PesajeCintasPage() {
   const qc = useQueryClient();
   const buscar = useServerFn(buscarContextoRollo);
+  const buscarImp=useServerFn(impBuscarFolio);
+  const [importada,setImportada]=useState<ImpBobina|null>(null);
   const crear = useServerFn(crearLote);
   const crearManualV2 = useServerFn(crearLoteManualV2);
   const heredarBajada = useServerFn(iniciarBajadaHeredada);
@@ -287,8 +293,16 @@ function PesajeCintasPage() {
     if (!rollo) { toast.error("Ingrese un número de rollo."); return; }
     setBuscando(true);
     setContexto(null); setLoteId(null); setManualOpen(false);
+    setImportada(null);
     setRolloActual(rollo.toUpperCase());
     try {
+      if(impNormalizeLookup(rollo)){
+        const row=await buscarImp({data:{folio:rollo}});if(!row){toast.error('Bobina importada no encontrada.');return;}setImportada(row);setRolloActual(row.folio);
+        const peso=Number((row.valores as Record<string,unknown>).peso_bobina??0);
+        const bajadas=await traerBajadas({data:{numero_rollo:row.folio}});const previo=bajadas.lote_abierto_id??[...bajadas.bajadas].sort((a,b)=>b.numero_bajada-a.numero_bajada).find(b=>b.estado!=='anulado')?.lote_id;if(previo)setLoteId(previo);
+        if(!impCanContinue(row.sku)){toast.warning('necesita atención Calidad SKU');return;}
+        setContexto({imp_bobina_id:row.id,muestra:{id:row.id,numero_rollo:row.folio??rollo,fabricacion:'MP-00 · Importada',producto_id:row.producto_id,producto_codigo:row.producto_codigo,producto_nombre:row.producto_codigo,turno:row.turno??'—',jefe_maquina:null,operador:null,prensero:null,analista:row.analista,capturado_at:row.capturado_at??'',observaciones:row.observaciones??'',mediciones:{}},pesaje:{id:row.id,peso_neto_kg:peso,fecha_hora_pesaje:row.capturado_at??'',orden_produccion_id:null,numero_orden:null,maquina_id:'',maquina_codigo:'MP-00'},lote:null});return;
+      }
       const ctx = await buscar({ data: { numero_rollo: rollo } });
       if (!ctx) {
         activarManual(rollo);
@@ -500,6 +514,7 @@ function PesajeCintasPage() {
           conductor_id: condRef,
           bobinadora_id: bobRef,
           idempotency_key: uuid(),
+          imp_bobina_id: contexto.imp_bobina_id,
         },
       });
       if (esIxtapaluca) {
@@ -514,7 +529,7 @@ function PesajeCintasPage() {
           toast.warning("El lote se creó, pero no se pudo registrar el nombre del bobinador.");
         });
       }
-      if (ordenSistema.trim()) {
+      if (!importada && ordenSistema.trim()) {
         await guardarOrden({ data: { lote_id, orden: ordenSistema.trim() } }).catch(() => null);
       }
       if (operadorCortes.trim() || analistaCortes.trim()) {
@@ -548,7 +563,7 @@ function PesajeCintasPage() {
       .then((r) => { if (vivo) setSkusSap(r.items ?? []); })
       .catch(() => { if (vivo) setSkusSap([]); });
     return () => { vivo = false; };
-  }, [productoRollo, traerSkus]);
+  }, [productoRollo, traerSkus,importada]);
 
   const netoBM = lote?.peso_bobina_madre_neto_kg ?? contexto?.pesaje.peso_neto_kg ?? 0;
   const totalCintas = lote?.peso_total_cintas_kg ?? 0;
@@ -814,6 +829,7 @@ function PesajeCintasPage() {
       </div>
 
       {/* Bajadas del rollo */}
+      {importada&&<ImportedRollContext row={importada} onUpdated={()=>void onBuscar()}/>}
       {rolloActual && rolloInfo && rolloInfo.total_bajadas > 0 && (
         <div className="rounded-lg border border-border bg-card p-4">
           <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
@@ -909,7 +925,7 @@ function PesajeCintasPage() {
             <Field
               label="Peso neto del rollo de origen"
               value={`${n(contexto.pesaje.peso_neto_kg)} kg`}
-              hint="Origen: Pesaje de Rollo"
+              hint={importada?'Origen: Bobinas Madre Imp':'Origen: Pesaje de Rollo'}
               highlight
             />
             <Field
@@ -925,7 +941,7 @@ function PesajeCintasPage() {
             <Field label="Analista" value={contexto.muestra.analista ?? "—"} />
             <Field label="Supervisor" value={contexto.muestra.jefe_maquina ?? "—"} />
             <Field label="Operador" value={contexto.muestra.operador ?? "—"} />
-            {lote ? (
+            {importada?null:lote ? (
               <Field label="Orden de Producción" value={lote.numero_orden || "—"} />
             ) : (
               <div>
@@ -1071,7 +1087,7 @@ function PesajeCintasPage() {
 
               <button
                 onClick={onSolicitarLoteManual}
-                disabled={saving}
+                disabled={saving || Boolean(importada&&!impCanContinue(importada.sku))}
                 className="mt-3 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
               >
                 {saving ? "Creando…" : "Crear lote manual y continuar"}
@@ -1184,7 +1200,7 @@ function PesajeCintasPage() {
             <div className="flex items-end">
               <button
                 onClick={onCrearLote}
-                disabled={saving}
+                disabled={saving || Boolean(importada&&!impCanContinue(importada.sku))}
                 className="w-full rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground disabled:opacity-50"
               >
                 {saving ? "Iniciando…" : "Iniciar lote"}

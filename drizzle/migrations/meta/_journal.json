@@ -225,6 +225,34 @@
       "when": 1792854268278,
       "tag": "0031_retire_imp_transaction_verifier",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1792856627421,
+      "tag": "0032_imported_roll_cut_traceability_and_sku",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1792856705786,
+      "tag": "0033_imported_cut_sku_labels_and_privacy",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1792856905757,
+      "tag": "0034_separate_imported_mother_sku_from_cut_sku",
+      "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1792857127715,
+      "tag": "0035_explicit_imported_cut_plant_read_guard",
+      "breakpoints": true
     }
   ]
 }
