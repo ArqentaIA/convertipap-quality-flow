@@ -22,15 +22,15 @@
 
 ## 3. Histórico y contador: conservación sin duplicados
 
-**La primera nueva captura solicitada ahora es 00761-00**, con contador automático compartido y consecutivos sin huecos. El sufijo **-00** distingue este segmento de fabricación propia; es un sufijo, no un prefijo. Falta confirmar cómo se aplicará al histórico y cómo resolver una coincidencia dentro del mismo segmento.
+**La primera nueva captura solicitada es 00761-00**, con contador automático compartido y consecutivos sin huecos. El sufijo **-00** distingue este segmento de fabricación propia; es un sufijo, no un prefijo. Usted confirmó histórico también con -00, continuar después del máximo si el inicio está ocupado y no permitir anular números.
 
 1. Revisar todas las filas del Excel antes de cargar: números, fechas, productos, estados, valores y campos vacíos. No dar por confirmada la cantidad de rollos ni el último folio a partir del número de filas.
 2. Conservar literalmente el **número original del proveedor** y la referencia al archivo/fila de origen. No renumerar el histórico ni sustituir su identificador original.
-3. Crear el **folio interno** conservando la parte numérica. Antes de transformar el sufijo del histórico, confirmar si el cambio anterior **-1 a -0** se reemplaza por **-1 a -00**. El original permanece intacto; sufijos diferentes o números ambiguos quedan en una lista de excepciones.
+3. Crear el **folio interno** conservando la parte numérica y convirtiendo **-1 a -00**, también en el histórico, según su confirmación. Ejemplo: original `00760-1` → interno `00760-00`. El original permanece intacto; sufijos diferentes o números ambiguos quedan en una lista de excepciones.
 4. Comparar los folios internos entre sí y contra los importados que ya existan. Detectar también equivalencias numéricas con distintos ceros iniciales. **El sufijo -00 no impide que dos capturas importadas intenten usar 00761-00**; requiere control de unicidad dentro del segmento.
 5. Si hay duplicados o ambigüedades, detener la carga hasta resolverlos; no eliminar filas, sobrescribir registros ni asignar números alternativos automáticamente.
-6. Con el histórico validado, iniciar nuevas capturas en **00761-00**, seguido de **00762-00, 00763-00…**, si no existe coincidencia con el histórico o registros importados previos. Si ya existe **00761-00**, no sobrescribirlo ni renumerarlo: falta confirmar si se continúa después del máximo importado o se detiene para su decisión. Los folios propios terminados en **-0, -1, -4…** no se modifican.
-7. Asignar el folio y guardar la bobina en una sola operación, con control de simultaneidad y unicidad para bobinas importadas. Dos analistas guardando a la vez reciben números distintos. Propuesta para «sin huecos»: asignar número solo al guardar correctamente, no consumirlo por formularios cancelados o guardados fallidos y no reutilizar números de registros anulados; pendiente confirmar esta interpretación.
+6. Con el histórico validado, iniciar nuevas capturas en **00761-00**, seguido de **00762-00, 00763-00…**, si no existe coincidencia con el histórico o registros importados previos. Si ya existe **00761-00**, continuar **después del máximo importado existente**, como autorizó; no sobrescribir ni renumerar el histórico. Los folios propios terminados en **-0, -1, -4…** no se modifican.
+7. Asignar el folio y guardar la bobina en una sola operación, con control de simultaneidad y unicidad para bobinas importadas. Dos analistas guardando a la vez reciben números distintos. Para mantener consecutivos, no consumir números por formularios cancelados o guardados fallidos. **No permitir anular, reutilizar ni editar el número asignado**; la edición autorizada conserva el folio.
 8. Una nueva ejecución del mismo archivo no vuelve a crear sus registros. El número original y la referencia de importación permiten detectar la repetición y cualquier diferencia.
 
 La conversión de folio y estado queda documentada; los valores originales del Excel permanecen recuperables. Las fechas del archivo no se convierten en horas de captura inventadas.
@@ -54,14 +54,15 @@ La conversión de folio y estado queda documentada; los valores originales del E
 | Compartir estas bobinas | Tlaxcala e Ixtapaluca; no amplía acceso a producción de la otra planta |
 | Elegir estado | Analista y Calidad; adgral conserva su acceso general |
 | Editar bobinas | Solo Calidad y adgral; ventana y alcance de la edición pendientes |
-| Anular o borrar bobinas | No autorizado |
+| Anular o modificar el número | No permitido por instrucción expresa |
+| Borrar bobinas | No autorizado; preservar folio e historial |
 | Administrar productos importados | No se presume autorización; pendiente precisar responsables |
 
 El acceso general previamente establecido de adgral no se retira. La última instrucción amplía el alta de proveedores a analistas y limita la edición a Calidad/adgral. No se cambiarán roles ni permisos globales para habilitar este módulo; se verificará qué cuentas corresponden a cada acción.
 
 ## 6. Precisiones pendientes, enumeradas
 
-1. **Histórico y contador:** confirmar si todo el histórico cambia de -1 a **-00**, qué hacer si **00761-00** ya existe dentro del segmento, y si «sin huecos» significa no consumir números por intentos fallidos/cancelados, sin reutilizar folios anulados. No corregir números históricos sin esta precisión.
+1. **Validación de numeración histórica:** las reglas ya están confirmadas (interno -00, original respaldado, 00761-00 o después del máximo si ocupado, número no anulable). Falta verificar el Excel para listar duplicados/ambigüedades reales; cualquier conflicto entre filas requiere su decisión, no renumeración automática.
 2. **Cuentas y productos/SKU:** verificar qué cuentas representan Analista y Calidad y quién administra productos importados; definir cómo se distinguirán códigos y versiones de los fabricados. El SKU distinto al de referencia está autorizado con alerta sin bloqueo para la captura importada, no como cambio de la regla global del catálogo.
 3. **Fecha y planta:** definir la fecha que captura el analista y la asignación de planta de recepción, si se requiere. Para filas históricas sin planta, hora, SKU, analista o turno, conservar la ausencia; no deducirlos ni completar datos sin autorización.
 4. **Campos obligatorios y revisión:** precisar si SKU, analista, observaciones y turno son obligatorios; si se permite guardar sin ninguna medición; motivo/evidencia requerida para elegir o cambiar estado. Analista y Calidad ya están autorizados para elegir los tres estados.
