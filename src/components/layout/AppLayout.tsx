@@ -14,6 +14,7 @@ import { useAuth, type AppModule } from "@/lib/auth";
 import { useLabFilter, LAB_LABEL } from "@/lib/lab";
 import { ShieldCheck } from "lucide-react";
 import { auditAction } from "@/lib/audit";
+import { ImportedRollSearch } from '@/components/common/ImportedRollSearch';
 
 export const PERFILES_ROLES_EMAIL = "adgral@convertipap.site";
 
@@ -354,6 +355,7 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
           </div>
 
           <div className="flex items-center gap-3">
+            {(auth.canAccess('reportes')||auth.canAccess('control_calidad'))&&<ImportedRollSearch/>}
             <div className="relative">
               <select
                 value={plant?.id ?? ""}

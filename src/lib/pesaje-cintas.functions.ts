@@ -11,6 +11,7 @@ import { readAllReportPages, readReportIdChunks } from "@/lib/report-query-pages
 export type Json = string | number | boolean | null | { [k: string]: Json } | Json[];
 
 export type ContextoRollo = {
+  imp_bobina_id?: string;
   muestra: {
     id: string;
     numero_rollo: string;
@@ -122,6 +123,8 @@ export type CintaRegistrada = {
 
 
 export type LoteCintas = {
+  imp_bobina_id?: string | null;
+  planta_corte_id?: string | null;
   id: string;
   numero_rollo: string;
   fabricacion: string;
@@ -301,8 +304,10 @@ export const crearLote = createServerFn({ method: "POST" })
     conductor_id: z.string().uuid(),
     bobinadora_id: z.string().uuid(),
     idempotency_key: z.string().uuid(),
+    imp_bobina_id: z.string().uuid().optional(),
   }).parse(d))
   .handler(async ({ data, context }) => {
+    if(data.imp_bobina_id){const {data:id,error}=await context.supabase.rpc('imp_crear_lote_cintas',{_id:data.imp_bobina_id,_conductor:data.conductor_id,_bobinadora:data.bobinadora_id,_idempotency:data.idempotency_key});if(error)throw new Error(error.message);return {lote_id:id};}
     const { data: id, error } = await context.supabase.rpc("crear_lote_pesaje_cintas", {
       _numero_rollo: data.numero_rollo,
       _conductor_id: (data.conductor_id ?? null) as unknown as string,
@@ -390,7 +395,7 @@ export const iniciarBajadaHeredada = createServerFn({ method: "POST" })
     const prev = previo as unknown as LoteCintas & { bobinador_nombre?: string | null };
 
     let loteId: string;
-    if (prev.es_manual) {
+    if(prev.imp_bobina_id){if(!prev.conductor_id||!prev.bobinadora_id)throw new Error('Falta personal de cortes');const {data:id,error}=await context.supabase.rpc('imp_crear_lote_cintas',{_id:prev.imp_bobina_id,_conductor:prev.conductor_id,_bobinadora:prev.bobinadora_id,_idempotency:data.idempotency_key});if(error)throw new Error(error.message);loteId=id;} else if (prev.es_manual) {
       const snap = prev.datos_calidad_snapshot as {
         datos_origen?: { diametro_origen_cm?: number | null; diametro_cm?: number | null; uniones_origen?: number | null; uniones?: number | null };
       } | null;
@@ -478,7 +483,7 @@ export const registrarCinta = createServerFn({ method: "POST" })
     ancho_util: z.number().positive(),
     observaciones: z.string().max(500).optional().nullable(),
     lote_logistico_pza: z.string().trim().min(1).max(10).optional().nullable(),
-    sku_sap: z.string().trim().max(30).optional().nullable(),
+    sku_sap: z.string().trim().max(64).optional().nullable(),
     idempotency_key: z.string().uuid(),
   }).parse(d))
   .handler(async ({ data, context }) => {
@@ -982,6 +987,7 @@ export const listarUltimosLotesCintas = createServerFn({ method: "POST" })
       .from("pesajes_cintas_lotes")
       .select("*")
       .is("muestra_calidad_id", null)
+      .is("imp_bobina_id",null)
       .order("created_at", { ascending: false })
       .limit(Math.max(limite * 4, 200));
     if (term) {
@@ -989,10 +995,13 @@ export const listarUltimosLotesCintas = createServerFn({ method: "POST" })
       qSinMuestra = qSinMuestra.ilike("numero_rollo", `%${term}%`);
     }
 
-    const [rPlanta, rSin] = await Promise.all([qPlanta, qSinMuestra]);
+    let qImp=context.supabase.from('pesajes_cintas_lotes').select('*').not('imp_bobina_id','is',null).in('planta_corte_id',scope.plantaIds).order('created_at',{ascending:false}).limit(limite);if(term)qImp=qImp.ilike('numero_rollo',`%${term}%`);
+    const [rPlanta, rSin,rImp] = await Promise.all([qPlanta, qSinMuestra,qImp]);
+    if(rImp.error)throw new Error(rImp.error.message);
     if (rPlanta.error) throw new Error(rPlanta.error.message);
     if (rSin.error) throw new Error(rSin.error.message);
-    const lotes = ([...(rPlanta.data ?? []), ...(rSin.data ?? [])] as unknown as (LoteResumen & {
+    const lotes = ([...(rPlanta.data ?? []), ...(rSin.data ?? []),...(rImp.data??[])] as unknown as (LoteResumen & {
+      imp_bobina_id?: string|null;planta_corte_id?:string|null;datos_calidad_snapshot?:{sku?:string};
       muestra_calidad_id: string | null;
       pesaje_bobina_madre_id: string | null;
       muestras_calidad?: unknown;
@@ -1032,6 +1041,7 @@ export const listarUltimosLotesCintas = createServerFn({ method: "POST" })
     );
 
     const visibles = lotes.filter((l) => {
+      if(l.imp_bobina_id)return Boolean(l.planta_corte_id&&scope.plantaIds.includes(l.planta_corte_id));
       const plantaMuestra = l.muestra_calidad_id ? plantaPorMuestra.get(l.muestra_calidad_id) : undefined;
       if (plantaMuestra) return scope.plantaIds.includes(plantaMuestra);
       const maquina = l.pesaje_bobina_madre_id ? maquinaPorPesaje.get(l.pesaje_bobina_madre_id) : undefined;
@@ -1041,7 +1051,7 @@ export const listarUltimosLotesCintas = createServerFn({ method: "POST" })
     });
 
     for (const l of visibles) {
-      l.sku_sap = l.muestra_calidad_id ? (skuPorMuestra.get(l.muestra_calidad_id) ?? null) : null;
+      l.sku_sap = l.imp_bobina_id ? l.datos_calidad_snapshot?.sku??null : l.muestra_calidad_id ? (skuPorMuestra.get(l.muestra_calidad_id) ?? null) : null;
     }
 
     return visibles.slice(0, limite) as LoteResumen[];
