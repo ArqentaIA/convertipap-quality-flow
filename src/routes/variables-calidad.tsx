@@ -316,7 +316,7 @@ function VariablesCalidad() {
 
   const saveEdit = async () => {
     if (!activeSpec || !borrador) return;
-    if (!reason.trim()) { toast.warning("Indique el motivo del cambio."); return; }
+    if (reason.trim().length < 5) { toast.warning("Motivo obligatorio (mínimo 5 caracteres)."); return; }
 
     const variables = variablesEditadas.flatMap((v) => {
       const d = draft[v.key];

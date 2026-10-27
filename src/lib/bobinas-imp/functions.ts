@@ -12,7 +12,7 @@ export const impBuscarEdicion = createServerFn({method:'POST'})
  .handler(async({data,context})=>{
   const permiso=await context.supabase.rpc('imp_permiso',{_accion:'editar'});
   if(permiso.error)throw new Error(permiso.error.message);
-  if(!permiso.data)throw new Error('Consulta exclusiva de Calidad y adgral.');
+  if(!permiso.data)return {rows:[] as ImpBobina[],hayMas:false};
   if(data.maquina&&data.maquina!=='MP-00')return {rows:[] as ImpBobina[],hayMas:false};
   let q=context.supabase.from('imp_bobinas').select('*').order('numero',{ascending:false}).range(data.offset,data.offset+200);
   if(data.folio){
