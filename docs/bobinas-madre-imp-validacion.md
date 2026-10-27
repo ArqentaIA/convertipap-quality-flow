@@ -12,7 +12,7 @@ Histórico importado en registros separados de calidad. No se agregaron bobinas 
 - Productos: PTC31 166, PSM33 348, PHR31 130, PSK32 115.
 - Estados: LIBERADO 715, CONDICIONADO 9, NO CONFORME 35.
 - Vacíos en mediciones: Peso base 27, R457 28, a* 29, b* 34, Ancho útil 6; Peso bobina no tiene vacíos.
-- No existe folio 760 en el archivo. Iniciar nuevas capturas en 00760-00 cumple el inicio solicitado, pero deja 00760-00 sin registro histórico. No inventar una bobina para rellenarlo.
+- No existe folio 760 en el archivo. Confirmado (27/10/2026): la primera captura nueva es 00760-00, continuando sin hueco tras 00759-00.
 
 ## Protección de integración
 
