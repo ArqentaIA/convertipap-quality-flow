@@ -17,7 +17,7 @@
 - [ ] Calidad debe capturar las claves autorizadas de PHR31 y PTC31: pendiente de dato real; aviso activo. PSK32 tiene referencia confirmada, sin asignación masiva a históricos.
 
 ## Bobinas Madre Imp — propuesta previa a implementación
-- [x] Incorporar precisiones: nuevas capturas desde 00761-00, contador automático compartido, elección de estado por analista/Calidad, alta de proveedores por analistas, edición solo Calidad/adgral y SKU distinto con alerta sin bloqueo.
+- [x] Incorporar precisiones: nuevas capturas desde 00760-00, contador automático compartido, elección de estado por analista/Calidad, alta de proveedores por analistas, edición solo Calidad/adgral y SKU distinto con alerta sin bloqueo.
 - [x] Validar Excel: 759 bobinas 1–759 sin duplicados; 622 folios numéricos y 137 -0; celda aislada 284 sin folio. Documentado en docs/bobinas-madre-imp-validacion.md.
 - [x] Resolver numeración actualizada tras validación: todos los folios internos -00 con original respaldado; nuevas desde 00760-00 o después del máximo si ocupado; folios no anulables ni repetibles. Autorizados registros separados en la misma base, sin órdenes/límites ficticios.
 - [x] Confirmar que todos los capturistas actuales pueden elegir estado y agregar proveedores únicamente en Bobinas Madre Imp; sin ampliar permisos de otros módulos.
