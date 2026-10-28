@@ -335,6 +335,7 @@ function buildHtml(
   .import-info div{padding:5px 10px;overflow-wrap:anywhere}
 
   @page{size:5.5in 8.5in portrait;margin:0}
+  ${imported ? "@page{size:139.7mm 215.9mm;margin:0}" : ""}
   @media print{
     html,body{background:#fff;padding:0;margin:0;width:139.7mm;height:215.9mm;overflow:hidden}
     .toolbar,.hint{display:none}

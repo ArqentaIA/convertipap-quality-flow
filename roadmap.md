@@ -1,8 +1,8 @@
 # Roadmap
 
 ## Formato de etiqueta importada
-- [ ] Reutilizar el formato vigente de bobinas fabricadas sin lecturas de fabricación; conservar seis variables, datos del registro y tres QR propios.
-- [ ] Verificar reimpresión real, datos y tamaño media carta vertical sin modificar el rollo ni producción.
+- [x] Reutilizar el formato vigente de bobinas fabricadas sin lecturas de fabricación; conservar seis variables, datos del registro y tres QR propios.
+- [x] Reimpresión real 00248-0 y tres QR decodificados; 23 pruebas aprobadas. Corregida declaración de papel que exportaba Carta en lugar de media carta; PDF revisado visualmente, sin escritura de datos ni cambios en producción. No publicado ni impresión física comprobada.
 
 ## SKU compartido en importadas
 - [x] Completar únicamente SKU faltantes del mismo producto mediante confirmación del conteo y transacción auditada desde catálogo o asignación en rollo; conservar claves existentes y demás campos.
