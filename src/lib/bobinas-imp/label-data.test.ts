@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { impLabelData } from './label-data';
-import type { ImpBobina } from './functions';
+import { impLabelData, type ImpLabelSnapshot } from './label-data';
 
 const source = {
   id: 'c179b799-d4df-4a5e-bedd-c3e645c3080b', folio: '00248-0', maquina: 'MP-00',
@@ -8,7 +7,7 @@ const source = {
   estado: 'liberada', fecha: '2026-08-25', revision: 2,
   valores: { peso_base: 49.7, r457: 32.6, a: 1.69, b: 7.27, peso_bobina: 2118, ancho_util: 261 },
   observaciones: 'Dato registrado', planta_codigo: null, turno: null, analista: null, capturado_at: null,
-} as ImpBobina;
+} satisfies ImpLabelSnapshot;
 
 describe('Datos de etiqueta importada', () => {
   it('incluye exactamente las seis variables propias sin límites de fabricación', () => {
