@@ -6,7 +6,7 @@ import { fechaHoraMX } from '@/lib/format';
 export function impLabelData(row: ImpBobina) {
   const values = row.valores as Record<string, number | null>;
   const estatus = row.estado === 'rechazada' ? 'NO CONFORME' as const
-    : row.estado === 'concesion' ? 'LIBERADO CON CONCESIÓN' as const : 'LIBERADO' as const;
+    : row.estado === 'concesion' ? 'CONCESIÓN' as const : 'LIBERADO' as const;
   return {
     data: {
       muestraId: row.id, folio: row.folio, numeroRollo: row.folio,
@@ -14,7 +14,7 @@ export function impLabelData(row: ImpBobina) {
       productoCodigo: row.producto_codigo, productoNombre: row.producto_codigo,
       skuSap: impSkuQr(row.sku), observacionesGenerales: row.observaciones ?? '', estatus,
       mediciones: IMP_VARIABLES.map(v => ({
-        clave: v.key, etiqueta: v.label, valor: values[v.key] ?? null,
+        clave: v.key, etiqueta: v.key === 'peso_bobina' ? 'Peso bobina' : v.label, valor: values[v.key] ?? null,
         unidad: v.key === 'peso_bobina' ? 'kg' : '',
       })),
     },

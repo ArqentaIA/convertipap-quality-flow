@@ -160,7 +160,8 @@ function row(m: Pick<EtiquetaMedicion, "etiqueta" | "valor" | "unidad">): string
 
 const OBS_OPCIONES = ["Arruga", "Picado", "Porosidad", "Hoyos por gomas", "Otro"];
 
-type LabelPresentationData = Omit<EtiquetaData, "mediciones"> & {
+type LabelPresentationData = Omit<EtiquetaData, "mediciones" | "estatus"> & {
+  estatus: EtiquetaData["estatus"] | "CONCESIÓN";
   mediciones: Pick<EtiquetaMedicion, "clave" | "etiqueta" | "valor" | "unidad">[];
 };
 export type ImportedLabelContext = {
@@ -192,7 +193,7 @@ function buildHtml(
       ? "#15803d"
       : data.estatus === "LIBERADO C/JUSTIF"
       ? "#854d0e"
-      : data.estatus === "CONDICIONAL" || data.estatus === "LIBERADO CON CONCESIÓN"
+      : data.estatus === "CONDICIONAL" || data.estatus === "LIBERADO CON CONCESIÓN" || data.estatus === "CONCESIÓN"
       ? "#b45309"
       : data.estatus === "PENDIENTE"
       ? "#0369a1"
@@ -202,7 +203,7 @@ function buildHtml(
       ? "#dcfce7"
       : data.estatus === "LIBERADO C/JUSTIF"
       ? "#fef08a"
-      : data.estatus === "CONDICIONAL" || data.estatus === "LIBERADO CON CONCESIÓN"
+      : data.estatus === "CONDICIONAL" || data.estatus === "LIBERADO CON CONCESIÓN" || data.estatus === "CONCESIÓN"
       ? "#fef3c7"
       : data.estatus === "PENDIENTE"
       ? "#e0f2fe"
