@@ -267,6 +267,13 @@
       "when": 1792859661432,
       "tag": "0037_imported_sku_confirmed_missing_only",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1793213980140,
+      "tag": "0038_imp_folio_sufijo_un_cero",
+      "breakpoints": true
     }
   ]
 }
