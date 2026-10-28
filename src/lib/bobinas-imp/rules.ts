@@ -7,12 +7,12 @@ export const IMP_VARIABLES = [
 export const IMP_ESTADOS = { liberada: 'Liberado', rechazada: 'No conforme', concesion: 'Concesión' } as const;
 export const impValoresSchema = z.object({ peso_base: z.number().finite().nullable().optional(), r457: z.number().finite().nullable().optional(), a: z.number().finite().nullable().optional(), b: z.number().finite().nullable().optional(), peso_bobina: z.number().finite().nullable().optional(), ancho_util: z.number().finite().nullable().optional() }).strict();
 export const impFormSchema = z.object({ proveedor_id: z.string().uuid(), producto_id: z.string().uuid(), sku: z.string().trim().max(64), analista: z.string().trim().min(1).max(200), observaciones: z.string().max(2000), turno: z.enum(['1','2','3']), planta_codigo: z.enum(['TLX','IXT']), fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), estado: z.enum(['liberada','rechazada','concesion']), valores: impValoresSchema });
-export function impFolio(numero: number) { return `${String(numero).padStart(5, '0')}-00`; }
+export function impFolio(numero: number) { return `${String(numero).padStart(5, '0')}-0`; }
 export function impCanEdit(captured: string | null, now = Date.now()) { if (!captured) return false; const t = Date.parse(captured); return Number.isFinite(t) && now >= t && now <= t + 36 * 3600000; }
 export function impSkuMismatch(reference: string | null, entered: string) { return Boolean(reference && reference !== entered.trim()); }
 export function impSkuQr(sku: string | null) { return sku ?? ''; }
 export function impDateLabel(date: string) { const [y, m, d] = date.split('-'); return `${d}/${m}/${y}`; }
-export function impNormalizeLookup(folio: string) { const m=/^(\d+)-00$/.exec(folio.trim()); return m ? impFolio(Number(m[1])) : null; }
+export function impNormalizeLookup(folio: string) { const m=/^(\d+)(?:-00?)?$/.exec(folio.trim()); return m ? impFolio(Number(m[1])) : null; }
 export function impCanContinue(sku: string | null) { return Boolean(sku?.trim()); }
 export function impCanAssignSku(allowed: boolean, sku: string | null) { return allowed && !impCanContinue(sku); }
 export const impSkuConfirmationSchema = z.object({producto_id:z.string().uuid(),sku:z.string().trim().min(1).max(64),esperado:z.string().regex(/^[a-f0-9]{32}$/),confirmado:z.literal(true),motivo:z.string().trim().min(10).max(2000),bobina_id:z.string().uuid().optional(),revision:z.number().int().optional(),codigo:z.string().trim().min(2).max(64).optional(),catalogo_revision:z.number().int().optional()});
