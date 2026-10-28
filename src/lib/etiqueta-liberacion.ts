@@ -147,7 +147,7 @@ export function buildPayloadProducto(
   return (productoCodigo ?? "").trim();
 }
 
-function row(m: EtiquetaMedicion): string {
+function row(m: Pick<EtiquetaMedicion, "etiqueta" | "valor" | "unidad">): string {
   const v = m.valor === null || m.valor === undefined ? "—" : m.valor;
   const unidad = m.unidad;
   const cls = isPesoLabel(m.etiqueta) ? "peso" : "";
