@@ -1,5 +1,9 @@
 # Roadmap
 
+## Formato de etiqueta importada
+- [ ] Reutilizar el formato vigente de bobinas fabricadas sin lecturas de fabricación; conservar seis variables, datos del registro y tres QR propios.
+- [ ] Verificar reimpresión real, datos y tamaño media carta vertical sin modificar el rollo ni producción.
+
 ## SKU compartido en importadas
 - [x] Completar únicamente SKU faltantes del mismo producto mediante confirmación del conteo y transacción auditada desde catálogo o asignación en rollo; conservar claves existentes y demás campos.
 - [x] Con adgral: aviso PSK32 con 113 pendientes y cancelación sin cambios en ambas entradas; confirmar guardado de producto temporal, lectura posterior y etiqueta PDF. Prueba transaccional revertida cubre solo vacíos, claves existentes, otro producto, concurrencia, auditoría y permiso capturista. 10 pruebas unitarias aprobadas; 759 importadas, huellas de datos/SKU y totales de fabricación idénticos tras limpiar la prueba; visores sin cambios de código. No publicado ni repetido navegador con Karina/Sinay.
