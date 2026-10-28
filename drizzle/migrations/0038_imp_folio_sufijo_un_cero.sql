@@ -1,0 +1,1 @@
+ALTER TABLE public.imp_bobinas ALTER COLUMN folio SET EXPRESSION AS (lpad(numero::text, GREATEST(5, length(numero::text)), '0') || '-0');
