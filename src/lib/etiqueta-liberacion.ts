@@ -160,8 +160,20 @@ function row(m: EtiquetaMedicion): string {
 
 const OBS_OPCIONES = ["Arruga", "Picado", "Porosidad", "Hoyos por gomas", "Otro"];
 
+type LabelPresentationData = Omit<EtiquetaData, "mediciones"> & {
+  mediciones: Pick<EtiquetaMedicion, "clave" | "etiqueta" | "valor" | "unidad">[];
+};
+export type ImportedLabelContext = {
+  proveedor: string;
+  analista: string | null;
+  planta: string | null;
+  turno: string | null;
+  captura: string | null;
+  revision: number;
+};
+
 function buildHtml(
-  data: EtiquetaData,
+  data: LabelPresentationData,
   qrDataUrl: string,
   qrRolloDataUrl: string,
   qrPesoDataUrl: string,
@@ -172,6 +184,7 @@ function buildHtml(
   logoDataUrl: string,
   sapLogoDataUrl: string,
   payloads: { rollo: string; peso: string; lote: string; producto: string; sku: string },
+  imported?: ImportedLabelContext,
 ): string {
   const fechaImpresion = new Date().toLocaleString("es-MX", { timeZone: "America/Mexico_City", hour12: false });
   const estatusColor =
@@ -196,7 +209,7 @@ function buildHtml(
       : "#fee2e2";
 
   // Peso primero (destacado) y luego el resto en dos columnas
-  const pesoIdx = data.mediciones.findIndex((m) => isPesoLabel(m.etiqueta));
+  const pesoIdx = data.mediciones.findIndex((m) => isPesoLabel(m.etiqueta) || (imported && m.clave === "peso_bobina"));
   const pesoMed = pesoIdx >= 0 ? data.mediciones[pesoIdx] : null;
   const restantes = data.mediciones.filter((_, i) => i !== pesoIdx);
 
@@ -222,7 +235,7 @@ function buildHtml(
 
   const pesoBlock = `
     <div class="peso-highlight">
-      <div class="peso-label">Peso</div>
+      <div class="peso-label">${imported ? "Peso bobina" : "Peso"}</div>
       <div class="peso-value">${esc(pesoValor)}<span class="peso-unit">${esc(pesoUnidad)}</span></div>
     </div>`;
 
@@ -312,6 +325,14 @@ function buildHtml(
 
   .hint{max-width:140mm;margin:0 auto 8px;font-size:11px;color:#334155;background:#fef9c3;border:1px solid #fde68a;border-radius:6px;padding:6px 10px;line-height:1.4}
 
+  .sheet.imported .hero{grid-template-columns:minmax(0,1.1fr) minmax(0,1fr) 118px}
+  .sheet.imported .hero .num{font-size:36px;letter-spacing:0;overflow-wrap:anywhere}
+  .sheet.imported .hero .nombre,.sheet.imported .hero .sku{overflow-wrap:anywhere;letter-spacing:0}
+  .sheet.imported .val-e{font-size:28px;letter-spacing:0}
+  .sheet.imported .sap-footer{grid-template-columns:1fr 1fr 0.7fr}
+  .import-info{border-bottom:inherit;display:grid;grid-template-columns:1fr 1fr;font-size:11px;line-height:1.4}
+  .import-info div{padding:5px 10px;overflow-wrap:anywhere}
+
   @page{size:5.5in 8.5in portrait;margin:0}
   @media print{
     html,body{background:#fff;padding:0;margin:0;width:139.7mm;height:215.9mm;overflow:hidden}
@@ -328,16 +349,16 @@ function buildHtml(
   </div>
   <div class="hint"><b>Para imprimir a media carta:</b> Tamaño del papel = <b>Media carta / Statement (5.5 × 8.5 pulg)</b> · Disposición = <b>Vertical</b> · Escala = <b>100 % (Tamaño real)</b> · Márgenes = <b>Ninguno</b> · desactivar “Imprimir por ambas caras”. Si la impresora no tiene media carta, use <b>Carta Vertical</b>: la etiqueta se imprime en la mitad superior para recortar.</div>
   <div class="fit">
-  <div class="sheet">
+  <div class="sheet${imported ? " imported" : ""}">
     <div class="head">
       <div class="brand"><img src="${logoDataUrl}" alt="Convertipap" /></div>
       <div class="title">
         <b>CONVERTIDOR DE PAPEL S.A. DE C.V</b>
-        <span class="sub">${data.estatus === "NO CONFORME" ? "ETIQUETA DE CONTROL DE CALIDAD" : "ETIQUETA DE LIBERACIÓN"}</span>
+        <span class="sub">${imported ? "BOBINAS MADRE IMP" : data.estatus === "NO CONFORME" ? "ETIQUETA DE CONTROL DE CALIDAD" : "ETIQUETA DE LIBERACIÓN"}</span>
       </div>
       <div class="meta-bar">
-        <span>FOR-CAL-04 · Rev. 0</span>
-        <span>Emisión 05-03-2026</span>
+        <span>${imported ? `Bobinas Madre Imp · Ver ${esc(String(imported.revision))}.0` : "FOR-CAL-04 · Rev. 0"}</span>
+        <span>${imported ? `Fecha: ${esc(data.fecha)}` : "Emisión 05-03-2026"}</span>
         <span>Impresión: ${esc(fechaImpresion)}</span>
       </div>
     </div>
@@ -360,6 +381,14 @@ function buildHtml(
     </div>
 
     <div class="mediciones-title">Resultados de Calidad</div>
+    ${imported ? `<div class="import-info">
+      <div><b>Proveedor:</b> ${esc(imported.proveedor)}</div>
+      <div><b>Planta:</b> ${esc(imported.planta || "—")}</div>
+      <div><b>Analista:</b> ${esc(imported.analista || "—")}</div>
+      <div><b>Turno:</b> ${esc(imported.turno ? `T${imported.turno}` : "—")}</div>
+      <div><b>Fecha:</b> ${esc(data.fecha)}</div>
+      <div><b>Captura:</b> ${esc(imported.captura || "—")}</div>
+    </div>` : ""}
     ${pesoBlock}
     <div class="mediciones">
       <div><table>${left.join("")}</table></div>
@@ -409,7 +438,16 @@ function buildHtml(
 
     <div class="sap-footer${esTlx ? " tres" : ""}">
       ${
-        esTlx
+        imported
+          ? `<div class="sap-qr">
+        ${qrSkuDataUrl ? `<img src="${qrSkuDataUrl}" alt="QR SKU SAP" />` : `<div class="qr-na">Dato no disponible</div>`}
+        <div class="cap">SKU SAP</div>
+      </div>
+      <div class="sap-qr">
+        ${qrRolloDataUrl ? `<img src="${qrRolloDataUrl}" alt="QR N.º de rollo" />` : `<div class="qr-na">Dato no disponible</div>`}
+        <div class="cap">N.º de rollo</div>
+      </div>`
+          : esTlx
           ? `<div class="sap-qr">
         ${qrSkuDataUrl ? `<img src="${qrSkuDataUrl}" alt="QR SKU SAP" />` : `<div class="qr-na">Dato no disponible</div>`}
         <div class="cap">SKU SAP</div>
@@ -450,7 +488,7 @@ function buildHtml(
     </div>
 
 
-    <div class="foot">FOR-CAL-04 · Generado automáticamente</div>
+    <div class="foot">${imported ? "Bobinas Madre Imp" : "FOR-CAL-04"} · Generado automáticamente</div>
   </div>
   </div>
 <script>
@@ -475,6 +513,24 @@ function buildHtml(
 </script>
 </body>
 </html>`;
+}
+
+/** Presentation only: no manufacturing lookup, status resolver or catalogue fallback. */
+export async function buildImportedLabelHtml(
+  data: LabelPresentationData,
+  imported: ImportedLabelContext,
+): Promise<string> {
+  const traceUrl = `${TRACE_BASE_URL}/bobinas-madre-imp?bobina=${encodeURIComponent(data.muestraId)}`;
+  const qr = (value: string, trace = false) => value
+    ? QRCode.toDataURL(value, { margin: trace ? 1 : 2, width: trace ? 240 : 400, errorCorrectionLevel: "M" })
+    : Promise.resolve("");
+  const rollo = buildPayloadRollo(data);
+  const sku = buildPayloadSkuSap(data.skuSap);
+  const [traceImage, rolloImage, skuImage, brand, sap] = await Promise.all([
+    qr(traceUrl, true), qr(rollo), qr(sku), toDataUrl(logoUrl), toDataUrl(sapHanaAsset.url),
+  ]);
+  return buildHtml(data, traceImage, rolloImage, "", "", "", skuImage, true, brand, sap,
+    { rollo, sku, peso: "", lote: "", producto: "" }, imported);
 }
 
 export async function printEtiquetaLiberacion(data: EtiquetaData): Promise<void> {
