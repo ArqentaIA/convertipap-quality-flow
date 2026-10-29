@@ -1,5 +1,7 @@
 # Architecture rules
 
+- Evaluate sidebar visibility from the current authenticated account on each render; keep presentation-only navigation rules independently testable to avoid stale menus after session changes.
+
 - Imported mother rolls use isolated `imp_*` quality records, gapless numbering and immutable source snapshots; never create manufacturing orders/specifications for imports. Authorized cuts link existing cinta lots explicitly to the imported UUID and cutting plant, with no manufacturing sample/product IDs; missing-SKU assignment is a separate audited Quality/admin action, not an exception for editing other historic fields. Import report/label reads use persisted snapshots and stay outside production totals and visors.
 - Mother-roll SKU remains in the imported snapshot, while tape SKU remains in `pesajes_cintas.sku_sap` under the existing tape catalogue rules; never substitute one for the other because they identify different materials.
 - Imported labels share the active manufactured-label presentation builder through a snapshot-only adapter; the imported branch never calls manufacturing trace enrichment or introduces specification limits, preserving source isolation while keeping print layout consistent.
