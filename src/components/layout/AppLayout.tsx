@@ -1,5 +1,5 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   LayoutDashboard, Factory, ClipboardCheck, FileBarChart2,
@@ -15,6 +15,7 @@ import { useLabFilter, LAB_LABEL } from "@/lib/lab";
 import { ShieldCheck } from "lucide-react";
 import { auditAction } from "@/lib/audit";
 import { ImportedRollSearch } from '@/components/common/ImportedRollSearch';
+import { mostrarMenuFueraTurno } from './nav-visibility';
 
 export const PERFILES_ROLES_EMAIL = "adgral@convertipap.site";
 
@@ -214,9 +215,7 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
     }
   }, [auth.loading, auth.isAuthenticated, auth.modules, auth.roles, pathname, navigate, puedePesajeRollo, canPerfilesRoles, canOrdenesProduccion, canVariablesCalidad, esPesajeOperativo]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const visibleNav = useMemo(
-    () =>
-      NAV.filter((item) => {
+  const visibleNav = NAV.filter((item) => {
         if (item.to === "/bobinas-madre-imp") return auth.canAccess("reportes") || ((auth.hasRole("capturista") || auth.hasRole("calidad") || auth.hasRole("calidad_operativo")) && auth.canAccess("control_calidad")) || canConfiguracion;
         if (item.to === "/usuarios") return canPerfilesRoles;
         if (item.to === "/pesaje/catalogo-sku") {
@@ -224,16 +223,14 @@ export function AppLayout({ children, title }: { children: React.ReactNode; titl
           return !esPesajeOperativo && (auth.roles.includes("administrador") || em === "gcalidad@convertipap.site" || em === "msramosixt@convertipap.site");
         }
         // Captura fuera de turno: visible solo para adgral@.
-        if (item.to === "/calidad/captura-fuera-turno") return canConfiguracion;
+        if (item.to === "/calidad/captura-fuera-turno") return mostrarMenuFueraTurno(auth.user?.email);
         if (!puedeVer(item.module)) return false;
         // Oculta "Control de Pesaje" si el usuario no puede usar Pesaje de Rollo
         if (item.to === "/pesaje/bobina-madre" && !puedePesajeRollo) {
           return false;
         }
         return true;
-      }),
-    [auth.modules, auth.roles, puedePesajeRollo, canPerfilesRoles, canOrdenesProduccion, canVariablesCalidad, esPesajeOperativo], // eslint-disable-line react-hooks/exhaustive-deps
-  );
+      });
 
 
 
