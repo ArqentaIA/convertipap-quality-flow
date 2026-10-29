@@ -8,6 +8,7 @@
 import logoUrl from "@/assets/logo-convertipap.png";
 import sapHanaAsset from "@/assets/sap-hana-logo.jpg.asset.json";
 import QRCode from "qrcode";
+import { cintaOrigen, cintaOrigenLabel, impCutLabelVariables } from './bobinas-imp/cut-label-data';
 
 // Dominio público canónico (mismo que la etiqueta de rollo).
 const TRACE_BASE_URL = "https://www.convertipap.site";
@@ -90,6 +91,7 @@ export type EtiquetaSnapshot = {
     prensero?: string | null;
     analista?: string | null;
     mediciones?: Record<string, Medicion>;
+    bobina_snapshot?: unknown;
   } & Record<string, unknown>;
   cintas: EtiquetaCinta[];
 };
@@ -189,8 +191,7 @@ export function calcularTotalUniones(cintas: EtiquetaCinta[]): number {
 
 export function buildCintaLabelData(snap: EtiquetaSnapshot, cinta: EtiquetaCinta): CintaLabelData {
   const dc = snap.datos_calidad ?? {};
-  const origen: "sistema" | "captura_manual" | "importada" =
-    snap.origen_rollo ?? (snap.muestra_calidad_id ? "sistema" : "captura_manual");
+  const origen = cintaOrigen(snap);
   const esManual = origen === "captura_manual";
   const muestraId = snap.muestra_calidad_id ?? null;
   const traceBase = snap.imp_bobina_id ? `${TRACE_BASE_URL}/bobinas-madre-imp?bobina=${snap.imp_bobina_id}` : muestraId
@@ -341,7 +342,10 @@ function fila(k: string, v: string | null): string {
 
 function renderEtiqueta(d: CintaLabelData, snap: EtiquetaSnapshot, assets: Assets): string {
   const mediciones = snap.datos_calidad?.mediciones ?? {};
-  const gridVars = Object.keys(VAR_LABEL)
+  const gridVars = d.origen_rollo === 'importada'
+    ? impCutLabelVariables(snap.datos_calidad?.bobina_snapshot)
+      .map(v => `<div><span class="k">${v.label}</span><span class="v">${v.value ?? '—'}</span></div>`).join('')
+    : Object.keys(VAR_LABEL)
     .filter((k) => mediciones[k]?.valor != null)
     .map((k) => `<div><span class="k">${VAR_LABEL[k]}</span><span class="v">${med(snap, k)}</span></div>`)
     .join("");
@@ -363,7 +367,7 @@ function renderEtiqueta(d: CintaLabelData, snap: EtiquetaSnapshot, assets: Asset
   const filaOrigen = [
     fila("Diámetro del rollo", d.diametro_rollo_cm == null ? null : `${d.diametro_rollo_cm} cm`),
     fila("Total de uniones", String(d.total_uniones_cintas)),
-    fila("Origen", d.origen_rollo === "sistema" ? "Sistema" : "Captura manual"),
+    fila("Origen", cintaOrigenLabel(d.origen_rollo)),
   ].filter(Boolean).join("");
 
 
