@@ -26,6 +26,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Lock } from "lucide-react";
 import { getEstadoOficial } from "@/lib/qc-estado-oficial";
 import { exportarHistorialVisor } from "@/lib/operator-vision-export";
+import { CAROUSEL_INTERVAL_MS, carouselMachine, nextCarouselMachine, parseVisionCarousel, type VisionCarousel } from "@/lib/operator-vision-carousel";
 
 // Convierte "HH:MM" en minutos desde 00:00 (hora local).
 function hhmmToMin(s: string | undefined | null): number | null {
@@ -94,8 +95,15 @@ export const Route = createFileRoute("/operator-vision")({
     auto?: "1";
     v?: "a" | "b";
     t?: number;
+    carrusel?: VisionCarousel;
   } => {
     const m = String(search.maquina ?? "");
+    const carrusel = parseVisionCarousel(search.carrusel);
+    if (carrusel) {
+      const selected = carouselMachine(carrusel, m);
+      const maquina = MAQUINAS_VALIDAS.find((machine) => machine === selected) ?? "MP-04";
+      return { maquina, auto: "1", t: CAROUSEL_INTERVAL_MS / 1000, carrusel };
+    }
     const maquina = (MAQUINAS_VALIDAS as readonly string[]).includes(m)
       ? (m as MaquinaValida)
       : "MP-04";
@@ -607,7 +615,7 @@ function HeaderField({
 }
 
 function OperatorVisionPage() {
-  const { maquina, auto, v, t } = Route.useSearch();
+  const { maquina, auto, v, t, carrusel } = Route.useSearch();
   const navigate = useNavigate();
 
   // Modo auto-rotación (pantallas TV/kiosko): cada `t` segundos cambia a la
@@ -618,16 +626,17 @@ function OperatorVisionPage() {
     const segundos = t ?? 60;
     const id = setInterval(() => {
       const idx = MAQUINAS_VALIDAS.indexOf(maquina);
-      const next = MAQUINAS_VALIDAS[(idx + 1) % MAQUINAS_VALIDAS.length];
+      const selected = carrusel ? nextCarouselMachine(carrusel, maquina) : MAQUINAS_VALIDAS[(idx + 1) % MAQUINAS_VALIDAS.length];
+      const next = MAQUINAS_VALIDAS.find((machine) => machine === selected) ?? "MP-04";
       window.scrollTo(0, 0);
       navigate({
         to: "/operator-vision",
-        search: { maquina: next, auto: "1", v: v ?? "a", t: segundos },
+        search: { maquina: next, auto: "1", v: v ?? "a", t: segundos, ...(carrusel ? { carrusel } : {}) },
         replace: true,
       });
     }, segundos * 1000);
     return () => clearInterval(id);
-  }, [auto, maquina, v, t, navigate]);
+  }, [auto, maquina, v, t, carrusel, navigate]);
 
   // Desplazamiento automático hacia arriba: el contenido sube lentamente y
   // al llegar al final reinicia desde arriba. Solo en modo auto-rotación.
