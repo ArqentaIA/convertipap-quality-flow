@@ -2,7 +2,7 @@
 
 ## Tres carruseles de visores
 - [x] Crear tres enlaces nuevos con secuencias MP-04/05, MP-06/07 y MP-01/04/05/06/07, una máquina por minuto; conservar enlaces y datos actuales sin cambiar permisos.
-- [ ] Verificar pruebas de secuencias, apertura sin PIN y rotación con datos reales; no publicar sin solicitud.
+- [x] Cinco pruebas aprobadas; tres carruseles abiertos sin sesión/PIN, cambio real al minuto confirmado con datos de ambas plantas y pantallas revisadas; enlace anterior conservado, sin errores de pantalla. No publicado.
 
 ## Formato de etiqueta importada
 - [x] Reutilizar el formato vigente de bobinas fabricadas sin lecturas de fabricación; conservar seis variables, datos del registro y tres QR propios.
