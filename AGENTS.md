@@ -1,5 +1,7 @@
 # Architecture rules
 
+- New operational carousel URLs use validated named sequences on the existing visor route and reuse its presentation/data access unchanged; legacy monitor query parameters retain their behavior to avoid disrupting installed displays.
+
 - Evaluate sidebar visibility from the current authenticated account on each render; keep presentation-only navigation rules independently testable to avoid stale menus after session changes.
 
 - Imported mother rolls use isolated `imp_*` quality records, gapless numbering and immutable source snapshots; never create manufacturing orders/specifications for imports. Authorized cuts link existing cinta lots explicitly to the imported UUID and cutting plant, with no manufacturing sample/product IDs; missing-SKU assignment is a separate audited Quality/admin action, not an exception for editing other historic fields. Import report/label reads use persisted snapshots and stay outside production totals and visors.

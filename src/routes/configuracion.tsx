@@ -13,6 +13,8 @@ import { getBackendInfo, type BackendInfo } from "@/lib/backend-info.functions";
 import { getCEOReport } from "@/lib/ceo-report.functions";
 import { listEnviosCierreTurno, type ReporteTurnoEnvio } from "@/lib/reporte-turno-envios.functions";
 import { useAuth } from "@/lib/auth";
+import { VISION_CAROUSELS } from "@/lib/operator-vision-carousel";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/configuracion")({
   component: ConfigGate,
@@ -296,6 +298,7 @@ function ConfigContent({ settings }: { settings: AppSettings }) {
           <BackendInfoCard />
 
           {isAdmin && <MonitorUrlsCard />}
+          {isAdmin && <CarouselUrlsCard />}
 
           {isAdmin && <DestinatariosTurnoCard />}
 
@@ -834,6 +837,33 @@ const MONITORES = [
   { id: "a", label: "Monitor A", inicio: "MP-01" },
   { id: "b", label: "Monitor B", inicio: "MP-06" },
 ] as const;
+
+function CarouselUrlsCard() {
+  return (
+    <section className="space-y-3 border-t border-border pt-4">
+      <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground"><Monitor className="h-4 w-4 text-primary" />Carruseles · 1 minuto · Sin PIN</h3>
+      {Object.entries(VISION_CAROUSELS).map(([id, machines]) => {
+        const url = `${OPERATOR_VISION_BASE}/operator-vision?carrusel=${id}`;
+        return (
+          <div key={id} className="space-y-1 border-b border-border pb-3">
+            <div className="text-xs font-semibold text-foreground">Visor {id} · {machines.join(" → ")}</div>
+            <div className="flex items-center gap-2">
+              <code className="min-w-0 flex-1 break-all text-xs text-muted-foreground">{url}</code>
+              <Button variant="outline" size="icon" title={`Copiar enlace del visor ${id}`} aria-label={`Copiar enlace del visor ${id}`} onClick={async () => {
+                try {
+                  await navigator.clipboard.writeText(url);
+                  toast.success(`Enlace del visor ${id} copiado`);
+                } catch {
+                  toast.error("No se pudo copiar el enlace");
+                }
+              }}><Copy /></Button>
+            </div>
+          </div>
+        );
+      })}
+    </section>
+  );
+}
 
 function MonitorUrlsCard() {
   const qc = useQueryClient();
