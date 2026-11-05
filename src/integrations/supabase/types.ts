@@ -3864,6 +3864,7 @@ export type Database = {
       }
       imp_lote_access: { Args: { _id: string }; Returns: undefined }
       imp_permiso: { Args: { _accion: string }; Returns: boolean }
+      imp_puede_operar_cortes: { Args: { _uid: string }; Returns: boolean }
       imp_sku_confirmado: {
         Args: {
           _bobina_id?: string
