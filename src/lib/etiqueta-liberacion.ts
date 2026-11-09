@@ -359,8 +359,8 @@ function buildHtml(
         <span class="sub">${imported ? "BOBINAS MADRE IMP" : data.estatus === "NO CONFORME" ? "ETIQUETA DE CONTROL DE CALIDAD" : "ETIQUETA DE LIBERACIÓN"}</span>
       </div>
       <div class="meta-bar">
-        <span>${imported ? `Bobinas Madre Imp · Ver ${esc(String(imported.revision))}.0` : "FOR-CAL-04 · Rev. 0"}</span>
-        <span>${imported ? `Fecha: ${esc(data.fecha)}` : "Emisión 05-03-2026"}</span>
+        <span>${imported ? `Bobinas Madre Imp · Ver ${esc(String(imported.revision))}.0` : "FOR-CAL-04 · Rev. 01"}</span>
+        <span>${imported ? `Fecha: ${esc(data.fecha)}` : "Emisión 01-09-2026"}</span>
         <span>Impresión: ${esc(fechaImpresion)}</span>
       </div>
     </div>
