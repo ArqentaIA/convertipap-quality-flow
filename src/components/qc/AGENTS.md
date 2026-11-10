@@ -1,0 +1,1 @@
+- The production roll search also lists imported rolls as link-only results to their own module, so traceability works without mixing imports into production data.
