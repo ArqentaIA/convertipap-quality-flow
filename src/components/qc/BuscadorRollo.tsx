@@ -4,6 +4,9 @@ import { useServerFn } from "@tanstack/react-start";
 import { Search, Loader2, X, Package } from "lucide-react";
 import { buscarRolloPorFolio } from "@/lib/produccion.functions";
 import { DetalleCalidadModal } from "@/components/qc/DetalleCalidadModal";
+import { useNavigate } from "@tanstack/react-router";
+import { supabase } from "@/integrations/supabase/client";
+import { impLookupNumero } from "@/lib/bobinas-imp/rules";
 
 /**
  * Buscador global por folio de rollo.
@@ -23,6 +26,26 @@ export function BuscadorRollo({ className = "" }: { className?: string }) {
     enabled,
     staleTime: 10_000,
   });
+
+  // Rollos importados (MP-00): solo consulta y enlace a su módulo; no entran a producción.
+  const navigate = useNavigate();
+  const impNumero = impLookupNumero(q);
+  const { data: impRows = [], isFetching: impFetching } = useQuery({
+    queryKey: ["buscar-rollo-imp", impNumero],
+    queryFn: async () => {
+      const { data: rows, error } = await supabase
+        .from("imp_bobinas")
+        .select("id, folio, producto_codigo, proveedor_nombre, fecha")
+        .eq("numero", impNumero as number)
+        .limit(5);
+      if (error) throw new Error(error.message);
+      return rows ?? [];
+    },
+    enabled: impNumero != null,
+    staleTime: 10_000,
+  });
+  const buscando = isFetching || impFetching;
+  const sinResultados = data.length === 0 && impRows.length === 0;
 
   // Cerrar dropdown al hacer click fuera
   useEffect(() => {
@@ -76,16 +99,46 @@ export function BuscadorRollo({ className = "" }: { className?: string }) {
 
         {open && enabled && (
           <div className="absolute right-0 z-50 mt-2 w-[28rem] max-w-[90vw] overflow-hidden rounded-xl border border-border bg-popover shadow-2xl">
-            {isFetching ? (
+            {buscando ? (
               <div className="flex items-center gap-2 p-4 text-sm text-muted-foreground">
                 <Loader2 className="h-4 w-4 animate-spin" /> Buscando…
               </div>
-            ) : data.length === 0 ? (
+            ) : sinResultados ? (
               <div className="p-4 text-center text-sm text-muted-foreground">
                 Sin coincidencias para <strong>"{q}"</strong>
               </div>
             ) : (
               <ul className="max-h-80 divide-y divide-border overflow-y-auto">
+                {impRows.map((r) => (
+                  <li key={`imp-${r.id}`}>
+                    <button
+                      onClick={() => {
+                        setOpen(false);
+                        setQ("");
+                        navigate({ to: "/bobinas-madre-imp", search: { bobina: r.id } });
+                      }}
+                      className="flex w-full items-start gap-3 px-3 py-2.5 text-left transition hover:bg-muted"
+                    >
+                      <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent text-accent-foreground">
+                        <Package className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-baseline justify-between gap-2">
+                          <span className="truncate text-sm font-semibold text-foreground">{r.folio}</span>
+                          <span className="shrink-0 text-[10px] uppercase tracking-wider text-muted-foreground">
+                            Bobina Madre Imp
+                          </span>
+                        </div>
+                        <div className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
+                          <span>{r.producto_codigo ?? "—"}</span>
+                          <span>·</span>
+                          <span>{r.proveedor_nombre ?? "—"}</span>
+                          {r.fecha && (<><span>·</span><span>{r.fecha}</span></>)}
+                        </div>
+                      </div>
+                    </button>
+                  </li>
+                ))}
                 {data.map((r) => (
                   <li key={r.muestraId}>
                     <button
