@@ -1,0 +1,1 @@
+- Imported folios derive from `numero` plus a per-row authorized suffix (`-0` default, `-D1` exception); lookups resolve by number so earlier labels keep working.
