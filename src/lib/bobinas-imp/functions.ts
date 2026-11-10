@@ -39,7 +39,7 @@ export const impGetCatalogos = createServerFn({ method:'POST' }).middleware([req
 });
 const filters = z.object({desde:z.string().optional(),hasta:z.string().optional(),folio:z.string().trim().max(40).optional(),estado:z.enum(['liberada','rechazada','concesion']).optional()});
 export const impListar = createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator((d)=>filters.parse(d)).handler(async({data,context})=> {
- return readAllReportPages<ImpBobina>((from,to)=> { let q=context.supabase.from('imp_bobinas').select('*').order('numero').range(from,to); if(data.desde) q=q.gte('fecha',data.desde); if(data.hasta) q=q.lte('fecha',data.hasta); if(data.folio){ if(!/^\d+(?:-00?)?$/.test(data.folio)) throw new Error('Folio inválido.'); q=q.eq('numero',Number(data.folio.split('-')[0])); } if(data.estado) q=q.eq('estado',data.estado); return q; });
+ return readAllReportPages<ImpBobina>((from,to)=> { let q=context.supabase.from('imp_bobinas').select('*').order('numero').range(from,to); if(data.desde) q=q.gte('fecha',data.desde); if(data.hasta) q=q.lte('fecha',data.hasta); if(data.folio){ if(!/^\d+(?:-(?:00?|D1))?$/i.test(data.folio)) throw new Error('Folio inválido.'); q=q.eq('numero',Number(data.folio.split('-')[0])); } if(data.estado) q=q.eq('estado',data.estado); return q; });
 });
 export const impDetalle = createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator((d)=>z.object({id:z.string().uuid()}).parse(d)).handler(async({data,context})=> {
  const {data:row,error}=await context.supabase.from('imp_bobinas').select('*').eq('id',data.id).single(); if(error) throw new Error('No se pudo consultar la bobina.');
