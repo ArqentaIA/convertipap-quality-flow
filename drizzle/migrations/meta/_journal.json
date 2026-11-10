@@ -281,6 +281,13 @@
       "when": 1793893201919,
       "tag": "0039_imp_cortes_capturistas",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1794270803455,
+      "tag": "0040_imp_folio_sufijo_d1",
+      "breakpoints": true
     }
   ]
 }
