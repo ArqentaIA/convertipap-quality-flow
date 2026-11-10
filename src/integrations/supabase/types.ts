@@ -768,6 +768,7 @@ export type Database = {
           fecha: string
           folio: string | null
           folio_original: string | null
+          folio_sufijo: string
           fuente_fila: number | null
           fuente_sha256: string | null
           id: string
@@ -797,6 +798,7 @@ export type Database = {
           fecha: string
           folio?: string | null
           folio_original?: string | null
+          folio_sufijo?: string
           fuente_fila?: number | null
           fuente_sha256?: string | null
           id?: string
@@ -826,6 +828,7 @@ export type Database = {
           fecha?: string
           folio?: string | null
           folio_original?: string | null
+          folio_sufijo?: string
           fuente_fila?: number | null
           fuente_sha256?: string | null
           id?: string

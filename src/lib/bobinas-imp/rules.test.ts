@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { impFolio, impCanEdit, impFormSchema, impSkuMismatch, impSkuQr, impValoresSchema, impNormalizeLookup, impCanContinue, impCanAssignSku, impSkuConfirmationSchema } from './rules';
+import { impFolio, impCanEdit, impFormSchema, impSkuMismatch, impSkuQr, impValoresSchema, impNormalizeLookup, impLookupNumero, impCanContinue, impCanAssignSku, impSkuConfirmationSchema } from './rules';
 describe('Bobinas Madre Imp: reglas autorizadas', () => {
  it('requiere aceptar la confirmación y el conjunto esperado antes de aplicar SKU al resto',()=>{const d={producto_id:'11111111-1111-4111-8111-111111111111',sku:'SSK103132260',esperado:'a'.repeat(32),motivo:'Asignación autorizada',confirmado:true};expect(impSkuConfirmationSchema.safeParse(d).success).toBe(true);expect(impSkuConfirmationSchema.safeParse({...d,confirmado:false}).success).toBe(false);expect(impSkuConfirmationSchema.safeParse({...d,esperado:''}).success).toBe(false);});
  it('Calidad puede asignar SKU faltante en históricos sin abrir edición de otros datos',()=>{expect(impCanEdit(null)).toBe(false);expect(impCanAssignSku(true,null)).toBe(true);expect(impCanAssignSku(false,null)).toBe(false);expect(impCanAssignSku(true,'SSK103132260')).toBe(false);});
  it('busca el segmento importado -0 (acepta -00 de etiquetas previas) sin confundir producción',()=>{expect(impNormalizeLookup('756-0')).toBe('00756-0');expect(impNormalizeLookup('00756-00')).toBe('00756-0');expect(impNormalizeLookup('756')).toBe(null);expect(impNormalizeLookup('756-4')).toBe(null);});
+ it('acepta el sufijo -D1 y lo resuelve al mismo número interno',()=>{expect(impLookupNumero('00070-D1')).toBe(70);expect(impLookupNumero('00070-d1')).toBe(70);expect(impLookupNumero('00070-0')).toBe(70);expect(impLookupNumero('00070-1')).toBe(null);});
  it('solo continúa con SKU registrado',()=>{expect(impCanContinue(null)).toBe(false);expect(impCanContinue('  ')).toBe(false);expect(impCanContinue('SSM103133260')).toBe(true);});
  it('conserva el SKU confirmado PSK32 en el QR y permite continuar',()=>{expect(impSkuQr('SSK103132260')).toBe('SSK103132260');expect(impCanContinue('SSK103132260')).toBe(true);});
  it('inicia en 00760-0 y usa sufijo -0 en histórico', () => { expect(impFolio(760)).toBe('00760-0'); expect(impFolio(1)).toBe('00001-0'); expect(impFolio(759)).toBe('00759-0'); });
