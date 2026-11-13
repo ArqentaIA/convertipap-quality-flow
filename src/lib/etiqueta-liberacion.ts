@@ -3,6 +3,7 @@
 import QRCode from "qrcode";
 import logoUrl from "@/assets/logo-convertipap.png";
 import sapHanaAsset from "@/assets/sap-hana-logo.jpg.asset.json";
+import { resolveFormatoEtiqueta, type FormatoEtiqueta } from "@/lib/etiqueta-formato";
 
 async function toDataUrl(url: string): Promise<string> {
   try {
@@ -73,6 +74,7 @@ export type EtiquetaData = {
   plantaCodigo?: string | null;
   /** SKU SAP guardado con el rollo, en ambas plantas y modos de captura. */
   skuSap?: string | null;
+  formatoEtiqueta?: FormatoEtiqueta;
 };
 
 function fmtKg(value: number | string): string {
@@ -359,7 +361,7 @@ function buildHtml(
         <span class="sub">${imported ? "BOBINAS MADRE IMP" : data.estatus === "NO CONFORME" ? "ETIQUETA DE CONTROL DE CALIDAD" : "ETIQUETA DE LIBERACIÓN"}</span>
       </div>
       <div class="meta-bar">
-        <span>${imported ? `Bobinas Madre Imp · Ver ${esc(String(imported.revision))}.0` : "FOR-CAL-04 · Rev. 01"}</span>
+        <span>${imported ? `Bobinas Madre Imp · Ver ${esc(String(imported.revision))}.0` : data.formatoEtiqueta === "FOR-CAL-05" ? "FOR-CAL-05" : "FOR-CAL-04 · Rev. 01"}</span>
         <span>${imported ? `Fecha: ${esc(data.fecha)}` : "Emisión 01-09-2026"}</span>
         <span>Impresión: ${esc(fechaImpresion)}</span>
       </div>
@@ -490,7 +492,7 @@ function buildHtml(
     </div>
 
 
-    <div class="foot">${imported ? "Bobinas Madre Imp" : "FOR-CAL-04"} · Generado automáticamente</div>
+    <div class="foot">${imported ? "Bobinas Madre Imp" : data.formatoEtiqueta ?? "FOR-CAL-04"} · Generado automáticamente</div>
   </div>
   </div>
 <script>
@@ -535,7 +537,20 @@ export async function buildImportedLabelHtml(
     { rollo, sku, peso: "", lote: "", producto: "" }, imported);
 }
 
-export async function printEtiquetaLiberacion(data: EtiquetaData): Promise<void> {
+export async function printEtiquetaLiberacion(data: EtiquetaData): Promise<FormatoEtiqueta> {
+  // Every manufactured-label entry point uses the original persisted capture,
+  // including immediate printing, retries and reprinting from roll editing.
+  // Do not infer origin from the current screen or trust a caller override.
+  const { supabase } = await import("@/integrations/supabase/client");
+  const { data: source, error: sourceError } = await supabase
+    .from("muestras_calidad")
+    .select("capturado_at, fuera_de_turno")
+    .eq("id", data.muestraId)
+    .single();
+  if (sourceError || !source) {
+    throw new Error("No se pudo verificar el formato original de la etiqueta. Intenta imprimir nuevamente.");
+  }
+  const formatoEtiqueta = resolveFormatoEtiqueta(source);
   const traceUrl = buildTraceUrl(data.muestraId);
 
 
@@ -597,6 +612,7 @@ export async function printEtiquetaLiberacion(data: EtiquetaData): Promise<void>
   const html = buildHtml(
     {
       ...data,
+      formatoEtiqueta,
       numeroOrdenSap,
       estadoSap,
       plantaCodigo,
@@ -622,4 +638,5 @@ export async function printEtiquetaLiberacion(data: EtiquetaData): Promise<void>
   w.document.open();
   w.document.write(html);
   w.document.close();
+  return formatoEtiqueta;
 }

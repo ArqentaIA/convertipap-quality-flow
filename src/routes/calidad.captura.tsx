@@ -1107,8 +1107,8 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
   async function handlePrintEtiqueta() {
     if (!ultimaEtiqueta) return;
     try {
-      await printEtiquetaLiberacion(ultimaEtiqueta);
-      void auditAction("etiqueta", `Impresión etiqueta FOR-CAL-04 ${ultimaEtiqueta.folio ?? ""}`);
+      const formato = await printEtiquetaLiberacion(ultimaEtiqueta);
+      void auditAction("etiqueta", `Impresión etiqueta ${formato} ${ultimaEtiqueta.folio ?? ""}`);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "No se pudo abrir la etiqueta");
     }
@@ -1153,10 +1153,10 @@ function CapturaInner({ maquinas, productos, modoFueraTurno = false }: { maquina
   async function imprimirEtiquetaMuestra(muestra: MuestraReciente) {
     try {
       const data = buildEtiquetaFromMuestra(muestra);
-      await printEtiquetaLiberacion(data);
+      const formato = await printEtiquetaLiberacion(data);
       void auditAction(
         "etiqueta",
-        `Reimpresión etiqueta FOR-CAL-04 folio ${muestra.id.slice(0, 8)}`,
+        `Reimpresión etiqueta ${formato} folio ${muestra.id.slice(0, 8)}`,
         muestra.id,
       );
     } catch (e) {

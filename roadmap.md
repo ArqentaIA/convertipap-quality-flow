@@ -1,5 +1,10 @@
 # Roadmap
 
+## Vigencia FOR-CAL-05 en etiquetas
+- [x] Aplicar solo a nuevos registros de Control de Calidad desde 13/11/2026 12:20:50 México; conservar FOR-CAL-04 y revisión original en anteriores y fuera de turno, sin cambiar QR, importadas, cintas ni datos operativos.
+- [x] 14 pruebas aprobadas y tres encabezados revisados en navegador con lecturas simuladas: nuevo FOR-CAL-05, anterior y fuera de turno FOR-CAL-04; tres QR presentes. Sin registros nuevos, cambios de datos ni publicación.
+- [ ] Verificar reimpresión con sesión real: no se pudo obtener sesión del solicitante; requiere iniciar sesión en la vista previa. Impresión física no comprobada.
+
 ## Tres carruseles de visores
 - [x] Crear tres enlaces nuevos con secuencias MP-04/05, MP-06/07 y MP-01/04/05/06/07, una máquina por minuto; conservar enlaces y datos actuales sin cambiar permisos.
 - [x] Cinco pruebas aprobadas; tres carruseles abiertos sin sesión/PIN, cambio real al minuto confirmado con datos de ambas plantas y pantallas revisadas; enlace anterior conservado, sin errores de pantalla. No publicado.

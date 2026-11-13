@@ -1,5 +1,7 @@
 # Architecture rules
 
+- Resolve label format from persisted capture to preserve reprints.
+
 - New operational carousel URLs use validated named sequences on the existing visor route and reuse its presentation/data access unchanged; legacy monitor query parameters retain their behavior to avoid disrupting installed displays.
 
 - Evaluate sidebar visibility from the current authenticated account on each render; keep presentation-only navigation rules independently testable to avoid stale menus after session changes.
