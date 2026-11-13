@@ -13,3 +13,8 @@ export function resolveFormatoEtiqueta(source: {
     ? "FOR-CAL-05"
     : "FOR-CAL-04";
 }
+
+/** Leyenda impresa en la etiqueta; ambos formatos conservan «Rev. 01». */
+export function leyendaFormatoEtiqueta(formato: FormatoEtiqueta): string {
+  return `${formato} · Rev. 01`;
+}

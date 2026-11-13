@@ -3,7 +3,7 @@
 import QRCode from "qrcode";
 import logoUrl from "@/assets/logo-convertipap.png";
 import sapHanaAsset from "@/assets/sap-hana-logo.jpg.asset.json";
-import { resolveFormatoEtiqueta, type FormatoEtiqueta } from "@/lib/etiqueta-formato";
+import { leyendaFormatoEtiqueta, resolveFormatoEtiqueta, type FormatoEtiqueta } from "@/lib/etiqueta-formato";
 
 async function toDataUrl(url: string): Promise<string> {
   try {
@@ -361,7 +361,7 @@ function buildHtml(
         <span class="sub">${imported ? "BOBINAS MADRE IMP" : data.estatus === "NO CONFORME" ? "ETIQUETA DE CONTROL DE CALIDAD" : "ETIQUETA DE LIBERACIÓN"}</span>
       </div>
       <div class="meta-bar">
-        <span>${imported ? `Bobinas Madre Imp · Ver ${esc(String(imported.revision))}.0` : data.formatoEtiqueta === "FOR-CAL-05" ? "FOR-CAL-05" : "FOR-CAL-04 · Rev. 01"}</span>
+        <span>${imported ? `Bobinas Madre Imp · Ver ${esc(String(imported.revision))}.0` : leyendaFormatoEtiqueta(data.formatoEtiqueta ?? "FOR-CAL-04")}</span>
         <span>${imported ? `Fecha: ${esc(data.fecha)}` : "Emisión 01-09-2026"}</span>
         <span>Impresión: ${esc(fechaImpresion)}</span>
       </div>

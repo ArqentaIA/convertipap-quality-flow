@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { FOR_CAL_05_DESDE, resolveFormatoEtiqueta } from "../etiqueta-formato";
+import { FOR_CAL_05_DESDE, leyendaFormatoEtiqueta, resolveFormatoEtiqueta } from "../etiqueta-formato";
 
 describe("vigencia de formato de etiqueta por registro original", () => {
   it("solo Control de Calidad nuevo usa FOR-CAL-05", () => {
@@ -18,5 +18,9 @@ describe("vigencia de formato de etiqueta por registro original", () => {
     expect(resolveFormatoEtiqueta({ capturado_at: null, fuera_de_turno: false })).toBe("FOR-CAL-04");
     expect(resolveFormatoEtiqueta({ capturado_at: "inválida", fuera_de_turno: false })).toBe("FOR-CAL-04");
     expect(resolveFormatoEtiqueta({ capturado_at: FOR_CAL_05_DESDE, fuera_de_turno: null })).toBe("FOR-CAL-04");
+  });
+  it("la leyenda impresa conserva «Rev. 01» en ambos formatos", () => {
+    expect(leyendaFormatoEtiqueta("FOR-CAL-05")).toBe("FOR-CAL-05 · Rev. 01");
+    expect(leyendaFormatoEtiqueta("FOR-CAL-04")).toBe("FOR-CAL-04 · Rev. 01");
   });
 });
